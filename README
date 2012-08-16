@@ -1,0 +1,17 @@
+Description of pktools
+----------------------
+The version of this pktools distribution is 20120625
+pktools is a collection of programs written in C++ to perform operations on raster images.
+It heavily relies on the Geospatial Data Abstraction Library (GDAL, www.gdal.org) and OGR. Some of the programs are similar to the gdal tools (gdalinfo, gdal_translate, gdal_merge,...) and many of the functionalities provided in pktools already exist. The reason for implementing pktools is a combination of personal preference and in some case additional functionality. 
+
+License and distribution
+------------------------
+pktools is written by Pieter Kempeneers and is distributed under the GNU public license GPLv3. Refer to the file COPYING for copying conditions.
+
+Installation of pktools
+-----------------------
+To install the programs in pktools, refer to the file INSTALL
+
+Change history
+-------------
+June 25 2012, first public release of the code

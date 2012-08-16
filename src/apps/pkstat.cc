@@ -1,0 +1,255 @@
+/**********************************************************************
+pkstat.cc: program to calculate basic statistics from raster image
+Copyright (C) 2008-2012 Pieter Kempeneers
+
+This file is part of pktools
+
+pktools is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+pktools is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with pktools.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************/
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <math.h>
+#include "base/Optionpk.h"
+#include "algorithms/Histogram.h"
+
+using namespace std;
+
+int main(int argc, char *argv[])
+{
+  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
+   This is free software, and you are welcome to redistribute it\n\
+   under certain conditions; use option --license for details.",false);
+  Optionpk<bool> license_opt("lic","license","show license information",false);
+  Optionpk<bool> todo_opt("\0","todo","",false);
+  Optionpk<bool> help_opt("h","help","shows this help info",false);
+  Optionpk<string> input_opt("i","input","name of the input text file","");
+  Optionpk<char> fs_opt("fs","fs","field separator. Default is space",' ');
+  Optionpk<bool> output_opt("o","output","output the selected columns (default is false)",false);
+  Optionpk<short> col_opt("c", "column", "column nr, starting from 0 (default is 1)", 1);
+  Optionpk<int> range_opt("r", "range", "rows to start/end reading. Use -r 1 -r 10 to read first 10 rows where first row is header. Default is 0 (no header and read all rows)", 0);
+  Optionpk<int> end_opt("end", "end", "row to end reading. Default is 0 (read until end)", 0);
+  Optionpk<bool> num_opt("n","num","sample size",false);
+  Optionpk<bool> mean_opt("m","mean","calculate mean value",false);
+  Optionpk<bool> median_opt("med","median","calculate median",false);
+  Optionpk<bool> var_opt("var","var","calculate variance",false);
+  Optionpk<bool> stdev_opt("\0","stdev","calculate standard deviation",false);
+  Optionpk<bool> sum_opt("s","sum","calculate sum of column",false);
+  Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
+  Optionpk<double> min_opt("min","min","calculate minimum value",0);
+  Optionpk<double> max_opt("max","max","calculate maximum value",0);
+  Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
+  Optionpk<short> nbin_opt("bin","bin","number of bins to calculate histogram",10);
+  Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",true);
+  Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
+  Optionpk<bool> rmse_opt("e","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
+  Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose (default is 0)", 0);
+
+  version_opt.retrieveOption(argc,argv);
+  license_opt.retrieveOption(argc,argv);
+  help_opt.retrieveOption(argc,argv);
+  todo_opt.retrieveOption(argc,argv);
+  input_opt.retrieveOption(argc,argv);
+  fs_opt.retrieveOption(argc,argv);
+  output_opt.retrieveOption(argc,argv);
+  col_opt.retrieveOption(argc,argv);
+  range_opt.retrieveOption(argc,argv);
+  num_opt.retrieveOption(argc,argv);
+  mean_opt.retrieveOption(argc,argv);
+  median_opt.retrieveOption(argc,argv);
+  var_opt.retrieveOption(argc,argv);
+  stdev_opt.retrieveOption(argc,argv);
+  sum_opt.retrieveOption(argc,argv);
+  minmax_opt.retrieveOption(argc,argv);
+  min_opt.retrieveOption(argc,argv);
+  max_opt.retrieveOption(argc,argv);
+  histogram_opt.retrieveOption(argc,argv);
+  nbin_opt.retrieveOption(argc,argv);
+  relative_opt.retrieveOption(argc,argv);
+  correlation_opt.retrieveOption(argc,argv);
+  rmse_opt.retrieveOption(argc,argv);
+  reg_opt.retrieveOption(argc,argv);
+  verbose_opt.retrieveOption(argc,argv);
+
+  if(version_opt[0]){
+    cout << version_opt.getHelp() << endl;
+    exit(0);
+  }
+  if(license_opt[0]){
+    cout << Optionpk<bool>::getGPLv3License() << endl;
+    exit(0);
+  }
+
+  if(help_opt[0]){
+    cout << "usage: pkstat -i asciifile [OPTIONS]" << endl;
+    exit(0);
+  }
+
+  vector< vector<double> > dataVector(col_opt.size());
+  vector< vector<int> > histVector(col_opt.size());
+  ifstream dataFile;
+  if(verbose_opt[0])
+    cout << "opening file " << input_opt[0] << endl;
+  dataFile.open(input_opt[0].c_str());
+
+  int nrow=0;
+  bool withinRange=true;
+  
+  if(fs_opt[0]>' '&&fs_opt[0]<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
+  // if(input_opt[0].find(".csv")!=string::npos){
+    if(verbose_opt[0])
+      cout << "reading csv file " << input_opt[0] << endl;
+    string csvRecord;
+    while(getline(dataFile,csvRecord)){//read a line
+      withinRange=true;
+      if(nrow<range_opt[0])
+        withinRange=false;
+      if(range_opt.size()>1)
+        if(nrow>range_opt[1])
+          withinRange=false;
+      if(withinRange){
+        istringstream csvstream(csvRecord);
+        string item;
+        int ncol=0;
+        while(getline(csvstream,item,fs_opt[0])){//read a column
+          if(verbose_opt[0])
+            cout << item << " ";
+          for(int icol=0;icol<col_opt.size();++icol){
+            if(ncol==col_opt[icol]){
+              double value=atof(item.c_str());
+              if(value>=min_opt[0]&&value<=max_opt[0])
+                dataVector[icol].push_back(value);
+            }
+          }
+          ++ncol;
+        }
+        if(verbose_opt[0])
+          cout << endl;
+        assert(ncol>=col_opt[0]);
+      }
+      ++nrow;
+    }
+    assert(dataVector.size());
+  }
+  else{//space or tab delimited fields
+    string spaceRecord;
+    while(!getline(dataFile, spaceRecord).eof()){
+      withinRange=true;
+      if(nrow<range_opt[0])
+        withinRange=false;
+      if(range_opt.size()>1)
+        if(nrow>range_opt[1])
+          withinRange=false;
+      if(withinRange){
+        if(verbose_opt[0]>1)
+          cout << spaceRecord << endl;
+        istringstream lineStream(spaceRecord);
+        string item;
+        int ncol=0;
+        while(lineStream >> item){
+          if(verbose_opt[0]>1)
+            cout << item << " ";
+          istringstream itemStream(item);
+          double value;
+          itemStream >> value;
+          for(int icol=0;icol<col_opt.size();++icol){
+            if(ncol==col_opt[icol]){
+              if(value>=min_opt[0]&&value<=max_opt[0])
+                dataVector[icol].push_back(value);
+            }
+          }
+          ++ncol;
+        }
+        if(verbose_opt[0]>1)
+          cout << endl;
+        if(verbose_opt[0])
+          cout << "number of columns: " << ncol << endl;
+        assert(ncol>=col_opt[0]);
+      }
+      ++nrow;
+    }
+  }
+  dataFile.close();
+  double minValue=min_opt[0];
+  double maxValue=max_opt[0];
+  Histogram hist;
+  for(int icol=0;icol<col_opt.size();++icol){
+    if(num_opt[0])
+      cout << "sample size column " << col_opt[icol] << ": " << dataVector[icol].size() << endl;
+    if(mean_opt[0])
+      cout << "mean value column " << col_opt[icol] << ": " << hist.mean(dataVector[icol]) << endl;
+    if(var_opt[0])
+      cout << "variance value column " << col_opt[icol] << ": " << hist.var(dataVector[icol]) << endl;
+    if(stdev_opt[0])
+      cout << "standard deviation column " << col_opt[icol] << ": " << sqrt(hist.var(dataVector[icol])) << endl;
+    if(sum_opt[0]){
+      cout << setprecision(2);
+      cout << fixed << "sum column " << col_opt[icol] << ": " << (hist.sum(dataVector[icol])) << endl;
+    }
+    if(median_opt[0])
+      cout << "median value column " << col_opt[icol] << ": " << hist.median(dataVector[icol]) << endl;
+    if(minmax_opt[0]){
+      cout << "min value  column " << col_opt[icol] << ": " << hist.min(dataVector[icol]) << endl;
+      cout << "max value column " << col_opt[icol] << ": " << hist.max(dataVector[icol]) << endl;
+    }
+    if(histogram_opt[0]){
+      if(verbose_opt[0])
+        std::cout << "calculating histogram for col " << icol << std::endl;
+      hist.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),histVector[icol],nbin_opt[0],minValue,maxValue);
+      if(verbose_opt[0])
+        std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
+    }
+  }
+  if(correlation_opt[0]){
+    assert(dataVector.size()==2);
+    cout << "correlation between columns " << col_opt[0] << " and " << col_opt[1] << ": " << hist.correlation(dataVector[0],dataVector[1]) << endl;
+  }
+  if(rmse_opt[0]){
+    assert(dataVector.size()==2);
+    cout << "root mean square error between columns " << col_opt[0] << " and " << col_opt[1] << ": " << hist.rmse(dataVector[0],dataVector[1]) << endl;
+  }
+  if(reg_opt[0]){
+    assert(dataVector.size()==2);
+    double c0=0;
+    double c1=0;
+    double r2=hist.linear_regression(dataVector[0],dataVector[1],c0,c1);
+    cout << "linear regression between columns: " << col_opt[0] << " and " << col_opt[1] << ": " << c0 << "+" << c1 << " * x " << " with R^2 (square correlation coefficient): " << r2 << endl;
+  }
+  if(histogram_opt[0]){
+    for(int irow=0;irow<histVector.begin()->size();++irow){
+      std::cout << (maxValue-minValue)*irow/(nbin_opt[0]-1)+minValue << " ";
+      for(int icol=0;icol<col_opt.size();++icol){
+        if(relative_opt[0])
+          std::cout << 100.0*static_cast<double>(histVector[icol][irow])/static_cast<double>(dataVector[icol].size());
+        else
+          std::cout << histVector[icol][irow];
+        if(icol<col_opt.size()-1)
+          cout << " ";
+      }
+      cout << endl;
+    }
+  }
+  if(output_opt[0]){
+    for(int irow=0;irow<dataVector.begin()->size();++irow){
+      for(int icol=0;icol<col_opt.size();++icol){
+        cout << dataVector[icol][irow];
+        if(icol<col_opt.size()-1)
+          cout << " ";
+      }
+      cout << endl;
+    }
+  }
+}      

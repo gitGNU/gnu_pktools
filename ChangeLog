@@ -1,0 +1,31 @@
+version 1.0
+
+ - First release
+
+version 2.1
+ - Introduction of configure options
+	--with-fann (when FANN is installed, needed for pkclassify_nn)
+	--with-las (when LIBLAS is installed, needed for pklas2img)
+ - Introduction of new tools, now includes:
+	pkascii2img
+	pkclassify_nn
+	pkcreatect
+	pkcrop
+	pkdiff
+	pkdumpimg
+	pkdumpogr
+	pkegcs
+	pkextract
+	pkfillnodata
+	pkfilter
+	pkgetmask
+	pkinfo
+	pklas2img
+	pkmosaic
+	pkndvi
+	pkpolygonize
+	pkreclass
+	pksetmask
+	pksieve
+	pkstat
+	pkstatogr

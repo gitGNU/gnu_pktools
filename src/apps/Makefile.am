@@ -1,0 +1,45 @@
+AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(GDAL_CFLAGS) @AM_CXXFLAGS@
+AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a @AM_LDFLAGS@
+LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a
+###############################################################################
+# THE PROGRAMS TO BUILD
+###############################################################################
+
+# the program to build (the names of the final binaries)
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkmosaic pkndvi pkpolygonize pkascii2img pkdiff
+if USE_FANN
+bin_PROGRAMS += pkclassify_nn
+pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
+pkclassify_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
+pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
+endif
+if USE_LAS
+bin_PROGRAMS += pklas2img
+pklas2img_SOURCES = pklas2img.cc
+pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
+endif
+# list of sources for the binaries
+pkinfo_SOURCES = pkinfo.cc
+pkcrop_SOURCES = pkcrop.cc
+pkreclass_SOURCES = pkreclass.cc
+pkgetmask_SOURCES = pkgetmask.cc
+pksetmask_SOURCES = pksetmask.cc
+pkcreatect_SOURCES = pkcreatect.cc
+pkdumpimg_SOURCES = pkdumpimg.cc
+pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
+pksieve_SOURCES = pksieve.cc
+pkstat_SOURCES = $(top_srcdir)/src/algorithms/Histogram.h pkstat.cc
+pkstat_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
+pkstatogr_SOURCES = pkstatogr.cc
+pkegcs_SOURCES = pkegcs.cc
+pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
+pkextract_SOURCES = pkextract.cc
+pkfillnodata_SOURCES = pkfillnodata.cc
+pkfilter_SOURCES = pkfilter.cc
+pkfilter_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
+pkmosaic_SOURCES = pkmosaic.cc
+pkndvi_SOURCES = pkndvi.cc
+pkpolygonize_SOURCES = pkpolygonize.cc
+pkascii2img_SOURCES = pkascii2img.cc
+pkdiff_SOURCES = pkdiff.cc
+###############################################################################
