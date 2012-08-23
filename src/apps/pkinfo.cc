@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 
     if(minmax_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
-      imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+      imgReader.getMinMax(minValue,maxValue,band_opt[0],true);
       std::cout << "--min " << minValue << " --max " << maxValue << " ";
     }
     if(hist_opt[0]){
