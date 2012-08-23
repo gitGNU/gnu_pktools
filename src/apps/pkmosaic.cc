@@ -28,17 +28,24 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/Histogram.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","introduce -uli -ulj to crop based on image coordinates",false);
+  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created", "");
   Optionpk<string>  output_opt("o", "output", "Output image file", "");
   Optionpk<string>  projection_opt("p", "projection", "projection in EPSG format (leave blank to copy from input file, use EPSG:3035 to use European projection and to force to European grid", "");
@@ -57,15 +64,15 @@ int main(int argc, char *argv[])
   Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
   Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
   Optionpk<string>  description_opt("\0", "description", "Set image description", "");
-  Optionpk<int> mrule_opt("m", "mrule", "Mosaic rule for mosaic (0: overwrite, 1: max ndvi, 2: max Band, 3: min Band, 4: valid Band, 5: mean value, 6: max voting (only for byte images), 7: median, 8: (weighted) sum (default: 0)", 0);
-  Optionpk<int> ruleBand_opt("\0", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand (default 0)", 0);
-  Optionpk<int> validBand_opt("\0", "validBand", "valid band index(es)", 0);
+  Optionpk<int> mrule_opt("m", "mrule", "Mosaic rule for mosaic (0: overwrite, 1: max ndvi, 2: max Band, 3: min Band, 4: valid Band, 5: mean value, 6: max voting (only for byte images), 7: median, 8: (weighted) sum", 0);
+  Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
+  Optionpk<int> validBand_opt("vb", "validBand", "valid band index(es)", 0);
   Optionpk<double> invalid_opt("t", "invalid", "invalid value for valid band", 0);
-  Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid. Default is -99999999", -99999999);
-  Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid. Default is 99999999", 99999999);
-  Optionpk<bool> file_opt("\0", "file", "write number of observations for each pixels as additional layer in mosaic (default is false)", false);
-  Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the mosaic, use one weight for each input file in same order as input files are provided). Default is 1 (equal weights).", 1);
-  Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Default is 0 (no multi-band output image).", 0);
+  Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.", -99999999);
+  Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.", 99999999);
+  Optionpk<bool> file_opt("file", "file", "write number of observations for each pixels as additional layer in mosaic", false);
+  Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the mosaic, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
+  Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image).", 0);
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
   version_opt.retrieveOption(argc,argv);

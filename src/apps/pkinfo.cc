@@ -24,14 +24,22 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 int main(int argc, char *argv[])
 {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
+  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<std::string> input_opt("i","input","input image file","");
   Optionpk<bool>  bbox_opt("bb", "bbox", "show bounding box ", false);
   Optionpk<bool>  bbox_te_opt("te", "te", "show bounding box in GDAL format: xmin ymin xmax ymax ", false);
@@ -41,19 +49,18 @@ int main(int argc, char *argv[])
   Optionpk<bool>  lines_opt("l", "lines", "Number of lines in image ", false);
   Optionpk<bool>  nband_opt("nb", "nband", "Show number of bands in image", false);
   Optionpk<short>  band_opt("b", "band", "Band specific information", 0);
-  // Optionpk<bool>  magic_opt("\0", "magic", "Show magic pixel in image ", false);
   Optionpk<bool>  dx_opt("dx", "dx", "get resolution in x (in m)", false);
   Optionpk<bool>  dy_opt("dy", "dy", "get resolution in y (in m)", false);
   Optionpk<bool>  minmax_opt("mm", "minmax", "Show min and max value of the image ", false);
   Optionpk<bool>  stat_opt("stat", "stat", "Show statistics (min,max, mean and stdDev of the image ", false);
   Optionpk<double>  min_opt("m", "min", "Show min value of the image (or set minimum for histogram)", 0);
   Optionpk<double>  max_opt("M", "max", "Show max value of the image (or set maximum for histogram)", 0);
-  Optionpk<bool>  relative_opt("\0", "rel", "Calculate relative histogram in percentage", false);
+  Optionpk<bool>  relative_opt("rel", "rel", "Calculate relative histogram in percentage", false);
   Optionpk<bool>  projection_opt("p", "projection", "Show projection of the image ", false);
   Optionpk<bool>  geo_opt("geo", "geo", "get geotransform:  ", false);
   Optionpk<bool>  interleave_opt("il", "interleave", "Show interleave ", false);
   Optionpk<bool>  filename_opt("f", "filename", "Image filename ", false);
-  Optionpk<bool>  cover_opt("\0", "cover", "Image covers bounding box (or x and y pos) if printed to std out ", false);
+  Optionpk<bool>  cover_opt("cov", "cover", "Image covers bounding box (or x and y pos) if printed to std out ", false);
   Optionpk<double>  x_opt("x", "xpos", "x pos", -1);
   Optionpk<double>  y_opt("y", "ypos", "y pos", -1);
   Optionpk<bool>  read_opt("r", "read", "read row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based)", 0);
@@ -64,16 +71,17 @@ int main(int argc, char *argv[])
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (0)", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box (0)", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box (0)", 0.0);
-  Optionpk<bool>  hist_opt("\0", "hist", "Calculate histogram. Use --rel for a relative histogram output. ", false);
-  Optionpk<short>  nbin_opt("\0", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers", 0);
+  Optionpk<bool>  hist_opt("hist", "hist", "Calculate histogram. Use --rel for a relative histogram output. ", false);
+  Optionpk<short>  nbin_opt("nbin", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers", 0);
   Optionpk<bool>  type_opt("ot", "otype", "Return data type", false);
-  Optionpk<bool>  description_opt("\0", "description", "Return image description", false);
-  Optionpk<bool>  metadata_opt("\0", "meta", "Show meta data ", false);
-  Optionpk<double> maskValue_opt("\0", "mask", "mask value(s) for no data to calculate reference pixel in image (Default is 0)",0);
+  Optionpk<bool>  description_opt("d", "description", "Return image description", false);
+  Optionpk<bool>  metadata_opt("meta", "meta", "Show meta data ", false);
+  Optionpk<double> maskValue_opt("mask", "mask", "mask value(s) for no data to calculate reference pixel in image",0);
   
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
   help_opt.retrieveOption(argc,argv);
+  todo_opt.retrieveOption(argc,argv);
 
   if(version_opt[0]){
     std::cout << version_opt.getHelp() << std::endl;
@@ -93,7 +101,6 @@ int main(int argc, char *argv[])
   lines_opt.retrieveOption(argc,argv);
   nband_opt.retrieveOption(argc,argv);
   band_opt.retrieveOption(argc,argv);
-  // magic_opt.retrieveOption(argc,argv);
   dx_opt.retrieveOption(argc,argv);
   dy_opt.retrieveOption(argc,argv);
   minmax_opt.retrieveOption(argc,argv);
@@ -143,6 +150,9 @@ int main(int argc, char *argv[])
   ImgReaderGdal imgReader;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader.open(input_opt[ifile]);
+    for(int inodata=0;inodata<maskValue_opt.size();++inodata)
+      imgReader.pushNoDataValue(maskValue_opt[inodata],band_opt[0]);
+
     if(filename_opt[0])
       std::cout << " --input " << input_opt[ifile] << " ";
     if(centre_opt[0]){
@@ -153,8 +163,6 @@ int main(int argc, char *argv[])
     if(refpixel_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
       Egcs egcs;
-      for(int inodata=0;inodata<maskValue_opt.size();++inodata)
-        imgReader.pushNoDataValue(maskValue_opt[inodata],band_opt[0]);
       double refX,refY;
       //get centre of reference (centre of gravity) pixel in image
       imgReader.getRefPix(refX,refY,band_opt[0]);
@@ -242,11 +250,6 @@ int main(int argc, char *argv[])
       std::cout << "--rows " << imgReader.nrOfRow() << " ";
     if(nband_opt[0])
       std::cout << "--nband " << imgReader.nrOfBand() << " ";
-    // if(magic_opt[0]){
-    //   double magic_x, magic_y;
-    //   imgReader.getMagicPixel(magic_x,magic_y);
-    //   std::cout << "--magic_x " << magic_x << " --magic_y " << magic_y << " ";
-    // }
     double minValue=0;
     double maxValue=0;
     double meanValue=0;

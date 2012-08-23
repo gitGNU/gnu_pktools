@@ -25,30 +25,36 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  //command line options
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image", "");
   Optionpk<string>  mask_opt("m", "mask", "Mask image(s)", "");
   Optionpk<string> output_opt("o", "output", "Output mask file", "");
-  Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask. Default value is 1", 1);
+  Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask.", 1);
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<unsigned short>  band_opt("b", "band", "band index to replace (other bands are copied to output)", 0);
   Optionpk<string> type_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string> code_opt("\0", "code", "Recode text file (2 colums: from to)", "");
+  Optionpk<string> code_opt("code", "code", "Recode text file (2 colums: from to)", "");
   Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)", "");
   Optionpk<string> reclass_opt("r", "reclass", "list of recoded class(es) (in combination with class option)", "");
-  Optionpk<string> label_opt("l", "label", "Label name of the shape file to be replaced (default: label)", "label");
+  Optionpk<string> fieldname_opt("n", "fname", "field name of the shape file to be replaced", "label");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
   Optionpk<string> description_opt("d", "description", "Set image description", "");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
@@ -78,13 +84,13 @@ int main(int argc, char *argv[])
   output_opt.retrieveOption(argc,argv);
   type_opt.retrieveOption(argc,argv);
   band_opt.retrieveOption(argc,argv);
-  label_opt.retrieveOption(argc,argv);
+  fieldname_opt.retrieveOption(argc,argv);
   option_opt.retrieveOption(argc,argv);
   description_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
   if(help_opt[0]){
-    cout << "usage: pkreclass -i inputimage -o outputimage [OPTIONS]" << endl;
+    cout << "usage: pkinfo -i inputimage -o outputimage [OPTIONS]" << endl;
     exit(0);
   }
 
@@ -151,7 +157,7 @@ int main(int argc, char *argv[])
       for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
         OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
         string fieldname=poFieldDefn->GetNameRef();
-        if(fieldname==label_opt[0]){
+        if(fieldname==fieldname_opt[0]){
           string fromClass=poFeature->GetFieldAsString(iField);
           string toClass=fromClass;
           if(codemapString.find(fromClass)!=codemapString.end())

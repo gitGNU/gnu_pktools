@@ -24,39 +24,45 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/Histogram.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i","input","name of the input text file","");
-  Optionpk<char> fs_opt("fs","fs","field separator. Default is space",' ');
-  Optionpk<bool> output_opt("o","output","output the selected columns (default is false)",false);
-  Optionpk<short> col_opt("c", "column", "column nr, starting from 0 (default is 1)", 1);
-  Optionpk<int> range_opt("r", "range", "rows to start/end reading. Use -r 1 -r 10 to read first 10 rows where first row is header. Default is 0 (no header and read all rows)", 0);
-  Optionpk<int> end_opt("end", "end", "row to end reading. Default is 0 (read until end)", 0);
-  Optionpk<bool> num_opt("n","num","sample size",false);
+  Optionpk<char> fs_opt("fs","fs","field separator.",' ');
+  Optionpk<bool> output_opt("o","output","output the selected columns",false);
+  Optionpk<short> col_opt("c", "column", "column nr, starting from 0", 0);
+  Optionpk<int> range_opt("r", "range", "rows to start/end reading. Use -r 1 -r 10 to read first 10 rows where first row is header. Use 0 to read all rows with no header.", 0);
+  Optionpk<bool> size_opt("size","size","sample size",false);
   Optionpk<bool> mean_opt("m","mean","calculate mean value",false);
   Optionpk<bool> median_opt("med","median","calculate median",false);
   Optionpk<bool> var_opt("var","var","calculate variance",false);
-  Optionpk<bool> stdev_opt("\0","stdev","calculate standard deviation",false);
+  Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
   Optionpk<bool> sum_opt("s","sum","calculate sum of column",false);
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
   Optionpk<double> min_opt("min","min","calculate minimum value",0);
   Optionpk<double> max_opt("max","max","calculate maximum value",0);
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<short> nbin_opt("bin","bin","number of bins to calculate histogram",10);
-  Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",true);
+  Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
   Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> rmse_opt("e","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (default is 0)", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
@@ -67,7 +73,7 @@ int main(int argc, char *argv[])
   output_opt.retrieveOption(argc,argv);
   col_opt.retrieveOption(argc,argv);
   range_opt.retrieveOption(argc,argv);
-  num_opt.retrieveOption(argc,argv);
+  size_opt.retrieveOption(argc,argv);
   mean_opt.retrieveOption(argc,argv);
   median_opt.retrieveOption(argc,argv);
   var_opt.retrieveOption(argc,argv);
@@ -130,7 +136,7 @@ int main(int argc, char *argv[])
           for(int icol=0;icol<col_opt.size();++icol){
             if(ncol==col_opt[icol]){
               double value=atof(item.c_str());
-              if(value>=min_opt[0]&&value<=max_opt[0])
+              if((value>=min_opt[0]&&value<=max_opt[0])||max_opt[0]<=min_opt[0])
                 dataVector[icol].push_back(value);
             }
           }
@@ -167,7 +173,7 @@ int main(int argc, char *argv[])
           itemStream >> value;
           for(int icol=0;icol<col_opt.size();++icol){
             if(ncol==col_opt[icol]){
-              if(value>=min_opt[0]&&value<=max_opt[0])
+              if((value>=min_opt[0]&&value<=max_opt[0])||max_opt[0]<=min_opt[0])
                 dataVector[icol].push_back(value);
             }
           }
@@ -182,12 +188,14 @@ int main(int argc, char *argv[])
       ++nrow;
     }
   }
+  assert(dataVector.size());
   dataFile.close();
   double minValue=min_opt[0];
   double maxValue=max_opt[0];
   Histogram hist;
   for(int icol=0;icol<col_opt.size();++icol){
-    if(num_opt[0])
+    assert(dataVector[icol].size());
+    if(size_opt[0])
       cout << "sample size column " << col_opt[icol] << ": " << dataVector[icol].size() << endl;
     if(mean_opt[0])
       cout << "mean value column " << col_opt[icol] << ": " << hist.mean(dataVector[icol]) << endl;

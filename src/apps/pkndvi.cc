@@ -23,33 +23,40 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 
 int main(int argc, char *argv[])
 {
   //command line options
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i","input","input image file","");
   Optionpk<string> output_opt("o","output","output image file containing ndvi","");
   Optionpk<short> band_opt("b", "band", "Bands to be used for vegetation index (see rule option)", 0);
-  Optionpk<string> rule_opt("r", "rule", "Rule for index. [ndvi (b1-b0)/(b1+b0)|gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02)))|vari (b1-b2)/(b1+b2-b0)|diff (b1-b0)|scale. Default is 0 (ndvi)", "ndvi");
-  Optionpk<double> invalid_opt("t", "invalid", "Mask value where image is invalid. Default value is 0", 0);
+  Optionpk<string> rule_opt("r", "rule", "Rule for index. [ndvi (b1-b0)/(b1+b0)|gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02)))|vari (b1-b2)/(b1+b2-b0)|diff (b1-b0)|scale.", "ndvi");
+  Optionpk<double> invalid_opt("t", "invalid", "Mask value where image is invalid.", 0);
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<string> description_opt("d", "description", "Set image description", "");
-  Optionpk<double> minmax_opt("m", "minmax", "minimum and maximum values for ndvi (limit all values smaller/larger to min/max (default 0)", 0);
-  Optionpk<double> eps_opt("e", "eps", "epsilon, contraint division by zero (default is 0)", 0);
-  Optionpk<double> scale_opt("s", "scale", "scale[0] is used for input, scale[1] is used for output: DN=scale[1]*ndvi+offset[1] (default is -s 1 -s 1)", 1);
-  Optionpk<double> offset_opt("\0", "offset", "offset[0] is used for input, offset[1] is used for output (see also scale option (default is --offset 0 --offset 0)", 0);
+  Optionpk<double> minmax_opt("m", "minmax", "minimum and maximum values for ndvi (limit all values smaller/larger to min/max", 0);
+  Optionpk<double> eps_opt("e", "eps", "epsilon, contraint division by zero", 0);
+  Optionpk<double> scale_opt("s", "scale", "scale[0] is used for input, scale[1] is used for output: DN=scale[1]*ndvi+offset[1]", 1);
+  Optionpk<double> offset_opt("off", "offset", "offset[0] is used for input, offset[1] is used for output (see also scale option", 0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (default 0)", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
@@ -80,7 +87,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(help_opt[0]){
-    cout << "usage: pkndvi -i inputimage -o outputimage [OPTIONS]" << endl;
+    cout << "usage: pkinfo -i inputimage -o outputimage [OPTIONS]" << endl;
     exit(0);
   }
 

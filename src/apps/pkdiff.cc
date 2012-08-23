@@ -25,21 +25,26 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "Optionpk.h"
 #include "algorithms/ConfusionMatrix.h"
 
-using namespace std;
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 int main(int argc, char *argv[])
 {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","todo: support different data types",false);
+  Optionpk<bool> todo_opt("\0","todo","todo: support different data types (now only integer type supported)",false);
   Optionpk<string> input_opt("i", "input", "Input image file.", "");
   Optionpk<string> reference_opt("r", "reference", "Reference image file", "");
   Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.", "");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also mflag option. (default is empty)", "");
+  Optionpk<string> mask_opt("\0", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also mflag option. (default is empty)", "");
   Optionpk<string> colorTable_opt("\0", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels (0)", 0);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label (default value is 1)", 1);
@@ -112,44 +117,48 @@ int main(int argc, char *argv[])
     assert(mask_opt.size()==input_opt.size());
   vector<short> inputRange;
   vector<short> referenceRange;
-  if(class_opt.size()>1)
-    inputRange=class_opt;
-  else{
-    try{
-      if(verbose_opt[0])
-        cout << "opening input image file " << input_opt[0] << endl;
-      inputReader.open(input_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
-    }
-    catch(string error){
-      cerr << error << endl;
-      exit(1);
-    }
-    inputReader.getRange(inputRange,band_opt[0]);
-    inputReader.close();
-  }
-  
-  for(int iflag=0;iflag<flag_opt.size();++iflag){
-    vector<short>::iterator fit;
-    fit=find(inputRange.begin(),inputRange.end(),flag_opt[iflag]);
-    if(fit!=inputRange.end())
-      inputRange.erase(fit);
-  }
-  int nclass=inputRange.size();
+  ConfusionMatrix cm;
+  int nclass=0;
   vector<string> classNames;
-  if(verbose_opt[0]){
-    cout << "nclass (inputRange.size()): " << nclass << endl;
-    cout << "input range: " << endl;
-  }
-  for(int rc=0;rc<inputRange.size();++rc){
-    classNames.push_back(type2string(inputRange[rc]));
-    if(verbose_opt[0])
-      cout << inputRange[rc] << endl;
-  }
-  ConfusionMatrix cm(classNames);
-  if(verbose_opt[0]){
-    cout << "class names: " << endl;
-    for(int iclass=0;iclass<cm.nClasses();++iclass)
-      cout << iclass << " " << cm.getClass(iclass) << endl;
+  if(confusion_opt[0]){
+    if(class_opt.size()>1)
+      inputRange=class_opt;
+    else{
+      try{
+        if(verbose_opt[0])
+          cout << "opening input image file " << input_opt[0] << endl;
+        inputReader.open(input_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
+      }
+      catch(string error){
+        cerr << error << endl;
+        exit(1);
+      }
+      inputReader.getRange(inputRange,band_opt[0]);
+      inputReader.close();
+    }
+  
+    for(int iflag=0;iflag<flag_opt.size();++iflag){
+      vector<short>::iterator fit;
+      fit=find(inputRange.begin(),inputRange.end(),flag_opt[iflag]);
+      if(fit!=inputRange.end())
+        inputRange.erase(fit);
+    }
+    nclass=inputRange.size();
+    if(verbose_opt[0]){
+      cout << "nclass (inputRange.size()): " << nclass << endl;
+      cout << "input range: " << endl;
+    }
+    for(int rc=0;rc<inputRange.size();++rc){
+      classNames.push_back(type2string(inputRange[rc]));
+      if(verbose_opt[0])
+        cout << inputRange[rc] << endl;
+    }
+    cm.setClassNames(classNames);
+    if(verbose_opt[0]){
+      cout << "class names: " << endl;
+      for(int iclass=0;iclass<cm.nClasses();++iclass)
+        cout << iclass << " " << cm.getClass(iclass) << endl;
+    }
   }
   unsigned int ntotalValidation=0;
   unsigned int nflagged=0;
@@ -158,11 +167,17 @@ int main(int argc, char *argv[])
   vector<float> producer(nclass);
   vector<unsigned int> nvalidation(nclass);
 
-  //initialize
-  for(int rc=0;rc<nclass;++rc){
-    for(int ic=0;ic<nclass;++ic)
-      resultClass[rc][ic]=0;
-    nvalidation[rc]=0;
+  if(confusion_opt[0]){
+    resultClass.resize(nclass,nclass);
+    user.resize(nclass);
+    producer.resize(nclass);
+    nvalidation.resize(nclass);
+    //initialize
+    for(int rc=0;rc<nclass;++rc){
+      for(int ic=0;ic<nclass;++ic)
+        resultClass[rc][ic]=0;
+      nvalidation[rc]=0;
+    }
   }
   
   bool isDifferent=false;
@@ -194,7 +209,8 @@ int main(int argc, char *argv[])
           cerr << error << endl;
           exit(1);
         }
-        referenceRange=inputRange;
+        if(confusion_opt[0])
+          referenceRange=inputRange;
 
         ImgWriterOgr ogrWriter;
         OGRLayer *writeLayer;
@@ -362,16 +378,18 @@ int main(int argc, char *argv[])
             if(!windowHasFlag&&isHomogeneous){
               if(output_opt[0]!="")
                 writeFeature->SetField(labelclass_opt[0].c_str(),static_cast<int>(inputValue));
-              ++ntotalValidation;
-              int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-              int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
-              assert(rc<nclass);
-              assert(ic<nclass);
-              ++nvalidation[rc];
-              ++resultClass[rc][ic];
-              if(verbose_opt[0]>1)
-                cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
-              cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+              if(confusion_opt[0]){
+                ++ntotalValidation;
+                int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
+                int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+                assert(rc<nclass);
+                assert(ic<nclass);
+                ++nvalidation[rc];
+                ++resultClass[rc][ic];
+                if(verbose_opt[0]>1)
+                  cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
+                cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+              }
               if(inputValue==referenceValue){//correct
                 if(valueE_opt[0]!=flag_opt[0])
                   outputValue=valueE_opt[0];
@@ -406,17 +424,18 @@ int main(int argc, char *argv[])
                   if(output_opt[0]!="")
                     writeFeature->SetField(fs.str().c_str(),static_cast<int>(inputValue));
                   if(!windowJ&&!windowI){//centre pixel
-                    ++ntotalValidation;
-                    int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-                    int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
-                    assert(rc<nclass);
-                    assert(ic<nclass);
-                    ++nvalidation[rc];
-                    ++resultClass[rc][ic];
-                    if(verbose_opt[0]>1)
-                      cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
-                    cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
-
+                    if(confusion_opt[0]){
+                      ++ntotalValidation;
+                      int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
+                      int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+                      assert(rc<nclass);
+                      assert(ic<nclass);
+                      ++nvalidation[rc];
+                      ++resultClass[rc][ic];
+                      if(verbose_opt[0]>1)
+                        cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
+                      cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+                    }
                     if(inputValue==referenceValue){//correct
                       if(valueE_opt[0]!=flag_opt[0])
                         outputValue=valueE_opt[0];
@@ -487,7 +506,10 @@ int main(int argc, char *argv[])
     //todo: support different data types!
     vector<short> lineInput(inputReader.nrOfCol());
     vector<short> lineMask(maskReader.nrOfCol());
-    vector<short> lineOutput(inputReader.nrOfCol());
+    vector<short> lineOutput;
+    if(output_opt[0]!="")
+      lineOutput.resize(inputReader.nrOfCol());
+
     int irow=0;
     int icol=0;
     double oldreferencerow=-1;
@@ -505,30 +527,31 @@ int main(int argc, char *argv[])
         cout << "projection of input image and reference image are different!" << endl;
     }
     vector<short> lineReference(referenceReader.nrOfCol());
-    referenceReader.getRange(referenceRange,band_opt[0]);
-    for(int iflag=0;iflag<flag_opt.size();++iflag){
-      vector<short>::iterator fit;
-      fit=find(referenceRange.begin(),referenceRange.end(),flag_opt[iflag]);
-      if(fit!=referenceRange.end())
-        referenceRange.erase(fit);
-    }
-    if(verbose_opt[0]){
-      cout << "reference range: " << endl;
-      for(int rc=0;rc<referenceRange.size();++rc)
-        cout << referenceRange[rc] << endl;
-    }
-    if(referenceRange.size()!=inputRange.size()){
-      if(confusion_opt[0]||output_opt[0]!=""){
-        cout << "reference range is not equal to input range!" << endl;
-        cout << "Kappa: " << 0 << endl;    
-        cout << "total weighted: " << 0 << endl;
+    if(confusion_opt[0]){
+      referenceReader.getRange(referenceRange,band_opt[0]);
+      for(int iflag=0;iflag<flag_opt.size();++iflag){
+        vector<short>::iterator fit;
+        fit=find(referenceRange.begin(),referenceRange.end(),flag_opt[iflag]);
+        if(fit!=referenceRange.end())
+          referenceRange.erase(fit);
       }
-      else
-        cout << "reference range is not equal to input range!" << endl;
+      if(verbose_opt[0]){
+        cout << "reference range: " << endl;
+        for(int rc=0;rc<referenceRange.size();++rc)
+          cout << referenceRange[rc] << endl;
+      }
+      if(referenceRange.size()!=inputRange.size()){
+        if(confusion_opt[0]||output_opt[0]!=""){
+          cout << "reference range is not equal to input range!" << endl;
+          cout << "Kappa: " << 0 << endl;    
+          cout << "total weighted: " << 0 << endl;
+        }
+        else
+          cout << "reference range is not equal to input range!" << endl;
         cout << input_opt[0] << " and " << reference_opt[0] << " are different" << endl;
-      exit(1);
+        exit(1);
+      }
     }
-
     for(irow=0;irow<inputReader.nrOfRow()&&!isDifferent;++irow){
       //read line in lineInput, lineReference and lineMask
       inputReader.readData(lineInput,GDT_Int16,irow,band_opt[0]);
@@ -561,7 +584,8 @@ int main(int argc, char *argv[])
         bool flagged=false;
         for(int iflag=0;iflag<flag_opt.size();++iflag){
           if((lineInput[icol]==flag_opt[iflag])||(lineReference[ireference]==flag_opt[iflag])){
-            lineOutput[icol]=flag_opt[iflag];
+            if(output_opt[0]!="")
+              lineOutput[icol]=flag_opt[iflag];
             flagged=true;
             break;
           }
@@ -575,47 +599,54 @@ int main(int argc, char *argv[])
           }
         }
         if(!flagged){
-          ++ntotalValidation;
-          int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),lineReference[ireference]));
-          int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),lineInput[icol]));
-          assert(rc<nclass);
-          assert(ic<nclass);
-          ++nvalidation[rc];
-          ++resultClass[rc][ic];
-          if(verbose_opt[0]>1)
-            cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
-          cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+          if(confusion_opt[0]){
+            ++ntotalValidation;
+            int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),lineReference[ireference]));
+            int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),lineInput[icol]));
+            assert(rc<nclass);
+            assert(ic<nclass);
+            ++nvalidation[rc];
+            ++resultClass[rc][ic];
+            if(verbose_opt[0]>1)
+              cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
+            cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+          }
           if(lineInput[icol]==lineReference[ireference]){//correct
-            if(valueE_opt[0]!=flag_opt[0])
-              lineOutput[icol]=valueE_opt[0];
-            else
-              lineOutput[icol]=lineInput[icol];
+            if(output_opt[0]!=""){
+              if(valueE_opt[0]!=flag_opt[0])
+                lineOutput[icol]=valueE_opt[0];
+              else
+                lineOutput[icol]=lineInput[icol];
+            }
           }
           else{//error
             if(output_opt[0]==""&&!confusion_opt[0]){
               isDifferent=true;
               break;
             }
-            if(lineInput[icol]<20){//forest
-              if(lineReference[icol]>=20)//gain
-                lineOutput[icol]=lineInput[icol]*10+1;//GAIN is 111,121,131
-              else//forest type changed: mixed
-                lineOutput[icol]=130;//MIXED FOREST
-            }
-            else if(lineReference[icol]<20){//loss
-              lineOutput[icol]=20*10+lineReference[icol];//LOSS is 211 212 213
-            }
-            else//no forest
-              lineOutput[icol]=20*10;//NON FOREST is 200
-            // if(lineInput[icol]>lineReference[ireference])//1=forest,2=non-forest
+            if(output_opt[0]!=""){
+              if(lineInput[icol]<20){//forest
+                if(lineReference[icol]>=20)//gain
+                  lineOutput[icol]=lineInput[icol]*10+1;//GAIN is 111,121,131
+                else//forest type changed: mixed
+                  lineOutput[icol]=130;//MIXED FOREST
+              }
+              else if(lineReference[icol]<20){//loss
+                lineOutput[icol]=20*10+lineReference[icol];//LOSS is 211 212 213
+              }
+              else//no forest
+                lineOutput[icol]=20*10;//NON FOREST is 200
+              // if(lineInput[icol]>lineReference[ireference])//1=forest,2=non-forest
             //   lineOutput[icol]=valueO_opt[0];//omission error
             // else
             //   lineOutput[icol]=valueC_opt[0];//commission error
+            }
           }
         }
         else{
           ++nflagged;
-          lineOutput[icol]=flag_opt[0];
+          if(output_opt[0]!="")
+            lineOutput[icol]=flag_opt[0];
         }
       }
       if(output_opt[0]!=""){

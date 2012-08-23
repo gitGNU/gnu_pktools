@@ -22,6 +22,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 
 int main(int argc,char **argv) {
@@ -30,24 +34,27 @@ int main(int argc,char **argv) {
   short green=-1;
   short blue=-1;
 
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image file", "");
   Optionpk<string>  output_opt("o", "output", "Output image file", "");
   Optionpk<string>  legend_opt("l", "legend", "Create legend as png file", "");
-  Optionpk<short>  dim_opt("d", "dim", "number of columns and rows in legend (Default is 100 cols x max-min+1 rows", 100);
+  Optionpk<short>  dim_opt("dim", "dim", "number of columns and rows in legend.", 100);
   Optionpk<double>  min_opt("m", "min", "minimum value", 0);
   Optionpk<double>  max_opt("M", "max", "maximum value", 100);
-  Optionpk<bool>  grey_opt("g", "grey", "grey scale (default is false)", false);
+  Optionpk<bool>  grey_opt("g", "grey", "grey scale", false);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
-  Optionpk<string>  description_opt("\0", "description", "Set image description", "");
+  Optionpk<string>  description_opt("d", "description", "Set image description", "");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
   version_opt.retrieveOption(argc,argv);
@@ -78,7 +85,7 @@ int main(int argc,char **argv) {
   verbose_opt.retrieveOption(argc,argv);
 
   if(help_opt[0]){
-    cout << "usage: pkcreatect -i inputimage -o outputimage [OPTIONS]" << endl;
+    cout << "usage: pkcreatect [OPTIONS]" << endl;
     exit(0);
   }
 

@@ -25,12 +25,18 @@ extern "C" {
 }
 #include "base/Optionpk.h"
 
-using namespace std;
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 int main(int argc,char **argv) {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!", "");

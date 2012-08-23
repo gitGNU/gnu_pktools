@@ -32,7 +32,6 @@ template<typename T> unsigned int readDataImageShape(const string &filename,
                                                      double start,
                                                      double end,
                                                      const string& label,
-                                                     const string& query="",
                                                      int verbose=false);
 
 
@@ -42,7 +41,6 @@ template<typename T> unsigned int readDataImageShape(const string &filename,
                                                      double start,
                                                      double end,
                                                      const string& label,
-                                                     const string& query,
                                                      int verbose)
 {
   mapPixels.clear();
@@ -54,7 +52,6 @@ template<typename T> unsigned int readDataImageShape(const string &filename,
   ImgReaderOgr imgReaderShape;
   try{
     imgReaderShape.open(filename);
-    bool queryFound=false;
     //only retain bands in fields
     imgReaderShape.getFields(fields);
     vector<string>::iterator fit=fields.begin();
@@ -63,22 +60,16 @@ template<typename T> unsigned int readDataImageShape(const string &filename,
     while(fit!=fields.end()){
       if(verbose)
         cout << *fit << " ";
-      size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if(pos==string::npos){
-        if(query!=""){
-          if((*fit).find(query)!=string::npos)
-            queryFound=true;
-        }
+      // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
+      if(((*fit).substr(0,1)=="B")&&((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=string::npos)){
+        int iband=atoi((*fit).substr(1).c_str());
+        if((start||end)&&(iband<start||iband>end))
+          fields.erase(fit);
+        else
+          ++fit;
+      }
+      else
         fields.erase(fit);
-      }
-      else{
-        string fieldname=(*fit).substr(pos);
-          int iband=atoi(fieldname.c_str());
-          if((start||end)&&(iband<start||iband>end))
-            fields.erase(fit);
-          else
-            ++fit;
-      }
     }
     if(verbose)
       cout << endl;
@@ -89,30 +80,13 @@ template<typename T> unsigned int readDataImageShape(const string &filename,
       cout << endl;
     }
     if(!nband){
-      if(queryFound){
-        ostringstream qs;
-        qs << "select * from " << imgReaderShape.getLayerName() << " where " << query << "=1";
-        if(verbose)
-          cout << "reading with sql: " << qs.str() << endl;
-        nband=imgReaderShape.readSql(mapPixels,OFTReal,fields,label,qs.str(),NULL,0,true,false);
-      }
-      else{
-        if(verbose)
-          cout << "reading data" << endl;
-        nband=imgReaderShape.readData(mapPixels,OFTReal,fields,label,0,true,verbose==2);
-      }
+      if(verbose)
+        cout << "reading data" << endl;
+      nband=imgReaderShape.readData(mapPixels,OFTReal,fields,label,0,true,verbose==2);
+
     }
-    else{
-      if(queryFound){
-        ostringstream qs;
-        qs << "select * from " << imgReaderShape.getLayerName() << " where " << query << "=1";
-        if(verbose)
-          cout << "reading with sql: " << qs.str() << endl;
-        assert(nband==imgReaderShape.readSql(mapPixels,OFTReal,fields,label,qs.str(),NULL,0,true,false));
-      }
-      else        
-        assert(nband==imgReaderShape.readData(mapPixels,OFTReal,fields,label,0,true,false));
-    }
+    else
+      assert(nband==imgReaderShape.readData(mapPixels,OFTReal,fields,label,0,true,false));
   }
   catch(string e){
     ostringstream estr;

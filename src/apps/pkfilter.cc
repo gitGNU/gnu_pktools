@@ -31,32 +31,40 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /*------------------
   Main procedure
   ----------------*/
 int main(int argc,char **argv) {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<std::string> input_opt("i","input","input image file","");
   Optionpk<std::string> output_opt("o", "output", "Output image file", "");
-  Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion (default is false)", false);
-  Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation. Default is less than -180 (no directional effect)", -190);
+  Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
+  // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation. Default is less than -180 (no directional effect)", -190);
   Optionpk<int> function_opt("f", "filter", "filter function (0: median, 1: variance, 2: min, 3: max, 4: sum, 5: mean, 6: minmax, 7: dilation, 8: erosion, 9: closing, 10: opening, 11: spatially homogeneous, 12: SobelX edge detection in X, 13: SobelY edge detection in Y, 14: SobelXY (not supported), 15: smooth, 16: density, 17: majority voting (only for classes), 18: forest aggregation (mixed), 19: smooth no data (mask) values), 20: threshold local filtering", 0);
-  Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd (example: 3). Default is 0", 0);
-  Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd (example: 3). Default is 0. Set dy=0 if 1-D filter must be used in band domain", 0);
+  Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd (example: 3).", 0);
+  Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd (example: 3).. Set dy=0 if 1-D filter must be used in band domain", 0);
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
-  Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding (default is 1)", 1);
+  Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding", 1);
   Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class)", 0);
   Optionpk<short> mask_opt("\0", "mask", "mask value(s) ", -1);
-  Optionpk<std::string> tap_opt("tap", "tap", "text file conttaining taps used for filtering (from ul to lr). Default is empty: do not use taps. Use dimX and dimY to specify tap dimensions in x and y", "");
+  Optionpk<std::string> tap_opt("tap", "tap", "text file conttaining taps used for filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps", "");
   Optionpk<std::string> colorTable_opt("\0", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
-  Optionpk<short> down_opt("d", "down", "down sampling factor. Default is 1: no downsample)", 1);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (default is 0)", 0);
+  Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
@@ -65,9 +73,7 @@ int main(int argc,char **argv) {
 
   input_opt.retrieveOption(argc,argv);
   output_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
   disc_opt.retrieveOption(argc,argv);
-  angle_opt.retrieveOption(argc,argv);
   function_opt.retrieveOption(argc,argv);
   dimX_opt.retrieveOption(argc,argv);
   dimY_opt.retrieveOption(argc,argv);
@@ -78,6 +84,7 @@ int main(int argc,char **argv) {
   tap_opt.retrieveOption(argc,argv);
   down_opt.retrieveOption(argc,argv);
   colorTable_opt.retrieveOption(argc,argv);
+  verbose_opt.retrieveOption(argc,argv);
 
   if(version_opt[0]||todo_opt[0]){
     cout << version_opt.getHelp() << endl;
@@ -196,7 +203,7 @@ int main(int argc,char **argv) {
       break;
     case(Filter2d::DILATE):
       if(dimY_opt[0]>0)
-        filter2d.morphology(input,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+        filter2d.morphology(input,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],-190);
       else{
         if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
@@ -205,7 +212,7 @@ int main(int argc,char **argv) {
       break;
     case(Filter2d::ERODE):
       if(dimY_opt[0]>0)
-        filter2d.morphology(input,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+        filter2d.morphology(input,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],-190);
       else{
         if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
@@ -219,7 +226,7 @@ int main(int argc,char **argv) {
       tmpout.open(tmps.str(),input);
       try{
         if(dimY_opt[0]>0)
-          filter2d.morphology(input,tmpout,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+          filter2d.morphology(input,tmpout,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],-190);
         else
           filter1d.morphology(input,tmpout,Filter::DILATE,dimX_opt[0]);
       }
@@ -231,7 +238,7 @@ int main(int argc,char **argv) {
       ImgReaderGdal tmpin;
       tmpin.open(tmps.str());
       if(dimY_opt[0]>0)
-        filter2d.morphology(tmpin,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+        filter2d.morphology(tmpin,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],-190);
       else
         filter1d.morphology(tmpin,output,Filter::ERODE,dimX_opt[0]);
       tmpin.close();
@@ -246,14 +253,14 @@ int main(int argc,char **argv) {
       ImgWriterGdal tmpout;
       tmpout.open(tmps.str(),input);
       if(dimY_opt[0]>0)
-        filter2d.morphology(input,tmpout,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+        filter2d.morphology(input,tmpout,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],-190);
       else
         filter1d.morphology(input,tmpout,Filter::ERODE,dimX_opt[0]);
       tmpout.close();
       ImgReaderGdal tmpin;
       tmpin.open(tmps.str());
       if(dimY_opt[0]>0)
-        filter2d.morphology(tmpin,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+        filter2d.morphology(tmpin,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],-190);
       else
         filter1d.morphology(tmpin,output,Filter::DILATE,dimX_opt[0]);
       tmpin.close();

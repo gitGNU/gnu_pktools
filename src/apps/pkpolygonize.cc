@@ -30,25 +30,41 @@ extern "C" {
 #include "ogr_api.h"
 }
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 
 int main(int argc,char **argv) {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
+  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!", "");
   Optionpk<string> mask_opt("m", "mask", "All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use input file as mask to remove background polygon! ", "");
   Optionpk<string> output_opt("o", "output", "Output vector file", "");
-  Optionpk<int> band_opt("b", "band", "the band to be used from input file (default is 0)", 0);
-  Optionpk<string> fname_opt("n", "name", "the field name of the output layer (default is DN)", "DN");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
+  Optionpk<int> band_opt("b", "band", "the band to be used from input file", 0);
+  Optionpk<string> fname_opt("n", "name", "the field name of the output layer", "DN");
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
   help_opt.retrieveOption(argc,argv);
+  todo_opt.retrieveOption(argc,argv);
+
+  input_opt.retrieveOption(argc,argv);
+  mask_opt.retrieveOption(argc,argv);
+  output_opt.retrieveOption(argc,argv);
+  band_opt.retrieveOption(argc,argv);
+  fname_opt.retrieveOption(argc,argv);
+  verbose_opt.retrieveOption(argc,argv);
 
   if(version_opt[0]){
     cout << version_opt.getHelp() << endl;
@@ -58,13 +74,10 @@ int main(int argc,char **argv) {
     cout << Optionpk<bool>::getGPLv3License() << endl;
     exit(0);
   }
-
-  input_opt.retrieveOption(argc,argv);
-  mask_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  band_opt.retrieveOption(argc,argv);
-  fname_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
+  if(help_opt[0]){
+    cout << "usage: pkpolygonize -i inputimage -o outputimage [OPTIONS]" << endl;
+    exit(0);
+  }
 
   GDALAllRegister();
 

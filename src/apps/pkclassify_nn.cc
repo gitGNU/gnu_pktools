@@ -44,9 +44,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i", "input", "input image",""); 
-  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features for all classes. Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)",""); 
+  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)",""); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file. (default is label)","label"); 
-  Optionpk<string> query_opt("q", "sql", "field name for sql query statement for selecting training pixels: select * from layer where fieldname=1 (default: empty)",""); 
   Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.). Default is 0: do not reclass", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class (default 0: do not balance)", 0);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account (default is 0: consider all classes", 0);
@@ -94,7 +93,6 @@ int main(int argc, char *argv[])
   input_opt.retrieveOption(argc,argv);
   training_opt.retrieveOption(argc,argv);
   label_opt.retrieveOption(argc,argv);
-  query_opt.retrieveOption(argc,argv);
   reclass_opt.retrieveOption(argc,argv);
   balance_opt.retrieveOption(argc,argv);
   minSize_opt.retrieveOption(argc,argv);
@@ -189,7 +187,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         cout << "reading imageShape file " << training_opt[0] << endl;
       try{
-        totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],query_opt[0],verbose_opt[0]);
+        totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file";
           throw(errorstring);

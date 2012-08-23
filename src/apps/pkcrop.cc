@@ -27,17 +27,22 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/Egcs.h"
 
-using namespace std;
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 int main(int argc, char *argv[])
 {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","introduce -uli -ulj to crop based on image coordinates",false);
+  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created", "");
   Optionpk<string>  output_opt("o", "output", "Output image file", "");
   Optionpk<string>  projection_opt("p", "projection", "projection in EPSG format (leave blank to copy from input file, use EPSG:3035 to use European projection and to force to European grid", "");
@@ -51,14 +56,14 @@ int main(int argc, char *argv[])
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)", 0.0);
   Optionpk<int>  band_opt("b", "band", "band index to crop (-1: crop all bands)", -1);
   Optionpk<double> scale_opt("s", "scale", "output=scale*input+offset", 1);
-  Optionpk<double> offset_opt("\0", "offset", "output=scale*input+offset", 0);
+  Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset", 0);
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
   Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
-  Optionpk<string>  description_opt("\0", "description", "Set image description", "");
+  Optionpk<string>  description_opt("d", "description", "Set image description", "");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
   version_opt.retrieveOption(argc,argv);

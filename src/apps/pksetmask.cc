@@ -23,15 +23,22 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 
 int main(int argc, char *argv[])
 {
   //command line options
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
@@ -41,8 +48,8 @@ int main(int argc, char *argv[])
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "");
-  Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask. Default value is 1", 1);
-  Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each invalid option (default is =)", '=');
+  Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask.", 1);
+  Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each invalid option", '=');
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);

@@ -23,22 +23,29 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 using namespace std;
 int main(int argc,char **argv) {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image file", "");
-  Optionpk<short>  band_opt("b", "band", "band(s) used for mask (default is 0)", 0);
-  Optionpk<double> min_opt("m", "min", "Values smaller than min threshold(s) are masked as invalid. Use one threshold for each band (default 0)", 0);
-  Optionpk<double> max_opt("M", "max", "Values greater than max threshold(s) are masked as invalid. Use one threshold for each band (default 0)", 0);
-  Optionpk<string>  operator_opt("p", "operator", "Operator: [AND,OR]. Default is OR)", "OR");
-  Optionpk<unsigned short> valid_opt("t", "tvalue", "value(s) for valid pixels: between min and max (default 1)", 1);
-  Optionpk<unsigned short> invalid_opt("f", "fvalue", "value(s) for invalid pixels: not between min and max (default 0)", 0);
+  Optionpk<short>  band_opt("b", "band", "band(s) used for mask", 0);
+  Optionpk<double> min_opt("m", "min", "Values smaller than min threshold(s) are masked as invalid. Use one threshold for each band", 0);
+  Optionpk<double> max_opt("M", "max", "Values greater than max threshold(s) are masked as invalid. Use one threshold for each band", 0);
+  Optionpk<string>  operator_opt("p", "operator", "Operator: [AND,OR].", "OR");
+  Optionpk<unsigned short> valid_opt("t", "tvalue", "value(s) for valid pixels: between min and max", 1);
+  Optionpk<unsigned short> invalid_opt("f", "fvalue", "value(s) for invalid pixels: not between min and max", 0);
   Optionpk<string> output_opt("o", "output", "Output mask file", "");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
@@ -75,7 +82,7 @@ int main(int argc,char **argv) {
   verbose_opt.retrieveOption(argc,argv);
 
   if(help_opt[0]){
-    cout << "usage: pkgetmask -i inputimage -o outputimage [OPTIONS]" << endl;
+    cout << "usage: pkinfo -i inputimage -o outputimage [OPTIONS]" << endl;
     exit(0);
   }
 

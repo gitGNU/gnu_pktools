@@ -25,23 +25,30 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderOgr.h"
 #include "algorithms/Histogram.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 int main(int argc, char *argv[])
 {
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string> input_opt("i", "input", "Input shape file", "");
-  Optionpk<string> field_opt("f", "fields", "fields on which to calculate statistics", "");
-  Optionpk<short> nbin_opt("n", "nbin", "number of bins", 0);
+  Optionpk<string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
+  Optionpk<short> nbin_opt("nbin", "nbin", "number of bins", 0);
   Optionpk<bool> min_opt("m","min","calculate minimum value",false);
   Optionpk<bool> max_opt("M","max","calculate maximum value",false);
   Optionpk<bool> mean_opt("mean","mean","calculate mean value",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
@@ -49,7 +56,7 @@ int main(int argc, char *argv[])
   todo_opt.retrieveOption(argc,argv);
 
   input_opt.retrieveOption(argc,argv);
-  field_opt.retrieveOption(argc,argv);
+  fieldname_opt.retrieveOption(argc,argv);
   nbin_opt.retrieveOption(argc,argv);
   min_opt.retrieveOption(argc,argv);
   max_opt.retrieveOption(argc,argv);
@@ -84,11 +91,11 @@ int main(int argc, char *argv[])
   Histogram hist;
   //todo: implement ALL
 
-  for(int ifield=0;ifield<field_opt.size();++ifield){
+  for(int ifield=0;ifield<fieldname_opt.size();++ifield){
     if(verbose_opt[0])
       cout << "field: " << ifield << endl;
     theData.clear();
-    inputReader.readData(theData,OFTReal,field_opt[ifield],0,verbose_opt[0]);
+    inputReader.readData(theData,OFTReal,fieldname_opt[ifield],0,verbose_opt[0]);
     vector<int> binData;
     double minimum=0;
     double maximum=0;
@@ -97,7 +104,7 @@ int main(int argc, char *argv[])
     double theMean=0;
     double theVar=0;
     hist.meanVar(theData,theMean,theVar);
-    std::cout << " -f " << field_opt[ifield];
+    std::cout << " -f " << fieldname_opt[ifield];
     if(mean_opt[0])
       std::cout << " --mean " << theMean;
     if(stdev_opt[0])
