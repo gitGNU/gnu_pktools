@@ -58,9 +58,9 @@ int main(int argc,char **argv) {
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd (example: 3).", 0);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd (example: 3).. Set dy=0 if 1-D filter must be used in band domain", 0);
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
-  Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding", 1);
+  Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding");
   Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class)", 0);
-  Optionpk<short> mask_opt("\0", "mask", "mask value(s) ", -1);
+  Optionpk<short> mask_opt("\0", "mask", "mask value(s) ");
   Optionpk<std::string> tap_opt("tap", "tap", "text file conttaining taps used for filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps", "");
   Optionpk<std::string> colorTable_opt("\0", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);

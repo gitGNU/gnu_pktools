@@ -117,8 +117,10 @@ template<class T> class Optionpk : public vector <T>
 {
 public:
   Optionpk();
+  Optionpk(const string& shortName, const string& longName, const string& helpInfo);
   Optionpk(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue);
   ~Optionpk();
+  void setAll(const string& shortName, const string& longName, const string& helpInfo);
   void setAll(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue);
   void setHelp(const string& helpInfo){m_help=helpInfo;};
   string usage() const;
@@ -155,6 +157,7 @@ private:
   string m_help;
   bool m_hasArgument;
   T m_defaultValue;
+  bool m_hasDefault;
 };
 
 template<class T1> ostream& operator<<(ostream& os, const Optionpk<T1>& theOption)
@@ -167,10 +170,17 @@ template<class T1> ostream& operator<<(ostream& os, const Optionpk<T1>& theOptio
 }
 
 template<class T> Optionpk<T>::Optionpk() 
+  : m_hasDefault(false)
 {
 }
 
-template<class T> Optionpk<T>::Optionpk(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue)
+template<class T> Optionpk<T>::Optionpk(const string& shortName, const string& longName, const string& helpInfo)
+  : m_hasDefault(false)
+{
+  setAll(shortName,longName,helpInfo);
+}
+
+  template<class T> Optionpk<T>::Optionpk(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue)
 {
   setAll(shortName,longName,helpInfo,defaultValue);
 }
@@ -192,7 +202,8 @@ template<class T> string Optionpk<T>::usage() const
     helpss << "   " << setiosflags(ios::left) << setw(20) << " ";
   helpss << "   " << m_help;
   // helpss << std::resetiosflags << " (default: " << type2string<T>(m_defaultValue) << ")";
-  helpss << " (default: " << type2string<T>(m_defaultValue) << ")";
+  if(m_hasDefault)
+    helpss << " (default: " << type2string<T>(m_defaultValue) << ")";
   return helpss.str();
 }
 
@@ -203,8 +214,20 @@ template<class T> void Optionpk<T>::setAll(const string& shortName, const string
   m_hasArgument=true;
   m_help=helpInfo;
   m_defaultValue=defaultValue;
+  m_hasDefault=true;
 }
+
+template<class T> void Optionpk<T>::setAll(const string& shortName, const string& longName, const string& helpInfo)
+{
+  m_shortName=shortName;
+  m_longName=longName;
+  m_hasArgument=true;
+  m_help=helpInfo;
+}
+
 template<> void Optionpk<bool>::setAll(const string& shortName, const string& longName, const string& helpInfo,const bool& defaultValue);
+
+template<> void Optionpk<bool>::setAll(const string& shortName, const string& longName, const string& helpInfo);
 
 template<> Optionpk<bool>::Optionpk(const string& shortName, const string& longName, const string& helpInfo,const bool& defaultValue)
 {
@@ -218,6 +241,7 @@ template<> void Optionpk<bool>::setAll(const string& shortName, const string& lo
   m_hasArgument=false;
   m_help=helpInfo;
   m_defaultValue=defaultValue;
+  m_hasDefault=true;
 }
 
 template<class T> Optionpk<T>::~Optionpk() 
@@ -259,7 +283,7 @@ template<class T> int Optionpk<T>::retrieveOption(int argc, char **argv){
         this->push_back(string2type<T>("1"));
     }
   }
-  if(!(this->size()))//only set default value if no options were given
+  if(!(this->size())&&m_hasDefault)//only set default value if no options were given
     this->push_back(m_defaultValue);
   return(this->size());
 }
