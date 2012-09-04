@@ -713,8 +713,8 @@ ac_user_opts='
 enable_option_checking
 with_gdal
 enable_dependency_tracking
-with_fann
-with_las
+enable_fann
+enable_las
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1354,13 +1354,13 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
+  --enable-fann           Enable feature fann
+  --enable-las            Enable feature las
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gdal=[ARG]       Specify full path to gdal-config script
-  --with-fann             use fann library @@
-  --with-las              use las library @@
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -5089,17 +5089,11 @@ fi
 done
 
 
-# Checks for packages
-#PKG_CHECK_MODULES(FANN, fann >= 2.1.0, [HAVE_FANN=1], [HAVE_FANN=0])
-#AM_CONDITIONAL([USE_FANN], [test "$HAVE_FANN" -eq 1])
-
-
-# Check whether --with-fann was given.
-if test "${with_fann+set}" = set; then :
-  withval=$with_fann;
-else
-  with_fann=no
+# Check whether --enable-fann was given.
+if test "${enable_fann+set}" = set; then :
+  enableval=$enable_fann;
 fi
+
 
 
 
@@ -5220,7 +5214,7 @@ $as_echo "no" >&6; }
 		PKG_CONFIG=""
 	fi
 fi
-if test "x$with_fann" != xno; then :
+if test "x$enable_fann" = "xyes"; then :
 
 
 pkg_failed=no
@@ -5299,6 +5293,8 @@ else
   USE_FANN_FALSE=
 fi
 
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_FANN=true\"" >&5
+$as_echo "$as_me: WARNING: \"USE_FANN=true\"" >&2;}
 
 else
 
@@ -5310,18 +5306,18 @@ else
   USE_FANN_FALSE=
 fi
 
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_FANN=false\"" >&5
+$as_echo "$as_me: WARNING: \"USE_FANN=false\"" >&2;}
 
 fi
 
-
-# Check whether --with-las was given.
-if test "${with_las+set}" = set; then :
-  withval=$with_las;
-else
-  with_las=no
+# Check whether --enable-las was given.
+if test "${enable_las+set}" = set; then :
+  enableval=$enable_las;
 fi
 
-if test "x$with_las" != xno; then :
+
+if test "x$enable_las" = "xyes"; then :
 
 	 if true; then
   USE_LAS_TRUE=
@@ -5330,6 +5326,10 @@ else
   USE_LAS_TRUE='#'
   USE_LAS_FALSE=
 fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_LAS=true\"" >&5
+$as_echo "$as_me: WARNING: \"USE_LAS=true\"" >&2;}
+        FILECLASSES_OPT="src/fileclasses"
 
 
 else
@@ -5342,13 +5342,8 @@ else
   USE_LAS_FALSE=
 fi
 
-
-fi
-
-if $USE_LAS; then
-   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_LAS=true\"" >&5
-$as_echo "$as_me: WARNING: \"USE_LAS=true\"" >&2;}
-   FILECLASSES_OPT="src/fileclasses"
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_LAS=false\"" >&5
+$as_echo "$as_me: WARNING: \"USE_LAS=false\"" >&2;}
 
 fi
 

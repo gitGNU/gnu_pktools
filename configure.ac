@@ -22,38 +22,31 @@ AX_LIB_GDAL([1.8.0]) dnl uncomment if gdal version 1.8.0 is required
 
 AC_CHECK_HEADERS([gdal.h])
 
-# Checks for packages
-#PKG_CHECK_MODULES(FANN, fann >= 2.1.0, [HAVE_FANN=1], [HAVE_FANN=0])
-#AM_CONDITIONAL([USE_FANN], [test "$HAVE_FANN" -eq 1])
+dnl Default-disabled features
+AC_ARG_ENABLE([fann],
+    AS_HELP_STRING([--enable-fann], [Enable feature fann]))
 
-AC_ARG_WITH([fann],
-	[AS_HELP_STRING([--with-fann], [use fann library] @@)],
-	[],
-	[with_fann=no])
-AS_IF([test "x$with_fann" != xno],
-	[
+AS_IF([test "x$enable_fann" = "xyes"], [
 	PKG_CHECK_MODULES(FANN, fann >= 2.1.0, [HAVE_FANN=1], [HAVE_FANN=0])
 	AM_CONDITIONAL([USE_FANN], [test "$HAVE_FANN" -eq 1])
+	AC_MSG_WARN("USE_FANN=true")
 	], [
 	AM_CONDITIONAL(USE_FANN, false)
+	AC_MSG_WARN("USE_FANN=false")
 	])
 
-AC_ARG_WITH([las],
-	[AS_HELP_STRING([--with-las], [use las library] @@)],
-	[],
-	[with_las=no])
-AS_IF([test "x$with_las" != xno],
-	[
+AC_ARG_ENABLE([las],
+    AS_HELP_STRING([--enable-las], [Enable feature las]))
+
+AS_IF([test "x$enable_las" = "xyes"], [
 	AM_CONDITIONAL(USE_LAS, true)
+	AC_MSG_WARN("USE_LAS=true")
+        FILECLASSES_OPT="src/fileclasses"
+        AC_SUBST([FILECLASSES_OPT])
 	], [
 	AM_CONDITIONAL(USE_LAS, false)
+	AC_MSG_WARN("USE_LAS=false")
 	])
-
-if $USE_LAS; then
-   AC_MSG_WARN("USE_LAS=true")
-   FILECLASSES_OPT="src/fileclasses"
-   AC_SUBST([FILECLASSES_OPT])
-fi
 
 PKG_CHECK_MODULES(GSL, gsl >= 1.14, [HAVE_GSL=1], [HAVE_GSL=0])
 AM_CONDITIONAL([USE_GSL], [test "$HAVE_GSL" -eq 1])
