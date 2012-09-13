@@ -44,6 +44,7 @@ public:
   template<class T> void doit(T* input, int inputSize, vector<T>& output, int down=1, int offset=0);
   template<class T> void morphology(const vector<T>& input, vector<T>& output, int method, int dim, short down=1, int offset=0, bool verbose=0);
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down=1, int offset=0);
+  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
 
 private:
   vector<double> m_taps;

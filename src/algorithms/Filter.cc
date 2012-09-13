@@ -54,14 +54,40 @@ void Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int m
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      //test
-      if(y==168&&x==204){
-        cout << "m_class.size(): " << m_class.size() << endl;
-        cout << "y=" << y << ", x= " << x << endl;
-        morphology(pixelInput,pixelOutput,method,dim,down,offset,true);
+      morphology(pixelInput,pixelOutput,method,dim,down,offset);
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        lineOutput[iband][x]=pixelOutput[iband];
+    }
+    for(int iband=0;iband<input.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
       }
-      else
-        morphology(pixelInput,pixelOutput,method,dim,down,offset);
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
+void Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
+{
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    vector<double> pixelOutput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      doit(pixelInput,pixelOutput,down,offset);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }

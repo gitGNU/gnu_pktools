@@ -15,3 +15,4 @@ To install the programs in pktools, refer to the file INSTALL
 Change history
 -------------
 June 25 2012, first public release of the code
+September 04 2012, introduced --enable-fann and --enable-las in configuration

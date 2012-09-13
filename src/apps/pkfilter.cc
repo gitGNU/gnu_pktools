@@ -61,7 +61,8 @@ int main(int argc,char **argv) {
   Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding");
   Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class)", 0);
   Optionpk<short> mask_opt("\0", "mask", "mask value(s) ");
-  Optionpk<std::string> tap_opt("tap", "tap", "text file conttaining taps used for filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps", "");
+  Optionpk<std::string> tap_opt("tap", "tap", "text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps", "");
+  Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
   Optionpk<std::string> colorTable_opt("\0", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
@@ -82,6 +83,7 @@ int main(int argc,char **argv) {
   threshold_opt.retrieveOption(argc,argv);
   mask_opt.retrieveOption(argc,argv);
   tap_opt.retrieveOption(argc,argv);
+  tapz_opt.retrieveOption(argc,argv);
   down_opt.retrieveOption(argc,argv);
   colorTable_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
@@ -164,6 +166,10 @@ int main(int argc,char **argv) {
     filter2d.setTaps(taps);    
     filter2d.filter(input,output);
     tapfile.close();
+  }
+  else if(tapz_opt.size()){
+    filter1d.setTaps(tapz_opt);    
+    filter1d.doit(input,output,down_opt[0]);
   }
   else{
     if(colorTable_opt[0]!="")
