@@ -16,3 +16,4 @@ Change history
 -------------
 June 25 2012, first public release of the code
 September 04 2012, introduced --enable-fann and --enable-las in configuration
+September 13 2012, support spectral filtering (z-dimension) in pkfilter using tapz option
