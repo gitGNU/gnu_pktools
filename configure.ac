@@ -1,4 +1,4 @@
-AC_INIT([pktools], [2.3], [kempenep@gmail.com])
+AC_INIT([pktools], [2.2], [kempenep@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
 AX_LIB_GDAL()
@@ -47,6 +47,19 @@ AS_IF([test "x$enable_las" = "xyes"], [
 	AM_CONDITIONAL(USE_LAS, false)
 	AC_MSG_WARN("USE_LAS=false")
 	])
+
+AC_ARG_ENABLE([nlopt],
+    AS_HELP_STRING([--enable-nlopt], [Enable feature nlopt]))
+
+AS_IF([test "x$enable_nlopt" = "xyes"], [
+	PKG_CHECK_MODULES(NLOPT, nlopt >= 2.1.0, [HAVE_NLOPT=1], [HAVE_NLOPT=0])
+	AM_CONDITIONAL([USE_NLOPT], [test "$HAVE_NLOPT" -eq 1])
+	AC_MSG_WARN("USE_NLOPT=true")
+	], [
+	AM_CONDITIONAL(USE_NLOPT, false)
+	AC_MSG_WARN("USE_NLOPT=false")
+	])
+
 
 PKG_CHECK_MODULES(GSL, gsl >= 1.14, [HAVE_GSL=1], [HAVE_GSL=0])
 AM_CONDITIONAL([USE_GSL], [test "$HAVE_GSL" -eq 1])

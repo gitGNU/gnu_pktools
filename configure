@@ -605,6 +605,10 @@ USE_GSL_FALSE
 USE_GSL_TRUE
 GSL_LIBS
 GSL_CFLAGS
+USE_NLOPT_FALSE
+USE_NLOPT_TRUE
+NLOPT_LIBS
+NLOPT_CFLAGS
 FILECLASSES_OPT
 USE_LAS_FALSE
 USE_LAS_TRUE
@@ -715,6 +719,7 @@ with_gdal
 enable_dependency_tracking
 enable_fann
 enable_las
+enable_nlopt
 '
       ac_precious_vars='build_alias
 host_alias
@@ -733,6 +738,8 @@ PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
 FANN_CFLAGS
 FANN_LIBS
+NLOPT_CFLAGS
+NLOPT_LIBS
 GSL_CFLAGS
 GSL_LIBS
 CXXCPP'
@@ -1356,6 +1363,7 @@ Optional Features:
   --enable-dependency-tracking   do not reject slow dependency extractors
   --enable-fann           Enable feature fann
   --enable-las            Enable feature las
+  --enable-nlopt          Enable feature nlopt
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1380,6 +1388,9 @@ Some influential environment variables:
               path overriding pkg-config's built-in search path
   FANN_CFLAGS C compiler flags for FANN, overriding pkg-config
   FANN_LIBS   linker flags for FANN, overriding pkg-config
+  NLOPT_CFLAGS
+              C compiler flags for NLOPT, overriding pkg-config
+  NLOPT_LIBS  linker flags for NLOPT, overriding pkg-config
   GSL_CFLAGS  C compiler flags for GSL, overriding pkg-config
   GSL_LIBS    linker flags for GSL, overriding pkg-config
   CXXCPP      C++ preprocessor
@@ -5347,6 +5358,110 @@ $as_echo "$as_me: WARNING: \"USE_LAS=false\"" >&2;}
 
 fi
 
+# Check whether --enable-nlopt was given.
+if test "${enable_nlopt+set}" = set; then :
+  enableval=$enable_nlopt;
+fi
+
+
+if test "x$enable_nlopt" = "xyes"; then :
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for NLOPT" >&5
+$as_echo_n "checking for NLOPT... " >&6; }
+
+if test -n "$NLOPT_CFLAGS"; then
+    pkg_cv_NLOPT_CFLAGS="$NLOPT_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"nlopt >= 2.1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "nlopt >= 2.1.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_NLOPT_CFLAGS=`$PKG_CONFIG --cflags "nlopt >= 2.1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$NLOPT_LIBS"; then
+    pkg_cv_NLOPT_LIBS="$NLOPT_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"nlopt >= 2.1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "nlopt >= 2.1.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_NLOPT_LIBS=`$PKG_CONFIG --libs "nlopt >= 2.1.0" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        NLOPT_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "nlopt >= 2.1.0" 2>&1`
+        else
+	        NLOPT_PKG_ERRORS=`$PKG_CONFIG --print-errors "nlopt >= 2.1.0" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$NLOPT_PKG_ERRORS" >&5
+
+	HAVE_NLOPT=0
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	HAVE_NLOPT=0
+else
+	NLOPT_CFLAGS=$pkg_cv_NLOPT_CFLAGS
+	NLOPT_LIBS=$pkg_cv_NLOPT_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	HAVE_NLOPT=1
+fi
+	 if test "$HAVE_NLOPT" -eq 1; then
+  USE_NLOPT_TRUE=
+  USE_NLOPT_FALSE='#'
+else
+  USE_NLOPT_TRUE='#'
+  USE_NLOPT_FALSE=
+fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_NLOPT=true\"" >&5
+$as_echo "$as_me: WARNING: \"USE_NLOPT=true\"" >&2;}
+
+else
+
+	 if false; then
+  USE_NLOPT_TRUE=
+  USE_NLOPT_FALSE='#'
+else
+  USE_NLOPT_TRUE='#'
+  USE_NLOPT_FALSE=
+fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_NLOPT=false\"" >&5
+$as_echo "$as_me: WARNING: \"USE_NLOPT=false\"" >&2;}
+
+fi
+
+
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GSL" >&5
@@ -5864,6 +5979,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_LAS_TRUE}" && test -z "${USE_LAS_FALSE}"; then
   as_fn_error $? "conditional \"USE_LAS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_NLOPT_TRUE}" && test -z "${USE_NLOPT_FALSE}"; then
+  as_fn_error $? "conditional \"USE_NLOPT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${USE_NLOPT_TRUE}" && test -z "${USE_NLOPT_FALSE}"; then
+  as_fn_error $? "conditional \"USE_NLOPT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_GSL_TRUE}" && test -z "${USE_GSL_FALSE}"; then
