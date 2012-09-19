@@ -172,7 +172,7 @@ void Filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 	  }
         }
         if(absolute)
-          outBuffer[x]=(normalize)? abs(outBuffer[x])/norm : abs(outBuffer[x]);
+          outBuffer[x]=(normalize&&norm)? abs(outBuffer[x])/norm : abs(outBuffer[x]);
         else if(normalize&&norm!=0)
           outBuffer[x]=outBuffer[x]/norm;
       }
@@ -553,6 +553,10 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           outBuffer[x/down]=hist.min(windowBuffer);
           break;
         }
+        case(ISMIN):{
+          outBuffer[x/down]=(hist.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+          break;
+        }
         case(MINMAX):{
           double min=0;
           double max=0;
@@ -570,6 +574,20 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           outBuffer[x/down]=hist.max(windowBuffer);
           break;
         }
+        case(ISMAX):{
+          outBuffer[x/down]=(hist.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+          break;
+        }
+        case(ORDER):{
+          double lbound=0;
+          double ubound=dimX*dimY;
+          double theMin=hist.min(windowBuffer);
+          double theMax=hist.max(windowBuffer);
+          // outBuffer[x]=hist.median(windowBuffer);
+          double scale=(ubound-lbound)/(theMax-theMin);
+          outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
+          break;
+        }
         case(SUM):{
           // outBuffer[x]=hist.sum(windowBuffer);
           outBuffer[x/down]=hist.sum(windowBuffer);
@@ -583,6 +601,19 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    outBuffer[x/down]=m_noValue;
 	    // outBuffer[x]=m_noValue;
           break;
+        case(HETEROG):{
+          for(vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
+            if(wit==windowBuffer.begin()+windowBuffer.size()/2)
+              continue;
+            else if(*wit!=inBuffer[dimY/2][x])
+              outBuffer[x/down]=1;
+            else if(*wit==inBuffer[dimY/2][x]){//todo:wit mag niet central pixel zijn
+              outBuffer[x/down]=m_noValue;
+              break;
+            }
+          }
+          break;
+        }
         case(DENSITY):{
 	  if(windowBuffer.size()){
 	    vector<short>::const_iterator vit=m_class.begin();
@@ -827,10 +858,12 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	}
       }
       for(int x=0;x<input.nrOfCol();++x){
-	outBuffer[x]=0;
+	// outBuffer[x]=0;
         double currentValue=inBuffer[dimY/2][x];
+	outBuffer[x]=currentValue;
 	vector<double> histBuffer;
 	bool currentMasked=false;
+        double rse=0;
 	for(int imask=0;imask<m_mask.size();++imask){
 	  if(currentValue==m_mask[imask]){
 	    currentMasked=true;
@@ -845,17 +878,44 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	    for(int i=-dimX/2;i<(dimX+1)/2;++i){
 	      if(disc&&(i*i+j*j>(dimX/2)*(dimY/2)))
 		continue;
-	      // if(angle>=-180){
-	      // 	double theta;
-	      // 	if(i)
-	      // 	  theta=atan(static_cast<double>(j)/(static_cast<double>(i)));
-	      // 	else if(j>0)
-	      // 	  theta=PI/2.0;
-	      // 	else if(j<0)
-	      // 	  theta=3.0*PI/2.0;
-	      // 	if(j&&(theta<DEG2RAD(angle)||theta>DEG2RAD(angle+PI)))
-	      // 	  continue;
-	      // }
+              bool masked=false;
+	      if(angle>=-180){
+	      	// double theta;
+	      	// if(i>0)
+	      	//   theta=atan(static_cast<double>(j)/(static_cast<double>(i)));
+	      	// else if(i<0)
+	      	//   theta=PI+atan(static_cast<double>(j)/(static_cast<double>(i)));
+	      	// else if(j>0)
+	      	//   theta=PI/2.0;
+	      	// else if(j<0)
+	      	//   theta=3.0*PI/2.0;
+                // rse=sqrt((theta-DEG2RAD(angle))*(theta-DEG2RAD(angle))/theta/theta);
+                // //test
+                if(angle<45||angle>315)
+                  if((j!=0)||(i>0))//RIGHT
+                    continue;
+                if(angle>135&&angle<225)
+                  if(j!=0||i<0)//LEFT
+                    continue;
+                if(angle>45&&angle<135)
+                  if(j<0||i!=0)//UP
+                    continue;
+                if(angle>225&&angle<315)
+                  if(j>0||i!=0)//DOWN
+                    continue;
+                if(angle>270&&angle<360)
+                  if(j>0||i>0)//LOWER RIGHT
+                    continue;
+                if(angle>0&&angle<90)
+                  if(j<0||i>0)//UPPER RIGHT
+                    continue;
+                if(angle>180&&angle<270)
+                  if(j>0||i<0)//LOWER LEFT
+                    continue;
+                if(angle>90&&angle<180)
+                  if(j<0||i<0)//UPPER LEFT
+                    continue;
+	      }
 	      indexI=x+i;
 	      //check if out of bounds
 	      if(indexI<0)
@@ -868,7 +928,6 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 		indexJ=dimY/2-j;//indexJ=inBuffer.size()-1-j;
 	      else
 		indexJ=dimY/2+j;
-	      bool masked=false;
 	      for(int imask=0;imask<m_mask.size();++imask){
 		if(inBuffer[indexJ][indexI]==m_mask[imask]){
 		  masked=true;
@@ -889,21 +948,22 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 		  histBuffer.push_back(inBuffer[indexJ][indexI]);
 	      }
 	    }
-	  }
-	  assert(histBuffer.size());//should never occur if not masked (?)
-	  switch(method){
-	  case(DILATE):
-	    outBuffer[x]=hist.max(histBuffer);
-	    break;
-	  case(ERODE):
-	    outBuffer[x]=hist.min(histBuffer);
-	    break;
-	  default:
-	    ostringstream ess;
-	    ess << "Error:  morphology method " << method << " not supported, choose " << DILATE << " (dilate) or " << ERODE << " (erode)" << endl;
-	    throw(ess.str());
-	    break;
-	  }
+          }
+	  if(histBuffer.size()){
+            switch(method){
+            case(DILATE):
+              outBuffer[x]=hist.max(histBuffer);
+              break;
+            case(ERODE):
+              outBuffer[x]=hist.min(histBuffer);
+              break;
+            default:
+              ostringstream ess;
+              ess << "Error:  morphology method " << method << " not supported, choose " << DILATE << " (dilate) or " << ERODE << " (erode)" << endl;
+              throw(ess.str());
+              break;
+            }
+          }
 	  if(outBuffer[x]&&m_class.size())
 	    outBuffer[x]=m_class[0];
 	  // else{

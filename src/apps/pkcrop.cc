@@ -57,10 +57,10 @@ int main(int argc, char *argv[])
   Optionpk<int>  band_opt("b", "band", "band index to crop (-1: crop all bands)", -1);
   Optionpk<double> scale_opt("s", "scale", "output=scale*input+offset", 1);
   Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset", 0);
-  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
+  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
+  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description", "");
@@ -296,7 +296,7 @@ int main(int argc, char *argv[])
       // else
       //   theInterleave=imgReader.getInterleave();
       string imageType=imgReader.getImageType();
-      if(oformat_opt[0]!="")//default
+      if(oformat_opt.size())//default
         imageType=oformat_opt[0];
       try{
         imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,option_opt);
@@ -338,8 +338,6 @@ int main(int argc, char *argv[])
     else if(lri>=imgReader.nrOfCol())
       endCol=imgReader.nrOfCol()-1;
     int readncol=endCol-startCol+1;
-    //test
-    // vector<double> readBuffer(readncol);
     vector<double> readBuffer(readncol+1);
     int nband=(band_opt[0]<0)?imgReader.nrOfBand():band_opt.size();
     for(int iband=0;iband<nband;++iband){
@@ -376,8 +374,6 @@ int main(int argc, char *argv[])
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol+1,readRow,readBand,theResample);
             else
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,readBand,theResample);
-            //test
-	    // imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,readBand,theResample);
 	    for(int ib=0;ib<ncropcol;++ib){
 	      assert(imgWriter.image2geo(ib,irow,x,y));
 	      //lookup corresponding row for irow in this file

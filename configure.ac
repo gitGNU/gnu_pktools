@@ -18,7 +18,7 @@ AC_PROG_RANLIB
 
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/apps/pkinfo.cc])
-AX_LIB_GDAL([1.8.0]) dnl uncomment if gdal version 1.8.0 is required
+#AX_LIB_GDAL([1.8.0]) dnl uncomment if gdal version 1.8.0 is required
 
 AC_CHECK_HEADERS([gdal.h])
 

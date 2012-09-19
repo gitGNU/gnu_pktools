@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output mask file", "");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "");
+  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask.", 1);
   Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each invalid option", '=');
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
