@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i","input","input image file","");
   Optionpk<string> output_opt("o","output","output image file containing ndvi","");
   Optionpk<short> band_opt("b", "band", "Bands to be used for vegetation index (see rule option)", 0);
-  Optionpk<string> rule_opt("r", "rule", "Rule for index. [ndvi (b1-b0)/(b1+b0)|gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02)))|vari (b1-b2)/(b1+b2-b0)|diff (b1-b0)|scale|ratio.", "ndvi");
+  Optionpk<string> rule_opt("r", "rule", "Rule for index. [ndvi (b1-b0)/(b1+b0)|gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02)))|vari (b1-b2)/(b1+b2-b0)|osavi|mcari|tcari|diff (b1-b0)|scale|ratio.", "ndvi");
   Optionpk<double> invalid_opt("t", "invalid", "Mask value where image is invalid.", 0);
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
   int reqBand=0;
   if(rule_opt[0]=="scale")
     reqBand=1;
-  else if(rule_opt[0]=="vari")
+  else if(rule_opt[0]=="vari"||rule_opt[0]=="mcari"||rule_opt[0]=="tcari")
     reqBand=3;
   else
     reqBand=2;
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
     try{
       if(rule_opt[0]=="scale")
         inputReader[0].readData(lineInput[0],GDT_Float64,irow,band_opt[0]);
-      else if(rule_opt[0]=="vari"){
+      else if(rule_opt[0]=="vari"||rule_opt[0]=="tcari"){
         inputReader[0].readData(lineInput[0],GDT_Float64,irow,band_opt[0]);
         inputReader[1].readData(lineInput[1],GDT_Float64,irow,band_opt[1]);
         inputReader[2].readData(lineInput[2],GDT_Float64,irow,band_opt[2]);
@@ -230,6 +230,18 @@ int main(int argc, char *argv[])
         else if(rule_opt[0]=="vari"){
           denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[2][icol]-offset_opt[0])/scale_opt[0];
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+        }
+        else if(rule_opt[0]=="osavi"){
+          denom=(1.0+0.16)*(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[0][icol]-offset_opt[0])/scale_opt[0]+0.16;
+        }
+        else if(rule_opt[0]=="mcari"){
+          denom=((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-0.2*((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0]))*(lineInput[2][icol]-offset_opt[0])/scale_opt[0];
+          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
+        }
+        else if(rule_opt[0]=="tcari"){
+          denom=3*((lineInput[1][icol]-offset_opt[0])/scale_opt[0]*(lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-0.2*((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0])*(lineInput[2][icol]-offset_opt[0])/scale_opt[0]);
+          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
         }
         else if(rule_opt[0]=="diff"){
           denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
