@@ -1,4 +1,4 @@
-AC_INIT([pktools], [2.2], [kempenep@gmail.com])
+AC_INIT([pktools], [2.3], [kempenep@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
 AX_LIB_GDAL()
