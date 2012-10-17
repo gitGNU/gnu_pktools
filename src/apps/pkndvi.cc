@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i","input","input image file","");
   Optionpk<string> output_opt("o","output","output image file containing ndvi","");
   Optionpk<short> band_opt("b", "band", "Bands to be used for vegetation index (see rule option)", 0);
-  Optionpk<string> rule_opt("r", "rule", "Rule for index. [ndvi (b1-b0)/(b1+b0)|gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02)))|vari (b1-b2)/(b1+b2-b0)|osavi|mcari|tcari|diff (b1-b0)|scale|ratio.", "ndvi");
+  Optionpk<string> rule_opt("r", "rule", "Rule for index. [ndvi (b1-b0)/(b1+b0)|ndvi2 (b1-b0)/(b2+b3)|gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02)))|vari (b1-b2)/(b1+b2-b0)|osavi|mcari|tcari|diff (b1-b0)|scale|ratio.", "ndvi");
   Optionpk<double> invalid_opt("t", "invalid", "Mask value where image is invalid.", 0);
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
   Optionpk<double> offset_opt("off", "offset", "offset[0] is used for input, offset[1] is used for output (see also scale option", 0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
+  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
     else
       offset_opt.push_back(offset_opt[0]);
   }
+
   if(verbose_opt[0])
     std::cout << offset_opt;
   int reqBand=0;
@@ -112,10 +113,12 @@ int main(int argc, char *argv[])
     reqBand=1;
   else if(rule_opt[0]=="vari"||rule_opt[0]=="mcari"||rule_opt[0]=="tcari")
     reqBand=3;
+  else if(rule_opt[0]=="ndvi2")
+    reqBand=4;
   else
     reqBand=2;
-  while(band_opt.size()<reqBand)
-    band_opt.push_back(band_opt[0]);
+  while(band_opt.size()<reqBand)//bands can be explicitly provided by user or
+    band_opt.push_back(band_opt[0]);//default is to use band 0 for each input
   if(verbose_opt[0])
     std::cout << band_opt;
 
@@ -155,6 +158,12 @@ int main(int argc, char *argv[])
   ImgWriterGdal outputWriter;
   if(verbose_opt[0])
     cout << "opening output image file " << output_opt[0] << endl;
+
+  if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+    string theInterleave="INTERLEAVE=";
+    theInterleave+=inputReader[0].getInterleave();
+    option_opt.push_back(theInterleave);
+  }
   outputWriter.open(output_opt[0],inputReader[0].nrOfCol(),inputReader[0].nrOfRow(),1,theType,oformat_opt[0],option_opt);
 
   if(description_opt[0]!="")
@@ -193,6 +202,12 @@ int main(int argc, char *argv[])
         inputReader[1].readData(lineInput[1],GDT_Float64,irow,band_opt[1]);
         inputReader[2].readData(lineInput[2],GDT_Float64,irow,band_opt[2]);
       }
+      else if(rule_opt[0]=="ndvi2"){
+        inputReader[0].readData(lineInput[0],GDT_Float64,irow,band_opt[0]);
+        inputReader[1].readData(lineInput[1],GDT_Float64,irow,band_opt[1]);
+        inputReader[2].readData(lineInput[2],GDT_Float64,irow,band_opt[2]);
+        inputReader[3].readData(lineInput[3],GDT_Float64,irow,band_opt[3]);
+      }
       else{
         inputReader[0].readData(lineInput[0],GDT_Float64,irow,band_opt[0]);
         inputReader[1].readData(lineInput[1],GDT_Float64,irow,band_opt[1]);
@@ -220,8 +235,27 @@ int main(int argc, char *argv[])
       double nom;
       if(valid){
         if(rule_opt[0]=="ndvi"){
+          //Example of indices addressed by ndvi:
+          //structural indices
+          //NDVI (Rouse1974): b0=b_680, b1=b_800
+          //Chlorophyll indices:
+          //Normalized Phaeophytinization index (NPQI Barnes1992): b0=R_435, b1=R_415
+          //Photochemical Reflectance index (PRI1 Gamon1992): b0=R_567, b1=R_528
+          //Photochemical Reflectance index (PRI2 Gamon1992): b0=R_570, b1=R_531
+          //Normalized Phaeophytinization index (NPQI Barnes1992): b0=R_435, b1=R_415
+          //Normalized Pigment Chlorophyll index (NPCI Penuelas1994): b0=R_430, b1=R_680
+          //Structure Intensive Pigment index (SIPI Penuelas 1995): b0=R_450, b1=R_800
+          //Lichtenthaler index 1 (Lic1 Lichtenthaler1996): b0=R_680, b2=R_800
           denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+        }
+        if(rule_opt[0]=="ndvi2"){//normalized difference with different wavelengths used in denom and nom
+          //Example of indices addressed by ndvi2
+          //Structure Intensive Pigment index (SIPI Penuelas 1995): b0=R_450, b1=R_800, b2=R_650, b=R_800
+          //Vogelmann index 2 (Vog2 Vogelmann1993): b0=R_747, b1=R_735, b2=R_715, b3=R_726
+          //Vogelmann index 3 (Vog3 Vogelmann1993): b0=R_747, b1=R_734, b2=R_715, b3=R_720
+          denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+          nom=(lineInput[2][icol]-offset_opt[0])/scale_opt[0]+(lineInput[3][icol]-offset_opt[0])/scale_opt[0];
         }
         else if(rule_opt[0]=="gvmi"){
           denom=((lineInput[0][icol]-offset_opt[0])/scale_opt[0]+0.1)-((lineInput[1][icol]-offset_opt[0])/scale_opt[0]+0.02);
@@ -231,15 +265,15 @@ int main(int argc, char *argv[])
           denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[2][icol]-offset_opt[0])/scale_opt[0];
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
         }
-        else if(rule_opt[0]=="osavi"){
+        else if(rule_opt[0]=="osavi"){//structural index (Rondeaux1996): //b0=R_670, b1=R_800
           denom=(1.0+0.16)*(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[0][icol]-offset_opt[0])/scale_opt[0]+0.16;
         }
-        else if(rule_opt[0]=="mcari"){
+        else if(rule_opt[0]=="mcari"){//chlorophyll index (Daughtry2000): b0=R_550, b1=R_670, b2=R_700
           denom=((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-0.2*((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0]))*(lineInput[2][icol]-offset_opt[0])/scale_opt[0];
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
         }
-        else if(rule_opt[0]=="tcari"){
+        else if(rule_opt[0]=="tcari"){//chlorophyll index (Haboudane2002): b0=R_550, b1=R_670, B2=R_700
           denom=3*((lineInput[1][icol]-offset_opt[0])/scale_opt[0]*(lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-0.2*((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0])*(lineInput[2][icol]-offset_opt[0])/scale_opt[0]);
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
         }
@@ -252,6 +286,19 @@ int main(int argc, char *argv[])
           nom=1.0;
         }
         else if(rule_opt[0]=="ratio"){
+          //Examples of indices addressed by ratio:
+          //structural indices:
+          //Simple Ratio Index (SR Jordan1969, Rouse1974): b0=R_NIR/R_RED
+          //chlorophyll indices:
+          //Greenness Index: b0=R_554, b1=R_677; 
+          //Zarco-Tejada&Miller (Zarco2001): b0=R_750,b1=R_710
+          //Simple Red Pigment Index (SRPI Penuelas1995): b0=R_430, b1=R_680
+          //Carter index 1 (Ctr1 Carter1994): b0=R_695, b1=R_420
+          //Carter index 2 (Ctr2 Carter1994): b0=R_695, b1=R_760
+          //Lichtenthaler index 2 (Lic2 Lichtenthaler1996): b0=R_440, b2=R_690
+          //Vogelmann index 1 (Vog1 Vogelmann1993): b0=R_740, b1=R_720
+          //Gitelson and Merzlyak 1 (GM1 Gitelson1997): b0=R_750 b1=R_550
+          //Gitelson and Merzlyak (GM2 Gitelson1997) b0=R_750 b1=R_700
           denom=(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
         }

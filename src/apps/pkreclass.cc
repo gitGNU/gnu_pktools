@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
   Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)", "");
   Optionpk<string> reclass_opt("r", "reclass", "list of recoded class(es) (in combination with class option)", "");
   Optionpk<string> fieldname_opt("n", "fname", "field name of the shape file to be replaced", "label");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
+  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<string> description_opt("d", "description", "Set image description", "");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
@@ -212,6 +212,11 @@ int main(int argc, char *argv[])
       theType=inputReader.getDataType();
     if(verbose_opt[0])
       cout << endl << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=inputReader.getInterleave();
+      option_opt.push_back(theInterleave);
+    }
     outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,inputReader.getImageType(),option_opt);
     if(description_opt[0]!="")
       outputWriter.setImageDescription(description_opt[0]);

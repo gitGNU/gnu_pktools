@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask.", 1);
   Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each invalid option", '=');
-  Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
+  Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
@@ -123,6 +123,11 @@ int main(int argc, char *argv[])
   }
   ImgWriterGdal outputWriter;
   try{
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=inputReader.getInterleave();
+      option_opt.push_back(theInterleave);
+    }
     outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,imageType,option_opt);
     outputWriter.setProjection(inputReader.getProjection());
     outputWriter.copyGeoTransform(inputReader);

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<short> boundary_opt("\0", "boundary", "boundary for selecting the sample (default: 1)", 1);
   Optionpk<bool> disc_opt("\0", "circular", "use circular disc kernel boundary)", false);
   Optionpk<bool> homogeneous_opt("\0", "homogeneous", "only take homogeneous regions into account", false);
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
+  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> verbose_opt("v", "verbose", "verbose (default value is 0)", 0);
 
   version_opt.retrieveOption(argc,argv);
@@ -482,6 +482,11 @@ int main(int argc, char *argv[])
         if(verbose_opt[0])
           cout << "opening output image " << output_opt[0] << endl;
         string compression=(lzw_opt[0])? "LZW":"NONE";
+        if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+          string theInterleave="INTERLEAVE=";
+          theInterleave+=inputReader.getInterleave();
+          option_opt.push_back(theInterleave);
+        }
         imgWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),inputReader.getImageType(),option_opt);
 
         if(inputReader.isGeoRef()){

@@ -146,6 +146,11 @@ int main(int argc,char **argv) {
   string imageType=imgReader.getImageType();
   if(oformat_opt[0]!="")//default
     imageType=oformat_opt[0];
+  if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+    string theInterleave="INTERLEAVE=";
+    theInterleave+=imgReader.getInterleave();
+    option_opt.push_back(theInterleave);
+  }
   imgWriter.open(output_opt[0],imgReader.nrOfCol(),imgReader.nrOfRow(),1,theType,imageType,option_opt);
   if(colorTable_opt[0]!=""){
     if(colorTable_opt[0]!="none")

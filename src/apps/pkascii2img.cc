@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output image file", "");
   Optionpk<string> dataType_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string> imageType_opt("of", "oformat", "image type string (default: GTiff, see also gdal_translate)", "GTiff");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "");
+  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<double> ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double> uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter) (default is 0.0: keep original resolution)", 0.0);

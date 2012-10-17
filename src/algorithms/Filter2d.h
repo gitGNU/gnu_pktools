@@ -20,7 +20,16 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _MYFILTER2D_H_
 #define _MYFILTER2D_H_
 
+#ifndef PI
+#define PI 3.1415926535897932384626433832795
+#endif
+
+#ifndef DEG2RAD
+#define DEG2RAD(DEG) (DEG/180.0*PI)
+#endif
+
 #include <assert.h>
+#include <math.h>
 #include <limits>
 #include <vector>
 #include <string>
@@ -64,6 +73,8 @@ public:
   void var(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, bool disc=false, double angle=-190);
   template<class T> unsigned long int morphology(const Vector2d<T>& input, Vector2d<T>& output, int method, int dimX, int dimY, bool disc=false, double hThreshold=0);
+  template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
+  void shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void dwt_texture(const string& inputFilename, const string& outputFilename,int dim, int scale, int down=1, int iband=0, bool verbose=false);
   
 private:
@@ -270,6 +281,47 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
     pfnProgress(progress,pszMessage,pProgressArg);
   }
   return nchange;
+}
+
+  template<class T> void Filter2d::shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag)
+{
+  unsigned int ncols=input.nCols();
+  output.clear();
+  output.resize(input.nRows(),ncols);
+  //do we need to initialize output?
+  // for(int y=0;y<output.nRows();++y)
+  //   for(int x=0;x<output.nCols();++x)
+  //     output[y][x]=0;
+  int indexI=0;
+  int indexJ=0;
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nRows();++y){
+    for(int x=0;x<input.nCols();++x){
+      double currentValue=input[y][x];
+      int theDist=static_cast<int>(sqrt((currentValue*tan(DEG2RAD(sza))/pixelSize)*(currentValue*tan(DEG2RAD(sza))/pixelSize)));//in pixels
+      double theDir=DEG2RAD(saa)+PI/2.0;
+      if(theDir<0)
+        theDir+=2*PI;
+      for(int d=0;d<theDist;++d){//d in pixels
+        indexI=x+d*cos(theDir);//in pixels
+        indexJ=y+d*sin(theDir);//in pixels
+        if(indexJ<0||indexJ>=input.size())
+          continue;
+        if(indexI<0||indexI>=input[indexJ].size())
+          continue;
+        if(input[indexJ][indexI]<currentValue-d*pixelSize/tan(DEG2RAD(sza))){//in m
+          output[indexJ][indexI]=shadowFlag;
+        }
+      }
+    }
+    progress=(1.0+y);
+    progress/=output.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
 }
 
 }

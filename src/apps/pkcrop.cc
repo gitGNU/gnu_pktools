@@ -21,6 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <list>
 #include <iostream>
+#include <algorithm>
 #include "imageclasses/ImgWriterGdal.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
@@ -183,6 +184,12 @@ int main(int argc, char *argv[])
   //determine number of output bands
   int ncropband=0;//total number of bands to write
   int writeBand=0;//write band
+
+  while(scale_opt.size()<band_opt.size())
+    scale_opt.push_back(scale_opt[0]);
+  while(offset_opt.size()<band_opt.size())
+    offset_opt.push_back(offset_opt[0]);
+
   for(int iimg=0;iimg<input_opt.size();++iimg){
     imgReader.open(input_opt[iimg]);
     if(band_opt[0]>=0)
@@ -200,6 +207,11 @@ int main(int argc, char *argv[])
       theType=imgReader.getDataType();
       if(verbose_opt[0])
         cout << "Using data type from input image: " << GDALGetDataTypeName(theType) << endl;
+    }
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=imgReader.getInterleave();
+      option_opt.push_back(theInterleave);
     }
     int nrow=imgReader.nrOfRow();
     int ncol=imgReader.nrOfCol();
@@ -415,6 +427,8 @@ int main(int argc, char *argv[])
                 if(!valid)
                   writeBuffer.push_back(flag_opt[0]);
                 else{
+                  double theScale=(scale_opt.size()>1)?scale_opt[iband]:scale_opt[0];
+                  double theOffset=(offset_opt.size()>1)?offset_opt[iband]:offset_opt[0];
                   switch(theResample){
                   case(BILINEAR):
                     lowerCol=readCol-0.5;
@@ -425,12 +439,12 @@ int main(int argc, char *argv[])
                       lowerCol=0;
                     if(upperCol>=imgReader.nrOfCol())
                       upperCol=imgReader.nrOfCol()-1;
-                    writeBuffer.push_back((readCol-0.5-lowerCol)*(readBuffer[upperCol-startCol]*scale_opt[0]+offset_opt[0])+(1-readCol+0.5+lowerCol)*(readBuffer[lowerCol-startCol]*scale_opt[0]+offset_opt[0]));
+                    writeBuffer.push_back((readCol-0.5-lowerCol)*(readBuffer[upperCol-startCol]*theScale+theOffset)+(1-readCol+0.5+lowerCol)*(readBuffer[lowerCol-startCol]*theScale+theOffset));
                     break;
                   default:
                     readCol=static_cast<int>(readCol);
                     readCol-=startCol;//we only start reading from startCol
-                    writeBuffer.push_back(readBuffer[readCol]*scale_opt[0]+offset_opt[0]);
+                    writeBuffer.push_back(readBuffer[readCol]*theScale+theOffset);
                     break;
                   }
                 }

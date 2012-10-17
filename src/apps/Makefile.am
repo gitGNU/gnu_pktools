@@ -6,7 +6,7 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 ###############################################################################
 
 # the program to build (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkmosaic pkndvi pkpolygonize pkascii2img pkdiff
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkveg2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkdiff
 if USE_FANN
 bin_PROGRAMS += pkclassify_nn
 pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
@@ -32,11 +32,12 @@ pkstat_SOURCES = $(top_srcdir)/src/algorithms/Histogram.h pkstat.cc
 pkstat_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc
 pkegcs_SOURCES = pkegcs.cc
-pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
+#pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
 pkextract_SOURCES = pkextract.cc
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
-pkfilter_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
+#pkfilter_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
+pkveg2shadow_SOURCES = pkveg2shadow.cc
 pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc

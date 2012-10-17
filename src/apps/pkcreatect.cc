@@ -164,6 +164,12 @@ int main(int argc,char **argv) {
   if(input_opt[0]!=""&&output_opt[0]!=""){
     ImgReaderGdal imgReader(input_opt[0]);
     ImgWriterGdal imgWriter;
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=imgReader.getInterleave();
+      option_opt.push_back(theInterleave);
+    }
+
     imgWriter.open(output_opt[0],imgReader.nrOfCol(),imgReader.nrOfRow(),1,GDT_Byte,oformat_opt[0],option_opt);
 
     imgWriter.copyGeoTransform(imgReader);

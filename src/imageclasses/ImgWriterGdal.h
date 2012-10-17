@@ -67,6 +67,7 @@ public:
   template<typename T> bool writeData(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
   template<typename T> bool writeData(vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
   bool writeData(void* pdata, const GDALDataType& dataType, int band=0) const;
+  template<typename T> bool writeDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   // string getInterleave(){return m_interleave;};
   // string getCompression(){return m_compression;};
   GDALDataType getDataType(int band=0) const;
@@ -128,6 +129,7 @@ template<typename T> bool ImgWriterGdal::writeData(T& value, const GDALDataType&
     throw(s.str());
   }
   poBand->RasterIO(GF_Write,col,row,1,1,&value,1,1,dataType,0,0);
+  return true;
 }
 
 template<typename T> bool ImgWriterGdal::writeData(vector<T>& buffer, const GDALDataType& dataType, int minCol, int maxCol, int row, int band) const
@@ -176,6 +178,7 @@ template<typename T> bool ImgWriterGdal::writeData(vector<T>& buffer, const GDAL
     throw(s.str());
   }
   poBand->RasterIO(GF_Write,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
+  return true;
 }
 
 template<typename T> bool ImgWriterGdal::writeData(vector<T>& buffer, const GDALDataType& dataType, int row, int band) const
@@ -198,6 +201,23 @@ template<typename T> bool ImgWriterGdal::writeData(vector<T>& buffer, const GDAL
     throw(s.str());
   }
   poBand->RasterIO(GF_Write,0,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
+  return true;
+}
+
+template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+{
+  //fetch raster band
+  GDALRasterBand  *poBand;
+  if(band>=nrOfBand()+1){
+    ostringstream s;
+    s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+    throw(s.str());
+  }
+  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+  assert(buffer.size()==maxRow-minRow+1);
+  for(int irow=minRow;irow<=maxRow;++irow)
+    writeData(buffer[irow-minRow], dataType, minCol, maxCol, irow, band);
+  return true;
 }
 
 #endif // _IMGWRITERGDAL_H_

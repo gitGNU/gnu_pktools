@@ -25,16 +25,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "Histogram.h"
 // #include "imageclasses/ImgUtils.h"
 
-#ifndef PI
-#define PI 3.1415926535897932384626433832795
-#endif
-
-#include <math.h>
-
-#ifndef DEG2RAD
-#define DEG2RAD(DEG) ((DEG)*((PI)/(180.0)))
-#endif
-
 Filter2d::Filter2d::Filter2d(void)
   : m_noValue(0)
 {
@@ -418,24 +408,16 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 
 void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, short down, bool disc)
 {
-  // ImgReaderGdal input;
-  // ImgWriterGdal output;
-  // input.open(inputFilename);
-  // output.open(outputFilename,input);
   assert(dimX);
   assert(dimY);
   Histogram hist;
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
-    // vector<double> outBuffer(input.nrOfCol());
     vector<double> outBuffer((input.nrOfCol()+down-1)/down);
     //initialize last half of inBuffer
     int indexI=0;
     int indexJ=0;
-    // for(int y=0;y<dimY;++y){
     for(int j=-dimY/2;j<(dimY+1)/2;++j){
-      // if(y<dimY/2)
-      //   continue;//skip first half
       try{
         input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
       }
@@ -449,7 +431,6 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
     GDALProgressFunc pfnProgress=GDALTermProgress;
     double progress=0;
     pfnProgress(progress,pszMessage,pProgressArg);
-    // for(int y=0;y<input.nrOfRow();++y){
     for(int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
@@ -478,7 +459,6 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       for(int x=0;x<input.nrOfCol();++x){
         if((x+1+down/2)%down)
           continue;
-	// outBuffer[x]=0;
 	outBuffer[x/down]=0;
 	vector<double> windowBuffer;
 	map<int,int> occurrence;
@@ -493,24 +473,12 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	      indexI=-indexI;
 	    else if(indexI>=input.nrOfCol())
 	      indexI=input.nrOfCol()-i;
-	      // indexI=input.nrOfCol()-indexI;
 	    if(y+j<0)
 	      indexJ=-j;
 	    else if(y+j>=input.nrOfRow())
 	      indexJ=dimY/2-j;
 	    else
 	      indexJ=dimY/2+j;
-	    // if(method==HOMOG||method==DENSITY||method==MAJORITY||method==MIXED){
-	    //   bool masked=false;
-	    //   for(int imask=0;imask<m_mask.size();++imask){
-	    //     if(inBuffer[indexJ][indexI]==m_mask[imask]){
-	    //       masked=true;
-	    //       break;
-	    //     }
-	    //   }
-	    //   if(!masked)
-	    //     ++occurrence[inBuffer[indexJ][indexI]];
-	    // }
 	    bool masked=false;
 	    for(int imask=0;imask<m_mask.size();++imask){
 	      if(inBuffer[indexJ][indexI]==m_mask[imask]){
@@ -535,21 +503,17 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         }
         switch(method){
         case(MEDIAN):
-          // outBuffer[x]=hist.median(windowBuffer);
           outBuffer[x/down]=hist.median(windowBuffer);
           break;
         case(VAR):{
-          // outBuffer[x]=hist.var(windowBuffer);
           outBuffer[x/down]=hist.var(windowBuffer);
           break;
         }
         case(MEAN):{
-          // outBuffer[x]=hist.mean(windowBuffer);
           outBuffer[x/down]=hist.mean(windowBuffer);
           break;
         }
         case(MIN):{
-          // outBuffer[x]=hist.min(windowBuffer);
           outBuffer[x/down]=hist.min(windowBuffer);
           break;
         }
@@ -563,14 +527,11 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           hist.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
           if(min!=max)
             outBuffer[x/down]=0;
-            // outBuffer[x]=0;
           else
             outBuffer[x/down]=windowBuffer[dimX*dimY/2];//centre pixels
-            // outBuffer[x]=windowBuffer[dimX*dimY/2];//centre pixels
           break;
         }
         case(MAX):{
-          // outBuffer[x]=hist.max(windowBuffer);
           outBuffer[x/down]=hist.max(windowBuffer);
           break;
         }
@@ -583,23 +544,19 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           double ubound=dimX*dimY;
           double theMin=hist.min(windowBuffer);
           double theMax=hist.max(windowBuffer);
-          // outBuffer[x]=hist.median(windowBuffer);
           double scale=(ubound-lbound)/(theMax-theMin);
           outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
           break;
         }
         case(SUM):{
-          // outBuffer[x]=hist.sum(windowBuffer);
           outBuffer[x/down]=hist.sum(windowBuffer);
           break;
         }
         case(HOMOG):
 	  if(occurrence.size()==1)//all values in window must be the same
 	    outBuffer[x/down]=inBuffer[dimY/2][x];
-	    // outBuffer[x]=inBuffer[dimY/2][x];
 	  else//favorize original value in case of ties
 	    outBuffer[x/down]=m_noValue;
-	    // outBuffer[x]=m_noValue;
           break;
         case(HETEROG):{
           for(vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
@@ -619,11 +576,9 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    vector<short>::const_iterator vit=m_class.begin();
 	    while(vit!=m_class.end())
 	      outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
-	      // outBuffer[x]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
 	  }
 	  else
 	    outBuffer[x/down]=0;
-	    // outBuffer[x]=0;
           break;
 	}
         case(MAJORITY):{
@@ -640,7 +595,6 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	  }
 	  else
 	    outBuffer[x/down]=0;
-          // outBuffer[x]=0;
           break;
         }
         case(THRESHOLD):{
@@ -681,32 +635,25 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           }
 	  else
 	    outBuffer[x/down]=inBuffer[indexJ][indexI];
-            // outBuffer[x]=0;
           break;
         }
         default:
           break;
         }
       }
-      // progress=(1.0+y);
       progress=(1.0+y/down);
       progress+=(output.nrOfRow()*iband);
       progress/=output.nrOfBand()*output.nrOfRow();
-      // assert(progress>=0);
-      // assert(progress<=1);
       pfnProgress(progress,pszMessage,pProgressArg);
       //write outBuffer to file
       try{
         output.writeData(outBuffer,GDT_Float64,y/down,iband);
-        // output.writeData(outBuffer,GDT_Float64,y,iband);
       }
       catch(string errorstring){
 	cerr << errorstring << "in band " << iband << ", line " << y << endl;
       }
     }
   }
-  // input.close();
-  // output.close();
 }
 
 //todo: re-implement without dependency of CImg and reg libraries
@@ -858,7 +805,6 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	}
       }
       for(int x=0;x<input.nrOfCol();++x){
-	// outBuffer[x]=0;
         double currentValue=inBuffer[dimY/2][x];
 	outBuffer[x]=currentValue;
 	vector<double> histBuffer;
@@ -966,10 +912,6 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
           }
 	  if(outBuffer[x]&&m_class.size())
 	    outBuffer[x]=m_class[0];
-	  // else{
-	  //   assert(m_mask.size());
-	  //   outBuffer[x]=m_mask[0];
-	  // }
 	}
       }
       //write outBuffer to file
@@ -985,4 +927,12 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
       pfnProgress(progress,pszMessage,pProgressArg);
     }
   }
+}
+
+void Filter2d::Filter2d::shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
+  Vector2d<float> inputBuffer;
+  Vector2d<float> outputBuffer;
+  input.readDataBlock(inputBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, 0);
+  shadowDsm(inputBuffer, outputBuffer, sza, saa, pixelSize, shadowFlag);
+  output.writeDataBlock(outputBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,0);
 }

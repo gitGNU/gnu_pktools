@@ -120,8 +120,6 @@ public:
   Optionpk(const string& shortName, const string& longName, const string& helpInfo);
   Optionpk(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue);
   ~Optionpk();
-  void setAll(const string& shortName, const string& longName, const string& helpInfo);
-  void setAll(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue);
   void setHelp(const string& helpInfo){m_help=helpInfo;};
   string usage() const;
   static string getGPLv3License(){
@@ -139,19 +137,22 @@ public:
     You should have received a copy of the GNU General Public License\n\
     along with this program.  If not, see <http://www.gnu.org/licenses/>.\n");};
   string getHelp() const {return m_help;};
+  int retrieveOption(int argc, char ** argv);
+  std::vector<string>::const_iterator findSubstring(string argument) const;
+  template<class T1> friend ostream& operator<<(ostream & os, const Optionpk<T1>& theOption);
+private:
+  void setAll(const string& shortName, const string& longName, const string& helpInfo);
+  void setAll(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue);
   void setDefault(const T& defaultValue);
   string getDefaultValue() const {return m_defaultValue;};
   void setShortName(const string& shortName);
   void setLongName(const string& longName);
   string getShortName() const {return m_shortName;};
   string getLongName() const {return m_longName;};
-  bool hasArgument() const {return m_hasArgument;};
-  void hasArgument(bool flag){m_hasArgument=flag;};
+  bool hasArgument() const {return m_hasArgument;};//all options except bools should have arguments
   bool hasShortOption() const {return m_shortName.compare("\0");};
   bool hasLongOption() const {return m_longName.compare("\0");};
-  int retrieveOption(int argc, char ** argv);
-  template<class T1> friend ostream& operator<<(ostream & os, const Optionpk<T1>& theOption);
-private:
+
   string m_shortName;
   string m_longName;
   string m_help;
@@ -286,6 +287,16 @@ template<class T> int Optionpk<T>::retrieveOption(int argc, char **argv){
   if(!(this->size())&&m_hasDefault)//only set default value if no options were given
     this->push_back(m_defaultValue);
   return(this->size());
+}
+
+template<class T> std::vector<string>::const_iterator Optionpk<T>::findSubstring(string argument) const{
+  std::vector<string>::const_iterator opit=this->begin();
+  while(opit!=this->end()){
+    if(opit->find(argument)!=std::string::npos)
+      break;
+      ++opit;
+  }
+  return opit;
 }
 
 #endif

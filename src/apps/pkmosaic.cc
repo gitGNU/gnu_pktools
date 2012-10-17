@@ -186,14 +186,8 @@ int main(int argc, char *argv[])
   }
 
   ImgReaderGdal imgReader;
-  // GDALDataType dataType;
-  // string driverDescription;
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
-  // string interleave;
-  // string compression;
-  string theCompression;
-  string theInterleave;
   string imageType;
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
@@ -208,6 +202,11 @@ int main(int argc, char *argv[])
         theColorTable=(imgReader.getColorTable()->Clone());
     if(projection_opt[0]=="")
       theProjection=imgReader.getProjection();
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=imgReader.getInterleave();
+      option_opt.push_back(theInterleave);
+    }
 
     if((ulx_opt[0]||uly_opt[0]||lrx_opt[0]||lry_opt[0])&&(!imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
       if(verbose_opt[0])
@@ -252,8 +251,6 @@ int main(int argc, char *argv[])
           break;
         }
       }
-//       nband=mrule_opt[0]!=6? imgReader.nrOfBand(): 2;//max voting: [winner class][number of votes]
-      // nband=imgReader.nrOfBand();
       if(band_opt[0]>=0){
 	nband=band_opt.size();
         bands.resize(band_opt.size());

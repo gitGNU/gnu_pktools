@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "output classification image",""); 
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
+  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<string> colorTable_opt("\0", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)",""); 
   Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image",""); 
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
@@ -541,6 +541,11 @@ int main(int argc, char *argv[])
     }
     int nrow=testImage.nrOfRow();
     int ncol=testImage.nrOfCol();
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=testImage.getInterleave();
+      option_opt.push_back(theInterleave);
+    }
     vector<char> classOut(ncol);//classified line for writing to image file
 
     //   assert(nband==testImage.nrOfBand());
@@ -551,6 +556,7 @@ int main(int argc, char *argv[])
     if(oformat_opt[0]!="")//default
       imageType=oformat_opt[0];
     try{
+
       if(verbose_opt[0]>=1)
         cout << "opening class image for writing output " << output_opt[0] << endl;
       if(classBag_opt[0]!=""){

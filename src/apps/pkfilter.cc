@@ -134,6 +134,11 @@ int main(int argc,char **argv) {
   if(oformat_opt.size())
     imageType=oformat_opt[0];
 
+  if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+    string theInterleave="INTERLEAVE=";
+    theInterleave+=input.getInterleave();
+    option_opt.push_back(theInterleave);
+  }
   try{
     output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],input.nrOfBand(),theType,imageType,option_opt);
   }

@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> min_opt("m","min","calculate minimum value",false);
   Optionpk<bool> max_opt("M","max","calculate maximum value",false);
   Optionpk<bool> mean_opt("mean","mean","calculate mean value",false);
+  Optionpk<bool> median_opt("median","median","calculate median value",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
@@ -61,6 +62,7 @@ int main(int argc, char *argv[])
   min_opt.retrieveOption(argc,argv);
   max_opt.retrieveOption(argc,argv);
   mean_opt.retrieveOption(argc,argv);
+  median_opt.retrieveOption(argc,argv);
   stdev_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
@@ -74,7 +76,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(help_opt[0]){
-    std::cout << "usage: pkstatogr -i inputimage -n nbin -f field [-f field]" << std::endl;
+    std::cout << "usage: pkstatogr -i inputimage -n nbin -n fieldname [-n fieldname]" << std::endl;
     exit(0);
   }
 
@@ -104,7 +106,7 @@ int main(int argc, char *argv[])
     double theMean=0;
     double theVar=0;
     hist.meanVar(theData,theMean,theVar);
-    std::cout << " -f " << fieldname_opt[ifield];
+    std::cout << " --fname " << fieldname_opt[ifield];
     if(mean_opt[0])
       std::cout << " --mean " << theMean;
     if(stdev_opt[0])
@@ -113,6 +115,8 @@ int main(int argc, char *argv[])
       cout << " -m " << minimum;
     if(max_opt[0])
       cout << " -M " << maximum;
+    if(median_opt[0])
+      std::cout << " -median " << hist.median(theData);
     std::cout << std::endl;
     if(nbin_opt[0]>1){
       std::cout << std::endl;
