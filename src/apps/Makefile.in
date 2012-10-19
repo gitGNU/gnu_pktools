@@ -39,9 +39,10 @@ bin_PROGRAMS = pkinfo$(EXEEXT) pkcrop$(EXEEXT) pkreclass$(EXEEXT) \
 	pkextract$(EXEEXT) pkfillnodata$(EXEEXT) pkfilter$(EXEEXT) \
 	pkveg2shadow$(EXEEXT) pkmosaic$(EXEEXT) pkndvi$(EXEEXT) \
 	pkpolygonize$(EXEEXT) pkascii2img$(EXEEXT) pkdiff$(EXEEXT) \
-	$(am__EXEEXT_1) $(am__EXEEXT_2)
+	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @USE_FANN_TRUE@am__append_1 = pkclassify_nn
-@USE_LAS_TRUE@am__append_2 = pklas2img
+@USE_SVM_TRUE@am__append_2 = pkclassify_svm
+@USE_LAS_TRUE@am__append_3 = pklas2img
 subdir = src/apps
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -54,7 +55,8 @@ CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @USE_FANN_TRUE@am__EXEEXT_1 = pkclassify_nn$(EXEEXT)
-@USE_LAS_TRUE@am__EXEEXT_2 = pklas2img$(EXEEXT)
+@USE_SVM_TRUE@am__EXEEXT_2 = pkclassify_svm$(EXEEXT)
+@USE_LAS_TRUE@am__EXEEXT_3 = pklas2img$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_pkascii2img_OBJECTS = pkascii2img.$(OBJEXT)
@@ -76,6 +78,18 @@ am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
 @USE_FANN_TRUE@pkclassify_nn_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 @USE_FANN_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 pkclassify_nn_LINK = $(CXXLD) $(pkclassify_nn_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__pkclassify_svm_SOURCES_DIST = $(top_srcdir)/src/algorithms/svm.h \
+	$(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
+@USE_SVM_TRUE@am_pkclassify_svm_OBJECTS =  \
+@USE_SVM_TRUE@	pkclassify_svm-svm.$(OBJEXT) \
+@USE_SVM_TRUE@	pkclassify_svm-pkclassify_svm.$(OBJEXT)
+pkclassify_svm_OBJECTS = $(am_pkclassify_svm_OBJECTS)
+pkclassify_svm_LDADD = $(LDADD)
+pkclassify_svm_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/algorithms/libalgorithms.a \
+	$(top_builddir)/src/imageclasses/libimageClasses.a
+pkclassify_svm_LINK = $(CXXLD) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_pkcreatect_OBJECTS = pkcreatect.$(OBJEXT)
 pkcreatect_OBJECTS = $(am_pkcreatect_OBJECTS)
@@ -212,16 +226,17 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(pkascii2img_SOURCES) $(pkclassify_nn_SOURCES) \
-	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
-	$(pkdumpimg_SOURCES) $(pkdumpogr_SOURCES) $(pkegcs_SOURCES) \
-	$(pkextract_SOURCES) $(pkfillnodata_SOURCES) \
-	$(pkfilter_SOURCES) $(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
-	$(pklas2img_SOURCES) $(pkmosaic_SOURCES) $(pkndvi_SOURCES) \
-	$(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
-	$(pksetmask_SOURCES) $(pksieve_SOURCES) $(pkstat_SOURCES) \
-	$(pkstatogr_SOURCES) $(pkveg2shadow_SOURCES)
+	$(pkclassify_svm_SOURCES) $(pkcreatect_SOURCES) \
+	$(pkcrop_SOURCES) $(pkdiff_SOURCES) $(pkdumpimg_SOURCES) \
+	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
+	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
+	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) $(pklas2img_SOURCES) \
+	$(pkmosaic_SOURCES) $(pkndvi_SOURCES) $(pkpolygonize_SOURCES) \
+	$(pkreclass_SOURCES) $(pksetmask_SOURCES) $(pksieve_SOURCES) \
+	$(pkstat_SOURCES) $(pkstatogr_SOURCES) $(pkveg2shadow_SOURCES)
 DIST_SOURCES = $(pkascii2img_SOURCES) \
-	$(am__pkclassify_nn_SOURCES_DIST) $(pkcreatect_SOURCES) \
+	$(am__pkclassify_nn_SOURCES_DIST) \
+	$(am__pkclassify_svm_SOURCES_DIST) $(pkcreatect_SOURCES) \
 	$(pkcrop_SOURCES) $(pkdiff_SOURCES) $(pkdumpimg_SOURCES) \
 	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
 	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
@@ -347,6 +362,8 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 @USE_FANN_TRUE@pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
 @USE_FANN_TRUE@pkclassify_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 @USE_FANN_TRUE@pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
+@USE_SVM_TRUE@pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
+@USE_SVM_TRUE@pkclassify_svm_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 @USE_LAS_TRUE@pklas2img_SOURCES = pklas2img.cc
 @USE_LAS_TRUE@pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
 # list of sources for the binaries
@@ -377,7 +394,7 @@ pkdiff_SOURCES = pkdiff.cc
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cc .o .obj
+.SUFFIXES: .cc .cpp .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -451,6 +468,9 @@ pkascii2img$(EXEEXT): $(pkascii2img_OBJECTS) $(pkascii2img_DEPENDENCIES)
 pkclassify_nn$(EXEEXT): $(pkclassify_nn_OBJECTS) $(pkclassify_nn_DEPENDENCIES) 
 	@rm -f pkclassify_nn$(EXEEXT)
 	$(pkclassify_nn_LINK) $(pkclassify_nn_OBJECTS) $(pkclassify_nn_LDADD) $(LIBS)
+pkclassify_svm$(EXEEXT): $(pkclassify_svm_OBJECTS) $(pkclassify_svm_DEPENDENCIES) 
+	@rm -f pkclassify_svm$(EXEEXT)
+	$(pkclassify_svm_LINK) $(pkclassify_svm_OBJECTS) $(pkclassify_svm_LDADD) $(LIBS)
 pkcreatect$(EXEEXT): $(pkcreatect_OBJECTS) $(pkcreatect_DEPENDENCIES) 
 	@rm -f pkcreatect$(EXEEXT)
 	$(CXXLINK) $(pkcreatect_OBJECTS) $(pkcreatect_LDADD) $(LIBS)
@@ -523,6 +543,8 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkascii2img.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkclassify_nn-pkclassify_nn.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkclassify_svm-pkclassify_svm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkclassify_svm-svm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkcreatect.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkcrop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkdiff.Po@am__quote@
@@ -572,6 +594,48 @@ pkclassify_nn-pkclassify_nn.obj: pkclassify_nn.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='pkclassify_nn.cc' object='pkclassify_nn-pkclassify_nn.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_nn_CXXFLAGS) $(CXXFLAGS) -c -o pkclassify_nn-pkclassify_nn.obj `if test -f 'pkclassify_nn.cc'; then $(CYGPATH_W) 'pkclassify_nn.cc'; else $(CYGPATH_W) '$(srcdir)/pkclassify_nn.cc'; fi`
+
+pkclassify_svm-svm.o: $(top_srcdir)/src/algorithms/svm.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -MT pkclassify_svm-svm.o -MD -MP -MF $(DEPDIR)/pkclassify_svm-svm.Tpo -c -o pkclassify_svm-svm.o `test -f '$(top_srcdir)/src/algorithms/svm.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/algorithms/svm.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/pkclassify_svm-svm.Tpo $(DEPDIR)/pkclassify_svm-svm.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(top_srcdir)/src/algorithms/svm.cpp' object='pkclassify_svm-svm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -c -o pkclassify_svm-svm.o `test -f '$(top_srcdir)/src/algorithms/svm.cpp' || echo '$(srcdir)/'`$(top_srcdir)/src/algorithms/svm.cpp
+
+pkclassify_svm-svm.obj: $(top_srcdir)/src/algorithms/svm.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -MT pkclassify_svm-svm.obj -MD -MP -MF $(DEPDIR)/pkclassify_svm-svm.Tpo -c -o pkclassify_svm-svm.obj `if test -f '$(top_srcdir)/src/algorithms/svm.cpp'; then $(CYGPATH_W) '$(top_srcdir)/src/algorithms/svm.cpp'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/algorithms/svm.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/pkclassify_svm-svm.Tpo $(DEPDIR)/pkclassify_svm-svm.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(top_srcdir)/src/algorithms/svm.cpp' object='pkclassify_svm-svm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -c -o pkclassify_svm-svm.obj `if test -f '$(top_srcdir)/src/algorithms/svm.cpp'; then $(CYGPATH_W) '$(top_srcdir)/src/algorithms/svm.cpp'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/algorithms/svm.cpp'; fi`
+
+pkclassify_svm-pkclassify_svm.o: pkclassify_svm.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -MT pkclassify_svm-pkclassify_svm.o -MD -MP -MF $(DEPDIR)/pkclassify_svm-pkclassify_svm.Tpo -c -o pkclassify_svm-pkclassify_svm.o `test -f 'pkclassify_svm.cc' || echo '$(srcdir)/'`pkclassify_svm.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/pkclassify_svm-pkclassify_svm.Tpo $(DEPDIR)/pkclassify_svm-pkclassify_svm.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='pkclassify_svm.cc' object='pkclassify_svm-pkclassify_svm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -c -o pkclassify_svm-pkclassify_svm.o `test -f 'pkclassify_svm.cc' || echo '$(srcdir)/'`pkclassify_svm.cc
+
+pkclassify_svm-pkclassify_svm.obj: pkclassify_svm.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -MT pkclassify_svm-pkclassify_svm.obj -MD -MP -MF $(DEPDIR)/pkclassify_svm-pkclassify_svm.Tpo -c -o pkclassify_svm-pkclassify_svm.obj `if test -f 'pkclassify_svm.cc'; then $(CYGPATH_W) 'pkclassify_svm.cc'; else $(CYGPATH_W) '$(srcdir)/pkclassify_svm.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/pkclassify_svm-pkclassify_svm.Tpo $(DEPDIR)/pkclassify_svm-pkclassify_svm.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='pkclassify_svm.cc' object='pkclassify_svm-pkclassify_svm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_svm_CXXFLAGS) $(CXXFLAGS) -c -o pkclassify_svm-pkclassify_svm.obj `if test -f 'pkclassify_svm.cc'; then $(CYGPATH_W) 'pkclassify_svm.cc'; else $(CYGPATH_W) '$(srcdir)/pkclassify_svm.cc'; fi`
+
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

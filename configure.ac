@@ -35,6 +35,14 @@ AS_IF([test "x$enable_fann" = "xyes"], [
 	AC_MSG_WARN("USE_FANN=false")
 	])
 
+AC_ARG_ENABLE([svm],
+    AS_HELP_STRING([--enable-svm], [Enable feature svm]))
+
+AS_IF([test "x$enable_svm" = "xyes"], [
+	AM_CONDITIONAL(USE_SVM, true)
+	AC_MSG_WARN("USE_SVM=true")
+	])
+
 AC_ARG_ENABLE([las],
     AS_HELP_STRING([--enable-las], [Enable feature las]))
 

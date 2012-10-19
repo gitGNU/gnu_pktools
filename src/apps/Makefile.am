@@ -13,6 +13,11 @@ pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.
 pkclassify_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
 endif
+if USE_SVM
+bin_PROGRAMS += pkclassify_svm
+pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
+pkclassify_svm_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
+endif
 if USE_LAS
 bin_PROGRAMS += pklas2img
 pklas2img_SOURCES = pklas2img.cc

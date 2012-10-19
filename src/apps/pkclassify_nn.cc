@@ -29,6 +29,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "floatfann.h"
 #include "myfann_cpp.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 int main(int argc, char *argv[])
 {
   map<short,int> reclassMap;
@@ -37,12 +41,16 @@ int main(int argc, char *argv[])
   
   //--------------------------- command line options ------------------------------------
 
-  Optionpk<bool> version_opt("\0","version","version 20120625, Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.",false);
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
+  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string> input_opt("i", "input", "input image",""); 
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)",""); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file. (default is label)","label"); 
@@ -60,7 +68,6 @@ int main(int argc, char *argv[])
   Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
   Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
   Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
-  Optionpk<bool> random_opt("r", "random", "random seed for selecting balanced sample: set to 1 for random (default), set to 0 for reproducable accuracy result for each new run", true);
   Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option. Default is sum rule (0)",0); 
   Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("\0", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (default for no bagging: 100)", 100);
@@ -79,17 +86,8 @@ int main(int argc, char *argv[])
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
   help_opt.retrieveOption(argc,argv);
+  todo_opt.retrieveOption(argc,argv);
 
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
-    exit(0);
-  }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-
-  input_opt.retrieveOption(argc,argv);
   input_opt.retrieveOption(argc,argv);
   training_opt.retrieveOption(argc,argv);
   label_opt.retrieveOption(argc,argv);
@@ -107,7 +105,6 @@ int main(int argc, char *argv[])
   weights_opt.retrieveOption(argc,argv);
   learning_opt.retrieveOption(argc,argv);
   maxit_opt.retrieveOption(argc,argv);
-  random_opt.retrieveOption(argc,argv);
   comb_opt.retrieveOption(argc,argv);
   bag_opt.retrieveOption(argc,argv);
   bagSize_opt.retrieveOption(argc,argv);
@@ -123,8 +120,17 @@ int main(int argc, char *argv[])
   prob_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
-  if(help_opt[0]){
+  if(version_opt[0]||todo_opt[0]){
     cout << version_opt.getHelp() << endl;
+    cout << "todo: " << todo_opt.getHelp() << endl;
+    exit(0);
+  }
+  if(license_opt[0]){
+    cout << Optionpk<bool>::getGPLv3License() << endl;
+    exit(0);
+  }
+  if(help_opt[0]){
+    cout << "usage: pkclassify_nn -i testimage -o outputimage -t training [OPTIONS]" << endl;
     exit(0);
   }
 
