@@ -96,6 +96,7 @@ ConfusionMatrix ConfusionMatrix::operator*(double weight)
 }
 
 void ConfusionMatrix::resize(short nclass){
+  m_classes.resize(nclass);
   for(short iclass=0;iclass<nclass;++iclass){
     ostringstream osclass;
     osclass << iclass;

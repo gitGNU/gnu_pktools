@@ -123,10 +123,7 @@ pkdumpogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
 am_pkegcs_OBJECTS = pkegcs.$(OBJEXT)
 pkegcs_OBJECTS = $(am_pkegcs_OBJECTS)
-pkegcs_LDADD = $(LDADD)
-pkegcs_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+pkegcs_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_pkextract_OBJECTS = pkextract.$(OBJEXT)
 pkextract_OBJECTS = $(am_pkextract_OBJECTS)
 pkextract_LDADD = $(LDADD)
@@ -380,7 +377,7 @@ pkstat_SOURCES = $(top_srcdir)/src/algorithms/Histogram.h pkstat.cc
 pkstat_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc
 pkegcs_SOURCES = pkegcs.cc
-#pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
+pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
 pkextract_SOURCES = pkextract.cc
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
