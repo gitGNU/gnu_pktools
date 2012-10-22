@@ -612,8 +612,6 @@ NLOPT_CFLAGS
 FILECLASSES_OPT
 USE_LAS_FALSE
 USE_LAS_TRUE
-USE_SVM_FALSE
-USE_SVM_TRUE
 USE_FANN_FALSE
 USE_FANN_TRUE
 FANN_LIBS
@@ -720,7 +718,6 @@ enable_option_checking
 with_gdal
 enable_dependency_tracking
 enable_fann
-enable_svm
 enable_las
 enable_nlopt
 '
@@ -1365,7 +1362,6 @@ Optional Features:
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --enable-fann           Enable feature fann
-  --enable-svm            Enable feature svm
   --enable-las            Enable feature las
   --enable-nlopt          Enable feature nlopt
 
@@ -5138,26 +5134,7 @@ $as_echo "$as_me: WARNING: \"USE_FANN=false\"" >&2;}
 
 fi
 
-# Check whether --enable-svm was given.
-if test "${enable_svm+set}" = set; then :
-  enableval=$enable_svm;
-fi
 
-
-if test "x$enable_svm" = "xyes"; then :
-
-	 if true; then
-  USE_SVM_TRUE=
-  USE_SVM_FALSE='#'
-else
-  USE_SVM_TRUE='#'
-  USE_SVM_FALSE=
-fi
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"USE_SVM=true\"" >&5
-$as_echo "$as_me: WARNING: \"USE_SVM=true\"" >&2;}
-
-fi
 
 # Check whether --enable-las was given.
 if test "${enable_las+set}" = set; then :
@@ -5808,10 +5785,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_FANN_TRUE}" && test -z "${USE_FANN_FALSE}"; then
   as_fn_error $? "conditional \"USE_FANN\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${USE_SVM_TRUE}" && test -z "${USE_SVM_FALSE}"; then
-  as_fn_error $? "conditional \"USE_SVM\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_LAS_TRUE}" && test -z "${USE_LAS_FALSE}"; then
