@@ -106,6 +106,7 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   }
   char **papszMetadata;
   papszMetadata = poDriver->GetMetadata();
+  //todo: try and catch if CREATE is not supported (as in PNG)
   assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
   char **papszOptions=NULL;
   for(vector<string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
@@ -181,6 +182,7 @@ void ImgWriterGdal::setCodec(const string& imageType)
   }
   char **papszMetadata;
   papszMetadata = poDriver->GetMetadata();
+  //todo: try and catch if CREATE is not supported (as in PNG)
   assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
   char **papszOptions=NULL;
   for(vector<string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)

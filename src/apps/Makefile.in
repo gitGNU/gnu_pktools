@@ -37,7 +37,7 @@ bin_PROGRAMS = pkinfo$(EXEEXT) pkcrop$(EXEEXT) pkreclass$(EXEEXT) \
 	pkdumpimg$(EXEEXT) pkdumpogr$(EXEEXT) pksieve$(EXEEXT) \
 	pkstat$(EXEEXT) pkstatogr$(EXEEXT) pkegcs$(EXEEXT) \
 	pkextract$(EXEEXT) pkfillnodata$(EXEEXT) pkfilter$(EXEEXT) \
-	pkveg2shadow$(EXEEXT) pkmosaic$(EXEEXT) pkndvi$(EXEEXT) \
+	pkdsm2shadow$(EXEEXT) pkmosaic$(EXEEXT) pkndvi$(EXEEXT) \
 	pkpolygonize$(EXEEXT) pkascii2img$(EXEEXT) pkdiff$(EXEEXT) \
 	pkclassify_svm$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
 @USE_FANN_TRUE@am__append_1 = pkclassify_nn
@@ -99,6 +99,12 @@ am_pkdiff_OBJECTS = pkdiff.$(OBJEXT)
 pkdiff_OBJECTS = $(am_pkdiff_OBJECTS)
 pkdiff_LDADD = $(LDADD)
 pkdiff_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/algorithms/libalgorithms.a \
+	$(top_builddir)/src/imageclasses/libimageClasses.a
+am_pkdsm2shadow_OBJECTS = pkdsm2shadow.$(OBJEXT)
+pkdsm2shadow_OBJECTS = $(am_pkdsm2shadow_OBJECTS)
+pkdsm2shadow_LDADD = $(LDADD)
+pkdsm2shadow_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
 am_pkdumpimg_OBJECTS = pkdumpimg.$(OBJEXT)
@@ -195,12 +201,6 @@ pkstatogr_LDADD = $(LDADD)
 pkstatogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
-am_pkveg2shadow_OBJECTS = pkveg2shadow.$(OBJEXT)
-pkveg2shadow_OBJECTS = $(am_pkveg2shadow_OBJECTS)
-pkveg2shadow_LDADD = $(LDADD)
-pkveg2shadow_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -216,23 +216,25 @@ CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(pkascii2img_SOURCES) $(pkclassify_nn_SOURCES) \
 	$(pkclassify_svm_SOURCES) $(pkcreatect_SOURCES) \
-	$(pkcrop_SOURCES) $(pkdiff_SOURCES) $(pkdumpimg_SOURCES) \
-	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
-	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
-	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) $(pklas2img_SOURCES) \
-	$(pkmosaic_SOURCES) $(pkndvi_SOURCES) $(pkpolygonize_SOURCES) \
-	$(pkreclass_SOURCES) $(pksetmask_SOURCES) $(pksieve_SOURCES) \
-	$(pkstat_SOURCES) $(pkstatogr_SOURCES) $(pkveg2shadow_SOURCES)
-DIST_SOURCES = $(pkascii2img_SOURCES) \
-	$(am__pkclassify_nn_SOURCES_DIST) $(pkclassify_svm_SOURCES) \
-	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
+	$(pkcrop_SOURCES) $(pkdiff_SOURCES) $(pkdsm2shadow_SOURCES) \
 	$(pkdumpimg_SOURCES) $(pkdumpogr_SOURCES) $(pkegcs_SOURCES) \
 	$(pkextract_SOURCES) $(pkfillnodata_SOURCES) \
 	$(pkfilter_SOURCES) $(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
+	$(pklas2img_SOURCES) $(pkmosaic_SOURCES) $(pkndvi_SOURCES) \
+	$(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
+	$(pksetmask_SOURCES) $(pksieve_SOURCES) $(pkstat_SOURCES) \
+	$(pkstatogr_SOURCES)
+DIST_SOURCES = $(pkascii2img_SOURCES) \
+	$(am__pkclassify_nn_SOURCES_DIST) $(pkclassify_svm_SOURCES) \
+	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
+	$(pkdsm2shadow_SOURCES) $(pkdumpimg_SOURCES) \
+	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
+	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
+	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
 	$(am__pklas2img_SOURCES_DIST) $(pkmosaic_SOURCES) \
 	$(pkndvi_SOURCES) $(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
 	$(pksetmask_SOURCES) $(pksieve_SOURCES) $(pkstat_SOURCES) \
-	$(pkstatogr_SOURCES) $(pkveg2shadow_SOURCES)
+	$(pkstatogr_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -371,7 +373,7 @@ pkextract_SOURCES = pkextract.cc
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
 #pkfilter_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
-pkveg2shadow_SOURCES = pkveg2shadow.cc
+pkdsm2shadow_SOURCES = pkdsm2shadow.cc
 pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
@@ -467,6 +469,9 @@ pkcrop$(EXEEXT): $(pkcrop_OBJECTS) $(pkcrop_DEPENDENCIES)
 pkdiff$(EXEEXT): $(pkdiff_OBJECTS) $(pkdiff_DEPENDENCIES) 
 	@rm -f pkdiff$(EXEEXT)
 	$(CXXLINK) $(pkdiff_OBJECTS) $(pkdiff_LDADD) $(LIBS)
+pkdsm2shadow$(EXEEXT): $(pkdsm2shadow_OBJECTS) $(pkdsm2shadow_DEPENDENCIES) 
+	@rm -f pkdsm2shadow$(EXEEXT)
+	$(CXXLINK) $(pkdsm2shadow_OBJECTS) $(pkdsm2shadow_LDADD) $(LIBS)
 pkdumpimg$(EXEEXT): $(pkdumpimg_OBJECTS) $(pkdumpimg_DEPENDENCIES) 
 	@rm -f pkdumpimg$(EXEEXT)
 	$(CXXLINK) $(pkdumpimg_OBJECTS) $(pkdumpimg_LDADD) $(LIBS)
@@ -518,9 +523,6 @@ pkstat$(EXEEXT): $(pkstat_OBJECTS) $(pkstat_DEPENDENCIES)
 pkstatogr$(EXEEXT): $(pkstatogr_OBJECTS) $(pkstatogr_DEPENDENCIES) 
 	@rm -f pkstatogr$(EXEEXT)
 	$(CXXLINK) $(pkstatogr_OBJECTS) $(pkstatogr_LDADD) $(LIBS)
-pkveg2shadow$(EXEEXT): $(pkveg2shadow_OBJECTS) $(pkveg2shadow_DEPENDENCIES) 
-	@rm -f pkveg2shadow$(EXEEXT)
-	$(CXXLINK) $(pkveg2shadow_OBJECTS) $(pkveg2shadow_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -534,6 +536,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkcreatect.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkcrop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkdiff.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkdsm2shadow.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkdumpimg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkdumpogr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkegcs.Po@am__quote@
@@ -551,7 +554,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pksieve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkstat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkstatogr.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkveg2shadow.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/svm.Po@am__quote@
 
 .cc.o:
