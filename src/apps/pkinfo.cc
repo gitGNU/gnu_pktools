@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
   Optionpk<bool>  type_opt("ot", "otype", "Return data type", false);
   Optionpk<bool>  description_opt("d", "description", "Return image description", false);
   Optionpk<bool>  metadata_opt("meta", "meta", "Show meta data ", false);
-  Optionpk<double> maskValue_opt("mask", "mask", "mask value(s) for no data to calculate reference pixel in image",0);
+  Optionpk<double> nodata_opt("nodata", "nodata", "set no data value(s) for calculations (flags in input image)");
   
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
   type_opt.retrieveOption(argc,argv);
   description_opt.retrieveOption(argc,argv);
   metadata_opt.retrieveOption(argc,argv);
-  maskValue_opt.retrieveOption(argc,argv);
+  nodata_opt.retrieveOption(argc,argv);
 
   if(help_opt[0]){
     std::cout << "usage: pkinfo -i imagefile [OPTIONS]" << std::endl;
@@ -150,8 +150,8 @@ int main(int argc, char *argv[])
   ImgReaderGdal imgReader;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader.open(input_opt[ifile]);
-    for(int inodata=0;inodata<maskValue_opt.size();++inodata)
-      imgReader.pushNoDataValue(maskValue_opt[inodata],band_opt[0]);
+    for(int inodata=0;inodata<nodata_opt.size();++inodata)
+      imgReader.pushNoDataValue(nodata_opt[inodata]);
 
     if(filename_opt[0])
       std::cout << " --input " << input_opt[ifile] << " ";
@@ -289,7 +289,9 @@ int main(int argc, char *argv[])
       for(int irow=0;irow<imgReader.nrOfRow();++irow){
 	imgReader.readData(lineBuffer,GDT_Float64,irow,band_opt[0]);
 	for(int icol=0;icol<imgReader.nrOfCol();++icol){
-	  if(lineBuffer[icol]>maxValue)
+          if(imgReader.isNoData(lineBuffer[icol]))
+            ++ninvalid;
+          else if(lineBuffer[icol]>maxValue)
             ++ninvalid;
           else if(lineBuffer[icol]<minValue)
             ++ninvalid;
@@ -422,6 +424,6 @@ int main(int argc, char *argv[])
       std::cout << "no intersect" << std::endl;
   }
   //    std::cout << "bounding box mosaic (ULX ULY LRX LRY): " << minULX << " " << maxULY << " " << maxLRX << " " << minLRY << std::endl;
-  if(!read_opt[0])
+  if(!read_opt[0]&&!hist_opt[0])
     std::cout << std::endl;
 }

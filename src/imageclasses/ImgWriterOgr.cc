@@ -400,7 +400,6 @@ int ImgWriterOgr::ascii2shape(const string& filename, const string &layername, c
   createLayer(layername, theProjection, eGType, papszOptions);
   //create attribute fields that should appear on the layer. Fields must be added to the layer before any features are written. To create a field we initialize an OGRField object with the information about the field. In the case of Shapefiles, the field width and precision is significant in the creation of the output .dbf file, so we set it specifically, though generally the defaults are OK
   int ncol=fieldName.size();
-  assert(fieldName.size()==fieldType.size());
   assert(colX>=0);
   assert(colY>=0);
   assert(colX<ncol+2);

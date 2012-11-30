@@ -1,4 +1,4 @@
-AM_LDFLAGS = $(GDAL_LDFLAGS) @AM_LDFLAGS@
+AM_LDFLAGS = $(GSL_LIBS) $(GDAL_LDFLAGS) @AM_LDFLAGS@ 
 AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
 
 ###############################################################################
@@ -12,8 +12,8 @@ noinst_LIBRARIES = libalgorithms.a
 libalgorithms_adir = $(includedir)/algorithms
 
 # the list of header files that belong to the library (to be installed later)
-libalgorithms_a_HEADERS = Egcs.h  Filter2d.h  Filter.h  Histogram.h ConfusionMatrix.h myfann_cpp.h
+libalgorithms_a_HEADERS = Egcs.h  Filter2d.h  Filter.h  Histogram.h ConfusionMatrix.h myfann_cpp.h svm.h SensorModel.h
 
 # the sources to add to the library and to add to the source distribution
-libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc  Filter2d.cc  Filter.cc  Histogram.cc ConfusionMatrix.cc
+libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc  Filter2d.cc  Filter.cc  Histogram.cc ConfusionMatrix.cc svm.cpp
 ###############################################################################

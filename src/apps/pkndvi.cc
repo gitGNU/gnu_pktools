@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
           denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
           nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
         }
-        if(rule_opt[0]=="ndvi2"){//normalized difference with different wavelengths used in denom and nom
+        else if(rule_opt[0]=="ndvi2"){//normalized difference with different wavelengths used in denom and nom
           //Example of indices addressed by ndvi2
           //Structure Intensive Pigment index (SIPI Penuelas 1995): b0=R_450, b1=R_800, b2=R_650, b=R_800
           //Vogelmann index 2 (Vog2 Vogelmann1993): b0=R_747, b1=R_735, b2=R_715, b3=R_726

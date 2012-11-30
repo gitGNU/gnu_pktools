@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     if(refpixel_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
       for(int inodata=0;inodata<maskValue_opt.size();++inodata)
-        imgReader.pushNoDataValue(maskValue_opt[inodata],band_opt[0]);
+        imgReader.pushNoDataValue(maskValue_opt[inodata]);
       // if(verbose_opt[0]){
       //   vector<double> noData;
       //   imgReader.getNoDataValues(noData,band_opt[0]);

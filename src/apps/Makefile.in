@@ -38,10 +38,13 @@ bin_PROGRAMS = pkinfo$(EXEEXT) pkcrop$(EXEEXT) pkreclass$(EXEEXT) \
 	pkstat$(EXEEXT) pkstatogr$(EXEEXT) pkegcs$(EXEEXT) \
 	pkextract$(EXEEXT) pkfillnodata$(EXEEXT) pkfilter$(EXEEXT) \
 	pkdsm2shadow$(EXEEXT) pkmosaic$(EXEEXT) pkndvi$(EXEEXT) \
-	pkpolygonize$(EXEEXT) pkascii2img$(EXEEXT) pkdiff$(EXEEXT) \
-	pkclassify_svm$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+	pkpolygonize$(EXEEXT) pkascii2img$(EXEEXT) \
+	pkascii2ogr$(EXEEXT) pkdiff$(EXEEXT) pkclassify_svm$(EXEEXT) \
+	pkgeom$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3)
 @USE_FANN_TRUE@am__append_1 = pkclassify_nn
 @USE_LAS_TRUE@am__append_2 = pklas2img
+@USE_NLOPT_TRUE@am__append_3 = pksensormodel
 subdir = src/apps
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -55,6 +58,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @USE_FANN_TRUE@am__EXEEXT_1 = pkclassify_nn$(EXEEXT)
 @USE_LAS_TRUE@am__EXEEXT_2 = pklas2img$(EXEEXT)
+@USE_NLOPT_TRUE@am__EXEEXT_3 = pksensormodel$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_pkascii2img_OBJECTS = pkascii2img.$(OBJEXT)
@@ -62,6 +66,12 @@ pkascii2img_OBJECTS = $(am_pkascii2img_OBJECTS)
 pkascii2img_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 pkascii2img_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/algorithms/libalgorithms.a \
+	$(top_builddir)/src/imageclasses/libimageClasses.a
+am_pkascii2ogr_OBJECTS = pkascii2ogr.$(OBJEXT)
+pkascii2ogr_OBJECTS = $(am_pkascii2ogr_OBJECTS)
+pkascii2ogr_LDADD = $(LDADD)
+pkascii2ogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
 am__pkclassify_nn_SOURCES_DIST =  \
@@ -140,6 +150,12 @@ pkfilter_LDADD = $(LDADD)
 pkfilter_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
+am_pkgeom_OBJECTS = pkgeom.$(OBJEXT)
+pkgeom_OBJECTS = $(am_pkgeom_OBJECTS)
+pkgeom_LDADD = $(LDADD)
+pkgeom_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/algorithms/libalgorithms.a \
+	$(top_builddir)/src/imageclasses/libimageClasses.a
 am_pkgetmask_OBJECTS = pkgetmask.$(OBJEXT)
 pkgetmask_OBJECTS = $(am_pkgetmask_OBJECTS)
 pkgetmask_LDADD = $(LDADD)
@@ -180,6 +196,13 @@ pkreclass_LDADD = $(LDADD)
 pkreclass_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
+am__pksensormodel_SOURCES_DIST =  \
+	$(top_srcdir)/src/algorithms/SensorModel.h pksensormodel.h \
+	pksensormodel.cc
+@USE_NLOPT_TRUE@am_pksensormodel_OBJECTS = pksensormodel.$(OBJEXT)
+pksensormodel_OBJECTS = $(am_pksensormodel_OBJECTS)
+@USE_NLOPT_TRUE@pksensormodel_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@USE_NLOPT_TRUE@	$(am__DEPENDENCIES_2)
 am_pksetmask_OBJECTS = pksetmask.$(OBJEXT)
 pksetmask_OBJECTS = $(am_pksetmask_OBJECTS)
 pksetmask_LDADD = $(LDADD)
@@ -214,27 +237,28 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(pkascii2img_SOURCES) $(pkclassify_nn_SOURCES) \
-	$(pkclassify_svm_SOURCES) $(pkcreatect_SOURCES) \
-	$(pkcrop_SOURCES) $(pkdiff_SOURCES) $(pkdsm2shadow_SOURCES) \
-	$(pkdumpimg_SOURCES) $(pkdumpogr_SOURCES) $(pkegcs_SOURCES) \
-	$(pkextract_SOURCES) $(pkfillnodata_SOURCES) \
-	$(pkfilter_SOURCES) $(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
-	$(pklas2img_SOURCES) $(pkmosaic_SOURCES) $(pkndvi_SOURCES) \
-	$(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
+SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
+	$(pkclassify_nn_SOURCES) $(pkclassify_svm_SOURCES) \
+	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
+	$(pkdsm2shadow_SOURCES) $(pkdumpimg_SOURCES) \
+	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
+	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) $(pkgeom_SOURCES) \
+	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) $(pklas2img_SOURCES) \
+	$(pkmosaic_SOURCES) $(pkndvi_SOURCES) $(pkpolygonize_SOURCES) \
+	$(pkreclass_SOURCES) $(pksensormodel_SOURCES) \
 	$(pksetmask_SOURCES) $(pksieve_SOURCES) $(pkstat_SOURCES) \
 	$(pkstatogr_SOURCES)
-DIST_SOURCES = $(pkascii2img_SOURCES) \
+DIST_SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(am__pkclassify_nn_SOURCES_DIST) $(pkclassify_svm_SOURCES) \
 	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
 	$(pkdsm2shadow_SOURCES) $(pkdumpimg_SOURCES) \
 	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
-	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
+	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) $(pkgeom_SOURCES) \
 	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
 	$(am__pklas2img_SOURCES_DIST) $(pkmosaic_SOURCES) \
 	$(pkndvi_SOURCES) $(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
-	$(pksetmask_SOURCES) $(pksieve_SOURCES) $(pkstat_SOURCES) \
-	$(pkstatogr_SOURCES)
+	$(am__pksensormodel_SOURCES_DIST) $(pksetmask_SOURCES) \
+	$(pksieve_SOURCES) $(pkstat_SOURCES) $(pkstatogr_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -354,6 +378,8 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 @USE_FANN_TRUE@pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
 @USE_LAS_TRUE@pklas2img_SOURCES = pklas2img.cc
 @USE_LAS_TRUE@pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
+@USE_NLOPT_TRUE@pksensormodel_SOURCES = $(top_srcdir)/src/algorithms/SensorModel.h pksensormodel.h pksensormodel.cc
+@USE_NLOPT_TRUE@pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -lgslwrap
 # list of sources for the binaries
 pkinfo_SOURCES = pkinfo.cc
 pkcrop_SOURCES = pkcrop.cc
@@ -378,8 +404,10 @@ pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pkascii2img_SOURCES = pkascii2img.cc
+pkascii2ogr_SOURCES = pkascii2ogr.cc
 pkdiff_SOURCES = pkdiff.cc
 pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
+pkgeom_SOURCES = pkgeom.cc
 all: all-am
 
 .SUFFIXES:
@@ -454,6 +482,9 @@ clean-binPROGRAMS:
 pkascii2img$(EXEEXT): $(pkascii2img_OBJECTS) $(pkascii2img_DEPENDENCIES) 
 	@rm -f pkascii2img$(EXEEXT)
 	$(CXXLINK) $(pkascii2img_OBJECTS) $(pkascii2img_LDADD) $(LIBS)
+pkascii2ogr$(EXEEXT): $(pkascii2ogr_OBJECTS) $(pkascii2ogr_DEPENDENCIES) 
+	@rm -f pkascii2ogr$(EXEEXT)
+	$(CXXLINK) $(pkascii2ogr_OBJECTS) $(pkascii2ogr_LDADD) $(LIBS)
 pkclassify_nn$(EXEEXT): $(pkclassify_nn_OBJECTS) $(pkclassify_nn_DEPENDENCIES) 
 	@rm -f pkclassify_nn$(EXEEXT)
 	$(pkclassify_nn_LINK) $(pkclassify_nn_OBJECTS) $(pkclassify_nn_LDADD) $(LIBS)
@@ -490,6 +521,9 @@ pkfillnodata$(EXEEXT): $(pkfillnodata_OBJECTS) $(pkfillnodata_DEPENDENCIES)
 pkfilter$(EXEEXT): $(pkfilter_OBJECTS) $(pkfilter_DEPENDENCIES) 
 	@rm -f pkfilter$(EXEEXT)
 	$(CXXLINK) $(pkfilter_OBJECTS) $(pkfilter_LDADD) $(LIBS)
+pkgeom$(EXEEXT): $(pkgeom_OBJECTS) $(pkgeom_DEPENDENCIES) 
+	@rm -f pkgeom$(EXEEXT)
+	$(CXXLINK) $(pkgeom_OBJECTS) $(pkgeom_LDADD) $(LIBS)
 pkgetmask$(EXEEXT): $(pkgetmask_OBJECTS) $(pkgetmask_DEPENDENCIES) 
 	@rm -f pkgetmask$(EXEEXT)
 	$(CXXLINK) $(pkgetmask_OBJECTS) $(pkgetmask_LDADD) $(LIBS)
@@ -511,6 +545,9 @@ pkpolygonize$(EXEEXT): $(pkpolygonize_OBJECTS) $(pkpolygonize_DEPENDENCIES)
 pkreclass$(EXEEXT): $(pkreclass_OBJECTS) $(pkreclass_DEPENDENCIES) 
 	@rm -f pkreclass$(EXEEXT)
 	$(CXXLINK) $(pkreclass_OBJECTS) $(pkreclass_LDADD) $(LIBS)
+pksensormodel$(EXEEXT): $(pksensormodel_OBJECTS) $(pksensormodel_DEPENDENCIES) 
+	@rm -f pksensormodel$(EXEEXT)
+	$(CXXLINK) $(pksensormodel_OBJECTS) $(pksensormodel_LDADD) $(LIBS)
 pksetmask$(EXEEXT): $(pksetmask_OBJECTS) $(pksetmask_DEPENDENCIES) 
 	@rm -f pksetmask$(EXEEXT)
 	$(CXXLINK) $(pksetmask_OBJECTS) $(pksetmask_LDADD) $(LIBS)
@@ -531,6 +568,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkascii2img.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkascii2ogr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkclassify_nn-pkclassify_nn.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkclassify_svm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkcreatect.Po@am__quote@
@@ -543,6 +581,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkextract.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkfillnodata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkfilter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkgeom.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkgetmask.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkinfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pklas2img.Po@am__quote@
@@ -550,6 +589,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkndvi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkpolygonize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkreclass.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pksensormodel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pksetmask.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pksieve.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkstat.Po@am__quote@

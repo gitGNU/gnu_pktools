@@ -483,7 +483,7 @@ int main(int argc, char *argv[])
     }
     imgReader.close();
   }
-  if(extent_opt[0]!=""){
+  if(extent_opt[0]!=""&&mask_opt[0]){
     extentReader.close();
   }
   imgWriter.close();

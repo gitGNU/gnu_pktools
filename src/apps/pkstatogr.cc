@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> mean_opt("mean","mean","calculate mean value",false);
   Optionpk<bool> median_opt("median","median","calculate median value",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
+  Optionpk<bool> size_opt("s","size","sample size (number of points)",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
@@ -64,6 +65,7 @@ int main(int argc, char *argv[])
   mean_opt.retrieveOption(argc,argv);
   median_opt.retrieveOption(argc,argv);
   stdev_opt.retrieveOption(argc,argv);
+  size_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
   if(version_opt[0]||todo_opt[0]){
@@ -72,7 +74,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
+    std::cout << Optionpk<bool>::getGPLv3License() << std::endl;
     exit(0);
   }
   if(help_opt[0]){
@@ -85,7 +87,7 @@ int main(int argc, char *argv[])
     imgReader.open(input_opt[0]);
   }
   catch(string errorstring){
-    cerr << errorstring << endl;
+    std::cerr << errorstring << std::endl;
   }
 
   ImgReaderOgr inputReader(input_opt[0]);
@@ -95,33 +97,52 @@ int main(int argc, char *argv[])
 
   for(int ifield=0;ifield<fieldname_opt.size();++ifield){
     if(verbose_opt[0])
-      cout << "field: " << ifield << endl;
+      std::cout << "field: " << ifield << std::endl;
     theData.clear();
     inputReader.readData(theData,OFTReal,fieldname_opt[ifield],0,verbose_opt[0]);
     vector<int> binData;
     double minimum=0;
     double maximum=0;
     int nbin=(nbin_opt[0]>1)? nbin_opt[0] : 2;
-    hist.distribution(theData,theData.begin(),theData.end(),binData,nbin,minimum,maximum);
-    double theMean=0;
-    double theVar=0;
-    hist.meanVar(theData,theMean,theVar);
     std::cout << " --fname " << fieldname_opt[ifield];
-    if(mean_opt[0])
-      std::cout << " --mean " << theMean;
-    if(stdev_opt[0])
-      std::cout << " --stdev " << sqrt(theVar);
-    if(min_opt[0])
-      cout << " -m " << minimum;
-    if(max_opt[0])
-      cout << " -M " << maximum;
-    if(median_opt[0])
-      std::cout << " -median " << hist.median(theData);
-    std::cout << std::endl;
-    if(nbin_opt[0]>1){
+    try{
+      hist.distribution(theData,theData.begin(),theData.end(),binData,nbin,minimum,maximum);
+      double theMean=0;
+      double theVar=0;
+      hist.meanVar(theData,theMean,theVar);
+      if(mean_opt[0])
+        std::cout << " --mean " << theMean;
+      if(stdev_opt[0])
+        std::cout << " --stdev " << sqrt(theVar);
+      if(min_opt[0])
+        cout << " -m " << minimum;
+      if(max_opt[0])
+        cout << " -M " << maximum;
+      if(median_opt[0])
+        std::cout << " -median " << hist.median(theData);
+      if(size_opt[0])
+        std::cout << " -size " << theData.size();
       std::cout << std::endl;
-      for(int bin=0;bin<nbin;++bin)
-        cout << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(binData[bin])/theData.size() << endl;
+      if(nbin_opt[0]>1){
+        for(int bin=0;bin<nbin;++bin)
+          std::cout << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(binData[bin])/theData.size() << std::endl;
+      }
+    }
+    catch(string theError){
+      if(mean_opt[0])
+        std::cout << " --mean " << theData.back();
+      if(stdev_opt[0])
+        std::cout << " --stdev " << "0";
+      if(min_opt[0])
+        cout << " -m " << theData.back();
+      if(max_opt[0])
+        cout << " -M " << theData.back();
+      if(median_opt[0])
+        std::cout << " -median " << theData.back();
+      if(size_opt[0])
+        std::cout << " -size " << theData.size();
+      std::cout << std::endl;
+      std::cerr << "Warning: all identical values in data" << std::endl;
     }
   }
   imgReader.close();

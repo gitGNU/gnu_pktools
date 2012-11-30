@@ -260,7 +260,11 @@ template<class T> void  Histogram::distribution (const vector<T>& input, typenam
   //   minimum=*(min(input,begin,end));
   // if(!maximum)
   //   maximum=*(max(input,begin,end));
-  assert(maximum>minimum);
+  if(maximum<=minimum){
+    ostringstream s;
+    s<<"Error: could not calculate distribution (min>=max) in " << filename;
+    throw(s.str());
+  }
   assert(nbin>1);
   assert(input.size());
   if(output.size()!=nbin){
@@ -279,7 +283,7 @@ template<class T> void  Histogram::distribution (const vector<T>& input, typenam
     outputfile.open(filename.c_str());
     if(!outputfile){
       ostringstream s;
-      s<<"error opening distribution file , " << filename;
+      s<<"Error opening distribution file , " << filename;
       throw(s.str());
     }
     for(int bin=0;bin<nbin;++bin)

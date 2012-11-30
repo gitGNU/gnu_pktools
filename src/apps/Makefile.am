@@ -6,7 +6,7 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 ###############################################################################
 
 # the program to build (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkdsm2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkdiff pkclassify_svm
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkdsm2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkascii2ogr pkdiff pkclassify_svm pkgeom
 if USE_FANN
 bin_PROGRAMS += pkclassify_nn
 pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
@@ -18,6 +18,11 @@ if USE_LAS
 bin_PROGRAMS += pklas2img
 pklas2img_SOURCES = pklas2img.cc
 pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
+endif
+if USE_NLOPT
+bin_PROGRAMS += pksensormodel
+pksensormodel_SOURCES = $(top_srcdir)/src/algorithms/SensorModel.h pksensormodel.h pksensormodel.cc
+pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -lgslwrap
 endif
 # list of sources for the binaries
 pkinfo_SOURCES = pkinfo.cc
@@ -43,6 +48,8 @@ pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pkascii2img_SOURCES = pkascii2img.cc
+pkascii2ogr_SOURCES = pkascii2ogr.cc
 pkdiff_SOURCES = pkdiff.cc
 pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
+pkgeom_SOURCES = pkgeom.cc
 ###############################################################################

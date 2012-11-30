@@ -58,8 +58,9 @@ public:
   double getLrx() const {return (m_isGeoRef)? m_ulx+nrOfCol()*m_delta_x : nrOfCol()-1;};
   double getLry() const {return (m_isGeoRef)? m_uly-nrOfRow()*m_delta_y : 0;};
   // bool getMagicPixel(double& magicX, double& magicY) const {magicX=m_magic_x;magicY=m_magic_y;};
-  int getNoDataValues(vector<double>& noDataValues, int band=0) const;
-  int pushNoDataValue(double noDataValue,int band=0);
+  int getNoDataValues(vector<double>& noDataValues) const;
+  bool isNoData(double value) const{return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
+  int pushNoDataValue(double noDataValue);
   bool covers(double x, double y) const;
   bool covers(double ulx, double  uly, double lrx, double lry) const;
   bool geo2image(double x, double y, double& i, double& j) const;

@@ -418,7 +418,7 @@ void ImgReaderGdal::getRange(vector<short>& range, int band) const
   sort(range.begin(),range.end());
 }
 
-int ImgReaderGdal::getNoDataValues(vector<double>& noDataValues, int band) const
+int ImgReaderGdal::getNoDataValues(vector<double>& noDataValues) const
 {
   if(m_noDataValues.size()){
     noDataValues=m_noDataValues;
@@ -428,7 +428,7 @@ int ImgReaderGdal::getNoDataValues(vector<double>& noDataValues, int band) const
     return 0;
 }
 
-int ImgReaderGdal::pushNoDataValue(double noDataValue, int band)
+int ImgReaderGdal::pushNoDataValue(double noDataValue)
 {
   if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
     m_noDataValues.push_back(noDataValue);
