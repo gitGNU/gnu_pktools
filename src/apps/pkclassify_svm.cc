@@ -154,7 +154,8 @@ int main(int argc, char *argv[])
   }
 
   if(verbose_opt[0]>=1){
-    std::cout << "image filename: " << input_opt[0] << std::endl;
+    if(input_opt.size())
+      std::cout << "image filename: " << input_opt[0] << std::endl;
     if(mask_opt.size())
       std::cout << "mask filename: " << mask_opt[0] << std::endl;
     if(training_opt[0].size()){

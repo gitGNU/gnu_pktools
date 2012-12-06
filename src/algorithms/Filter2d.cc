@@ -411,6 +411,11 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
   assert(dimX);
   assert(dimY);
   Histogram hist;
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     vector<double> outBuffer((input.nrOfCol()+down-1)/down);
@@ -426,11 +431,6 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       }
       ++indexJ;
     }
-    const char* pszMessage;
-    void* pProgressArg=NULL;
-    GDALProgressFunc pfnProgress=GDALTermProgress;
-    double progress=0;
-    pfnProgress(progress,pszMessage,pProgressArg);
     for(int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
@@ -507,6 +507,10 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           break;
         case(VAR):{
           outBuffer[x/down]=hist.var(windowBuffer);
+          break;
+        }
+        case(STDEV):{
+          outBuffer[x/down]=sqrt(hist.var(windowBuffer));
           break;
         }
         case(MEAN):{

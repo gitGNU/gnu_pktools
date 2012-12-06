@@ -41,8 +41,8 @@ int main(int argc,char **argv) {
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image file", "");
   Optionpk<short>  band_opt("b", "band", "band(s) used for mask", 0);
-  Optionpk<double> min_opt("m", "min", "Values smaller than min threshold(s) are masked as invalid. Use one threshold for each band", 0);
-  Optionpk<double> max_opt("M", "max", "Values greater than max threshold(s) are masked as invalid. Use one threshold for each band", 0);
+  Optionpk<double> min_opt("min", "min", "Values smaller than min threshold(s) are masked as invalid. Use one threshold for each band", 0);
+  Optionpk<double> max_opt("max", "max", "Values greater than max threshold(s) are masked as invalid. Use one threshold for each band", 0);
   Optionpk<string>  operator_opt("p", "operator", "Operator: [AND,OR].", "OR");
   Optionpk<unsigned short> valid_opt("t", "tvalue", "value(s) for valid pixels: between min and max", 1);
   Optionpk<unsigned short> invalid_opt("f", "fvalue", "value(s) for invalid pixels: not between min and max", 0);

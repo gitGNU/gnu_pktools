@@ -50,6 +50,7 @@ public:
   void setProjection(const string& projection);
   string setProjectionProj4(const string& projection);
   void setImageDescription(const string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
+  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {getRasterBand(band)->SetNoDataValue(noDataValue);};
   string getProjection(void) const;
   string getGeoTransform() const;
   void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const;

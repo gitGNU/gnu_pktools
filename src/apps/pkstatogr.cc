@@ -44,8 +44,8 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "Input shape file", "");
   Optionpk<string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
   Optionpk<short> nbin_opt("nbin", "nbin", "number of bins", 0);
-  Optionpk<bool> min_opt("m","min","calculate minimum value",false);
-  Optionpk<bool> max_opt("M","max","calculate maximum value",false);
+  Optionpk<bool> min_opt("min","min","calculate minimum value",false);
+  Optionpk<bool> max_opt("max","max","calculate maximum value",false);
   Optionpk<bool> mean_opt("mean","mean","calculate mean value",false);
   Optionpk<bool> median_opt("median","median","calculate median value",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);

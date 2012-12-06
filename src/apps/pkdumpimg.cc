@@ -48,14 +48,15 @@ int main(int argc, char *argv[])
   Optionpk<string> oformat_opt("of", "oformat", "Output format (matrix form or list (x,y,z) form. Default is matrix form", "matrix");
   Optionpk<int> band_opt("b", "band", "band index to crop (-1: crop all bands)", 0);
   Optionpk<string> extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
-  Optionpk<double> ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double> uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double> lrx_opt("lrx", "lrx", "Lower left x value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double> lry_opt("lry", "lry", "Lower left y value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)", 0.0);
-  Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)", 0.0);
+  Optionpk<double> ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)",0.0);
+  Optionpk<double> uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)",0.0);
+  Optionpk<double> lrx_opt("lrx", "lrx", "Lower left x value bounding box (in geocoordinates if georef is true)",0.0);
+  Optionpk<double> lry_opt("lry", "lry", "Lower left y value bounding box (in geocoordinates if georef is true)",0.0);
+  Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)",0.0);
+  Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)",0.0);
   Optionpk<string> resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<short> flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
+  Optionpk<double> nodata_opt("nodata", "nodata", "set no data value(s) for calculations (flags in input image)");
   Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0);
 
   version_opt.retrieveOption(argc,argv);
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
   dy_opt.retrieveOption(argc,argv);
   resample_opt.retrieveOption(argc,argv);
   flag_opt.retrieveOption(argc,argv);
+  nodata_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
   if(help_opt[0]){
@@ -117,6 +119,9 @@ int main(int argc, char *argv[])
   GDALDataType theType;
 
   ImgReaderGdal imgReader(input_opt[0]);
+  for(int inodata=0;inodata<nodata_opt.size();++inodata)
+    imgReader.pushNoDataValue(nodata_opt[inodata]);
+
   ImgWriterGdal virtualWriter;//only for coordinate conversion (no output file defined)
   
   int nband=imgReader.nrOfBand();
@@ -145,18 +150,27 @@ int main(int argc, char *argv[])
         cerr << "Error: could not get extent from " << extent_opt[0] << endl;
         exit(1);
       }
-      if(ulx_opt[0]<cropulx)
+      if(!iextent){
         cropulx=ulx_opt[0];
-      if(uly_opt[0]>cropuly)
         cropuly=uly_opt[0];
-      if(lry_opt[0]<croplry)
         croplry=lry_opt[0];
-      if(lrx_opt[0]>croplrx)
         croplrx=lrx_opt[0];
+      }
+      else{
+        if(ulx_opt[0]<cropulx)
+          cropulx=ulx_opt[0];
+        if(uly_opt[0]>cropuly)
+          cropuly=uly_opt[0];
+        if(lry_opt[0]<croplry)
+          croplry=lry_opt[0];
+        if(lrx_opt[0]>croplrx)
+          croplrx=lrx_opt[0];
+      }
       extentReader.close();
     }
   }
-  double uli,ulj,lri,lrj;//image coordinates
+     double uli,ulj,lri,lrj;//image coordinates
+     double magicX=1,magicY=1;
   if(ulx_opt[0]>=lrx_opt[0]){//default bounding box: no cropping
     uli=0;
     lri=imgReader.nrOfCol()-1;
@@ -165,14 +179,17 @@ int main(int argc, char *argv[])
     ncropcol=imgReader.nrOfCol();
     ncroprow=imgReader.nrOfRow();
     imgReader.getBoundingBox(cropulx,cropuly,croplrx,croplry);
-    imgReader.geo2image(cropulx,cropuly,uli,ulj);
-    imgReader.geo2image(croplrx,croplry,lri,lrj);
+    imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
+    imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
+    ncropcol=ceil((croplrx-cropulx)/dx);
+    ncroprow=ceil((cropuly-croplry)/dy);
     ncropcol=ceil((croplrx-cropulx)/dx);
     ncroprow=ceil((cropuly-croplry)/dy);
   }
   else{
-    imgReader.geo2image(cropulx,cropuly,uli,ulj);
-    imgReader.geo2image(croplrx,croplry,lri,lrj);
+    imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
+    imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
+    
     ncropcol=ceil((croplrx-cropulx)/dx);
     ncroprow=ceil((cropuly-croplry)/dy);
     uli=floor(uli);
@@ -201,8 +218,6 @@ int main(int argc, char *argv[])
     cout << "selected upper left row of input image: " << ulj << endl;
     cout << "selected lower right column in input image: " << lri << endl;
     cout << "selected lower right row in input image: " << lrj << endl;
-    cout << "new number of cols: " << ncropcol << endl;
-    cout << "new number of rows: " << ncroprow << endl;
   }
 
   imgWriter.setGeoTransform(cropulx,cropuly,dx,dy,0,0);
@@ -275,12 +290,11 @@ int main(int argc, char *argv[])
               else
                 outputStream << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " ";
             }
-            else{
-              if(output_opt[0].empty())
-                std::cout << x << " " << y << " " << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " " << endl;
-              else
-                outputStream << x << " " << y << " " << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " " << endl;
-
+            else if(!imgReader.isNoData(readBuffer[upperCol-startCol])&&!imgReader.isNoData(readBuffer[lowerCol-startCol])){
+                if(output_opt[0].empty())
+                  std::cout << x << " " << y << " " << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " " << endl;
+                else
+                  outputStream << x << " " << y << " " << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " " << endl;
             }
             break;
           default:
@@ -296,7 +310,7 @@ int main(int argc, char *argv[])
               else
                 outputStream << readBuffer[readCol] << " ";
             }
-            else{
+            else if(!imgReader.isNoData(readBuffer[readCol])){
               if(output_opt[0].empty())
                 std::cout << x << " " << y << " " << readBuffer[readCol] << std::endl;
               else

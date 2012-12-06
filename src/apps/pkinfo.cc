@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
   Optionpk<bool>  dy_opt("dy", "dy", "get resolution in y (in m)", false);
   Optionpk<bool>  minmax_opt("mm", "minmax", "Show min and max value of the image ", false);
   Optionpk<bool>  stat_opt("stat", "stat", "Show statistics (min,max, mean and stdDev of the image ", false);
-  Optionpk<double>  min_opt("m", "min", "Show min value of the image (or set minimum for histogram)", 0);
-  Optionpk<double>  max_opt("M", "max", "Show max value of the image (or set maximum for histogram)", 0);
+  Optionpk<double>  min_opt("min", "min", "Show min value of the image (or set minimum for histogram)", 0);
+  Optionpk<double>  max_opt("max", "max", "Show max value of the image (or set maximum for histogram)", 0);
   Optionpk<bool>  relative_opt("rel", "rel", "Calculate relative histogram in percentage", false);
   Optionpk<bool>  projection_opt("p", "projection", "Show projection of the image ", false);
   Optionpk<bool>  geo_opt("geo", "geo", "get geotransform:  ", false);
@@ -150,9 +150,11 @@ int main(int argc, char *argv[])
   ImgReaderGdal imgReader;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader.open(input_opt[ifile]);
-    for(int inodata=0;inodata<nodata_opt.size();++inodata)
+    for(int inodata=0;inodata<nodata_opt.size();++inodata){
+      if(!inodata)
+        imgReader.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
       imgReader.pushNoDataValue(nodata_opt[inodata]);
-
+    }
     if(filename_opt[0])
       std::cout << " --input " << input_opt[ifile] << " ";
     if(centre_opt[0]){
@@ -297,8 +299,11 @@ int main(int argc, char *argv[])
             ++ninvalid;
 	  else if(lineBuffer[icol]==maxValue)
 	    ++output[nbin-1];
-	  else if(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*nbin>=nbin)
-	    ++output[nbin-1];
+	  // else if(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*nbin>=nbin){
+          //   //test
+          //   std::cout << "..." << lineBuffer[icol] << std::endl;
+	  //   ++output[nbin-1];
+          // }
 	  else
 	    ++output[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*nbin)];
 	}

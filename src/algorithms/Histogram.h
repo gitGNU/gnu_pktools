@@ -61,6 +61,8 @@ public:
   template<class T> double var(const vector<T>& v) const;
   template<class T> double moment(const vector<T>& v, int n) const;
   template<class T> double cmoment(const vector<T>& v, int n) const;
+  template<class T> double skewness(const vector<T>& v) const;
+  template<class T> double kurtosis(const vector<T>& v) const;
   template<class T> void meanVar(const vector<T>& v, double& m1, double& v1) const;
   template<class T1, class T2> void  scale2byte(const vector<T1>& input, vector<T2>& output, unsigned char lbound=0, unsigned char ubound=255) const;
   template<class T> void distribution(const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end,  vector<int>& output, int nbin, T &minimum=0.0, T &maximum=0.0, const string &filename="");
@@ -216,6 +218,7 @@ template<class T> double Histogram::moment(const vector<T>& v, int n) const
   return m/v.size();
 }
 
+  //central moment
 template<class T> double Histogram::cmoment(const vector<T>& v, int n) const
 {
   assert(v.size());
@@ -226,6 +229,18 @@ template<class T> double Histogram::cmoment(const vector<T>& v, int n) const
     m+=pow((*it-m1),n);
   }
   return m/v.size();
+}
+
+template<class T> double Histogram::skewness(const vector<T>& v) const
+{
+  return cmoment(v,3)/pow(var(v),1.5);
+}
+
+template<class T> double Histogram::kurtosis(const vector<T>& v) const
+{
+  double m2=cmoment(v,2);
+  double m4=cmoment(v,4);
+  return m4/m2/m2-3.0;
 }
 
 template<class T> void Histogram::meanVar(const vector<T>& v, double& m1, double& v1) const

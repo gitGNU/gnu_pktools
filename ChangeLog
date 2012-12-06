@@ -29,3 +29,25 @@ version 2.1
 	pksieve
 	pkstat
 	pkstatogr
+version 2.3
+ - New configure options (--enable instead of --with)
+	--enable-fann (when FANN is installed, needed for pkclassify_nn)
+	--enable-las (when LIBLAS is installed, needed for pklas2img)
+	--enable-nlopt (when NLOPT is installed, needed for pksensormodel and pkgetchandelier)
+ - ImgReaderGdal.cc
+	in addition to internal setNoData member variable, also support GDALSetNoData
+ - ImgWriterGdal.cc
+	in addition to internal setNoData member variable, also support GDALSetNoData
+ - pkinfo
+	support of nodata value when calculating histogram and image statistics
+	options min and max are now set with -min (--min) and -max (--max)
+ - pkfilter
+	bug solved in update of progress bar
+	support of standard deviation
+ - pkgetmask
+	options min and max are now set with -min (--min) and -max (--max)
+ - pkstatogr
+	options min and max are now set with -min (--min) and -max (--max)
+ - pkclassify_svm
+	do not output input file if no input data was defined in verbose mode
+

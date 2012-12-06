@@ -61,6 +61,7 @@ public:
   int getNoDataValues(vector<double>& noDataValues) const;
   bool isNoData(double value) const{return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
   int pushNoDataValue(double noDataValue);
+  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {getRasterBand(band)->SetNoDataValue(noDataValue);};
   bool covers(double x, double y) const;
   bool covers(double ulx, double  uly, double lrx, double lry) const;
   bool geo2image(double x, double y, double& i, double& j) const;

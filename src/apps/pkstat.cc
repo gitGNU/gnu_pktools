@@ -51,6 +51,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> mean_opt("m","mean","calculate mean value",false);
   Optionpk<bool> median_opt("med","median","calculate median",false);
   Optionpk<bool> var_opt("var","var","calculate variance",false);
+  Optionpk<bool> skewness_opt("skew","skewness","calculate skewness",false);
+  Optionpk<bool> kurtosis_opt("kurt","kurtosis","calculate kurtosis",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
   Optionpk<bool> sum_opt("s","sum","calculate sum of column",false);
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
@@ -78,6 +80,8 @@ int main(int argc, char *argv[])
   median_opt.retrieveOption(argc,argv);
   var_opt.retrieveOption(argc,argv);
   stdev_opt.retrieveOption(argc,argv);
+  skewness_opt.retrieveOption(argc,argv);
+  kurtosis_opt.retrieveOption(argc,argv);
   sum_opt.retrieveOption(argc,argv);
   minmax_opt.retrieveOption(argc,argv);
   min_opt.retrieveOption(argc,argv);
@@ -203,6 +207,10 @@ int main(int argc, char *argv[])
       cout << "variance value column " << col_opt[icol] << ": " << hist.var(dataVector[icol]) << endl;
     if(stdev_opt[0])
       cout << "standard deviation column " << col_opt[icol] << ": " << sqrt(hist.var(dataVector[icol])) << endl;
+    if(skewness_opt[0])
+      cout << "skewness value column " << col_opt[icol] << ": " << hist.skewness(dataVector[icol]) << endl;
+    if(kurtosis_opt[0])
+      cout << "kurtosis value column " << col_opt[icol] << ": " << hist.kurtosis(dataVector[icol]) << endl;
     if(sum_opt[0]){
       cout << setprecision(2);
       cout << fixed << "sum column " << col_opt[icol] << ": " << (hist.sum(dataVector[icol])) << endl;

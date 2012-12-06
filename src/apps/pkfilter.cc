@@ -54,7 +54,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file", "");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation.");
-  Optionpk<int> function_opt("f", "filter", "filter function (0: median, 1: variance, 2: min, 3: max, 4: sum, 5: mean, 6: minmax, 7: dilation, 8: erosion, 9: closing, 10: opening, 11: spatially homogeneous (central pixel must be identical to all other pixels within window), 12: SobelX edge detection in X, 13: SobelY edge detection in Y, 14: SobelXY, -14: SobelYX, 15: smooth, 16: density, 17: majority voting (only for classes), 18: forest aggregation (mixed), 19: smooth no data (mask) values), 20: threshold local filtering, 21: ismin, 22: ismax, 23: heterogeneous (central pixel must be different than all other pixels within window), 24: order", 0);
+  Optionpk<int> function_opt("f", "filter", "filter function (0: median, 1: variance, 2: min, 3: max, 4: sum, 5: mean, 6: minmax, 7: dilation, 8: erosion, 9: closing, 10: opening, 11: spatially homogeneous (central pixel must be identical to all other pixels within window), 12: SobelX edge detection in X, 13: SobelY edge detection in Y, 14: SobelXY, -14: SobelYX, 15: smooth, 16: density, 17: majority voting (only for classes), 18: forest aggregation (mixed), 19: smooth no data (mask) values), 20: threshold local filtering, 21: ismin, 22: ismax, 23: heterogeneous (central pixel must be different than all other pixels within window), 24: order, 25: stdev", 0);
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
@@ -219,6 +219,9 @@ int main(int argc,char **argv) {
       break;
     case(Filter2d::VAR):
       filter2d.doit(input,output,Filter2d::VAR,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      break;
+    case(Filter2d::STDEV):
+      filter2d.doit(input,output,Filter2d::STDEV,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
     case(Filter2d::MIN):
       filter2d.doit(input,output,Filter2d::MIN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
