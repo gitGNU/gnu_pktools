@@ -23,14 +23,16 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <vector>
 #include <iostream>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_permutation.h>
-#include <gsl/gsl_linalg.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+// #include <gsl/gsl_matrix.h>
+// #include <gsl/gsl_vector.h>
+// #include <gsl/gsl_permutation.h>
+// #include <gsl/gsl_linalg.h>
+// #include <gsl/gsl_blas.h>
+// #include <gsl/gsl_rng.h>
+// #include <gsl/gsl_randist.h>
+#include <gslwrap/vector_double.h>
 #include <gslwrap/matrix_double.h>
+#include <gslwrap/matrix_vector_operators.h>
 #include "ogr_spatialref.h"
 
 #ifndef PI

@@ -29,8 +29,14 @@ version 2.1
 	pksieve
 	pkstat
 	pkstatogr
+version 2.2
+	bug fixes
 version 2.3
- - New configure options (--enable instead of --with)
+	bug fixes
+version 2.4
+ - configure.ac
+	gdal 1.8 required for pkextract (member function Centroid in OGRMultiPolygon)
+	New configure options (--enable instead of --with)
 	--enable-fann (when FANN is installed, needed for pkclassify_nn)
 	--enable-las (when LIBLAS is installed, needed for pklas2img)
 	--enable-nlopt (when NLOPT is installed, needed for pksensormodel and pkgetchandelier)
@@ -50,4 +56,5 @@ version 2.3
 	options min and max are now set with -min (--min) and -max (--max)
  - pkclassify_svm
 	do not output input file if no input data was defined in verbose mode
-
+ - pkascii2ogr
+	tool to create simple vector files from coordinates in ASCII file (points or polygon)

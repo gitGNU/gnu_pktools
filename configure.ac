@@ -1,4 +1,4 @@
-AC_INIT([pktools], [2.3], [kempenep@gmail.com])
+AC_INIT([pktools], [2.4], [kempenep@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
 AX_LIB_GDAL()
@@ -18,7 +18,7 @@ AC_PROG_RANLIB
 
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/apps/pkinfo.cc])
-#AX_LIB_GDAL([1.8.0]) dnl uncomment if gdal version 1.8.0 is required
+AX_LIB_GDAL([1.8.0]) dnl uncomment if gdal version 1.8.0 is required
 
 AC_CHECK_HEADERS([gdal.h])
 

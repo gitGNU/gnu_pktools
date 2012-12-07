@@ -33,9 +33,11 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+@USE_FANN_TRUE@am__append_1 = myfann_cpp.h
+@USE_NLOPT_TRUE@am__append_2 = SensorModel.h
 subdir = src/algorithms
-DIST_COMMON = $(libalgorithms_a_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(am__libalgorithms_a_HEADERS_DIST) \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_lib_gdal.m4 \
 	$(top_srcdir)/configure.ac
@@ -50,8 +52,13 @@ AR = ar
 ARFLAGS = cru
 libalgorithms_a_AR = $(AR) $(ARFLAGS)
 libalgorithms_a_LIBADD =
+am__libalgorithms_a_SOURCES_DIST = Egcs.h Filter2d.h Filter.h \
+	Histogram.h ConfusionMatrix.h svm.h myfann_cpp.h SensorModel.h \
+	Egcs.cc Filter2d.cc Filter.cc Histogram.cc ConfusionMatrix.cc \
+	svm.cpp
 am__objects_1 =
-am_libalgorithms_a_OBJECTS = $(am__objects_1) Egcs.$(OBJEXT) \
+am__objects_2 = $(am__objects_1) $(am__objects_1)
+am_libalgorithms_a_OBJECTS = $(am__objects_2) Egcs.$(OBJEXT) \
 	Filter2d.$(OBJEXT) Filter.$(OBJEXT) Histogram.$(OBJEXT) \
 	ConfusionMatrix.$(OBJEXT) svm.$(OBJEXT)
 libalgorithms_a_OBJECTS = $(am_libalgorithms_a_OBJECTS)
@@ -69,7 +76,9 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libalgorithms_a_SOURCES)
-DIST_SOURCES = $(libalgorithms_a_SOURCES)
+DIST_SOURCES = $(am__libalgorithms_a_SOURCES_DIST)
+am__libalgorithms_a_HEADERS_DIST = Egcs.h Filter2d.h Filter.h \
+	Histogram.h ConfusionMatrix.h svm.h myfann_cpp.h SensorModel.h
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -218,7 +227,8 @@ noinst_LIBRARIES = libalgorithms.a
 libalgorithms_adir = $(includedir)/algorithms
 
 # the list of header files that belong to the library (to be installed later)
-libalgorithms_a_HEADERS = Egcs.h  Filter2d.h  Filter.h  Histogram.h ConfusionMatrix.h myfann_cpp.h svm.h SensorModel.h
+libalgorithms_a_HEADERS = Egcs.h Filter2d.h Filter.h Histogram.h \
+	ConfusionMatrix.h svm.h $(am__append_1) $(am__append_2)
 
 # the sources to add to the library and to add to the source distribution
 libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc  Filter2d.cc  Filter.cc  Histogram.cc ConfusionMatrix.cc svm.cpp

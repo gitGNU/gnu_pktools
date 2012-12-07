@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
   Optionpk<bool>  dy_opt("dy", "dy", "get resolution in y (in m)", false);
   Optionpk<bool>  minmax_opt("mm", "minmax", "Show min and max value of the image ", false);
   Optionpk<bool>  stat_opt("stat", "stat", "Show statistics (min,max, mean and stdDev of the image ", false);
-  Optionpk<double>  min_opt("min", "min", "Show min value of the image (or set minimum for histogram)", 0);
-  Optionpk<double>  max_opt("max", "max", "Show max value of the image (or set maximum for histogram)", 0);
+  Optionpk<double>  min_opt("min", "min", "Set minimum for histogram)", 0);
+  Optionpk<double>  max_opt("max", "max", "Set maximum for histogram)", 0);
   Optionpk<bool>  relative_opt("rel", "rel", "Calculate relative histogram in percentage", false);
   Optionpk<bool>  projection_opt("p", "projection", "Show projection of the image ", false);
   Optionpk<bool>  geo_opt("geo", "geo", "get geotransform:  ", false);

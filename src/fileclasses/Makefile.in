@@ -34,8 +34,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = src/fileclasses
-DIST_COMMON = $(libfileClasses_a_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+DIST_COMMON = $(am__libfileClasses_a_HEADERS_DIST) \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_lib_gdal.m4 \
 	$(top_srcdir)/configure.ac
@@ -50,8 +50,10 @@ AR = ar
 ARFLAGS = cru
 libfileClasses_a_AR = $(AR) $(ARFLAGS)
 libfileClasses_a_LIBADD =
+am__libfileClasses_a_SOURCES_DIST = FileReaderLas.h FileReaderLas.cc
 am__objects_1 =
-am_libfileClasses_a_OBJECTS = $(am__objects_1) FileReaderLas.$(OBJEXT)
+@USE_LAS_TRUE@am_libfileClasses_a_OBJECTS = $(am__objects_1) \
+@USE_LAS_TRUE@	FileReaderLas.$(OBJEXT)
 libfileClasses_a_OBJECTS = $(am_libfileClasses_a_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -67,7 +69,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libfileClasses_a_SOURCES)
-DIST_SOURCES = $(libfileClasses_a_SOURCES)
+DIST_SOURCES = $(am__libfileClasses_a_SOURCES_DIST)
+am__libfileClasses_a_HEADERS_DIST = FileReaderLas.h
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -210,16 +213,13 @@ top_srcdir = @top_srcdir@
 ###############################################################################
 
 # the library names to build (note we are building static libs only)
-noinst_LIBRARIES = libfileClasses.a
-
+@USE_LAS_TRUE@noinst_LIBRARIES = libfileClasses.a
 # where to install the headers on the system
-libfileClasses_adir = $(includedir)/fileclasses
-
+@USE_LAS_TRUE@libfileClasses_adir = $(includedir)/fileclasses
 # the list of header files that belong to the library (to be installed later)
-libfileClasses_a_HEADERS = FileReaderLas.h
-
+@USE_LAS_TRUE@libfileClasses_a_HEADERS = FileReaderLas.h
 # the sources to add to the library and to add to the source distribution
-libfileClasses_a_SOURCES = $(libfileClasses_a_HEADERS) FileReaderLas.cc
+@USE_LAS_TRUE@libfileClasses_a_SOURCES = $(libfileClasses_a_HEADERS) FileReaderLas.cc
 all: all-am
 
 .SUFFIXES:
@@ -501,6 +501,7 @@ uninstall-am: uninstall-libfileClasses_aHEADERS
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-libfileClasses_aHEADERS
+
 
 ###############################################################################
 
