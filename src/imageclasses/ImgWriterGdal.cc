@@ -206,7 +206,10 @@ void ImgWriterGdal::setCodec(const string& imageType)
   // m_gds->SetMetadataItem( "INTERLEAVE", m_interleave.c_str(), "IMAGE_STRUCTURE" );
   // m_gds->SetMetadataItem( "COMPRESSION", m_compression.c_str(), "IMAGE_STRUCTURE" );
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
-  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", "pktools v2.0 by Pieter Kempeneers");
+  std::string versionString="pktools ";
+  versionString+=VERSION;
+  versionString+=" by Pieter Kempeneers";
+  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
   time_t rawtime;
   time ( &rawtime );
 
