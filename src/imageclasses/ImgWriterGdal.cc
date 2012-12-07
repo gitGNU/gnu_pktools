@@ -22,6 +22,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include "ogr_spatialref.h"
 #include "ImgWriterGdal.h"
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 //---------------------------------------------------------------------------
 ImgWriterGdal::ImgWriterGdal(void)
   : m_gds(NULL), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0)
@@ -127,7 +132,10 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   }
   m_gds->SetMetadata(imgSrc.getMetadata() ); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
-  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", "pktools v2.0 by Pieter Kempeneers");
+  std::string versionString="pktools ";
+  versionString+=VERSION;
+  versionString+=" by Pieter Kempeneers";
+  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
   time_t rawtime;
   time ( &rawtime );
 
