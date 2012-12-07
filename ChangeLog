@@ -58,3 +58,5 @@ version 2.4
 	do not output input file if no input data was defined in verbose mode
  - pkascii2ogr
 	tool to create simple vector files from coordinates in ASCII file (points or polygon)
+ - pksensormodel
+	tool to model pushbroom sensor
