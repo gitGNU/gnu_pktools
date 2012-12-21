@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
   Optionpk<string> ftype_opt("ot", "ot", "Field type (Real, Integer, String) for each of the fields as defined by name","Real");
   Optionpk<string> itype_opt("of", "of", "image type string", "ESRI Shapefile");
   Optionpk<string> projection_opt("p", "projection", "use EPSG:<code> or Wkt string", "EPSG:4326");
+  Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<int> verbose_opt("v", "verbose", "verbose (0)", 0);
 
   version_opt.retrieveOption(argc,argv);
@@ -63,6 +64,7 @@ int main(int argc, char *argv[])
   ftype_opt.retrieveOption(argc,argv);
   itype_opt.retrieveOption(argc,argv);
   projection_opt.retrieveOption(argc,argv);
+  fs_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
   if(version_opt[0]){
@@ -111,9 +113,9 @@ int main(int argc, char *argv[])
   imgWriter.open(output_opt[0]);
   try{
     if(polygon_opt[0])
-      imgWriter.ascii2shape(input_opt[0], "New Layer", fname_opt, ftype, colX_opt[0], colY_opt[0], theProjection, wkbPolygon);
+      imgWriter.ascii2ogr(input_opt[0], "New Layer", fname_opt, ftype, colX_opt[0], colY_opt[0], theProjection, wkbPolygon, fs_opt[0]);
     else
-      imgWriter.ascii2shape(input_opt[0], "New Layer", fname_opt, ftype, colX_opt[0], colY_opt[0], theProjection, wkbPoint);
+      imgWriter.ascii2ogr(input_opt[0], "New Layer", fname_opt, ftype, colX_opt[0], colY_opt[0], theProjection, wkbPoint, fs_opt[0]);
   }
   catch(string errorString){
     cout << errorString << endl;

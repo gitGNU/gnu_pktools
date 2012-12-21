@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
   Optionpk<double> x_opt("x","x","gcp x coordinate)");
   Optionpk<double> y_opt("y","y","gcp y coordinate)");
   Optionpk<double> z_opt("z","z","gcp z coordinate in m)");
-  Optionpk<double> errorZ_opt("ez","ez","offset (error) in z coordinate of the GCP",0);
+  Optionpk<double> errorZ_opt("ez","ez","offset (error) in z coordinate of the GCP");
   Optionpk<int> col_opt("c","col","column of the pixel on CCD");
   Optionpk<int> row_opt("r","row","row of the pixel on CCD");
   Optionpk<double> roll_opt("roll","roll","platform attitude roll");
@@ -489,17 +489,19 @@ int main(int argc, char *argv[])
     assert(col_opt.size()>ipoint);
     theDataModel.pushRow(row_opt[ipoint]);
     theDataModel.pushCol(col_opt[ipoint]);
-    if(x_opt.size()>ipoint){
-      assert(y_opt.size()>ipoint);
-      assert(z_opt.size()>ipoint);
+    if(z_opt.size()>ipoint){
+      // assert(x_opt.size()>ipoint);
+      // assert(y_opt.size()>ipoint);
       gsl::vector thePosGCP(3);
-      if(gcprad_opt[0]){
-        thePosGCP[0]=theModel.rad2deg(x_opt[ipoint]);
-        thePosGCP[1]=theModel.rad2deg(y_opt[ipoint]);
-      }
-      else{
-        thePosGCP[0]=x_opt[ipoint];
-        thePosGCP[1]=y_opt[ipoint];
+      if(x_opt.size()>ipoint&&y_opt.size()>ipoint){
+        if(gcprad_opt[0]){
+          thePosGCP[0]=theModel.rad2deg(x_opt[ipoint]);
+          thePosGCP[1]=theModel.rad2deg(y_opt[ipoint]);
+        }
+        else{
+          thePosGCP[0]=x_opt[ipoint];
+          thePosGCP[1]=y_opt[ipoint];
+        }
       }
       thePosGCP[2]=z_opt[ipoint];
       if(s_srs_opt[0]!=4326)
@@ -538,6 +540,7 @@ int main(int argc, char *argv[])
   }
 
   //todo: remove GCP points with error above threshold
+  unsigned int nremoved=0;
   if(threshold_opt[0]>0){
     for(int ipoint=0;ipoint<vID.size();++ipoint){
       if(verbose_opt[0]>1)
@@ -551,6 +554,7 @@ int main(int argc, char *argv[])
       if(e>=theDataModel.getThreshold()){
         vID.erase(vID.begin()+ipoint);
         theDataModel.erase(ipoint);
+        ++nremoved;
       }
     }
     if(!theDataModel.getSize())
@@ -628,11 +632,11 @@ int main(int argc, char *argv[])
 
     gsl::vector pos_calc;
     gsl::vector pos_gcp;
-    if(theDataModel.getSize())
+    if(x_opt.size())
       pos_gcp=theDataModel.getPosGCP(ipoint);
     else
       pos_gcp=theDataModel.getPos(ipoint);
-    if(errorZ_opt[0]!=0)
+    if(errorZ_opt.size())
       pos_calc=theDataModel.getModel().getPos(pos_platform,att_platform,theDataModel.getRow(ipoint),theDataModel.getCol(ipoint),theDataModel.getHeight(ipoint)+errorZ_opt[0]);
     else
       pos_calc=theDataModel.getPos(ipoint);
@@ -652,15 +656,21 @@ int main(int argc, char *argv[])
     if(output_opt.size()){
       outputStream << setprecision(12) << vID[ipoint] << " " << theDataModel.getRow(ipoint) << " " << theDataModel.getCol(ipoint) << " " << pos_calc[0] << " " << pos_calc[1] << " " << pos_calc[2] << " " << gcpss.str();
       if(getzenith_opt[0])
-        outputStream << " " << theDataModel.getModel().getZenith(att_platform);
+        outputStream << " " << theDataModel.getModel().getZenith(att_platform,theDataModel.getRow(ipoint),theDataModel.getCol(ipoint));
       outputStream << std::endl;
     }
     else{
       std::cout << setprecision(12) << vID[ipoint] << " " << theDataModel.getRow(ipoint) << " " << theDataModel.getCol(ipoint) << " " << pos_calc[0] << " " << pos_calc[1] << " " << pos_calc[2] << " " << gcpss.str();
       if(getzenith_opt[0])
-        std::cout << " " << theDataModel.getModel().getZenith(att_platform);
+        std::cout << " " << theDataModel.getModel().getZenith(att_platform,theDataModel.getRow(ipoint),theDataModel.getCol(ipoint));
       std::cout << std::endl;
     }
+  }
+  if(verbose_opt[0]){
+    if(output_opt.size())
+      outputStream << "Number of GCP above threshold removed: " << nremoved << std::endl;
+    else
+      std::cout << "Number of GCP above threshold removed: " << nremoved << std::endl;
   }
   if(mean_opt[0]){
     double theMean=0;

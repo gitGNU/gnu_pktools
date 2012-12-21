@@ -44,9 +44,14 @@ version 2.4
 	in addition to internal setNoData member variable, also support GDALSetNoData
  - ImgWriterGdal.cc
 	in addition to internal setNoData member variable, also support GDALSetNoData
+ - ImgWriterOGR.h
+	renamed ascii2shape to ascii2ogr, support csv file in ascii2ogr
+ - ImgWriterOGR.cc
+	renamed ascii2shape to ascii2ogr, support csv file in ascii2ogr
  - pkinfo
 	support of nodata value when calculating histogram and image statistics
 	options min and max are now set with -min (--min) and -max (--max)
+	option min and max now per default empty and can be set individually for calculating histogram
  - pkfilter
 	bug solved in update of progress bar
 	support of standard deviation
@@ -60,3 +65,5 @@ version 2.4
 	tool to create simple vector files from coordinates in ASCII file (points or polygon)
  - pksensormodel
 	tool to model pushbroom sensor
+ - pkascii2ogr
+	support csv input file

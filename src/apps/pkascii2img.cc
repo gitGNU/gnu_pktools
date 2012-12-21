@@ -39,18 +39,18 @@ int main(int argc, char *argv[])
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","introduce -uli -ulj to crop based on image coordinates",false);
-  Optionpk<std::string> input_opt("i","input","input ASCII file","");
-  Optionpk<string> output_opt("o", "output", "Output image file", "");
-  Optionpk<string> dataType_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
+  Optionpk<std::string> input_opt("i","input","input ASCII file");
+  Optionpk<string> output_opt("o", "output", "Output image file");
+  Optionpk<string> dataType_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","Byte");
   Optionpk<string> imageType_opt("of", "oformat", "image type string (default: GTiff, see also gdal_translate)", "GTiff");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<double> ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double> uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter) (default is 0.0: keep original resolution)", 0.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter) (default is 0.0: keep original resolution)", 0.0);
-  Optionpk<string> projection_opt("p", "projection", "projection string (default is empty: no projection)", "");
-  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
-  Optionpk<string> description_opt("d", "description", "Set image description", "");
+  Optionpk<string> projection_opt("p", "projection", "projection string (default is empty: no projection)");
+  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<string> description_opt("d", "description", "Set image description");
   Optionpk<bool> verbose_opt("v", "verbose", "verbose (false)", false);
 
   version_opt.retrieveOption(argc,argv);
@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
     cout << "usage: pkascii2img -i asciifile -o imgfile [OPTIONS]" << endl;
     exit(0);
   }
+  assert(input_opt.size());
+  assert(output_opt.size());
   ImgWriterGdal imgWriter;
   ifstream ifile(input_opt[0].c_str(),ios::in);
   //get number of lines
@@ -149,9 +151,9 @@ int main(int argc, char *argv[])
   }
 
   imgWriter.open(output_opt[0],ncol,nrow,1,dataType,imageType_opt[0],option_opt);
-  if(description_opt[0]!="")
+  if(description_opt.size())
     imgWriter.setImageDescription(description_opt[0]);
-  if(projection_opt[0]!=""){
+  if(projection_opt.size()){
     if(verbose_opt[0])
       cout << output_opt[0] << " is georeferenced." << endl;
     imgWriter.setGeoTransform(ulx_opt[0],uly_opt[0],dx_opt[0],dy_opt[0],0,0);
@@ -162,7 +164,7 @@ int main(int argc, char *argv[])
       cout << output_opt[0] << " is not georeferenced." << endl;
     assert(!imgWriter.isGeoRef());
   }
-  if(colorTable_opt[0]!=""){
+  if(colorTable_opt.size()){
     assert(imgWriter.getDataType()==GDT_Byte);
     imgWriter.setColorTable(colorTable_opt[0]);
   }

@@ -90,14 +90,34 @@ namespace SensorModel
     gsl::vector getBoresightAtt() const{return m_bcatt;};
     void setPolynome(const std::vector<double>& polynome) {m_polynome=polynome;};
     void setDatum(const std::string& theDatum="WGS84"){m_spatialref.SetWellKnownGeogCS(theDatum.c_str());};
-    double getZenith(const gsl::vector& att_platform) const{
+    double getZenith(const gsl::vector& att_platform, int row, int column) const{
       gsl::vector normallevel(3);
       gsl::vector normalplatform(3);
+
+      gsl::vector apl_deg=att_platform;
+      apl_deg+=m_bcatt;
+      gsl::vector apl_rad(3);
+      apl_rad[0]=deg2rad(apl_deg[0]);//roll
+      apl_rad[1]=deg2rad(apl_deg[1]);//pitch
+      apl_rad[2]=deg2rad(apl_deg[2]);//yaw
+
+      if(getModel()==PUSHBROOM){
+        gsl::vector scanAngle(2);
+        scanAngle=scanAngle_PB(row,column);
+        apl_rad[0]+=scanAngle[1];
+        apl_rad[1]+=scanAngle[0];
+      }
+      else if(getModel()==WHISKBROOM){
+        apl_rad[0]+=0;
+        apl_rad[1]=tan(scanAngle_WB(column));
+      }
+      else//not implemented?
+        assert(0);
       normallevel[0]=0;
       normallevel[1]=0;
       normallevel[2]=-1;
       gsl::matrix rotM(3,3);
-      rotM=getRz(deg2rad(att_platform[2]))*getRy(deg2rad(att_platform[1]))*getRx(deg2rad(att_platform[0]));
+      rotM=getRz(apl_rad[2])*getRy(apl_rad[1])*getRx(apl_rad[0]);
       normalplatform=rotM*normallevel;
       return rad2deg(acos(-normalplatform[2]));
     };
@@ -208,7 +228,7 @@ namespace SensorModel
       poCT->Transform(1,&lon,&lat);
     };
 
-  gsl::vector pECEF(const gsl::vector& pos, const gsl::vector& attitude, int row, int column) const{
+    gsl::vector pECEF(const gsl::vector& pos, const gsl::vector& attitude, int row, int column) const{
       gsl::vector A(3);
       gsl::matrix B(3,3);
       B.set_element(0,0,-sin(pos[1])*cos(pos[0]));
@@ -246,7 +266,7 @@ namespace SensorModel
     double scanAngle_WB(int column) const{
       return (-m_fov/2.0+column*(m_fov/(m_ncol-1)));
     };
-  gsl::vector SV(int row, int column, const gsl::vector& attitude, double z) const{
+    gsl::vector SV(int row, int column, const gsl::vector& attitude, double z) const{
       gsl::vector rv(3);
       gsl::matrix rotM(3,3);
       rotM=getRz(attitude[2])*getRy(attitude[1])*getRx(attitude[0]);

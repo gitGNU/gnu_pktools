@@ -44,7 +44,7 @@ public:
   ~ImgWriterOgr(void);
   void open(const string& filename, const string& imageType="ESRI Shapefile");
   void close(void);
-  int ascii2shape(const string& filename, const string &layername, const vector<string>& fieldName, const vector<OGRFieldType>& fieldType, short colX=1, short colY=2, const string& theProjection="", const OGRwkbGeometryType& eGType=wkbPoint);
+  int ascii2ogr(const string& filename, const string &layername, const vector<string>& fieldName, const vector<OGRFieldType>& fieldType, short colX=1, short colY=2, const string& theProjection="", const OGRwkbGeometryType& eGType=wkbPoint, const char fs=' ');
   OGRLayer* createLayer(const string& layername="New layer", const string& theProjection="", const OGRwkbGeometryType& eGType=wkbUnknown, char** papszOptions=NULL);
   OGRLayer* copyLayer(OGRLayer* poSrcLayer, const string& layername, char** papszOptions=NULL);
   void createField(const string& fieldname, const OGRFieldType& fieldType, int theLayer=-1);//default: get back layer

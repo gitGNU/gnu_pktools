@@ -48,8 +48,8 @@ int main(int argc,char **argv) {
   Optionpk<string>  output_opt("o", "output", "Output image file", "");
   Optionpk<string>  legend_opt("l", "legend", "Create legend as png file", "");
   Optionpk<short>  dim_opt("dim", "dim", "number of columns and rows in legend.", 100);
-  Optionpk<double>  min_opt("m", "min", "minimum value", 0);
-  Optionpk<double>  max_opt("M", "max", "maximum value", 100);
+  Optionpk<double>  min_opt("min", "min", "minimum value", 0);
+  Optionpk<double>  max_opt("max", "max", "maximum value", 100);
   Optionpk<bool>  grey_opt("g", "grey", "grey scale", false);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");

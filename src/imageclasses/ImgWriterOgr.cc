@@ -394,7 +394,7 @@ int ImgWriterOgr::getFeatureCount() const
   return(getLayer()->GetFeatureCount());
 }
 
-int ImgWriterOgr::ascii2shape(const string& filename, const string &layername, const vector<string>& fieldName, const vector<OGRFieldType>& fieldType, short colX, short colY, const string& theProjection, const OGRwkbGeometryType& eGType)
+int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, const vector<string>& fieldName, const vector<OGRFieldType>& fieldType, short colX, short colY, const string& theProjection, const OGRwkbGeometryType& eGType, const char fs)
 {
   char     **papszOptions=NULL;
   createLayer(layername, theProjection, eGType, papszOptions);
@@ -416,66 +416,135 @@ int ImgWriterOgr::ascii2shape(const string& filename, const string &layername, c
   OGRFeature *polyFeature;
   if(eGType!=wkbPoint)
     polyFeature=createFeature();
-  while(getline(fpoints,line)){
-    OGRFeature *pointFeature;
-    if(eGType==wkbPoint)
-      pointFeature=createFeature();
-    OGRPoint thePoint;
-    bool skip=false;
-    istringstream ist(line);
-    string value;
-    int colId=0;
-    int fieldId=0;
-    while(ist >> value){
-      if(colId==colX)
-	thePoint.setX(atof(value.c_str()));
-      else if(colId==colY)
-	thePoint.setY(atof(value.c_str()));
-      else{
-        switch(fieldType[fieldId]){
-        case(OFTReal):
-	  if(eGType==wkbPoint)
-	    pointFeature->SetField(fieldId,atof(value.c_str()));
-	  else if(firstPoint.IsEmpty())
-	    polyFeature->SetField(fieldId,atof(value.c_str()));
-          break;
-        case(OFTInteger):
-	  if(eGType==wkbPoint)
-	    pointFeature->SetField(fieldId,atoi(value.c_str()));
-	  else if(firstPoint.IsEmpty())
-	    polyFeature->SetField(fieldId,atof(value.c_str()));
-          break;
-        case(OFTString):
-	  if(eGType==wkbPoint)
-	    pointFeature->SetField(fieldId,value.c_str());
-	  else if(firstPoint.IsEmpty())
-	    polyFeature->SetField(fieldId,atof(value.c_str()));
-          break;
-        default:
-          break;
+
+
+  if(fs>' '&&fs<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
+    string csvRecord;
+    while(getline(fpoints,csvRecord)){//read a line
+      OGRFeature *pointFeature;
+      if(eGType==wkbPoint)
+        pointFeature=createFeature();
+      OGRPoint thePoint;
+      bool skip=false;
+      istringstream csvstream(csvRecord);
+      string value;
+      int colId=0;
+      int fieldId=0;
+      while(getline(csvstream,value,fs)){//read a column
+        if(colId==colX)
+          thePoint.setX(atof(value.c_str()));
+        else if(colId==colY)
+          thePoint.setY(atof(value.c_str()));
+        else{
+          switch(fieldType[fieldId]){
+          case(OFTReal):
+            if(eGType==wkbPoint)
+              pointFeature->SetField(fieldId,atof(value.c_str()));
+            else if(firstPoint.IsEmpty())
+              polyFeature->SetField(fieldId,atof(value.c_str()));
+            break;
+          case(OFTInteger):
+            if(eGType==wkbPoint)
+              pointFeature->SetField(fieldId,atoi(value.c_str()));
+            else if(firstPoint.IsEmpty())
+              polyFeature->SetField(fieldId,atof(value.c_str()));
+            break;
+          case(OFTString):
+            if(eGType==wkbPoint)
+              pointFeature->SetField(fieldId,value.c_str());
+            else if(firstPoint.IsEmpty())
+              polyFeature->SetField(fieldId,atof(value.c_str()));
+            break;
+          default:
+            break;
+          }
+          ++fieldId;
         }
-        ++fieldId;
+        ++colId;
       }
-      ++colId;
-    }
-    if(colId!=fieldId+2){
-      ostringstream ess;
-      ess << "Error: colId = " << colId << " is different from fieldId+2 = " << fieldId;
-      throw(ess.str());
-    }
-    if(eGType==wkbPoint){
-      pointFeature->SetGeometry( &thePoint );
-      if(createFeature(pointFeature)!=OGRERR_NONE){
-	string errorString="Failed to create feature in shapefile";
-	throw(errorString);
-	OGRFeature::DestroyFeature( pointFeature );
+      if(colId!=fieldId+2){
+        ostringstream ess;
+        ess << "Error: colId = " << colId << " is different from fieldId+2 = " << fieldId;
+        throw(ess.str());
+      }
+      if(eGType==wkbPoint){
+        pointFeature->SetGeometry( &thePoint );
+        if(createFeature(pointFeature)!=OGRERR_NONE){
+          string errorString="Failed to create feature in shapefile";
+          throw(errorString);
+          OGRFeature::DestroyFeature( pointFeature );
+        }
+      }
+      else{
+        if(firstPoint.IsEmpty()){
+          firstPoint=thePoint;
+        }
+        theRing.addPoint(&thePoint);
       }
     }
-    else{
-      if(firstPoint.IsEmpty()){
-	firstPoint=thePoint;
+  }
+  else{//space or tab delimited fields
+    while(getline(fpoints,line)){
+      OGRFeature *pointFeature;
+      if(eGType==wkbPoint)
+        pointFeature=createFeature();
+      OGRPoint thePoint;
+      bool skip=false;
+      istringstream ist(line);
+      string value;
+      int colId=0;
+      int fieldId=0;
+      while(ist >> value){
+        if(colId==colX)
+          thePoint.setX(atof(value.c_str()));
+        else if(colId==colY)
+          thePoint.setY(atof(value.c_str()));
+        else{
+          switch(fieldType[fieldId]){
+          case(OFTReal):
+            if(eGType==wkbPoint)
+              pointFeature->SetField(fieldId,atof(value.c_str()));
+            else if(firstPoint.IsEmpty())
+              polyFeature->SetField(fieldId,atof(value.c_str()));
+            break;
+          case(OFTInteger):
+            if(eGType==wkbPoint)
+              pointFeature->SetField(fieldId,atoi(value.c_str()));
+            else if(firstPoint.IsEmpty())
+              polyFeature->SetField(fieldId,atof(value.c_str()));
+            break;
+          case(OFTString):
+            if(eGType==wkbPoint)
+              pointFeature->SetField(fieldId,value.c_str());
+            else if(firstPoint.IsEmpty())
+              polyFeature->SetField(fieldId,atof(value.c_str()));
+            break;
+          default:
+            break;
+          }
+          ++fieldId;
+        }
+        ++colId;
       }
-      theRing.addPoint(&thePoint);
+      if(colId!=fieldId+2){
+        ostringstream ess;
+        ess << "Error: colId = " << colId << " is different from fieldId+2 = " << fieldId;
+        throw(ess.str());
+      }
+      if(eGType==wkbPoint){
+        pointFeature->SetGeometry( &thePoint );
+        if(createFeature(pointFeature)!=OGRERR_NONE){
+          string errorString="Failed to create feature in shapefile";
+          throw(errorString);
+          OGRFeature::DestroyFeature( pointFeature );
+        }
+      }
+      else{
+        if(firstPoint.IsEmpty()){
+          firstPoint=thePoint;
+        }
+        theRing.addPoint(&thePoint);
+      }
     }
   }
   if(eGType!=wkbPoint){

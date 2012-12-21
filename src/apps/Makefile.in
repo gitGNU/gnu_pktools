@@ -39,8 +39,8 @@ bin_PROGRAMS = pkinfo$(EXEEXT) pkcrop$(EXEEXT) pkreclass$(EXEEXT) \
 	pkextract$(EXEEXT) pkfillnodata$(EXEEXT) pkfilter$(EXEEXT) \
 	pkdsm2shadow$(EXEEXT) pkmosaic$(EXEEXT) pkndvi$(EXEEXT) \
 	pkpolygonize$(EXEEXT) pkascii2img$(EXEEXT) pkdiff$(EXEEXT) \
-	pkclassify_svm$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3)
+	pkclassify_svm$(EXEEXT) pkascii2ogr$(EXEEXT) $(am__EXEEXT_1) \
+	$(am__EXEEXT_2) $(am__EXEEXT_3)
 @USE_FANN_TRUE@am__append_1 = pkclassify_nn
 @USE_LAS_TRUE@am__append_2 = pklas2img
 @USE_NLOPT_TRUE@am__append_3 = pksensormodel
@@ -65,6 +65,12 @@ pkascii2img_OBJECTS = $(am_pkascii2img_OBJECTS)
 pkascii2img_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 pkascii2img_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/algorithms/libalgorithms.a \
+	$(top_builddir)/src/imageclasses/libimageClasses.a
+am_pkascii2ogr_OBJECTS = pkascii2ogr.$(OBJEXT)
+pkascii2ogr_OBJECTS = $(am_pkascii2ogr_OBJECTS)
+pkascii2ogr_LDADD = $(LDADD)
+pkascii2ogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
 am__pkclassify_nn_SOURCES_DIST =  \
@@ -224,17 +230,18 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(pkascii2img_SOURCES) $(pkclassify_nn_SOURCES) \
-	$(pkclassify_svm_SOURCES) $(pkcreatect_SOURCES) \
-	$(pkcrop_SOURCES) $(pkdiff_SOURCES) $(pkdsm2shadow_SOURCES) \
-	$(pkdumpimg_SOURCES) $(pkdumpogr_SOURCES) $(pkegcs_SOURCES) \
-	$(pkextract_SOURCES) $(pkfillnodata_SOURCES) \
-	$(pkfilter_SOURCES) $(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
-	$(pklas2img_SOURCES) $(pkmosaic_SOURCES) $(pkndvi_SOURCES) \
-	$(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
-	$(pksensormodel_SOURCES) $(pksetmask_SOURCES) \
-	$(pksieve_SOURCES) $(pkstat_SOURCES) $(pkstatogr_SOURCES)
-DIST_SOURCES = $(pkascii2img_SOURCES) \
+SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
+	$(pkclassify_nn_SOURCES) $(pkclassify_svm_SOURCES) \
+	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
+	$(pkdsm2shadow_SOURCES) $(pkdumpimg_SOURCES) \
+	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
+	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
+	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) $(pklas2img_SOURCES) \
+	$(pkmosaic_SOURCES) $(pkndvi_SOURCES) $(pkpolygonize_SOURCES) \
+	$(pkreclass_SOURCES) $(pksensormodel_SOURCES) \
+	$(pksetmask_SOURCES) $(pksieve_SOURCES) $(pkstat_SOURCES) \
+	$(pkstatogr_SOURCES)
+DIST_SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(am__pkclassify_nn_SOURCES_DIST) $(pkclassify_svm_SOURCES) \
 	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
 	$(pkdsm2shadow_SOURCES) $(pkdumpimg_SOURCES) \
@@ -392,6 +399,7 @@ pkpolygonize_SOURCES = pkpolygonize.cc
 pkdiff_SOURCES = pkdiff.cc
 pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
 pkascii2img_SOURCES = pkascii2img.cc
+pkascii2ogr_SOURCES = pkascii2ogr.cc
 all: all-am
 
 .SUFFIXES:
@@ -466,6 +474,9 @@ clean-binPROGRAMS:
 pkascii2img$(EXEEXT): $(pkascii2img_OBJECTS) $(pkascii2img_DEPENDENCIES) 
 	@rm -f pkascii2img$(EXEEXT)
 	$(CXXLINK) $(pkascii2img_OBJECTS) $(pkascii2img_LDADD) $(LIBS)
+pkascii2ogr$(EXEEXT): $(pkascii2ogr_OBJECTS) $(pkascii2ogr_DEPENDENCIES) 
+	@rm -f pkascii2ogr$(EXEEXT)
+	$(CXXLINK) $(pkascii2ogr_OBJECTS) $(pkascii2ogr_LDADD) $(LIBS)
 pkclassify_nn$(EXEEXT): $(pkclassify_nn_OBJECTS) $(pkclassify_nn_DEPENDENCIES) 
 	@rm -f pkclassify_nn$(EXEEXT)
 	$(pkclassify_nn_LINK) $(pkclassify_nn_OBJECTS) $(pkclassify_nn_LDADD) $(LIBS)
@@ -546,6 +557,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkascii2img.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkascii2ogr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkclassify_nn-pkclassify_nn.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkclassify_svm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkcreatect.Po@am__quote@
@@ -826,7 +838,7 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-binPROGRAMS
 
-#pkascii2ogr_SOURCES = pkascii2ogr.cc
+#pkxcorimg_SOURCES= pkxcorimg.cc
 #pkgeom_SOURCES = pkgeom.cc
 ###############################################################################
 

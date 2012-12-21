@@ -51,9 +51,9 @@ int main(int argc,char **argv) {
   Optionpk<short> maxIter_opt("\0", "maxIter", "Maximum number of iterations in post filter (default is 100)", 100.0);
   Optionpk<short> nbin_opt("nb", "nbin", "Number of percentile bins for calculating profile (=number of output bands) (default is 10)", 10.0);
   Optionpk<unsigned short> returns_opt("r", "returns", "number(s) of returns to include (use -r -1 for last return only). Default is 0 (include all returns)", 0);
-  Optionpk<string> composite_opt("c", "composite", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile). Default is last (overwrite cells with latest point", "last");
+  Optionpk<string> composite_opt("c", "composite", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile, number (point density)). Default is last (overwrite cells with latest point", "last");
   Optionpk<string> filter_opt("fir", "filter", "filter las points (single,multiple,all). Default is all", "all");
-  Optionpk<string> postFilter_opt("pf", "pfilter", "filter las points (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none) . Default is none", "none");
+  Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none) . Default is none", "none");
   Optionpk<short> dimx_opt("\0", "dimX", "Dimension X of postFilter (default is 3)", 3);
   Optionpk<short> dimy_opt("\0", "dimY", "Dimension Y of postFilter (default is 3)", 3);
   Optionpk<string> output_opt("o", "output", "Output image file", "");
@@ -65,8 +65,8 @@ int main(int argc,char **argv) {
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
-  Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter) (default is 0.0: keep original resolution)", 0.0);
-  Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter) (default is 0.0: keep original resolution)", 0.0);
+  Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter)", 1.0);
+  Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)", 1.0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> verbose_opt("v", "verbose", "verbose (default is 0)", 0);
 
@@ -128,6 +128,7 @@ int main(int argc,char **argv) {
   double progress=0;
 
   Vector2d<vector<float> > inputData;//row,col,point
+
    
   ImgReaderGdal maskReader;
   ImgWriterGdal outputWriter;
@@ -235,6 +236,12 @@ int main(int argc,char **argv) {
 
   inputData.clear();
   inputData.resize(nrow,ncol);
+  Vector2d<float> outputData(nrow,ncol);
+  for(int irow=0;irow<nrow;++irow)
+    for(int icol=0;icol<ncol;++icol)
+      outputData[irow][icol]=0;
+
+
   std::cout << "Reading " << input_opt.size() << " las files" << std::endl;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int iinput=0;iinput<input_opt.size();++iinput){
@@ -296,7 +303,9 @@ int main(int argc,char **argv) {
       assert(irow<nrow);
       assert(icol>=0);
       assert(icol<ncol);
-      if(attribute_opt[0]=="z")
+      if(composite_opt[0]=="number")
+        outputData[irow][icol]+=1;
+      else if(attribute_opt[0]=="z")
         inputData[irow][icol].push_back(thePoint.GetZ());
       else if(attribute_opt[0]=="intensity")
         inputData[irow][icol].push_back(thePoint.GetIntensity());
@@ -321,14 +330,15 @@ int main(int argc,char **argv) {
   progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
   Histogram hist;
-  //fill in inputData in outputData
-  Vector2d<float> outputData(nrow,ncol);
+  //fill inputData in outputData
   if(composite_opt[0]=="profile"){
     assert(postFilter_opt[0]=="none");
     // for(int iband=0;iband<nband;++iband)
       // outputProfile[iband].resize(nrow,ncol);
   }
   for(int irow=0;irow<nrow;++irow){
+    if(composite_opt[0]=="number")
+      continue;//outputData already set
     Vector2d<float> outputProfile(nband,ncol);
     for(int icol=0;icol<ncol;++icol){
       std::vector<float> profile;
@@ -383,7 +393,7 @@ int main(int argc,char **argv) {
         // assert(outputProfile[iband].size()==outputWriter.nrOfRow());
         assert(outputProfile[iband].size()==outputWriter.nrOfCol());
         try{
-          outputWriter.writeData(outputProfile[iband],theType,irow,iband);
+          outputWriter.writeData(outputProfile[iband],GDT_Float32,irow,iband);
         }
         catch(std::string errorString){
           cout << errorString << endl;
@@ -505,7 +515,7 @@ int main(int argc,char **argv) {
       try{
         assert(outputData.size()==outputWriter.nrOfRow());
         assert(outputData[0].size()==outputWriter.nrOfCol());
-        outputWriter.writeData(outputData[irow],theType,irow,0);
+        outputWriter.writeData(outputData[irow],GDT_Float32,irow,0);
       }
       catch(std::string errorString){
         cout << errorString << endl;

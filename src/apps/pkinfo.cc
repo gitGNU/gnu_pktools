@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
   Optionpk<bool>  dy_opt("dy", "dy", "get resolution in y (in m)", false);
   Optionpk<bool>  minmax_opt("mm", "minmax", "Show min and max value of the image ", false);
   Optionpk<bool>  stat_opt("stat", "stat", "Show statistics (min,max, mean and stdDev of the image ", false);
-  Optionpk<double>  min_opt("min", "min", "Set minimum for histogram)", 0);
-  Optionpk<double>  max_opt("max", "max", "Set maximum for histogram)", 0);
+  Optionpk<double>  min_opt("min", "min", "Set minimum for histogram)");
+  Optionpk<double>  max_opt("max", "max", "Set maximum for histogram)");
   Optionpk<bool>  relative_opt("rel", "rel", "Calculate relative histogram in percentage", false);
   Optionpk<bool>  projection_opt("p", "projection", "Show projection of the image ", false);
   Optionpk<bool>  geo_opt("geo", "geo", "get geotransform:  ", false);
@@ -273,12 +273,11 @@ int main(int argc, char *argv[])
     }
     if(hist_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
-      if(min_opt[0]==max_opt[0])
-        imgReader.getMinMax(minValue,maxValue,band_opt[0]);
-      else{
+      imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+      if(min_opt.size())
         minValue=min_opt[0];
+      if(max_opt.size())
         maxValue=max_opt[0];
-      }
       int nbin=nbin_opt[0];
       if(nbin_opt[0]==0)
 	nbin=maxValue-minValue+1;
@@ -323,11 +322,11 @@ int main(int argc, char *argv[])
     }
     else{
       int minCol,minRow;
-      if(min_opt[0]){
+      if(min_opt.size()){
         assert(band_opt[0]<imgReader.nrOfBand());
         std::cout << "--min " << imgReader.getMin(minCol, minRow,band_opt[0]);
       }
-      if(max_opt[0]){
+      if(max_opt.size()){
         assert(band_opt[0]<imgReader.nrOfBand());
         assert(band_opt[0]<imgReader.nrOfBand());
         std::cout << "--max " << imgReader.getMax(minCol, minRow,band_opt[0]);
