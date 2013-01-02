@@ -61,6 +61,9 @@ version 2.4
 	options min and max are now set with -min (--min) and -max (--max)
  - pkclassify_svm
 	do not output input file if no input data was defined in verbose mode
+	update of header information
+ - pkfs_svm
+	feature selection tool for svm classification (added)
  - pkascii2ogr
 	tool to create simple vector files from coordinates in ASCII file (points or polygon)
  - pksensormodel

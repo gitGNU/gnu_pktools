@@ -53,9 +53,9 @@ ARFLAGS = cru
 libalgorithms_a_AR = $(AR) $(ARFLAGS)
 libalgorithms_a_LIBADD =
 am__libalgorithms_a_SOURCES_DIST = Egcs.h Filter2d.h Filter.h \
-	Histogram.h ConfusionMatrix.h svm.h myfann_cpp.h SensorModel.h \
-	Egcs.cc Filter2d.cc Filter.cc Histogram.cc ConfusionMatrix.cc \
-	svm.cpp
+	Histogram.h ConfusionMatrix.h svm.h FeatureSelector.h \
+	myfann_cpp.h SensorModel.h Egcs.cc Filter2d.cc Filter.cc \
+	Histogram.cc ConfusionMatrix.cc svm.cpp
 am__objects_1 =
 am__objects_2 = $(am__objects_1) $(am__objects_1)
 am_libalgorithms_a_OBJECTS = $(am__objects_2) Egcs.$(OBJEXT) \
@@ -78,7 +78,8 @@ LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libalgorithms_a_SOURCES)
 DIST_SOURCES = $(am__libalgorithms_a_SOURCES_DIST)
 am__libalgorithms_a_HEADERS_DIST = Egcs.h Filter2d.h Filter.h \
-	Histogram.h ConfusionMatrix.h svm.h myfann_cpp.h SensorModel.h
+	Histogram.h ConfusionMatrix.h svm.h FeatureSelector.h \
+	myfann_cpp.h SensorModel.h
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -228,10 +229,11 @@ libalgorithms_adir = $(includedir)/algorithms
 
 # the list of header files that belong to the library (to be installed later)
 libalgorithms_a_HEADERS = Egcs.h Filter2d.h Filter.h Histogram.h \
-	ConfusionMatrix.h svm.h $(am__append_1) $(am__append_2)
+	ConfusionMatrix.h svm.h FeatureSelector.h $(am__append_1) \
+	$(am__append_2)
 
 # the sources to add to the library and to add to the source distribution
-libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc  Filter2d.cc  Filter.cc  Histogram.cc ConfusionMatrix.cc svm.cpp
+libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc Filter2d.cc Filter.cc Histogram.cc ConfusionMatrix.cc svm.cpp
 all: all-am
 
 .SUFFIXES:

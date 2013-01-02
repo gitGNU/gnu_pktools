@@ -1,5 +1,5 @@
 /**********************************************************************
-pkclassify_svm.cc: classify raster image using Artificial Neural Network
+pkclassify_svm.cc: classify raster image using Support Vector Machine
 Copyright (C) 2008-2012 Pieter Kempeneers
 
 This file is part of pktools
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(help_opt[0]){
-    std::cout << "usage: pkclassify_nn -i testimage -o outputimage -t training [OPTIONS]" << std::endl;
+    std::cout << "usage: pkclassify_svm -i testimage -o outputimage -t training [OPTIONS]" << std::endl;
     exit(0);
   }
 
@@ -174,7 +174,6 @@ int main(int argc, char *argv[])
   unsigned int totalSamples=0;
   int nreclass=0;
   vector<int> vcode;//unique class codes in recode string
-  // vector<FANN::neural_net> net(nbag);//the neural network
   vector<struct svm_model*> svm(nbag);
   vector<struct svm_parameter> param(nbag);
 

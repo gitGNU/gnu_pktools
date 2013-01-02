@@ -6,7 +6,7 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 ###############################################################################
 
 # the program to build (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkdsm2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkdiff pkclassify_svm pkascii2ogr #pkxcorimg pkgeom
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkdsm2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkdiff pkclassify_svm pkfs_svm pkascii2ogr #pkxcorimg pkgeom
 if USE_FANN
 bin_PROGRAMS += pkclassify_nn
 pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
@@ -49,6 +49,7 @@ pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pkdiff_SOURCES = pkdiff.cc
 pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
+pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkfs_svm.cc
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
 #pkxcorimg_SOURCES= pkxcorimg.cc
