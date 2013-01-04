@@ -26,6 +26,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
+#include "algorithms/ConfusionMatrix.h"
 #include "floatfann.h"
 #include "myfann_cpp.h"
 
@@ -59,10 +60,12 @@ int main(int argc, char *argv[])
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account (default is 0: consider all classes", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
+  Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: sum rule, 1: max rule). Default is max rule (1)",1); 
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ), default set to equal priors)", 0.0); 
+  Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned int> nneuron_opt("\0", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
   Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
   Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
@@ -96,10 +99,12 @@ int main(int argc, char *argv[])
   minSize_opt.retrieveOption(argc,argv);
   start_opt.retrieveOption(argc,argv);
   end_opt.retrieveOption(argc,argv);
+  band_opt.retrieveOption(argc,argv);
   offset_opt.retrieveOption(argc,argv);
   scale_opt.retrieveOption(argc,argv);
   aggreg_opt.retrieveOption(argc,argv);
   priors_opt.retrieveOption(argc,argv);
+  cv_opt.retrieveOption(argc,argv);
   nneuron_opt.retrieveOption(argc,argv);
   connection_opt.retrieveOption(argc,argv);
   weights_opt.retrieveOption(argc,argv);
@@ -183,6 +188,9 @@ int main(int argc, char *argv[])
       priors[iclass]/=normPrior;
   }
 
+  //sort bands
+  if(band_opt.size())
+    std::sort(band_opt.begin(),band_opt.end());
   //----------------------------------- Training -------------------------------
   vector<string> fields;
   for(int ibag=0;ibag<nbag;++ibag){
@@ -193,18 +201,21 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         cout << "reading imageShape file " << training_opt[0] << endl;
       try{
-        totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+        if(band_opt.size())
+          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+        else
+          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file";
           throw(errorstring);
         }
       }
       catch(string error){
-        cerr << error << endl;
+        cerr << error << std::endl;
         exit(1);
       }
       catch(...){
-        cerr << "error catched" << endl;
+        cerr << "error catched" << std::endl;
         exit(1);
       }
       //delete class 0
@@ -414,8 +425,7 @@ int main(int argc, char *argv[])
       assert(trainingFeatures[iclass].size()==nctraining);
     }
     
-    int nFeatures=0;
-    nFeatures=trainingFeatures[0][0].size();
+    unsigned int nFeatures=trainingFeatures[0][0].size();
     unsigned int ntraining=0;
     for(int iclass=0;iclass<nclass;++iclass){
       if(verbose_opt[0]>=1)
@@ -424,7 +434,7 @@ int main(int argc, char *argv[])
     }
     const unsigned int num_layers = nneuron_opt.size()+2;
     const float desired_error = 0.0003;
-    const unsigned int iterations_between_reports = (verbose_opt[0]>=1)?100:maxit_opt[0]+1;
+    const unsigned int iterations_between_reports = (verbose_opt[0])? maxit_opt[0]+1:0;
     if(verbose_opt[0]>=1){
       cout << "creating artificial neural network with " << nneuron_opt.size() << " hidden layer, having " << endl;
       for(int ilayer=0;ilayer<nneuron_opt.size();++ilayer)
@@ -475,33 +485,57 @@ int main(int argc, char *argv[])
       net[ibag].print_parameters();
     }
       
-
-    FANN::training_data trainingData;
+    if(cv_opt[0]){
+      if(verbose_opt[0])
+        std::cout << "cross validation" << std::endl;
+      vector<unsigned short> referenceVector;
+      vector<unsigned short> outputVector;
+      float rmse=net[ibag].cross_validation(trainingFeatures,
+                                            ntraining,
+                                            cv_opt[0],
+                                            maxit_opt[0],
+                                            0,
+                                            desired_error,
+                                            referenceVector,
+                                            outputVector,
+                                            verbose_opt[0]);
+      ConfusionMatrix cm(nclass);
+      for(int isample=0;isample<referenceVector.size();++isample)
+        cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1);
+      assert(cm.nReference());
+      std::cout << cm << std::endl;
+      std::cout << "Kappa: " << cm.kappa() << std::endl;
+      double se95_oa=0;
+      double doa=0;
+      doa=cm.oa_pct(&se95_oa);
+      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+      std::cout << "rmse cross-validation: " << rmse << std::endl;
+    }
   
     if(verbose_opt[0]>=1)
       cout << endl << "Set training data" << endl;
-    trainingData.set_train_data(trainingFeatures,ntraining);
-    //     trainingData.set_train_data(trainingFeatures,totalSamples);
 
     if(verbose_opt[0]>=1)
       cout << endl << "Training network" << endl;
-    net[ibag].init_weights(trainingData);
     
     if(verbose_opt[0]>=1){
       cout << "Max Epochs " << setw(8) << maxit_opt[0] << ". "
            << "Desired Error: " << left << desired_error << right << endl;
     }
-    //   net.set_callback(print_callback, NULL);
-    if(weights_opt.size()==net[ibag].get_total_connections()){
+    if(weights_opt.size()==net[ibag].get_total_connections()){//no new training needed (same training sample)
       vector<fann_connection> convector;
       net[ibag].get_connection_array(convector);
       for(int i_connection=0;i_connection<net[ibag].get_total_connections();++i_connection)
         convector[i_connection].weight=weights_opt[i_connection];
       net[ibag].set_weight_array(convector);
     }
-    else
-      net[ibag].train_on_data(trainingData, maxit_opt[0],
+    else{
+      bool initWeights=true;
+      net[ibag].train_on_data(trainingFeatures,ntraining,initWeights, maxit_opt[0],
                               iterations_between_reports, desired_error);
+    }
+
+
     if(verbose_opt[0]>=2){
       net[ibag].print_connections();
       vector<fann_connection> convector;
@@ -596,32 +630,64 @@ int main(int argc, char *argv[])
       vector<short> lineMask;
       if(mask_opt[0]!="")
         lineMask.resize(maskReader.nrOfCol());
-      Vector2d<float> hpixel(ncol,nband);
+      Vector2d<float> hpixel(ncol);
       Vector2d<float> fpixel(ncol);
       Vector2d<float> prOut(nreclass,ncol);//posterior prob for each reclass
       Vector2d<char> classBag;//classified line for writing to image file
       if(classBag_opt[0]!="")
         classBag.resize(nbag,ncol);
       //read all bands of all pixels in this line in hline
-      for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
-        if(verbose_opt[0]==2)
-          cout << "reading band " << iband << endl;
-        assert(iband>=0);
-        assert(iband<testImage.nrOfBand());
-        try{
-          testImage.readData(buffer,GDT_Float32,iline,iband);
+      try{
+        if(band_opt.size()){
+          for(int iband=0;iband<band_opt.size();++iband){
+            if(verbose_opt[0]==2)
+              std::cout << "reading band " << band_opt[iband] << std::endl;
+            assert(band_opt[iband]>=0);
+            assert(band_opt[iband]<testImage.nrOfBand());
+            testImage.readData(buffer,GDT_Float32,iline,band_opt[iband]);
+            for(int icol=0;icol<ncol;++icol)
+              hpixel[icol].push_back(buffer[icol]);
+          }
         }
-        catch(string theError){
-          cerr << "Error reading " << input_opt[0] << ": " << theError << endl;
-          exit(3);
+        else{
+          for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
+            if(verbose_opt[0]==2)
+              std::cout << "reading band " << iband << std::endl;
+            assert(iband>=0);
+            assert(iband<testImage.nrOfBand());
+            testImage.readData(buffer,GDT_Float32,iline,iband);
+            for(int icol=0;icol<ncol;++icol)
+              hpixel[icol].push_back(buffer[icol]);
+          }
         }
-        catch(...){
-          cerr << "error catched" << endl;
-          exit(3);
-        }
-        for(int icol=0;icol<ncol;++icol)
-          hpixel[icol][iband-start_opt[0]]=buffer[icol];
       }
+      catch(string theError){
+        cerr << "Error reading " << input_opt[0] << ": " << theError << std::endl;
+        exit(3);
+      }
+      catch(...){
+        cerr << "error catched" << std::endl;
+        exit(3);
+      }
+      // for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
+      //   if(verbose_opt[0]==2)
+      //     cout << "reading band " << iband << endl;
+      //   assert(iband>=0);
+      //   assert(iband<testImage.nrOfBand());
+      //   try{
+      //     testImage.readData(buffer,GDT_Float32,iline,iband);
+      //   }
+      //   catch(string theError){
+      //     cerr << "Error reading " << input_opt[0] << ": " << theError << endl;
+      //     exit(3);
+      //   }
+      //   catch(...){
+      //     cerr << "error catched" << endl;
+      //     exit(3);
+      //   }
+      //   for(int icol=0;icol<ncol;++icol)
+      //     hpixel[icol][iband-start_opt[0]]=buffer[icol];
+      // }
 
       assert(nband==hpixel[0].size());
       if(verbose_opt[0]==2)
@@ -808,6 +874,7 @@ int main(int argc, char *argv[])
     classImageOut.close();
   }
   else{//classify shape file
+    //notice that fields have already been set by readDataImageShape (taking into account appropriate bands)
     for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
       assert(output_opt.size()==input_opt.size());
       if(verbose_opt[0])

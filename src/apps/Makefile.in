@@ -41,7 +41,7 @@ bin_PROGRAMS = pkinfo$(EXEEXT) pkcrop$(EXEEXT) pkreclass$(EXEEXT) \
 	pkpolygonize$(EXEEXT) pkascii2img$(EXEEXT) pkdiff$(EXEEXT) \
 	pkclassify_svm$(EXEEXT) pkfs_svm$(EXEEXT) pkascii2ogr$(EXEEXT) \
 	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
-@USE_FANN_TRUE@am__append_1 = pkclassify_nn
+@USE_FANN_TRUE@am__append_1 = pkclassify_nn pkfs_nn
 @USE_LAS_TRUE@am__append_2 = pklas2img
 @USE_NLOPT_TRUE@am__append_3 = pksensormodel
 subdir = src/apps
@@ -55,7 +55,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@USE_FANN_TRUE@am__EXEEXT_1 = pkclassify_nn$(EXEEXT)
+@USE_FANN_TRUE@am__EXEEXT_1 = pkclassify_nn$(EXEEXT) pkfs_nn$(EXEEXT)
 @USE_LAS_TRUE@am__EXEEXT_2 = pklas2img$(EXEEXT)
 @USE_NLOPT_TRUE@am__EXEEXT_3 = pksensormodel$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
@@ -149,12 +149,18 @@ pkfilter_LDADD = $(LDADD)
 pkfilter_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
+am__pkfs_nn_SOURCES_DIST = $(top_srcdir)/src/algorithms/myfann_cpp.h \
+	pkfs_nn.cc
+@USE_FANN_TRUE@am_pkfs_nn_OBJECTS = pkfs_nn-pkfs_nn.$(OBJEXT)
+pkfs_nn_OBJECTS = $(am_pkfs_nn_OBJECTS)
+@USE_FANN_TRUE@pkfs_nn_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@USE_FANN_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+@USE_FANN_TRUE@	$(am__DEPENDENCIES_2)
+pkfs_nn_LINK = $(CXXLD) $(pkfs_nn_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_pkfs_svm_OBJECTS = svm.$(OBJEXT) pkfs_svm.$(OBJEXT)
 pkfs_svm_OBJECTS = $(am_pkfs_svm_OBJECTS)
-pkfs_svm_LDADD = $(LDADD)
-pkfs_svm_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+pkfs_svm_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
 am_pkgetmask_OBJECTS = pkgetmask.$(OBJEXT)
 pkgetmask_OBJECTS = $(am_pkgetmask_OBJECTS)
 pkgetmask_LDADD = $(LDADD)
@@ -241,7 +247,7 @@ SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
 	$(pkdsm2shadow_SOURCES) $(pkdumpimg_SOURCES) \
 	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
-	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
+	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) $(pkfs_nn_SOURCES) \
 	$(pkfs_svm_SOURCES) $(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
 	$(pklas2img_SOURCES) $(pkmosaic_SOURCES) $(pkndvi_SOURCES) \
 	$(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
@@ -253,7 +259,8 @@ DIST_SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(pkdsm2shadow_SOURCES) $(pkdumpimg_SOURCES) \
 	$(pkdumpogr_SOURCES) $(pkegcs_SOURCES) $(pkextract_SOURCES) \
 	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) \
-	$(pkfs_svm_SOURCES) $(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
+	$(am__pkfs_nn_SOURCES_DIST) $(pkfs_svm_SOURCES) \
+	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
 	$(am__pklas2img_SOURCES_DIST) $(pkmosaic_SOURCES) \
 	$(pkndvi_SOURCES) $(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
 	$(am__pksensormodel_SOURCES_DIST) $(pksetmask_SOURCES) \
@@ -375,6 +382,9 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 @USE_FANN_TRUE@pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
 @USE_FANN_TRUE@pkclassify_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 @USE_FANN_TRUE@pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
+@USE_FANN_TRUE@pkfs_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkfs_nn.cc
+@USE_FANN_TRUE@pkfs_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
+@USE_FANN_TRUE@pkfs_nn_LDADD = $(GSL_LIBS) $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
 @USE_LAS_TRUE@pklas2img_SOURCES = pklas2img.cc
 @USE_LAS_TRUE@pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
 @USE_NLOPT_TRUE@pksensormodel_SOURCES = $(top_srcdir)/src/algorithms/SensorModel.h pksensormodel.h pksensormodel.cc
@@ -405,6 +415,7 @@ pkpolygonize_SOURCES = pkpolygonize.cc
 pkdiff_SOURCES = pkdiff.cc
 pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
 pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkfs_svm.cc
+pkfs_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
 all: all-am
@@ -520,6 +531,9 @@ pkfillnodata$(EXEEXT): $(pkfillnodata_OBJECTS) $(pkfillnodata_DEPENDENCIES)
 pkfilter$(EXEEXT): $(pkfilter_OBJECTS) $(pkfilter_DEPENDENCIES) 
 	@rm -f pkfilter$(EXEEXT)
 	$(CXXLINK) $(pkfilter_OBJECTS) $(pkfilter_LDADD) $(LIBS)
+pkfs_nn$(EXEEXT): $(pkfs_nn_OBJECTS) $(pkfs_nn_DEPENDENCIES) 
+	@rm -f pkfs_nn$(EXEEXT)
+	$(pkfs_nn_LINK) $(pkfs_nn_OBJECTS) $(pkfs_nn_LDADD) $(LIBS)
 pkfs_svm$(EXEEXT): $(pkfs_svm_OBJECTS) $(pkfs_svm_DEPENDENCIES) 
 	@rm -f pkfs_svm$(EXEEXT)
 	$(CXXLINK) $(pkfs_svm_OBJECTS) $(pkfs_svm_LDADD) $(LIBS)
@@ -580,6 +594,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkextract.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkfillnodata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkfilter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkfs_nn-pkfs_nn.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkfs_svm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkgetmask.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkinfo.Po@am__quote@
@@ -636,6 +651,20 @@ svm.obj: $(top_srcdir)/src/algorithms/svm.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$(top_srcdir)/src/algorithms/svm.cpp' object='svm.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o svm.obj `if test -f '$(top_srcdir)/src/algorithms/svm.cpp'; then $(CYGPATH_W) '$(top_srcdir)/src/algorithms/svm.cpp'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/src/algorithms/svm.cpp'; fi`
+
+pkfs_nn-pkfs_nn.o: pkfs_nn.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkfs_nn_CXXFLAGS) $(CXXFLAGS) -MT pkfs_nn-pkfs_nn.o -MD -MP -MF $(DEPDIR)/pkfs_nn-pkfs_nn.Tpo -c -o pkfs_nn-pkfs_nn.o `test -f 'pkfs_nn.cc' || echo '$(srcdir)/'`pkfs_nn.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/pkfs_nn-pkfs_nn.Tpo $(DEPDIR)/pkfs_nn-pkfs_nn.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='pkfs_nn.cc' object='pkfs_nn-pkfs_nn.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkfs_nn_CXXFLAGS) $(CXXFLAGS) -c -o pkfs_nn-pkfs_nn.o `test -f 'pkfs_nn.cc' || echo '$(srcdir)/'`pkfs_nn.cc
+
+pkfs_nn-pkfs_nn.obj: pkfs_nn.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkfs_nn_CXXFLAGS) $(CXXFLAGS) -MT pkfs_nn-pkfs_nn.obj -MD -MP -MF $(DEPDIR)/pkfs_nn-pkfs_nn.Tpo -c -o pkfs_nn-pkfs_nn.obj `if test -f 'pkfs_nn.cc'; then $(CYGPATH_W) 'pkfs_nn.cc'; else $(CYGPATH_W) '$(srcdir)/pkfs_nn.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/pkfs_nn-pkfs_nn.Tpo $(DEPDIR)/pkfs_nn-pkfs_nn.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='pkfs_nn.cc' object='pkfs_nn-pkfs_nn.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkfs_nn_CXXFLAGS) $(CXXFLAGS) -c -o pkfs_nn-pkfs_nn.obj `if test -f 'pkfs_nn.cc'; then $(CYGPATH_W) 'pkfs_nn.cc'; else $(CYGPATH_W) '$(srcdir)/pkfs_nn.cc'; fi`
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

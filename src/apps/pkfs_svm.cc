@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <vector>
+#include <string>
 #include <map>
 #include <algorithm>
 #include "imageclasses/ImgReaderGdal.h"
@@ -36,76 +37,67 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
+                                    //static enum SelectorValue { NA, SFFS, SFS, SBS, BFS };
+enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
+
+//global parameters used in cost function getCost
+Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
+Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*|u-v|^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
+Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
+Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
+Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
+Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C-SVC, epsilon-SVR, and nu-SVR",1);
+Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu-SVC, one-class SVM, and nu-SVR",0.5);
+Optionpk<float> epsilon_loss_opt("eloss", "eloss", "the epsilon in loss function of epsilon-SVR",0.1);
+Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);
+Optionpk<float> epsilon_tol_opt("etol", "etol", "the tolerance of termination criterion",0.001);
+Optionpk<bool> shrinking_opt("shrink", "shrink", "whether to use the shrinking heuristics",false);
+Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",false);
+// Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
+Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
+Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+
 double getCost(const vector<Vector2d<float> > &trainingFeatures)
 {
-  //test
-  std::cout << "debug0" << std::endl;
-  bool verbose=true;
+  unsigned short nclass=trainingFeatures.size();
+  unsigned int ntraining=0;
+  for(int iclass=0;iclass<nclass;++iclass)
+    ntraining+=trainingFeatures[iclass].size();
   unsigned short nFeatures=trainingFeatures[0][0].size();
-  //todo: set SVM parameters through command line options
+
   struct svm_parameter param;
-  // param.svm_type = svm_type_opt[0];
-  // param.kernel_type = kernel_type_opt[0];
-  // param.degree = kernel_degree_opt[0];
-  // param.gamma = (gamma_opt[0]>0)? gamma_opt[0] : 1.0/nFeatures;
-  // param.coef0 = coef0_opt[0];
-  // param.nu = nu_opt[0];
-  // param.cache_size = cache_opt[0];
-  // param.C = ccost_opt[0];
-  // param.eps = epsilon_tol_opt[0];
-  // param.p = epsilon_loss_opt[0];
-  // param.shrinking = (shrinking_opt[0])? 1 : 0;
-  // param.probability = (prob_est_opt[0])? 1 : 0;
-  // param.nr_weight = 0;//not used: I use priors and balancing
-  // param.weight_label = NULL;
-  // param.weight = NULL;
-  //todo: make parameter
-  unsigned int cv=2;
-  param.svm_type = 0;
-  param.kernel_type = 2;
-  param.degree = 3;
-  param.gamma = 1.0/nFeatures;
-  param.coef0 = 0;
-  param.nu = 0.5;
-  param.cache_size = 100.0;
-  param.C = 1;
-  param.eps = 0.001;
-  param.p = 0.1;
-  param.shrinking = 0;
-  param.probability = 0;
+  param.svm_type = svm_type_opt[0];
+  param.kernel_type = kernel_type_opt[0];
+  param.degree = kernel_degree_opt[0];
+  param.gamma = (gamma_opt[0]>0)? gamma_opt[0] : 1.0/nFeatures;
+  param.coef0 = coef0_opt[0];
+  param.nu = nu_opt[0];
+  param.cache_size = cache_opt[0];
+  param.C = ccost_opt[0];
+  param.eps = epsilon_tol_opt[0];
+  param.p = epsilon_loss_opt[0];
+  param.shrinking = (shrinking_opt[0])? 1 : 0;
+  param.probability = (prob_est_opt[0])? 1 : 0;
   param.nr_weight = 0;//not used: I use priors and balancing
   param.weight_label = NULL;
   param.weight = NULL;
+  param.verbose=(verbose_opt[0]>1)? true:false;
   struct svm_model* svm;
   struct svm_problem prob;
   struct svm_node* x_space;
-  unsigned int ntraining=0;
-  unsigned short nclass=trainingFeatures.size();
-
-  //test
-  std::cout << "debug1" << std::endl;
-
-  for(int iclass=0;iclass<nclass;++iclass)
-    ntraining+=trainingFeatures[iclass].size();
 
   prob.l=ntraining;
   prob.y = Malloc(double,prob.l);
   prob.x = Malloc(struct svm_node *,prob.l);
-  //test
-  std::cout << "debug2" << std::endl;
   x_space = Malloc(struct svm_node,(nFeatures+1)*ntraining);
   unsigned long int spaceIndex=0;
   int lIndex=0;
   for(int iclass=0;iclass<nclass;++iclass){
     for(int isample=0;isample<trainingFeatures[iclass].size();++isample){
-      //test
-      std::cout << "..." << iclass << std::endl;
       prob.x[lIndex]=&(x_space[spaceIndex]);
       for(int ifeature=0;ifeature<nFeatures;++ifeature){
         x_space[spaceIndex].index=ifeature+1;
         x_space[spaceIndex].value=trainingFeatures[iclass][isample][ifeature];
-        //test
-        std::cout << " " << x_space[spaceIndex].index << ":" << x_space[spaceIndex].value;
         ++spaceIndex;
       }
       x_space[spaceIndex++].index=-1;
@@ -113,23 +105,20 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
       ++lIndex;
     }
   }
-  //test
-  std::cout << "debug3" << std::endl;
 
   assert(lIndex==prob.l);
-  if(verbose)
+  if(verbose_opt[0]>1)
     std::cout << "checking parameters" << std::endl;
   svm_check_parameter(&prob,&param);
-  if(verbose)
+  if(verbose_opt[0]>1)
     std::cout << "parameters ok, training" << std::endl;
   svm=svm_train(&prob,&param);
-  if(verbose)
+  if(verbose_opt[0]>1)
     std::cout << "SVM is now trained" << std::endl;
 
-  std::cout << "Confusion matrix" << std::endl;
   ConfusionMatrix cm(nclass);
   double *target = Malloc(double,prob.l);
-  svm_cross_validation(&prob,&param,cv,target);
+  svm_cross_validation(&prob,&param,cv_opt[0],target);
   assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
   int total_correct=0;
   for(int i=0;i<prob.l;i++)
@@ -157,12 +146,11 @@ int main(int argc, char *argv[])
 {
   map<short,int> reclassMap;
   vector<int> vreclass;
-  vector<double> priors;
+  // vector<double> priors;
   
   //--------------------------- command line options ------------------------------------
-
   std::string versionString="version ";
-  versionString+=VERSION;
+  versionString+=static_cast<string>(VERSION);
   versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
    This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
    This is free software, and you are welcome to redistribute it\n\
@@ -179,25 +167,13 @@ int main(int argc, char *argv[])
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
+  Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",0);
-  Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
-  Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
-  Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*|u-v|^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
-  Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
-  Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
-  Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
-  Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C-SVC, epsilon-SVR, and nu-SVR",1);
-  Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu-SVC, one-class SVM, and nu-SVR",0.5);
-  Optionpk<float> epsilon_loss_opt("eloss", "eloss", "the epsilon in loss function of epsilon-SVR",0.1);
-  Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);
-  Optionpk<float> epsilon_tol_opt("etol", "etol", "the tolerance of termination criterion",0.001);
-  Optionpk<bool> shrinking_opt("shrink", "shrink", "whether to use the shrinking heuristics",false);
-  Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",false);
-  // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
-  Optionpk<unsigned int> cv_opt("cv", "cv", "n-fold cross validation mode",2);
-  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+  // Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0);
+  Optionpk<string> selector_opt("sm", "sm", "feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search)","sffs"); 
+  Optionpk<float> epsilon_cost_opt("ecost", "ecost", "epsilon for stopping criterion in cost function to determine optimal number of features",0.001);
 
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
@@ -211,10 +187,11 @@ int main(int argc, char *argv[])
   minSize_opt.retrieveOption(argc,argv);
   start_opt.retrieveOption(argc,argv);
   end_opt.retrieveOption(argc,argv);
+  band_opt.retrieveOption(argc,argv);
   offset_opt.retrieveOption(argc,argv);
   scale_opt.retrieveOption(argc,argv);
   aggreg_opt.retrieveOption(argc,argv);
-  priors_opt.retrieveOption(argc,argv);
+  // priors_opt.retrieveOption(argc,argv);
   svm_type_opt.retrieveOption(argc,argv);
   kernel_type_opt.retrieveOption(argc,argv);
   kernel_degree_opt.retrieveOption(argc,argv);
@@ -228,6 +205,8 @@ int main(int argc, char *argv[])
   shrinking_opt.retrieveOption(argc,argv);
   prob_est_opt.retrieveOption(argc,argv);
   cv_opt.retrieveOption(argc,argv);
+  selector_opt.retrieveOption(argc,argv);
+  epsilon_cost_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
   if(version_opt[0]||todo_opt[0]){
@@ -243,6 +222,13 @@ int main(int argc, char *argv[])
     std::cout << "usage: pkfs_svm -t training [OPTIONS]" << std::endl;
     exit(0);
   }
+  
+  static std::map<std::string, SelectorValue> selMap;
+  //initialize selMap
+  selMap["sffs"]=SFFS;
+  selMap["sfs"]=SFS;
+  selMap["sbs"]=SBS;
+  selMap["bfs"]=BFS;
 
   assert(training_opt[0].size());
   if(verbose_opt[0]>=1)
@@ -267,19 +253,21 @@ int main(int argc, char *argv[])
       vreclass[iclass]=reclass_opt[iclass];
     }
   }
-  if(priors_opt.size()>1){//priors from argument list
-    priors.resize(priors_opt.size());
-    double normPrior=0;
-    for(int iclass=0;iclass<priors_opt.size();++iclass){
-      priors[iclass]=priors_opt[iclass];
-      normPrior+=priors[iclass];
-    }
-    //normalize
-    for(int iclass=0;iclass<priors_opt.size();++iclass)
-      priors[iclass]/=normPrior;
-  }
+  // if(priors_opt.size()>1){//priors from argument list
+  //   priors.resize(priors_opt.size());
+  //   double normPrior=0;
+  //   for(int iclass=0;iclass<priors_opt.size();++iclass){
+  //     priors[iclass]=priors_opt[iclass];
+  //     normPrior+=priors[iclass];
+  //   }
+  //   //normalize
+  //   for(int iclass=0;iclass<priors_opt.size();++iclass)
+  //     priors[iclass]/=normPrior;
+  // }
 
-
+  //sort bands
+  if(band_opt.size())
+    std::sort(band_opt.begin(),band_opt.end());
   //----------------------------------- Training -------------------------------
   struct svm_problem prob;
   vector<string> fields;
@@ -289,7 +277,10 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>=1)
     std::cout << "reading imageShape file " << training_opt[0] << std::endl;
   try{
-    totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+    if(band_opt.size())
+      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+    else
+      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
     if(trainingMap.size()<2){
       string errorstring="Error: could not read at least two classes from training file";
       throw(errorstring);
@@ -373,7 +364,7 @@ int main(int argc, char *argv[])
     assert(scale_opt.size()==nband);
   Histogram hist;
   for(int iband=0;iband<nband;++iband){
-    if(verbose_opt[0]>=1)
+    if(verbose_opt[0]>1)
       std::cout << "scaling for band" << iband << std::endl;
     offset[iband]=(offset_opt.size()==1)?offset_opt[0]:offset_opt[iband];
     scale[iband]=(scale_opt.size()==1)?scale_opt[0]:scale_opt[iband];
@@ -391,7 +382,7 @@ int main(int argc, char *argv[])
       }
       offset[iband]=theMin+(theMax-theMin)/2.0;
       scale[iband]=(theMax-theMin)/2.0;
-      if(verbose_opt[0]>=1){
+      if(verbose_opt[0]>1){
         std::cout << "Extreme image values for band " << iband << ": [" << theMin << "," << theMax << "]" << std::endl;
         std::cout << "Using offset, scale: " << offset[iband] << ", " << scale[iband] << std::endl;
         std::cout << "scaled values for band " << iband << ": [" << (theMin-offset[iband])/scale[iband] << "," << (theMax-offset[iband])/scale[iband] << "]" << std::endl;
@@ -450,20 +441,20 @@ int main(int argc, char *argv[])
     std::cout << "number of reclasses: " << nreclass << std::endl;
   }
     
-  if(priors_opt.size()==1){//default: equal priors for each class
-    priors.resize(nclass);
-    for(int iclass=0;iclass<nclass;++iclass)
-      priors[iclass]=1.0/nclass;
-  }
-  assert(priors_opt.size()==1||priors_opt.size()==nclass);
+  // if(priors_opt.size()==1){//default: equal priors for each class
+  //   priors.resize(nclass);
+  //   for(int iclass=0;iclass<nclass;++iclass)
+  //     priors[iclass]=1.0/nclass;
+  // }
+  // assert(priors_opt.size()==1||priors_opt.size()==nclass);
     
   if(verbose_opt[0]>=1){
     std::cout << "number of bands: " << nband << std::endl;
     std::cout << "number of classes: " << nclass << std::endl;
-    std::cout << "priors:";
-    for(int iclass=0;iclass<nclass;++iclass)
-      std::cout << " " << priors[iclass];
-    std::cout << std::endl;
+    // std::cout << "priors:";
+    // for(int iclass=0;iclass<nclass;++iclass)
+    //   std::cout << " " << priors[iclass];
+    // std::cout << std::endl;
   }
 
   //Calculate features of trainig set
@@ -496,45 +487,84 @@ int main(int argc, char *argv[])
     
   unsigned int ntraining=0;
   for(int iclass=0;iclass<nclass;++iclass){
-    std::cout << "..." << iclass << "..." << std::endl;
-    if(verbose_opt[0]>=1)
+    if(verbose_opt[0]>1)
       std::cout << "training sample size for class " << vcode[iclass] << ": " << trainingFeatures[iclass].size() << std::endl;
     ntraining+=trainingFeatures[iclass].size();
   }
 
   int nFeatures=trainingFeatures[0][0].size();
-  int maxFeatures=(maxFeatures_opt[0])? maxFeatures_opt[0] : nFeatures;
+  int maxFeatures=maxFeatures_opt[0];
+  double previousCost=(maxFeatures_opt[0])? 1 : 0;
+  double currentCost=1;
   list<int> subset;//set of selected features (levels) for each class combination
   double cost=0;
   FeatureSelector selector;
-  if(maxFeatures==nFeatures){
-    subset.clear();
-    for(int ifeature=0;ifeature<nFeatures;++ifeature)
-      subset.push_back(ifeature);
-    // cost=getCost(trainingFeatures[iclass1],trainingFeatures[iclass2]);
-  }
-  else{
-    try{
-      //test
-      std::cout << "debug3" << std::endl;
-      cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,(verbose_opt[0]>0) ? true:false);
+  try{
+    if(maxFeatures==nFeatures){
+      subset.clear();
+      for(int ifeature=0;ifeature<nFeatures;++ifeature)
+        subset.push_back(ifeature);
+      cost=getCost(trainingFeatures);
     }
-    catch(...){
-      std::cout << "catched feature selection" << std::endl;
-      exit(1);
+    else if(!maxFeatures_opt[0]){
+      while(currentCost-previousCost>epsilon_cost_opt[0]){
+        ++maxFeatures;
+        switch(selMap[selector_opt[0]]){
+        case(SFFS):
+          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          break;
+        case(SFS):
+          cost=selector.forward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          break;
+        case(SBS):
+          cost=selector.backward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          break;
+        case(BFS):
+          cost=selector.bruteForce(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          break;
+        default:
+          std::cout << "Error: selector not supported, please use sffs, sfs, sbs or bfs" << std::endl;
+          exit(1);
+          break;
+        }
+        previousCost=currentCost;
+        currentCost=cost;
+      }
+    }
+    else{
+      switch(selMap[selector_opt[0]]){
+      case(SFFS):
+        cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+        break;
+      case(SFS):
+        cost=selector.forward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+        break;
+      case(SBS):
+        cost=selector.backward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+        break;
+      case(BFS):
+        cost=selector.bruteForce(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+        break;
+      default:
+        std::cout << "Error: selector not supported, please use sffs, sfs, sbs or bfs" << std::endl;
+        exit(1);
+        break;
+      }
     }
   }
-  if(verbose_opt[0]){
+  catch(...){
+    std::cout << "catched feature selection" << std::endl;
+    exit(1);
+  }
+
+  if(verbose_opt[0])
     cout <<"cost: " << cost << endl;
-    cout << "levels: ";
-    for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit){
-      cout << *lit;
-      if((*(lit))!=subset.back())
-        cout <<",";
-      else
-        cout << endl;
-    }
-  }
+  for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
+    std::cout << " -b " << *lit;
+  std::cout << std::endl;
+    // if((*(lit))!=subset.back())
+    // else
+    //   cout << endl;
 
   // *NOTE* Because svm_model contains pointers to svm_problem, you can
   // not free the memory used by svm_problem if you are still using the

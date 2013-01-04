@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
+  Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",0);
@@ -80,7 +81,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> shrinking_opt("shrink", "shrink", "whether to use the shrinking heuristics",false);
   Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",false);
   // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
-  Optionpk<unsigned int> cv_opt("cv", "cv", "n-fold cross validation mode",0);
+  Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
   Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations", 1);
   Optionpk<int> bagSize_opt("\0", "bsize", "Percentage of features used from available training features for each bootstrap aggregation", 100);
@@ -108,6 +109,7 @@ int main(int argc, char *argv[])
   minSize_opt.retrieveOption(argc,argv);
   start_opt.retrieveOption(argc,argv);
   end_opt.retrieveOption(argc,argv);
+  band_opt.retrieveOption(argc,argv);
   offset_opt.retrieveOption(argc,argv);
   scale_opt.retrieveOption(argc,argv);
   aggreg_opt.retrieveOption(argc,argv);
@@ -204,6 +206,10 @@ int main(int argc, char *argv[])
       priors[iclass]/=normPrior;
   }
 
+  //sort bands
+  if(band_opt.size())
+    std::sort(band_opt.begin(),band_opt.end());
+
   //----------------------------------- Training -------------------------------
   vector<struct svm_problem> prob(nbag);
   vector<struct svm_node *> x_space(nbag);
@@ -217,7 +223,10 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         std::cout << "reading imageShape file " << training_opt[0] << std::endl;
       try{
-        totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+        if(band_opt.size())
+          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+        else
+          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file";
           throw(errorstring);
@@ -489,15 +498,16 @@ int main(int argc, char *argv[])
     param[ibag].nr_weight = 0;//not used: I use priors and balancing
     param[ibag].weight_label = NULL;
     param[ibag].weight = NULL;
+    param[ibag].verbose=(verbose_opt[0]>1)? true:false;
 
-    if(verbose_opt[0])
+    if(verbose_opt[0]>1)
       std::cout << "checking parameters" << std::endl;
     svm_check_parameter(&prob[ibag],&param[ibag]);
     if(verbose_opt[0])
       std::cout << "parameters ok, training" << std::endl;
     svm[ibag]=svm_train(&prob[ibag],&param[ibag]);
     
-    if(verbose_opt[0])
+    if(verbose_opt[0]>1)
       std::cout << "SVM is now trained" << std::endl;
     if(cv_opt[0]>0){
       std::cout << "Confusion matrix" << std::endl;
@@ -616,33 +626,45 @@ int main(int argc, char *argv[])
       vector<short> lineMask;
       if(mask_opt.size())
         lineMask.resize(maskReader.nrOfCol());
-      Vector2d<float> hpixel(ncol,nband);
+      Vector2d<float> hpixel(ncol);
       // Vector2d<float> fpixel(ncol);
       Vector2d<float> prOut(nreclass,ncol);//posterior prob for each reclass
       Vector2d<char> classBag;//classified line for writing to image file
       if(classBag_opt.size())
         classBag.resize(nbag,ncol);
       //read all bands of all pixels in this line in hline
-      for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
-        if(verbose_opt[0]==2)
-          std::cout << "reading band " << iband << std::endl;
-        assert(iband>=0);
-        assert(iband<testImage.nrOfBand());
-        try{
-          testImage.readData(buffer,GDT_Float32,iline,iband);
+      try{
+        if(band_opt.size()){
+          for(int iband=0;iband<band_opt.size();++iband){
+            if(verbose_opt[0]==2)
+              std::cout << "reading band " << band_opt[iband] << std::endl;
+            assert(band_opt[iband]>=0);
+            assert(band_opt[iband]<testImage.nrOfBand());
+            testImage.readData(buffer,GDT_Float32,iline,band_opt[iband]);
+            for(int icol=0;icol<ncol;++icol)
+              hpixel[icol].push_back(buffer[icol]);
+          }
         }
-        catch(string theError){
-          cerr << "Error reading " << input_opt[0] << ": " << theError << std::endl;
-          exit(3);
+        else{
+          for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
+            if(verbose_opt[0]==2)
+              std::cout << "reading band " << iband << std::endl;
+            assert(iband>=0);
+            assert(iband<testImage.nrOfBand());
+            testImage.readData(buffer,GDT_Float32,iline,iband);
+            for(int icol=0;icol<ncol;++icol)
+              hpixel[icol].push_back(buffer[icol]);
+          }
         }
-        catch(...){
-          cerr << "error catched" << std::endl;
-          exit(3);
-        }
-        for(int icol=0;icol<ncol;++icol)
-          hpixel[icol][iband-start_opt[0]]=buffer[icol];
       }
-
+      catch(string theError){
+        cerr << "Error reading " << input_opt[0] << ": " << theError << std::endl;
+        exit(3);
+      }
+      catch(...){
+        cerr << "error catched" << std::endl;
+        exit(3);
+      }
       assert(nband==hpixel[0].size());
       if(verbose_opt[0]==2)
         std::cout << "used bands: " << nband << std::endl;
@@ -663,7 +685,7 @@ int main(int argc, char *argv[])
     
       //process per pixel
       for(int icol=0;icol<ncol;++icol){
-
+        assert(hpixel[icol].size()==nband);
         bool masked=false;
         if(!lineMask.empty()){
           short theMask=0;
@@ -858,6 +880,7 @@ int main(int argc, char *argv[])
     classImageOut.close();
   }
   else{//classify shape file
+    //notice that fields have already been set by readDataImageShape (taking into account appropriate bands)
     for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
       assert(output_opt.size()==input_opt.size());
       if(verbose_opt[0])

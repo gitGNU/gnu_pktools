@@ -62,8 +62,12 @@ version 2.4
  - pkclassify_svm
 	do not output input file if no input data was defined in verbose mode
 	update of header information
+ - pkclassify_nn
+	support of cross validation
  - pkfs_svm
 	feature selection tool for svm classification (added)
+ - pkfs_nn
+	feature selection tool for nn classification (added)
  - pkascii2ogr
 	tool to create simple vector files from coordinates in ASCII file (points or polygon)
  - pksensormodel

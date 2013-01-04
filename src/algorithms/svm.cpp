@@ -407,7 +407,7 @@ public:
 
 	void Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 		   double *alpha_, double Cp, double Cn, double eps,
-		   SolutionInfo* si, int shrinking);
+		   SolutionInfo* si, int shrinking, bool verbose=false);
 protected:
 	int active_size;
 	schar *y;
@@ -505,7 +505,8 @@ void Solver::reconstruct_gradient()
 
 void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 		   double *alpha_, double Cp, double Cn, double eps,
-		   SolutionInfo* si, int shrinking)
+		   SolutionInfo* si, int shrinking,
+                   bool verbose)//pk
 {
 	this->l = l;
 	this->Q = &Q;
@@ -571,7 +572,8 @@ void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 		{
 			counter = min(l,1000);
 			if(shrinking) do_shrinking();
-			info(".");
+                        if(verbose)//pk
+                          info(".");
 		}
 
 		int i,j;
@@ -581,7 +583,8 @@ void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 			reconstruct_gradient();
 			// reset active set size and check
 			active_size = l;
-			info("*");
+                        if(verbose)//pk
+                          info("*");
 			if(select_working_set(i,j)!=0)
 				break;
 			else
@@ -737,7 +740,8 @@ void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 			// reconstruct the whole gradient to calculate objective value
 			reconstruct_gradient();
 			active_size = l;
-			info("*");
+                        if(verbose)//pk
+                          info("*");
 		}
 		info("\nWARNING: reaching max number of iterations");
 	}
@@ -772,8 +776,9 @@ void Solver::Solve(int l, const QMatrix& Q, const double *p_, const schar *y_,
 
 	si->upper_bound_p = Cp;
 	si->upper_bound_n = Cn;
-
-	info("\noptimization finished, #iter = %d\n",iter);
+        
+        if(verbose)//pk
+          info("\noptimization finished, #iter = %d\n",iter);
 
 	delete[] p;
 	delete[] y;
@@ -1014,10 +1019,10 @@ public:
 	Solver_NU() {}
 	void Solve(int l, const QMatrix& Q, const double *p, const schar *y,
 		   double *alpha, double Cp, double Cn, double eps,
-		   SolutionInfo* si, int shrinking)
+		   SolutionInfo* si, int shrinking, bool verbose=false)
 	{
 		this->si = si;
-		Solver::Solve(l,Q,p,y,alpha,Cp,Cn,eps,si,shrinking);
+		Solver::Solve(l,Q,p,y,alpha,Cp,Cn,eps,si,shrinking,verbose);
 	}
 private:
 	SolutionInfo *si;
@@ -1458,14 +1463,15 @@ static void solve_c_svc(
 
 	Solver s;
 	s.Solve(l, SVC_Q(*prob,*param,y), minus_ones, y,
-		alpha, Cp, Cn, param->eps, si, param->shrinking);
+		alpha, Cp, Cn, param->eps, si, param->shrinking, param->verbose);
 
 	double sum_alpha=0;
 	for(i=0;i<l;i++)
 		sum_alpha += alpha[i];
 
 	if (Cp==Cn)
-		info("nu = %f\n", sum_alpha/(Cp*prob->l));
+          if(param->verbose)//pk
+            info("nu = %f\n", sum_alpha/(Cp*prob->l));
 
 	for(i=0;i<l;i++)
 		alpha[i] *= y[i];
@@ -1512,10 +1518,11 @@ static void solve_nu_svc(
 
 	Solver_NU s;
 	s.Solve(l, SVC_Q(*prob,*param,y), zeros, y,
-		alpha, 1.0, 1.0, param->eps, si,  param->shrinking);
+		alpha, 1.0, 1.0, param->eps, si,  param->shrinking, param->verbose);
 	double r = si->r;
-
-	info("C = %f\n",1/r);
+        
+        if(param->verbose)//pk
+          info("C = %f\n",1/r);
 
 	for(i=0;i<l;i++)
 		alpha[i] *= y[i]/r;
@@ -1555,7 +1562,7 @@ static void solve_one_class(
 
 	Solver s;
 	s.Solve(l, ONE_CLASS_Q(*prob,*param), zeros, ones,
-		alpha, 1.0, 1.0, param->eps, si, param->shrinking);
+		alpha, 1.0, 1.0, param->eps, si, param->shrinking, param->verbose );
 
 	delete[] zeros;
 	delete[] ones;
@@ -1584,7 +1591,7 @@ static void solve_epsilon_svr(
 
 	Solver s;
 	s.Solve(2*l, SVR_Q(*prob,*param), linear_term, y,
-		alpha2, param->C, param->C, param->eps, si, param->shrinking);
+		alpha2, param->C, param->C, param->eps, si, param->shrinking, param->verbose);
 
 	double sum_alpha = 0;
 	for(i=0;i<l;i++)
@@ -1592,7 +1599,8 @@ static void solve_epsilon_svr(
 		alpha[i] = alpha2[i] - alpha2[i+l];
 		sum_alpha += fabs(alpha[i]);
 	}
-	info("nu = %f\n",sum_alpha/(param->C*l));
+        if(param->verbose)//pk
+          info("nu = %f\n",sum_alpha/(param->C*l));
 
 	delete[] alpha2;
 	delete[] linear_term;
@@ -1625,9 +1633,10 @@ static void solve_nu_svr(
 
 	Solver_NU s;
 	s.Solve(2*l, SVR_Q(*prob,*param), linear_term, y,
-		alpha2, C, C, param->eps, si, param->shrinking);
+		alpha2, C, C, param->eps, si, param->shrinking, param->verbose);
 
-	info("epsilon = %f\n",-si->r);
+        if(param->verbose)//pk
+          info("epsilon = %f\n",-si->r);
 
 	for(i=0;i<l;i++)
 		alpha[i] = alpha2[i] - alpha2[i+l];
@@ -1671,7 +1680,8 @@ static decision_function svm_train_one(
 			break;
 	}
 
-	info("obj = %f, rho = %f\n",si.obj,si.rho);
+        if(param->verbose)//pk
+          info("obj = %f, rho = %f\n",si.obj,si.rho);
 
 	// output SVs
 
@@ -1695,7 +1705,8 @@ static decision_function svm_train_one(
 		}
 	}
 
-	info("nSV = %d, nBSV = %d\n",nSV,nBSV);
+        if(param->verbose)//pk
+          info("nSV = %d, nBSV = %d\n",nSV,nBSV);
 
 	decision_function f;
 	f.alpha = alpha;
@@ -2252,7 +2263,8 @@ svm_model *svm_train(const svm_problem *prob, const svm_parameter *param)
 			nz_count[i] = nSV;
 		}
 		
-		info("Total nSV = %d\n",total_sv);
+                if(param->verbose)//pk
+                  info("Total nSV = %d\n",total_sv);
 
 		model->l = total_sv;
 		model->SV = Malloc(svm_node *,total_sv);

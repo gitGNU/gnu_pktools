@@ -826,7 +826,7 @@ namespace FANN
             }
             set_train_data(data);
       }
-      
+
 
 private:
         /* Set the training data to the struct fann_training_data pointer.
@@ -1483,6 +1483,127 @@ public:
             }
         }
 
+      
+
+        void train_on_data(const std::vector< Vector2d<fann_type> >& input,
+                           unsigned int num_data,
+                           bool initWeights,
+                           unsigned int max_epochs,
+                           unsigned int epochs_between_reports,
+                           float desired_error)
+        {
+          if ((ann != NULL))
+            {
+              training_data data;
+              data.set_train_data(input,num_data);
+              if(data.train_data != NULL){
+                if(initWeights)
+                  init_weights(data);
+                fann_train_on_data(ann, data.train_data, max_epochs,
+                                   epochs_between_reports, desired_error);
+              }
+            }
+        }
+
+        float cross_validation(std::vector< Vector2d<fann_type> >& trainingFeatures,
+                               unsigned int ntraining,
+                               unsigned short cv,
+                               unsigned int max_epochs,
+                               unsigned int epochs_between_reports,
+                               float desired_error,
+                               std::vector<unsigned short>& input,
+                               std::vector<unsigned short>& output,
+                               short verbose=0)
+        {
+          input.clear();
+          output.clear();
+          assert(cv<ntraining);
+          float rmse=0;
+          int nclass=trainingFeatures.size();
+          vector< Vector2d<float> > testFeatures(nclass);
+          int testclass=0;//class to leave out
+          int testsample=0;//sample to leave out
+          int nrun=(cv>1)? cv : ntraining;
+          for(int irun=0;irun<nrun;++irun){
+            if(verbose>1)
+              std::cout << "run " << irun << std::endl;
+            //reset training sample from last run
+            if(verbose>1)
+              std::cout << "reset training sample from last run" << std::endl;
+            for(int iclass=0;iclass<nclass;++iclass){
+              while(testFeatures[iclass].size()){
+                trainingFeatures[iclass].push_back(testFeatures[iclass].back());
+                testFeatures[iclass].pop_back();
+              }
+              assert(trainingFeatures[iclass].size());
+            }
+            //create test sample
+            if(verbose>1)
+              std::cout << "create test sample" << std::endl;
+            unsigned int nsample=0;
+            int ntest=(cv>1)? ntraining/cv : 1; //n-fold cross validation or leave-one-out
+            while(nsample<ntest){
+              // if(index>=trainingFeatures[testclass].size()){
+              //   index=0;
+              // }
+              testFeatures[testclass].push_back(trainingFeatures[testclass][0]);
+              trainingFeatures[testclass].erase(trainingFeatures[testclass].begin());
+              if(!trainingFeatures[testclass].size())
+                std::cout << "Error: testclass " << testclass << " has no training" << std::endl;
+              assert(trainingFeatures[testclass].size());
+              ++nsample;
+              if(static_cast<float>(trainingFeatures[testclass].size())/static_cast<float>(testFeatures[testclass].size())<=cv)
+                testclass=(testclass+1)%nclass;
+            }
+            assert(nsample==ntest);
+            //training with left out training set
+            if(verbose>1)
+              cout << endl << "Set training data" << endl;
+            bool initWeights=true;
+            train_on_data(trainingFeatures,ntraining-ntest,initWeights, max_epochs,
+                          epochs_between_reports, desired_error);
+            //cross validation with testFeatures
+            if(verbose>1)
+              cout << endl << "Cross validation" << endl;
+
+            //todo: run network and store result in vector
+            vector<float> result(nclass);
+            int maxClass=-1;
+            for(int iclass=0;iclass<testFeatures.size();++iclass){
+              assert(trainingFeatures[iclass].size());
+              for(int isample=0;isample<testFeatures[iclass].size();++isample){
+                result=run(testFeatures[iclass][isample]);
+                //search class with maximum posterior probability
+                float maxP=-1;
+                for(int ic=0;ic<nclass;++ic){
+                float pv=(result[ic]+1.0)/2.0;//bring back to scale [0,1]
+                  if(pv>maxP){
+                    maxP=pv;
+                    maxClass=ic;
+                  }
+                }
+                assert(maxP>=0);
+                input.push_back(iclass);
+                output.push_back(maxClass);
+              }
+            }
+
+            // rmse+=test_data(testFeatures,ntest);
+            // if(verbose>1)
+            //   cout << endl << "rmse: " << rmse << endl;
+          }
+          // rmse/=nrun;
+          //reset from very last run
+          for(int iclass=0;iclass<nclass;++iclass){
+            while(testFeatures[iclass].size()){
+              trainingFeatures[iclass].push_back(testFeatures[iclass].back());
+              testFeatures[iclass].pop_back();
+            }
+          }
+          // return(rmse);
+          return 0;
+        }
+
         /* Method: train_on_file
            
            Does the same as <train_on_data>, but reads the training data directly from a file.
@@ -1544,6 +1665,54 @@ public:
             }
             return mse;
         }
+
+      float test_data(const std::vector< Vector2d<fann_type> >& input, unsigned int num_data)
+      {
+          assert(num_data);
+          assert(input.size());
+          unsigned int num_class=input.size();
+          assert(input[0].size());
+          unsigned int num_input=input[0][0].size();
+          unsigned int num_output=num_class;
+            struct fann_train_data *data =
+                (struct fann_train_data *)malloc(sizeof(struct fann_train_data));
+            data->input = (fann_type **)calloc(num_data, sizeof(fann_type *));
+            data->output = (fann_type **)calloc(num_data, sizeof(fann_type *));
+
+            data->num_data = num_data;
+            data->num_input = num_input;
+            data->num_output = num_output;
+
+            fann_type *data_input = (fann_type *)calloc(num_input*num_data, sizeof(fann_type));
+            fann_type *data_output = (fann_type *)calloc(num_output*num_data, sizeof(fann_type));
+
+            unsigned int isample=0;
+            for(int iclass=0;iclass<num_class;++iclass){
+              for(int csample=0;csample<input[iclass].size();++csample){
+                data->input[isample] = data_input;
+                data_input += num_input;
+                for(int iband=0;iband<input[iclass][csample].size();++iband){
+                  assert(input[iclass][csample].size()==num_input);
+                  data->input[isample][iband] = input[iclass][csample][iband];
+                }
+                data->output[isample] = data_output;
+                data_output += num_output;
+                for(int ic=0;ic<num_output;++ic){
+                  //for single neuron output:
+//                   data->output[isample][ic]=2.0/(num_class-1)*(iclass-(num_class-1)/2.0);
+                  if(ic==iclass)
+                    data->output[isample][ic] = 1;
+                  else
+                    data->output[isample][ic] = -1;
+                }
+                ++isample;
+              }
+            }
+            FANN::training_data trainingData;
+            trainingData.train_data = data;
+            return test_data(trainingData);
+      }
+
 
         /* Method: get_MSE
            Reads the mean square error from the network.
