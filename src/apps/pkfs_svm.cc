@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
-  Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select all)", 0);
+  Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
@@ -493,11 +493,10 @@ int main(int argc, char *argv[])
   }
 
   int nFeatures=trainingFeatures[0][0].size();
-  int maxFeatures=maxFeatures_opt[0];
-  double previousCost=(maxFeatures_opt[0])? 1 : 0;
-  double currentCost=1;
-  list<int> subset;//set of selected features (levels) for each class combination
+  int maxFeatures=(maxFeatures_opt[0])? maxFeatures_opt[0] : 1;
+  double previousCost=-1;
   double cost=0;
+  list<int> subset;//set of selected features (levels) for each class combination
   FeatureSelector selector;
   try{
     if(maxFeatures==nFeatures){
@@ -506,11 +505,12 @@ int main(int argc, char *argv[])
         subset.push_back(ifeature);
       cost=getCost(trainingFeatures);
     }
-    else if(!maxFeatures_opt[0]){
-      while(currentCost-previousCost>epsilon_cost_opt[0]){
-        ++maxFeatures;
+    else{
+      while(cost-previousCost>epsilon_cost_opt[0]){
+        previousCost=cost;
         switch(selMap[selector_opt[0]]){
         case(SFFS):
+          subset.clear();//needed to clear in case of floating and brute force search
           cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
           break;
         case(SFS):
@@ -520,6 +520,7 @@ int main(int argc, char *argv[])
           cost=selector.backward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
           break;
         case(BFS):
+          subset.clear();//needed to clear in case of floating and brute force search
           cost=selector.bruteForce(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
           break;
         default:
@@ -527,28 +528,15 @@ int main(int argc, char *argv[])
           exit(1);
           break;
         }
-        previousCost=currentCost;
-        currentCost=cost;
-      }
-    }
-    else{
-      switch(selMap[selector_opt[0]]){
-      case(SFFS):
-        cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
-        break;
-      case(SFS):
-        cost=selector.forward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
-        break;
-      case(SBS):
-        cost=selector.backward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
-        break;
-      case(BFS):
-        cost=selector.bruteForce(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
-        break;
-      default:
-        std::cout << "Error: selector not supported, please use sffs, sfs, sbs or bfs" << std::endl;
-        exit(1);
-        break;
+        if(verbose_opt[0]){
+          std::cout << "cost: " << cost << std::endl;
+          std::cout << "previousCost: " << previousCost << std::endl;
+          std::cout << std::setprecision(12) << "cost-previousCost: " << cost - previousCost << " ( " << epsilon_cost_opt[0] << ")" << std::endl;
+        }
+        if(!maxFeatures_opt[0])
+          ++maxFeatures;
+        else
+          break;
       }
     }
   }

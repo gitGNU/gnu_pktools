@@ -177,7 +177,7 @@ template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, dou
     else if(verbose){
       for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
         cout << *lit << " ";
-      cout << " (" << cost.back() << ")" << endl;
+      cout << " (cost: " << cost.back() << ")" << endl;
     }
 
     while(k>1){
@@ -192,7 +192,7 @@ template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, dou
         else if(verbose){
           for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
             cout << *lit << " ";
-          cout << " (" << cost.back() << ")" << endl;
+          cout << " (cost: " << cost.back() << ")" << endl;
         }
 	continue;
       }
