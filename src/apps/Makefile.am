@@ -23,9 +23,11 @@ pklas2img_SOURCES = pklas2img.cc
 pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
 endif
 if USE_NLOPT
-bin_PROGRAMS += pksensormodel
+bin_PROGRAMS += pksensormodel pkopt_svm
 pksensormodel_SOURCES = $(top_srcdir)/src/algorithms/SensorModel.h pksensormodel.h pksensormodel.cc
 pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -lgslwrap
+pkopt_svm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h pkopt_svm.cc
+pkopt_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt
 endif
 # list of sources for the binaries
 pkinfo_SOURCES = pkinfo.cc
@@ -51,8 +53,8 @@ pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pkdiff_SOURCES = pkdiff.cc
-pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
-pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkfs_svm.cc
+pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_nn.h pkclassify_svm.cc
+pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_nn.h pkfs_svm.cc
 pkfs_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc

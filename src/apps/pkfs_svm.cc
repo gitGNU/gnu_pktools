@@ -21,10 +21,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <map>
 #include <algorithm>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgReaderOgr.h"
-#include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
@@ -37,7 +33,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-                                    //static enum SelectorValue { NA, SFFS, SFS, SBS, BFS };
 enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
 
 //global parameters used in cost function getCost
@@ -107,13 +102,13 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   }
 
   assert(lIndex==prob.l);
-  if(verbose_opt[0]>1)
+  if(verbose_opt[0]>2)
     std::cout << "checking parameters" << std::endl;
   svm_check_parameter(&prob,&param);
-  if(verbose_opt[0]>1)
+  if(verbose_opt[0]>2)
     std::cout << "parameters ok, training" << std::endl;
   svm=svm_train(&prob,&param);
-  if(verbose_opt[0]>1)
+  if(verbose_opt[0]>2)
     std::cout << "SVM is now trained" << std::endl;
 
   ConfusionMatrix cm(nclass);
@@ -124,6 +119,8 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   for(int i=0;i<prob.l;i++)
     cm.incrementResult(cm.getClass(prob.y[i]),cm.getClass(target[i]),1);
   assert(cm.nReference());
+  if(verbose_opt[0]>1)
+    std::cout << cm << std::endl;
   // std::cout << "Kappa: " << cm.kappa() << std::endl;
   // double se95_oa=0;
   // double doa=0;
@@ -159,7 +156,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
-  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
+  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
@@ -170,8 +167,6 @@ int main(int argc, char *argv[])
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
-  Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",0);
-  // Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0);
   Optionpk<string> selector_opt("sm", "sm", "feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search)","sffs"); 
   Optionpk<float> epsilon_cost_opt("ecost", "ecost", "epsilon for stopping criterion in cost function to determine optimal number of features",0.001);
 
@@ -190,7 +185,6 @@ int main(int argc, char *argv[])
   band_opt.retrieveOption(argc,argv);
   offset_opt.retrieveOption(argc,argv);
   scale_opt.retrieveOption(argc,argv);
-  aggreg_opt.retrieveOption(argc,argv);
   // priors_opt.retrieveOption(argc,argv);
   svm_type_opt.retrieveOption(argc,argv);
   kernel_type_opt.retrieveOption(argc,argv);

@@ -40,6 +40,8 @@ version 2.4
 	--enable-fann (when FANN is installed, needed for pkclassify_nn)
 	--enable-las (when LIBLAS is installed, needed for pklas2img)
 	--enable-nlopt (when NLOPT is installed, needed for pksensormodel and pkgetchandelier)
+ - OptFactory.h (added)
+	factory class for nlopt::opt (selecting algorithm via string)
  - ImgReaderGdal.cc
 	in addition to internal setNoData member variable, also support GDALSetNoData
  - ImgWriterGdal.cc
@@ -64,13 +66,15 @@ version 2.4
 	update of header information
  - pkclassify_nn
 	support of cross validation
- - pkfs_svm
-	feature selection tool for svm classification (added)
- - pkfs_nn
-	feature selection tool for nn classification (added)
+ - pkfs_svm (added)
+	feature selection tool for svm classification
+ - pkfs_nn (added)
+	feature selection tool for nn classification
+ - pkopt_svm (added)
+	optimization tool for svm classification (optimize ccost and gamma using NLOPT)
  - pkascii2ogr
 	tool to create simple vector files from coordinates in ASCII file (points or polygon)
  - pksensormodel
-	tool to model pushbroom sensor
+	tool to model pushbroom sensor (with optimization of boresight angles using NLOPT)
  - pkascii2ogr
 	support csv input file

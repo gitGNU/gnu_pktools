@@ -24,6 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <nlopt.hpp>
 #include "base/Optionpk.h"
+#include "algorithms/OptFactory.h"
 #include "algorithms/Histogram.h"
 #include "pksensormodel.h"
 
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> aplrad_opt("arad","arad","platform attitude angles",false);
   Optionpk<bool> bcrad_opt("brad","brad","boresight attitude angles",false);
   Optionpk<bool> getzenith_opt("gz","getzenith","get zenith angle from platform",false);
+  Optionpk<string> algorithm_opt("a", "algorithm", "optimization algorithm (see http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms)","LN_COBYLA"); 
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
 
   version_opt.retrieveOption(argc,argv);
@@ -152,6 +154,7 @@ int main(int argc, char *argv[])
   aplrad_opt.retrieveOption(argc,argv);
   bcrad_opt.retrieveOption(argc,argv);
   getzenith_opt.retrieveOption(argc,argv);
+  algorithm_opt.retrieveOption(argc,argv);
   verbose_opt.retrieveOption(argc,argv);
 
   if(version_opt[0]){
@@ -570,7 +573,7 @@ int main(int argc, char *argv[])
       init_opt.push_back(init_opt[0]);
     //todo: make nlopt::LN_COBYLA as a command line option
     //nlopt::opt opt(nlopt::LN_COBYLA,4*input_opt.size());//k,e,a,haze
-    nlopt::opt optimizer(nlopt::LN_SBPLX,3);//bore sight angles
+    nlopt::opt optimizer=OptFactory::getOptimizer(algorithm_opt[0],3);//bore sight angles
 
     optimizer.set_min_objective(objFunction, &theDataModel);
 

@@ -19,7 +19,7 @@ libalgorithms_a_HEADERS += myfann_cpp.h
 endif
 
 if USE_NLOPT
-libalgorithms_a_HEADERS += SensorModel.h
+libalgorithms_a_HEADERS += SensorModel.h OptFactory.h
 endif
 
 # the sources to add to the library and to add to the source distribution

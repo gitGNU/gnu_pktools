@@ -43,7 +43,7 @@ bin_PROGRAMS = pkinfo$(EXEEXT) pkcrop$(EXEEXT) pkreclass$(EXEEXT) \
 	$(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3)
 @USE_FANN_TRUE@am__append_1 = pkclassify_nn pkfs_nn
 @USE_LAS_TRUE@am__append_2 = pklas2img
-@USE_NLOPT_TRUE@am__append_3 = pksensormodel
+@USE_NLOPT_TRUE@am__append_3 = pksensormodel pkopt_svm
 subdir = src/apps
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -57,7 +57,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @USE_FANN_TRUE@am__EXEEXT_1 = pkclassify_nn$(EXEEXT) pkfs_nn$(EXEEXT)
 @USE_LAS_TRUE@am__EXEEXT_2 = pklas2img$(EXEEXT)
-@USE_NLOPT_TRUE@am__EXEEXT_3 = pksensormodel$(EXEEXT)
+@USE_NLOPT_TRUE@am__EXEEXT_3 = pksensormodel$(EXEEXT) \
+@USE_NLOPT_TRUE@	pkopt_svm$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_pkascii2img_OBJECTS = pkascii2img.$(OBJEXT)
@@ -189,6 +190,13 @@ pkndvi_LDADD = $(LDADD)
 pkndvi_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.a \
 	$(top_builddir)/src/imageclasses/libimageClasses.a
+am__pkopt_svm_SOURCES_DIST =  \
+	$(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h \
+	pkopt_svm.cc
+@USE_NLOPT_TRUE@am_pkopt_svm_OBJECTS = pkopt_svm.$(OBJEXT)
+pkopt_svm_OBJECTS = $(am_pkopt_svm_OBJECTS)
+@USE_NLOPT_TRUE@pkopt_svm_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@USE_NLOPT_TRUE@	$(am__DEPENDENCIES_2)
 am_pkpolygonize_OBJECTS = pkpolygonize.$(OBJEXT)
 pkpolygonize_OBJECTS = $(am_pkpolygonize_OBJECTS)
 pkpolygonize_LDADD = $(LDADD)
@@ -250,9 +258,10 @@ SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(pkfillnodata_SOURCES) $(pkfilter_SOURCES) $(pkfs_nn_SOURCES) \
 	$(pkfs_svm_SOURCES) $(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
 	$(pklas2img_SOURCES) $(pkmosaic_SOURCES) $(pkndvi_SOURCES) \
-	$(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
-	$(pksensormodel_SOURCES) $(pksetmask_SOURCES) \
-	$(pksieve_SOURCES) $(pkstat_SOURCES) $(pkstatogr_SOURCES)
+	$(pkopt_svm_SOURCES) $(pkpolygonize_SOURCES) \
+	$(pkreclass_SOURCES) $(pksensormodel_SOURCES) \
+	$(pksetmask_SOURCES) $(pksieve_SOURCES) $(pkstat_SOURCES) \
+	$(pkstatogr_SOURCES)
 DIST_SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(am__pkclassify_nn_SOURCES_DIST) $(pkclassify_svm_SOURCES) \
 	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
@@ -262,7 +271,8 @@ DIST_SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(am__pkfs_nn_SOURCES_DIST) $(pkfs_svm_SOURCES) \
 	$(pkgetmask_SOURCES) $(pkinfo_SOURCES) \
 	$(am__pklas2img_SOURCES_DIST) $(pkmosaic_SOURCES) \
-	$(pkndvi_SOURCES) $(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
+	$(pkndvi_SOURCES) $(am__pkopt_svm_SOURCES_DIST) \
+	$(pkpolygonize_SOURCES) $(pkreclass_SOURCES) \
 	$(am__pksensormodel_SOURCES_DIST) $(pksetmask_SOURCES) \
 	$(pksieve_SOURCES) $(pkstat_SOURCES) $(pkstatogr_SOURCES)
 ETAGS = etags
@@ -389,6 +399,8 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 @USE_LAS_TRUE@pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
 @USE_NLOPT_TRUE@pksensormodel_SOURCES = $(top_srcdir)/src/algorithms/SensorModel.h pksensormodel.h pksensormodel.cc
 @USE_NLOPT_TRUE@pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -lgslwrap
+@USE_NLOPT_TRUE@pkopt_svm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h pkopt_svm.cc
+@USE_NLOPT_TRUE@pkopt_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt
 # list of sources for the binaries
 pkinfo_SOURCES = pkinfo.cc
 pkcrop_SOURCES = pkcrop.cc
@@ -413,8 +425,8 @@ pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pkdiff_SOURCES = pkdiff.cc
-pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_svm.cc
-pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkfs_svm.cc
+pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_nn.h pkclassify_svm.cc
+pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_nn.h pkfs_svm.cc
 pkfs_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
@@ -552,6 +564,9 @@ pkmosaic$(EXEEXT): $(pkmosaic_OBJECTS) $(pkmosaic_DEPENDENCIES)
 pkndvi$(EXEEXT): $(pkndvi_OBJECTS) $(pkndvi_DEPENDENCIES) 
 	@rm -f pkndvi$(EXEEXT)
 	$(CXXLINK) $(pkndvi_OBJECTS) $(pkndvi_LDADD) $(LIBS)
+pkopt_svm$(EXEEXT): $(pkopt_svm_OBJECTS) $(pkopt_svm_DEPENDENCIES) 
+	@rm -f pkopt_svm$(EXEEXT)
+	$(CXXLINK) $(pkopt_svm_OBJECTS) $(pkopt_svm_LDADD) $(LIBS)
 pkpolygonize$(EXEEXT): $(pkpolygonize_OBJECTS) $(pkpolygonize_DEPENDENCIES) 
 	@rm -f pkpolygonize$(EXEEXT)
 	$(CXXLINK) $(pkpolygonize_OBJECTS) $(pkpolygonize_LDADD) $(LIBS)
@@ -601,6 +616,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pklas2img.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkmosaic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkndvi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkopt_svm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkpolygonize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pkreclass.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pksensormodel.Po@am__quote@
