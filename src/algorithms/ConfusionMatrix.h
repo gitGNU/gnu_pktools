@@ -33,6 +33,7 @@ public:
   ConfusionMatrix(const vector<string>& classNames);
   ConfusionMatrix(const ConfusionMatrix& cm);
   ConfusionMatrix& operator=(const ConfusionMatrix& cm);
+  short size() const {return m_results.size();};
   void resize(short nclass);
   void setClassNames(const vector<string>& classNames);
   void pushBackClassName(const string& className);

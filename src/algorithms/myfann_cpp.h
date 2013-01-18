@@ -1535,6 +1535,10 @@ public:
                 trainingFeatures[iclass].push_back(testFeatures[iclass].back());
                 testFeatures[iclass].pop_back();
               }
+              if(verbose>1){
+                std::cout << "training size " << iclass << ": " << trainingFeatures[iclass].size() << std::endl;
+                std::cout << "test size " << iclass << ": " << testFeatures[iclass].size() << std::endl;
+              }
               assert(trainingFeatures[iclass].size());
             }
             //create test sample
@@ -1552,8 +1556,13 @@ public:
                 std::cout << "Error: testclass " << testclass << " has no training" << std::endl;
               assert(trainingFeatures[testclass].size());
               ++nsample;
-              if(static_cast<float>(trainingFeatures[testclass].size())/static_cast<float>(testFeatures[testclass].size())<=cv)
+              if(static_cast<float>(trainingFeatures[testclass].size())/static_cast<float>(testFeatures[testclass].size())<=(cv-1)){
+                if(verbose>1){
+                  std::cout << "training size " << testclass << ": " << trainingFeatures[testclass].size() << std::endl;
+                  std::cout << "test size " << testclass << ": " << testFeatures[testclass].size() << std::endl;
+                }
                 testclass=(testclass+1)%nclass;
+              }
             }
             assert(nsample==ntest);
             //training with left out training set

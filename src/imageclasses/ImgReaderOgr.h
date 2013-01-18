@@ -49,6 +49,7 @@ public:
   template <typename T> int readData(vector<T>& data, const OGRFieldType& fieldType, const string& theField, int layer=0, bool verbose=false);
   template <typename T> int readData(Vector2d<T>& data, const OGRFieldType& fieldType, vector<string>& fields, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   template <typename T> int readData(map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, vector<string>& fields, const string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
+  template <typename T> int readData(map<string,Vector2d<T> >& data, const OGRFieldType& fieldType, vector<string>& fields, const string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   void shape2ascii(ostream& theOstream, const string& pointname, int layer=0, bool verbose=false);
   unsigned long int getFeatureCount(int layer=0) const;
   int getFieldCount(int layer=0) const;
@@ -182,6 +183,141 @@ template <typename T> int ImgReaderOgr::readData(map<int,Vector2d<T> >& data, co
     if(verbose)
       cout << "number of features read: " << ifeature << endl << flush;
     typename map<int,Vector2d<T> >::const_iterator mit=data.begin();
+    int nband=0;
+    if(verbose)
+      cout << "read classes: " << flush;
+    while(mit!=data.end()){
+      if(verbose)
+        cout << mit->first << " " << flush;
+      if(!nband)
+        nband=fields.size();
+      if(pos)
+        assert((mit->second)[0].size()==nband+2);
+      else
+        assert((mit->second)[0].size()==nband);
+      ++mit;
+    }
+    if(verbose)
+      cout << endl << flush;
+    return(nband);
+  }
+  else{
+    ostringstream ess;
+    ess << "no layer in " << m_filename;
+    throw(ess.str());
+  }
+}
+
+//read data from all features in a map, organized by class names
+template <typename T> int ImgReaderOgr::readData(map<string,Vector2d<T> >& data, const OGRFieldType& fieldType, vector<string>& fields, const string& label, int layer, bool pos, bool verbose)
+{
+  if(layer<0)
+    layer=m_datasource->GetLayerCount()-1;
+  assert(m_datasource->GetLayerCount()>layer);
+  OGRLayer  *poLayer;
+  if(verbose)
+    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+  poLayer = m_datasource->GetLayer(layer);
+  if(poLayer!=NULL){
+    OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+    if(fields.empty()){
+      fields.resize(poFDefn->GetFieldCount());
+      if(verbose)
+        cout << "resized fields to " << fields.size() << endl;
+    }
+    //start reading features from the layer
+    OGRFeature *poFeature;
+    if(verbose)
+      cout << "reset reading" << endl;
+    poLayer->ResetReading();
+    unsigned long int ifeature=0;
+    int posOffset=(pos)?2:0;
+    if(verbose)
+      cout << "going through features to fill in string map" << endl << flush;
+    string theClass;
+    while( (poFeature = poLayer->GetNextFeature()) != NULL ){
+      vector<T> theFeature;//(fields.size()+posOffset);//x,y+selectedfields
+      if(verbose)
+        cout << "reading feature " << ifeature << endl << flush;
+      OGRGeometry *poGeometry;
+      poGeometry = poFeature->GetGeometryRef();
+      if(verbose){
+        if(poGeometry == NULL)
+          cerr << "no geometry defined" << endl << flush;
+        else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
+          cerr << "Warning: poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
+      }
+      assert(poGeometry != NULL );
+             // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
+      OGRPoint *poPoint;
+      if(pos){
+        poPoint = (OGRPoint *) poGeometry;
+        if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
+        theFeature.push_back(poPoint->getX());
+        theFeature.push_back(poPoint->getY());
+        }
+        else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+          OGRPolygon * poPolygon = (OGRPolygon *) poGeometry;
+          poPolygon->Centroid(poPoint);
+          theFeature.push_back(poPoint->getX());
+          theFeature.push_back(poPoint->getY());
+        }        
+        else{
+          string errorstring="Error: Centroid for non polygon geometry not supported until OGR 1.8.0, change ImgReaderOgr if version >= 1.8.0 is installed...";
+            throw(errorstring);
+          // poGeometry->Centroid(poPoint);
+          // theFeature.push_back(poPoint->getX());
+          // theFeature.push_back(poPoint->getY());
+        }       
+      }
+      // OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();//got LayerDefn already...
+      string featurename;
+      for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
+        OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
+        string fieldname=poFieldDefn->GetNameRef();
+        if(fieldname==label){
+          theClass=poFeature->GetFieldAsString(iField);
+          if(verbose)
+            std::cout << "read feature for " << theClass << std::endl;
+        }
+        else{
+          switch(fieldType){
+          case(OFTReal):
+            if(fields.size()<poFDefn->GetFieldCount()){
+              if(find(fields.begin(),fields.end(),fieldname)!=fields.end())
+                theFeature.push_back(poFeature->GetFieldAsDouble(iField));
+            }
+            else{
+              fields[iField]=fieldname;
+              theFeature.push_back(poFeature->GetFieldAsDouble(iField));
+            }
+            break;
+          case(OFTInteger):
+            if(fields.size()<poFDefn->GetFieldCount()){
+              if(find(fields.begin(),fields.end(),fieldname)!=fields.end())
+                theFeature.push_back(poFeature->GetFieldAsDouble(iField));
+            }
+            else{
+              fields[iField]=fieldname;
+              theFeature.push_back(poFeature->GetFieldAsDouble(iField));
+            }
+            break;
+          default:
+            {
+              string errorstring="field type not supported in ImgReaderOgr::ReadData";
+              throw(errorstring);
+            }
+            break;
+          }
+        }
+      }
+      data[theClass].push_back(theFeature);
+      ++ifeature;
+      ++ifeature;
+    }
+    if(verbose)
+      cout << "number of features read: " << ifeature << endl << flush;
+    typename map<string,Vector2d<T> >::const_iterator mit=data.begin();
     int nband=0;
     if(verbose)
       cout << "read classes: " << flush;
