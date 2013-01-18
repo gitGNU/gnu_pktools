@@ -522,9 +522,19 @@ int main(int argc, char *argv[])
         cm.incrementResult(cm.getClass(prob[ibag].y[i]),cm.getClass(target[i]),1);
       assert(cm.nReference());
       std::cout << cm << std::endl;
-      std::cout << "Kappa: " << cm.kappa() << std::endl;
+      double se95_ua=0;
+      double se95_pa=0;
+      double dua=0;
+      double dpa=0;
       double se95_oa=0;
       double doa=0;
+      cout << "class #samples userAcc prodAcc" << endl;
+      for(int iclass=0;iclass<cm.nClasses();++iclass){
+        dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
+        dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+        cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+      }
+      std::cout << "Kappa: " << cm.kappa() << std::endl;
       doa=cm.oa_pct(&se95_oa);
       std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
       free(target);
