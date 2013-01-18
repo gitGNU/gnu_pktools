@@ -35,11 +35,57 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
+void reclass(const vector<double>& result, const vector<int>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass);
+
+void reclass(const vector<double>& result, const vector<int>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass){
+  unsigned int nclass=result.size();
+  assert(priors.size()==nclass);
+  assert(theResultReclass.size()>1);//must have size nreclass!
+  unsigned int nreclass=theResultReclass.size();
+  vector<float> pValues(nclass);
+  float normReclass=0;
+  for(int iclass=0;iclass<nclass;++iclass){
+    float pv=result[iclass];//todo: check if result from svm is [0,1]
+    assert(pv>=0);
+    assert(pv<=1);
+    pv*=priors[iclass];
+    pValues[iclass]=pv;
+  }
+  for(int iclass=0;iclass<nreclass;++iclass){
+    theResultReclass[iclass]=0;
+    float maxPaggreg=0;
+    for(int ic=0;ic<nclass;++ic){
+      if(vreclass[ic]==iclass){
+	switch(aggregation){
+	default:
+	case(1)://sum rule (sum posterior probabilities of aggregated individual classes)
+	  theResultReclass[iclass]+=pValues[ic];
+	break;
+	case(0):
+	case(2)://max rule (look for maximum post probability of aggregated individual classes)
+	  if(pValues[ic]>maxPaggreg){
+	    maxPaggreg=pValues[ic];
+	    theResultReclass[iclass]=maxPaggreg;
+	  }
+	break;
+	}
+      }
+    }
+    normReclass+=theResultReclass[iclass];
+  }
+  for(int iclass=0;iclass<nreclass;++iclass){
+    float prv=theResultReclass[iclass];
+    prv/=normReclass;
+    theResultReclass[iclass]=prv;
+  }
+}
+
 int main(int argc, char *argv[])
 {
   map<short,int> reclassMap;
-  vector<int> vreclass;
+  vector<int> vreclass;	  //vreclass: map nclass->nreclass
   vector<double> priors;
+  vector<double> priorsReclass;
   
   //--------------------------- command line options ------------------------------------
 
@@ -205,6 +251,7 @@ int main(int argc, char *argv[])
     for(int iclass=0;iclass<priors_opt.size();++iclass)
       priors[iclass]/=normPrior;
   }
+
 
   //sort bands
   if(band_opt.size())
@@ -410,7 +457,16 @@ int main(int argc, char *argv[])
           priors[iclass]=1.0/nclass;
       }
       assert(priors_opt.size()==1||priors_opt.size()==nclass);
-    
+
+      priorsReclass.resize(nreclass);
+      for(int iclass=0;iclass<nreclass;++iclass){
+	priorsReclass[iclass]=0;
+	for(int ic=0;ic<nclass;++ic){
+	  if(vreclass[ic]==iclass)
+	    priorsReclass[iclass]+=priors[ic];
+	}
+      }
+
       if(verbose_opt[0]>=1){
         std::cout << "number of bands: " << nband << std::endl;
         std::cout << "number of classes: " << nclass << std::endl;
@@ -522,19 +578,9 @@ int main(int argc, char *argv[])
         cm.incrementResult(cm.getClass(prob[ibag].y[i]),cm.getClass(target[i]),1);
       assert(cm.nReference());
       std::cout << cm << std::endl;
-      double se95_ua=0;
-      double se95_pa=0;
-      double dua=0;
-      double dpa=0;
+      std::cout << "Kappa: " << cm.kappa() << std::endl;
       double se95_oa=0;
       double doa=0;
-      cout << "class #samples userAcc prodAcc" << endl;
-      for(int iclass=0;iclass<cm.nClasses();++iclass){
-        dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
-        dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
-        cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
-      }
-      std::cout << "Kappa: " << cm.kappa() << std::endl;
       doa=cm.oa_pct(&se95_oa);
       std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
       free(target);
@@ -762,9 +808,7 @@ int main(int argc, char *argv[])
           // x[fpixel[icol].size()].index=-1;//to end svm feature vector
           x[nband].index=-1;//to end svm feature vector
           double predict_label=0;
-          vector<float> pValues(nclass);
           vector<float> prValues(nreclass);
-          vector<float> priorsReclass(nreclass);
           float maxP=0;
           if(!aggreg_opt[0]){
             predict_label = svm_predict(svm[ibag],x);
@@ -779,40 +823,10 @@ int main(int argc, char *argv[])
             assert(svm_check_probability_model(svm[ibag]));
             predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
           }
-          for(int iclass=0;iclass<nclass;++iclass){
-            float pv=result[iclass];
-            assert(pv>=0);
-            assert(pv<=1);
-            pv*=priors[iclass];
-            pValues[iclass]=pv;
-          }
-          float normReclass=0;
-          for(int iclass=0;iclass<nreclass;++iclass){
-            prValues[iclass]=0;
-            priorsReclass[iclass]=0;
-            float maxPaggreg=0;
-            for(int ic=0;ic<nclass;++ic){
-              if(vreclass[ic]==iclass){
-                priorsReclass[iclass]+=priors[ic];
-                switch(aggreg_opt[0]){
-                default:
-                case(1)://sum rule (sum posterior probabilities of aggregated individual classes)
-                  prValues[iclass]+=pValues[ic];
-                break;
-                case(0):
-                case(2)://max rule (look for maximum post probability of aggregated individual classes)
-                  if(pValues[ic]>maxPaggreg){
-                    maxPaggreg=pValues[ic];
-                    prValues[iclass]=maxPaggreg;
-                  }
-                  break;
-                }
-              }
-            }
-          }
+
+	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
+	  
           for(int iclass=0;iclass<nreclass;++iclass)
-            normReclass+=prValues[iclass];
-        
           //calculate posterior prob of bag 
           if(classBag_opt.size()){
             //search for max prob within bag
@@ -820,10 +834,6 @@ int main(int argc, char *argv[])
             classBag[ibag][icol]=0;
           }
           for(int iclass=0;iclass<nreclass;++iclass){
-            float prv=prValues[iclass];
-            prv/=normReclass;
-            //           prv*=100.0;
-            prValues[iclass]=prv;
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
@@ -924,15 +934,12 @@ int main(int argc, char *argv[])
         
         imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature);
         OGRFeature::DestroyFeature( poFeature );
-//         assert(validationPixel.size()>=start_opt[0]+nband);
         assert(validationPixel.size()==nband);
         vector<float> prOut(nreclass);//posterior prob for each reclass
         for(int iclass=0;iclass<nreclass;++iclass)
           prOut[iclass]=0;
         for(int ibag=0;ibag<nbag;++ibag){
-//           for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
           for(int iband=0;iband<nband;++iband){
-//             validationFeature.push_back((validationPixel[iband]-offset[ibag][iband-start_opt[0]])/scale[ibag][iband-start_opt[0]]);
             validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
             if(verbose_opt[0]==2)
               std::cout << " " << validationFeature.back();
@@ -950,10 +957,8 @@ int main(int argc, char *argv[])
           }
           x[validationFeature.size()].index=-1;//to end svm feature vector
           double predict_label=0;
-          vector<float> pValues(nclass);
+          // vector<float> pValues(nclass);
           vector<float> prValues(nreclass);
-          vector<float> priorsReclass(nreclass);
-          float maxP=0;
           if(!aggreg_opt[0]){
             predict_label = svm_predict(svm[ibag],x);
             for(int iclass=0;iclass<nclass;++iclass){
@@ -967,43 +972,11 @@ int main(int argc, char *argv[])
             assert(svm_check_probability_model(svm[ibag]));
             predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
           }
-          // int maxClass=0;
-          for(int iclass=0;iclass<nclass;++iclass){
-            float pv=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
-            pv*=priors[iclass];
-            pValues[iclass]=pv;
-          }
-          float normReclass=0;
-          for(int iclass=0;iclass<nreclass;++iclass){
-            prValues[iclass]=0;
-            priorsReclass[iclass]=0;
-            float maxPaggreg=0;
-            for(int ic=0;ic<nclass;++ic){
-              if(vreclass[ic]==iclass){
-                priorsReclass[iclass]+=priors[ic];
-                switch(aggreg_opt[0]){
-                default:
-                case(0)://sum rule (sum posterior probabilities of aggregated individual classes)
-                  prValues[iclass]+=pValues[ic];
-                  break;
-                case(1)://max rule (look for maximum post probability of aggregated individual classes)
-                  if(pValues[ic]>maxPaggreg){
-                    maxPaggreg=pValues[ic];
-                    prValues[iclass]=maxPaggreg;
-                  }
-                  break;
-                }
-              }
-            }
-          }
-          for(int iclass=0;iclass<nreclass;++iclass)
-            normReclass+=prValues[iclass];
+
+	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
+
           //calculate posterior prob of bag 
           for(int iclass=0;iclass<nreclass;++iclass){
-            float prv=prValues[iclass];
-            prv/=normReclass;
-            //           prv*=100.0;
-            prValues[iclass]=prv;
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
@@ -1020,6 +993,7 @@ int main(int argc, char *argv[])
           }
           free(x);
         }//for ibag
+
         //search for max class prob
         float maxBag=0;
         float normBag=0;

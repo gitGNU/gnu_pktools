@@ -34,11 +34,57 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <config.h>
 #endif
 
+void reclass(const vector<float>& result, const vector<int>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass);
+
+void reclass(const vector<float>& result, const vector<int>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass){
+  unsigned int nclass=result.size();
+  assert(priors.size()==nclass);
+  assert(theResultReclass.size()>1);//must have size nreclass!
+  unsigned int nreclass=theResultReclass.size();
+  vector<float> pValues(nclass);
+  float normReclass=0;
+  for(int iclass=0;iclass<nclass;++iclass){
+    float pv=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
+    assert(pv>=0);
+    assert(pv<=1);
+    pv*=priors[iclass];
+    pValues[iclass]=pv;
+  }
+  for(int iclass=0;iclass<nreclass;++iclass){
+    theResultReclass[iclass]=0;
+    float maxPaggreg=0;
+    for(int ic=0;ic<nclass;++ic){
+      if(vreclass[ic]==iclass){
+	switch(aggregation){
+	default:
+	case(1)://sum rule (sum posterior probabilities of aggregated individual classes)
+	  theResultReclass[iclass]+=pValues[ic];
+	break;
+	case(0):
+	case(2)://max rule (look for maximum post probability of aggregated individual classes)
+	  if(pValues[ic]>maxPaggreg){
+	    maxPaggreg=pValues[ic];
+	    theResultReclass[iclass]=maxPaggreg;
+	  }
+	break;
+	}
+      }
+    }
+    normReclass+=theResultReclass[iclass];
+  }
+  for(int iclass=0;iclass<nreclass;++iclass){
+    float prv=theResultReclass[iclass];
+    prv/=normReclass;
+    theResultReclass[iclass]=prv;
+  }
+}
+
 int main(int argc, char *argv[])
 {
   map<short,int> reclassMap;
   vector<int> vreclass;
   vector<double> priors;
+  vector<double> priorsReclass;
   
   //--------------------------- command line options ------------------------------------
 
@@ -52,8 +98,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
-  Optionpk<string> input_opt("i", "input", "input image",""); 
-  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)",""); 
+  Optionpk<string> input_opt("i", "input", "input image"); 
+  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file. (default is label)","label"); 
   Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.). Default is 0: do not reclass", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class (default 0: do not balance)", 0);
@@ -63,7 +109,7 @@ int main(int argc, char *argv[])
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
-  Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: sum rule, 1: max rule). Default is max rule (1)",1); 
+  Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (1: sum rule, 2: max rule).",1);
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ), default set to equal priors)", 0.0); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned int> nneuron_opt("\0", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
@@ -74,16 +120,16 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option. Default is sum rule (0)",0); 
   Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("\0", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (default for no bagging: 100)", 100);
-  Optionpk<string> classBag_opt("\0", "class", "output for each individual bootstrap aggregation (default is blank)",""); 
-  Optionpk<string> mask_opt("\0", "mask", "mask image (see also mvalue option (default is no mask)",""); 
+  Optionpk<string> classBag_opt("\0", "class", "output for each individual bootstrap aggregation (default is blank)"); 
+  Optionpk<string> mask_opt("\0", "mask", "mask image (see also mvalue option (default is no mask)"); 
   Optionpk<short> maskValue_opt("\0", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> flag_opt("f", "flag", "flag to put where image is invalid. Default is 0", 0);
-  Optionpk<string> output_opt("o", "output", "output classification image",""); 
-  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
+  Optionpk<string> output_opt("o", "output", "output classification image"); 
+  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
-  Optionpk<string> colorTable_opt("\0", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)",""); 
-  Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image",""); 
+  Optionpk<string> colorTable_opt("\0", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
+  Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image"); 
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
   version_opt.retrieveOption(argc,argv);
@@ -141,9 +187,9 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0]>=1){
     cout << "image filename: " << input_opt[0] << endl;
-    if(mask_opt[0]!="")
+    if(mask_opt.size())
       cout << "mask filename: " << mask_opt[0] << endl;
-    if(training_opt[0]!=""){
+    if(training_opt.size()){
       cout << "training shape file: " << endl;
       for(int ifile=0;ifile<training_opt.size();++ifile)
         cout << training_opt[ifile] << endl;
@@ -252,11 +298,11 @@ int main(int argc, char *argv[])
       }
       if(!ibag){
         nclass=trainingPixels.size();
-        nband=(training_opt[0]!="")?trainingPixels[0][0].size()-2:trainingPixels[0][0].size();//X and Y
+        nband=(training_opt.size())?trainingPixels[0][0].size()-2:trainingPixels[0][0].size();//X and Y
       }
       else{
         assert(nclass==trainingPixels.size());
-        assert(nband==(training_opt[0]!="")?trainingPixels[0][0].size()-2:trainingPixels[0][0].size());
+        assert(nband==(training_opt.size())?trainingPixels[0][0].size()-2:trainingPixels[0][0].size());
       }
       assert(reclassMap.size()==nclass);
 
@@ -388,6 +434,15 @@ int main(int argc, char *argv[])
       }
       assert(priors_opt.size()==1||priors_opt.size()==nclass);
     
+      priorsReclass.resize(nreclass);
+      for(int iclass=0;iclass<nreclass;++iclass){
+	priorsReclass[iclass]=0;
+	for(int ic=0;ic<nclass;++ic){
+	  if(vreclass[ic]==iclass)
+	    priorsReclass[iclass]+=priors[ic];
+	}
+      }
+
       if(verbose_opt[0]>=1){
         cout << "number of bands: " << nband << endl;
         cout << "number of classes: " << nclass << endl;
@@ -562,7 +617,7 @@ int main(int argc, char *argv[])
       exit(2);
     }
     ImgReaderGdal maskReader;
-    if(mask_opt[0]!=""){
+    if(mask_opt.size()){
       try{
         if(verbose_opt[0]>=1)
           cout << "opening mask image file " << mask_opt[0] << endl;
@@ -593,13 +648,13 @@ int main(int argc, char *argv[])
     ImgWriterGdal classImageOut;
     ImgWriterGdal probImage;
     string imageType=testImage.getImageType();
-    if(oformat_opt[0]!="")//default
+    if(oformat_opt.size())//default
       imageType=oformat_opt[0];
     try{
 
       if(verbose_opt[0]>=1)
         cout << "opening class image for writing output " << output_opt[0] << endl;
-      if(classBag_opt[0]!=""){
+      if(classBag_opt.size()){
         classImageBag.open(output_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
         classImageBag.copyGeoTransform(testImage);
         classImageBag.setProjection(testImage.getProjection());
@@ -607,9 +662,9 @@ int main(int argc, char *argv[])
       classImageOut.open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,option_opt);
       classImageOut.copyGeoTransform(testImage);
       classImageOut.setProjection(testImage.getProjection());
-      if(colorTable_opt[0]!="")
+      if(colorTable_opt.size())
         classImageOut.setColorTable(colorTable_opt[0],0);
-      if(prob_opt[0]!=""){
+      if(prob_opt.size()){
         probImage.open(prob_opt[0],ncol,nrow,nreclass,GDT_Byte,imageType,option_opt);
         probImage.copyGeoTransform(testImage);
         probImage.setProjection(testImage.getProjection());
@@ -628,13 +683,13 @@ int main(int argc, char *argv[])
     for(int iline=0;iline<nrow;++iline){
       vector<float> buffer(ncol);
       vector<short> lineMask;
-      if(mask_opt[0]!="")
+      if(mask_opt.size())
         lineMask.resize(maskReader.nrOfCol());
       Vector2d<float> hpixel(ncol);
       Vector2d<float> fpixel(ncol);
       Vector2d<float> prOut(nreclass,ncol);//posterior prob for each reclass
       Vector2d<char> classBag;//classified line for writing to image file
-      if(classBag_opt[0]!="")
+      if(classBag_opt.size())
         classBag.resize(nbag,ncol);
       //read all bands of all pixels in this line in hline
       try{
@@ -732,7 +787,7 @@ int main(int argc, char *argv[])
             }
           }
           if(masked){
-            if(classBag_opt[0]!="")
+            if(classBag_opt.size())
               for(int ibag=0;ibag<nbag;++ibag)
                 classBag[ibag][icol]=theMask;
             classOut[icol]=theMask;
@@ -747,7 +802,7 @@ int main(int argc, char *argv[])
           }
         }
         if(!valid){
-          if(classBag_opt[0]!="")
+          if(classBag_opt.size())
             for(int ibag=0;ibag<nbag;++ibag)
               classBag[ibag][icol]=flag_opt[0];
           classOut[icol]=flag_opt[0];
@@ -767,50 +822,16 @@ int main(int argc, char *argv[])
           float maxP=0;
           vector<float> pValues(nclass);
           vector<float> prValues(nreclass);
-          vector<float> priorsReclass(nreclass);
-          for(int iclass=0;iclass<nclass;++iclass){
-            float pv=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
-            pv*=priors[iclass];
-            pValues[iclass]=pv;
-          }
-          float normReclass=0;
-          for(int iclass=0;iclass<nreclass;++iclass){
-            prValues[iclass]=0;
-            priorsReclass[iclass]=0;
-            float maxPaggreg=0;
-            for(int ic=0;ic<nclass;++ic){
-              if(vreclass[ic]==iclass){
-                priorsReclass[iclass]+=priors[ic];
-                switch(aggreg_opt[0]){
-                default:
-                case(0)://sum rule (sum posterior probabilities of aggregated individual classes)
-                  prValues[iclass]+=pValues[ic];
-                  break;
-                case(1)://max rule (look for maximum post probability of aggregated individual classes)
-                  if(pValues[ic]>maxPaggreg){
-                    maxPaggreg=pValues[ic];
-                    prValues[iclass]=maxPaggreg;
-                  }
-                  break;
-                }
-              }
-            }
-          }
-        
-          for(int iclass=0;iclass<nreclass;++iclass)
-            normReclass+=prValues[iclass];
-        
+
+	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
+
           //calculate posterior prob of bag 
-          if(classBag_opt[0]!=""){
+          if(classBag_opt.size()){
             //search for max prob within bag
             maxP=0;
             classBag[ibag][icol]=0;
           }
           for(int iclass=0;iclass<nreclass;++iclass){
-            float prv=prValues[iclass];
-            prv/=normReclass;
-            //           prv*=100.0;
-            prValues[iclass]=prv;
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
@@ -824,7 +845,7 @@ int main(int argc, char *argv[])
                 prOut[iclass][icol]=prValues[iclass];
               break;
             }
-            if(classBag_opt[0]!=""){
+            if(classBag_opt.size()){
               //search for max prob within bag
               if(prValues[iclass]>maxP){
                 maxP=prValues[iclass];
@@ -853,10 +874,10 @@ int main(int argc, char *argv[])
         }
       }//icol
       //----------------------------------- write output ------------------------------------------
-      if(classBag_opt[0]!="")
+      if(classBag_opt.size())
         for(int ibag=0;ibag<nbag;++ibag)
           classImageBag.writeData(classBag[ibag],GDT_Byte,iline,ibag);
-      if(prob_opt[0]!=""){
+      if(prob_opt.size()){
         for(int iclass=0;iclass<nreclass;++iclass)
           probImage.writeData(prOut[iclass],GDT_Float32,iline,iclass);
       }
@@ -867,9 +888,9 @@ int main(int argc, char *argv[])
       }
     }
     testImage.close();
-    if(prob_opt[0]!="")
+    if(prob_opt.size())
       probImage.close();
-    if(classBag_opt[0]!="")
+    if(classBag_opt.size())
       classImageBag.close();
     classImageOut.close();
   }
@@ -928,43 +949,11 @@ int main(int argc, char *argv[])
           float maxP=0;
           vector<float> pValues(nclass);
           vector<float> prValues(nreclass);
-          vector<float> priorsReclass(nreclass);
-          for(int iclass=0;iclass<nclass;++iclass){
-            float pv=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
-            pv*=priors[iclass];
-            pValues[iclass]=pv;
-          }
-          float normReclass=0;
-          for(int iclass=0;iclass<nreclass;++iclass){
-            prValues[iclass]=0;
-            priorsReclass[iclass]=0;
-            float maxPaggreg=0;
-            for(int ic=0;ic<nclass;++ic){
-              if(vreclass[ic]==iclass){
-                priorsReclass[iclass]+=priors[ic];
-                switch(aggreg_opt[0]){
-                default:
-                case(0)://sum rule (sum posterior probabilities of aggregated individual classes)
-                  prValues[iclass]+=pValues[ic];
-                  break;
-                case(1)://max rule (look for maximum post probability of aggregated individual classes)
-                  if(pValues[ic]>maxPaggreg){
-                    maxPaggreg=pValues[ic];
-                    prValues[iclass]=maxPaggreg;
-                  }
-                  break;
-                }
-              }
-            }
-          }
-          for(int iclass=0;iclass<nreclass;++iclass)
-            normReclass+=prValues[iclass];
+
+	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
+
           //calculate posterior prob of bag 
           for(int iclass=0;iclass<nreclass;++iclass){
-            float prv=prValues[iclass];
-            prv/=normReclass;
-            //           prv*=100.0;
-            prValues[iclass]=prv;
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
