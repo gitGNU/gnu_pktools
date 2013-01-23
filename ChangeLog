@@ -54,6 +54,7 @@ version 2.4
 	support of nodata value when calculating histogram and image statistics
 	options min and max are now set with -min (--min) and -max (--max)
 	option min and max now per default empty and can be set individually for calculating histogram
+	segmentation fault with option -ct if no color table was defined
  - pkfilter
 	bug solved in update of progress bar
 	support of standard deviation

@@ -241,10 +241,14 @@ int main(int argc, char *argv[])
     }
     if(colorTable_opt[0]){
       GDALColorTable* colorTable=imgReader.getColorTable();
-      for(int index=0;index<colorTable->GetColorEntryCount();++index){
-        GDALColorEntry sEntry=*(colorTable->GetColorEntry(index));
-        std::cout << index << " " << sEntry.c1 << " " << sEntry.c2 << " " << sEntry.c3 << " " << sEntry.c4 << std::endl;
+      if(colorTable!=NULL){
+        for(int index=0;index<colorTable->GetColorEntryCount();++index){
+          GDALColorEntry sEntry=*(colorTable->GetColorEntry(index));
+          std::cout << index << " " << sEntry.c1 << " " << sEntry.c2 << " " << sEntry.c3 << " " << sEntry.c4 << std::endl;
+        }
       }
+      else
+        std::cout << "--ct none ";
     }
     if(samples_opt[0])
       std::cout << "--samples " << imgReader.nrOfCol() << " ";
