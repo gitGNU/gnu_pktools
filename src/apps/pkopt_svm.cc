@@ -50,6 +50,7 @@ Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);
 Optionpk<float> epsilon_tol_opt("etol", "etol", "the tolerance of termination criterion",0.001);
 Optionpk<bool> shrinking_opt("shrink", "shrink", "whether to use the shrinking heuristics",false);
 Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",false);
+Optionpk<bool> costfunction_opt("cf", "cf", "use Overall Accuracy instead of kappa",false);
 // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
 Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
 Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
@@ -142,8 +143,9 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
     std::cout << "oa: " << oa << std::endl;
     std::cout << "kappa: " << kappa << std::endl;
   }
-  if(oa)
-    error=1.0/oa;
+  double cost=(costfunction_opt[0])? oa : kappa;
+  if(cost)
+    error=1.0/cost;
   return(error);
 }
 
@@ -204,6 +206,7 @@ int main(int argc, char *argv[])
   shrinking_opt.retrieveOption(argc,argv);
   prob_est_opt.retrieveOption(argc,argv);
   cv_opt.retrieveOption(argc,argv);
+  costfunction_opt.retrieveOption(argc,argv);
   maxit_opt.retrieveOption(argc,argv);
   tolerance_opt.retrieveOption(argc,argv);
   algorithm_opt.retrieveOption(argc,argv);
