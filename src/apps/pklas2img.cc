@@ -50,9 +50,10 @@ int main(int argc,char **argv) {
   Optionpk<double> hThreshold_opt("ht", "maxHeight", "initial and maximum height threshold for progressive morphological filtering (e.g., -ht 0.2 -ht 2.5)", 0.2);
   Optionpk<short> maxIter_opt("\0", "maxIter", "Maximum number of iterations in post filter (default is 100)", 100.0);
   Optionpk<short> nbin_opt("nb", "nbin", "Number of percentile bins for calculating profile (=number of output bands) (default is 10)", 10.0);
-  Optionpk<unsigned short> returns_opt("r", "returns", "number(s) of returns to include (use -r -1 for last return only). Default is 0 (include all returns)", 0);
-  Optionpk<string> composite_opt("c", "composite", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile, number (point density)). Default is last (overwrite cells with latest point", "last");
-  Optionpk<string> filter_opt("fir", "filter", "filter las points (single,multiple,all). Default is all", "all");
+  Optionpk<unsigned short> returns_opt("r", "returns", "number(s) of returns to include");
+  Optionpk<unsigned short> classes_opt("c", "classes", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
+  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile, number (point density)). Default is last (overwrite cells with latest point", "last");
+  Optionpk<string> filter_opt("fir", "filter", "filter las points (last,single,multiple,all). Default is all", "all");
   Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none) . Default is none", "none");
   Optionpk<short> dimx_opt("\0", "dimX", "Dimension X of postFilter (default is 3)", 3);
   Optionpk<short> dimy_opt("\0", "dimY", "Dimension Y of postFilter (default is 3)", 3);
@@ -94,6 +95,7 @@ int main(int argc,char **argv) {
   maxIter_opt.retrieveOption(argc,argv);
   nbin_opt.retrieveOption(argc,argv);
   returns_opt.retrieveOption(argc,argv);
+  classes_opt.retrieveOption(argc,argv);
   composite_opt.retrieveOption(argc,argv);
   filter_opt.retrieveOption(argc,argv);
   postFilter_opt.retrieveOption(argc,argv);
@@ -256,8 +258,10 @@ int main(int argc,char **argv) {
     //set bounding filter
     // lasReader.addBoundsFilter(minULX,maxULY,maxLRX,minLRY);
     //set returns filter
-    if(returns_opt[0])
+    if(returns_opt.size())
       lasReader.addReturnsFilter(returns_opt);
+    if(classes_opt.size())
+      lasReader.addClassFilter(classes_opt);
     lasReader.setFilters();
 
     if(attribute_opt[0]!="z"){
@@ -295,6 +299,10 @@ int main(int argc,char **argv) {
         continue;
       if((filter_opt[0]=="multiple")&&(thePoint.GetNumberOfReturns()<2))
         continue;
+      if(filter_opt[0]=="last"){
+        if(thePoint.GetReturnNumber()!=thePoint.GetNumberOfReturns())
+          continue;
+      }
       double dcol,drow;
       outputWriter.geo2image(thePoint.GetX(),thePoint.GetY(),dcol,drow);
       int icol=static_cast<int>(dcol);
@@ -454,12 +462,10 @@ int main(int argc,char **argv) {
       try{
         theFilter.morphology(outputData,currentOutput,Filter2d::ERODE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
         theFilter.morphology(currentOutput,outputData,Filter2d::DILATE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
-      //   if(postFilter_opt[0]=="bunting"){//todo: implement doit in Filter2d on Vector2d
-      //     theFilter.doit(outputData,currentOutput,Filter2d::MEDIAN,dimx,dimy,1,disc_opt[0]);
-      // filter2d.doit(input,output,Filter2d::MEDIAN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
-
-      //     outputData=currentOutput;
-      //   }
+        if(postFilter_opt[0]=="bunting"){//todo: implement doit in Filter2d on Vector2d
+          theFilter.doit(outputData,currentOutput,Filter2d::MEDIAN,dimx,dimy,1,disc_opt[0]);
+          outputData=currentOutput;
+        }
       }
       catch(std::string errorString){
         cout << errorString << endl;

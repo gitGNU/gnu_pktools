@@ -69,6 +69,7 @@ public:
   /* void homogeneousSpatial(const string& inputFilename, const string& outputFilename, int dim, bool disc=false, int noValue=0); */
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down=2, bool disc=false);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, short down=1, bool disc=false);
+  template<class T1, class T2> void doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, int method, int dimX, int dimY, short down=1, bool disc=false);
   void median(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
   void var(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, bool disc=false, double angle=-190);
@@ -101,13 +102,59 @@ private:
     filter(inputVector,outputVector);
   }
   
- template<class T1, class T2> void Filter2d::filter(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector)
+  template<class T1, class T2> void Filter2d::filter(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector)
   {
-  outputVector.resize(inputVector.size());
-  int dimX=m_taps[0].size();//horizontal!!!
-  int dimY=m_taps.size();//vertical!!!
+    outputVector.resize(inputVector.size());
+    int dimX=m_taps[0].size();//horizontal!!!
+    int dimY=m_taps.size();//vertical!!!
+    Vector2d<T1> inBuffer(dimY);
+    vector<T2> outBuffer(inputVector[0].size());
+    //initialize last half of inBuffer
+    int indexI=0;
+    int indexJ=0;
+    for(int y=0;y<dimY;++y){
+      if(y<dimY/2)
+        continue;//skip first half
+      inBuffer[y]=inputVector[indexJ++];
+    }
+    for(int y=0;y<inputVector.size();++y){
+      if(y){//inBuffer already initialized for y=0
+        //erase first line from inBuffer
+        inBuffer.erase(inBuffer.begin());
+        //read extra line and push back to inBuffer if not out of bounds
+        if(y+dimY/2<inputVector.size())
+          inBuffer.push_back(inputVector[y+dimY/2]);
+      }
+      for(int x=0;x<inputVector[0].size();++x){
+        outBuffer[x]=0;
+        for(int j=-dimY/2;j<(dimY+1)/2;++j){
+          for(int i=-dimX/2;i<(dimX+1)/2;++i){
+            indexI=x+i;
+            indexJ=dimY/2+j;
+            //check if out of bounds
+            if(x<dimX/2)
+              indexI=x+abs(i);
+            else if(x>=inputVector[0].size()-dimX/2)
+              indexI=x-abs(i);
+            if(y<dimY/2)
+              indexJ=dimY/2+abs(j);
+            else if(y>=inputVector.size()-dimY/2)
+              indexJ=dimY/2-abs(j);
+            outBuffer[x]+=(m_taps[dimY/2+j][dimX/2+i]*inBuffer[indexJ][indexI]);
+          }
+        }
+      }
+      //copy outBuffer to outputVector
+      outputVector[y]=outBuffer;
+    }
+  }
+
+template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, int method, int dimX, int dimY, short down, bool disc)
+{
+  Histogram hist;
+  outputVector.resize((inputVector.size()+down-1)/down);
   Vector2d<T1> inBuffer(dimY);
-  vector<T2> outBuffer(inputVector[0].size());
+  vector<T2> outBuffer((inputVector[0].size()+down-1)/down);
   //initialize last half of inBuffer
   int indexI=0;
   int indexJ=0;
@@ -116,6 +163,11 @@ private:
       continue;//skip first half
     inBuffer[y]=inputVector[indexJ++];
   }
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<inputVector.size();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
@@ -123,9 +175,22 @@ private:
       //read extra line and push back to inBuffer if not out of bounds
       if(y+dimY/2<inputVector.size())
 	inBuffer.push_back(inputVector[y+dimY/2]);
+      else{
+        int over=y+dimY/2-inputVector.size();
+        int index=(inBuffer.size()-1)-over;
+        assert(index>=0);
+        assert(index<inBuffer.size());
+        inBuffer.push_back(inBuffer[index]);
+      }
     }
+    if((y+1+down/2)%down)
+      continue;
     for(int x=0;x<inputVector[0].size();++x){
-      outBuffer[x]=0;
+      if((x+1+down/2)%down)
+        continue;
+      outBuffer[x/down]=0;
+      vector<double> windowBuffer;
+      map<int,int> occurrence;
       for(int j=-dimY/2;j<(dimY+1)/2;++j){
 	for(int i=-dimX/2;i<(dimX+1)/2;++i){
 	  indexI=x+i;
@@ -139,12 +204,210 @@ private:
 	    indexJ=dimY/2+abs(j);
 	  else if(y>=inputVector.size()-dimY/2)
 	    indexJ=dimY/2-abs(j);
-	  outBuffer[x]+=(m_taps[dimY/2+j][dimX/2+i]*inBuffer[indexJ][indexI]);
-	}
+          bool masked=false;
+          for(int imask=0;imask<m_mask.size();++imask){
+            if(inBuffer[indexJ][indexI]==m_mask[imask]){
+              masked=true;
+              break;
+            }
+          }
+          if(!masked){
+            vector<short>::const_iterator vit=m_class.begin();
+            //todo: test if this works (only add occurrence if within defined classes)!
+            if(!m_class.size())
+              ++occurrence[inBuffer[indexJ][indexI]];
+            else{
+              while(vit!=m_class.end()){
+                if(inBuffer[indexJ][indexI]==*(vit++))
+                  ++occurrence[inBuffer[indexJ][indexI]];
+              }
+            }
+            windowBuffer.push_back(inBuffer[indexJ][indexI]);
+          }
+        }
+      }
+      switch(method){
+      case(MEDIAN):
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=hist.median(windowBuffer);
+        break;
+      case(VAR):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=hist.var(windowBuffer);
+        break;
+      }
+      case(STDEV):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=sqrt(hist.var(windowBuffer));
+        break;
+      }
+      case(MEAN):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=hist.mean(windowBuffer);
+        break;
+      }
+      case(MIN):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=hist.min(windowBuffer);
+        break;
+      }
+      case(ISMIN):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=(hist.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+        break;
+      }
+      case(MINMAX):{
+        double min=0;
+        double max=0;
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else{
+          hist.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
+          if(min!=max)
+            outBuffer[x/down]=0;
+          else
+            outBuffer[x/down]=windowBuffer[dimX*dimY/2];//centre pixels
+        }
+        break;
+      }
+      case(MAX):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=hist.max(windowBuffer);
+        break;
+      }
+      case(ISMAX):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else
+          outBuffer[x/down]=(hist.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+        break;
+      }
+      case(ORDER):{
+        if(windowBuffer.empty())
+          outBuffer[x/down]=m_noValue;
+        else{
+          double lbound=0;
+          double ubound=dimX*dimY;
+          double theMin=hist.min(windowBuffer);
+          double theMax=hist.max(windowBuffer);
+          double scale=(ubound-lbound)/(theMax-theMin);
+          outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
+        }
+        break;
+      }
+      case(SUM):{
+        outBuffer[x/down]=hist.sum(windowBuffer);
+        break;
+      }
+      case(HOMOG):
+        if(occurrence.size()==1)//all values in window must be the same
+          outBuffer[x/down]=inBuffer[dimY/2][x];
+        else//favorize original value in case of ties
+          outBuffer[x/down]=m_noValue;
+        break;
+      case(HETEROG):{
+        for(vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
+          if(wit==windowBuffer.begin()+windowBuffer.size()/2)
+            continue;
+          else if(*wit!=inBuffer[dimY/2][x])
+            outBuffer[x/down]=1;
+          else if(*wit==inBuffer[dimY/2][x]){//todo:wit mag niet central pixel zijn
+            outBuffer[x/down]=m_noValue;
+            break;
+          }
+        }
+        break;
+      }
+      case(DENSITY):{
+        if(windowBuffer.size()){
+          vector<short>::const_iterator vit=m_class.begin();
+          while(vit!=m_class.end())
+            outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
+        }
+        else
+          outBuffer[x/down]=m_noValue;
+        break;
+      }
+      case(MAJORITY):{
+        if(occurrence.size()){
+          map<int,int>::const_iterator maxit=occurrence.begin();
+          for(map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
+            if(mit->second>maxit->second)
+              maxit=mit;
+          }
+          if(occurrence[inBuffer[dimY/2][x]]<maxit->second)//
+            outBuffer[x/down]=maxit->first;
+          else//favorize original value in case of ties
+            outBuffer[x/down]=inBuffer[dimY/2][x];
+        }
+        else
+          outBuffer[x/down]=m_noValue;
+        break;
+      }
+      case(THRESHOLD):{
+        assert(m_class.size()==m_threshold.size());
+        if(windowBuffer.size()){
+          outBuffer[x/down]=inBuffer[dimY/2][x];//initialize with original value (in case thresholds not met)
+          for(int iclass=0;iclass<m_class.size();++iclass){
+            if(100.0*(occurrence[m_class[iclass]])/windowBuffer.size()>m_threshold[iclass])
+              outBuffer[x/down]=m_class[iclass];
+          }
+        }
+        else
+          outBuffer[x/down]=m_noValue;
+        break;
+      }
+      case(MIXED):{
+        enum Type { BF=11, CF=12, MF=13, NF=20, W=30 };
+        double nBF=occurrence[BF];
+        double nCF=occurrence[CF];
+        double nMF=occurrence[MF];
+        double nNF=occurrence[NF];
+        double nW=occurrence[W];
+        if(windowBuffer.size()){
+          if((nBF+nCF+nMF)&&(nBF+nCF+nMF>=nNF+nW)){//forest
+            if(nBF/(nBF+nCF)>=0.75)
+              outBuffer[x/down]=BF;
+            else if(nCF/(nBF+nCF)>=0.75)
+              outBuffer[x/down]=CF;
+            else
+              outBuffer[x/down]=MF;
+          }
+          else{//non-forest
+            if(nW&&(nW>=nNF))
+              outBuffer[x/down]=W;
+            else
+              outBuffer[x/down]=NF;
+          }
+        }
+        else
+          outBuffer[x/down]=inBuffer[indexJ][indexI];
+        break;
+      }
+      default:
+        break;
       }
     }
+    progress=(1.0+y/down);
+    progress+=(outputVector.size());
+    progress/=outputVector.size();
+    pfnProgress(progress,pszMessage,pProgressArg);
     //copy outBuffer to outputVector
-    outputVector[y]=outBuffer;
+    outputVector[y/down]=outBuffer;
   }
 }
 

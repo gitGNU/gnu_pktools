@@ -22,6 +22,30 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include "FileReaderLas.h"
 //---------------------------------------------------------------------------
+LastReturnFilter::LastReturnFilter(  ) : liblas::FilterI(eInclusion) {}
+
+bool LastReturnFilter::filter(const liblas::Point& p)
+{
+
+  // If the GetReturnNumber equals the GetNumberOfReturns,
+  // we're a last return
+
+  bool output = false;
+  if (p.GetReturnNumber() == p.GetNumberOfReturns())
+    {
+      output = true;
+    }
+
+  // If the type is switched to eExclusion, we'll throw out all last returns.
+  if (GetType() == eExclusion && output == true)
+    {
+      output = false;
+    } else {
+    output = true;
+  }
+  return output;
+}
+
 FileReaderLas::FileReaderLas(void)
 {
   m_reader=NULL;
@@ -136,5 +160,20 @@ void FileReaderLas::addReturnsFilter(std::vector<unsigned short> const& returns)
     return_filter=new filter(returns_t,false);
   }
   m_filters.push_back(liblas::FilterPtr(return_filter));
+}
+
+void FileReaderLas::addClassFilter(std::vector<unsigned short> const& classes){
+
+  std::vector<liblas::FilterPtr> filters;
+  std::vector<liblas::Classification> theClasses;
+  for(int iclass=0;iclass<classes.size();++iclass){
+    liblas::Classification aClass(classes[iclass]);
+    theClasses.push_back(aClass);
+  }
+  liblas::FilterPtr class_filter = liblas::FilterPtr(new liblas::ClassificationFilter(theClasses));
+  // eInclusion means to keep the classes that match.  eExclusion would
+  // throw out those that matched
+  class_filter->SetType(liblas::FilterI::eInclusion);
+  m_filters.push_back(class_filter);
 }
 

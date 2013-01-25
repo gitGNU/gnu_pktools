@@ -503,53 +503,85 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         }
         switch(method){
         case(MEDIAN):
-          outBuffer[x/down]=hist.median(windowBuffer);
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+            outBuffer[x/down]=hist.median(windowBuffer);
           break;
         case(VAR):{
-          outBuffer[x/down]=hist.var(windowBuffer);
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+            outBuffer[x/down]=hist.var(windowBuffer);
           break;
         }
         case(STDEV):{
-          outBuffer[x/down]=sqrt(hist.var(windowBuffer));
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+            outBuffer[x/down]=sqrt(hist.var(windowBuffer));
           break;
         }
         case(MEAN):{
-          outBuffer[x/down]=hist.mean(windowBuffer);
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+            outBuffer[x/down]=hist.mean(windowBuffer);
           break;
         }
         case(MIN):{
-          outBuffer[x/down]=hist.min(windowBuffer);
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+           outBuffer[x/down]=hist.min(windowBuffer);
           break;
         }
         case(ISMIN):{
-          outBuffer[x/down]=(hist.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+           if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+            outBuffer[x/down]=(hist.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
           break;
         }
         case(MINMAX):{
           double min=0;
           double max=0;
-          hist.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
-          if(min!=max)
-            outBuffer[x/down]=0;
-          else
-            outBuffer[x/down]=windowBuffer[dimX*dimY/2];//centre pixels
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else{
+            hist.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
+            if(min!=max)
+              outBuffer[x/down]=0;
+            else
+              outBuffer[x/down]=windowBuffer[dimX*dimY/2];//centre pixels
+          }
           break;
         }
         case(MAX):{
-          outBuffer[x/down]=hist.max(windowBuffer);
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+            outBuffer[x/down]=hist.max(windowBuffer);
           break;
         }
         case(ISMAX):{
-          outBuffer[x/down]=(hist.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else
+            outBuffer[x/down]=(hist.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
           break;
         }
         case(ORDER):{
-          double lbound=0;
-          double ubound=dimX*dimY;
-          double theMin=hist.min(windowBuffer);
-          double theMax=hist.max(windowBuffer);
-          double scale=(ubound-lbound)/(theMax-theMin);
-          outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
+          if(windowBuffer.empty())
+            outBuffer[x/down]=m_noValue;
+          else{
+            double lbound=0;
+            double ubound=dimX*dimY;
+            double theMin=hist.min(windowBuffer);
+            double theMax=hist.max(windowBuffer);
+            double scale=(ubound-lbound)/(theMax-theMin);
+            outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
+          }
           break;
         }
         case(SUM):{
@@ -582,7 +614,7 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	      outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
 	  }
 	  else
-	    outBuffer[x/down]=0;
+	    outBuffer[x/down]=m_noValue;
           break;
 	}
         case(MAJORITY):{
@@ -598,7 +630,7 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
               outBuffer[x/down]=inBuffer[dimY/2][x];
 	  }
 	  else
-	    outBuffer[x/down]=0;
+	    outBuffer[x/down]=m_noValue;
           break;
         }
         case(THRESHOLD):{
@@ -611,7 +643,7 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
             }
           }
           else
-	    outBuffer[x/down]=0;
+	    outBuffer[x/down]=m_noValue;
           break;
         }
         case(MIXED):{

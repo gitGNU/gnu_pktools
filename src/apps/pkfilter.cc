@@ -50,8 +50,8 @@ int main(int argc,char **argv) {
   Optionpk<bool> license_opt("lic","license","show license information",false);
   Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
-  Optionpk<std::string> input_opt("i","input","input image file","");
-  Optionpk<std::string> output_opt("o", "output", "Output image file", "");
+  Optionpk<std::string> input_opt("i","input","input image file");
+  Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation.");
   Optionpk<int> function_opt("f", "filter", "filter function (0: median, 1: variance, 2: min, 3: max, 4: sum, 5: mean, 6: minmax, 7: dilation, 8: erosion, 9: closing, 10: opening, 11: spatially homogeneous (central pixel must be identical to all other pixels within window), 12: SobelX edge detection in X, 13: SobelY edge detection in Y, 14: SobelXY, -14: SobelYX, 15: smooth, 16: density, 17: majority voting (only for classes), 18: forest aggregation (mixed), 19: smooth no data (mask) values), 20: threshold local filtering, 21: ismin, 22: ismax, 23: heterogeneous (central pixel must be different than all other pixels within window), 24: order, 25: stdev", 0);
@@ -60,12 +60,12 @@ int main(int argc,char **argv) {
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
   Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding");
   Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class)", 0);
-  Optionpk<short> mask_opt("\0", "mask", "mask value(s) ");
+  Optionpk<short> mask_opt("m", "mask", "mask value(s) ");
   Optionpk<std::string> tap_opt("tap", "tap", "text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps");
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
-  Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
+  Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<std::string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
@@ -111,6 +111,7 @@ int main(int argc,char **argv) {
 
   ImgReaderGdal input;
   ImgWriterGdal output;
+  assert(input_opt.size());
   input.open(input_opt[0]);
   // output.open(output_opt[0],input);
   GDALDataType theType=GDT_Unknown;
@@ -140,6 +141,7 @@ int main(int argc,char **argv) {
     option_opt.push_back(theInterleave);
   }
   try{
+    assert(output_opt.size());
     output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],input.nrOfBand(),theType,imageType,option_opt);
   }
   catch(string errorstring){
@@ -152,7 +154,13 @@ int main(int argc,char **argv) {
     input.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
     output.setGeoTransform(ulx,uly,deltaX*down_opt[0],deltaY*down_opt[0],rot1,rot2);
   }
-  if(input.getColorTable()!=NULL)
+  if(colorTable_opt.size()){
+    if(verbose_opt[0])
+      cout << "set colortable " << colorTable_opt[0] << endl;
+    assert(output.getDataType()==GDT_Byte);
+    output.setColorTable(colorTable_opt[0]);
+  }
+  else if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());
 
   // if(input.isGeoRef()){
@@ -162,7 +170,7 @@ int main(int argc,char **argv) {
 
   Filter2d::Filter2d filter2d;
   Filter filter1d;
-  if(verbose_opt[0])
+  if(class_opt.size()&&verbose_opt[0])
     std::cout<< "class values: ";
   for(int iclass=0;iclass<class_opt.size();++iclass){
     if(!dimZ_opt.size())
@@ -211,7 +219,7 @@ int main(int argc,char **argv) {
     filter1d.doit(input,output,down_opt[0]);
   }
   else{
-    if(colorTable_opt[0]!="")
+    if(colorTable_opt.size())
       output.setColorTable(colorTable_opt[0]);
     switch(function_opt[0]){
     case(Filter2d::MEDIAN):

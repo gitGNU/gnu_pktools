@@ -25,6 +25,17 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "liblas/liblas.hpp"
 
 //--------------------------------------------------------------------------
+class LastReturnFilter: public liblas::FilterI
+{
+public:
+  LastReturnFilter();
+  bool filter(const liblas::Point& point);
+
+private:
+  LastReturnFilter(LastReturnFilter const& other);
+  LastReturnFilter& operator=(LastReturnFilter const& rhs);
+};
+
 class FileReaderLas
 {
 public:
@@ -47,6 +58,7 @@ public:
   liblas::Point const& readPointAt(std::size_t n){m_reader->ReadPointAt(n);return m_reader->GetPoint();};
   // void addBoundsFilter(double ulx, double uly, double lrx, double lry);
   void addReturnsFilter(std::vector<unsigned short> const& returns);
+  void addClassFilter(std::vector<unsigned short> const& classes);
   void setFilters(const std::vector<liblas::FilterPtr>& filters){m_filters=filters;setFilters();};
   void setFilters(){m_reader->SetFilters(m_filters);};
 protected:

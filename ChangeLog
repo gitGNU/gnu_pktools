@@ -42,14 +42,20 @@ version 2.4
 	--enable-nlopt (when NLOPT is installed, needed for pksensormodel and pkgetchandelier)
  - OptFactory.h (added)
 	factory class for nlopt::opt (selecting algorithm via string)
+ - Filter2d
+	support filtering of matrix (doit with Vector2d arguments) (to create DTM according to P. Bunting)
+ - FileReaderLas
+	support class filters
  - ImgReaderGdal.cc
 	in addition to internal setNoData member variable, also support GDALSetNoData
  - ImgWriterGdal.cc
 	in addition to internal setNoData member variable, also support GDALSetNoData
  - ImgWriterOGR.h
 	renamed ascii2shape to ascii2ogr, support csv file in ascii2ogr
- - ImgWriterOGR.cc
+ - ImgWriterOgr.cc
 	renamed ascii2shape to ascii2ogr, support csv file in ascii2ogr
+ - pkcrop
+	changed default option for color table to empty vector
  - pkinfo
 	support of nodata value when calculating histogram and image statistics
 	options min and max are now set with -min (--min) and -max (--max)
@@ -58,6 +64,7 @@ version 2.4
  - pkfilter
 	bug solved in update of progress bar
 	support of standard deviation
+	default empty classes
  - pkgetmask
 	options min and max are now set with -min (--min) and -max (--max)
  - pkstatogr
@@ -81,3 +88,5 @@ version 2.4
 	tool to model pushbroom sensor (with optimization of boresight angles using NLOPT)
  - pkascii2ogr
 	support csv input file
+ - pklas2img
+	support DTM according to Bunting (slightly adapted version of Chang2003, including a median filter after morphological operator)

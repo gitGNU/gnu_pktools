@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset", 0);
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
       }
       else if(imgReader.isGeoRef())
 	imgWriter.setProjection(imgReader.getProjection());
-      if(colorTable_opt[0]!=""){
+      if(colorTable_opt.size()){
         if(verbose_opt[0])
           cout << "set colortable " << colorTable_opt[0] << endl;
         assert(imgWriter.getDataType()==GDT_Byte);
