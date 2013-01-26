@@ -42,6 +42,8 @@ version 2.4
 	--enable-nlopt (when NLOPT is installed, needed for pksensormodel and pkgetchandelier)
  - OptFactory.h (added)
 	factory class for nlopt::opt (selecting algorithm via string)
+ - OptionPk
+	changed layout of help info to Markdown format as input for Doxygen
  - Filter2d
 	support filtering of matrix (doit with Vector2d arguments) (to create DTM according to P. Bunting)
  - FileReaderLas
@@ -61,6 +63,7 @@ version 2.4
 	options min and max are now set with -min (--min) and -max (--max)
 	option min and max now per default empty and can be set individually for calculating histogram
 	segmentation fault with option -ct if no color table was defined
+	default value of x_opt empty (no longer -1 to read entire line)
  - pkfilter
 	bug solved in update of progress bar
 	support of standard deviation

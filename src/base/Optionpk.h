@@ -28,6 +28,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <typeinfo>
 #include "ogr_feature.h"
 
 using namespace std;
@@ -191,21 +192,38 @@ template<class T> string Optionpk<T>::usage() const
   ostringstream helpss;
   string shortOption=m_shortName;
   string longOption=m_longName;
-  shortOption.insert(0,"-");
-  longOption.insert(0,"--");
   if(hasShortOption())
-    helpss << "   " << setiosflags(ios::left) << setw(4) << shortOption;
+    helpss << " | " << setiosflags(ios::left) << setw(6) << shortOption << " | ";
   else 
-    helpss << "   " << setiosflags(ios::left) << setw(4) << " ";
+    helpss << " | " << setiosflags(ios::left) << setw(6) << " | ";
   if(hasLongOption())
-    helpss << "   " << setiosflags(ios::left) << setw(20) << longOption;
+    helpss << setiosflags(ios::left) << setw(20) << longOption << " | ";
   else
-    helpss << "   " << setiosflags(ios::left) << setw(20) << " ";
-  helpss << "   " << m_help;
-  // helpss << std::resetiosflags << " (default: " << type2string<T>(m_defaultValue) << ")";
+    helpss << setiosflags(ios::left) << setw(20) << " | ";
+  helpss << setiosflags(ios::left) << setw(4) << typeid(T).name() << " | ";
+  helpss << m_help << " | ";
   if(m_hasDefault)
-    helpss << " (default: " << type2string<T>(m_defaultValue) << ")";
+    helpss << type2string<T>(m_defaultValue) << "|";
+  else
+    helpss << "|";
   return helpss.str();
+  /* ostringstream helpss; */
+  /* string shortOption=m_shortName; */
+  /* string longOption=m_longName; */
+  /* shortOption.insert(0,"-"); */
+  /* longOption.insert(0,"--"); */
+  /* if(hasShortOption()) */
+  /*   helpss << "   " << setiosflags(ios::left) << setw(4) << shortOption; */
+  /* else  */
+  /*   helpss << "   " << setiosflags(ios::left) << setw(4) << " "; */
+  /* if(hasLongOption()) */
+  /*   helpss << "   " << setiosflags(ios::left) << setw(20) << longOption; */
+  /* else */
+  /*   helpss << "   " << setiosflags(ios::left) << setw(20) << " "; */
+  /* helpss << "   " << m_help; */
+  /* if(m_hasDefault) */
+  /*   helpss << " (default: " << type2string<T>(m_defaultValue) << ")"; */
+  /* return helpss.str(); */
 }
 
 template<class T> void Optionpk<T>::setAll(const string& shortName, const string& longName, const string& helpInfo,const T& defaultValue)

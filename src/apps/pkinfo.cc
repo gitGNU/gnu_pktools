@@ -17,6 +17,66 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
+/*! \page pkinfo pkinfo
+  \tableofcontents
+  program to retrieve information from raster images
+  
+  ## SYNOPSIS
+  <code>
+  pkinfo -i imagefile [\ref OPTIONS]
+  </code>
+  ## DESCRIPTION
+  This tool is similar to gdalinfo but output is driven by input options. Output format can be used as pipe for other commands (see \ref pkinfo_examples)
+  
+  ## OPTIONS ##
+  - use either `-short` or `--long` options (both `--long=value` as `--long value` are supported)
+  - boolean (bool) options do not expect a value (e.g., `pkinfo --version`)
+  - multiple inputs require duplicate options (e.g., `pkinfo -i input1.tif -i input2.tif -f`)
+
+  |short|long|type|description|default|
+  |-----|----|----|-----------|------|
+  |     |version|bool|Shows version of pktools|false |
+ | lic    | license              | b    | Shows license information | false|
+ | h      | help                 | b    | Shows this help info | false|
+ |  |    todo                 | b    |  | false|
+ | i      | input                | Ss   | Input image file | <empty string>|
+ | bb     | bbox                 | b    | Shows bounding box  | false|
+ | te     | te                   | b    | Shows bounding box in GDAL format: xmin ymin xmax ymax  | false|
+ | c      | centre               | b    | Image centre in projected X,Y coordinates  | false|
+ | ct     | colourtable          | b    | Shows colour table  | false|
+ | s      | samples              | b    | Number of samples in image  | false|
+ | l      | lines                | b    | Number of lines in image  | false|
+ | nb     | nband                | b    | Show number of bands in image | false|
+ | b      | band                 | s    | Band specific information | 0|
+ | dx     | dx                   | b    | Gets resolution in x (in m) | false|
+ | dy     | dy                   | b    | Gets resolution in y (in m) | false|
+ | mm     | minmax               | b    | Shows min and max value of the image  | false|
+ | stat   | stat                 | b    | Shows statistics (min,max, mean and stdDev of the image) | false|
+ | min    | min                  | d    | Sets minimum for histogram | |
+ | max    | max                  | d    | Sets maximum for histogram | |
+ | rel    | rel                  | b    | Calculates relative histogram in percentage | false|
+ | p      | projection           | b    | Shows projection of the image  | false|
+ | geo    | geo                  | b    | Gets geotransform   | false|
+ | il     | interleave           | b    | Shows interleave  | false|
+ | f      | filename             | b    | Shows image filename  | false|
+ | cov    | cover                | b    | Image covers bounding box (or x and y pos) if printed to std out  | false|
+ | x      | xpos                 | d    | x pos | |
+ | y      | ypos                 | d    | y pos | |
+ | r      | read                 | b    | Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based) | false|
+ | ref    | ref                  | b    | Gets reference pixel (lower left corner of centre of gravity pixel) | false|
+ | of     | oformat              | b    | Gets driver description  | false|
+ | e      | extent               | Ss   | Gets boundary from extent from polygons in vector file | <empty string>|
+ | ulx    | ulx                  | d    | Upper left x value bounding box | |
+ | uly    | uly                  | d    | Upper left y value bounding box | |
+ | lrx    | lrx                  | d    | Lower right x value bounding box | |
+ | lry    | lry                  | d    | Lower right y value bounding box | |
+ | hist   | hist                 | b    | Calculates histogram. Use --rel for a relative histogram output.  | false|
+ | nbin   | nbin                 | s    | Number of bins used in histogram. Use 0 for all input values as integers | 0|
+ | ot     | otype                | b    | Returns data type | false|
+ | d      | description          | b    | Returns image description | false|
+ | meta   | meta                 | b    | Shows meta data  | false|
+ | nodata | nodata               | d    | Sets no data value(s) for calculations (flags in input image) | |
+*/
 #include <sstream>
 #include <list>
 #include "base/Optionpk.h"
@@ -37,46 +97,46 @@ int main(int argc, char *argv[])
    This is free software, and you are welcome to redistribute it\n\
    under certain conditions; use option --license for details.";
   Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
+  Optionpk<bool> license_opt("lic","license","Shows license information",false);
+  Optionpk<bool> help_opt("h","help","Shows this help info",false);
   Optionpk<bool> todo_opt("\0","todo","",false);
-  Optionpk<std::string> input_opt("i","input","input image file","");
-  Optionpk<bool>  bbox_opt("bb", "bbox", "show bounding box ", false);
-  Optionpk<bool>  bbox_te_opt("te", "te", "show bounding box in GDAL format: xmin ymin xmax ymax ", false);
+  Optionpk<std::string> input_opt("i","input","Input image file","");
+  Optionpk<bool>  bbox_opt("bb", "bbox", "Shows bounding box ", false);
+  Optionpk<bool>  bbox_te_opt("te", "te", "Shows bounding box in GDAL format: xmin ymin xmax ymax ", false);
   Optionpk<bool>  centre_opt("c", "centre", "Image centre in projected X,Y coordinates ", false);
-  Optionpk<bool>  colorTable_opt("ct", "colourtable", "show colour table ", false);
+  Optionpk<bool>  colorTable_opt("ct", "colourtable", "Shows colour table ", false);
   Optionpk<bool>  samples_opt("s", "samples", "Number of samples in image ", false);
   Optionpk<bool>  lines_opt("l", "lines", "Number of lines in image ", false);
   Optionpk<bool>  nband_opt("nb", "nband", "Show number of bands in image", false);
   Optionpk<short>  band_opt("b", "band", "Band specific information", 0);
-  Optionpk<bool>  dx_opt("dx", "dx", "get resolution in x (in m)", false);
-  Optionpk<bool>  dy_opt("dy", "dy", "get resolution in y (in m)", false);
-  Optionpk<bool>  minmax_opt("mm", "minmax", "Show min and max value of the image ", false);
-  Optionpk<bool>  stat_opt("stat", "stat", "Show statistics (min,max, mean and stdDev of the image ", false);
-  Optionpk<double>  min_opt("min", "min", "Set minimum for histogram)");
-  Optionpk<double>  max_opt("max", "max", "Set maximum for histogram)");
-  Optionpk<bool>  relative_opt("rel", "rel", "Calculate relative histogram in percentage", false);
-  Optionpk<bool>  projection_opt("p", "projection", "Show projection of the image ", false);
-  Optionpk<bool>  geo_opt("geo", "geo", "get geotransform:  ", false);
-  Optionpk<bool>  interleave_opt("il", "interleave", "Show interleave ", false);
-  Optionpk<bool>  filename_opt("f", "filename", "Image filename ", false);
+  Optionpk<bool>  dx_opt("dx", "dx", "Gets resolution in x (in m)", false);
+  Optionpk<bool>  dy_opt("dy", "dy", "Gets resolution in y (in m)", false);
+  Optionpk<bool>  minmax_opt("mm", "minmax", "Shows min and max value of the image ", false);
+  Optionpk<bool>  stat_opt("stat", "stat", "Shows statistics (min,max, mean and stdDev of the image)", false);
+  Optionpk<double>  min_opt("min", "min", "Sets minimum for histogram");
+  Optionpk<double>  max_opt("max", "max", "Sets maximum for histogram");
+  Optionpk<bool>  relative_opt("rel", "rel", "Calculates relative histogram in percentage", false);
+  Optionpk<bool>  projection_opt("p", "projection", "Shows projection of the image ", false);
+  Optionpk<bool>  geo_opt("geo", "geo", "Gets geotransform  ", false);
+  Optionpk<bool>  interleave_opt("il", "interleave", "Shows interleave ", false);
+  Optionpk<bool>  filename_opt("f", "filename", "Shows image filename ", false);
   Optionpk<bool>  cover_opt("cov", "cover", "Image covers bounding box (or x and y pos) if printed to std out ", false);
-  Optionpk<double>  x_opt("x", "xpos", "x pos", -1);
-  Optionpk<double>  y_opt("y", "ypos", "y pos", -1);
-  Optionpk<bool>  read_opt("r", "read", "read row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based)", 0);
-  Optionpk<bool>  refpixel_opt("ref", "ref", "get reference pixel (lower left corner of centre of gravity pixel)", false);
-  Optionpk<bool>  driver_opt("of", "oformat", "get driver description ", false);
-  Optionpk<std::string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
-  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box (0)", 0.0);
-  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (0)", 0.0);
-  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box (0)", 0.0);
-  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box (0)", 0.0);
-  Optionpk<bool>  hist_opt("hist", "hist", "Calculate histogram. Use --rel for a relative histogram output. ", false);
+  Optionpk<double>  x_opt("x", "xpos", "x pos");
+  Optionpk<double>  y_opt("y", "ypos", "y pos");
+  Optionpk<bool>  read_opt("r", "read", "Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based)", 0);
+  Optionpk<bool>  refpixel_opt("ref", "ref", "Gets reference pixel (lower left corner of centre of gravity pixel)", false);
+  Optionpk<bool>  driver_opt("of", "oformat", "Gets driver description ", false);
+  Optionpk<std::string>  extent_opt("e", "extent", "Gets boundary from extent from polygons in vector file", "");
+  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box");
+  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box");
+  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box");
+  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box");
+  Optionpk<bool>  hist_opt("hist", "hist", "Calculates histogram. Use --rel for a relative histogram output. ", false);
   Optionpk<short>  nbin_opt("nbin", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers", 0);
-  Optionpk<bool>  type_opt("ot", "otype", "Return data type", false);
-  Optionpk<bool>  description_opt("d", "description", "Return image description", false);
-  Optionpk<bool>  metadata_opt("meta", "meta", "Show meta data ", false);
-  Optionpk<double> nodata_opt("nodata", "nodata", "set no data value(s) for calculations (flags in input image)");
+  Optionpk<bool>  type_opt("ot", "otype", "Returns data type", false);
+  Optionpk<bool>  description_opt("d", "description", "Returns image description", false);
+  Optionpk<bool>  metadata_opt("meta", "meta", "Shows meta data ", false);
+  Optionpk<double> nodata_opt("nodata", "nodata", "Sets no data value(s) for calculations (flags in input image)");
   
   version_opt.retrieveOption(argc,argv);
   license_opt.retrieveOption(argc,argv);
@@ -221,22 +281,22 @@ int main(int argc, char *argv[])
       }
       double theULX, theULY, theLRX, theLRY;
       imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
-      if((ulx_opt[0]||uly_opt[0]||lrx_opt[0]||lry_opt[0])&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0])))
+      if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0])))
 	std::cout << " -i " << input_opt[ifile] << " ";
       else if(imgReader.covers(x_opt[0],y_opt[0]))
 	std::cout << " -i " << input_opt[ifile] << " ";
 
     }
-    else if(ulx_opt[0]||uly_opt[0]||lrx_opt[0]||lry_opt[0]){
+    else if(ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size()){
       double ulx,uly,lrx,lry;
       imgReader.getBoundingBox(ulx,uly,lrx,lry);
-      if(ulx_opt[0])
+      if(ulx_opt.size())
         std::cout << " --ulx=" << fixed << ulx << " ";
-      if(uly_opt[0])
+      if(uly_opt.size())
         std::cout << " --uly=" << fixed << uly << " ";
-      if(lrx_opt[0])
+      if(lrx_opt.size())
         std::cout << " --lrx=" << fixed << lrx << " ";
-      if(lry_opt[0])
+      if(lry_opt.size())
         std::cout << " --lry=" << fixed << lry << " ";
     }
     if(colorTable_opt[0]){
@@ -393,22 +453,21 @@ int main(int argc, char *argv[])
         std::vector<float> rowBuffer;//buffer will be resized in readdata
         for(int iy=0;iy<y_opt.size();++iy){
 	  double theRow=y_opt[iy];
-          for(int ix=0;ix<x_opt.size();++ix){
-	    double theCol=x_opt[iy];
-	    if(geo_opt[0])
-	      imgReader.geo2image(x_opt[ix],y_opt[iy],theCol,theRow);
+	  int ncol=(x_opt.size())? x_opt.size() : imgReader.nrOfCol();
+          for(int ix=0;ix<ncol;++ix){
+	    double theCol=ix;
+	    if(x_opt.size()){
+	      if(geo_opt[0])
+		imgReader.geo2image(x_opt[ix],y_opt[iy],theCol,theRow);
+	      else
+		theCol=x_opt[ix];
+	    }
             assert(theRow>=0);
             assert(theRow<imgReader.nrOfRow());
             imgReader.readData(rowBuffer,GDT_Float32, static_cast<int>(theRow), theBand);
-            if(x_opt[ix]>=0){
-              assert(theCol<rowBuffer.size());
-              std::cout << rowBuffer[static_cast<int>(theCol)] << " ";
-            }
-            else{
-              for(int i=0;i<rowBuffer.size();++i)
-                std::cout << rowBuffer[i] << " ";
-            }
-          }
+	    assert(theCol<rowBuffer.size());
+	    std::cout << rowBuffer[static_cast<int>(theCol)] << " ";
+	  }
           std::cout << std::endl;
         }
       }

@@ -23,7 +23,7 @@ find src/apps/ -name 'pk*.cc'|sed -e 's/.*\//- /' -e 's/\.cc//'|sort
 - pkgeom
 - pkgetchandelier
 - pkgetmask
-- pkinfo
+- \ref pkinfo
 - pklas2img
 - pkmosaic
 - pkndvi
@@ -37,15 +37,3 @@ find src/apps/ -name 'pk*.cc'|sed -e 's/.*\//- /' -e 's/\.cc//'|sort
 - pkstat
 - pkstatogr
 - pkxcorimg
-
-/*! \page pkinfo pkinfo
-
-lists specific information about a raster dataset (similar to gdalinfo but information given is driven by options)
-
-##pkinfo_synopsis SYNOPSIS
-
-pkinfo [--help-general] [-mm] [-stats] [-hist] [-nogcp] [-nomd]
-         [-noct] [-nofl] [-checksum] [-proj4] [-mdd domain]*
-	 [-sd subdataset] datasetname
-
-##pkinfo_description DESCRIPTION
