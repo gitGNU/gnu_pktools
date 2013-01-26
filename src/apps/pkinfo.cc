@@ -33,49 +33,51 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   - boolean (bool) options do not expect a value (e.g., `pkinfo --version`)
   - multiple inputs require duplicate options (e.g., `pkinfo -i input1.tif -i input2.tif -f`)
 
-  |short|long|type|description|default|
-  |-----|----|----|-----------|------|
-  |     |version|bool|Shows version of pktools|false |
- | lic    | license              | b    | Shows license information | false|
- | h      | help                 | b    | Shows this help info | false|
- |  |    todo                 | b    |  | false|
- | i      | input                | Ss   | Input image file | <empty string>|
- | bb     | bbox                 | b    | Shows bounding box  | false|
- | te     | te                   | b    | Shows bounding box in GDAL format: xmin ymin xmax ymax  | false|
- | c      | centre               | b    | Image centre in projected X,Y coordinates  | false|
- | ct     | colourtable          | b    | Shows colour table  | false|
- | s      | samples              | b    | Number of samples in image  | false|
- | l      | lines                | b    | Number of lines in image  | false|
- | nb     | nband                | b    | Show number of bands in image | false|
- | b      | band                 | s    | Band specific information | 0|
- | dx     | dx                   | b    | Gets resolution in x (in m) | false|
- | dy     | dy                   | b    | Gets resolution in y (in m) | false|
- | mm     | minmax               | b    | Shows min and max value of the image  | false|
- | stat   | stat                 | b    | Shows statistics (min,max, mean and stdDev of the image) | false|
- | min    | min                  | d    | Sets minimum for histogram | |
- | max    | max                  | d    | Sets maximum for histogram | |
- | rel    | rel                  | b    | Calculates relative histogram in percentage | false|
- | p      | projection           | b    | Shows projection of the image  | false|
- | geo    | geo                  | b    | Gets geotransform   | false|
- | il     | interleave           | b    | Shows interleave  | false|
- | f      | filename             | b    | Shows image filename  | false|
- | cov    | cover                | b    | Image covers bounding box (or x and y pos) if printed to std out  | false|
- | x      | xpos                 | d    | x pos | |
- | y      | ypos                 | d    | y pos | |
- | r      | read                 | b    | Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based) | false|
- | ref    | ref                  | b    | Gets reference pixel (lower left corner of centre of gravity pixel) | false|
- | of     | oformat              | b    | Gets driver description  | false|
- | e      | extent               | Ss   | Gets boundary from extent from polygons in vector file | <empty string>|
- | ulx    | ulx                  | d    | Upper left x value bounding box | |
- | uly    | uly                  | d    | Upper left y value bounding box | |
- | lrx    | lrx                  | d    | Lower right x value bounding box | |
- | lry    | lry                  | d    | Lower right y value bounding box | |
- | hist   | hist                 | b    | Calculates histogram. Use --rel for a relative histogram output.  | false|
- | nbin   | nbin                 | s    | Number of bins used in histogram. Use 0 for all input values as integers | 0|
- | ot     | otype                | b    | Returns data type | false|
- | d      | description          | b    | Returns image description | false|
- | meta   | meta                 | b    | Shows meta data  | false|
- | nodata | nodata               | d    | Sets no data value(s) for calculations (flags in input image) | |
+ |short|long|type|default|description|
+ |-----|----|----|-------|-----------|
+ | lic    | license              | b    | false |Shows license information | 
+ | h      | help                 | b    | false |Shows this help info | 
+ | i      | input                | Ss   | <empty string> |Input image file | 
+ | bb     | bbox                 | b    | false |Shows bounding box  | 
+ | te     | te                   | b    | false |Shows bounding box in GDAL format: xmin ymin xmax ymax  | 
+ | c      | centre               | b    | false |Image centre in projected X,Y coordinates  | 
+ | ct     | colourtable          | b    | false |Shows colour table  | 
+ | s      | samples              | b    | false |Number of samples in image  | 
+ | l      | lines                | b    | false |Number of lines in image  | 
+ | nb     | nband                | b    | false |Show number of bands in image | 
+ | b      | band                 | s    | 0 |Band specific information | 
+ | dx     | dx                   | b    | false |Gets resolution in x (in m) | 
+ | dy     | dy                   | b    | false |Gets resolution in y (in m) | 
+ | mm     | minmax               | b    | false |Shows min and max value of the image  | 
+ | stat   | stat                 | b    | false |Shows statistics (min,max, mean and stdDev of the image) | 
+ | min    | min                  | d    |  |Sets minimum for histogram | 
+ | max    | max                  | d    |  |Sets maximum for histogram | 
+ | rel    | rel                  | b    | false |Calculates relative histogram in percentage | 
+ | p      | projection           | b    | false |Shows projection of the image  | 
+ | geo    | geo                  | b    | false |Gets geotransform   | 
+ | il     | interleave           | b    | false |Shows interleave  | 
+ | f      | filename             | b    | false |Shows image filename  | 
+ | cov    | cover                | b    | false |Image covers bounding box (or x and y pos) if printed to std out  | 
+ | x      | xpos                 | d    |  |x pos | 
+ | y      | ypos                 | d    |  |y pos | 
+ | r      | read                 | b    | false |Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based) | 
+ | ref    | ref                  | b    | false |Gets reference pixel (lower left corner of centre of gravity pixel) | 
+ | of     | oformat              | b    | false |Gets driver description  | 
+ | e      | extent               | Ss   | <empty string> |Gets boundary from extent from polygons in vector file | 
+ | ulx    | ulx                  | d    |  |Upper left x value bounding box | 
+ | uly    | uly                  | d    |  |Upper left y value bounding box | 
+ | lrx    | lrx                  | d    |  |Lower right x value bounding box | 
+ | lry    | lry                  | d    |  |Lower right y value bounding box | 
+ | hist   | hist                 | b    | false |Calculates histogram. Use --rel for a relative histogram output.  | 
+ | nbin   | nbin                 | s    | 0 |Number of bins used in histogram. Use 0 for all input values as integers | 
+ | ot     | otype                | b    | false |Returns data type | 
+ | d      | description          | b    | false |Returns image description | 
+ | meta   | meta                 | b    | false |Shows meta data  | 
+ | nodata | nodata               | d    |  |Sets no data value(s) for calculations (flags in input image) | 
+ |        | version              | b    | false |version 2.4, Copyright (C) 2008-2012 Pieter Kempeneers.
+   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.
+   This is free software, and you are welcome to redistribute it
+   under certain conditions; use option --license for details. | 
 */
 #include <sstream>
 #include <list>
@@ -90,16 +92,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(int argc, char *argv[])
 {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
   Optionpk<bool> license_opt("lic","license","Shows license information",false);
   Optionpk<bool> help_opt("h","help","Shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
+  Optionpk<bool> doxygen_opt("\0","doxygen","Shows this help info",false,2);
+  Optionpk<bool> todo_opt("todo","todo","Nothing planned",false,2);
   Optionpk<std::string> input_opt("i","input","Input image file","");
   Optionpk<bool>  bbox_opt("bb", "bbox", "Shows bounding box ", false);
   Optionpk<bool>  bbox_te_opt("te", "te", "Shows bounding box in GDAL format: xmin ymin xmax ymax ", false);
@@ -137,20 +133,18 @@ int main(int argc, char *argv[])
   Optionpk<bool>  description_opt("d", "description", "Returns image description", false);
   Optionpk<bool>  metadata_opt("meta", "meta", "Shows meta data ", false);
   Optionpk<double> nodata_opt("nodata", "nodata", "Sets no data value(s) for calculations (flags in input image)");
-  
-  version_opt.retrieveOption(argc,argv);
+  std::string versionString="version ";
+  versionString+=VERSION;
+  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
+   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
+   This is free software, and you are welcome to redistribute it\n\
+   under certain conditions; use option --license for details.";
+  Optionpk<bool> version_opt("\0","version",versionString,false);
+
   license_opt.retrieveOption(argc,argv);
   help_opt.retrieveOption(argc,argv);
+  doxygen_opt.retrieveOption(argc,argv);
   todo_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]){
-    std::cout << version_opt.getHelp() << std::endl;
-    exit(0);
-  }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
 
   input_opt.retrieveOption(argc,argv);
   bbox_opt.retrieveOption(argc,argv);
@@ -189,9 +183,21 @@ int main(int argc, char *argv[])
   description_opt.retrieveOption(argc,argv);
   metadata_opt.retrieveOption(argc,argv);
   nodata_opt.retrieveOption(argc,argv);
+  version_opt.retrieveOption(argc,argv);
 
+  if(version_opt[0]){
+    std::cout << version_opt.getHelp() << std::endl;
+    exit(0);
+  }
+  if(license_opt[0]){
+    cout << Optionpk<bool>::getGPLv3License() << endl;
+    exit(0);
+  }
   if(help_opt[0]){
-    std::cout << "usage: pkinfo -i imagefile [OPTIONS]" << std::endl;
+    cout << "usage: pkcrop -i inputimage -o outputimage [OPTIONS]" << endl;
+    exit(0);
+  }
+  if(doxygen_opt[0]){
     exit(0);
   }
 
