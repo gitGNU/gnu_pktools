@@ -28,10 +28,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/Histogram.h"
 #include "pksensormodel.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
   assert(grad.empty());
   double error=0;
@@ -51,16 +47,6 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
 
 int main(int argc, char *argv[])
 {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i","input","name of the input text file");
   Optionpk<string> datum_opt("datum","datum","GPS datum of the input points","WGS84");
   Optionpk<int> s_srs_opt("s_srs","s_srs","source EPSG (integer) code of GCP input coordinates",4326);
@@ -107,68 +93,61 @@ int main(int argc, char *argv[])
   Optionpk<string> algorithm_opt("a", "algorithm", "optimization algorithm (see http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms)","LN_COBYLA"); 
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-  input_opt.retrieveOption(argc,argv);
-  datum_opt.retrieveOption(argc,argv);
-  s_srs_opt.retrieveOption(argc,argv);
-  t_srs_opt.retrieveOption(argc,argv);
-  focal_opt.retrieveOption(argc,argv);
-  dx_opt.retrieveOption(argc,argv);
-  dy_opt.retrieveOption(argc,argv);
-  nx_opt.retrieveOption(argc,argv);
-  ny_opt.retrieveOption(argc,argv);
-  x_opt.retrieveOption(argc,argv);
-  y_opt.retrieveOption(argc,argv);
-  z_opt.retrieveOption(argc,argv);
-  errorZ_opt.retrieveOption(argc,argv);
-  xl_opt.retrieveOption(argc,argv);
-  yl_opt.retrieveOption(argc,argv);
-  zl_opt.retrieveOption(argc,argv);
-  roll_opt.retrieveOption(argc,argv);
-  pitch_opt.retrieveOption(argc,argv);
-  yaw_opt.retrieveOption(argc,argv);
-  col_opt.retrieveOption(argc,argv);
-  row_opt.retrieveOption(argc,argv);
-  // bcpos_opt.retrieveOption(argc,argv);
-  bcatt_opt.retrieveOption(argc,argv);
-  fov_opt.retrieveOption(argc,argv);
-  ppx_opt.retrieveOption(argc,argv);
-  ppy_opt.retrieveOption(argc,argv);
-  fs_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  sensor_opt.retrieveOption(argc,argv);
-  polynome_opt.retrieveOption(argc,argv);
-  mean_opt.retrieveOption(argc,argv);
-  optimize_opt.retrieveOption(argc,argv);
-  lb_opt.retrieveOption(argc,argv);
-  ub_opt.retrieveOption(argc,argv);
-  maxit_opt.retrieveOption(argc,argv);
-  tolerance_opt.retrieveOption(argc,argv);
-  init_opt.retrieveOption(argc,argv);
-  threshold_opt.retrieveOption(argc,argv);
-  gcprad_opt.retrieveOption(argc,argv);
-  pplrad_opt.retrieveOption(argc,argv);
-  aplrad_opt.retrieveOption(argc,argv);
-  bcrad_opt.retrieveOption(argc,argv);
-  getzenith_opt.retrieveOption(argc,argv);
-  algorithm_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    datum_opt.retrieveOption(argc,argv);
+    s_srs_opt.retrieveOption(argc,argv);
+    t_srs_opt.retrieveOption(argc,argv);
+    focal_opt.retrieveOption(argc,argv);
+    dx_opt.retrieveOption(argc,argv);
+    dy_opt.retrieveOption(argc,argv);
+    nx_opt.retrieveOption(argc,argv);
+    ny_opt.retrieveOption(argc,argv);
+    x_opt.retrieveOption(argc,argv);
+    y_opt.retrieveOption(argc,argv);
+    z_opt.retrieveOption(argc,argv);
+    errorZ_opt.retrieveOption(argc,argv);
+    xl_opt.retrieveOption(argc,argv);
+    yl_opt.retrieveOption(argc,argv);
+    zl_opt.retrieveOption(argc,argv);
+    roll_opt.retrieveOption(argc,argv);
+    pitch_opt.retrieveOption(argc,argv);
+    yaw_opt.retrieveOption(argc,argv);
+    col_opt.retrieveOption(argc,argv);
+    row_opt.retrieveOption(argc,argv);
+    // bcpos_opt.retrieveOption(argc,argv);
+    bcatt_opt.retrieveOption(argc,argv);
+    fov_opt.retrieveOption(argc,argv);
+    ppx_opt.retrieveOption(argc,argv);
+    ppy_opt.retrieveOption(argc,argv);
+    fs_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    sensor_opt.retrieveOption(argc,argv);
+    polynome_opt.retrieveOption(argc,argv);
+    mean_opt.retrieveOption(argc,argv);
+    optimize_opt.retrieveOption(argc,argv);
+    lb_opt.retrieveOption(argc,argv);
+    ub_opt.retrieveOption(argc,argv);
+    maxit_opt.retrieveOption(argc,argv);
+    tolerance_opt.retrieveOption(argc,argv);
+    init_opt.retrieveOption(argc,argv);
+    threshold_opt.retrieveOption(argc,argv);
+    gcprad_opt.retrieveOption(argc,argv);
+    pplrad_opt.retrieveOption(argc,argv);
+    aplrad_opt.retrieveOption(argc,argv);
+    bcrad_opt.retrieveOption(argc,argv);
+    getzenith_opt.retrieveOption(argc,argv);
+    algorithm_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-
-  if(help_opt[0]){
-    cout << "usage: pksensormodel -i asciifile [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   //ID, row of GCP, column of GCP, x_GCP, y_GCP, Z_GCP, x_platform, y_platform, z_platform, platform roll, platform pitch, platform yaw of point.

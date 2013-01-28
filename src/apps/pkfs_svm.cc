@@ -27,10 +27,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/svm.h"
 #include "pkclassify_nn.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
 enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
@@ -146,16 +142,6 @@ int main(int argc, char *argv[])
   // vector<double> priors;
   
   //--------------------------- command line options ------------------------------------
-  std::string versionString="version ";
-  versionString+=static_cast<string>(VERSION);
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
@@ -170,53 +156,46 @@ int main(int argc, char *argv[])
   Optionpk<string> selector_opt("sm", "sm", "feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search)","sffs"); 
   Optionpk<float> epsilon_cost_opt("ecost", "ecost", "epsilon for stopping criterion in cost function to determine optimal number of features",0.001);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-  training_opt.retrieveOption(argc,argv);
-  maxFeatures_opt.retrieveOption(argc,argv);
-  label_opt.retrieveOption(argc,argv);
-  reclass_opt.retrieveOption(argc,argv);
-  balance_opt.retrieveOption(argc,argv);
-  minSize_opt.retrieveOption(argc,argv);
-  start_opt.retrieveOption(argc,argv);
-  end_opt.retrieveOption(argc,argv);
-  band_opt.retrieveOption(argc,argv);
-  offset_opt.retrieveOption(argc,argv);
-  scale_opt.retrieveOption(argc,argv);
-  // priors_opt.retrieveOption(argc,argv);
-  svm_type_opt.retrieveOption(argc,argv);
-  kernel_type_opt.retrieveOption(argc,argv);
-  kernel_degree_opt.retrieveOption(argc,argv);
-  gamma_opt.retrieveOption(argc,argv);
-  coef0_opt.retrieveOption(argc,argv);
-  ccost_opt.retrieveOption(argc,argv);
-  nu_opt.retrieveOption(argc,argv);
-  epsilon_loss_opt.retrieveOption(argc,argv);
-  cache_opt.retrieveOption(argc,argv);
-  epsilon_tol_opt.retrieveOption(argc,argv);
-  shrinking_opt.retrieveOption(argc,argv);
-  prob_est_opt.retrieveOption(argc,argv);
-  cv_opt.retrieveOption(argc,argv);
-  selector_opt.retrieveOption(argc,argv);
-  epsilon_cost_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=training_opt.retrieveOption(argc,argv);
+    maxFeatures_opt.retrieveOption(argc,argv);
+    label_opt.retrieveOption(argc,argv);
+    reclass_opt.retrieveOption(argc,argv);
+    balance_opt.retrieveOption(argc,argv);
+    minSize_opt.retrieveOption(argc,argv);
+    start_opt.retrieveOption(argc,argv);
+    end_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
+    // priors_opt.retrieveOption(argc,argv);
+    svm_type_opt.retrieveOption(argc,argv);
+    kernel_type_opt.retrieveOption(argc,argv);
+    kernel_degree_opt.retrieveOption(argc,argv);
+    gamma_opt.retrieveOption(argc,argv);
+    coef0_opt.retrieveOption(argc,argv);
+    ccost_opt.retrieveOption(argc,argv);
+    nu_opt.retrieveOption(argc,argv);
+    epsilon_loss_opt.retrieveOption(argc,argv);
+    cache_opt.retrieveOption(argc,argv);
+    epsilon_tol_opt.retrieveOption(argc,argv);
+    shrinking_opt.retrieveOption(argc,argv);
+    prob_est_opt.retrieveOption(argc,argv);
+    cv_opt.retrieveOption(argc,argv);
+    selector_opt.retrieveOption(argc,argv);
+    epsilon_cost_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
+    exit(0);
+  }
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
+  }
 
-  if(version_opt[0]||todo_opt[0]){
-    std::cout << version_opt.getHelp() << std::endl;
-    std::cout << "todo: " << todo_opt.getHelp() << std::endl;
-    exit(0);
-  }
-  if(license_opt[0]){
-    std::cout << Optionpk<bool>::getGPLv3License() << std::endl;
-    exit(0);
-  }
-  if(help_opt[0]){
-    std::cout << "usage: pkfs_svm -t training [OPTIONS]" << std::endl;
-    exit(0);
-  }
-  
   static std::map<std::string, SelectorValue> selMap;
   //initialize selMap
   selMap["sffs"]=SFFS;

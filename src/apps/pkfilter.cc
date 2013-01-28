@@ -32,24 +32,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 /*------------------
   Main procedure
   ----------------*/
 int main(int argc,char **argv) {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<std::string> input_opt("i","input","input image file");
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
@@ -70,43 +56,35 @@ int main(int argc,char **argv) {
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-
-  input_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  disc_opt.retrieveOption(argc,argv);
-  angle_opt.retrieveOption(argc,argv);
-  function_opt.retrieveOption(argc,argv);
-  dimX_opt.retrieveOption(argc,argv);
-  dimY_opt.retrieveOption(argc,argv);
-  dimZ_opt.retrieveOption(argc,argv);
-  option_opt.retrieveOption(argc,argv);
-  class_opt.retrieveOption(argc,argv);
-  threshold_opt.retrieveOption(argc,argv);
-  mask_opt.retrieveOption(argc,argv);
-  tap_opt.retrieveOption(argc,argv);
-  tapz_opt.retrieveOption(argc,argv);
-  down_opt.retrieveOption(argc,argv);
-  otype_opt.retrieveOption(argc,argv);
-  oformat_opt.retrieveOption(argc,argv);
-  colorTable_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]||todo_opt[0]){
-    cout << version_opt.getHelp() << endl;
-    cout << "todo: " << todo_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    disc_opt.retrieveOption(argc,argv);
+    angle_opt.retrieveOption(argc,argv);
+    function_opt.retrieveOption(argc,argv);
+    dimX_opt.retrieveOption(argc,argv);
+    dimY_opt.retrieveOption(argc,argv);
+    dimZ_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    class_opt.retrieveOption(argc,argv);
+    threshold_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    tap_opt.retrieveOption(argc,argv);
+    tapz_opt.retrieveOption(argc,argv);
+    down_opt.retrieveOption(argc,argv);
+    otype_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-  if(help_opt[0]){
-    cout << "usage: pkfilter -i inputimage -o outputimage [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   ImgReaderGdal input;

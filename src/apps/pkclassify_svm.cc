@@ -17,7 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -86,7 +85,6 @@ int main(int argc, char *argv[])
   vector<double> priorsReclass;
   
   //--------------------------- command line options ------------------------------------
-
   Optionpk<string> input_opt("i", "input", "input image"); 
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 

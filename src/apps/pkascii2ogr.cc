@@ -23,22 +23,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgWriterOgr.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 int main(int argc, char *argv[])
 {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i","input","Input ASCII file");
   Optionpk<string> output_opt("o", "output", "Output file");
   Optionpk<short> colX_opt("x", "x", "column number of x (0)", 0);
@@ -51,34 +37,28 @@ int main(int argc, char *argv[])
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<int> verbose_opt("v", "verbose", "verbose (0)", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-  input_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  colX_opt.retrieveOption(argc,argv);
-  colY_opt.retrieveOption(argc,argv);
-  polygon_opt.retrieveOption(argc,argv);
-  fname_opt.retrieveOption(argc,argv);
-  ftype_opt.retrieveOption(argc,argv);
-  itype_opt.retrieveOption(argc,argv);
-  projection_opt.retrieveOption(argc,argv);
-  fs_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    input_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    colX_opt.retrieveOption(argc,argv);
+    colY_opt.retrieveOption(argc,argv);
+    polygon_opt.retrieveOption(argc,argv);
+    fname_opt.retrieveOption(argc,argv);
+    ftype_opt.retrieveOption(argc,argv);
+    itype_opt.retrieveOption(argc,argv);
+    projection_opt.retrieveOption(argc,argv);
+    fs_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-
-  if(help_opt[0]){
-    cout << "usage: pksensormodel -i asciifile [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   string theProjection;

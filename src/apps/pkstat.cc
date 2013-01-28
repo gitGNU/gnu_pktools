@@ -24,24 +24,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/Histogram.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i","input","name of the input text file","");
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<bool> output_opt("o","output","output the selected columns",false);
@@ -66,46 +52,39 @@ int main(int argc, char *argv[])
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-  input_opt.retrieveOption(argc,argv);
-  fs_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  col_opt.retrieveOption(argc,argv);
-  range_opt.retrieveOption(argc,argv);
-  size_opt.retrieveOption(argc,argv);
-  mean_opt.retrieveOption(argc,argv);
-  median_opt.retrieveOption(argc,argv);
-  var_opt.retrieveOption(argc,argv);
-  stdev_opt.retrieveOption(argc,argv);
-  skewness_opt.retrieveOption(argc,argv);
-  kurtosis_opt.retrieveOption(argc,argv);
-  sum_opt.retrieveOption(argc,argv);
-  minmax_opt.retrieveOption(argc,argv);
-  min_opt.retrieveOption(argc,argv);
-  max_opt.retrieveOption(argc,argv);
-  histogram_opt.retrieveOption(argc,argv);
-  nbin_opt.retrieveOption(argc,argv);
-  relative_opt.retrieveOption(argc,argv);
-  correlation_opt.retrieveOption(argc,argv);
-  rmse_opt.retrieveOption(argc,argv);
-  reg_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    fs_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    col_opt.retrieveOption(argc,argv);
+    range_opt.retrieveOption(argc,argv);
+    size_opt.retrieveOption(argc,argv);
+    mean_opt.retrieveOption(argc,argv);
+    median_opt.retrieveOption(argc,argv);
+    var_opt.retrieveOption(argc,argv);
+    stdev_opt.retrieveOption(argc,argv);
+    skewness_opt.retrieveOption(argc,argv);
+    kurtosis_opt.retrieveOption(argc,argv);
+    sum_opt.retrieveOption(argc,argv);
+    minmax_opt.retrieveOption(argc,argv);
+    min_opt.retrieveOption(argc,argv);
+    max_opt.retrieveOption(argc,argv);
+    histogram_opt.retrieveOption(argc,argv);
+    nbin_opt.retrieveOption(argc,argv);
+    relative_opt.retrieveOption(argc,argv);
+    correlation_opt.retrieveOption(argc,argv);
+    rmse_opt.retrieveOption(argc,argv);
+    reg_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-
-  if(help_opt[0]){
-    cout << "usage: pkstat -i asciifile [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   vector< vector<double> > dataVector(col_opt.size());

@@ -25,20 +25,7 @@ extern "C" {
 }
 #include "base/Optionpk.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 int main(int argc,char **argv) {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!", "");
   Optionpk<int> band_opt("b", "band", "band(s) to process (Default is -1: process all bands)", -1);
   Optionpk<string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ", "");
@@ -47,30 +34,23 @@ int main(int argc,char **argv) {
   Optionpk<int> iteration_opt("it", "iteration", "Number of 3x3 smoothing filter passes to run (default 0)", 0);
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    distance_opt.retrieveOption(argc,argv);
+    iteration_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-
-  input_opt.retrieveOption(argc,argv);
-  band_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  mask_opt.retrieveOption(argc,argv);
-  distance_opt.retrieveOption(argc,argv);
-  iteration_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(help_opt[0]){
-    cout << "usage: pkfillnodata -i inputimage -o outputimage -m maskimage [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   GDALAllRegister();

@@ -22,10 +22,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 using namespace std;
 
 int main(int argc,char **argv) {
@@ -34,16 +30,6 @@ int main(int argc,char **argv) {
   short green=-1;
   short blue=-1;
 
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image file", "");
   Optionpk<string>  output_opt("o", "output", "Output image file", "");
   Optionpk<string>  legend_opt("l", "legend", "Create legend as png file", "");
@@ -57,36 +43,28 @@ int main(int argc,char **argv) {
   Optionpk<string>  description_opt("d", "description", "Set image description", "");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]||todo_opt[0]){
-    cout << version_opt.getHelp() << endl;
-    cout << "todo: " << todo_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    legend_opt.retrieveOption(argc,argv);
+    dim_opt.retrieveOption(argc,argv);
+    min_opt.retrieveOption(argc,argv);
+    max_opt.retrieveOption(argc,argv);
+    grey_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
+    description_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-  input_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  legend_opt.retrieveOption(argc,argv);
-  dim_opt.retrieveOption(argc,argv);
-  min_opt.retrieveOption(argc,argv);
-  max_opt.retrieveOption(argc,argv);
-  grey_opt.retrieveOption(argc,argv);
-  colorTable_opt.retrieveOption(argc,argv);
-  description_opt.retrieveOption(argc,argv);
-  oformat_opt.retrieveOption(argc,argv);
-  option_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(help_opt[0]){
-    cout << "usage: pkcreatect [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   GDALColorTable colorTable;

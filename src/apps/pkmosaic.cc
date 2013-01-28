@@ -28,24 +28,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/Histogram.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created", "");
   Optionpk<string>  output_opt("o", "output", "Output image file", "");
   Optionpk<string>  projection_opt("p", "projection", "projection in EPSG format (leave blank to copy from input file, use EPSG:3035 to use European projection and to force to European grid", "");
@@ -75,53 +61,44 @@ int main(int argc, char *argv[])
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image).", 0);
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]||todo_opt[0]){
-    cout << version_opt.getHelp() << endl;
-    cout << "todo: " << todo_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    projection_opt.retrieveOption(argc,argv);
+    extent_opt.retrieveOption(argc,argv);
+    ulx_opt.retrieveOption(argc,argv);
+    uly_opt.retrieveOption(argc,argv);
+    lrx_opt.retrieveOption(argc,argv);
+    lry_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    otype_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
+    dx_opt.retrieveOption(argc,argv);
+    dy_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    flag_opt.retrieveOption(argc,argv);
+    resample_opt.retrieveOption(argc,argv);
+    description_opt.retrieveOption(argc,argv);
+    mrule_opt.retrieveOption(argc,argv);
+    ruleBand_opt.retrieveOption(argc,argv);
+    validBand_opt.retrieveOption(argc,argv);
+    invalid_opt.retrieveOption(argc,argv);
+    minValue_opt.retrieveOption(argc,argv);
+    maxValue_opt.retrieveOption(argc,argv);
+    file_opt.retrieveOption(argc,argv);
+    weight_opt.retrieveOption(argc,argv);
+    class_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-  
-  input_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  projection_opt.retrieveOption(argc,argv);
-  extent_opt.retrieveOption(argc,argv);
-  ulx_opt.retrieveOption(argc,argv);
-  uly_opt.retrieveOption(argc,argv);
-  lrx_opt.retrieveOption(argc,argv);
-  lry_opt.retrieveOption(argc,argv);
-  band_opt.retrieveOption(argc,argv);
-  otype_opt.retrieveOption(argc,argv);
-  oformat_opt.retrieveOption(argc,argv);
-  colorTable_opt.retrieveOption(argc,argv);
-  dx_opt.retrieveOption(argc,argv);
-  dy_opt.retrieveOption(argc,argv);
-  option_opt.retrieveOption(argc,argv);
-  flag_opt.retrieveOption(argc,argv);
-  resample_opt.retrieveOption(argc,argv);
-  description_opt.retrieveOption(argc,argv);
-  mrule_opt.retrieveOption(argc,argv);
-  ruleBand_opt.retrieveOption(argc,argv);
-  validBand_opt.retrieveOption(argc,argv);
-  invalid_opt.retrieveOption(argc,argv);
-  minValue_opt.retrieveOption(argc,argv);
-  maxValue_opt.retrieveOption(argc,argv);
-  file_opt.retrieveOption(argc,argv);
-  weight_opt.retrieveOption(argc,argv);
-  class_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(help_opt[0]){
-    cout << "usage: pkmosaic -i inputimage -o outputimage [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   while(invalid_opt.size()<validBand_opt.size())

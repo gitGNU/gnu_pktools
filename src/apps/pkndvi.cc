@@ -23,24 +23,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 using namespace std;
 
 int main(int argc, char *argv[])
 {
   //command line options
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> input_opt("i","input","input image file","");
   Optionpk<string> output_opt("o","output","output image file containing ndvi","");
   Optionpk<short> band_opt("b", "band", "Bands to be used for vegetation index (see rule option)", 0);
@@ -58,37 +45,32 @@ int main(int argc, char *argv[])
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  input_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  band_opt.retrieveOption(argc,argv);
-  rule_opt.retrieveOption(argc,argv);
-  invalid_opt.retrieveOption(argc,argv);
-  flag_opt.retrieveOption(argc,argv);
-  colorTable_opt.retrieveOption(argc,argv);
-  description_opt.retrieveOption(argc,argv);
-  minmax_opt.retrieveOption(argc,argv);
-  eps_opt.retrieveOption(argc,argv);
-  scale_opt.retrieveOption(argc,argv);
-  offset_opt.retrieveOption(argc,argv);
-  otype_opt.retrieveOption(argc,argv);
-  oformat_opt.retrieveOption(argc,argv);
-  option_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    rule_opt.retrieveOption(argc,argv);
+    invalid_opt.retrieveOption(argc,argv);
+    flag_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
+    description_opt.retrieveOption(argc,argv);
+    minmax_opt.retrieveOption(argc,argv);
+    eps_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
+    otype_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-  if(help_opt[0]){
-    cout << "usage: pkinfo -i inputimage -o outputimage [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   if(scale_opt.size()<2){

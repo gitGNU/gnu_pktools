@@ -21,21 +21,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "algorithms/Egcs.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 int main(int argc, char *argv[])
 {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
   Optionpk<string> image_opt("i","image","input image to analyse","");
   Optionpk<unsigned short>  band_opt("b", "band", "Band specific information", 0);
   Optionpk<string> cell2bb_opt("c2b","cell2bb","convert cell code to geo coordinates of boundingbox (e.g. 32-AB)","");
@@ -47,29 +34,28 @@ int main(int argc, char *argv[])
   Optionpk<double> x_opt("x","x","x coordinate in epsg:3035",0);
   Optionpk<double> y_opt("y","y","y coordinate in epsg:3035",0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
 
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=image_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    cell2bb_opt.retrieveOption(argc,argv);
+    cell2mid_opt.retrieveOption(argc,argv);
+    geo2cell_opt.retrieveOption(argc,argv);
+    refpixel_opt.retrieveOption(argc,argv);
+    maskValue_opt.retrieveOption(argc,argv);
+    dx_opt.retrieveOption(argc,argv);
+    x_opt.retrieveOption(argc,argv);
+    y_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
-
-  image_opt.retrieveOption(argc,argv);
-  band_opt.retrieveOption(argc,argv);
-  cell2bb_opt.retrieveOption(argc,argv);
-  cell2mid_opt.retrieveOption(argc,argv);
-  geo2cell_opt.retrieveOption(argc,argv);
-  refpixel_opt.retrieveOption(argc,argv);
-  maskValue_opt.retrieveOption(argc,argv);
-  dx_opt.retrieveOption(argc,argv);
-  x_opt.retrieveOption(argc,argv);
-  y_opt.retrieveOption(argc,argv);
   
   Egcs egcs;
   if(cell2bb_opt[0]!=""){

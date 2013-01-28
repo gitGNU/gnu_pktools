@@ -23,25 +23,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 using namespace std;
 
 int main(int argc, char *argv[])
 {
   //command line options
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string>  input_opt("i", "input", "Input image", "");
   Optionpk<string>  mask_opt("m", "mask", "Mask image(s)", "");
   Optionpk<string> output_opt("o", "output", "Output mask file", "");
@@ -54,35 +40,27 @@ int main(int argc, char *argv[])
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]||todo_opt[0]){
-    cout << version_opt.getHelp() << endl;
-    cout << "todo: " << todo_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    otype_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    invalid_opt.retrieveOption(argc,argv);
+    operator_opt.retrieveOption(argc,argv);
+    flag_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-  input_opt.retrieveOption(argc,argv);
-  mask_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  otype_opt.retrieveOption(argc,argv);
-  oformat_opt.retrieveOption(argc,argv);
-  option_opt.retrieveOption(argc,argv);
-  invalid_opt.retrieveOption(argc,argv);
-  operator_opt.retrieveOption(argc,argv);
-  flag_opt.retrieveOption(argc,argv);
-  colorTable_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(help_opt[0]){
-    cout << "usage: pksetmask -i inputimage -o outputimage -m maskimage [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   if(verbose_opt[0])

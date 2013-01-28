@@ -30,23 +30,9 @@ extern "C" {
 #include "ogr_api.h"
 }
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 using namespace std;
 
 int main(int argc,char **argv) {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string> input_opt("i", "input", "Input image file", "");
   Optionpk<string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ", "");
   Optionpk<string> output_opt("o", "output", "Output image file", "");
@@ -55,30 +41,23 @@ int main(int argc,char **argv) {
   Optionpk<int> size_opt("s", "size", "raster polygons with sizes smaller than this will be merged into their largest neighbour. No sieve is performed if size = 0", 0);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-
-  input_opt.retrieveOption(argc,argv);
-  mask_opt.retrieveOption(argc,argv);
-  output_opt.retrieveOption(argc,argv);
-  band_opt.retrieveOption(argc,argv);
-  connect_opt.retrieveOption(argc,argv);
-  size_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]){
-    cout << version_opt.getHelp() << endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    connect_opt.retrieveOption(argc,argv);
+    size_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    cout << Optionpk<bool>::getGPLv3License() << endl;
-    exit(0);
-  }
-  if(help_opt[0]){
-    cout << "usage: pksieve -i inputimage -o outputimage [OPTIONS]" << endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   GDALAllRegister();

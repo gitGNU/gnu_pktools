@@ -25,22 +25,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderOgr.h"
 #include "algorithms/Histogram.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 int main(int argc, char *argv[])
 {
-  std::string versionString="version ";
-  versionString+=VERSION;
-  versionString+=", Copyright (C) 2008-2012 Pieter Kempeneers.\n\
-   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n\
-   This is free software, and you are welcome to redistribute it\n\
-   under certain conditions; use option --license for details.";
-  Optionpk<bool> version_opt("\0","version",versionString,false);
-  Optionpk<bool> license_opt("lic","license","show license information",false);
-  Optionpk<bool> help_opt("h","help","shows this help info",false);
-  Optionpk<bool> todo_opt("\0","todo","",false);
   Optionpk<string> input_opt("i", "input", "Input shape file", "");
   Optionpk<string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
   Optionpk<short> nbin_opt("nbin", "nbin", "number of bins", 0);
@@ -52,34 +38,26 @@ int main(int argc, char *argv[])
   Optionpk<bool> size_opt("s","size","sample size (number of points)",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
-  version_opt.retrieveOption(argc,argv);
-  license_opt.retrieveOption(argc,argv);
-  help_opt.retrieveOption(argc,argv);
-  todo_opt.retrieveOption(argc,argv);
-
-  input_opt.retrieveOption(argc,argv);
-  fieldname_opt.retrieveOption(argc,argv);
-  nbin_opt.retrieveOption(argc,argv);
-  min_opt.retrieveOption(argc,argv);
-  max_opt.retrieveOption(argc,argv);
-  mean_opt.retrieveOption(argc,argv);
-  median_opt.retrieveOption(argc,argv);
-  stdev_opt.retrieveOption(argc,argv);
-  size_opt.retrieveOption(argc,argv);
-  verbose_opt.retrieveOption(argc,argv);
-
-  if(version_opt[0]||todo_opt[0]){
-    std::cout << version_opt.getHelp() << std::endl;
-    std::cout << "todo: " << todo_opt.getHelp() << std::endl;
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=input_opt.retrieveOption(argc,argv);
+    fieldname_opt.retrieveOption(argc,argv);
+    nbin_opt.retrieveOption(argc,argv);
+    min_opt.retrieveOption(argc,argv);
+    max_opt.retrieveOption(argc,argv);
+    mean_opt.retrieveOption(argc,argv);
+    median_opt.retrieveOption(argc,argv);
+    stdev_opt.retrieveOption(argc,argv);
+    size_opt.retrieveOption(argc,argv);
+    verbose_opt.retrieveOption(argc,argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(license_opt[0]){
-    std::cout << Optionpk<bool>::getGPLv3License() << std::endl;
-    exit(0);
-  }
-  if(help_opt[0]){
-    std::cout << "usage: pkstatogr -i inputimage -n nbin -n fieldname [-n fieldname]" << std::endl;
-    exit(0);
+  if(!doProcess){
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
   }
 
   ImgReaderOgr imgReader;
