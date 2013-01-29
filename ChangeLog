@@ -48,6 +48,8 @@ version 2.4
 	support filtering of matrix (doit with Vector2d arguments) (to create DTM according to P. Bunting)
  - FileReaderLas
 	support class filters
+ - ImgReaderGdal.h
+	support of polygons in readData
  - ImgReaderGdal.cc
 	in addition to internal setNoData member variable, also support GDALSetNoData
  - ImgWriterGdal.cc
@@ -76,6 +78,7 @@ version 2.4
 	do not output input file if no input data was defined in verbose mode
 	update of header information
 	adding some short options
+	support of polygon ogr input file
  - pkclassify_nn
 	support of cross validation
 	adding some short options

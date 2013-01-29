@@ -54,7 +54,7 @@ ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr, b
   copyFields(imgReaderOgr);
   if(copyData){
     OGRFeature *poFeature;
-    while( (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
+    while(true){// (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
       poFeature = imgReaderOgr.getLayer()->GetNextFeature();
       if( poFeature == NULL )
         break;

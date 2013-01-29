@@ -163,8 +163,7 @@ ostream& operator<<(ostream& theOstream, ImgReaderOgr& theImageReader){
 
   theOstream << "#";
   int iField=0;
-  theOstream << "X" << " " << "Y" << " ";
-  // theOstream << poFDefn->GetFieldDefn(iField)->GetNameRef() << " ";
+  // theOstream << "X" << " " << "Y" << " ";
   for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
       string fieldname=poFieldDefn->GetNameRef();
@@ -180,38 +179,27 @@ ostream& operator<<(ostream& theOstream, ImgReaderOgr& theImageReader){
   while( (poFeature = poLayer->GetNextFeature()) != NULL ){
     OGRGeometry *poGeometry;
     poGeometry = poFeature->GetGeometryRef();
-    // if(verbose){
-    //   if(!poGeometry)
-    //     cerr << "no geometry defined" << endl << flush;
-    //   else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-    //     cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
-    // }
-    assert(poGeometry != NULL 
-           && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-    OGRPoint *poPoint = (OGRPoint *) poGeometry;
-    double x=poPoint->getX();
-    double y=poPoint->getY();
+    assert(poGeometry != NULL);
+    double x,y;
+    if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
+      OGRPoint *poPoint = (OGRPoint *) poGeometry;
+      x=poPoint->getX();
+      y=poPoint->getY();
+    }
     vector<string> vfields(poFDefn->GetFieldCount());
     string featurename;
     vector<string>::iterator fit=vfields.begin();
     for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
-      // OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
-      // string fieldname=poFieldDefn->GetNameRef();
-      // if(fieldname==pointname)
-      //   featurename=poFeature->GetFieldAsString(iField);
-      // else
       *(fit++)=poFeature->GetFieldAsString(iField);
     }
-//     theOstream << ifeature << " " << featurename << " " << x << " " << y;
     theOstream.precision(12);
-    // theOstream << featurename << " " << x << " " << y;
-    theOstream << x << " " << y;
+    if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint)
+      theOstream << x << " " << y;
     for(fit=vfields.begin();fit!=vfields.end();++fit)
       theOstream << " " << *fit;
     theOstream << endl;
     ++ifeature;
   }
-  // theOstream.close();
   return(theOstream);
 }
 

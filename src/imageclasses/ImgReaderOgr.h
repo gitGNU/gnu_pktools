@@ -117,28 +117,29 @@ template <typename T> int ImgReaderOgr::readData(map<int,Vector2d<T> >& data, co
       }
       assert(poGeometry != NULL );
              // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-      OGRPoint *poPoint;
       if(pos){
-        poPoint = (OGRPoint *) poGeometry;
         if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
-        theFeature.push_back(poPoint->getX());
-        theFeature.push_back(poPoint->getY());
-        }
-        else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
-          OGRPolygon * poPolygon = (OGRPolygon *) poGeometry;
-          poPolygon->Centroid(poPoint);
+          OGRPoint *poPoint;
+          poPoint = (OGRPoint *) poGeometry;
           theFeature.push_back(poPoint->getX());
           theFeature.push_back(poPoint->getY());
+        }
+        else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+          OGRPoint thePoint;
+          OGRPolygon * poPolygon = (OGRPolygon *) poGeometry;
+          poPolygon->Centroid(&thePoint);
+          theFeature.push_back(thePoint.getX());
+          theFeature.push_back(thePoint.getY());
         }        
         else{
-          string errorstring="Error: Centroid for non polygon geometry not supported until OGR 1.8.0, change ImgReaderOgr if version >= 1.8.0 is installed...";
-            throw(errorstring);
-          // poGeometry->Centroid(poPoint);
-          // theFeature.push_back(poPoint->getX());
-          // theFeature.push_back(poPoint->getY());
+          //Centroid for non polygon geometry not supported until OGR 1.8.0, comment out if version < 1.8.0 is installed...";
+          OGRPoint thePoint;
+          poGeometry->Centroid(&thePoint);
+          theFeature.push_back(thePoint.getX());
+          theFeature.push_back(thePoint.getY());
         }       
       }
-      OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+      // OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
       string featurename;
       for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
         OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
@@ -220,11 +221,14 @@ template <typename T> int ImgReaderOgr::readData(map<string,Vector2d<T> >& data,
   poLayer = m_datasource->GetLayer(layer);
   if(poLayer!=NULL){
     OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+    assert(poFDefn!=NULL);
+
     if(fields.empty()){
       fields.resize(poFDefn->GetFieldCount());
       if(verbose)
         cout << "resized fields to " << fields.size() << endl;
     }
+
     //start reading features from the layer
     OGRFeature *poFeature;
     if(verbose)
@@ -249,25 +253,25 @@ template <typename T> int ImgReaderOgr::readData(map<string,Vector2d<T> >& data,
       }
       assert(poGeometry != NULL );
              // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-      OGRPoint *poPoint;
       if(pos){
-        poPoint = (OGRPoint *) poGeometry;
         if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
-        theFeature.push_back(poPoint->getX());
-        theFeature.push_back(poPoint->getY());
-        }
-        else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
-          OGRPolygon * poPolygon = (OGRPolygon *) poGeometry;
-          poPolygon->Centroid(poPoint);
+          OGRPoint *poPoint;
+          poPoint = (OGRPoint *) poGeometry;
           theFeature.push_back(poPoint->getX());
           theFeature.push_back(poPoint->getY());
+        }
+        else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+          OGRPoint thePoint;
+          poGeometry->Centroid(&thePoint);
+          theFeature.push_back(thePoint.getX());
+          theFeature.push_back(thePoint.getY());
         }        
         else{
-          string errorstring="Error: Centroid for non polygon geometry not supported until OGR 1.8.0, change ImgReaderOgr if version >= 1.8.0 is installed...";
-            throw(errorstring);
-          // poGeometry->Centroid(poPoint);
-          // theFeature.push_back(poPoint->getX());
-          // theFeature.push_back(poPoint->getY());
+          //Centroid for non polygon geometry not supported until OGR 1.8.0, comment out if version < 1.8.0 is installed...";
+          OGRPoint thePoint;
+          poGeometry->Centroid(&thePoint);
+          theFeature.push_back(thePoint.getX());
+          theFeature.push_back(thePoint.getY());
         }       
       }
       // OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();//got LayerDefn already...
@@ -310,9 +314,9 @@ template <typename T> int ImgReaderOgr::readData(map<string,Vector2d<T> >& data,
             break;
           }
         }
+        assert(poFDefn!=NULL);
       }
       data[theClass].push_back(theFeature);
-      ++ifeature;
       ++ifeature;
     }
     if(verbose)
@@ -414,12 +418,30 @@ template <typename T> int ImgReaderOgr::readData(vector<T>& data, const OGRField
     else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
       cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
   }
-  assert(poGeometry != NULL 
-         && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
+  assert(poGeometry != NULL);
+         // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
   OGRPoint *poPoint = (OGRPoint *) poGeometry;
   if(pos){
-    data.push_back(poPoint->getX());
-    data.push_back(poPoint->getY());
+    if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
+      OGRPoint *poPoint;
+      poPoint = (OGRPoint *) poGeometry;
+      data.push_back(poPoint->getX());
+      data.push_back(poPoint->getY());
+    }
+    else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+      OGRPoint thePoint;
+      poGeometry->Centroid(&thePoint);
+      data.push_back(thePoint.getX());
+      data.push_back(thePoint.getY());
+    }        
+    else{
+      //Centroid for non polygon geometry not supported until OGR 1.8.0, comment out if version < 1.8.0 is installed...";
+      OGRPoint thePoint;
+      poGeometry->Centroid(&thePoint);
+      data.push_back(thePoint.getX());
+      data.push_back(thePoint.getY());
+    }       
+
   }
   string featurename;
   for(int iField=0;iField<poFDefn->GetFieldCount();++iField){

@@ -90,7 +90,8 @@ int main(int argc, char *argv[])
   if(attribute_opt[0]!="ALL"){
     vector<double> xvector;
     vector<double> yvector;
-    inputReader.readXY(xvector,yvector);
+    if(inputReader.getGeometryType()==wkbPoint)
+      inputReader.readXY(xvector,yvector);
     Vector2d<double> theData(attribute_opt.size());
     for(int ifield=0;ifield<attribute_opt.size();++ifield){
       if(verbose_opt[0])
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
       std::cout << "number of samples: " << theData[0].size() << std::endl;
     }
     if(transpose_opt[0]){
-      if(pos_opt[0]){
+      if(pos_opt[0]&&(inputReader.getGeometryType()==wkbPoint)){
         if(output_opt[0]!=""){
           outputFile << "X" << " ";
           for(int isample=0;isample<xvector.size();++isample){

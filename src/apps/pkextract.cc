@@ -812,8 +812,8 @@ int main(int argc, char *argv[])
       readLayer->ResetReading();
       OGRFeature *readFeature;
       int isample=0;
-      int ifeature=0;
-
+      unsigned long int ifeature=0;
+      unsigned long int nfeature=sampleReader.getFeatureCount();
       ImgWriterOgr boxWriter;
       if(rbox_opt[0]>0||cbox_opt[0]>0){
         if(verbose_opt[0]>1)
@@ -827,6 +827,8 @@ int main(int argc, char *argv[])
         //       ogrWriter.createField(fieldname,OFTInteger);
         boxWriter.createField(fieldname,OFTInteger);
       }
+      progress=0;
+      pfnProgress(progress,pszMessage,pProgressArg);
       while( (readFeature = readLayer->GetNextFeature()) != NULL ){
         if(verbose_opt[0]>0)
           std::cout << "reading feature " << readFeature->GetFID() << std::endl;
@@ -2186,6 +2188,8 @@ int main(int argc, char *argv[])
             throw(oss.str());
           }
           ++ifeature;
+          progress=static_cast<float>(ifeature+1)/nfeature;
+          pfnProgress(progress,pszMessage,pProgressArg);
         }
         catch(std::string e){
           std::cout << e << std::endl;
