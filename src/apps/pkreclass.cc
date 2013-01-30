@@ -29,20 +29,20 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string>  input_opt("i", "input", "Input image", "");
-  Optionpk<string>  mask_opt("m", "mask", "Mask image(s)", "");
-  Optionpk<string> output_opt("o", "output", "Output mask file", "");
+  Optionpk<string>  input_opt("i", "input", "Input image");
+  Optionpk<string>  mask_opt("m", "mask", "Mask image(s)");
+  Optionpk<string> output_opt("o", "output", "Output mask file");
   Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask.", 1);
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
-  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<unsigned short>  band_opt("b", "band", "band index to replace (other bands are copied to output)", 0);
   Optionpk<string> type_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string> code_opt("code", "code", "Recode text file (2 colums: from to)", "");
-  Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)", "");
-  Optionpk<string> reclass_opt("r", "reclass", "list of recoded class(es) (in combination with class option)", "");
+  Optionpk<string> code_opt("code", "code", "Recode text file (2 colums: from to)");
+  Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)");
+  Optionpk<string> reclass_opt("r", "reclass", "list of recoded class(es) (in combination with class option)");
   Optionpk<string> fieldname_opt("n", "fname", "field name of the shape file to be replaced", "label");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
-  Optionpk<string> description_opt("d", "description", "Set image description", "");
+  Optionpk<string> description_opt("d", "description", "Set image description");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -71,13 +71,17 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
-
+  if(input_opt.empty()||output_opt.empty()){
+    std::cout << "input or output files are missing, provide input (-i) and output (-o) files. Use -h or --help for more help information" << std::endl;
+    exit(0);
+  }
+    
   // vector<short> bandVector;
   // for(int iband=0;iband<band_opt.size();++iband)
   //   bandVector.push_back(band_opt[iband]);
   map<string,string> codemapString;//map with codes: codemapString[theKey(from)]=theValue(to)
   map<double,double> codemap;//map with codes: codemap[theKey(from)]=theValue(to)
-  if(code_opt[0]!=""){
+  if(code_opt.size()){
     if(verbose_opt[0])
       cout << "opening code text file " << code_opt[0] << endl;
     ifstream codefile;
@@ -164,11 +168,9 @@ int main(int argc, char *argv[])
       cout << "opening input image file " << input_opt[0] << endl;
     inputReader.open(input_opt[0]);
     for(int imask=0;imask<mask_opt.size();++imask){
-      if(mask_opt[imask]!=""){
-        if(verbose_opt[0])
-          cout << "opening mask image file " << mask_opt[imask] << endl;
-        maskReader[imask].open(mask_opt[imask]);
-      }
+      if(verbose_opt[0])
+        cout << "opening mask image file " << mask_opt[imask] << endl;
+      maskReader[imask].open(mask_opt[imask]);
     }
     if(verbose_opt[0]){
       cout << "opening output image file " << output_opt[0] << endl;
@@ -196,10 +198,10 @@ int main(int argc, char *argv[])
       option_opt.push_back(theInterleave);
     }
     outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,inputReader.getImageType(),option_opt);
-    if(description_opt[0]!="")
+    if(description_opt.size())
       outputWriter.setImageDescription(description_opt[0]);
 
-    if(colorTable_opt[0]!=""){
+    if(colorTable_opt.size()){
       if(colorTable_opt[0]!="none")
         outputWriter.setColorTable(colorTable_opt[0]);
     }
@@ -209,23 +211,20 @@ int main(int argc, char *argv[])
     //if input image is georeferenced, copy projection info to output image
     if(inputReader.isGeoRef()){
       for(int imask=0;imask<mask_opt.size();++imask)
-        if(mask_opt[imask]!="")
-          assert(maskReader[imask].isGeoRef());
+        assert(maskReader[imask].isGeoRef());
       outputWriter.setProjection(inputReader.getProjection());
     }
     else{
       for(int imask=0;imask<mask_opt.size();++imask){
-        if(mask_opt[imask]!=""){
-          assert(maskReader[imask].nrOfCol()==inputReader.nrOfCol());
-          assert(maskReader[imask].nrOfRow()==inputReader.nrOfRow());
-        }
+        assert(maskReader[imask].nrOfCol()==inputReader.nrOfCol());
+        assert(maskReader[imask].nrOfRow()==inputReader.nrOfRow());
       }
     }
     double ulx,uly,lrx,lry;
     inputReader.getBoundingBox(ulx,uly,lrx,lry);
     outputWriter.copyGeoTransform(inputReader);
     assert(flag_opt.size()==invalid_opt.size());
-    if(verbose_opt[0]&&mask_opt[0]!=""){
+    if(verbose_opt[0]&&mask_opt.size()){
       for(int iv=0;iv<invalid_opt.size();++iv)
         cout << invalid_opt[iv] << "->" << flag_opt[iv] << endl;
     }
@@ -235,8 +234,7 @@ int main(int argc, char *argv[])
     Vector2d<double> lineInput(inputReader.nrOfBand(),inputReader.nrOfCol());
     Vector2d<short> lineMask(mask_opt.size());
     for(int imask=0;imask<mask_opt.size();++imask)
-      if(mask_opt[imask]!="")
-        lineMask[imask].resize(maskReader[imask].nrOfCol());
+      lineMask[imask].resize(maskReader[imask].nrOfCol());
     Vector2d<double> lineOutput(outputWriter.nrOfBand(),outputWriter.nrOfCol());
     int irow=0;
     int icol=0;
@@ -264,8 +262,6 @@ int main(int argc, char *argv[])
         bool masked=false;
         if(mask_opt.size()>1){//multiple masks
           for(int imask=0;imask<mask_opt.size();++imask){
-            if(mask_opt[imask]=="")
-              continue;
             if(maskReader[imask].isGeoRef()){
               inputReader.image2geo(icol,irow,x,y);
               maskReader[imask].geo2image(x,y,colMask,rowMask);
@@ -298,7 +294,7 @@ int main(int argc, char *argv[])
             }
           }
         }
-        else if(mask_opt[0]!=""){//potentially more invalid values for single mask
+        else if(mask_opt.size()){//potentially more invalid values for single mask
           if(maskReader[0].isGeoRef()){
             inputReader.image2geo(icol,irow,x,y);
             maskReader[0].geo2image(x,y,colMask,rowMask);

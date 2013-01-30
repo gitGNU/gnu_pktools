@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "input image"); 
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
-  Optionpk<unsigned short> reclass_opt("rc", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.)");
+   Optionpk<unsigned short> reclass_opt("rc", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.)");
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
@@ -196,7 +196,6 @@ int main(int argc, char *argv[])
     std::cout << "number of bootstrap aggregations: " << nbag << std::endl;
   
   unsigned int totalSamples=0;
-  short nreclass=0;
   vector<short> vcode;//unique reclass codes (e.g., -rc 1 -rc 1 -rc 2 -rc 2 -> vcode[0]=1,vcode[1]=2)
   vector<struct svm_model*> svm(nbag);
   vector<struct svm_parameter> param(nbag);
@@ -205,6 +204,22 @@ int main(int argc, char *argv[])
   int nband=0;
   int startBand=2;//first two bands represent X and Y pos
 
+  short nreclass=0;
+  // if(reclass_opt.size()){
+  //   //remove duplicates:
+  //   std::sort(reclass.begin(),reclass.end());
+  //   reclass.erase(std::unique(reclass.begin(),reclass.end()),reclass.end());
+  //   nreclass=reclass.size();//number of unique output classes
+  //   if(verbose_opt[0])
+  //     std::cout << "number of unique reclass strings: " << nreclass << std::endl;
+  //   for(short iclass=0;iclass<reclass_opt.size();++iclass)
+  //     shortreclass[iclass]=string2type<short>(reclass[iclass])
+  //     if(verbose_opt[0]){
+  //       std::cout << reclass[iclass] << " ";
+  //       std::cout << std::endl;
+  //     }
+  //   }
+  // }
   if(reclass_opt.size()){
     vreclass.resize(reclass_opt.size());
     for(short iclass=0;iclass<reclass_opt.size();++iclass){
@@ -212,6 +227,8 @@ int main(int argc, char *argv[])
       vreclass[iclass]=reclass_opt[iclass];
     }
   }
+
+  //normalize priors from command line
   if(priors_opt.size()>1){//priors from argument list
     priors.resize(priors_opt.size());
     double normPrior=0;
@@ -934,8 +951,8 @@ int main(int argc, char *argv[])
       ImgWriterOgr imgWriterOgr(output_opt[ivalidation],imgReaderOgr,false);
       if(verbose_opt[0])
         std::cout << "creating field class" << std::endl;
-      // imgWriterOgr.createField("class",OFTInteger);
-      imgWriterOgr.createField("class",OFTString);
+      imgWriterOgr.createField("class",OFTInteger);
+      // imgWriterOgr.createField("class",OFTString);
       OGRFeature *poFeature;
       unsigned int ifeature=0;
       unsigned int nFeatures=imgReaderOgr.getFeatureCount();
