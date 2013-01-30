@@ -15,6 +15,11 @@
 
 @SET_MAKE@
 
+###############################################################################
+# THE PROGRAMS TO BUILD
+###############################################################################
+
+
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -33,6 +38,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+noinst_PROGRAMS = pktestOption$(EXEEXT)
 subdir = src/base
 DIST_COMMON = $(libbase_a_HEADERS) $(noinst_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -53,6 +59,10 @@ libbase_a_LIBADD =
 am__objects_1 =
 am_libbase_a_OBJECTS = $(am__objects_1) PointData.$(OBJEXT)
 libbase_a_OBJECTS = $(am_libbase_a_OBJECTS)
+PROGRAMS = $(noinst_PROGRAMS)
+am_pktestOption_OBJECTS = pktestOption.$(OBJEXT)
+pktestOption_OBJECTS = $(am_pktestOption_OBJECTS)
+pktestOption_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -66,8 +76,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libbase_a_SOURCES)
-DIST_SOURCES = $(libbase_a_SOURCES)
+SOURCES = $(libbase_a_SOURCES) $(pktestOption_SOURCES)
+DIST_SOURCES = $(libbase_a_SOURCES) $(pktestOption_SOURCES)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -224,6 +234,9 @@ libbase_a_HEADERS = PointData.h
 libbase_a_SOURCES = $(libbase_a_HEADERS) PointData.cc
 ###############################################################################
 
+# list of sources for the binaries
+pktestOption_SOURCES = pktestOption.cc
+
 ###############################################################################
 # HEADERS USED FOR BUILDING BUT NOT TO BE INSTALLED
 ###############################################################################
@@ -270,6 +283,12 @@ libbase.a: $(libbase_a_OBJECTS) $(libbase_a_DEPENDENCIES)
 	$(libbase_a_AR) libbase.a $(libbase_a_OBJECTS) $(libbase_a_LIBADD)
 	$(RANLIB) libbase.a
 
+clean-noinstPROGRAMS:
+	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
+pktestOption$(EXEEXT): $(pktestOption_OBJECTS) $(pktestOption_DEPENDENCIES) 
+	@rm -f pktestOption$(EXEEXT)
+	$(CXXLINK) $(pktestOption_OBJECTS) $(pktestOption_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -277,6 +296,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/PointData.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pktestOption.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -396,7 +416,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(HEADERS)
+all-am: Makefile $(LIBRARIES) $(PROGRAMS) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(libbase_adir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -428,7 +448,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
+clean-am: clean-generic clean-noinstLIBRARIES clean-noinstPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -498,17 +519,18 @@ uninstall-am: uninstall-libbase_aHEADERS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-noinstLIBRARIES ctags distclean distclean-compile \
-	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-libbase_aHEADERS install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-libbase_aHEADERS
+	clean-noinstLIBRARIES clean-noinstPROGRAMS ctags distclean \
+	distclean-compile distclean-generic distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-libbase_aHEADERS \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags uninstall uninstall-am \
+	uninstall-libbase_aHEADERS
 
 ###############################################################################
 

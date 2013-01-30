@@ -122,6 +122,73 @@ template<> inline std::string type2string(double const& value){
   return oss.str();
 }
 
+/**
+Class to implement command line options. With the constructor you can define an option, in both short `-` and long `--` format, of a specific type, help information and a default value.\n
+This class inherits from std::vector, so the option variable is a vector, supporting multiple inputs for the same option (e.g., --input file1 [--input file2 ...].
+Several command line option formats are supported: 
+- `-shortOption value`
+- `-shortOption=value`
+- `--longOption value`
+- `--longOption=value`
+- `-shortOption` (no value for boolean options, which are automatically set by invoking the option)
+- `--longOption` (no value for boolean options, which are automatically set by invoking the option)
+
+Option names should have regular characters and no white space in them. Some names are reserved and can not be used either:
+- short option `h` or long option `help`: shows help info
+- long option `license`: shows license info
+- long option `version`: shows current version of pktools
+- long option `doxygen`: shows help info in table format, ready to be included in doxygen
+
+A call to member function \ref retrieveOption reads the command line arguments and initializes the object (vector). Make sure to call this member function before using the option object in your main program (or a segmentation error due to an un-initialized vector will occur).
+
+All calls to retrieveOption should reside in a try{} block. If one of the reserved options
+- `license`
+- `version`
+is used, an exception of type std::string is thrown. This can be caught with a catch(string predefinedString) right after the try block, where the message can be sent to stdout and the program can be ended.
+
+Similarly, if help is invoked with the short option `-h` or long option `--help`, the main program is informed by the return value `false` of \ref retrieveOption (for any option). Thus, a typical use of \ref Optionpk would look like:
+
+~~~
+#include <iostream>
+#include <string>
+#include "base/Optionpk.h"
+
+int main(int argc, char *argv[])
+{
+  Optionpk<std::string> foo_opt("f","foo","command line option **foo** of type string can be invoked with either short (f) or long (foo) option","defaultString");
+  Optionpk<int> bar_opt("\0","bar","command line option **bar** of type int has no short option",false,1);//bar will only be visible in long help (hide=1)
+  Optionpk<bool> easterEgg_opt("egg","egg","this help information is useless",false,2);//this option will not be shown in help (hide=2)
+
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=foo_opt.retrieveOption(argc,argv);
+    bar_opt.retrieveOption(argc,argv);
+    easterEgg_opt.retrieveOption(argc,argv);
+    }
+  catch(std::string predefinedString){//command line option contained license or version
+    std::cout << predefinedString << std::endl;//report the predefined string to stdout
+    exit(0);//stop processing
+  }
+  if(!doProcess){//command line option contained help option
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;//provide extra details for help to the user
+    exit(0);//stop processing
+  }
+  std::cout << "foo: ";
+  for(int ifoo=0;ifoo<foo_opt.size();++ifoo){
+    std::cout << foo_opt[ifoo] << " ";
+  }
+  std::cout << std::endl;
+  std::cout << foo_opt << std::endl;//short cut for code above
+
+  if(bar_opt[0]>0)
+    std::cout << "long option for bar was used with a positive value" << std::endl;
+  
+  if(easterEgg_opt[0])
+    std::cout << "How did you find this option -egg or --egg? Not through the help info!" << std::endl;
+}
+~~~
+**/
+
 template<class T> class Optionpk : public std::vector <T>
 {
 public:
@@ -198,7 +265,6 @@ constructor without default value\n
 shortName is option invoked with `-`\n
 longName is option invoked with `--`\n
 helpInfo is the help message that is shown when option -h or --help is invoked\n
-When the constructor without default value is used, the option is only visible in long help (`--help`), i.e., hide=1
 **/
 template<class T> Optionpk<T>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
 : m_hasDefault(false)
@@ -206,7 +272,7 @@ template<class T> Optionpk<T>::Optionpk(const std::string& shortName, const std:
   setAll(shortName,longName,helpInfo);
 }
 
-/*!
+/**
 constructor with default value.\n
 shortName is option invoked with `-`\n
 longName is option invoked with `--`\n
@@ -215,7 +281,7 @@ defaultValue is default value of the option (first value of vector: option[0])\n
 hide=0 : option is visible for in both short (`-h`) and long (`--help`) help. Typical use: mandatory options\n
 hide=1 : option is only visible in long help (`--help`). Typical use: expert options\n
 hide=2 : option is hidden for user. Typical use: Easter eggs or options only known to author
-*/
+**/
 template<class T> Optionpk<T>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide)
 {
   setAll(shortName,longName,helpInfo,defaultValue, hide);
@@ -272,7 +338,7 @@ template<class T> void Optionpk<T>::setAll(const std::string& shortName, const s
   m_longName=longName;
   m_hasArgument=true;
   m_help=helpInfo;
-  m_hide=1;
+  m_hide=0;
 }
 
 template<class T> void Optionpk<T>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide)

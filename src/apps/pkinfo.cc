@@ -80,13 +80,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 int main(int argc, char *argv[])
 {
-  Optionpk<std::string> input_opt("i","input","Input image file","");
+  Optionpk<std::string> input_opt("i","input","Input image file");
   Optionpk<bool>  bbox_opt("bb", "bbox", "Shows bounding box ", false,1);
   Optionpk<bool>  bbox_te_opt("te", "te", "Shows bounding box in GDAL format: xmin ymin xmax ymax ", false,1);
   Optionpk<bool>  centre_opt("c", "centre", "Image centre in projected X,Y coordinates ", false,1);
@@ -109,7 +105,7 @@ int main(int argc, char *argv[])
   Optionpk<bool>  cover_opt("cov", "cover", "Image covers bounding box (or x and y pos) if printed to std out ", false,1);
   Optionpk<double>  x_opt("x", "xpos", "x pos");
   Optionpk<double>  y_opt("y", "ypos", "y pos");
-  Optionpk<bool>  read_opt("r", "read", "Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based)", 0,1);
+  Optionpk<bool>  read_opt("r", "read", "Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based)",false,1);
   Optionpk<bool>  refpixel_opt("ref", "ref", "Gets reference pixel (lower left corner of centre of gravity pixel)", false,1);
   Optionpk<bool>  driver_opt("of", "oformat", "Gets driver description ", false,1);
   Optionpk<std::string>  extent_opt("e", "extent", "Gets boundary from extent from polygons in vector file");
@@ -467,7 +463,8 @@ int main(int argc, char *argv[])
     else
       std::cout << "no intersect" << std::endl;
   }
-  //    std::cout << "bounding box mosaic (ULX ULY LRX LRY): " << minULX << " " << maxULY << " " << maxLRX << " " << minLRY << std::endl;
-  if(!read_opt[0]&&!hist_opt[0])
+  if(!input_opt.size())
+    std::cerr << "No input file provided (use option -i). Use pkinfo --help for help information" << std::endl;
+  else if(!read_opt[0]&&!hist_opt[0])
     std::cout << std::endl;
 }

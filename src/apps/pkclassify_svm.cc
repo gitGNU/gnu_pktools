@@ -31,26 +31,26 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-void reclass(const vector<double>& result, const vector<int>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass);
+void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass);
 
-void reclass(const vector<double>& result, const vector<int>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass){
-  unsigned int nclass=result.size();
+void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass){
+  short nclass=result.size();
   assert(priors.size()==nclass);
   assert(theResultReclass.size()>1);//must have size nreclass!
-  unsigned int nreclass=theResultReclass.size();
+  short nreclass=theResultReclass.size();
   vector<float> pValues(nclass);
   float normReclass=0;
-  for(int iclass=0;iclass<nclass;++iclass){
+  for(short iclass=0;iclass<nclass;++iclass){
     float pv=result[iclass];//todo: check if result from svm is [0,1]
     assert(pv>=0);
     assert(pv<=1);
     pv*=priors[iclass];
     pValues[iclass]=pv;
   }
-  for(int iclass=0;iclass<nreclass;++iclass){
+  for(short iclass=0;iclass<nreclass;++iclass){
     theResultReclass[iclass]=0;
     float maxPaggreg=0;
-    for(int ic=0;ic<nclass;++ic){
+    for(short ic=0;ic<nclass;++ic){
       if(vreclass[ic]==iclass){
 	switch(aggregation){
 	default:
@@ -69,7 +69,7 @@ void reclass(const vector<double>& result, const vector<int>& vreclass, const ve
     }
     normReclass+=theResultReclass[iclass];
   }
-  for(int iclass=0;iclass<nreclass;++iclass){
+  for(short iclass=0;iclass<nreclass;++iclass){
     float prv=theResultReclass[iclass];
     prv/=normReclass;
     theResultReclass[iclass]=prv;
@@ -79,8 +79,8 @@ void reclass(const vector<double>& result, const vector<int>& vreclass, const ve
 int main(int argc, char *argv[])
 {
   // map<short,int> reclassMap;
-  vector<int> vreclass;	  //vreclass: map nclass->nreclass
-  vector<int> vuniqueclass;
+  vector<short> vreclass;	  //vreclass: map nclass->nreclass
+  vector<short> vuniqueclass;
   vector<double> priors;
   vector<double> priorsReclass;
   
@@ -196,18 +196,18 @@ int main(int argc, char *argv[])
     std::cout << "number of bootstrap aggregations: " << nbag << std::endl;
   
   unsigned int totalSamples=0;
-  int nreclass=0;
-  vector<int> vcode;//unique class codes in recode string
+  short nreclass=0;
+  vector<short> vcode;//unique reclass codes (e.g., -rc 1 -rc 1 -rc 2 -rc 2 -> vcode[0]=1,vcode[1]=2)
   vector<struct svm_model*> svm(nbag);
   vector<struct svm_parameter> param(nbag);
 
-  unsigned int nclass=0;
+  short nclass=0;
   int nband=0;
   int startBand=2;//first two bands represent X and Y pos
 
   if(reclass_opt.size()){
     vreclass.resize(reclass_opt.size());
-    for(int iclass=0;iclass<reclass_opt.size();++iclass){
+    for(short iclass=0;iclass<reclass_opt.size();++iclass){
       // reclassMap[iclass]=reclass_opt[iclass];
       vreclass[iclass]=reclass_opt[iclass];
     }
@@ -215,12 +215,12 @@ int main(int argc, char *argv[])
   if(priors_opt.size()>1){//priors from argument list
     priors.resize(priors_opt.size());
     double normPrior=0;
-    for(int iclass=0;iclass<priors_opt.size();++iclass){
+    for(short iclass=0;iclass<priors_opt.size();++iclass){
       priors[iclass]=priors_opt[iclass];
       normPrior+=priors[iclass];
     }
     //normalize
-    for(int iclass=0;iclass<priors_opt.size();++iclass)
+    for(short iclass=0;iclass<priors_opt.size();++iclass)
       priors[iclass]/=normPrior;
   }
 
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
         if(random)
           srand(time(NULL));
         totalSamples=0;
-        for(int iclass=0;iclass<nclass;++iclass){
+        for(short iclass=0;iclass<nclass;++iclass){
           if(trainingPixels[iclass].size()>balance_opt[0]){
             while(trainingPixels[iclass].size()>balance_opt[0]){
               int index=rand()%trainingPixels[iclass].size();
@@ -373,7 +373,7 @@ int main(int argc, char *argv[])
         if(scale[ibag][iband]<=0){
           float theMin=trainingPixels[0][0][iband+startBand];
           float theMax=trainingPixels[0][0][iband+startBand];
-          for(int iclass=0;iclass<nclass;++iclass){
+          for(short iclass=0;iclass<nclass;++iclass){
             for(int isample=0;isample<trainingPixels[iclass].size();++isample){
               if(theMin>trainingPixels[iclass][isample][iband+startBand])
                 theMin=trainingPixels[iclass][isample][iband+startBand];
@@ -405,37 +405,37 @@ int main(int argc, char *argv[])
       vcode.clear();
       if(verbose_opt[0]>=1){
         std::cout << "before recoding: " << std::endl;
-        for(int iclass = 0; iclass < vreclass.size(); iclass++)
+        for(short iclass = 0; iclass < vreclass.size(); iclass++)
           std::cout << " " << vreclass[iclass];
         std::cout << std::endl; 
       }
-      vector<int> vord=vreclass;//ordered vector, starting from 0 to nreclass
-      int iclass=0;
-      map<short,int> mreclass;
-      for(int ic=0;ic<vreclass.size();++ic){
+      vector<short> vord=vreclass;//ordered vector, starting from 0 to nreclass
+      short iclass=0;
+      map<short,short> mreclass;
+      for(short ic=0;ic<vreclass.size();++ic){
         if(mreclass.find(vreclass[ic])==mreclass.end())
           mreclass[vreclass[ic]]=iclass++;
       }
-      for(int ic=0;ic<vreclass.size();++ic)
+      for(short ic=0;ic<vreclass.size();++ic)
         vord[ic]=mreclass[vreclass[ic]];
       //construct uniqe class codes
       while(!vreclass.empty()){
         vcode.push_back(*(vreclass.begin()));
         //delete all these entries from vreclass
-        vector<int>::iterator vit;
+        vector<short>::iterator vit;
         while((vit=find(vreclass.begin(),vreclass.end(),vcode.back()))!=vreclass.end())
           vreclass.erase(vit);
       }
       if(verbose_opt[0]>=1){
         std::cout << "recode values: " << std::endl;
-        for(int icode=0;icode<vcode.size();++icode)
+        for(short icode=0;icode<vcode.size();++icode)
           std::cout << vcode[icode] << " ";
         std::cout << std::endl;
       }
       vreclass=vord;
       if(verbose_opt[0]>=1){
         std::cout << "after recoding: " << std::endl;
-        for(int iclass = 0; iclass < vord.size(); iclass++)
+        for(short iclass = 0; iclass < vord.size(); iclass++)
           std::cout << " " << vord[iclass];
         std::cout << std::endl; 
       }
@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
       nreclass=vuniqueclass.size();
       if(verbose_opt[0]>=1){
         std::cout << "unique classes: " << std::endl;
-        for(int iclass = 0; iclass < vuniqueclass.size(); iclass++)
+        for(short iclass = 0; iclass < vuniqueclass.size(); iclass++)
           std::cout << " " << vuniqueclass[iclass];
         std::cout << std::endl; 
         std::cout << "number of reclasses: " << nreclass << std::endl;
@@ -455,15 +455,15 @@ int main(int argc, char *argv[])
     
       if(priors_opt.size()==1){//default: equal priors for each class
         priors.resize(nclass);
-        for(int iclass=0;iclass<nclass;++iclass)
+        for(short iclass=0;iclass<nclass;++iclass)
           priors[iclass]=1.0/nclass;
       }
       assert(priors_opt.size()==1||priors_opt.size()==nclass);
 
       priorsReclass.resize(nreclass);
-      for(int iclass=0;iclass<nreclass;++iclass){
+      for(short iclass=0;iclass<nreclass;++iclass){
 	priorsReclass[iclass]=0;
-	for(int ic=0;ic<nclass;++ic){
+	for(short ic=0;ic<nclass;++ic){
 	  if(vreclass[ic]==iclass)
 	    priorsReclass[iclass]+=priors[ic];
 	}
@@ -473,7 +473,7 @@ int main(int argc, char *argv[])
         std::cout << "number of bands: " << nband << std::endl;
         std::cout << "number of classes: " << nclass << std::endl;
         std::cout << "priors:";
-        for(int iclass=0;iclass<nclass;++iclass)
+        for(short iclass=0;iclass<nclass;++iclass)
           std::cout << " " << priors[iclass];
         std::cout << std::endl;
       }
@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 
     //Calculate features of trainig set
     vector< Vector2d<float> > trainingFeatures(nclass);
-    for(int iclass=0;iclass<nclass;++iclass){
+    for(short iclass=0;iclass<nclass;++iclass){
       int nctraining=0;
       if(verbose_opt[0]>=1)
         std::cout << "calculating features for class " << iclass << std::endl;
@@ -508,7 +508,7 @@ int main(int argc, char *argv[])
     
     unsigned int nFeatures=trainingFeatures[0][0].size();
     unsigned int ntraining=0;
-    for(int iclass=0;iclass<nclass;++iclass){
+    for(short iclass=0;iclass<nclass;++iclass){
       //vcode has size nreclass???
       // if(verbose_opt[0]>=1)
       //   std::cout << "training sample size for class " << vcode[iclass] << ": " << trainingFeatures[iclass].size() << std::endl;
@@ -522,7 +522,7 @@ int main(int argc, char *argv[])
     x_space[ibag] = Malloc(struct svm_node,(nFeatures+1)*ntraining);
     unsigned long int spaceIndex=0;
     int lIndex=0;
-    for(int iclass=0;iclass<nclass;++iclass){
+    for(short iclass=0;iclass<nclass;++iclass){
       for(int isample=0;isample<trainingFeatures[iclass].size();++isample){
         prob[ibag].x[lIndex]=&(x_space[ibag][spaceIndex]);
         for(int ifeature=0;ifeature<nFeatures;++ifeature){
@@ -578,7 +578,7 @@ int main(int argc, char *argv[])
       else{
         if(verbose_opt[0]>1)
           std::cout << "classes for confusion matrix: " << std::endl;
-        for(int iclass=0;iclass<nreclass;++iclass){
+        for(short iclass=0;iclass<nreclass;++iclass){
           ostringstream os;
           os << vcode[iclass];
           if(verbose_opt[0]>1)
@@ -605,7 +605,7 @@ int main(int argc, char *argv[])
       double dua=0;
       double dpa=0;
       double doa=0;
-      for(int iclass=0;iclass<cm.nClasses();++iclass){
+      for(short iclass=0;iclass<cm.nClasses();++iclass){
         dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
         dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
         cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
@@ -809,7 +809,7 @@ int main(int argc, char *argv[])
           classOut[icol]=flag_opt[0];
           continue;//next column
         }
-        for(int iclass=0;iclass<nreclass;++iclass)
+        for(short iclass=0;iclass<nreclass;++iclass)
           prOut[iclass][icol]=0;
         //----------------------------------- classification -------------------
         for(int ibag=0;ibag<nbag;++ibag){
@@ -835,8 +835,8 @@ int main(int argc, char *argv[])
           float maxP=0;
           if(!aggreg_opt[0]){
             predict_label = svm_predict(svm[ibag],x);
-            for(int iclass=0;iclass<nclass;++iclass){
-              if(iclass==static_cast<int>(predict_label))
+            for(short iclass=0;iclass<nclass;++iclass){
+              if(iclass==static_cast<short>(predict_label))
                 result[iclass]=1;
               else
                 result[iclass]=0;
@@ -849,14 +849,14 @@ int main(int argc, char *argv[])
 
 	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
 	  
-          for(int iclass=0;iclass<nreclass;++iclass)
+          for(short iclass=0;iclass<nreclass;++iclass)
           //calculate posterior prob of bag 
           if(classBag_opt.size()){
             //search for max prob within bag
             maxP=0;
             classBag[ibag][icol]=0;
           }
-          for(int iclass=0;iclass<nreclass;++iclass){
+          for(short iclass=0;iclass<nreclass;++iclass){
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
@@ -884,7 +884,7 @@ int main(int argc, char *argv[])
         //search for max class prob
         float maxBag=0;
         float normBag=0;
-        for(int iclass=0;iclass<nreclass;++iclass){
+        for(short iclass=0;iclass<nreclass;++iclass){
           if(prOut[iclass][icol]>maxBag){
             maxBag=prOut[iclass][icol];
             classOut[icol]=vcode[iclass];
@@ -893,7 +893,7 @@ int main(int argc, char *argv[])
         }
         //normalize prOut and convert to percentage
         if(prob_opt.size()){
-          for(int iclass=0;iclass<nreclass;++iclass){
+          for(short iclass=0;iclass<nreclass;++iclass){
             float prv=prOut[iclass][icol];
             prv/=normBag;
             prv*=100.0;
@@ -906,7 +906,7 @@ int main(int argc, char *argv[])
         for(int ibag=0;ibag<nbag;++ibag)
           classImageBag.writeData(classBag[ibag],GDT_Byte,iline,ibag);
       if(prob_opt.size()){
-        for(int iclass=0;iclass<nreclass;++iclass)
+        for(short iclass=0;iclass<nreclass;++iclass)
           probImage.writeData(prOut[iclass],GDT_Float32,iline,iclass);
       }
       classImageOut.writeData(classOut,GDT_Byte,iline);
@@ -934,7 +934,8 @@ int main(int argc, char *argv[])
       ImgWriterOgr imgWriterOgr(output_opt[ivalidation],imgReaderOgr,false);
       if(verbose_opt[0])
         std::cout << "creating field class" << std::endl;
-      imgWriterOgr.createField("class",OFTInteger);
+      // imgWriterOgr.createField("class",OFTInteger);
+      imgWriterOgr.createField("class",OFTString);
       OGRFeature *poFeature;
       unsigned int ifeature=0;
       unsigned int nFeatures=imgReaderOgr.getFeatureCount();
@@ -959,7 +960,7 @@ int main(int argc, char *argv[])
         OGRFeature::DestroyFeature( poFeature );
         assert(validationPixel.size()==nband);
         vector<float> prOut(nreclass);//posterior prob for each reclass
-        for(int iclass=0;iclass<nreclass;++iclass)
+        for(short iclass=0;iclass<nreclass;++iclass)
           prOut[iclass]=0;
         for(int ibag=0;ibag<nbag;++ibag){
           for(int iband=0;iband<nband;++iband){
@@ -984,8 +985,8 @@ int main(int argc, char *argv[])
           vector<float> prValues(nreclass);
           if(!aggreg_opt[0]){
             predict_label = svm_predict(svm[ibag],x);
-            for(int iclass=0;iclass<nclass;++iclass){
-              if(predict_label==static_cast<int>(predict_label))
+            for(short iclass=0;iclass<nclass;++iclass){
+              if(iclass==static_cast<short>(predict_label))
                 result[iclass]=1;
               else
                 result[iclass]=0;
@@ -995,11 +996,25 @@ int main(int argc, char *argv[])
             assert(svm_check_probability_model(svm[ibag]));
             predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
           }
-
+          
+          if(verbose_opt[0]>1)
+            std::cout << "predict_label: " << predict_label << std::endl;
+          if(verbose_opt[0]>1){
+            std::cout << "result before reclass: " << std::endl;
+            for(int iclass=0;iclass<result.size();++iclass)
+              std::cout << result[iclass] << " ";
+            std::cout << std::endl;
+          }
 	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
+          if(verbose_opt[0]>1){
+            std::cout << "prValues after reclass: " << std::endl;
+            for(int iclass=0;iclass<prValues.size();++iclass)
+              std::cout << prValues[iclass] << " ";
+            std::cout << std::endl;
+          }
 
           //calculate posterior prob of bag 
-          for(int iclass=0;iclass<nreclass;++iclass){
+          for(short iclass=0;iclass<nreclass;++iclass){
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
@@ -1020,21 +1035,27 @@ int main(int argc, char *argv[])
         //search for max class prob
         float maxBag=0;
         float normBag=0;
-        char classOut=0;
-        for(int iclass=0;iclass<nreclass;++iclass){
+        short classOut=0;
+        for(short iclass=0;iclass<nreclass;++iclass){
+          if(verbose_opt[0]>1)
+            std::cout << prOut[iclass] << " ";
           if(prOut[iclass]>maxBag){
             maxBag=prOut[iclass];
             classOut=vcode[iclass];
           }
-          normBag+=prOut[iclass];
+          // normBag+=prOut[iclass];
         }
+        //look for class name
+        //todo: write class name to field "class" in output ogr file
+        if(verbose_opt[0]>1)
+          std::cout << "->" << static_cast<short>(classOut) << std::endl;
         //normalize prOut and convert to percentage
-        for(int iclass=0;iclass<nreclass;++iclass){
-          float prv=prOut[iclass];
-          prv/=normBag;
-          prv*=100.0;
-          prOut[iclass]=static_cast<short>(prv+0.5);
-        }
+        // for(int iclass=0;iclass<nreclass;++iclass){
+        //   float prv=prOut[iclass];
+        //   prv/=normBag;
+        //   prv*=100.0;
+        //   prOut[iclass]=static_cast<short>(prv+0.5);
+        // }
         poDstFeature->SetField("class",classOut);
         poDstFeature->SetFID( poFeature->GetFID() );
         CPLErrorReset();
