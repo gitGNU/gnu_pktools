@@ -17,62 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-/*! \page pkinfo pkinfo
-  \tableofcontents
-  program to retrieve information from raster images
-  
-  ## SYNOPSIS
-  <code>
-  pkinfo -i imagefile [\ref OPTIONS]
-  </code>
-  ## DESCRIPTION
-  This tool is similar to gdalinfo but output is driven by input options. Output format can be used as pipe for other commands (see \ref pkinfo_examples)
-  
-  ## OPTIONS ##
-  - use either `-short` or `--long` options (both `--long=value` as `--long value` are supported)
-  - boolean (bool) options do not expect a value (e.g., `pkinfo --version`)
-  - multiple inputs require duplicate options (e.g., `pkinfo -i input1.tif -i input2.tif -f`)
-
- |short|long|type|default|description|
- |-----|----|----|-------|-----------|
-| i      | input                | Ss   |       |Input image file | 
- | bb     | bbox                 | b    | false |Shows bounding box  | 
- | te     | te                   | b    | false |Shows bounding box in GDAL format: xmin ymin xmax ymax  | 
- | c      | centre               | b    | false |Image centre in projected X,Y coordinates  | 
- | ct     | colourtable          | b    | false |Shows colour table  | 
- | s      | samples              | b    | false |Number of samples in image  | 
- | l      | lines                | b    | false |Number of lines in image  | 
- | nb     | nband                | b    | false |Show number of bands in image | 
- | b      | band                 | s    | 0     |Band specific information | 
- | dx     | dx                   | b    | false |Gets resolution in x (in m) | 
- | dy     | dy                   | b    | false |Gets resolution in y (in m) | 
- | mm     | minmax               | b    | false |Shows min and max value of the image  | 
- | stat   | stat                 | b    | false |Shows statistics (min,max, mean and stdDev of the image) | 
- | min    | min                  | d    |       |Sets minimum for histogram | 
- | max    | max                  | d    |       |Sets maximum for histogram | 
- | rel    | rel                  | b    | false |Calculates relative histogram in percentage | 
- | p      | projection           | b    | false |Shows projection of the image  | 
- | geo    | geo                  | b    | false |Gets geotransform   | 
- | il     | interleave           | b    | false |Shows interleave  | 
- | f      | filename             | b    | false |Shows image filename  | 
- | cov    | cover                | b    | false |Image covers bounding box (or x and y pos) if printed to std out  | 
- | x      | xpos                 | d    |       |x pos | 
- | y      | ypos                 | d    |       |y pos | 
- | r      | read                 | b    | false |Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based) | 
- | ref    | ref                  | b    | false |Gets reference pixel (lower left corner of centre of gravity pixel) | 
- | of     | oformat              | b    | false |Gets driver description  | 
- | e      | extent               | Ss   |       |Gets boundary from extent from polygons in vector file | 
- | ulx    | ulx                  | d    |       |Upper left x value bounding box | 
- | uly    | uly                  | d    |       |Upper left y value bounding box | 
- | lrx    | lrx                  | d    |       |Lower right x value bounding box | 
- | lry    | lry                  | d    |       |Lower right y value bounding box | 
- | hist   | hist                 | b    | false |Calculates histogram. Use --rel for a relative histogram output.  | 
- | nbin   | nbin                 | s    | 0     |Number of bins used in histogram. Use 0 for all input values as integers | 
- | ot     | otype                | b    | false |Returns data type | 
- | d      | description          | b    | false |Returns image description | 
- | meta   | meta                 | b    | false |Shows meta data  | 
- | nodata | nodata               | d    |       |Sets no data value(s) for calculations (flags in input image) | 
-*/
 #include <sstream>
 #include <list>
 #include "base/Optionpk.h"
