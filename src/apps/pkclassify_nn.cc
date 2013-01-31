@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned short> reclass_opt("rc", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.)");
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
-  Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
+  Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
@@ -104,10 +104,10 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
   Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option. Default is sum rule (0)",0); 
   Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
-  Optionpk<int> bagSize_opt("\0", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (default for no bagging: 100)", 100);
+  Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("\0", "class", "output for each individual bootstrap aggregation (default is blank)"); 
-  Optionpk<string> mask_opt("\0", "mask", "mask image (see also mvalue option (default is no mask)"); 
-  Optionpk<short> maskValue_opt("\0", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
+  Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option (default is no mask)"); 
+  Optionpk<short> maskValue_opt("mv", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> flag_opt("f", "flag", "flag to put where image is invalid. Default is 0", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
@@ -189,11 +189,6 @@ int main(int argc, char *argv[])
   int nband=0;
   int startBand=2;//first two bands represent X and Y pos
 
-  vector< vector<double> > offset(nbag);
-  vector< vector<double> > scale(nbag);
-  map<string,Vector2d<float> > trainingMap;
-  vector< Vector2d<float> > trainingPixels;//[class][sample][band]
-
   if(reclass_opt.size()){
     vreclass.resize(reclass_opt.size());
     for(int iclass=0;iclass<reclass_opt.size();++iclass){
@@ -217,14 +212,17 @@ int main(int argc, char *argv[])
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
   //----------------------------------- Training -------------------------------
+  ConfusionMatrix cm;
+  vector< vector<double> > offset(nbag);
+  vector< vector<double> > scale(nbag);
+  map<string,Vector2d<float> > trainingMap;
+  vector< Vector2d<float> > trainingPixels;//[class][sample][band]
   vector<string> fields;
   for(int ibag=0;ibag<nbag;++ibag){
     //organize training data
     if(ibag<training_opt.size()){//if bag contains new training pixels
       trainingMap.clear();
       trainingPixels.clear();
-      // map<int,Vector2d<float> > trainingMap;
-      // map<string,Vector2d<float> > trainingMap;
       if(verbose_opt[0]>=1)
         cout << "reading imageShape file " << training_opt[0] << endl;
       try{
@@ -259,9 +257,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>1)
         std::cout << "training pixels: " << std::endl;
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
-      // map<int,Vector2d<float> >::iterator mapit=trainingMap.begin();
       while(mapit!=trainingMap.end()){
-//       for(map<int,Vector2d<float> >::const_iterator mapit=trainingMap.begin();mapit!=trainingMap.end();++mapit){
         //delete small classes
         if((mapit->second).size()<minSize_opt[0]){
           trainingMap.erase(mapit);
@@ -269,8 +265,6 @@ int main(int argc, char *argv[])
           //todo: beware of reclass option: delete this reclass if no samples are left in this classes!!
         }
         if(reclass_opt.empty()){//no reclass option, read classes from shape
-          // reclassMap[iclass]=(mapit->first);
-          // vreclass.push_back(mapit->first);
           vreclass.push_back(iclass);
         }
         trainingPixels.push_back(mapit->second);
@@ -293,26 +287,27 @@ int main(int argc, char *argv[])
       //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
       //balance training data
       if(balance_opt[0]>0){
+        while(balance_opt.size()<nclass)
+          balance_opt.push_back(balance_opt.back());
         if(random)
           srand(time(NULL));
         totalSamples=0;
         for(int iclass=0;iclass<nclass;++iclass){
-          if(trainingPixels[iclass].size()>balance_opt[0]){
-            while(trainingPixels[iclass].size()>balance_opt[0]){
+          if(trainingPixels[iclass].size()>balance_opt[iclass]){
+            while(trainingPixels[iclass].size()>balance_opt[iclass]){
               int index=rand()%trainingPixels[iclass].size();
               trainingPixels[iclass].erase(trainingPixels[iclass].begin()+index);
             }
           }
           else{
             int oldsize=trainingPixels[iclass].size();
-            for(int isample=trainingPixels[iclass].size();isample<balance_opt[0];++isample){
+            for(int isample=trainingPixels[iclass].size();isample<balance_opt[iclass];++isample){
               int index = rand()%oldsize;
               trainingPixels[iclass].push_back(trainingPixels[iclass][index]);
             }
           }
           totalSamples+=trainingPixels[iclass].size();
         }
-        assert(totalSamples==nclass*balance_opt[0]);
       }
     
       //set scale and offset
@@ -418,6 +413,7 @@ int main(int argc, char *argv[])
       }
       assert(priors_opt.size()==1||priors_opt.size()==nclass);
     
+      //set priors
       priorsReclass.resize(nreclass);
       for(int iclass=0;iclass<nreclass;++iclass){
 	priorsReclass[iclass]=0;
@@ -426,6 +422,9 @@ int main(int argc, char *argv[])
 	    priorsReclass[iclass]+=priors[ic];
 	}
       }
+      //set bagsize for each class if not done already via command line
+      while(bagSize_opt.size()<nclass)
+        bagSize_opt.push_back(bagSize_opt.back());
 
       if(verbose_opt[0]>=1){
         cout << "number of bands: " << nband << endl;
@@ -445,12 +444,12 @@ int main(int argc, char *argv[])
         cout << "calculating features for class " << iclass << endl;
       if(random)
         srand(time(NULL));
-      nctraining=(bagSize_opt[0]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[0] : trainingPixels[iclass].size();//bagSize_opt[0] given in % of training size
+      nctraining=(bagSize_opt[iclass]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[iclass] : trainingPixels[iclass].size();//bagSize_opt[iclass] given in % of training size
       if(nctraining<=0)
         nctraining=1;
       assert(nctraining<=trainingPixels[iclass].size());
       int index=0;
-      if(bagSize_opt[0]<100)
+      if(bagSize_opt[iclass]<100)
         random_shuffle(trainingPixels[iclass].begin(),trainingPixels[iclass].end());
       
       trainingFeatures[iclass].resize(nctraining);
@@ -539,7 +538,6 @@ int main(int argc, char *argv[])
                                             referenceVector,
                                             outputVector,
                                             verbose_opt[0]);
-      ConfusionMatrix cm;
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
       if(reclass_opt.empty()){
         while(mapit!=trainingMap.end()){
@@ -563,24 +561,7 @@ int main(int argc, char *argv[])
       assert(cm.size()==nreclass);
 
       for(int isample=0;isample<referenceVector.size();++isample)
-        cm.incrementResult(cm.getClass(vreclass[referenceVector[isample]]),cm.getClass(vreclass[outputVector[isample]]),1);
-      assert(cm.nReference());
-      std::cout << cm << std::endl;
-      cout << "class #samples userAcc prodAcc" << endl;
-      double se95_ua=0;
-      double se95_pa=0;
-      double se95_oa=0;
-      double dua=0;
-      double dpa=0;
-      double doa=0;
-      for(int iclass=0;iclass<cm.nClasses();++iclass){
-        dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
-        dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
-        cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
-      }
-      std::cout << "Kappa: " << cm.kappa() << std::endl;
-      doa=cm.oa_pct(&se95_oa);
-      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+        cm.incrementResult(cm.getClass(vreclass[referenceVector[isample]]),cm.getClass(vreclass[outputVector[isample]]),1.0/nbag);
     }
   
     if(verbose_opt[0]>=1)
@@ -615,8 +596,26 @@ int main(int argc, char *argv[])
         cout << "connection " << i_connection << ": " << convector[i_connection].weight << endl;
 
     }
+  }//for ibag
+  if(cv_opt[0]>0){
+    assert(cm.nReference());
+    std::cout << cm << std::endl;
+    cout << "class #samples userAcc prodAcc" << endl;
+    double se95_ua=0;
+    double se95_pa=0;
+    double se95_oa=0;
+    double dua=0;
+    double dpa=0;
+    double doa=0;
+    for(int iclass=0;iclass<cm.nClasses();++iclass){
+      dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
+      dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+      cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+    }
+    std::cout << "Kappa: " << cm.kappa() << std::endl;
+    doa=cm.oa_pct(&se95_oa);
+    std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
   }
-
   //--------------------------------- end of training -----------------------------------
   if(input_opt.empty())
     exit(0);

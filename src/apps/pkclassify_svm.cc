@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
    Optionpk<unsigned short> reclass_opt("rc", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.)");
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
-  Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
+  Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
@@ -114,10 +114,10 @@ int main(int argc, char *argv[])
   // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
   Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
   Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations", 1);
-  Optionpk<int> bagSize_opt("\0", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
+  Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("\0", "class", "output for each individual bootstrap aggregation");
-  Optionpk<string> mask_opt("\0", "mask", "mask image (see also mvalue option"); 
-  Optionpk<short> maskValue_opt("\0", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
+  Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option"); 
+  Optionpk<short> maskValue_opt("mv", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
   Optionpk<unsigned short> flag_opt("f", "flag", "flag to put where image is invalid.", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
@@ -253,27 +253,10 @@ int main(int argc, char *argv[])
   vector< vector<double> > scale(nbag);
   map<string,Vector2d<float> > trainingMap;
   vector< Vector2d<float> > trainingPixels;//[class][sample][band]
+  vector<string> fields;
 
   vector<struct svm_problem> prob(nbag);
   vector<struct svm_node *> x_space(nbag);
-
-  //test
-  // ImgReaderOgr testOgr(training_opt[0]);
-  // OGRDataSource* testSource=testOgr.getDataSource();
-  // OGRLayer  *poLayer=testSource->GetLayer(0);
-  // unsigned long int ifeature=0;
-  // if(poLayer!=NULL){
-  //   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
-  //   OGRFeature *poFeature;
-  //   while( (poFeature = poLayer->GetNextFeature()) != NULL ){
-  //     std::cout << "got feature " << ifeature << std::endl;
-  //     ++ifeature;
-  //   }
-  //   exit(1);
-  // }
-
-  // struct svm_node *x_space;
-  vector<string> fields;
 
   for(int ibag=0;ibag<nbag;++ibag){
     //organize training data
@@ -322,7 +305,6 @@ int main(int argc, char *argv[])
         std::cout << "training pixels: " << std::endl;
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
       while(mapit!=trainingMap.end()){
-//       for(map<int,Vector2d<float> >::const_iterator mapit=trainingMap.begin();mapit!=trainingMap.end();++mapit){
         //delete small classes
         if((mapit->second).size()<minSize_opt[0]){
           trainingMap.erase(mapit);
@@ -330,8 +312,6 @@ int main(int argc, char *argv[])
           //todo: beware of reclass option: delete this reclass if no samples are left in this classes!!
         }
         if(reclass_opt.empty()){//no reclass option, read classes from shape
-          // reclassMap[iclass]=(mapit->first);
-          // vreclass.push_back(mapit->first);
           vreclass.push_back(iclass);
         }
         trainingPixels.push_back(mapit->second);
@@ -502,7 +482,6 @@ int main(int argc, char *argv[])
           std::cout << " " << priors[iclass];
         std::cout << std::endl;
       }
-      // ConfusionMatrix cm(nclass);
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
       if(reclass_opt.empty()){
         while(mapit!=trainingMap.end()){
@@ -534,7 +513,7 @@ int main(int argc, char *argv[])
         std::cout << "calculating features for class " << iclass << std::endl;
       if(random)
         srand(time(NULL));
-      nctraining=(bagSize_opt[iclass]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[iclass] : trainingPixels[iclass].size();//bagSize_opt[0] given in % of training size
+      nctraining=(bagSize_opt[iclass]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[iclass] : trainingPixels[iclass].size();//bagSize_opt[iclass] given in % of training size
       if(nctraining<=0)
         nctraining=1;
       assert(nctraining<=trainingPixels[iclass].size());
