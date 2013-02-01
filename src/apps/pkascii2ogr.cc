@@ -40,7 +40,6 @@ int main(int argc, char *argv[])
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     colX_opt.retrieveOption(argc,argv);
     colY_opt.retrieveOption(argc,argv);

@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
   Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file", "");
   Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
   Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
-  Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use multiple threshold values (e.g. -t 80 -t 60) is more classes are to be extracted with random selection. Use value 100 to select all pixels for selected class(es)", 100);
+  Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use multiple threshold values (e.g. -t 80 -t 60) if more classes are to be extracted with random selection. Use value 100 to select all pixels for selected class(es)", 100);
   Optionpk<double> min_opt("min", "min", "minimum number of samples to select (0)", 0);
   Optionpk<short> boundary_opt("bo", "boundary", "boundary for selecting the sample", 1);
   Optionpk<short> rbox_opt("rb", "rbox", "rectangular boundary box (total width in m) to draw around the selected pixel. Can not combined with class option. Use multiple rbox options for multiple boundary boxes. Use value 0 for no box)", 0);

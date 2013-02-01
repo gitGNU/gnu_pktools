@@ -450,8 +450,8 @@ int main(int argc,char **argv) {
         cout << errorString << endl;
         exit(1);
       }
-      int newdimx=2*(dimx-1)+1;
-      int newdimy=2*(dimy-1)+1;//from PE&RS vol 71 pp313-324
+      int newdimx=(dimx==1)? 3: 2*(dimx-1)+1;
+      int newdimy=(dimx==1)? 3: 2*(dimy-1)+1;//from PE&RS vol 71 pp313-324
       hThreshold=hThreshold_opt[0]+maxSlope_opt[0]*(newdimx-dimx)*dx_opt[0];
       dimx=newdimx;
       dimy=newdimy;

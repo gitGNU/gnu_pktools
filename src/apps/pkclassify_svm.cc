@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
   // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
   Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
   Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations", 1);
-  Optionpk<int> bagSize_opt("\0", "bsize", "Percentage of features used from available training features for each bootstrap aggregation", 100);
+  Optionpk<int> bagSize_opt("\0", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("\0", "class", "output for each individual bootstrap aggregation");
   Optionpk<string> mask_opt("\0", "mask", "mask image (see also mvalue option"); 
   Optionpk<short> maskValue_opt("\0", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
@@ -195,6 +195,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>=1)
     std::cout << "number of bootstrap aggregations: " << nbag << std::endl;
   
+  
   unsigned int totalSamples=0;
   vector<short> vcode;//unique reclass codes (e.g., -rc 1 -rc 1 -rc 2 -rc 2 -> vcode[0]=1,vcode[1]=2)
   vector<struct svm_model*> svm(nbag);
@@ -247,6 +248,7 @@ int main(int argc, char *argv[])
     std::sort(band_opt.begin(),band_opt.end());
 
   //----------------------------------- Training -------------------------------
+  ConfusionMatrix cm;
   vector< vector<double> > offset(nbag);
   vector< vector<double> > scale(nbag);
   map<string,Vector2d<float> > trainingMap;
@@ -272,6 +274,7 @@ int main(int argc, char *argv[])
 
   // struct svm_node *x_space;
   vector<string> fields;
+
   for(int ibag=0;ibag<nbag;++ibag){
     //organize training data
     if(ibag<training_opt.size()){//if bag contains new training pixels
@@ -351,26 +354,27 @@ int main(int argc, char *argv[])
       //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
       //balance training data
       if(balance_opt[0]>0){
+        while(balance_opt.size()<nclass)
+          balance_opt.push_back(balance_opt.back());
         if(random)
           srand(time(NULL));
         totalSamples=0;
         for(short iclass=0;iclass<nclass;++iclass){
-          if(trainingPixels[iclass].size()>balance_opt[0]){
-            while(trainingPixels[iclass].size()>balance_opt[0]){
+          if(trainingPixels[iclass].size()>balance_opt[iclass]){
+            while(trainingPixels[iclass].size()>balance_opt[iclass]){
               int index=rand()%trainingPixels[iclass].size();
               trainingPixels[iclass].erase(trainingPixels[iclass].begin()+index);
             }
           }
           else{
             int oldsize=trainingPixels[iclass].size();
-            for(int isample=trainingPixels[iclass].size();isample<balance_opt[0];++isample){
+            for(int isample=trainingPixels[iclass].size();isample<balance_opt[iclass];++isample){
               int index = rand()%oldsize;
               trainingPixels[iclass].push_back(trainingPixels[iclass][index]);
             }
           }
           totalSamples+=trainingPixels[iclass].size();
         }
-        assert(totalSamples==nclass*balance_opt[0]);
       }
     
       //set scale and offset
@@ -477,6 +481,7 @@ int main(int argc, char *argv[])
       }
       assert(priors_opt.size()==1||priors_opt.size()==nclass);
 
+      //set priors
       priorsReclass.resize(nreclass);
       for(short iclass=0;iclass<nreclass;++iclass){
 	priorsReclass[iclass]=0;
@@ -485,6 +490,9 @@ int main(int argc, char *argv[])
 	    priorsReclass[iclass]+=priors[ic];
 	}
       }
+      //set bagsize for each class if not done already via command line
+      while(bagSize_opt.size()<nclass)
+        bagSize_opt.push_back(bagSize_opt.back());
 
       if(verbose_opt[0]>=1){
         std::cout << "number of bands: " << nband << std::endl;
@@ -494,6 +502,28 @@ int main(int argc, char *argv[])
           std::cout << " " << priors[iclass];
         std::cout << std::endl;
       }
+      // ConfusionMatrix cm(nclass);
+      map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
+      if(reclass_opt.empty()){
+        while(mapit!=trainingMap.end()){
+          cm.pushBackClassName(mapit->first);
+          ++mapit;
+        }
+      }
+      else{
+        if(verbose_opt[0]>1)
+          std::cout << "classes for confusion matrix: " << std::endl;
+        for(short iclass=0;iclass<nreclass;++iclass){
+          ostringstream os;
+          os << vcode[iclass];
+          if(verbose_opt[0]>1)
+            std::cout << os.str() << " ";
+          cm.pushBackClassName(os.str());
+        }
+        if(verbose_opt[0]>1)
+          std::cout << std::endl;
+      }
+      assert(cm.size()==nreclass);
     }//if(!ibag)
 
     //Calculate features of trainig set
@@ -504,12 +534,12 @@ int main(int argc, char *argv[])
         std::cout << "calculating features for class " << iclass << std::endl;
       if(random)
         srand(time(NULL));
-      nctraining=(bagSize_opt[0]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[0] : trainingPixels[iclass].size();//bagSize_opt[0] given in % of training size
+      nctraining=(bagSize_opt[iclass]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[iclass] : trainingPixels[iclass].size();//bagSize_opt[0] given in % of training size
       if(nctraining<=0)
         nctraining=1;
       assert(nctraining<=trainingPixels[iclass].size());
       int index=0;
-      if(bagSize_opt[0]<100)
+      if(bagSize_opt[iclass]<100)
         random_shuffle(trainingPixels[iclass].begin(),trainingPixels[iclass].end());
       
       trainingFeatures[iclass].resize(nctraining);
@@ -578,64 +608,40 @@ int main(int argc, char *argv[])
     if(verbose_opt[0])
       std::cout << "parameters ok, training" << std::endl;
     svm[ibag]=svm_train(&prob[ibag],&param[ibag]);
-    
-    if(verbose_opt[0]>1)
-      std::cout << "SVM is now trained" << std::endl;
     if(cv_opt[0]>0){
-      //todo: implement reclassification
-      // ConfusionMatrix cm(nclass);
-      ConfusionMatrix cm;
-      map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
-      if(reclass_opt.empty()){
-        while(mapit!=trainingMap.end()){
-          cm.pushBackClassName(mapit->first);
-          ++mapit;
-        }
-      }
-      else{
-        if(verbose_opt[0]>1)
-          std::cout << "classes for confusion matrix: " << std::endl;
-        for(short iclass=0;iclass<nreclass;++iclass){
-          ostringstream os;
-          os << vcode[iclass];
-          if(verbose_opt[0]>1)
-            std::cout << os.str() << " ";
-          cm.pushBackClassName(os.str());
-        }
-        if(verbose_opt[0]>1)
-          std::cout << std::endl;
-      }
-      assert(cm.size()==nreclass);
-
       double *target = Malloc(double,prob[ibag].l);
       svm_cross_validation(&prob[ibag],&param[ibag],cv_opt[0],target);
       assert(param[ibag].svm_type != EPSILON_SVR&&param[ibag].svm_type != NU_SVR);//only for regression
 
       for(int i=0;i<prob[ibag].l;i++)
-        cm.incrementResult(cm.getClass(vreclass[prob[ibag].y[i]]),cm.getClass(vreclass[target[i]]),1);
-      assert(cm.nReference());
-      std::cout << cm << std::endl;
-      cout << "class #samples userAcc prodAcc" << endl;
-      double se95_ua=0;
-      double se95_pa=0;
-      double se95_oa=0;
-      double dua=0;
-      double dpa=0;
-      double doa=0;
-      for(short iclass=0;iclass<cm.nClasses();++iclass){
-        dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
-        dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
-        cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
-      }
-      std::cout << "Kappa: " << cm.kappa() << std::endl;
-      doa=cm.oa_pct(&se95_oa);
-      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+        cm.incrementResult(cm.getClass(vreclass[prob[ibag].y[i]]),cm.getClass(vreclass[target[i]]),1.0/nbag);
       free(target);
-    }
+    }    
+    if(verbose_opt[0]>1)
+      std::cout << "SVM is now trained" << std::endl;
     // *NOTE* Because svm_model contains pointers to svm_problem, you can
     // not free the memory used by svm_problem if you are still using the
     // svm_model produced by svm_train(). 
   }//for ibag
+  if(cv_opt[0]>0){
+    assert(cm.nReference());
+    std::cout << cm << std::endl;
+    cout << "class #samples userAcc prodAcc" << endl;
+    double se95_ua=0;
+    double se95_pa=0;
+    double se95_oa=0;
+    double dua=0;
+    double dpa=0;
+    double doa=0;
+    for(short iclass=0;iclass<cm.nClasses();++iclass){
+      dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
+      dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+      cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+    }
+    std::cout << "Kappa: " << cm.kappa() << std::endl;
+    doa=cm.oa_pct(&se95_oa);
+    std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+  }
 
   //--------------------------------- end of training -----------------------------------
   if(input_opt.empty())

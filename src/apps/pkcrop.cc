@@ -30,8 +30,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created", "");
-  Optionpk<string>  output_opt("o", "output", "Output image file", "");
+  Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
+  Optionpk<string>  output_opt("o", "output", "Output image file");
   Optionpk<string>  projection_opt("p", "projection", "projection in EPSG format (leave blank to copy from input file, use EPSG:3035 to use European projection and to force to European grid", "");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
   Optionpk<bool> mask_opt("m","mask","mask values out of polygon in extent file to flag option (tip: for better performance, use gdal_rasterize -i -burn 0 -l extent extent.shp output (with output the result of pkcrop)",false);
@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);
@@ -85,6 +84,14 @@ int main(int argc, char *argv[])
   }
   if(!doProcess){
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
+  }
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use pkinfo --help for help information" << std::endl;
+    exit(0);//help was invoked, stop processing
+  }
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -i). Use pkinfo --help for help information" << std::endl;
     exit(0);//help was invoked, stop processing
   }
 
@@ -307,16 +314,11 @@ int main(int argc, char *argv[])
       else if(imgReader.isGeoRef())
 	imgWriter.setProjection(imgReader.getProjection());
       if(colorTable_opt.size()){
-        if(verbose_opt[0])
-          cout << "set colortable " << colorTable_opt[0] << endl;
-        assert(imgWriter.getDataType()==GDT_Byte);
-        imgWriter.setColorTable(colorTable_opt[0]);
+        if(colorTable_opt[0]!="none")
+          imgWriter.setColorTable(colorTable_opt[0]);
       }
-      else if(imgReader.getColorTable()!=NULL){
-        if(verbose_opt[0])
-          cout << "set colortable from input image" << endl;
+      else if (imgReader.getColorTable()!=NULL)//copy colorTable from input image
         imgWriter.setColorTable(imgReader.getColorTable());
-      }
     }
     double startCol=uli;
     double endCol=lri;
