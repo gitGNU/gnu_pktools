@@ -29,3 +29,6 @@ How to refer
 ============
 You are welcome to refer to pktools as: http://pktools.nongnu.org (Pieter Kempeneers)
 
+List of pktools
+===============
+\ref available_tools "Available Tools"

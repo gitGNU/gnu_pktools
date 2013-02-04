@@ -96,3 +96,7 @@ version 2.4
 	support csv input file
  - pklas2img
 	support DTM according to Bunting (slightly adapted version of Chang2003, including a median filter after morphological operator)
+ - Doxyfile
+	support doxygen to document code
+ - doc
+	directory for doxy input files
