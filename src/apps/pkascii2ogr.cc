@@ -1,5 +1,5 @@
 /**********************************************************************
-pkascii2ogr.cc: program to create vector (ogr) points polygon) from text file
+pkascii2ogr.cc: program to create vector points or polygons from text file
 Copyright (C) 2008-2012 Pieter Kempeneers
 
 This file is part of pktools

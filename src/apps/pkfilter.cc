@@ -1,5 +1,5 @@
 /**********************************************************************
-pkfilter.cc: program to filter raster images (e.g., median, min/max, morphological filtering)
+pkfilter.cc: program to filter raster images: median, min/max, morphological, filtering
 Copyright (C) 2008-2012 Pieter Kempeneers
 
 This file is part of pktools
