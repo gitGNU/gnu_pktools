@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "create header"
 cat > ../doc/header.dox <<EOF
 \section thetool thetool
 theshortdescription
@@ -19,6 +20,7 @@ thelongdescription
 |-----|----|----|-------|-----------|
 EOF
 
+echo "create dox files for applications"
 for file in ../src/apps/pk*.cc;do    
     THETOOL=$(basename $file .cc)
     echo ${THETOOL}
@@ -33,8 +35,21 @@ for file in ../src/apps/pk*.cc;do
     ${THETOOL} --doxygen|sed '$d' >> ../doc/${THETOOL}.dox
 done
 
+echo "create general dox file for aps list"
 for file in ../src/apps/pk*.cc;do
     THETOOL=$(basename $file .cc)
     THESHORTDESCRIPTION=$(grep "${THETOOL}.cc: " $file | awk -v FS=':' '{print $2}')
     echo "- \\ref ${THETOOL} ${THESHORTDESCRIPTION}"; 
 done > ../doc/apps.dox
+
+echo "Savannah repository for homepage can only be maintained via cvs"
+#mkdir ~/tmp
+#cd ~/tmp
+#cvs -z3 -d:ext:kempenep@cvs.sv.gnu.org:/web/pktools co pktools"
+#cd pktools/html
+#rm *
+#cvs rm *
+#rsync -avz <orig html>/ ~/tmp/pktools/html
+#cvs add *
+#cvs commit -m "update of repository homepage"
+#rm -r ~/tmp/pktools
