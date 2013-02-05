@@ -53,7 +53,7 @@ done >> ../doc/apps.dox
 echo "Savannah repository for homepage can only be maintained via cvs"
 #mkdir ~/tmp
 #cd ~/tmp
-#cvs -z3 -d:ext:kempenep@cvs.sv.gnu.org:/web/pktools co pktools"
+#cvs -z3 -d:ext:kempenep@cvs.sv.gnu.org:/web/pktools co pktools
 #cd pktools/html
 #rm *
 #cvs rm *
