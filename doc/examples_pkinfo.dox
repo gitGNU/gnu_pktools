@@ -1,0 +1,46 @@
+\section examples_pkinfo "Examples of pkinfo"
+\code
+pkinfo -i image.tif -nb
+\endcode
+show number of bands in raster image.tif
+
+
+\code
+pkinfo -i image.tif -max -b 1
+\endcode
+show maximum value of band 1 (starting from 0) of raster image.tif
+
+\code
+pkinfo -i image.tif -x 0 -y 0 -r -b 3 -b 2 -b 1
+\endcode
+read (dump) upper left pixel value for bands 3,2,1
+
+\code
+pkinfo -i image.tif -x 3528120 -y 4329681 -geo -r -b 3 -b 2 -b 1
+\endcode
+read (dump) pixel value at this geographic location (x,y) for bands 3,2,1
+
+\code
+pkinfo -i image1.tif -b
+\endcode
+show bounding box (-ulx -uly -lrx -lry) in geo coordinates for image1.tif
+
+\code
+pkinfo -i image1.tif -i image2.tif -i image3.tif -b
+\endcode
+show bounding box (-ulx -uly -lrx -lry) in geo coordinates for each image (and union and intersect)
+
+\code
+pkinfo -i image1.tif --mask 0 --mask 255 -ref
+\endcode
+show the refence pixel (centre of gravity) for image1.tif, treating 0 and 255 as NO VALUE
+
+\code
+pkinfo -i image.tif $(pkinfo -i image.tif -c
+\endcode
+read (dump) pixel value at image centre for band 0
+
+\code
+pkinfo $(for IMAGE in *.tif; do pkinfo -i $IMAGE --cover -x 3528120 -y 4329681;done) -x 3528120 -y 4329681 -geo -r
+\endcode
+read (dump) pixel value in band 0 (default) for all images in current directory that cover this geographic location  

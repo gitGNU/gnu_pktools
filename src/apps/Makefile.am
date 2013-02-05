@@ -9,7 +9,7 @@ LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_bui
 bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkdsm2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkdiff pkclassify_svm pkfs_svm pkascii2ogr pkeditogr
 
 # the program to build but not install (the names of the final binaries)
-noinst_PROGRAMS =  pkxcorimg pkgeom
+#noinst_PROGRAMS =  pkxcorimg pkgeom
 
 if USE_FANN
 bin_PROGRAMS += pkclassify_nn pkfs_nn
@@ -63,6 +63,6 @@ pkfs_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
 pkeditogr_SOURCES = pkeditogr.cc
-pkxcorimg_SOURCES= pkxcorimg.cc
-pkgeom_SOURCES = pkgeom.cc
+#pkxcorimg_SOURCES= pkxcorimg.cc
+#pkgeom_SOURCES = pkgeom.cc
 ###############################################################################
