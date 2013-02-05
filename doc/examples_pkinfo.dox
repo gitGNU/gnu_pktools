@@ -1,4 +1,4 @@
-\section examples_pkinfo "Examples of pkinfo"
+\section examples_pkinfo Examples of pkinfo
 \code
 pkinfo -i image.tif -nb
 \endcode
