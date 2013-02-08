@@ -406,8 +406,12 @@ int main(int argc, char *argv[])
                       ++ntotalValidation;
                       int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
                       int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
-                      assert(rc<nclass);
-                      assert(ic<nclass);
+                      if(rc>=nclass)
+                        continue;
+                      if(ic>=nclass)
+                        continue;
+                      // assert(rc<nclass);
+                      // assert(ic<nclass);
                       ++nvalidation[rc];
                       ++resultClass[rc][ic];
                       if(verbose_opt[0]>1)

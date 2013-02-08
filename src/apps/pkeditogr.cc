@@ -30,6 +30,9 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "Input image");
   Optionpk<string> output_opt("o", "output", "Output mask file");
   Optionpk<string> field_opt("f", "field", "output field names (number must exactly match input fields)");
+  Optionpk<string> addname_opt("an", "an", "name(s) of field(s) to add (number must exactly match field types)");
+  Optionpk<string> addtype_opt("at", "at", "type(s) of field(s) to add (number must exactly match fieldnames to add", "Real");
+  Optionpk<string> default_opt("d", "default", "default value(s) for new field(s)");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -37,6 +40,9 @@ int main(int argc, char *argv[])
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     field_opt.retrieveOption(argc,argv);
+    addname_opt.retrieveOption(argc,argv);
+    addtype_opt.retrieveOption(argc,argv);
+    default_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -52,11 +58,26 @@ int main(int argc, char *argv[])
   ImgReaderOgr ogrReader(input_opt[0]);
   if(verbose_opt[0])
     cout << "opening " << output_opt[0] << " for writing " << endl;
+
+  OGRFieldType fieldType[addtype_opt.size()];
+  int ogr_typecount=11;//hard coded for now!
+  for(int it=0;it<addtype_opt.size();++it){
+    for(int iType = 0; iType < ogr_typecount; ++iType){
+      if( OGRFieldDefn::GetFieldTypeName((OGRFieldType)iType) != NULL
+          && EQUAL(OGRFieldDefn::GetFieldTypeName((OGRFieldType)iType),
+                   addtype_opt[it].c_str()))
+        fieldType[it]=(OGRFieldType) iType;
+    }
+    if(verbose_opt[0]>1)
+      std::cout << std::endl << "field type is: " << OGRFieldDefn::GetFieldTypeName(fieldType[it]) << std::endl;
+  }
+
   //start reading features from the layer
   if(verbose_opt[0])
     cout << "reset reading" << endl;
   ogrReader.getLayer()->ResetReading();
-  assert(field_opt.size()==ogrReader.getFieldCount());
+  if(field_opt.size())
+    assert(field_opt.size()==ogrReader.getFieldCount());
   unsigned long int ifeature=0;
   if(verbose_opt[0])
     cout << "going through features" << endl << flush;
@@ -69,10 +90,16 @@ int main(int argc, char *argv[])
   writeFields=readFields;
   try{
     for(int ifield=0;ifield<readFields.size();++ifield){
-      writeFields[ifield]->SetName(field_opt[ifield].c_str());
+      if(field_opt.size()>ifield)
+        writeFields[ifield]->SetName(field_opt[ifield].c_str());
+      if(verbose_opt[0])
+        std::cout << readFields[ifield]->GetNameRef() << " -> " << writeFields[ifield]->GetNameRef() << std::endl;
       if(writeLayer->CreateField(writeFields[ifield]) != OGRERR_NONE ){
         ostringstream es;
-        es << "Creating field " << field_opt[ifield] << " failed";
+        if(field_opt.size()>ifield)
+          es << "Creating field " << field_opt[ifield] << " failed";
+        else
+          es << "Creating field " << readFields[ifield] << " failed";
         string errorString=es.str();
         throw(errorString);
       }
@@ -82,11 +109,29 @@ int main(int argc, char *argv[])
     std::cerr << errorString << std::endl;
     exit(1);
   }
+  if(verbose_opt[0])
+    std::cout << "add " << addname_opt.size() << " fields" << std::endl;
+  if(addname_opt.size()){
+    assert(addname_opt.size()==addtype_opt.size());
+    while(default_opt.size()<addname_opt.size())
+      default_opt.push_back(default_opt.back());
+  }
+  for(int iname=0;iname<addname_opt.size();++iname){
+    if(verbose_opt[0])
+      std::cout << addname_opt[iname] << " " << std::endl;
+    ogrWriter.createField(addname_opt[iname],fieldType[iname]);
+  }
+  if(verbose_opt[0]){
+    std::cout << std::endl;
+    std::cout << addname_opt.size() << " fields created" << std::endl;
+  }
   OGRFeature *poFeature;
-  while(true){// (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
-    poFeature = ogrReader.getLayer()->GetNextFeature();
-    if( poFeature == NULL )
-      break;
+  // while(true){// (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
+  while((poFeature = ogrReader.getLayer()->GetNextFeature()) != NULL ){
+    ++ifeature;
+    // poFeature = ogrReader.getLayer()->GetNextFeature();
+    // if( poFeature == NULL )
+    //   break;
     OGRFeature *poDstFeature = NULL;
     poDstFeature=ogrWriter.createFeature();
     if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
@@ -100,9 +145,34 @@ int main(int argc, char *argv[])
       OGRFeature::DestroyFeature( poDstFeature );
     }
     poDstFeature->SetFID( poFeature->GetFID() );
-    OGRFeature::DestroyFeature( poFeature );
-
+    //set default values for new fields
+    if(verbose_opt[0])
+      std::cout << "set default values for new fields in feature " << ifeature << std::endl;
+    for(int iname=0;iname<addname_opt.size();++iname){
+      switch(fieldType[iname]){
+      case(OFTReal):
+        if(verbose_opt[0])
+          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<float>(default_opt[iname]) << std::endl;
+        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<float>(default_opt[iname]));
+        break;
+      case(OFTInteger):
+        if(verbose_opt[0])
+          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<int>(default_opt[iname]) << std::endl;
+        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<int>(default_opt[iname]));
+        break;
+      case(OFTString):
+        if(verbose_opt[0])
+          std::cout << "set field " << addname_opt[iname] << " to default " << default_opt[iname] << std::endl;
+        poDstFeature->SetField(addname_opt[iname].c_str(),default_opt[iname].c_str());
+        break;
+      default:
+        break;
+      }
+      OGRFeature::DestroyFeature( poFeature );
+    }
     CPLErrorReset();
+    if(verbose_opt[0])
+      std::cout << "create feature" << std::endl;
     if(ogrWriter.createFeature( poDstFeature ) != OGRERR_NONE){
       const char* fmt;
       string errorString="Unable to translate feature %d from layer %s.\n";
@@ -115,7 +185,7 @@ int main(int argc, char *argv[])
     OGRFeature::DestroyFeature( poDstFeature );
   }
   if(verbose_opt[0])
-    cout << "replaced " << ifeature << " features" << endl;
+    std::cout << "replaced " << ifeature << " features" << std::endl;
   ogrReader.close();
   ogrWriter.close();
 }

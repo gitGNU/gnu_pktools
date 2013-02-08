@@ -1354,6 +1354,9 @@ int main(int argc, char *argv[])
             // //test
             // std::cout << "before write polygon" << std::endl;
             if(polygon_opt[0]||rule_opt[0]==1){
+              //do not create if no points found within polygon
+              if(!nPointPolygon)
+                continue;
               //add ring to polygon
               if(polygon_opt[0]){
                 writePolygon.addRing(&writeRing);

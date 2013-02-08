@@ -614,7 +614,7 @@ int main(int argc, char *argv[])
 
     gsl::vector pos_calc;
     gsl::vector pos_gcp;
-    if(x_opt.size())
+    if(input_opt.size()||x_opt.size())
       pos_gcp=theDataModel.getPosGCP(ipoint);
     else
       pos_gcp=theDataModel.getPos(ipoint);
