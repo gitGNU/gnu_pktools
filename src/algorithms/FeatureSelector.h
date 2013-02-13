@@ -27,7 +27,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
-#include "PosValue.h"
+#include "IndexValue.h"
 #include "Vector2d.h"
 #include "gsl/gsl_combination.h"
 
@@ -57,7 +57,7 @@ template<class T> double FeatureSelector::forwardUnivariate(vector< Vector2d<T> 
   int k=subset.size();
   if(k>=maxFeatures)
     return -1;
-  vector<PosValue> cost(maxLevels);
+  vector<IndexValue> cost(maxLevels);
   list<int> tmpset=subset;//temporary set of selected features (levels)
   vector< Vector2d<T> > tmp(v.size());
   for(int ilevel=0;ilevel<maxLevels;++ilevel){
@@ -68,13 +68,13 @@ template<class T> double FeatureSelector::forwardUnivariate(vector< Vector2d<T> 
 	v[iclass].selectCols(tmpset,tmp[iclass]);
       }
       try{
-	PosValue pv;
+	IndexValue pv;
 	pv.position=ilevel;
 	pv.value=getCost(tmp);
 	cost[ilevel]=pv;
       }
       catch(...){
-	PosValue pv;
+	IndexValue pv;
 	pv.position=ilevel;
 	pv.value=-1;
 	cost[ilevel]=pv;
@@ -82,7 +82,7 @@ template<class T> double FeatureSelector::forwardUnivariate(vector< Vector2d<T> 
       tmpset.pop_back();
     }
   }
-  sort(cost.begin(),cost.end(),Compare_PosValue());//decreasing order
+  sort(cost.begin(),cost.end(),Compare_IndexValue());//decreasing order
   int ilevel=0;
   while((subset.size()<maxFeatures)&&(ilevel<maxLevels)){
     if(cost[ilevel].value>0)

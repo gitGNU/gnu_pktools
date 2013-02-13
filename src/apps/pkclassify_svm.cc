@@ -25,6 +25,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
+#include "base/PosValue.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/svm.h"
 #include "pkclassify_nn.h"
@@ -96,11 +97,11 @@ int main(int argc, char *argv[])
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
-  Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",0);
+  Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",1);
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
-  Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*|u-v|^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
+  Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*(u-v)^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
   Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
   Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
   Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
@@ -124,6 +125,8 @@ int main(int argc, char *argv[])
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<string> colorTable_opt("ct", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("\0", "prob", "probability image."); 
+  Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
+  Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -166,6 +169,8 @@ int main(int argc, char *argv[])
     colorTable_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     prob_opt.retrieveOption(argc,argv);
+    active_opt.retrieveOption(argc,argv);
+    nactive_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -194,9 +199,23 @@ int main(int argc, char *argv[])
   unsigned short nbag=(training_opt.size()>1)?training_opt.size():bag_opt[0];
   if(verbose_opt[0]>=1)
     std::cout << "number of bootstrap aggregations: " << nbag << std::endl;
-  
+
+  ImgWriterOgr activeWriter;
+  if(active_opt.size()){
+    ImgReaderOgr trainingReader(training_opt[0]);
+    activeWriter.open(active_opt[0]);
+    activeWriter.createLayer(active_opt[0],trainingReader.getProjection(),wkbPoint,NULL);
+    activeWriter.copyFields(trainingReader);
+  }
+  vector<PosValue> activePoints(nactive_opt[0]);
+  for(int iactive=0;iactive<activePoints.size();++iactive){
+    activePoints[iactive].value=1.0;
+    activePoints[iactive].posx=0.0;
+    activePoints[iactive].posy=0.0;
+  }
   
   unsigned int totalSamples=0;
+  unsigned int nactive=0;
   vector<short> vcode;//unique reclass codes (e.g., -rc 1 -rc 1 -rc 2 -rc 2 -> vcode[0]=1,vcode[1]=2)
   vector<struct svm_model*> svm(nbag);
   vector<struct svm_parameter> param(nbag);
@@ -675,6 +694,7 @@ int main(int argc, char *argv[])
     ImgWriterGdal classImageBag;
     ImgWriterGdal classImageOut;
     ImgWriterGdal probImage;
+
     string imageType=testImage.getImageType();
     if(oformat_opt.size())//default
       imageType=oformat_opt[0];
@@ -714,6 +734,11 @@ int main(int argc, char *argv[])
       if(classBag_opt.size())
         classBag.resize(nbag,ncol);
       //read all bands of all pixels in this line in hline
+      // for(int iband=0;iband<testImage.nrOfBand();++iband){
+      // 	testImage.readData(buffer,GDT_Float32,iline,iband);
+      // 	for(int icol=0;icol<ncol;++icol)
+      // 	  hpixel[icol].push_back(buffer[icol]);
+      // }
       try{
         if(band_opt.size()){
           for(int iband=0;iband<band_opt.size();++iband){
@@ -798,7 +823,27 @@ int main(int argc, char *argv[])
           }
         }
         bool valid=false;
-        for(int iband=0;iband<nband;++iband){
+        // if(band_opt.size()){
+        //   for(int iband=0;iband<band_opt.size();++iband){
+	//     assert(band_opt[iband]>0);
+	//     assert(band_opt[iband]<hpixel[icol].size());
+	//     if(hpixel[icol][band_opt[iband]]){
+	//       valid=true;
+	//       break;
+	//     }
+	//   }
+	// }
+	// else{
+	//   for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
+	//     assert(iband>0);
+	//     assert(iband<hpixel[icol].size());
+	//     if(hpixel[icol][iband]){
+	//       valid=true;
+	//       break;
+	//     }
+	//   }
+	// }
+        for(int iband=0;iband<hpixel[icol].size();++iband){
           if(hpixel[icol][iband]){
             valid=true;
             break;
@@ -825,6 +870,18 @@ int main(int argc, char *argv[])
           // x = (struct svm_node *) malloc((fpixel[icol].size()+1)*sizeof(struct svm_node));
           x = (struct svm_node *) malloc((nband+1)*sizeof(struct svm_node));
           // for(int i=0;i<fpixel[icol].size();++i){
+	  // if(band_opt.size()){
+	  //   for(int iband=0;iband<band_opt.size();++iband){
+	  //     x[iband].index=iband+1;
+	  //     x[iband].value=(hpixel[icol][band_opt[iband]]-offset[ibag][iband])/scale[ibag][iband];
+	  //   }
+	  // }
+	  // else{
+	  //   for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
+	  //     x[iband].index=iband+1;
+	  //     x[iband].value=(hpixel[icol][iband]-offset[ibag][iband])/scale[ibag][iband];
+	  //   }
+	  // }
           for(int iband=0;iband<nband;++iband){
             x[iband].index=iband+1;
             // x[i].value=fpixel[icol][i];
@@ -884,15 +941,29 @@ int main(int argc, char *argv[])
         }//ibag
 
         //search for max class prob
-        float maxBag=0;
+        float maxBag1=0;//max probability
+        float maxBag2=0;//second max probability
         float normBag=0;
         for(short iclass=0;iclass<nreclass;++iclass){
-          if(prOut[iclass][icol]>maxBag){
-            maxBag=prOut[iclass][icol];
+          if(prOut[iclass][icol]>maxBag1){
+            maxBag1=prOut[iclass][icol];
             classOut[icol]=vcode[iclass];
           }
+	  else if(prOut[iclass][icol]>maxBag2)
+            maxBag2=prOut[iclass][icol];
           normBag+=prOut[iclass][icol];
         }
+	float maxDiff=maxBag1-maxBag2;
+	if(active_opt.size()&&maxDiff){
+	  if(maxDiff<activePoints.back().value){
+	    activePoints.back().value=maxDiff;//replace largest value (last)
+	    activePoints.back().posx=icol;
+	    activePoints.back().posy=iline;
+	    std::sort(activePoints.begin(),activePoints.end(),Increase_PosValue());//sort in ascending order (smallest first, largest last)
+	    if(verbose_opt[0])
+	      std::cout << activePoints.back().posx << " " << activePoints.back().posy << " " << activePoints.back().value << std::endl;
+	  }
+	}
         //normalize prOut and convert to percentage
         if(prob_opt.size()){
           for(short iclass=0;iclass<nreclass;++iclass){
@@ -917,6 +988,28 @@ int main(int argc, char *argv[])
         pfnProgress(progress,pszMessage,pProgressArg);
       }
     }
+    //write active learning points
+    if(active_opt.size()){
+      for(int iactive=0;iactive<activePoints.size();++iactive){
+	std::map<string,double> pointMap;
+	for(int iband=0;iband<testImage.nrOfBand();++iband){
+	  double value;
+	  testImage.readData(value,GDT_Float64,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
+	  ostringstream fs;
+	  fs << "B" << iband;
+	  pointMap[fs.str()]=value;
+	}
+	pointMap[label_opt[0]]=0;
+	double x, y;
+	testImage.image2geo(activePoints[iactive].posx,activePoints[iactive].posy,x,y);
+        std::string fieldname="id";//number of the point
+	//test
+	// pointMap["col"]=activePoints[iactive].posx;
+	// pointMap["row"]=activePoints[iactive].posy;
+	activeWriter.addPoint(x,y,pointMap,fieldname,++nactive);
+      }
+    }
+
     testImage.close();
     if(prob_opt.size())
       probImage.close();
@@ -1078,9 +1171,12 @@ int main(int argc, char *argv[])
       imgWriterOgr.close();
     }
   }
+  if(active_opt.size())
+    activeWriter.close();
 
   for(int ibag=0;ibag<nbag;++ibag){
-    svm_destroy_param[ibag](&param[ibag]);
+    // svm_destroy_param[ibag](&param[ibag]);
+    svm_destroy_param(&param[ibag]);
     free(prob[ibag].y);
     free(prob[ibag].x);
     free(x_space[ibag]);

@@ -1,22 +1,32 @@
 \mainpage
-Introduction
-============
-pktools is a collection of programs written by Pieter Kempeneers in C++ to perform operations on raster images.
-It heavily relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR. Some of the programs are similar to the gdal tools (gdalinfo, gdal_translate, gdal_merge,...) and many of the functionalities provided in pktools already exist. The reason for implementing pktools is a combination of personal preference and additional functionality.
+
+   - \ref pktools_introduction "Introduction"
+   - \ref pktools_license "License"
+   - \ref pktools_download "Download"
+   - \ref pktools_refer "How to refer"
+   - \ref pktools_installation "Installation"
+   - \ref available_tools "Available Tools"
+
+\section pktools_introduction Introduction
+
+pktools is a collection of programs written in C++ to perform operations, mostly on raster images.
+It heavily relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR. The programs are similar to the gdal tools (gdalinfo, gdal_translate, gdal_merge,...) and some of the functionalities provided in pktools already exist in the gdal tools. The reason for implementing pktools is a combination of personal preference and additional functionality.
 
 All utilities in pktools use command line options and have a built in help
 
 - use the `-h` option to get help
 - pktools ALWAYS use -i for input and -o for output (unlike GDAL utilities that commonly use last argument as output and second but last argument as input)
 
-License
-=======
-pktools is released under the GNU General Public License version3
+Currently the tools only work in a Linux environment
+
+\section pktools_license License
+
+pktools is written by Pieter Kempeneers and released under the GNU General Public License version3
     
 See http://www.gnu.org/licenses for more details
 
-Download
-========
+\section pktools_download Download
+
 You can download the latest release
 - from http://download.savannah.gnu.org/releases/pktools/ (tar ball)
 - or by getting a copy of the Git repository
@@ -25,10 +35,41 @@ You can download the latest release
 git clone git://git.savannah.nongnu.org/pktools.git
 ~~~
 
-How to refer
-============
+\section pktools_refer How to refer
+
 You are welcome to refer to pktools as: http://pktools.nongnu.org (Pieter Kempeneers)
 
-List of pktools
-===============
-\ref available_tools "Available Tools"
+contact: kempenep at gmail.com
+
+\section pktools_installation Installation
+Download the latest release from http://download.savannah.gnu.org/releases/pktools/ (e.g., pktools-2.3.tar.gz)
+\code
+tar xzvf pktools-2.3.tar.gz
+cd pktools-2.3
+\endcode
+Basic installation (please refer to INSTALL file for more advanced configuration)
+\code
+./configure
+make
+sudo make install
+\endcode
+
+Prerequisites (required)
+------------------------
+packages to install before pktool
+   - libgdal-dev http://trac.osgeo.org/gdal/wiki/BuildingOnUnix (or via repository)
+   - libgsl0-dev http://www.gnu.org/software/gsl/ (or via repository)
+
+Prerequisites (optional)
+------------------------
+if configured with `--enable-nlopt`: required for \ref pkfs_nn, \ref pkfs_svm, \ref pkopt_svm 
+   - nlopt http://ab-initio.mit.edu/wiki/index.php/NLopt#Download_and_installation 
+
+if configured with `--enable-las`: required for \ref pklas2img
+   - cmake (2.8.1+) http://www.cmake.org/ (or via repository)
+   - libboost-dev (1.38.0+) http://www.boost.org/ (or via repository)
+   - liblas http://www.liblas.org/compilation.html#compilation
+     (notice this is not the same package as laslib...)
+
+if configured with `--enable-fann`: required for \ref pkclassify_nn, \ref pkfs_nn, \ref pkfs_nn
+   - libfann-dev http://leenissen.dk/fann/wp/download/ (or via repository)

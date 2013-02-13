@@ -15,7 +15,7 @@ thelongdescription
 
 ## OPTIONS ##
  - use either \`-short\` or \`--long\` options (both \`--long=value\` and \`--long value\` are supported)
- - short option \`-h\` shows basic options only, long option \`--h\` shows all options
+ - short option \`-h\` shows basic options only, long option \`--help\` shows all options
 |short|long|type|default|description|
 |-----|----|----|-------|-----------|
 EOF

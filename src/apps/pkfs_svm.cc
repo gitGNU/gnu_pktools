@@ -33,7 +33,7 @@ enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
 
 //global parameters used in cost function getCost
 Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
-Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*|u-v|^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
+Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*(u-v)^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
 Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
 Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
 Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);

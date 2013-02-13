@@ -30,9 +30,12 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "Input image");
   Optionpk<string> output_opt("o", "output", "Output mask file");
   Optionpk<string> field_opt("f", "field", "output field names (number must exactly match input fields)");
+  Optionpk<long int> setfeature_opt("sf", "sf", "id of feature(s) to set (start from 0)");
+  Optionpk<string> setname_opt("sn", "sn", "name(s) of field(s) to set");
+  Optionpk<string> setvalue_opt("sv", "sv", "value(s) of field(s) to set");
   Optionpk<string> addname_opt("an", "an", "name(s) of field(s) to add (number must exactly match field types)");
   Optionpk<string> addtype_opt("at", "at", "type(s) of field(s) to add (number must exactly match fieldnames to add", "Real");
-  Optionpk<string> default_opt("d", "default", "default value(s) for new field(s)");
+  Optionpk<string> addvalue_opt("av", "av", "value(s) of field(s) to add");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -42,7 +45,10 @@ int main(int argc, char *argv[])
     field_opt.retrieveOption(argc,argv);
     addname_opt.retrieveOption(argc,argv);
     addtype_opt.retrieveOption(argc,argv);
-    default_opt.retrieveOption(argc,argv);
+    addvalue_opt.retrieveOption(argc,argv);
+    setfeature_opt.retrieveOption(argc,argv);
+    setname_opt.retrieveOption(argc,argv);
+    setvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -113,8 +119,8 @@ int main(int argc, char *argv[])
     std::cout << "add " << addname_opt.size() << " fields" << std::endl;
   if(addname_opt.size()){
     assert(addname_opt.size()==addtype_opt.size());
-    while(default_opt.size()<addname_opt.size())
-      default_opt.push_back(default_opt.back());
+    while(addvalue_opt.size()<addname_opt.size())
+      addvalue_opt.push_back(addvalue_opt.back());
   }
   for(int iname=0;iname<addname_opt.size();++iname){
     if(verbose_opt[0])
@@ -126,12 +132,8 @@ int main(int argc, char *argv[])
     std::cout << addname_opt.size() << " fields created" << std::endl;
   }
   OGRFeature *poFeature;
-  // while(true){// (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
   while((poFeature = ogrReader.getLayer()->GetNextFeature()) != NULL ){
     ++ifeature;
-    // poFeature = ogrReader.getLayer()->GetNextFeature();
-    // if( poFeature == NULL )
-    //   break;
     OGRFeature *poDstFeature = NULL;
     poDstFeature=ogrWriter.createFeature();
     if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
@@ -144,7 +146,34 @@ int main(int argc, char *argv[])
       OGRFeature::DestroyFeature( poFeature );
       OGRFeature::DestroyFeature( poDstFeature );
     }
+    long int fid=poFeature->GetFID();
+    //test
+    std::cout << "fid: " << fid << std::endl;
     poDstFeature->SetFID( poFeature->GetFID() );
+    for(int ifeature=0;ifeature<setfeature_opt.size();++ifeature){
+      //test
+      std::cout << "set feature " << setfeature_opt[ifeature] << std::endl;
+      if(fid==setfeature_opt[ifeature]){
+	switch(poDstFeature->GetFieldDefnRef(fid)->GetType()){
+	  case(OFTReal):
+	    poDstFeature->SetField(setname_opt[ifeature].c_str(),string2type<float>(setvalue_opt[ifeature]));
+	    break;
+	  case(OFTInteger):
+	    //test
+	    std::cout << "set field " << setname_opt[ifeature] << " to " << setvalue_opt[ifeature] << std::endl;
+	    poDstFeature->SetField(setname_opt[ifeature].c_str(),string2type<int>(setvalue_opt[ifeature]));
+	    break;
+	  case(OFTString):
+	    poDstFeature->SetField(setname_opt[ifeature].c_str(),setvalue_opt[ifeature].c_str());
+	    break;
+	  default:
+	    std::cerr << "Error: field type not supported" << std::endl;
+	    exit(1);
+	    break;
+	}
+      }
+    }
+
     //set default values for new fields
     if(verbose_opt[0])
       std::cout << "set default values for new fields in feature " << ifeature << std::endl;
@@ -152,23 +181,24 @@ int main(int argc, char *argv[])
       switch(fieldType[iname]){
       case(OFTReal):
         if(verbose_opt[0])
-          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<float>(default_opt[iname]) << std::endl;
-        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<float>(default_opt[iname]));
+          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<float>(addvalue_opt[iname]) << std::endl;
+        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<float>(addvalue_opt[iname]));
         break;
       case(OFTInteger):
         if(verbose_opt[0])
-          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<int>(default_opt[iname]) << std::endl;
-        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<int>(default_opt[iname]));
+          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<int>(addvalue_opt[iname]) << std::endl;
+        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<int>(addvalue_opt[iname]));
         break;
       case(OFTString):
         if(verbose_opt[0])
-          std::cout << "set field " << addname_opt[iname] << " to default " << default_opt[iname] << std::endl;
-        poDstFeature->SetField(addname_opt[iname].c_str(),default_opt[iname].c_str());
+          std::cout << "set field " << addname_opt[iname] << " to default " << addvalue_opt[iname] << std::endl;
+        poDstFeature->SetField(addname_opt[iname].c_str(),addvalue_opt[iname].c_str());
         break;
       default:
+	std::cerr << "Error: field type not supported" << std::endl;
+	exit(1);
         break;
       }
-      OGRFeature::DestroyFeature( poFeature );
     }
     CPLErrorReset();
     if(verbose_opt[0])
@@ -182,6 +212,7 @@ int main(int argc, char *argv[])
                 poFeature->GetFID(), ogrWriter.getLayerName().c_str() );
       OGRFeature::DestroyFeature( poDstFeature );
     }
+    OGRFeature::DestroyFeature( poFeature );
     OGRFeature::DestroyFeature( poDstFeature );
   }
   if(verbose_opt[0])

@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
   Optionpk<string> cell2bb_opt("c2b","cell2bb","convert cell code to geo coordinates of boundingbox (e.g. 32-AB)","");
   Optionpk<string> cell2mid_opt("c2m","cell2mid","convert cell code to centre in geo coordinates (e.g. 32-AB)","");
   Optionpk<bool> refpixel_opt("\0", "ref", "get reference pixel (lower left corner of centre of gravity pixel)", false);
-  Optionpk<double> maskValue_opt("m", "mask", "mask value(s) for no data to calculate reference pixel in image (Default is 0)",0);
-  Optionpk<int> dx_opt("dx","dx","resolution (default is 250m)",250);
+  Optionpk<double> maskValue_opt("m", "mask", "mask value(s) for no data to calculate reference pixel in image",0);
+  Optionpk<int> dx_opt("dx","dx","resolution",250);
   Optionpk<bool> geo2cell_opt("g2c", "geo2cell", "get cell code for coordinates in x_opt and y_opt given the resolution in dx_opt", false);
   Optionpk<double> x_opt("x","x","x coordinate in epsg:3035",0);
   Optionpk<double> y_opt("y","y","y coordinate in epsg:3035",0);

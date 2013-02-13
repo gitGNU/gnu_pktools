@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i","input","input image file","");
   Optionpk<string> output_opt("o","output","output image file containing ndvi","");
   Optionpk<short> band_opt("b", "band", "Bands to be used for vegetation index (see rule option)", 0);
-  Optionpk<string> rule_opt("r", "rule", "Rule for index. [ndvi (b1-b0)/(b1+b0)|ndvi2 (b1-b0)/(b2+b3)|gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02)))|vari (b1-b2)/(b1+b2-b0)|osavi|mcari|tcari|diff (b1-b0)|scale|ratio.", "ndvi");
+  Optionpk<string> rule_opt("r", "rule", "Rule for index. ndvi (b1-b0)/(b1+b0), ndvi2 (b1-b0)/(b2+b3), gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02))), vari (b1-b2)/(b1+b2-b0), osavi, mcari, tcari, diff (b1-b0), scale, ratio.", "ndvi");
   Optionpk<double> invalid_opt("t", "invalid", "Mask value where image is invalid.", 0);
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");

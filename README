@@ -14,7 +14,4 @@ To install the programs in pktools, refer to the file INSTALL
 
 Change history
 -------------
-version 1.0 June 25 2012, first public release of the code
-version 2.1 September 04 2012, introduced --enable-fann and --enable-las in configuration
-version 2.2 September 13 2012, support spectral filtering (z-dimension) in pkfilter using tapz option
-version 2.3 October 20 2012, support for SVM classifier 
+see Changelog

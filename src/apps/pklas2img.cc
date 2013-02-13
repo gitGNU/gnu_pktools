@@ -29,34 +29,34 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input las file", "");
   // Optionpk<string> mask_opt("m", "mask", "mask image file", "");
-  // Optionpk<short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use multiple values for a single mask. Default value is 0", 0);
-  Optionpk<short> flag_opt("f", "flag", "Flag value(s) to put in image if not valid. Use as many flags as invalid options (Default is 0)", 0);
-  Optionpk<string> attribute_opt("n", "name", "names of the attribute to select: [intensity|return|nreturn|z]", "z");
-  Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion (default is false)", false);
-  Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering (default is 0)", 0.0);
+  // Optionpk<short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use multiple values for a single mask.", 0);
+  Optionpk<short> flag_opt("f", "flag", "Flag value(s) to put in image if not valid. Use as many flags as invalid options", 0);
+  Optionpk<string> attribute_opt("n", "name", "names of the attribute to select: intensity, return, nreturn, z", "z");
+  Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
+  Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering", 0.0);
   Optionpk<double> hThreshold_opt("ht", "maxHeight", "initial and maximum height threshold for progressive morphological filtering (e.g., -ht 0.2 -ht 2.5)", 0.2);
-  Optionpk<short> maxIter_opt("\0", "maxIter", "Maximum number of iterations in post filter (default is 100)", 100.0);
-  Optionpk<short> nbin_opt("nb", "nbin", "Number of percentile bins for calculating profile (=number of output bands) (default is 10)", 10.0);
+  Optionpk<short> maxIter_opt("\0", "maxIter", "Maximum number of iterations in post filter", 100.0);
+  Optionpk<short> nbin_opt("nb", "nbin", "Number of percentile bins for calculating profile (=number of output bands)", 10.0);
   Optionpk<unsigned short> returns_opt("r", "returns", "number(s) of returns to include");
   Optionpk<unsigned short> classes_opt("c", "classes", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
-  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile, number (point density)). Default is last (overwrite cells with latest point", "last");
-  Optionpk<string> filter_opt("fir", "filter", "filter las points (last,single,multiple,all). Default is all", "all");
-  Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none) . Default is none", "none");
-  Optionpk<short> dimx_opt("\0", "dimX", "Dimension X of postFilter (default is 3)", 3);
-  Optionpk<short> dimy_opt("\0", "dimY", "Dimension Y of postFilter (default is 3)", 3);
+  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile, number (point density)). Last: overwrite cells with latest point", "last");
+  Optionpk<string> filter_opt("fir", "filter", "filter las points (last,single,multiple,all).", "all");
+  Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none).", "none");
+  Optionpk<short> dimx_opt("\0", "dimX", "Dimension X of postFilter", 3);
+  Optionpk<short> dimy_opt("\0", "dimY", "Dimension Y of postFilter", 3);
   Optionpk<string> output_opt("o", "output", "Output image file", "");
-  Optionpk<string> projection_opt("p", "projection", "projection in EPSG code, e.g., EPSG:3035 (Default is no projection)", "");
-  Optionpk<double> ulx_opt("\0", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true). Default is 0: read from input file", 0.0);
-  Optionpk<double> uly_opt("\0", "uly", "Upper left y value bounding box (in geocoordinates if georef is true). Default is 0: read from input file", 0.0);
-  Optionpk<double> lrx_opt("\0", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true). Default is 0: read from input file", 0.0);
-  Optionpk<double> lry_opt("\0", "lry", "Lower right y value bounding box (in geocoordinates if georef is true). Default is 0: read from input file", 0.0);
+  Optionpk<string> projection_opt("p", "projection", "projection in EPSG code, e.g., EPSG:3035", "");
+  Optionpk<double> ulx_opt("\0", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
+  Optionpk<double> uly_opt("\0", "uly", "Upper left y value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
+  Optionpk<double> lrx_opt("\0", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
+  Optionpk<double> lry_opt("\0", "lry", "Lower right y value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter)", 1.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)", 1.0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (default is 0)", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{

@@ -42,6 +42,7 @@ public:
   ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr);
   ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr, bool copyData);
   ~ImgWriterOgr(void);
+  void open(const string& filename, ImgReaderOgr& imgReaderOgr);
   void open(const string& filename, const string& imageType="ESRI Shapefile");
   void close(void);
   int ascii2ogr(const string& filename, const string &layername, const vector<string>& fieldName, const vector<OGRFieldType>& fieldType, short colX=1, short colY=2, const string& theProjection="", const OGRwkbGeometryType& eGType=wkbPoint, const char fs=' ');

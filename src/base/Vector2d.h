@@ -25,7 +25,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <numeric>
 #include <gsl/gsl_matrix.h>
-#include "PosValue.h"
+#include "IndexValue.h"
 #include "algorithms/Histogram.h"
 
 using namespace std;
@@ -200,14 +200,14 @@ template<class T> void Vector2d<T>::sort(Vector2d<T>& output)
   //sort according to first sample (ex. wavelength)
   int nsample=this->size();//including first sample (ex. wavelength)
   int nband=(*this)[0].size();  
-  vector<PosValue> sortW(nband);
+  vector<IndexValue> sortW(nband);
   for(int ilevel=0;ilevel<nband;++ilevel){
-    PosValue pv;
+    IndexValue pv;
     pv.position=ilevel;
     pv.value=(*this)[0][ilevel];
     sortW[ilevel]=pv;
   }
-  std::sort(sortW.begin(),sortW.end(),Increase_PosValue());
+  std::sort(sortW.begin(),sortW.end(),Increase_IndexValue());
   output.resize(nsample);  
   for(int isample=0;isample<nsample;++isample){
     output[isample].resize(nband);

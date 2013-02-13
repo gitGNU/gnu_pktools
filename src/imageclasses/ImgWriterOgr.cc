@@ -96,6 +96,14 @@ ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr, b
 
 //---------------------------------------------------------------------------
 
+void ImgWriterOgr::open(const string& filename, ImgReaderOgr& imageReader)
+{
+  m_filename=filename;
+  setCodec(imageReader.getDriver());
+  createLayer(filename,imageReader.getProjection(),imageReader.getGeometryType(),NULL);
+  copyFields(imageReader);
+}
+
 void ImgWriterOgr::open(const string& filename, const string& imageType)
 {
   m_filename = filename;

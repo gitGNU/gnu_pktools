@@ -12,8 +12,9 @@ The simplest way to compile this package is:
      configure options (use ./configure --help for help info)
      
         --with-gdal=<path to gdal-config file>
-     	--enable-fann (to include pkclassify_nn when FANN is installed)
-	--enable-las (to include pklas2img when LIBLAS >= 1.6 is installed)
+     	--enable-fann
+	--enable-las
+	--enable-nlopt
 
   2. Type `make' to compile the package.
 
