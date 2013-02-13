@@ -202,6 +202,7 @@ int main(int argc, char *argv[])
 
   ImgWriterOgr activeWriter;
   if(active_opt.size()){
+    prob_est_opt[0]=true;
     ImgReaderOgr trainingReader(training_opt[0]);
     activeWriter.open(active_opt[0]);
     activeWriter.createLayer(active_opt[0],trainingReader.getProjection(),wkbPoint,NULL);
