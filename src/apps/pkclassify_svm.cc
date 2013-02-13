@@ -1172,8 +1172,13 @@ int main(int argc, char *argv[])
       imgWriterOgr.close();
     }
   }
-  if(active_opt.size())
-    activeWriter.close();
+  try{
+    if(active_opt.size())
+      activeWriter.close();
+  }
+  catch(string errorString){
+    std::cerr << "Error: errorString" << std::endl;
+  }
 
   for(int ibag=0;ibag<nbag;++ibag){
     // svm_destroy_param[ibag](&param[ibag]);

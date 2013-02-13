@@ -147,20 +147,14 @@ int main(int argc, char *argv[])
       OGRFeature::DestroyFeature( poDstFeature );
     }
     long int fid=poFeature->GetFID();
-    //test
-    std::cout << "fid: " << fid << std::endl;
     poDstFeature->SetFID( poFeature->GetFID() );
     for(int ifeature=0;ifeature<setfeature_opt.size();++ifeature){
-      //test
-      std::cout << "set feature " << setfeature_opt[ifeature] << std::endl;
       if(fid==setfeature_opt[ifeature]){
 	switch(poDstFeature->GetFieldDefnRef(fid)->GetType()){
 	  case(OFTReal):
 	    poDstFeature->SetField(setname_opt[ifeature].c_str(),string2type<float>(setvalue_opt[ifeature]));
 	    break;
 	  case(OFTInteger):
-	    //test
-	    std::cout << "set field " << setname_opt[ifeature] << " to " << setvalue_opt[ifeature] << std::endl;
 	    poDstFeature->SetField(setname_opt[ifeature].c_str(),string2type<int>(setvalue_opt[ifeature]));
 	    break;
 	  case(OFTString):
