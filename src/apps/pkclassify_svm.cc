@@ -124,7 +124,8 @@ int main(int argc, char *argv[])
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<string> colorTable_opt("ct", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
-  Optionpk<string> prob_opt("\0", "prob", "probability image."); 
+  Optionpk<string> prob_opt("prob", "prob", "probability image."); 
+  Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
   Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
@@ -169,6 +170,7 @@ int main(int argc, char *argv[])
     colorTable_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     prob_opt.retrieveOption(argc,argv);
+    entropy_opt.retrieveOption(argc,argv);
     active_opt.retrieveOption(argc,argv);
     nactive_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
@@ -695,6 +697,7 @@ int main(int argc, char *argv[])
     ImgWriterGdal classImageBag;
     ImgWriterGdal classImageOut;
     ImgWriterGdal probImage;
+    ImgWriterGdal entropyImage;
 
     string imageType=testImage.getImageType();
     if(oformat_opt.size())//default
@@ -718,6 +721,11 @@ int main(int argc, char *argv[])
         probImage.copyGeoTransform(testImage);
         probImage.setProjection(testImage.getProjection());
       }
+      if(entropy_opt.size()){
+        entropyImage.open(entropy_opt[0],ncol,nrow,1,GDT_Byte,imageType,option_opt);
+        entropyImage.copyGeoTransform(testImage);
+        entropyImage.setProjection(testImage.getProjection());
+      }
     }
     catch(string error){
       cerr << error << std::endl;
@@ -731,6 +739,7 @@ int main(int argc, char *argv[])
       Vector2d<float> hpixel(ncol);
       // Vector2d<float> fpixel(ncol);
       Vector2d<float> prOut(nreclass,ncol);//posterior prob for each reclass
+      vector<float> entropy(ncol);
       Vector2d<char> classBag;//classified line for writing to image file
       if(classBag_opt.size())
         classBag.resize(nbag,ncol);
@@ -954,26 +963,40 @@ int main(int argc, char *argv[])
             maxBag2=prOut[iclass][icol];
           normBag+=prOut[iclass][icol];
         }
-	float maxDiff=maxBag1-maxBag2;
-	if(active_opt.size()&&maxDiff){
-	  if(maxDiff<activePoints.back().value){
-	    activePoints.back().value=maxDiff;//replace largest value (last)
+        //normalize prOut and convert to percentage
+        entropy[icol]=0;
+        for(short iclass=0;iclass<nreclass;++iclass){
+          float prv=prOut[iclass][icol];
+          prv/=normBag;
+          entropy[icol]-=prv*log(prv)/log(2);
+          prv*=100.0;
+            
+          prOut[iclass][icol]=static_cast<short>(prv+0.5);
+        }
+        entropy[icol]/=log(nreclass)/log(2);
+        entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
+	// float maxDiff=maxBag1-maxBag2;
+	// if(active_opt.size()&&maxDiff){
+	//   if(maxDiff<activePoints.back().value){
+	//     activePoints.back().value=maxDiff;//replace largest value (last)
+	//     activePoints.back().posx=icol;
+	//     activePoints.back().posy=iline;
+	//     std::sort(activePoints.begin(),activePoints.end(),Increase_PosValue());//sort in ascending order (smallest first, largest last)
+	//     if(verbose_opt[0])
+	//       std::cout << activePoints.back().posx << " " << activePoints.back().posy << " " << activePoints.back().value << std::endl;
+	//   }
+	// }
+        //todo: select pixel with maximum entropy as active point
+	if(active_opt.size()){
+	  if(entropy[icol]>activePoints.back().value){
+	    activePoints.back().value=entropy[icol];//replace largest value (last)
 	    activePoints.back().posx=icol;
 	    activePoints.back().posy=iline;
-	    std::sort(activePoints.begin(),activePoints.end(),Increase_PosValue());//sort in ascending order (smallest first, largest last)
+	    std::sort(activePoints.begin(),activePoints.end(),Decrease_PosValue());//sort in descending order (largest first, smallest last)
 	    if(verbose_opt[0])
 	      std::cout << activePoints.back().posx << " " << activePoints.back().posy << " " << activePoints.back().value << std::endl;
 	  }
 	}
-        //normalize prOut and convert to percentage
-        if(prob_opt.size()){
-          for(short iclass=0;iclass<nreclass;++iclass){
-            float prv=prOut[iclass][icol];
-            prv/=normBag;
-            prv*=100.0;
-            prOut[iclass][icol]=static_cast<short>(prv+0.5);
-          }
-        }
       }//icol
       //----------------------------------- write output ------------------------------------------
       if(classBag_opt.size())
@@ -982,6 +1005,9 @@ int main(int argc, char *argv[])
       if(prob_opt.size()){
         for(short iclass=0;iclass<nreclass;++iclass)
           probImage.writeData(prOut[iclass],GDT_Float32,iline,iclass);
+      }
+      if(entropy_opt.size()){
+        entropyImage.writeData(entropy,GDT_Float32,iline);
       }
       classImageOut.writeData(classOut,GDT_Byte,iline);
       if(!verbose_opt[0]){
@@ -1014,6 +1040,8 @@ int main(int argc, char *argv[])
     testImage.close();
     if(prob_opt.size())
       probImage.close();
+    if(entropy_opt.size())
+      entropyImage.close();
     if(classBag_opt.size())
       classImageBag.close();
     classImageOut.close();
