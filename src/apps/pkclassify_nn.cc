@@ -102,10 +102,10 @@ int main(int argc, char *argv[])
   Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
   Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
   Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
-  Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option. Default is sum rule (0)",0); 
-  Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
+  Optionpk<unsigned short> comb_opt("comb", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option. Default is sum rule (0)",0); 
+  Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
-  Optionpk<string> classBag_opt("\0", "class", "output for each individual bootstrap aggregation (default is blank)"); 
+  Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
   Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option (default is no mask)"); 
   Optionpk<short> maskValue_opt("mv", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> flag_opt("f", "flag", "flag to put where image is invalid. Default is 0", 0);
@@ -911,6 +911,7 @@ int main(int argc, char *argv[])
     classImageOut.close();
   }
   else{//classify shape file
+    cm.clearResults();
     //notice that fields have already been set by readDataImageShape (taking into account appropriate bands)
     for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
       assert(output_opt.size()==input_opt.size());
@@ -989,10 +990,12 @@ int main(int argc, char *argv[])
         float maxBag=0;
         float normBag=0;
         char classOut=0;
+	short classOutIndex=0;
         for(int iclass=0;iclass<nreclass;++iclass){
           if(prOut[iclass]>maxBag){
             maxBag=prOut[iclass];
             classOut=vcode[iclass];
+	    classOutIndex=iclass;
           }
           normBag+=prOut[iclass];
         }
@@ -1005,6 +1008,11 @@ int main(int argc, char *argv[])
         }
         poDstFeature->SetField("class",classOut);
         poDstFeature->SetFID( poFeature->GetFID() );
+	int labelIndex=poDstFeature->GetFieldIndex(label_opt[0].c_str());
+	if(labelIndex>=0){
+	  string classRef=poDstFeature->GetFieldAsString(labelIndex);
+	  // cm.incrementResult(classRef,cm.getClass(classOutIndex),1);
+	}
         CPLErrorReset();
         if(imgWriterOgr.createFeature( poDstFeature ) != OGRERR_NONE){
           CPLError( CE_Failure, CPLE_AppDefined,
@@ -1017,6 +1025,24 @@ int main(int argc, char *argv[])
       }
       imgReaderOgr.close();
       imgWriterOgr.close();
+    }
+    if(cm.nReference()){
+      std::cout << cm << std::endl;
+      cout << "class #samples userAcc prodAcc" << endl;
+      double se95_ua=0;
+      double se95_pa=0;
+      double se95_oa=0;
+      double dua=0;
+      double dpa=0;
+      double doa=0;
+      for(short iclass=0;iclass<cm.nClasses();++iclass){
+	dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
+	dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+	cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+      }
+      std::cout << "Kappa: " << cm.kappa() << std::endl;
+      doa=cm.oa_pct(&se95_oa);
+      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
     }
   }
   return 0;

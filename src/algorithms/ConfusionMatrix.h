@@ -46,6 +46,12 @@ public:
   double nClassified(const string& theRef) const;
   int nClasses() const {return m_classes.size();};
   string getClass(int iclass) const {assert(iclass>=0);assert(iclass<m_classes.size());return m_classes[iclass];};
+  int getClassIndex(string className) const {
+    int index=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),className));
+    assert(index>=0);
+    assert(index<m_results.size());
+    return(index);
+  }
   vector<string> getClassNames() const {return m_classes;};
   ~ConfusionMatrix();
   double pa(const string& theClass, double* se95=NULL) const;

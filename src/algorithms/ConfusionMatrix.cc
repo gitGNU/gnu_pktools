@@ -124,15 +124,18 @@ void ConfusionMatrix::setResults(const Vector2d<double>& theResults){
 
 void ConfusionMatrix::clearResults(){
   m_results.clear();
+  m_results.resize(m_classes.size(),m_classes.size());
 }
 
 void ConfusionMatrix::setResult(const string& theRef, const string& theClass, double theResult){
-  int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
-  int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
-  assert(ir>=0);
-  assert(ir<m_results.size());
-  assert(ic>=0);
-  assert(ic<m_results[ir].size());
+  // int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
+  // int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  // assert(ir>=0);
+  // assert(ir<m_results.size());
+  // assert(ic>=0);
+  // assert(ic<m_results[ir].size());
+  int ir=getClassIndex(theRef);
+  int ic=getClassIndex(theClass);
   m_results[ir][ic]=theResult;
 }
 

@@ -32,64 +32,59 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass);
+// void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass);
 
-void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass){
-  short nclass=result.size();
-  assert(priors.size()==nclass);
-  assert(theResultReclass.size()>1);//must have size nreclass!
-  short nreclass=theResultReclass.size();
-  vector<float> pValues(nclass);
-  float normReclass=0;
-  for(short iclass=0;iclass<nclass;++iclass){
-    float pv=result[iclass];//todo: check if result from svm is [0,1]
-    assert(pv>=0);
-    assert(pv<=1);
-    pv*=priors[iclass];
-    pValues[iclass]=pv;
-  }
-  for(short iclass=0;iclass<nreclass;++iclass){
-    theResultReclass[iclass]=0;
-    float maxPaggreg=0;
-    for(short ic=0;ic<nclass;++ic){
-      if(vreclass[ic]==iclass){
-	switch(aggregation){
-	default:
-	case(1)://sum rule (sum posterior probabilities of aggregated individual classes)
-	  theResultReclass[iclass]+=pValues[ic];
-	break;
-	case(0):
-	case(2)://max rule (look for maximum post probability of aggregated individual classes)
-	  if(pValues[ic]>maxPaggreg){
-	    maxPaggreg=pValues[ic];
-	    theResultReclass[iclass]=maxPaggreg;
-	  }
-	break;
-	}
-      }
-    }
-    normReclass+=theResultReclass[iclass];
-  }
-  for(short iclass=0;iclass<nreclass;++iclass){
-    float prv=theResultReclass[iclass];
-    prv/=normReclass;
-    theResultReclass[iclass]=prv;
-  }
-}
+// void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass){
+//   short nclass=result.size();
+//   assert(priors.size()==nclass);
+//   assert(theResultReclass.size()>1);//must have size nreclass!
+//   short nreclass=theResultReclass.size();
+//   vector<float> pValues(nclass);
+//   float normReclass=0;
+//   for(short iclass=0;iclass<nclass;++iclass){
+//     float pv=result[iclass];//todo: check if result from svm is [0,1]
+//     assert(pv>=0);
+//     assert(pv<=1);
+//     pv*=priors[iclass];
+//     pValues[iclass]=pv;
+//   }
+//   for(short iclass=0;iclass<nreclass;++iclass){
+//     theResultReclass[iclass]=0;
+//     float maxPaggreg=0;
+//     for(short ic=0;ic<nclass;++ic){
+//       if(vreclass[ic]==iclass){
+// 	switch(aggregation){
+// 	default:
+// 	case(1)://sum rule (sum posterior probabilities of aggregated individual classes)
+// 	  theResultReclass[iclass]+=pValues[ic];
+// 	break;
+// 	case(0):
+// 	case(2)://max rule (look for maximum post probability of aggregated individual classes)
+// 	  if(pValues[ic]>maxPaggreg){
+// 	    maxPaggreg=pValues[ic];
+// 	    theResultReclass[iclass]=maxPaggreg;
+// 	  }
+// 	break;
+// 	}
+//       }
+//     }
+//     normReclass+=theResultReclass[iclass];
+//   }
+//   for(short iclass=0;iclass<nreclass;++iclass){
+//     float prv=theResultReclass[iclass];
+//     prv/=normReclass;
+//     theResultReclass[iclass]=prv;
+//   }
+// }
 
 int main(int argc, char *argv[])
 {
-  // map<short,int> reclassMap;
-  vector<short> vreclass;	  //vreclass: map nclass->nreclass
-  vector<short> vuniqueclass;
   vector<double> priors;
-  vector<double> priorsReclass;
   
   //--------------------------- command line options ------------------------------------
   Optionpk<string> input_opt("i", "input", "input image"); 
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
-   Optionpk<unsigned short> reclass_opt("rc", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.)");
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
@@ -97,7 +92,6 @@ int main(int argc, char *argv[])
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
-  Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",1);
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
@@ -113,10 +107,10 @@ int main(int argc, char *argv[])
   Optionpk<bool> shrinking_opt("shrink", "shrink", "whether to use the shrinking heuristics",false);
   Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",false);
   // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
-  Optionpk<unsigned short> comb_opt("c", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
-  Optionpk<unsigned short> bag_opt("\0", "bag", "Number of bootstrap aggregations", 1);
+  Optionpk<unsigned short> comb_opt("comb", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
+  Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
-  Optionpk<string> classBag_opt("\0", "class", "output for each individual bootstrap aggregation");
+  Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation");
   Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option"); 
   Optionpk<short> maskValue_opt("mv", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
   Optionpk<unsigned short> flag_opt("f", "flag", "flag to put where image is invalid.", 0);
@@ -128,6 +122,8 @@ int main(int argc, char *argv[])
   Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
   Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
+  Optionpk<string> classname_opt("c", "class", "list of class names."); 
+  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -135,7 +131,6 @@ int main(int argc, char *argv[])
     doProcess=input_opt.retrieveOption(argc,argv);
     training_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
-    reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
@@ -143,7 +138,6 @@ int main(int argc, char *argv[])
     band_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
-    aggreg_opt.retrieveOption(argc,argv);
     priors_opt.retrieveOption(argc,argv);
     svm_type_opt.retrieveOption(argc,argv);
     kernel_type_opt.retrieveOption(argc,argv);
@@ -173,6 +167,8 @@ int main(int argc, char *argv[])
     entropy_opt.retrieveOption(argc,argv);
     active_opt.retrieveOption(argc,argv);
     nactive_opt.retrieveOption(argc,argv);
+    classname_opt.retrieveOption(argc,argv);
+    classvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -219,7 +215,6 @@ int main(int argc, char *argv[])
   
   unsigned int totalSamples=0;
   unsigned int nactive=0;
-  vector<short> vcode;//unique reclass codes (e.g., -rc 1 -rc 1 -rc 2 -rc 2 -> vcode[0]=1,vcode[1]=2)
   vector<struct svm_model*> svm(nbag);
   vector<struct svm_parameter> param(nbag);
 
@@ -227,29 +222,7 @@ int main(int argc, char *argv[])
   int nband=0;
   int startBand=2;//first two bands represent X and Y pos
 
-  short nreclass=0;
-  // if(reclass_opt.size()){
-  //   //remove duplicates:
-  //   std::sort(reclass.begin(),reclass.end());
-  //   reclass.erase(std::unique(reclass.begin(),reclass.end()),reclass.end());
-  //   nreclass=reclass.size();//number of unique output classes
-  //   if(verbose_opt[0])
-  //     std::cout << "number of unique reclass strings: " << nreclass << std::endl;
-  //   for(short iclass=0;iclass<reclass_opt.size();++iclass)
-  //     shortreclass[iclass]=string2type<short>(reclass[iclass])
-  //     if(verbose_opt[0]){
-  //       std::cout << reclass[iclass] << " ";
-  //       std::cout << std::endl;
-  //     }
-  //   }
-  // }
-  if(reclass_opt.size()){
-    vreclass.resize(reclass_opt.size());
-    for(short iclass=0;iclass<reclass_opt.size();++iclass){
-      // reclassMap[iclass]=reclass_opt[iclass];
-      vreclass[iclass]=reclass_opt[iclass];
-    }
-  }
+  // short nreclass=0;
 
   //normalize priors from command line
   if(priors_opt.size()>1){//priors from argument list
@@ -319,10 +292,6 @@ int main(int argc, char *argv[])
 
       //convert map to vector
       short iclass=0;
-      if(reclass_opt.empty()){//no reclass option, read classes from shape
-        // reclassMap.clear();
-        vreclass.clear();
-      }
       if(verbose_opt[0]>1)
         std::cout << "training pixels: " << std::endl;
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
@@ -331,15 +300,10 @@ int main(int argc, char *argv[])
         if((mapit->second).size()<minSize_opt[0]){
           trainingMap.erase(mapit);
           continue;
-          //todo: beware of reclass option: delete this reclass if no samples are left in this classes!!
-        }
-        if(reclass_opt.empty()){//no reclass option, read classes from shape
-          vreclass.push_back(iclass);
         }
         trainingPixels.push_back(mapit->second);
         if(verbose_opt[0]>1)
           std::cout << mapit->first << ": " << (mapit->second).size() << " samples" << std::endl;
-        ++iclass;
         ++mapit;
       }
       if(!ibag){
@@ -350,8 +314,7 @@ int main(int argc, char *argv[])
         assert(nclass==trainingPixels.size());
         assert(nband==trainingPixels[0][0].size()-2);
       }
-      // assert(reclassMap.size()==nclass);
-      assert(vreclass.size()==nclass);
+      // assert(vreclass.size()==nclass);
 
       //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
       //balance training data
@@ -424,58 +387,6 @@ int main(int argc, char *argv[])
     }
       
     if(!ibag){
-      //recode vreclass to ordered vector, starting from 0 to nreclass
-      vcode.clear();
-      if(verbose_opt[0]>=1){
-        std::cout << "before recoding: " << std::endl;
-        for(short iclass = 0; iclass < vreclass.size(); iclass++)
-          std::cout << " " << vreclass[iclass];
-        std::cout << std::endl; 
-      }
-      vector<short> vord=vreclass;//ordered vector, starting from 0 to nreclass
-      short iclass=0;
-      map<short,short> mreclass;
-      for(short ic=0;ic<vreclass.size();++ic){
-        if(mreclass.find(vreclass[ic])==mreclass.end())
-          mreclass[vreclass[ic]]=iclass++;
-      }
-      for(short ic=0;ic<vreclass.size();++ic)
-        vord[ic]=mreclass[vreclass[ic]];
-      //construct uniqe class codes
-      while(!vreclass.empty()){
-        vcode.push_back(*(vreclass.begin()));
-        //delete all these entries from vreclass
-        vector<short>::iterator vit;
-        while((vit=find(vreclass.begin(),vreclass.end(),vcode.back()))!=vreclass.end())
-          vreclass.erase(vit);
-      }
-      if(verbose_opt[0]>=1){
-        std::cout << "recode values: " << std::endl;
-        for(short icode=0;icode<vcode.size();++icode)
-          std::cout << vcode[icode] << " ";
-        std::cout << std::endl;
-      }
-      vreclass=vord;
-      if(verbose_opt[0]>=1){
-        std::cout << "after recoding: " << std::endl;
-        for(short iclass = 0; iclass < vord.size(); iclass++)
-          std::cout << " " << vord[iclass];
-        std::cout << std::endl; 
-      }
-      
-      vuniqueclass=vreclass;
-      //remove duplicate elements from vuniqueclass
-      sort( vuniqueclass.begin(), vuniqueclass.end() );
-      vuniqueclass.erase( unique( vuniqueclass.begin(), vuniqueclass.end() ), vuniqueclass.end() );
-      nreclass=vuniqueclass.size();
-      if(verbose_opt[0]>=1){
-        std::cout << "unique classes: " << std::endl;
-        for(short iclass = 0; iclass < vuniqueclass.size(); iclass++)
-          std::cout << " " << vuniqueclass[iclass];
-        std::cout << std::endl; 
-        std::cout << "number of reclasses: " << nreclass << std::endl;
-      }
-    
       if(priors_opt.size()==1){//default: equal priors for each class
         priors.resize(nclass);
         for(short iclass=0;iclass<nclass;++iclass)
@@ -483,15 +394,6 @@ int main(int argc, char *argv[])
       }
       assert(priors_opt.size()==1||priors_opt.size()==nclass);
 
-      //set priors
-      priorsReclass.resize(nreclass);
-      for(short iclass=0;iclass<nreclass;++iclass){
-	priorsReclass[iclass]=0;
-	for(short ic=0;ic<nclass;++ic){
-	  if(vreclass[ic]==iclass)
-	    priorsReclass[iclass]+=priors[ic];
-	}
-      }
       //set bagsize for each class if not done already via command line
       while(bagSize_opt.size()<nclass)
         bagSize_opt.push_back(bagSize_opt.back());
@@ -505,26 +407,11 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
       }
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
-      if(reclass_opt.empty()){
-        while(mapit!=trainingMap.end()){
-          cm.pushBackClassName(mapit->first);
-          ++mapit;
-        }
+      while(mapit!=trainingMap.end()){
+	cm.pushBackClassName(mapit->first);
+	++mapit;
       }
-      else{
-        if(verbose_opt[0]>1)
-          std::cout << "classes for confusion matrix: " << std::endl;
-        for(short iclass=0;iclass<nreclass;++iclass){
-          ostringstream os;
-          os << vcode[iclass];
-          if(verbose_opt[0]>1)
-            std::cout << os.str() << " ";
-          cm.pushBackClassName(os.str());
-        }
-        if(verbose_opt[0]>1)
-          std::cout << std::endl;
-      }
-      assert(cm.size()==nreclass);
+      assert(cm.size()==nclass);
     }//if(!ibag)
 
     //Calculate features of trainig set
@@ -556,14 +443,9 @@ int main(int argc, char *argv[])
     
     unsigned int nFeatures=trainingFeatures[0][0].size();
     unsigned int ntraining=0;
-    for(short iclass=0;iclass<nclass;++iclass){
-      //vcode has size nreclass???
-      // if(verbose_opt[0]>=1)
-      //   std::cout << "training sample size for class " << vcode[iclass] << ": " << trainingFeatures[iclass].size() << std::endl;
+    for(short iclass=0;iclass<nclass;++iclass)
       ntraining+=trainingFeatures[iclass].size();
-    }
-    // vector<struct svm_problem> prob(ibag);
-    // vector<struct svm_node *> x_space(ibag);
+
     prob[ibag].l=ntraining;
     prob[ibag].y = Malloc(double,prob[ibag].l);
     prob[ibag].x = Malloc(struct svm_node *,prob[ibag].l);
@@ -615,7 +497,7 @@ int main(int argc, char *argv[])
       assert(param[ibag].svm_type != EPSILON_SVR&&param[ibag].svm_type != NU_SVR);//only for regression
 
       for(int i=0;i<prob[ibag].l;i++)
-        cm.incrementResult(cm.getClass(vreclass[prob[ibag].y[i]]),cm.getClass(vreclass[target[i]]),1.0/nbag);
+        cm.incrementResult(cm.getClass(prob[ibag].y[i]),cm.getClass(target[i]),1.0/nbag);
       free(target);
     }    
     if(verbose_opt[0]>1)
@@ -656,6 +538,22 @@ int main(int argc, char *argv[])
     pfnProgress(progress,pszMessage,pProgressArg);
   //-------------------------------- open image file ------------------------------------
   if(input_opt[0].find(".shp")==string::npos){
+    //test
+    if(classname_opt.size()!=classvalue_opt.size())
+      std::cout << classname_opt.size() << "!=" << classvalue_opt.size() << std::endl;
+    assert(classname_opt.size()==classvalue_opt.size());
+    if(classname_opt.size())
+      assert(classname_opt.size()==nclass);
+    map<string,short>classValueMap;
+    if(classname_opt.empty())
+      std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
+    for(int iclass=0;iclass<nclass;++iclass){
+      if(classname_opt.size()==nclass)
+	classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
+      else
+	classValueMap[type2string<short>(iclass)]=string2type<short>(cm.getClass(iclass));
+    }
+	
     ImgReaderGdal testImage;
     try{
       if(verbose_opt[0]>=1)
@@ -717,7 +615,7 @@ int main(int argc, char *argv[])
       if(colorTable_opt.size())
         classImageOut.setColorTable(colorTable_opt[0],0);
       if(prob_opt.size()){
-        probImage.open(prob_opt[0],ncol,nrow,nreclass,GDT_Byte,imageType,option_opt);
+        probImage.open(prob_opt[0],ncol,nrow,nclass,GDT_Byte,imageType,option_opt);
         probImage.copyGeoTransform(testImage);
         probImage.setProjection(testImage.getProjection());
       }
@@ -737,8 +635,7 @@ int main(int argc, char *argv[])
       if(mask_opt.size())
         lineMask.resize(maskReader.nrOfCol());
       Vector2d<float> hpixel(ncol);
-      // Vector2d<float> fpixel(ncol);
-      Vector2d<float> prOut(nreclass,ncol);//posterior prob for each reclass
+      Vector2d<float> prOut(nclass,ncol);//posterior prob for each class
       vector<float> entropy(ncol);
       Vector2d<char> classBag;//classified line for writing to image file
       if(classBag_opt.size())
@@ -866,7 +763,7 @@ int main(int argc, char *argv[])
           classOut[icol]=flag_opt[0];
           continue;//next column
         }
-        for(short iclass=0;iclass<nreclass;++iclass)
+        for(short iclass=0;iclass<nclass;++iclass)
           prOut[iclass][icol]=0;
         //----------------------------------- classification -------------------
         for(int ibag=0;ibag<nbag;++ibag){
@@ -900,9 +797,9 @@ int main(int argc, char *argv[])
           // x[fpixel[icol].size()].index=-1;//to end svm feature vector
           x[nband].index=-1;//to end svm feature vector
           double predict_label=0;
-          vector<float> prValues(nreclass);
+          vector<float> prValues(nclass);
           float maxP=0;
-          if(!aggreg_opt[0]){
+          if(!prob_est_opt[0]){
             predict_label = svm_predict(svm[ibag],x);
             for(short iclass=0;iclass<nclass;++iclass){
               if(iclass==static_cast<short>(predict_label))
@@ -915,35 +812,39 @@ int main(int argc, char *argv[])
             assert(svm_check_probability_model(svm[ibag]));
             predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
           }
-
-	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
-	  
-          for(short iclass=0;iclass<nreclass;++iclass)
           //calculate posterior prob of bag 
           if(classBag_opt.size()){
             //search for max prob within bag
             maxP=0;
             classBag[ibag][icol]=0;
           }
-          for(short iclass=0;iclass<nreclass;++iclass){
+          for(short iclass=0;iclass<nclass;++iclass){
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
-              prOut[iclass][icol]+=prValues[iclass]+static_cast<float>(1.0-nbag)/nbag*priorsReclass[iclass];//add probabilities for each bag
+              // prOut[iclass][icol]+=prValues[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
+              prOut[iclass][icol]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
               break;
             case(1)://product rule
-              prOut[iclass][icol]*=pow(priorsReclass[iclass],static_cast<float>(1.0-nbag)/nbag)*prValues[iclass];//add probabilities for each bag
+              // prOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*prValues[iclass];//add probabilities for each bag
+              prOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
               break;
             case(2)://max rule
-              if(prValues[iclass]>prOut[iclass][icol])
-                prOut[iclass][icol]=prValues[iclass];
+              // if(prValues[iclass]>prOut[iclass][icol])
+              //   prOut[iclass][icol]=prValues[iclass];
+              if(result[iclass]>prOut[iclass][icol])
+                prOut[iclass][icol]=result[iclass];
               break;
             }
             if(classBag_opt.size()){
               //search for max prob within bag
-              if(prValues[iclass]>maxP){
-                maxP=prValues[iclass];
-                classBag[ibag][icol]=vcode[iclass];
+              // if(prValues[iclass]>maxP){
+              //   maxP=prValues[iclass];
+              //   classBag[ibag][icol]=iclass;
+              // }
+              if(result[iclass]>maxP){
+                maxP=result[iclass];
+                classBag[ibag][icol]=iclass;
               }
             }
           }
@@ -954,10 +855,10 @@ int main(int argc, char *argv[])
         float maxBag1=0;//max probability
         float maxBag2=0;//second max probability
         float normBag=0;
-        for(short iclass=0;iclass<nreclass;++iclass){
+        for(short iclass=0;iclass<nclass;++iclass){
           if(prOut[iclass][icol]>maxBag1){
             maxBag1=prOut[iclass][icol];
-            classOut[icol]=vcode[iclass];
+            classOut[icol]=classValueMap[cm.getClass(iclass)];
           }
 	  else if(prOut[iclass][icol]>maxBag2)
             maxBag2=prOut[iclass][icol];
@@ -965,7 +866,7 @@ int main(int argc, char *argv[])
         }
         //normalize prOut and convert to percentage
         entropy[icol]=0;
-        for(short iclass=0;iclass<nreclass;++iclass){
+        for(short iclass=0;iclass<nclass;++iclass){
           float prv=prOut[iclass][icol];
           prv/=normBag;
           entropy[icol]-=prv*log(prv)/log(2);
@@ -973,7 +874,7 @@ int main(int argc, char *argv[])
             
           prOut[iclass][icol]=static_cast<short>(prv+0.5);
         }
-        entropy[icol]/=log(nreclass)/log(2);
+        entropy[icol]/=log(nclass)/log(2);
         entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
 	// float maxDiff=maxBag1-maxBag2;
 	// if(active_opt.size()&&maxDiff){
@@ -1003,7 +904,7 @@ int main(int argc, char *argv[])
         for(int ibag=0;ibag<nbag;++ibag)
           classImageBag.writeData(classBag[ibag],GDT_Byte,iline,ibag);
       if(prob_opt.size()){
-        for(short iclass=0;iclass<nreclass;++iclass)
+        for(short iclass=0;iclass<nclass;++iclass)
           probImage.writeData(prOut[iclass],GDT_Float32,iline,iclass);
       }
       if(entropy_opt.size()){
@@ -1047,19 +948,25 @@ int main(int argc, char *argv[])
     classImageOut.close();
   }
   else{//classify shape file
+    cm.clearResults();
+
     //notice that fields have already been set by readDataImageShape (taking into account appropriate bands)
     for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
-      assert(output_opt.size()==input_opt.size());
+      if(output_opt.size())
+	assert(output_opt.size()==input_opt.size());
       if(verbose_opt[0])
         std::cout << "opening img reader " << input_opt[ivalidation] << std::endl;
       ImgReaderOgr imgReaderOgr(input_opt[ivalidation]);
-      if(verbose_opt[0])
-        std::cout << "opening img writer and copying fields from img reader" << output_opt[ivalidation] << std::endl;
-      ImgWriterOgr imgWriterOgr(output_opt[ivalidation],imgReaderOgr,false);
-      if(verbose_opt[0])
-        std::cout << "creating field class" << std::endl;
-      imgWriterOgr.createField("class",OFTInteger);
-      // imgWriterOgr.createField("class",OFTString);
+      ImgWriterOgr imgWriterOgr;
+
+      if(output_opt.size()){
+	if(verbose_opt[0])
+	  std::cout << "opening img writer and copying fields from img reader" << output_opt[ivalidation] << std::endl;
+	imgWriterOgr.open(output_opt[ivalidation],imgReaderOgr);
+	if(verbose_opt[0])
+	  std::cout << "creating field class" << std::endl;
+	imgWriterOgr.createField("class",OFTString);
+      }
       OGRFeature *poFeature;
       unsigned int ifeature=0;
       unsigned int nFeatures=imgReaderOgr.getFeatureCount();
@@ -1069,22 +976,23 @@ int main(int argc, char *argv[])
         if( poFeature == NULL )
           break;
         OGRFeature *poDstFeature = NULL;
-        poDstFeature=imgWriterOgr.createFeature();
-        if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
-          CPLError( CE_Failure, CPLE_AppDefined,
-                    "Unable to translate feature %d from layer %s.\n",
-                    poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
-          OGRFeature::DestroyFeature( poFeature );
-          OGRFeature::DestroyFeature( poDstFeature );
-        }
+	if(output_opt.size()){
+	  poDstFeature=imgWriterOgr.createFeature();
+	  if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
+	    CPLError( CE_Failure, CPLE_AppDefined,
+		      "Unable to translate feature %d from layer %s.\n",
+		      poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
+	    OGRFeature::DestroyFeature( poFeature );
+	    OGRFeature::DestroyFeature( poDstFeature );
+	  }
+	}
         vector<float> validationPixel;
         vector<float> validationFeature;
         
         imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature);
-        OGRFeature::DestroyFeature( poFeature );
         assert(validationPixel.size()==nband);
-        vector<float> prOut(nreclass);//posterior prob for each reclass
-        for(short iclass=0;iclass<nreclass;++iclass)
+        vector<float> prOut(nclass);//posterior prob for each reclass
+        for(short iclass=0;iclass<nclass;++iclass)
           prOut[iclass]=0;
         for(int ibag=0;ibag<nbag;++ibag){
           for(int iband=0;iband<nband;++iband){
@@ -1103,11 +1011,12 @@ int main(int argc, char *argv[])
             x[i].index=i+1;
             x[i].value=validationFeature[i];
           }
+
           x[validationFeature.size()].index=-1;//to end svm feature vector
           double predict_label=0;
           // vector<float> pValues(nclass);
-          vector<float> prValues(nreclass);
-          if(!aggreg_opt[0]){
+          vector<float> prValues(nclass);
+          if(!prob_est_opt[0]){
             predict_label = svm_predict(svm[ibag],x);
             for(short iclass=0;iclass<nclass;++iclass){
               if(iclass==static_cast<short>(predict_label))
@@ -1120,36 +1029,28 @@ int main(int argc, char *argv[])
             assert(svm_check_probability_model(svm[ibag]));
             predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
           }
-          
           if(verbose_opt[0]>1)
             std::cout << "predict_label: " << predict_label << std::endl;
           if(verbose_opt[0]>1){
-            std::cout << "result before reclass: " << std::endl;
             for(int iclass=0;iclass<result.size();++iclass)
               std::cout << result[iclass] << " ";
             std::cout << std::endl;
           }
-	  reclass(result,vreclass,priors,aggreg_opt[0],prValues);
-          if(verbose_opt[0]>1){
-            std::cout << "prValues after reclass: " << std::endl;
-            for(int iclass=0;iclass<prValues.size();++iclass)
-              std::cout << prValues[iclass] << " ";
-            std::cout << std::endl;
-          }
+	  // reclass(result,vreclass,priors,aggreg_opt[0],prValues);
 
           //calculate posterior prob of bag 
-          for(short iclass=0;iclass<nreclass;++iclass){
+          for(short iclass=0;iclass<nclass;++iclass){
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
-              prOut[iclass]+=prValues[iclass]+static_cast<float>(1.0-nbag)/nbag*priorsReclass[iclass];//add probabilities for each bag
+              prOut[iclass]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
               break;
             case(1)://product rule
-              prOut[iclass]*=pow(priorsReclass[iclass],static_cast<float>(1.0-nbag)/nbag)*prValues[iclass];//add probabilities for each bag
+              prOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
               break;
             case(2)://max rule
-              if(prValues[iclass]>prOut[iclass])
-                prOut[iclass]=prValues[iclass];
+              if(result[iclass]>prOut[iclass])
+                prOut[iclass]=result[iclass];
               break;
             }
           }
@@ -1159,20 +1060,21 @@ int main(int argc, char *argv[])
         //search for max class prob
         float maxBag=0;
         float normBag=0;
-        short classOut=0;
-        for(short iclass=0;iclass<nreclass;++iclass){
+        string classOut="Unclassified";
+        for(short iclass=0;iclass<nclass;++iclass){
           if(verbose_opt[0]>1)
             std::cout << prOut[iclass] << " ";
           if(prOut[iclass]>maxBag){
             maxBag=prOut[iclass];
-            classOut=vcode[iclass];
+            classOut=cm.getClass(iclass);
+	    //test
+	    assert(iclass==cm.getClassIndex(cm.getClass(iclass)));
           }
           // normBag+=prOut[iclass];
         }
         //look for class name
-        //todo: write class name to field "class" in output ogr file
         if(verbose_opt[0]>1)
-          std::cout << "->" << static_cast<short>(classOut) << std::endl;
+          std::cout << "->" << classOut << std::endl;
         //normalize prOut and convert to percentage
         // for(int iclass=0;iclass<nreclass;++iclass){
         //   float prv=prOut[iclass];
@@ -1180,24 +1082,57 @@ int main(int argc, char *argv[])
         //   prv*=100.0;
         //   prOut[iclass]=static_cast<short>(prv+0.5);
         // }
-        poDstFeature->SetField("class",classOut);
-        poDstFeature->SetFID( poFeature->GetFID() );
+	if(output_opt.size()){
+	  poDstFeature->SetField("class",classOut.c_str());
+	  poDstFeature->SetFID( poFeature->GetFID() );
+	}
+	int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
+	if(labelIndex>=0){
+	  string classRef=poFeature->GetFieldAsString(labelIndex);
+	  // //test
+	  // std::cout << classRef << "->" << type2string<int>(classRef) << std::endl;
+	  // std::cout << classOut << "->" << type2string<int>(classOut) << std::endl;
+	  cm.incrementResult(classRef,classOut,1);
+	}
         CPLErrorReset();
-        if(imgWriterOgr.createFeature( poDstFeature ) != OGRERR_NONE){
-          CPLError( CE_Failure, CPLE_AppDefined,
-                    "Unable to translate feature %d from layer %s.\n",
-                    poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
-          OGRFeature::DestroyFeature( poDstFeature );
-          OGRFeature::DestroyFeature( poDstFeature );
-        }
+	if(output_opt.size()){
+	  if(imgWriterOgr.createFeature( poDstFeature ) != OGRERR_NONE){
+	    CPLError( CE_Failure, CPLE_AppDefined,
+		      "Unable to translate feature %d from layer %s.\n",
+		      poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
+	    OGRFeature::DestroyFeature( poDstFeature );
+	    OGRFeature::DestroyFeature( poDstFeature );
+	  }
+	}
         ++ifeature;
         if(!verbose_opt[0]){
           progress=static_cast<float>(ifeature+1.0)/nFeatures;
           pfnProgress(progress,pszMessage,pProgressArg);
         }
+        OGRFeature::DestroyFeature( poFeature );
+        OGRFeature::DestroyFeature( poDstFeature );
       }
       imgReaderOgr.close();
-      imgWriterOgr.close();
+      if(output_opt.size())
+	imgWriterOgr.close();
+    }
+    if(cm.nReference()){
+      std::cout << cm << std::endl;
+      cout << "class #samples userAcc prodAcc" << endl;
+      double se95_ua=0;
+      double se95_pa=0;
+      double se95_oa=0;
+      double dua=0;
+      double dpa=0;
+      double doa=0;
+      for(short iclass=0;iclass<cm.nClasses();++iclass){
+	dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
+	dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+	cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+      }
+      std::cout << "Kappa: " << cm.kappa() << std::endl;
+      doa=cm.oa_pct(&se95_oa);
+      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
     }
   }
   try{

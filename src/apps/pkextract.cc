@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
   Optionpk<int> invalid_opt("f", "flag", "Mask value where image is invalid. If a single mask is used, more flags can be set. If more masks are used, use one value for each mask.", 1);
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or 0 to extract all non-flagged pixels from sample file", 0);
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)", "");
+  Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
   Optionpk<bool> keepFeatures_opt("k", "keep", "Keep original features in output vector file", false);
   Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file", "");
   Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
@@ -69,6 +70,7 @@ int main(int argc, char *argv[])
     invalid_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    test_opt.retrieveOption(argc,argv);
     keepFeatures_opt.retrieveOption(argc,argv);
     bufferOutput_opt.retrieveOption(argc,argv);
     geo_opt.retrieveOption(argc,argv);
@@ -383,17 +385,17 @@ int main(int argc, char *argv[])
                 double p=static_cast<double>(random())/(RAND_MAX);
                 p*=100.0;
                 if(p>theThreshold)
-                  continue;//do not select for now, go to next column
+		  continue;//do not select for now, go to next column
               }
               else{//absolute value
                 if(nvalid[processClass]>-theThreshold)
-                  continue;//do not select any more pixels for this class, go to next column to search for other classes
+		    continue;//do not select any more pixels for this class, go to next column to search for other classes
               }
-              writeBuffer.push_back(sample);
-              writeBufferClass.push_back(theClass);
-              ++ntotalvalid;
-              ++(nvalid[processClass]);
-            }
+	      writeBuffer.push_back(sample);
+	      writeBufferClass.push_back(theClass);
+	      ++ntotalvalid;
+	      ++(nvalid[processClass]);
+	    }
             else{
               ++ntotalinvalid;
               ++(ninvalid[processClass]);
@@ -722,7 +724,10 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>1)
         std::cout << "creating image sample writer " << output_opt[0] << std::endl;
       ImgWriterOgr ogrWriter;
+      ImgWriterOgr ogrTestWriter;
       ogrWriter.open(output_opt[0]);
+      if(test_opt.size())
+	 ogrTestWriter.open(test_opt[0]);
       char     **papszOptions=NULL;
       ostringstream slayer;
       slayer << "training data";
@@ -731,13 +736,19 @@ int main(int argc, char *argv[])
         if(verbose_opt[0])
           std::cout << "create polygons" << std::endl;
         ogrWriter.createLayer(layername, imgReader.getProjection(), wkbPolygon, papszOptions);
+	if(test_opt.size())
+	   ogrTestWriter.createLayer(layername, imgReader.getProjection(), wkbPolygon, papszOptions);
       }
       else{
         if(verbose_opt[0])
           std::cout << "create points" << std::endl;
         ogrWriter.createLayer(layername, imgReader.getProjection(), wkbPoint, papszOptions);
+	if(test_opt.size())
+	   ogrTestWriter.createLayer(layername, imgReader.getProjection(), wkbPoint, papszOptions);
       }
       ogrWriter.copyFields(sampleReader);
+      if(test_opt.size())
+	ogrTestWriter.copyFields(sampleReader);
       vector<std::string> fieldnames;
       sampleReader.getFields(fieldnames);
       assert(fieldnames.size()==ogrWriter.getFieldCount());
@@ -756,12 +767,17 @@ int main(int argc, char *argv[])
       case(3):
       case(4):
         ogrWriter.createField(label_opt[0],fieldType);
+      if(test_opt.size())
+	ogrTestWriter.createField(label_opt[0],fieldType);
         break;
       case(0):
       case(1):
       default:{
-        if(keepFeatures_opt[0])
+        if(keepFeatures_opt[0]){
           ogrWriter.createField("origId",OFTInteger);//the fieldId of the original feature
+	  if(test_opt.size())
+	    ogrTestWriter.createField("origId",OFTInteger);
+	}
         for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
           for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
             if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
@@ -777,16 +793,21 @@ int main(int argc, char *argv[])
                 std::cout << "creating field " << fs.str() << std::endl;
 
               ogrWriter.createField(fs.str(),fieldType);
+	      if(test_opt.size())
+		ogrTestWriter.createField(fs.str(),fieldType);
             }
           }
-        }
+	}
         break;
       }
       }
       OGRLayer  *readLayer;
       readLayer = sampleReader.getDataSource()->GetLayer(0);
       OGRLayer *writeLayer;
+      OGRLayer *writeTestLayer;
       writeLayer=ogrWriter.getDataSource()->GetLayer(0);
+      if(test_opt.size())
+	writeTestLayer=ogrTestWriter.getDataSource()->GetLayer(0);
       readLayer->ResetReading();
       OGRFeature *readFeature;
       int isample=0;
@@ -794,6 +815,7 @@ int main(int argc, char *argv[])
       unsigned long int nfeature=sampleReader.getFeatureCount();
       ImgWriterOgr boxWriter;
       if(rbox_opt[0]>0||cbox_opt[0]>0){
+	assert(test_opt.empty());//not implemented
         if(verbose_opt[0]>1)
           std::cout << "opening box writer " << bufferOutput_opt[0] << std::endl;
         boxWriter.open(bufferOutput_opt[0]);
@@ -808,17 +830,25 @@ int main(int argc, char *argv[])
       progress=0;
       pfnProgress(progress,pszMessage,pProgressArg);
       while( (readFeature = readLayer->GetNextFeature()) != NULL ){
+	bool writeTest=false;//write this feature to test_opt[0] instead of output_opt
         if(verbose_opt[0]>0)
           std::cout << "reading feature " << readFeature->GetFID() << std::endl;
         if(threshold_opt[0]>0){//percentual value
           double p=static_cast<double>(random())/(RAND_MAX);
           p*=100.0;
-          if(p>threshold_opt[0])
-            continue;//do not select for now, go to next feature
+          if(p>threshold_opt[0]){
+	    if(test_opt.size())
+	      writeTest=true;
+	    else
+	      continue;//do not select for now, go to next feature
+	  }
         }
         else{//absolute value
           if(ntotalvalid>-threshold_opt[0]){
-            continue;//do not select any more pixels, go to next column feature
+	    if(test_opt.size())
+	      writeTest=true;
+	    else
+	      continue;//do not select any more pixels, go to next column feature
           }
         }
         if(verbose_opt[0]>0)
@@ -918,6 +948,7 @@ int main(int argc, char *argv[])
               continue;
 
             if(rbox_opt[0]){
+	      assert(test_opt.empty());//not implemented
               vector< vector<OGRPoint*> > points;
               points.resize(rbox_opt.size());
               if(verbose_opt[0]>1)
@@ -980,7 +1011,11 @@ int main(int argc, char *argv[])
             }
       
             OGRFeature *writeFeature;
-            writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+
+	    if(writeTest)
+	      writeFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+	    else
+	      writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             if(verbose_opt[0]>1)
               std::cout << "copying fields from points " << sample_opt[0] << std::endl;
             if(writeFeature->SetFrom(readFeature)!= OGRERR_NONE)
@@ -1052,10 +1087,18 @@ int main(int argc, char *argv[])
               writeFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
             if(verbose_opt[0]>1)
               std::cout << "creating point feature" << std::endl;
-            if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-              std::string errorString="Failed to create feature in shapefile";
-              throw(errorString);
-            }
+	    if(writeTest){
+	      if(writeTestLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
+		std::string errorString="Failed to create feature in shapefile";
+		throw(errorString);
+	      }
+	    }
+	    else{
+	      if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
+		std::string errorString="Failed to create feature in shapefile";
+		throw(errorString);
+	      }
+	    }
             OGRFeature::DestroyFeature( writeFeature );
             ++isample;
             ++ntotalvalid;
@@ -1121,10 +1164,17 @@ int main(int argc, char *argv[])
 
             int nPointPolygon=0;
             if(polygon_opt[0]){
-              writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	      if(writeTest)
+		writePolygonFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+	      else
+		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             }
-            else if(rule_opt[0]==1)
-              writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+            else if(rule_opt[0]==1){
+	      if(writeTest)
+		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+	      else
+		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	    }
             //previously here
             vector<double> polyValues;
             switch(rule_opt[0]){
@@ -1244,7 +1294,10 @@ int main(int argc, char *argv[])
                   if(!polygon_opt[0]){
                     //create feature
                     if(rule_opt[0]!=1){//do not create in case of mean value (only create point at centroid
-                      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+		      if(writeTest)
+			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+		      else
+			writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
                       if(verbose_opt[0]>1)
                         std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
                       if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
@@ -1336,10 +1389,18 @@ int main(int argc, char *argv[])
                       //write feature
                       if(verbose_opt[0]>1)
                         std::cout << "creating point feature" << std::endl;
-                      if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-                        std::string errorString="Failed to create feature in shapefile";
-                        throw(errorString);
-                      }
+		      if(writeTest){
+			if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
+			  std::string errorString="Failed to create feature in test shapefile";
+			  throw(errorString);
+			}
+		      }
+		      else{
+			if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
+			  std::string errorString="Failed to create feature in shapefile";
+			  throw(errorString);
+			}
+		      }
                       //destroy feature
                       OGRFeature::DestroyFeature( writePointFeature );
 		      ++ntotalvalid;
@@ -1676,10 +1737,17 @@ int main(int argc, char *argv[])
 
             int nPointPolygon=0;
             if(polygon_opt[0]){
-              writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	      if(writeTest)
+		writePolygonFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+	      else
+		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             }
-            else if(rule_opt[0]==1)
-              writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+            else if(rule_opt[0]==1){
+	      if(writeTest)
+		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+	      else
+		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	    }
             //previously here
             vector<double> polyValues;
             switch(rule_opt[0]){
@@ -1799,7 +1867,10 @@ int main(int argc, char *argv[])
                   if(!polygon_opt[0]){
                     //create feature
                     if(rule_opt[0]!=1){//do not create in case of mean value (only create point at centroid
-                      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+		      if(writeTest)
+			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+		      else
+			writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
                       if(verbose_opt[0]>1)
                         std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
                       if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
@@ -1889,10 +1960,18 @@ int main(int argc, char *argv[])
                       //write feature
                       if(verbose_opt[0]>1)
                         std::cout << "creating point feature" << std::endl;
-                      if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-                        std::string errorString="Failed to create feature in shapefile";
-                        throw(errorString);
-                      }
+		      if(writeTest){
+			if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
+			  std::string errorString="Failed to create feature in shapefile";
+			  throw(errorString);
+			}
+		      }
+		      else{
+			if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
+			  std::string errorString="Failed to create feature in shapefile";
+			  throw(errorString);
+			}
+		      }
                       //destroy feature
                       OGRFeature::DestroyFeature( writePointFeature );
                     }
@@ -2136,42 +2215,58 @@ int main(int argc, char *argv[])
                   writePolygonFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
                 if(verbose_opt[0]>1)
                   std::cout << "creating polygon feature" << std::endl;
-                if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-                  std::string errorString="Failed to create polygon feature in shapefile";
-                  throw(errorString);
-                }
+		if(writeTest){
+		  if(writeTestLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create polygon feature in shapefile";
+		    throw(errorString);
+		  }
+		}
+		else{
+		  if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create polygon feature in shapefile";
+		    throw(errorString);
+		  }
+		}
                 OGRFeature::DestroyFeature( writePolygonFeature );
 		++ntotalvalid;
 		if(verbose_opt[0])
 		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
-              }
+	      }
               else{
                 if(keepFeatures_opt[0])
                   writeCentroidFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
                 if(verbose_opt[0]>1)
                   std::cout << "creating point feature in centroid" << std::endl;
-                if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-                  std::string errorString="Failed to create point feature in shapefile";
-                  throw(errorString);
-                }
+		if(writeTest){
+		  if(writeTestLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create point feature in shapefile";
+		    throw(errorString);
+		  }
+		}
+		else{
+		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create point feature in shapefile";
+		    throw(errorString);
+		  }
+		}
                 OGRFeature::DestroyFeature( writeCentroidFeature );
 		++ntotalvalid;
 		if(verbose_opt[0])
 		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
-              }
-            }
-          }
+	      }
+	    }
+	  }
           else{
             std::string test;
             test=poGeometry->getGeometryName();
             ostringstream oss;
             oss << "geometry " << test << " not supported";
             throw(oss.str());
-          }
+	  }
           ++ifeature;
           progress=static_cast<float>(ifeature+1)/nfeature;
           pfnProgress(progress,pszMessage,pProgressArg);
-        }
+	}
         catch(std::string e){
           std::cout << e << std::endl;
           continue;
@@ -2180,8 +2275,9 @@ int main(int argc, char *argv[])
       if(rbox_opt[0]>0||cbox_opt[0]>0)
         boxWriter.close();
       ogrWriter.close();
+      if(test_opt.size())
+	ogrTestWriter.close();
     }
   imgReader.close();
 }
-
   
