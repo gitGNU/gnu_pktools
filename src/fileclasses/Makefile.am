@@ -11,7 +11,7 @@ noinst_LIBRARIES = libfileClasses.a
 # where to install the headers on the system
 libfileClasses_adir = $(includedir)/fileclasses
 # the list of header files that belong to the library (to be installed later)
-libfileClasses_a_HEADERS = FileReaderLas.h
+libfileClasses_a_HEADERS = FileReaderLas.h FileReaderAscii.h
 # the sources to add to the library and to add to the source distribution
 libfileClasses_a_SOURCES = $(libfileClasses_a_HEADERS) FileReaderLas.cc
 endif

@@ -22,6 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <math.h>
 #include "base/Optionpk.h"
+#include "fileclasses/FileReaderAscii.h"
 #include "algorithms/Histogram.h"
 
 using namespace std;
@@ -30,8 +31,9 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i","input","name of the input text file","");
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
+  Optionpk<char> comment_opt("comment","comment","comment character",'#');
   Optionpk<bool> output_opt("o","output","output the selected columns",false);
-  Optionpk<short> col_opt("c", "column", "column nr, starting from 0", 0);
+  Optionpk<int> col_opt("c", "column", "column nr, starting from 0", 0);
   Optionpk<int> range_opt("r", "range", "rows to start/end reading. Use -r 1 -r 10 to read first 10 rows where first row is header. Use 0 to read all rows with no header.", 0);
   Optionpk<bool> size_opt("size","size","sample size",false);
   Optionpk<bool> mean_opt("m","mean","calculate mean value",false);
@@ -42,8 +44,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
   Optionpk<bool> sum_opt("s","sum","calculate sum of column",false);
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
-  Optionpk<double> min_opt("min","min","calculate minimum value",0);
-  Optionpk<double> max_opt("max","max","calculate maximum value",0);
+  Optionpk<double> min_opt("min","min","set minimum value",0);
+  Optionpk<double> max_opt("max","max","set maximum value",0);
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<short> nbin_opt("bin","bin","number of bins to calculate histogram",10);
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
@@ -56,6 +58,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     fs_opt.retrieveOption(argc,argv);
+    comment_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     col_opt.retrieveOption(argc,argv);
     range_opt.retrieveOption(argc,argv);
@@ -89,95 +92,23 @@ int main(int argc, char *argv[])
 
   vector< vector<double> > dataVector(col_opt.size());
   vector< vector<int> > histVector(col_opt.size());
-  ifstream dataFile;
-  if(verbose_opt[0])
-    cout << "opening file " << input_opt[0] << endl;
-  dataFile.open(input_opt[0].c_str());
 
-  int nrow=0;
-  bool withinRange=true;
-  
-  if(fs_opt[0]>' '&&fs_opt[0]<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
-  // if(input_opt[0].find(".csv")!=string::npos){
-    if(verbose_opt[0])
-      cout << "reading csv file " << input_opt[0] << endl;
-    string csvRecord;
-    while(getline(dataFile,csvRecord)){//read a line
-      withinRange=true;
-      if(nrow<range_opt[0])
-        withinRange=false;
-      if(range_opt.size()>1)
-        if(nrow>range_opt[1])
-          withinRange=false;
-      if(withinRange){
-        istringstream csvstream(csvRecord);
-        string item;
-        int ncol=0;
-        while(getline(csvstream,item,fs_opt[0])){//read a column
-          if(verbose_opt[0])
-            cout << item << " ";
-          for(int icol=0;icol<col_opt.size();++icol){
-            if(ncol==col_opt[icol]){
-              double value=atof(item.c_str());
-              if((value>=min_opt[0]&&value<=max_opt[0])||max_opt[0]<=min_opt[0])
-                dataVector[icol].push_back(value);
-            }
-          }
-          ++ncol;
-        }
-        if(verbose_opt[0])
-          cout << endl;
-        assert(ncol>=col_opt[0]);
-      }
-      ++nrow;
-    }
-    assert(dataVector.size());
-  }
-  else{//space or tab delimited fields
-    string spaceRecord;
-    while(!getline(dataFile, spaceRecord).eof()){
-      withinRange=true;
-      if(nrow<range_opt[0])
-        withinRange=false;
-      if(range_opt.size()>1)
-        if(nrow>range_opt[1])
-          withinRange=false;
-      if(withinRange){
-        if(verbose_opt[0]>1)
-          cout << spaceRecord << endl;
-        istringstream lineStream(spaceRecord);
-        string item;
-        int ncol=0;
-        while(lineStream >> item){
-          if(verbose_opt[0]>1)
-            cout << item << " ";
-          istringstream itemStream(item);
-          double value;
-          itemStream >> value;
-          for(int icol=0;icol<col_opt.size();++icol){
-            if(ncol==col_opt[icol]){
-              if((value>=min_opt[0]&&value<=max_opt[0])||max_opt[0]<=min_opt[0])
-                dataVector[icol].push_back(value);
-            }
-          }
-          ++ncol;
-        }
-        if(verbose_opt[0]>1)
-          cout << endl;
-        if(verbose_opt[0])
-          cout << "number of columns: " << ncol << endl;
-        assert(ncol>=col_opt[0]);
-      }
-      ++nrow;
-    }
-  }
+  FileReaderAscii asciiReader(input_opt[0]);
+  asciiReader.setFieldSeparator(fs_opt[0]);
+  asciiReader.setComment(comment_opt[0]);
+  asciiReader.setMinRow(range_opt[0]);
+  if(range_opt.size()>1)
+    asciiReader.setMaxRow(range_opt[1]);
+  asciiReader.readData(dataVector,col_opt);
   assert(dataVector.size());
-  dataFile.close();
   double minValue=min_opt[0];
   double maxValue=max_opt[0];
   Histogram hist;
   for(int icol=0;icol<col_opt.size();++icol){
-    assert(dataVector[icol].size());
+    if(!dataVector[icol].size()){
+      std::cerr << "Warning: dataVector[" << icol << "] is empty" << std::endl;
+      continue;
+    }
     if(size_opt[0])
       cout << "sample size column " << col_opt[icol] << ": " << dataVector[icol].size() << endl;
     if(mean_opt[0])
