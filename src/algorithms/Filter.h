@@ -22,7 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 #include <iostream>
-#include "Histogram.h"
+#include "StatFactory.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
@@ -89,8 +89,8 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
   assert(dim);
   output.resize((input.size()-offset+down-1)/down);
   int i=0;
-  Histogram hist;
-  vector<T> histBuffer;
+  statfactory::StatFactory stat;
+  vector<T> statBuffer;
   short binValue=0;
   //start: extend input with mirrored version of itself
   for(i=offset;i<dim/2;++i){
@@ -102,9 +102,9 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
       }
     }
     if(m_class.size())
-      histBuffer.push_back(binValue);
+      statBuffer.push_back(binValue);
     else
-      histBuffer.push_back(input[i]);
+      statBuffer.push_back(input[i]);
     for(int t=1;t<=dim/2;++t){
       binValue=0;
       for(int iclass=0;iclass<m_class.size();++iclass){
@@ -114,25 +114,25 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
         }
       }
       if(m_class.size()){
-        histBuffer.push_back(binValue);
-        histBuffer.push_back(binValue);
+        statBuffer.push_back(binValue);
+        statBuffer.push_back(binValue);
       }
       else{
-        histBuffer.push_back(input[i+t]);
-        histBuffer.push_back(input[i+t]);
+        statBuffer.push_back(input[i+t]);
+        statBuffer.push_back(input[i+t]);
       }
     }
-    assert(histBuffer.size()==dim);
+    assert(statBuffer.size()==dim);
     if((i-offset)%down){
-      histBuffer.clear();
+      statBuffer.clear();
       continue;
     }
     switch(method){
     case(DILATE):
-      output[(i-offset+down-1)/down]=hist.max(histBuffer);
+      output[(i-offset+down-1)/down]=stat.max(statBuffer);
       break;
     case(ERODE):
-      output[(i-offset+down-1)/down]=hist.min(histBuffer);
+      output[(i-offset+down-1)/down]=stat.min(statBuffer);
       break;
     default:
       string errorString="method not supported";
@@ -141,13 +141,13 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
     }
     if(verbose){
       cout << "buffer: ";
-      for(int ibuf=0;ibuf<histBuffer.size();++ibuf)
-        cout << histBuffer[ibuf] << " ";
+      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
+        cout << statBuffer[ibuf] << " ";
       cout << "->" << output[(i-offset+down-1)/down] << endl;
     }
   }
   //main
-  histBuffer.clear();
+  statBuffer.clear();
   for(i=offset+dim/2;i<input.size()-dim/2;++i){
     binValue=0;
     for(int t=0;t<dim;++t){
@@ -158,21 +158,21 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
         }
       }
       if(m_class.size())
-        histBuffer.push_back(binValue);
+        statBuffer.push_back(binValue);
       else
-        histBuffer.push_back(input[i-dim/2+t]);
+        statBuffer.push_back(input[i-dim/2+t]);
     }
-    assert(histBuffer.size()==dim);
+    assert(statBuffer.size()==dim);
     if((i-offset)%down){
-      histBuffer.clear();
+      statBuffer.clear();
       continue;
     }
     switch(method){
     case(DILATE):
-      output[(i-offset+down-1)/down]=hist.max(histBuffer);
+      output[(i-offset+down-1)/down]=stat.max(statBuffer);
       break;
     case(ERODE):
-      output[(i-offset+down-1)/down]=hist.min(histBuffer);
+      output[(i-offset+down-1)/down]=stat.min(statBuffer);
       break;
     default:
       string errorString="method not supported";
@@ -181,11 +181,11 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
     }
     if(verbose){
       cout << "buffer: ";
-      for(int ibuf=0;ibuf<histBuffer.size();++ibuf)
-        cout << histBuffer[ibuf] << " ";
+      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
+        cout << statBuffer[ibuf] << " ";
       cout << "->" << output[(i-offset+down-1)/down] << endl;
     }
-    histBuffer.clear();
+    statBuffer.clear();
   }
   //end: extend input with mirrored version of itself
   for(i=input.size()-dim/2;i<input.size();++i){
@@ -197,9 +197,9 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
         }
       }
       if(m_class.size())
-        histBuffer.push_back(binValue);
+        statBuffer.push_back(binValue);
       else
-        histBuffer.push_back(input[i]);
+        statBuffer.push_back(input[i]);
       for(int t=1;t<=dim/2;++t){
         binValue=0;
         for(int iclass=0;iclass<m_class.size();++iclass){
@@ -209,24 +209,24 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
           }
         }
         if(m_class.size()){
-          histBuffer.push_back(binValue);
-          histBuffer.push_back(binValue);
+          statBuffer.push_back(binValue);
+          statBuffer.push_back(binValue);
         }
         else{
-          histBuffer.push_back(input[i-t]);
-          histBuffer.push_back(input[i-t]);
+          statBuffer.push_back(input[i-t]);
+          statBuffer.push_back(input[i-t]);
         }
       }
     if((i-offset)%down){
-      histBuffer.clear();
+      statBuffer.clear();
       continue;
     }
     switch(method){
     case(DILATE):
-      output[(i-offset+down-1)/down]=hist.max(histBuffer);
+      output[(i-offset+down-1)/down]=stat.max(statBuffer);
       break;
     case(ERODE):
-      output[(i-offset+down-1)/down]=hist.min(histBuffer);
+      output[(i-offset+down-1)/down]=stat.min(statBuffer);
       break;
     default:
       string errorString="method not supported";
@@ -235,8 +235,8 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
     }
     if(verbose){
       cout << "buffer: ";
-      for(int ibuf=0;ibuf<histBuffer.size();++ibuf)
-        cout << histBuffer[ibuf] << " ";
+      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
+        cout << statBuffer[ibuf] << " ";
       cout << "->" << output[(i-offset+down-1)/down] << endl;
     }
   }

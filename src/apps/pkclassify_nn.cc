@@ -317,7 +317,6 @@ int main(int argc, char *argv[])
         assert(offset_opt.size()==nband);
       if(scale_opt.size()>1)
         assert(scale_opt.size()==nband);
-      Histogram hist;
       for(int iband=0;iband<nband;++iband){
         if(verbose_opt[0]>=1)
           cout << "scaling for band" << iband << endl;

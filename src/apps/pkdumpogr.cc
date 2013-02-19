@@ -23,7 +23,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
-#include "algorithms/Histogram.h"
 #include "pkdumpogr.h"
 
 int main(int argc, char *argv[])

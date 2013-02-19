@@ -27,7 +27,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
-#include "algorithms/Histogram.h"
+#include "algorithms/StatFactory.h"
 
 #ifndef PI
 #define PI 3.1415926535897932384626433832795
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
-  Histogram hist;
+  statfactory::StatFactory stat;
   Vector2d<unsigned int> posdata;
   unsigned long int nsample=0;
   unsigned long int ntotalvalid=0;
@@ -1590,8 +1590,8 @@ int main(int argc, char *argv[])
               case(2):{//proportion classes
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-                hist.normalize_pct(polyValues);
-                // hist.sum(polyValues);
+                stat.normalize_pct(polyValues);
+                // stat.sum(polyValues);
                 for(int index=0;index<polyValues.size();++index){
                   double theValue=polyValues[index];
                   ostringstream fs;
@@ -1607,7 +1607,7 @@ int main(int argc, char *argv[])
                 assert(polygon_opt[0]);//not implemented for points
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-                hist.normalize_pct(polyValues);
+                stat.normalize_pct(polyValues);
                 assert(polyValues.size()==2);//11:broadleaved, 12:coniferous
                 if(polyValues[0]>=75)//broadleaved
                   writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(11));
@@ -1633,7 +1633,7 @@ int main(int argc, char *argv[])
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 //search for min class
-                //todo: change to minClass=hist.max(class_opt) once Optionpk is implemented...
+                //todo: change to minClass=stat.max(class_opt) once Optionpk is implemented...
                 int minClass=class_opt[class_opt.size()-1];//!hard coded for now, maximum class is last entry in class_opt
                 for(int iclass=0;iclass<class_opt.size();++iclass){
                   if(polyValues[iclass]>0){
@@ -2151,8 +2151,8 @@ int main(int argc, char *argv[])
               case(2):{//proportion classes
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-                hist.normalize_pct(polyValues);
-                // hist.sum(polyValues);
+                stat.normalize_pct(polyValues);
+                // stat.sum(polyValues);
                 for(int index=0;index<polyValues.size();++index){
                   double theValue=polyValues[index];
                   ostringstream fs;
@@ -2168,7 +2168,7 @@ int main(int argc, char *argv[])
                 assert(polygon_opt[0]);//not implemented for points
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-                hist.normalize_pct(polyValues);
+                stat.normalize_pct(polyValues);
                 assert(polyValues.size()==2);//11:broadleaved, 12:coniferous
                 if(polyValues[0]>=75)//broadleaved
                   writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(11));
@@ -2194,7 +2194,7 @@ int main(int argc, char *argv[])
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 //search for min class
-                //todo: change to minClass=hist.max(class_opt) once Optionpk is implemented...
+                //todo: change to minClass=stat.max(class_opt) once Optionpk is implemented...
                 int minClass=class_opt[class_opt.size()-1];//!hard coded for now, maximum class is last entry in class_opt
                 for(int iclass=0;iclass<class_opt.size();++iclass){
                   if(polyValues[iclass]>0){

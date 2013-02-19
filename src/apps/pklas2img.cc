@@ -23,7 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "fileclasses/FileReaderLas.h"
-#include "algorithms/Histogram.h"
+#include "algorithms/StatFactory.h"
 #include "algorithms/Filter2d.h"
 
 int main(int argc,char **argv) {
@@ -316,7 +316,7 @@ int main(int argc,char **argv) {
   std::cout << "processing LiDAR points" << std::endl;
   progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  Histogram hist;
+  statfactory::StatFactory stat;
   //fill inputData in outputData
   if(composite_opt[0]=="profile"){
     assert(postFilter_opt[0]=="none");
@@ -332,17 +332,17 @@ int main(int argc,char **argv) {
       if(!inputData[irow][icol].size())
         outputData[irow][icol]=(static_cast<float>((flag_opt[0])));
       else{
-        Histogram hist;
+        statfactory::StatFactory stat;
         if(composite_opt[0]=="min")
-          outputData[irow][icol]=hist.min(inputData[irow][icol]);
+          outputData[irow][icol]=stat.min(inputData[irow][icol]);
         else if(composite_opt[0]=="max")
-          outputData[irow][icol]=hist.max(inputData[irow][icol]);
+          outputData[irow][icol]=stat.max(inputData[irow][icol]);
         else if(composite_opt[0]=="median")
-          outputData[irow][icol]=hist.median(inputData[irow][icol]);
+          outputData[irow][icol]=stat.median(inputData[irow][icol]);
         else if(composite_opt[0]=="mean")
-          outputData[irow][icol]=hist.mean(inputData[irow][icol]);
+          outputData[irow][icol]=stat.mean(inputData[irow][icol]);
         else if(composite_opt[0]=="sum")
-          outputData[irow][icol]=hist.sum(inputData[irow][icol]);
+          outputData[irow][icol]=stat.sum(inputData[irow][icol]);
         else if(composite_opt[0]=="first")
           outputData[irow][icol]=inputData[irow][icol][0];
         else if(composite_opt[0]=="last")
@@ -355,11 +355,11 @@ int main(int argc,char **argv) {
           }
           float min=0;
           float max=0;
-          hist.minmax(inputData[irow][icol],inputData[irow][icol].begin(),inputData[irow][icol].end(),min,max);
+          stat.minmax(inputData[irow][icol],inputData[irow][icol].begin(),inputData[irow][icol].end(),min,max);
           if(verbose_opt[0])
             std::cout << "min,max: " << min << "," << max << std::endl;
           if(max>min){
-            hist.percentiles(inputData[irow][icol],inputData[irow][icol].begin(),inputData[irow][icol].end(),profile,nband,min,max);
+            stat.percentiles(inputData[irow][icol],inputData[irow][icol].begin(),inputData[irow][icol].end(),profile,nband,min,max);
             assert(profile.size()==nband);
             for(int iband=0;iband<nband;++iband)
               outputProfile[iband][icol]=profile[iband];

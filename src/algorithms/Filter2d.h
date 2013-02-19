@@ -372,7 +372,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         break;
       }
       case(MIXED):{
-        enum Type { BF=11, CF=12, MF=13, NF=20, W=30 };
+        enum MixType { BF=11, CF=12, MF=13, NF=20, W=30 };
         double nBF=occurrence[BF];
         double nCF=occurrence[CF];
         double nMF=occurrence[MF];

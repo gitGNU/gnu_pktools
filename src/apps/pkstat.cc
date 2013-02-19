@@ -23,7 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include "base/Optionpk.h"
 #include "fileclasses/FileReaderAscii.h"
-#include "algorithms/Histogram.h"
+#include "algorithms/StatFactory.h"
 
 using namespace std;
 
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
   }
 
   vector< vector<double> > dataVector(col_opt.size());
-  vector< vector<int> > histVector(col_opt.size());
+  vector< vector<int> > statVector(col_opt.size());
 
   FileReaderAscii asciiReader(input_opt[0]);
   asciiReader.setFieldSeparator(fs_opt[0]);
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
   assert(dataVector.size());
   double minValue=min_opt[0];
   double maxValue=max_opt[0];
-  Histogram hist;
+  statfactory::StatFactory stat;
   for(int icol=0;icol<col_opt.size();++icol){
     if(!dataVector[icol].size()){
       std::cerr << "Warning: dataVector[" << icol << "] is empty" << std::endl;
@@ -112,56 +112,56 @@ int main(int argc, char *argv[])
     if(size_opt[0])
       cout << "sample size column " << col_opt[icol] << ": " << dataVector[icol].size() << endl;
     if(mean_opt[0])
-      cout << "mean value column " << col_opt[icol] << ": " << hist.mean(dataVector[icol]) << endl;
+      cout << "mean value column " << col_opt[icol] << ": " << stat.mean(dataVector[icol]) << endl;
     if(var_opt[0])
-      cout << "variance value column " << col_opt[icol] << ": " << hist.var(dataVector[icol]) << endl;
+      cout << "variance value column " << col_opt[icol] << ": " << stat.var(dataVector[icol]) << endl;
     if(stdev_opt[0])
-      cout << "standard deviation column " << col_opt[icol] << ": " << sqrt(hist.var(dataVector[icol])) << endl;
+      cout << "standard deviation column " << col_opt[icol] << ": " << sqrt(stat.var(dataVector[icol])) << endl;
     if(skewness_opt[0])
-      cout << "skewness value column " << col_opt[icol] << ": " << hist.skewness(dataVector[icol]) << endl;
+      cout << "skewness value column " << col_opt[icol] << ": " << stat.skewness(dataVector[icol]) << endl;
     if(kurtosis_opt[0])
-      cout << "kurtosis value column " << col_opt[icol] << ": " << hist.kurtosis(dataVector[icol]) << endl;
+      cout << "kurtosis value column " << col_opt[icol] << ": " << stat.kurtosis(dataVector[icol]) << endl;
     if(sum_opt[0]){
       cout << setprecision(2);
-      cout << fixed << "sum column " << col_opt[icol] << ": " << (hist.sum(dataVector[icol])) << endl;
+      cout << fixed << "sum column " << col_opt[icol] << ": " << (stat.sum(dataVector[icol])) << endl;
     }
     if(median_opt[0])
-      cout << "median value column " << col_opt[icol] << ": " << hist.median(dataVector[icol]) << endl;
+      cout << "median value column " << col_opt[icol] << ": " << stat.median(dataVector[icol]) << endl;
     if(minmax_opt[0]){
-      cout << "min value  column " << col_opt[icol] << ": " << hist.min(dataVector[icol]) << endl;
-      cout << "max value column " << col_opt[icol] << ": " << hist.max(dataVector[icol]) << endl;
+      cout << "min value  column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
+      cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
     }
     if(histogram_opt[0]){
       if(verbose_opt[0])
         std::cout << "calculating histogram for col " << icol << std::endl;
-      hist.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),histVector[icol],nbin_opt[0],minValue,maxValue);
+      stat.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),statVector[icol],nbin_opt[0],minValue,maxValue);
       if(verbose_opt[0])
         std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
     }
   }
   if(correlation_opt[0]){
     assert(dataVector.size()==2);
-    cout << "correlation between columns " << col_opt[0] << " and " << col_opt[1] << ": " << hist.correlation(dataVector[0],dataVector[1]) << endl;
+    cout << "correlation between columns " << col_opt[0] << " and " << col_opt[1] << ": " << stat.correlation(dataVector[0],dataVector[1]) << endl;
   }
   if(rmse_opt[0]){
     assert(dataVector.size()==2);
-    cout << "root mean square error between columns " << col_opt[0] << " and " << col_opt[1] << ": " << hist.rmse(dataVector[0],dataVector[1]) << endl;
+    cout << "root mean square error between columns " << col_opt[0] << " and " << col_opt[1] << ": " << stat.rmse(dataVector[0],dataVector[1]) << endl;
   }
   if(reg_opt[0]){
     assert(dataVector.size()==2);
     double c0=0;
     double c1=0;
-    double r2=hist.linear_regression(dataVector[0],dataVector[1],c0,c1);
+    double r2=stat.linear_regression(dataVector[0],dataVector[1],c0,c1);
     cout << "linear regression between columns: " << col_opt[0] << " and " << col_opt[1] << ": " << c0 << "+" << c1 << " * x " << " with R^2 (square correlation coefficient): " << r2 << endl;
   }
   if(histogram_opt[0]){
-    for(int irow=0;irow<histVector.begin()->size();++irow){
+    for(int irow=0;irow<statVector.begin()->size();++irow){
       std::cout << (maxValue-minValue)*irow/(nbin_opt[0]-1)+minValue << " ";
       for(int icol=0;icol<col_opt.size();++icol){
         if(relative_opt[0])
-          std::cout << 100.0*static_cast<double>(histVector[icol][irow])/static_cast<double>(dataVector[icol].size());
+          std::cout << 100.0*static_cast<double>(statVector[icol][irow])/static_cast<double>(dataVector[icol].size());
         else
-          std::cout << histVector[icol][irow];
+          std::cout << statVector[icol][irow];
         if(icol<col_opt.size()-1)
           cout << " ";
       }

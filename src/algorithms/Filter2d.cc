@@ -22,7 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <cmath>
 #include "Filter2d.h"
-#include "Histogram.h"
+#include "StatFactory.h"
 // #include "imageclasses/ImgUtils.h"
 
 Filter2d::Filter2d::Filter2d(void)
@@ -410,7 +410,7 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 {
   assert(dimX);
   assert(dimY);
-  Histogram hist;
+  statfactory::StatFactory stat;
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -506,41 +506,41 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=hist.median(windowBuffer);
+            outBuffer[x/down]=stat.median(windowBuffer);
           break;
         case(VAR):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=hist.var(windowBuffer);
+            outBuffer[x/down]=stat.var(windowBuffer);
           break;
         }
         case(STDEV):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=sqrt(hist.var(windowBuffer));
+            outBuffer[x/down]=sqrt(stat.var(windowBuffer));
           break;
         }
         case(MEAN):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=hist.mean(windowBuffer);
+            outBuffer[x/down]=stat.mean(windowBuffer);
           break;
         }
         case(MIN):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-           outBuffer[x/down]=hist.min(windowBuffer);
+           outBuffer[x/down]=stat.min(windowBuffer);
           break;
         }
         case(ISMIN):{
            if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=(hist.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+            outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
           break;
         }
         case(MINMAX):{
@@ -549,7 +549,7 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else{
-            hist.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
+            stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
             if(min!=max)
               outBuffer[x/down]=0;
             else
@@ -561,14 +561,14 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=hist.max(windowBuffer);
+            outBuffer[x/down]=stat.max(windowBuffer);
           break;
         }
         case(ISMAX):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=(hist.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+            outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
           break;
         }
         case(ORDER):{
@@ -577,15 +577,15 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           else{
             double lbound=0;
             double ubound=dimX*dimY;
-            double theMin=hist.min(windowBuffer);
-            double theMax=hist.max(windowBuffer);
+            double theMin=stat.min(windowBuffer);
+            double theMax=stat.max(windowBuffer);
             double scale=(ubound-lbound)/(theMax-theMin);
             outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
           }
           break;
         }
         case(SUM):{
-          outBuffer[x/down]=hist.sum(windowBuffer);
+          outBuffer[x/down]=stat.sum(windowBuffer);
           break;
         }
         case(HOMOG):
@@ -803,7 +803,7 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 {
   assert(dimX);
   assert(dimY);
-  Histogram hist;
+  statfactory::StatFactory stat;
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     vector<double> outBuffer(input.nrOfCol());
@@ -843,7 +843,7 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
       for(int x=0;x<input.nrOfCol();++x){
         double currentValue=inBuffer[dimY/2][x];
 	outBuffer[x]=currentValue;
-	vector<double> histBuffer;
+	vector<double> statBuffer;
 	bool currentMasked=false;
         double rse=0;
 	for(int imask=0;imask<m_mask.size();++imask){
@@ -925,19 +925,19 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 		  }
 		}
 		if(m_class.size())
-		  histBuffer.push_back(binValue);
+		  statBuffer.push_back(binValue);
 		else
-		  histBuffer.push_back(inBuffer[indexJ][indexI]);
+		  statBuffer.push_back(inBuffer[indexJ][indexI]);
 	      }
 	    }
           }
-	  if(histBuffer.size()){
+	  if(statBuffer.size()){
             switch(method){
             case(DILATE):
-              outBuffer[x]=hist.max(histBuffer);
+              outBuffer[x]=stat.max(statBuffer);
               break;
             case(ERODE):
-              outBuffer[x]=hist.min(histBuffer);
+              outBuffer[x]=stat.min(statBuffer);
               break;
             default:
               ostringstream ess;

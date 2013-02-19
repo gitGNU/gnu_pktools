@@ -12,7 +12,7 @@ noinst_LIBRARIES = libalgorithms.a
 libalgorithms_adir = $(includedir)/algorithms
 
 # the list of header files that belong to the library (to be installed later)
-libalgorithms_a_HEADERS = Egcs.h Filter2d.h Filter.h Histogram.h ConfusionMatrix.h svm.h FeatureSelector.h
+libalgorithms_a_HEADERS = Egcs.h Filter2d.h Filter.h StatFactory.h ConfusionMatrix.h svm.h FeatureSelector.h
 
 if USE_FANN
 libalgorithms_a_HEADERS += myfann_cpp.h
@@ -23,5 +23,5 @@ libalgorithms_a_HEADERS += SensorModel.h OptFactory.h
 endif
 
 # the sources to add to the library and to add to the source distribution
-libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc Filter2d.cc Filter.cc Histogram.cc ConfusionMatrix.cc svm.cpp
+libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc Filter2d.cc Filter.cc ConfusionMatrix.cc svm.cpp
 ###############################################################################

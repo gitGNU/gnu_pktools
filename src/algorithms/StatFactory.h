@@ -1,6 +1,6 @@
 /**********************************************************************
-Histogram.h: class for statistical operations on vectors
-Copyright (C) 2008-2012 Pieter Kempeneers
+StatFactory.h: class for statistical operations on vectors
+Copyright (C) 2008-2013 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -17,8 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-#ifndef _HISTOGRAM_H_
-#define _HISTOGRAM_H_
+#ifndef _STATFACTORY_H_
+#define _STATFACTORY_H_
 
 #include <iostream>
 #include <vector>
@@ -29,22 +29,21 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include <algorithm>
 #include <gsl/gsl_fit.h>
-//#include <gsl/gsl_errno.h>
-
-/* #include "newmat/newmat.h" */
-/* #include "newmat/newmatap.h" */
-/* #include "newmat/newmatio.h" */
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_spline.h>
 
 using namespace std;
 // using namespace NEWMAT;
 
-namespace histogram
+namespace statfactory
 {
+
+  enum INTERPOLATION_TYPE {UNDEFINED=0,POLYNOMIAL=1,CSPLINE=2,PERIODIC=3,AKIMA=4,AKIMA_PERIODIC=5,LINEAR=6};
       
-class Histogram{
+class StatFactory{
 public:
-  Histogram(void);
-  virtual ~Histogram(void){};
+  StatFactory(void){};
+  virtual ~StatFactory(void){};
   template<class T> T max(const vector<T>& v) const;
   template<class T> T min(const vector<T>& v) const;
 //   template<class T> typename vector<T>::const_iterator max(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const;
@@ -76,22 +75,16 @@ public:
   template<class T> double correlation(const vector<T>& x, const vector<T>& y, int delay=0) const;
   template<class T> double cross_correlation(const vector<T>& x, const vector<T>& y, int maxdelay, vector<T>& z) const;
   template<class T> double linear_regression(const vector<T>& x, const vector<T>& y, double &c0, double &c1) const;
+  template<class T> void interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type=0);
+  template<class T> void interpolateUp(const vector<T>& input, vector<T>& output, int nbin);
+  template<class T> void interpolateUp(double* input, int dim, vector<T>& output, int nbin);
+  template<class T> void interpolateDown(const vector<T>& input, vector<T>& output, int nbin);
+  template<class T> void interpolateDown(double* input, int dim, vector<T>& output, int nbin);
+
 private:
-  double F(double x);
-  double F_1(double y, double x1, double x2, double e);
 };
 
-// template<class T> typename vector<T>::const_iterator Histogram::max(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
-// {
-//   typename vector<T>::const_iterator tmpIt=begin;
-//   for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
-//     if(*tmpIt<*it)
-//       tmpIt=it;
-//   }
-//   return tmpIt;
-// }
-
-template<class T> typename vector<T>::iterator Histogram::max(const vector<T>& v, typename vector<T>::iterator begin, typename vector<T>::iterator end) const
+template<class T> typename vector<T>::iterator StatFactory::max(const vector<T>& v, typename vector<T>::iterator begin, typename vector<T>::iterator end) const
 {
   typename vector<T>::iterator tmpIt=begin;
   for (typename vector<T>::iterator it = begin; it!=end; ++it){
@@ -101,7 +94,7 @@ template<class T> typename vector<T>::iterator Histogram::max(const vector<T>& v
   return tmpIt;
 }
 
-template<class T> T Histogram::max(const vector<T>& v) const
+template<class T> T StatFactory::max(const vector<T>& v) const
 {
   T maxValue=*(v.begin());
   for (typename vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
@@ -111,7 +104,7 @@ template<class T> T Histogram::max(const vector<T>& v) const
   return maxValue;
 }
 
-template<class T> T Histogram::min(const vector<T>& v) const
+template<class T> T StatFactory::min(const vector<T>& v) const
 {
   T minValue=*(v.begin());
   for (typename vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
@@ -121,7 +114,7 @@ template<class T> T Histogram::min(const vector<T>& v) const
   return minValue;
 }
 
-template<class T> typename vector<T>::const_iterator Histogram::absmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
+template<class T> typename vector<T>::const_iterator StatFactory::absmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
 {
   typename vector<T>::const_iterator tmpIt=begin;
   for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
@@ -131,7 +124,7 @@ template<class T> typename vector<T>::const_iterator Histogram::absmax(const vec
   return tmpIt;
 }
 
-template<class T> typename vector<T>::const_iterator Histogram::min(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
+template<class T> typename vector<T>::const_iterator StatFactory::min(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
 {
   typename vector<T>::const_iterator tmpIt=begin;
   for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
@@ -141,7 +134,7 @@ template<class T> typename vector<T>::const_iterator Histogram::min(const vector
   return tmpIt;
 }
 
-template<class T> typename vector<T>::const_iterator Histogram::absmin(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
+template<class T> typename vector<T>::const_iterator StatFactory::absmin(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
 {
   typename vector<T>::const_iterator tmpIt=begin;
   for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
@@ -150,7 +143,7 @@ template<class T> typename vector<T>::const_iterator Histogram::absmin(const vec
   }
 }
 
-template<class T> void Histogram::minmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, T& theMin, T& theMax) const
+template<class T> void StatFactory::minmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, T& theMin, T& theMax) const
 {
   theMin=*begin;
   theMax=*begin;
@@ -162,7 +155,7 @@ template<class T> void Histogram::minmax(const vector<T>& v, typename vector<T>:
   }
 }
 
-template<class T> T Histogram::sum(const vector<T>& v) const
+template<class T> T StatFactory::sum(const vector<T>& v) const
 {
   typename vector<T>::const_iterator it;
   T tmpSum=0;
@@ -171,13 +164,13 @@ template<class T> T Histogram::sum(const vector<T>& v) const
   return tmpSum;
 }
 
-template<class T> double Histogram::mean(const vector<T>& v) const
+template<class T> double StatFactory::mean(const vector<T>& v) const
 {
   assert(v.size());
   return static_cast<double>(sum(v))/v.size();
 }
 
-template<class T> T Histogram::median(const vector<T>& v) const
+template<class T> T StatFactory::median(const vector<T>& v) const
 {
   vector<T> tmpV=v;
   sort(tmpV.begin(),tmpV.end());
@@ -187,7 +180,7 @@ template<class T> T Histogram::median(const vector<T>& v) const
     return 0.5*(tmpV[tmpV.size()/2-1]+tmpV[tmpV.size()/2]);
 }
 
-template<class T> double Histogram::var(const vector<T>& v) const
+template<class T> double StatFactory::var(const vector<T>& v) const
 {
   typename vector<T>::const_iterator it;
   double v1=0;
@@ -206,7 +199,7 @@ template<class T> double Histogram::var(const vector<T>& v) const
   return v1;
 }
 
-template<class T> double Histogram::moment(const vector<T>& v, int n) const
+template<class T> double StatFactory::moment(const vector<T>& v, int n) const
 {
   assert(v.size());
   typename vector<T>::const_iterator it;
@@ -219,7 +212,7 @@ template<class T> double Histogram::moment(const vector<T>& v, int n) const
 }
 
   //central moment
-template<class T> double Histogram::cmoment(const vector<T>& v, int n) const
+template<class T> double StatFactory::cmoment(const vector<T>& v, int n) const
 {
   assert(v.size());
   typename vector<T>::const_iterator it;
@@ -231,19 +224,19 @@ template<class T> double Histogram::cmoment(const vector<T>& v, int n) const
   return m/v.size();
 }
 
-template<class T> double Histogram::skewness(const vector<T>& v) const
+template<class T> double StatFactory::skewness(const vector<T>& v) const
 {
   return cmoment(v,3)/pow(var(v),1.5);
 }
 
-template<class T> double Histogram::kurtosis(const vector<T>& v) const
+template<class T> double StatFactory::kurtosis(const vector<T>& v) const
 {
   double m2=cmoment(v,2);
   double m4=cmoment(v,4);
   return m4/m2/m2-3.0;
 }
 
-template<class T> void Histogram::meanVar(const vector<T>& v, double& m1, double& v1) const
+template<class T> void StatFactory::meanVar(const vector<T>& v, double& m1, double& v1) const
 {
   typename vector<T>::const_iterator it;
   v1=0;
@@ -256,7 +249,7 @@ template<class T> void Histogram::meanVar(const vector<T>& v, double& m1, double
   assert(v1>=0);
 }
 
-template<class T1, class T2> void Histogram::scale2byte(const vector<T1>& input, vector<T2>& output, unsigned char lbound,  unsigned char ubound) const
+template<class T1, class T2> void StatFactory::scale2byte(const vector<T1>& input, vector<T2>& output, unsigned char lbound,  unsigned char ubound) const
 {
   output.resize(input.size());
   T1 minimum=min(input);
@@ -267,7 +260,7 @@ template<class T1, class T2> void Histogram::scale2byte(const vector<T1>& input,
     output[i]=scale*(input[i]-(minimum))+lbound;
 }
 
-template<class T> void  Histogram::distribution (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<int>& output, int nbin, T &minimum, T &maximum, const string &filename)
+template<class T> void  StatFactory::distribution (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<int>& output, int nbin, T &minimum, T &maximum, const string &filename)
 {
   if(maximum<=minimum)
     minmax(input,begin,end,minimum,maximum);
@@ -307,7 +300,7 @@ template<class T> void  Histogram::distribution (const vector<T>& input, typenam
   }
 }
 
-template<class T> void  Histogram::percentiles (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<T>& output, int nbin, T &minimum, T &maximum, const string &filename)
+template<class T> void  StatFactory::percentiles (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<T>& output, int nbin, T &minimum, T &maximum, const string &filename)
 {
   if(maximum<=minimum)
     minmax(input,begin,end,minimum,maximum);
@@ -354,7 +347,7 @@ template<class T> void  Histogram::percentiles (const vector<T>& input, typename
   }
 }
 
-// template<class T> void  Histogram::cumulative (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<int>& output, int nbin, T &minimum, T &maximum)
+// template<class T> void  StatFactory::cumulative (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<int>& output, int nbin, T &minimum, T &maximum)
 // {
 //   assert(nbin>1);
 //   assert(input.size());
@@ -375,14 +368,14 @@ template<class T> void  Histogram::percentiles (const vector<T>& input, typename
 //   }
 // }
 
-template<class T> void Histogram::signature(const vector<T>& input, double&k, double& alpha, double& beta, double e)
+template<class T> void StatFactory::signature(const vector<T>& input, double&k, double& alpha, double& beta, double e)
 {
   double m1=moment(input,1);
   double m2=moment(input,2);
   signature(m1,m2,k,alpha,beta,e);
 }
 
-template<class T> void Histogram::normalize(const vector<T>& input, vector<double>& output){
+template<class T> void StatFactory::normalize(const vector<T>& input, vector<double>& output){
   double total=sum(input);
   if(total){
     output.resize(input.size());
@@ -393,7 +386,7 @@ template<class T> void Histogram::normalize(const vector<T>& input, vector<doubl
     output=input;
 }
 
-template<class T> void Histogram::normalize_pct(vector<T>& input){
+template<class T> void StatFactory::normalize_pct(vector<T>& input){
   double total=sum(input);
   if(total){
     typename vector<T>::iterator it;
@@ -402,7 +395,7 @@ template<class T> void Histogram::normalize_pct(vector<T>& input){
   }
 }
  
-template<class T> double Histogram::rmse(const vector<T>& x, const vector<T>& y) const{
+template<class T> double StatFactory::rmse(const vector<T>& x, const vector<T>& y) const{
   assert(x.size()==y.size());
   assert(x.size());
   double mse=0;
@@ -413,7 +406,7 @@ template<class T> double Histogram::rmse(const vector<T>& x, const vector<T>& y)
   return sqrt(mse);
 }
 
-template<class T> double Histogram::correlation(const vector<T>& x, const vector<T>& y, int delay) const{
+template<class T> double StatFactory::correlation(const vector<T>& x, const vector<T>& y, int delay) const{
   double meanX=0;
   double meanY=0;
   double varX=0;
@@ -442,7 +435,7 @@ template<class T> double Histogram::correlation(const vector<T>& x, const vector
     return 0;
 }
 
-template<class T> double Histogram::cross_correlation(const vector<T>& x, const vector<T>& y, int maxdelay, vector<T>& z) const{
+template<class T> double StatFactory::cross_correlation(const vector<T>& x, const vector<T>& y, int maxdelay, vector<T>& z) const{
   z.clear();
   double sumCorrelation=0;
   for (int delay=-maxdelay;delay<maxdelay;delay++) {
@@ -452,7 +445,7 @@ template<class T> double Histogram::cross_correlation(const vector<T>& x, const 
   return sumCorrelation;
 }
 
-  template<class T> double Histogram::linear_regression(const vector<T>& x, const vector<T>& y, double &c0, double &c1) const{
+  template<class T> double StatFactory::linear_regression(const vector<T>& x, const vector<T>& y, double &c0, double &c1) const{
   assert(x.size()==y.size());
   assert(x.size());
   double cov00;
@@ -463,13 +456,175 @@ template<class T> double Histogram::cross_correlation(const vector<T>& x, const 
   return (1-sumsq/var(y)/(y.size()-1));
 }
 
-}
-
-
 //alternatively: use GNU scientific library:
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
+template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type)
+{
+  int nsample=input.size()-1;//first sample contains wavelength
+  int nband=input[0].size();    
+  output.clear();
+  output.resize(nsample+1);//first sample contains wavelength
+  start=(start)?start:floor(input[0][0]);
+  end=(end)?end:ceil(input[0].back());
+  for(double xi=start;xi<=end;xi+=step)
+    output[0].push_back(xi);
+  for(int isample=1;isample<nsample+1;++isample){
+    gsl_interp_accel *acc=gsl_interp_accel_alloc();
+    gsl_spline *spline;
+    switch(type){
+    case(POLYNOMIAL):
+      spline=gsl_spline_alloc(gsl_interp_polynomial,nband);
+      break;
+    case(CSPLINE):
+        spline=gsl_spline_alloc(gsl_interp_cspline,nband);
+        break;
+    case(PERIODIC):
+        spline=gsl_spline_alloc(gsl_interp_cspline_periodic,nband);
+        break;
+    case(AKIMA):
+        spline=gsl_spline_alloc(gsl_interp_akima,nband);
+        break;
+    case(PERIODIC):
+        spline=gsl_spline_alloc(gsl_interp_akima_periodic,nband);
+        break;
+    case(LINEAR):
+    default:
+        spline=gsl_spline_alloc(gsl_interp_linear,nband);
+        break;
+    case(UNDEFINED):
+    default:{
+      string errorString="Error: interpolation type not defined: ";
+      errorString+=type;
+      throw(errorString);
+        break;
+    }
+    }
+    gsl_spline_init(spline,&(input[0][0]),&(input[isample][0]),nband);      
+    for(double xi=start;xi<=end;xi+=step){
+      if(!type&&xi>input[0].back())
+        output[isample].push_back(output[isample].back());
+      else
+        output[isample].push_back(gsl_spline_eval(spline,xi,acc));
+    }
+    gsl_spline_free(spline);
+    gsl_interp_accel_free(acc);
 
-using namespace histogram;
+  }    
+}    
 
-#endif /* _HISTOGRAM_H_ */
+template<class T> void StatFactory::interpolateUp(const vector<T>& input, vector<T>& output, int nbin)
+{
+  assert(input.size());
+  assert(nbin);
+  output.clear();
+  int dim=input.size();
+  for(int i=0;i<dim;++i){
+    double deltaX=0;
+    double left=input[i];
+    if(i<dim-1){
+      double right=(i<dim-1)? input[i+1]:input[i];
+      deltaX=(right-left)/static_cast<double>(nbin);
+      for(int x=0;x<nbin;++x){
+        output.push_back(left+x*deltaX);
+      }
+    }
+    else
+      output.push_back(input.back());
+  }
+}
+
+template<class T> void StatFactory::interpolateUp(double* input, int dim, vector<T>& output, int nbin)
+{
+  assert(nbin);
+  output.clear();
+  for(int i=0;i<dim;++i){
+    double deltaX=0;
+    double left=input[i];
+    if(i<dim-1){
+      double right=(i<dim-1)? input[i+1]:input[i];
+      deltaX=(right-left)/static_cast<double>(nbin);
+      for(int x=0;x<nbin;++x){
+        output.push_back(left+x*deltaX);
+      }
+    }
+    else
+      output.push_back(input[dim-1]);
+  }
+}
+
+template<class T> void StatFactory::interpolateDown(const vector<T>& input, vector<T>& output, int nbin)
+{
+  assert(input.size());
+  assert(nbin);
+  output.clear();
+  int dim=input.size();
+  int x=0;
+  output.push_back(input[0]);
+  for(int i=1;i<dim;++i){
+    if(i%nbin)
+      continue;
+    else{
+      x=(i-1)/nbin+1;
+      output.push_back(input[i]);
+    }
+  }
+}
+
+template<class T> void StatFactory::interpolateDown(double* input, int dim, vector<T>& output, int nbin)
+{
+  assert(nbin);
+  output.clear();
+  int x=0;
+  output.push_back(input[0]);
+  for(int i=1;i<dim;++i){
+    if(i%nbin)
+      continue;
+    else{
+      x=(i-1)/nbin+1;
+      output.push_back(input[i]);
+    }
+  }
+}
+}
+
+#endif /* _STATFACTORY_H_ */
+
+// void Histogram::signature(double m1, double m2, double& k, double& alpha, double& beta, double e)
+// {
+//   double y=m1*m1/m2;
+//   beta=F_1(y,0.1,10.0,e);
+//   double fb=F(beta);
+//   double g=exp(lgamma(1.0/beta));
+//   alpha=m1*g/exp(lgamma(2.0/beta));
+//   k=beta/(2*alpha*g);
+// //   cout << "y, alpha, beta: " << y << ", " << alpha << ", " << beta << endl;
+// }
+
+// double Histogram::F(double x)
+// {
+//   double g2=exp(lgamma(2.0/x));
+//   return(g2*g2/exp(lgamma(3.0/x))/exp(lgamma(1.0/x)));
+// }
+
+// //x1 is under estimate, x2 is over estimate, e is error
+// double Histogram::F_1(double y, double x1, double x2, double e)
+// {
+//   double f1=F(x1);
+//   double f2=F(x2);
+//   assert(f1!=f2);
+//   double x=x1+(x2-x1)*(y-f1)/(f2-f1);
+//   double f=F(x);
+//   while(f-y>=e||y-f>=e){
+//     if(f<y)
+//       x1=x;
+//     else 
+//       x2=x;
+//     if(x1==x2)
+//       return x1;
+//     assert(f1!=f2);
+//     x=x1+(x2-x1)*(y-f1)/(f2-f1);
+//     f=F(x);
+//   }
+//   return x;
+// }

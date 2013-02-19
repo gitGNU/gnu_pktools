@@ -26,7 +26,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
-#include "algorithms/Histogram.h"
+#include "algorithms/StatFactory.h"
 
 using namespace std;
 
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
   vector<short> fileBuffer(ncol);//holds the number of used files
   Vector2d<short> maxBuffer;//buffer used for maximum voting
   Vector2d<double> readBuffer(nband);
-  Histogram hist;
+  statfactory::StatFactory stat;
   if(mrule_opt[0]==1)//ndvi
     assert(ruleBand_opt.size()==2);
   if(mrule_opt[0]==6){//max voting
@@ -814,7 +814,7 @@ int main(int argc, char *argv[])
       else{
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
           vector<short>::iterator maxit=maxBuffer[icol].begin();
-          maxit=hist.max(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
+          maxit=stat.max(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
           writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
           fileBuffer[icol]=*(maxit);
         }
@@ -838,17 +838,17 @@ int main(int argc, char *argv[])
           case(5):
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=hist.mean(storeBuffer[bands[iband]][icol]);
+              writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
             break;
           case(7):
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=hist.median(storeBuffer[bands[iband]][icol]);
+              writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
             break;
           case(8)://sum
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=hist.sum(storeBuffer[bands[iband]][icol]);
+              writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
             break;
           default:
             break;

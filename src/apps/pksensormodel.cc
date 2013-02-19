@@ -25,7 +25,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <nlopt.hpp>
 #include "base/Optionpk.h"
 #include "algorithms/OptFactory.h"
-#include "algorithms/Histogram.h"
+#include "algorithms/StatFactory.h"
 #include "pksensormodel.h"
 
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
@@ -599,7 +599,6 @@ int main(int argc, char *argv[])
       std::cout << "opening output file: " << output_opt[0] << std::endl;
     outputStream.open(output_opt[0].c_str());
   }
-  Histogram hist;
   vector<double> errorv;
 
   oSourceSRS.importFromEPSG(4326);
@@ -657,7 +656,8 @@ int main(int argc, char *argv[])
   if(mean_opt[0]){
     double theMean=0;
     double theVar=0;
-    hist.meanVar(errorv,theMean,theVar);
+    statfactory::StatFactory stat;
+    stat.meanVar(errorv,theMean,theVar);
     if(output_opt.size())
       outputStream << setprecision(12) << "mean stddev: " << theMean << " " << sqrt(theVar) << std::endl;
     else

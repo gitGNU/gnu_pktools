@@ -23,7 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
-#include "algorithms/Histogram.h"
+#include "algorithms/StatFactory.h"
 
 int main(int argc, char *argv[])
 {
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
   ImgReaderOgr inputReader(input_opt[0]);
   vector<double> theData;
-  Histogram hist;
+  statfactory::StatFactory stat;
   //todo: implement ALL
 
   for(int ifield=0;ifield<fieldname_opt.size();++ifield){
@@ -84,10 +84,10 @@ int main(int argc, char *argv[])
     int nbin=(nbin_opt[0]>1)? nbin_opt[0] : 2;
     std::cout << " --fname " << fieldname_opt[ifield];
     try{
-      hist.distribution(theData,theData.begin(),theData.end(),binData,nbin,minimum,maximum);
+      stat.distribution(theData,theData.begin(),theData.end(),binData,nbin,minimum,maximum);
       double theMean=0;
       double theVar=0;
-      hist.meanVar(theData,theMean,theVar);
+      stat.meanVar(theData,theMean,theVar);
       if(mean_opt[0])
         std::cout << " --mean " << theMean;
       if(stdev_opt[0])
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
       if(max_opt[0])
         cout << " -M " << maximum;
       if(median_opt[0])
-        std::cout << " -median " << hist.median(theData);
+        std::cout << " -median " << stat.median(theData);
       if(size_opt[0])
         std::cout << " -size " << theData.size();
       std::cout << std::endl;
