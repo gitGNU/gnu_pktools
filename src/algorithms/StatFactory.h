@@ -75,7 +75,8 @@ public:
   template<class T> double correlation(const vector<T>& x, const vector<T>& y, int delay=0) const;
   template<class T> double cross_correlation(const vector<T>& x, const vector<T>& y, int maxdelay, vector<T>& z) const;
   template<class T> double linear_regression(const vector<T>& x, const vector<T>& y, double &c0, double &c1) const;
-  template<class T> void interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type=0);
+  template<class T> void interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type=1);
+  template<class T> void interpolateUp(const vector< vector<T> >& input, const vector<double>& wavelengthIn, vector< vector<T> >& output, vector<double>& wavelengthOut, double start, double end, double step, int type=1);
   template<class T> void interpolateUp(const vector<T>& input, vector<T>& output, int nbin);
   template<class T> void interpolateUp(double* input, int dim, vector<T>& output, int nbin);
   template<class T> void interpolateDown(const vector<T>& input, vector<T>& output, int nbin);
@@ -459,7 +460,59 @@ template<class T> double StatFactory::cross_correlation(const vector<T>& x, cons
 //alternatively: use GNU scientific library:
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
-template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type)
+  template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& input, const vector<double>& wavelengthIn, vector< vector<T> >& output, vector<double>& wavelengthOut, double start, double end, double step, int type){
+  int nsample=input.size();//first sample contains wavelength
+  int nband=wavelengthIn.size();    
+  output.clear();
+  wavelengthOut.clear();
+  output.resize(nsample);//first sample contains wavelength
+  start=(start)?start:floor(wavelengthIn[0]);
+  end=(end)?end:ceil(wavelengthIn.back());
+  for(double xi=start;xi<=end;xi+=step)
+    wavelengthOut.push_back(xi);
+  for(int isample=0;isample<nsample;++isample){
+    gsl_interp_accel *acc=gsl_interp_accel_alloc();
+    gsl_spline *spline;
+    switch(type){
+    case(POLYNOMIAL):
+      spline=gsl_spline_alloc(gsl_interp_polynomial,nband);
+      break;
+    case(CSPLINE):
+        spline=gsl_spline_alloc(gsl_interp_cspline,nband);
+        break;
+    case(PERIODIC):
+        spline=gsl_spline_alloc(gsl_interp_cspline_periodic,nband);
+        break;
+    case(AKIMA):
+        spline=gsl_spline_alloc(gsl_interp_akima,nband);
+        break;
+    case(AKIMA_PERIODIC):
+        spline=gsl_spline_alloc(gsl_interp_akima_periodic,nband);
+        break;
+    case(LINEAR):
+        spline=gsl_spline_alloc(gsl_interp_linear,nband);
+        break;
+    case(UNDEFINED):
+    default:{
+      string errorString="Error: interpolation type not defined: ";
+      errorString+=type;
+      throw(errorString);
+        break;
+    }
+    }
+    gsl_spline_init(spline,&(wavelengthIn[0]),&(input[isample][0]),nband);      
+    for(double xi=start;xi<=end;xi+=step){
+      if(!type&&xi>wavelengthIn.back())
+        output[isample].push_back(output[isample].back());
+      else
+        output[isample].push_back(gsl_spline_eval(spline,xi,acc));
+    }
+    gsl_spline_free(spline);
+    gsl_interp_accel_free(acc);
+  }
+  }
+
+  template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type)
 {
   int nsample=input.size()-1;//first sample contains wavelength
   int nband=input[0].size();    
@@ -485,11 +538,10 @@ template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& inp
     case(AKIMA):
         spline=gsl_spline_alloc(gsl_interp_akima,nband);
         break;
-    case(PERIODIC):
+    case(AKIMA_PERIODIC):
         spline=gsl_spline_alloc(gsl_interp_akima_periodic,nband);
         break;
     case(LINEAR):
-    default:
         spline=gsl_spline_alloc(gsl_interp_linear,nband);
         break;
     case(UNDEFINED):
@@ -509,9 +561,8 @@ template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& inp
     }
     gsl_spline_free(spline);
     gsl_interp_accel_free(acc);
-
-  }    
-}    
+  }
+}
 
 template<class T> void StatFactory::interpolateUp(const vector<T>& input, vector<T>& output, int nbin)
 {

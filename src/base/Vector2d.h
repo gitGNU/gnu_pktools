@@ -26,7 +26,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <numeric>
 #include <gsl/gsl_matrix.h>
 #include "IndexValue.h"
-#include "algorithms/Histogram.h"
+#include "algorithms/StatFactory.h"
 
 using namespace std;
 template<class T> class Vector2d: public vector<vector <T> >
@@ -57,6 +57,7 @@ public:
   Vector2d<T> operator=(const Vector2d<T>& v1);
 //   ostream& operator<<(ostream& os, const Vector2d<T>& v);
 //   template<class T> ostream& operator<<(ostream& os, const Vector2d<T>& v);
+  template<class T1> friend ostream& operator<<(ostream & os, const Vector2d<T1>& v);
   Vector2d<T> sum(const Vector2d<T>& v1, const Vector2d<T>& v2) const;
   T max(int& x, int& y, double maxValue) const;
 
@@ -184,16 +185,21 @@ template<class T> void Vector2d<T>::selectCols(const list<int> &cols)
 	(*this)[irow].erase(((*this)[irow]).begin()+icol);
 }
 
-// template<class T> ostream& operator<<(ostream& os, const Vector2d<T>& v)
-// {
-//   for(int irow=0;irow<v.size();++irow){
-//     for(int icol=0;icol<v[irow].size();++icol){
-//       os << v[irow][icol] << "\t";
-//     }
-//     os << endl;
-//   }
-//   return os;
-// }
+template<class T1> ostream& operator<<(ostream& os, const Vector2d<T1>& v)
+{
+  for(int irow=0;irow<v.size();++irow){
+    for(int icol=0;icol<v[irow].size();++icol){
+      os << v[irow][icol] << "\t";
+    }
+    os << endl;
+  }
+  return os;
+  // os << theOption.getLongName() << ": ";
+  // for(int index=0;index<theOption.size();++index)
+  //   os << type2string<T>(theOption[index]) << " ";
+  // os << std::endl;
+  // return os;
+}
 
 template<class T> void Vector2d<T>::sort(Vector2d<T>& output)
 {
@@ -239,11 +245,11 @@ template<class T> void Vector2d<T>::scale(const T lbound, const T ubound, vector
   vector<T> pixel(nsample);
   T theMin;
   T theMax;
-  Histogram hist;
+  statfactory::StatFactory stat;
   scaledOutput.resize(nsample,nband);
   for(int iband=0;iband<nband;++iband){
     pixel=selectCol(iband);
-    hist.minmax(pixel, pixel.begin(), pixel.end(), theMin, theMax);
+    stat.minmax(pixel, pixel.begin(), pixel.end(), theMin, theMax);
     scaleVector[iband]=static_cast<double>(ubound-lbound)/(theMax-theMin);
     offsetVector[iband]=static_cast<double>(-theMin*scaleVector[iband])-lbound;
     for(int isample=0;isample<pixel.size();++isample)

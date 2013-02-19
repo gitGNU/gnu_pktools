@@ -25,32 +25,32 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "StatFactory.h"
 // #include "imageclasses/ImgUtils.h"
 
-Filter2d::Filter2d::Filter2d(void)
+filter2d::Filter2d::Filter2d(void)
   : m_noValue(0)
 {
 }
 
-Filter2d::Filter2d::Filter2d(const Vector2d<double> &taps)
+filter2d::Filter2d::Filter2d(const Vector2d<double> &taps)
   : m_taps(taps), m_noValue(0)
 {
 }
 
-void Filter2d::Filter2d::setTaps(const Vector2d<double> &taps)
+void filter2d::Filter2d::setTaps(const Vector2d<double> &taps)
 {
   m_taps=taps;
 }
 
-void Filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output, int dim)
+void filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output, int dim)
 {
   smoothNoData(input, output,dim,dim);
 }
 
-void Filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, int dim)
+void filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, int dim)
 {
   smooth(input, output,dim,dim);
 }
 
-void Filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -61,7 +61,7 @@ void Filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal&
   filter(input,output,false,true,true);
 }
 
-void Filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -73,7 +73,7 @@ void Filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& outpu
 }
 
     
-void Filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& output, bool absolute, bool normalize, bool noData)
+void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& output, bool absolute, bool normalize, bool noData)
 {
   int dimX=m_taps[0].size();//horizontal!!!
   int dimY=m_taps.size();//vertical!!!
@@ -182,7 +182,7 @@ void Filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 }
 
 
-void Filter2d::Filter2d::majorVoting(const string& inputFilename, const string& outputFilename,int dim,const vector<int> &prior)
+void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& outputFilename,int dim,const vector<int> &prior)
 {
   bool usePriors=true;  
   if(prior.empty()){
@@ -383,7 +383,7 @@ void Filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
 //   output.close();
 // }
 
-void Filter2d::Filter2d::median(const string& inputFilename, const string& outputFilename,int dim, bool disc)
+void filter2d::Filter2d::median(const string& inputFilename, const string& outputFilename,int dim, bool disc)
 {
   ImgReaderGdal input;
   ImgWriterGdal output;
@@ -392,7 +392,7 @@ void Filter2d::Filter2d::median(const string& inputFilename, const string& outpu
   doit(input,output,MEDIAN,dim,disc);
 }
 
-void Filter2d::Filter2d::var(const string& inputFilename, const string& outputFilename,int dim, bool disc)
+void filter2d::Filter2d::var(const string& inputFilename, const string& outputFilename,int dim, bool disc)
 {
   ImgReaderGdal input;
   ImgWriterGdal output;
@@ -401,12 +401,12 @@ void Filter2d::Filter2d::var(const string& inputFilename, const string& outputFi
   doit(input,output,VAR,dim,disc);
 }
 
-void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down, bool disc)
+void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down, bool disc)
 {
   doit(input,output,method,dim,dim,down,disc);
 }
 
-void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, short down, bool disc)
+void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, short down, bool disc)
 {
   assert(dimX);
   assert(dimY);
@@ -693,7 +693,7 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 }
 
 //todo: re-implement without dependency of CImg and reg libraries
-// void Filter2d::Filter2d::dwt_texture(const string& inputFilename, const string& outputFilename,int dim, int scale, int down, int iband, bool verbose)
+// void filter2d::Filter2d::dwt_texture(const string& inputFilename, const string& outputFilename,int dim, int scale, int down, int iband, bool verbose)
 // {
 //   ImgReaderGdal input;
 //   ImgWriterGdal output;
@@ -799,7 +799,7 @@ void Filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 //   output.close();
 // }
 
-void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, bool disc, double angle)
+void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, bool disc, double angle)
 {
   assert(dimX);
   assert(dimY);
@@ -965,7 +965,7 @@ void Filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
   }
 }
 
-void Filter2d::Filter2d::shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
+void filter2d::Filter2d::shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
   Vector2d<float> inputBuffer;
   Vector2d<float> outputBuffer;
   input.readDataBlock(inputBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, 0);

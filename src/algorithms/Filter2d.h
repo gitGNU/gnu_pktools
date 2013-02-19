@@ -37,10 +37,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Vector2d.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
+#include "algorithms/StatFactory.h"
 
 using namespace std;
 // using namespace cimg_library;
-namespace Filter2d
+namespace filter2d
 {
   enum Type { MEDIAN=0, VAR=1 , MIN=2, MAX=3, SUM=4, MEAN=5, MINMAX=6, DILATE=7, ERODE=8, CLOSE=9, OPEN=10, HOMOG=11, SOBELX=12, SOBELY=13, SOBELXY=14, SOBELYX=-14, SMOOTH=15, DENSITY=16, MAJORITY=17, MIXED=18, SMOOTHNODATA=19, THRESHOLD=20, ISMIN=21, ISMAX=22, HETEROG=23, ORDER=24, STDEV=25};
   
@@ -151,7 +152,7 @@ private:
 
 template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, int method, int dimX, int dimY, short down, bool disc)
 {
-  Histogram hist;
+  statfactory::StatFactory stat;
   outputVector.resize((inputVector.size()+down-1)/down);
   Vector2d<T1> inBuffer(dimY);
   vector<T2> outBuffer((inputVector[0].size()+down-1)/down);
@@ -231,41 +232,41 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=hist.median(windowBuffer);
+          outBuffer[x/down]=stat.median(windowBuffer);
         break;
       case(VAR):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=hist.var(windowBuffer);
+          outBuffer[x/down]=stat.var(windowBuffer);
         break;
       }
       case(STDEV):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=sqrt(hist.var(windowBuffer));
+          outBuffer[x/down]=sqrt(stat.var(windowBuffer));
         break;
       }
       case(MEAN):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=hist.mean(windowBuffer);
+          outBuffer[x/down]=stat.mean(windowBuffer);
         break;
       }
       case(MIN):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=hist.min(windowBuffer);
+          outBuffer[x/down]=stat.min(windowBuffer);
         break;
       }
       case(ISMIN):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=(hist.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+          outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
         break;
       }
       case(MINMAX):{
@@ -274,7 +275,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else{
-          hist.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
+          stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
           if(min!=max)
             outBuffer[x/down]=0;
           else
@@ -286,14 +287,14 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=hist.max(windowBuffer);
+          outBuffer[x/down]=stat.max(windowBuffer);
         break;
       }
       case(ISMAX):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
-          outBuffer[x/down]=(hist.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+          outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
         break;
       }
       case(ORDER):{
@@ -302,15 +303,15 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         else{
           double lbound=0;
           double ubound=dimX*dimY;
-          double theMin=hist.min(windowBuffer);
-          double theMax=hist.max(windowBuffer);
+          double theMin=stat.min(windowBuffer);
+          double theMax=stat.max(windowBuffer);
           double scale=(ubound-lbound)/(theMax-theMin);
           outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
         }
         break;
       }
       case(SUM):{
-        outBuffer[x/down]=hist.sum(windowBuffer);
+        outBuffer[x/down]=stat.sum(windowBuffer);
         break;
       }
       case(HOMOG):
@@ -423,7 +424,7 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
   unsigned long int nchange=0;
   assert(dimX);
   assert(dimY);
-  Histogram hist;
+  statfactory::StatFactory stat;
   Vector2d<T> inBuffer(dimY,input.nCols());
   output.clear();
   output.resize(input.nRows(),input.nCols());
@@ -455,7 +456,7 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
     for(int x=0;x<input.nCols();++x){
       output[y][x]=0;
       double currentValue=inBuffer[dimY/2][x];
-      vector<double> histBuffer;
+      vector<double> statBuffer;
       bool currentMasked=false;
       for(int imask=0;imask<m_mask.size();++imask){
         if(currentValue==m_mask[imask]){
@@ -502,23 +503,23 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
                 }
               }
               if(m_class.size())
-                histBuffer.push_back(binValue);
+                statBuffer.push_back(binValue);
               else
-                histBuffer.push_back(inBuffer[indexJ][indexI]);
+                statBuffer.push_back(inBuffer[indexJ][indexI]);
             }
           }
         }
-        if(histBuffer.size()){
+        if(statBuffer.size()){
           switch(method){
           case(DILATE):
-            if(output[y][x]<hist.max(histBuffer)-hThreshold){
-              output[y][x]=hist.max(histBuffer);
+            if(output[y][x]<stat.max(statBuffer)-hThreshold){
+              output[y][x]=stat.max(statBuffer);
               ++nchange;
             }
             break;
           case(ERODE):
-            if(output[y][x]>hist.min(histBuffer)+hThreshold){
-              output[y][x]=hist.min(histBuffer);
+            if(output[y][x]>stat.min(statBuffer)+hThreshold){
+              output[y][x]=stat.min(statBuffer);
               ++nchange;
             }
             break;

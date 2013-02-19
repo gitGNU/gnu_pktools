@@ -21,24 +21,24 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include <iostream>
 
-Filter::Filter(void)
+filter::Filter::Filter(void)
 {
 }
 
 
-Filter::Filter(const vector<double> &taps)
+filter::Filter::Filter(const vector<double> &taps)
   : m_taps(taps)
 {
   assert(m_taps.size()%2);
 }
 
-void Filter::setTaps(const vector<double> &taps)
+void filter::Filter::setTaps(const vector<double> &taps)
 {
   m_taps=taps;
   assert(m_taps.size()%2);
 }
 
-void Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down, int offset)
+void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down, int offset)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -71,7 +71,7 @@ void Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int m
   }
 }
 
-void Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
+void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -103,4 +103,37 @@ void Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down,
     pfnProgress(progress,pszMessage,pProgressArg);
   }
 }
+
+void filter::Filter::applyFwhm(const ImgReaderGdal& input, ImgWriterGdal& output, const vector<double> &wavelengthIn, const vector<double> &wavelengthOut, const vector<double> &fwhm, bool verbose){
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput(wavelengthOut.size(),input.nrOfCol());
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    vector<double> pixelOutput;
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      applyFwhm<double>(pixelInput,wavelengthIn,pixelOutput,wavelengthOut, fwhm, verbose);
+      for(int iband=0;iband<pixelOutput.size();++iband)
+        lineOutput[iband][x]=pixelOutput[iband];
+    }
+    for(int iband=0;iband<output.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
 

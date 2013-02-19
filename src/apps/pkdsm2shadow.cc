@@ -113,7 +113,7 @@ int main(int argc,char **argv) {
   if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());
 
-  Filter2d::Filter2d filter2d;
+  filter2d::Filter2d filter2d;
   if(verbose_opt[0])
     std::cout<< "class values: ";
   if(colorTable_opt[0]!="")

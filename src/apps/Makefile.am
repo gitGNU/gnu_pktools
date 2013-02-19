@@ -44,14 +44,15 @@ pkdumpimg_SOURCES = pkdumpimg.cc
 pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
 pksieve_SOURCES = pksieve.cc
 pkstat_SOURCES = $(top_srcdir)/src/algorithms/Histogram.h pkstat.cc
-pkstat_LDADD = -lfileClasses $(GSL_LIBS) $(AM_LDFLAGS)
+pkstat_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc
 pkegcs_SOURCES = pkegcs.cc
 pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
 pkextract_SOURCES = pkextract.cc
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
-#pkfilter_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
+pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgslwrap -lgdal
+
 pkdsm2shadow_SOURCES = pkdsm2shadow.cc
 pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc

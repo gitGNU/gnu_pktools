@@ -49,6 +49,9 @@ int main(int argc,char **argv) {
   Optionpk<short> mask_opt("m", "mask", "mask value(s) ");
   Optionpk<std::string> tap_opt("tap", "tap", "text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps");
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
+  Optionpk<double> fwhm_opt("fwhm", "fwhm", "list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...)");
+  Optionpk<double> wavelengthIn_opt("win", "wavelengthIn", "list of wavelengths in input spectrum (-w band1 -w band2 ...)");
+  Optionpk<double> wavelengthOut_opt("wout", "wavelengthOut", "list of wavelengths in output spectrum (-w band1 -w band2 ...)");
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
@@ -72,6 +75,9 @@ int main(int argc,char **argv) {
     mask_opt.retrieveOption(argc,argv);
     tap_opt.retrieveOption(argc,argv);
     tapz_opt.retrieveOption(argc,argv);
+    fwhm_opt.retrieveOption(argc,argv);
+    wavelengthIn_opt.retrieveOption(argc,argv);
+    wavelengthOut_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -146,8 +152,8 @@ int main(int argc,char **argv) {
   //   output.copyGeoTransform(input);
   // }
 
-  Filter2d::Filter2d filter2d;
-  Filter filter1d;
+  filter2d::Filter2d filter2d;
+  filter::Filter filter1d;
   if(class_opt.size()&&verbose_opt[0])
     std::cout<< "class values: ";
   for(int iclass=0;iclass<class_opt.size();++iclass){
@@ -196,91 +202,96 @@ int main(int argc,char **argv) {
     filter1d.setTaps(tapz_opt);    
     filter1d.doit(input,output,down_opt[0]);
   }
+  else if(wavelengthOut_opt.size()){
+    assert(wavelengthOut_opt.size()==fwhm_opt.size());
+    assert(wavelengthIn_opt.size());
+    filter1d.applyFwhm(input,output,wavelengthIn_opt,wavelengthOut_opt,fwhm_opt,verbose_opt[0]);    
+  }
   else{
     if(colorTable_opt.size())
       output.setColorTable(colorTable_opt[0]);
     switch(function_opt[0]){
-    case(Filter2d::MEDIAN):
-      filter2d.doit(input,output,Filter2d::MEDIAN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::MEDIAN):
+      filter2d.doit(input,output,filter2d::MEDIAN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::VAR):
-      filter2d.doit(input,output,Filter2d::VAR,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::VAR):
+      filter2d.doit(input,output,filter2d::VAR,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::STDEV):
-      filter2d.doit(input,output,Filter2d::STDEV,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::STDEV):
+      filter2d.doit(input,output,filter2d::STDEV,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::MIN):
-      filter2d.doit(input,output,Filter2d::MIN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::MIN):
+      filter2d.doit(input,output,filter2d::MIN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::ISMIN):
-      filter2d.doit(input,output,Filter2d::ISMIN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::ISMIN):
+      filter2d.doit(input,output,filter2d::ISMIN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::MAX):
-      filter2d.doit(input,output,Filter2d::MAX,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::MAX):
+      filter2d.doit(input,output,filter2d::MAX,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::ISMAX):
-      filter2d.doit(input,output,Filter2d::ISMAX,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::ISMAX):
+      filter2d.doit(input,output,filter2d::ISMAX,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::MINMAX):
-      filter2d.doit(input,output,Filter2d::MINMAX,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::MINMAX):
+      filter2d.doit(input,output,filter2d::MINMAX,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::SUM):
-      filter2d.doit(input,output,Filter2d::SUM,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::SUM):
+      filter2d.doit(input,output,filter2d::SUM,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::MEAN):
-      filter2d.doit(input,output,Filter2d::MEAN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::MEAN):
+      filter2d.doit(input,output,filter2d::MEAN,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::MAJORITY):
-      filter2d.doit(input,output,Filter2d::MAJORITY,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::MAJORITY):
+      filter2d.doit(input,output,filter2d::MAJORITY,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::THRESHOLD):
+    case(filter2d::THRESHOLD):
       filter2d.setThresholds(threshold_opt);
       filter2d.setClasses(class_opt);
-      filter2d.doit(input,output,Filter2d::THRESHOLD,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      filter2d.doit(input,output,filter2d::THRESHOLD,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::MIXED):
-      filter2d.doit(input,output,Filter2d::MIXED,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::MIXED):
+      filter2d.doit(input,output,filter2d::MIXED,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
-    case(Filter2d::DILATE):
+    case(filter2d::DILATE):
       if(dimZ_opt.size()){
         if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
-        filter1d.morphology(input,output,Filter::DILATE,dimZ_opt[0]);
+        filter1d.morphology(input,output,filter::Filter::DILATE,dimZ_opt[0]);
       }
       else{
         if(angle_opt.size())
-          filter2d.morphology(input,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+          filter2d.morphology(input,output,filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
         else
-          filter2d.morphology(input,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
+          filter2d.morphology(input,output,filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
       }
       break;
-    case(Filter2d::ERODE):
+    case(filter2d::ERODE):
       if(dimZ_opt[0]>0){
         if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
-        filter1d.morphology(input,output,Filter::ERODE,dimZ_opt[0]);
+        filter1d.morphology(input,output,filter::Filter::ERODE,dimZ_opt[0]);
       }
       else{
         if(angle_opt.size())
-          filter2d.morphology(input,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+          filter2d.morphology(input,output,filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
         else
-          filter2d.morphology(input,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
+          filter2d.morphology(input,output,filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
       }
       break;
-    case(Filter2d::CLOSE):{//closing
+    case(filter2d::CLOSE):{//closing
       ostringstream tmps;
       tmps << "/tmp/dilation_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
       tmpout.open(tmps.str(),input);
       try{
         if(dimZ_opt.size()){
-          filter1d.morphology(input,tmpout,Filter::DILATE,dimZ_opt[0]);
+          filter1d.morphology(input,tmpout,filter::Filter::DILATE,dimZ_opt[0]);
         }
         else{
           if(angle_opt.size())
-            filter2d.morphology(input,tmpout,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+            filter2d.morphology(input,tmpout,filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
           else
-            filter2d.morphology(input,tmpout,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
+            filter2d.morphology(input,tmpout,filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
         }
       }
       catch(std::string errorString){
@@ -291,13 +302,13 @@ int main(int argc,char **argv) {
       ImgReaderGdal tmpin;
       tmpin.open(tmps.str());
       if(dimZ_opt.size()){
-        filter1d.morphology(tmpin,output,Filter::ERODE,dimZ_opt[0]);
+        filter1d.morphology(tmpin,output,filter::Filter::ERODE,dimZ_opt[0]);
       }
       else{
         if(angle_opt.size())
-          filter2d.morphology(tmpin,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+          filter2d.morphology(tmpin,output,filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
         else
-          filter2d.morphology(tmpin,output,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
+          filter2d.morphology(tmpin,output,filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
       }
       tmpin.close();
       if(remove(tmps.str().c_str( )) !=0){
@@ -305,31 +316,31 @@ int main(int argc,char **argv) {
       }
       break;
     }
-    case(Filter2d::OPEN):{//opening
+    case(filter2d::OPEN):{//opening
       ostringstream tmps;
       tmps << "/tmp/erosion_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
       tmpout.open(tmps.str(),input);
       if(dimZ_opt.size()){
-        filter1d.morphology(input,tmpout,Filter::ERODE,dimZ_opt[0]);
+        filter1d.morphology(input,tmpout,filter::Filter::ERODE,dimZ_opt[0]);
       }
       else{
         if(angle_opt.size())
-          filter2d.morphology(input,tmpout,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+          filter2d.morphology(input,tmpout,filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
         else
-          filter2d.morphology(input,tmpout,Filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
+          filter2d.morphology(input,tmpout,filter2d::ERODE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
       }
       tmpout.close();
       ImgReaderGdal tmpin;
       tmpin.open(tmps.str());
       if(dimZ_opt.size()){
-        filter1d.morphology(tmpin,output,Filter::DILATE,dimZ_opt[0]);
+        filter1d.morphology(tmpin,output,filter::Filter::DILATE,dimZ_opt[0]);
       }
       else{
         if(angle_opt.size())
-          filter2d.morphology(tmpin,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
+          filter2d.morphology(tmpin,output,filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
         else
-          filter2d.morphology(tmpin,output,Filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
+          filter2d.morphology(tmpin,output,filter2d::DILATE,dimX_opt[0],dimY_opt[0],disc_opt[0]);
       }
       tmpin.close();
       if(remove(tmps.str().c_str( )) !=0){
@@ -337,16 +348,16 @@ int main(int argc,char **argv) {
       }
       break;
     }
-    case(Filter2d::HOMOG):{//spatially homogeneous
-      filter2d.doit(input,output,Filter2d::HOMOG,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::HOMOG):{//spatially homogeneous
+      filter2d.doit(input,output,filter2d::HOMOG,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       // filter2d.homogeneousSpatial(input,output,dimX_opt[0],disc_opt[0]);
       break;
     }
-    case(Filter2d::HETEROG):{//spatially heterogeneous
-      filter2d.doit(input,output,Filter2d::HETEROG,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::HETEROG):{//spatially heterogeneous
+      filter2d.doit(input,output,filter2d::HETEROG,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
     }
-    case(Filter2d::SOBELX):{//Sobel edge detection in X
+    case(filter2d::SOBELX):{//Sobel edge detection in X
       Vector2d<double> theTaps(3,3);
       theTaps[0][0]=-1.0;
       theTaps[0][1]=0.0;
@@ -361,7 +372,7 @@ int main(int argc,char **argv) {
       filter2d.filter(input,output,true);
       break;
     }
-    case(Filter2d::SOBELY):{//Sobel edge detection in Y
+    case(filter2d::SOBELY):{//Sobel edge detection in Y
       Vector2d<double> theTaps(3,3);
       theTaps[0][0]=1.0;
       theTaps[0][1]=2.0;
@@ -376,7 +387,7 @@ int main(int argc,char **argv) {
       filter2d.filter(input,output,true);
       break;
     }
-    case(Filter2d::SOBELXY):{//Sobel edge detection in XY
+    case(filter2d::SOBELXY):{//Sobel edge detection in XY
       Vector2d<double> theTaps(3,3);
       theTaps[0][0]=0.0;
       theTaps[0][1]=1.0;
@@ -391,7 +402,7 @@ int main(int argc,char **argv) {
       filter2d.filter(input,output,true);
       break;
     }
-    case(Filter2d::SOBELYX):{//Sobel edge detection in XY
+    case(filter2d::SOBELYX):{//Sobel edge detection in XY
       Vector2d<double> theTaps(3,3);
       theTaps[0][0]=2.0;
       theTaps[0][1]=1.0;
@@ -406,21 +417,21 @@ int main(int argc,char **argv) {
       filter2d.filter(input,output,true);
       break;
     }
-    case(Filter2d::SMOOTH):{//Smoothing filter
+    case(filter2d::SMOOTH):{//Smoothing filter
       filter2d.smooth(input,output,dimX_opt[0],dimY_opt[0]);
       break;
     }
-    case(Filter2d::SMOOTHNODATA):{//Smoothing filter
+    case(filter2d::SMOOTHNODATA):{//Smoothing filter
       filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
       break;
     }
-    case(Filter2d::DENSITY):{//estimation of forest density
-      filter2d.doit(input,output,Filter2d::DENSITY,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+    case(filter2d::DENSITY):{//estimation of forest density
+      filter2d.doit(input,output,filter2d::DENSITY,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
     }
-    case(Filter2d::ORDER):{//order centre pixel with respect to values in window
+    case(filter2d::ORDER):{//order centre pixel with respect to values in window
       assert(dimX_opt[0]);
-      filter2d.doit(input,output,Filter2d::ORDER,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      filter2d.doit(input,output,filter2d::ORDER,dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
     }
     default:

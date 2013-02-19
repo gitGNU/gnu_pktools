@@ -405,14 +405,14 @@ int main(int argc,char **argv) {
     //increase cells and thresholds until no points from the previous iteration are discarded.
     int dimx=dimx_opt[0];
     int dimy=dimy_opt[0];
-    Filter2d::Filter2d morphFilter;
+    filter2d::Filter2d morphFilter;
     morphFilter.setNoValue(0);
     Vector2d<float> currentOutput=outputData;
     int iteration=1;
     while(nchange&&iteration<maxIter_opt[0]){
       double hThreshold=maxSlope_opt[0]*dimx;
       Vector2d<float> newOutput;
-      nchange=morphFilter.morphology(currentOutput,newOutput,Filter2d::ERODE,dimx,dimy,disc_opt[0],hThreshold);
+      nchange=morphFilter.morphology(currentOutput,newOutput,filter2d::ERODE,dimx,dimy,disc_opt[0],hThreshold);
       currentOutput=newOutput;
       dimx+=2;//change from theory: originally double cellCize
       dimy+=2;//change from theory: originally double cellCize
@@ -430,7 +430,7 @@ int main(int argc,char **argv) {
     //increase cells and thresholds until no points from the previous iteration are discarded.
     int dimx=dimx_opt[0];
     int dimy=dimy_opt[0];
-    Filter2d::Filter2d theFilter;
+    filter2d::Filter2d theFilter;
     theFilter.setNoValue(0);
     Vector2d<float> currentOutput=outputData;
     double hThreshold=hThreshold_opt[0];
@@ -439,10 +439,10 @@ int main(int argc,char **argv) {
       std::cout << "iteration " << iteration << " with window size " << dimx << " and dh_max: " << hThreshold << std::endl;
       Vector2d<float> newOutput;
       try{
-        theFilter.morphology(outputData,currentOutput,Filter2d::ERODE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
-        theFilter.morphology(currentOutput,outputData,Filter2d::DILATE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
+        theFilter.morphology(outputData,currentOutput,filter2d::ERODE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
+        theFilter.morphology(currentOutput,outputData,filter2d::DILATE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
         if(postFilter_opt[0]=="bunting"){//todo: implement doit in Filter2d on Vector2d
-          theFilter.doit(outputData,currentOutput,Filter2d::MEDIAN,dimx,dimy,1,disc_opt[0]);
+          theFilter.doit(outputData,currentOutput,filter2d::MEDIAN,dimx,dimy,1,disc_opt[0]);
           outputData=currentOutput;
         }
       }
@@ -464,12 +464,12 @@ int main(int argc,char **argv) {
   else if(postFilter_opt[0]=="open"){
     if(composite_opt[0]!="min")
       std::cout << "Warning: composite option is not set to min!" << std::endl;
-    Filter2d::Filter2d morphFilter;
+    filter2d::Filter2d morphFilter;
     morphFilter.setNoValue(0);
     Vector2d<float> filterInput=outputData;
     try{
-      morphFilter.morphology(outputData,filterInput,Filter2d::ERODE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
-      morphFilter.morphology(filterInput,outputData,Filter2d::DILATE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(outputData,filterInput,filter2d::ERODE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(filterInput,outputData,filter2d::DILATE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
     }
     catch(std::string errorString){
       cout << errorString << endl;
@@ -479,12 +479,12 @@ int main(int argc,char **argv) {
   else if(postFilter_opt[0]=="close"){
     if(composite_opt[0]!="max")
       std::cout << "Warning: composite option is not set to max!" << std::endl;
-    Filter2d::Filter2d morphFilter;
+    filter2d::Filter2d morphFilter;
     morphFilter.setNoValue(0);
     Vector2d<float> filterInput=outputData;
     try{
-      morphFilter.morphology(outputData,filterInput,Filter2d::DILATE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
-      morphFilter.morphology(filterInput,outputData,Filter2d::ERODE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(outputData,filterInput,filter2d::DILATE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(filterInput,outputData,filter2d::ERODE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
     }
     catch(std::string errorString){
       cout << errorString << endl;
