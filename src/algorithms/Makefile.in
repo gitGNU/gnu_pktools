@@ -16,6 +16,7 @@
 @SET_MAKE@
 
 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -33,6 +34,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+noinst_PROGRAMS = pktestStat$(EXEEXT)
 @USE_FANN_TRUE@am__append_1 = myfann_cpp.h
 @USE_NLOPT_TRUE@am__append_2 = SensorModel.h OptFactory.h
 subdir = src/algorithms
@@ -62,6 +64,13 @@ am_libalgorithms_a_OBJECTS = $(am__objects_2) Egcs.$(OBJEXT) \
 	Filter2d.$(OBJEXT) Filter.$(OBJEXT) ConfusionMatrix.$(OBJEXT) \
 	svm.$(OBJEXT)
 libalgorithms_a_OBJECTS = $(am_libalgorithms_a_OBJECTS)
+PROGRAMS = $(noinst_PROGRAMS)
+am_pktestStat_OBJECTS = pktestStat.$(OBJEXT)
+pktestStat_OBJECTS = $(am_pktestStat_OBJECTS)
+am__DEPENDENCIES_1 =
+pktestStat_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/algorithms/libalgorithms.a \
+	$(top_builddir)/src/imageclasses/libimageClasses.a
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -75,8 +84,9 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libalgorithms_a_SOURCES)
-DIST_SOURCES = $(am__libalgorithms_a_SOURCES_DIST)
+SOURCES = $(libalgorithms_a_SOURCES) $(pktestStat_SOURCES)
+DIST_SOURCES = $(am__libalgorithms_a_SOURCES_DIST) \
+	$(pktestStat_SOURCES)
 am__libalgorithms_a_HEADERS_DIST = Egcs.h Filter2d.h Filter.h \
 	StatFactory.h ConfusionMatrix.h svm.h FeatureSelector.h \
 	myfann_cpp.h SensorModel.h OptFactory.h
@@ -234,6 +244,11 @@ libalgorithms_a_HEADERS = Egcs.h Filter2d.h Filter.h StatFactory.h \
 
 # the sources to add to the library and to add to the source distribution
 libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc Filter2d.cc Filter.cc ConfusionMatrix.cc svm.cpp
+###############################################################################
+
+# list of sources for the binaries
+pktestStat_SOURCES = pktestStat.cc
+pktestStat_LDADD = $(GSL_LIBS) -lgslwrap $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a -lgslwrap
 all: all-am
 
 .SUFFIXES:
@@ -276,6 +291,12 @@ libalgorithms.a: $(libalgorithms_a_OBJECTS) $(libalgorithms_a_DEPENDENCIES)
 	$(libalgorithms_a_AR) libalgorithms.a $(libalgorithms_a_OBJECTS) $(libalgorithms_a_LIBADD)
 	$(RANLIB) libalgorithms.a
 
+clean-noinstPROGRAMS:
+	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
+pktestStat$(EXEEXT): $(pktestStat_OBJECTS) $(pktestStat_DEPENDENCIES) 
+	@rm -f pktestStat$(EXEEXT)
+	$(CXXLINK) $(pktestStat_OBJECTS) $(pktestStat_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -286,6 +307,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Egcs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Filter2d.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pktestStat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/svm.Po@am__quote@
 
 .cc.o:
@@ -420,7 +442,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES) $(HEADERS)
+all-am: Makefile $(LIBRARIES) $(PROGRAMS) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(libalgorithms_adir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -452,7 +474,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
+clean-am: clean-generic clean-noinstLIBRARIES clean-noinstPROGRAMS \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -522,19 +545,19 @@ uninstall-am: uninstall-libalgorithms_aHEADERS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-noinstLIBRARIES ctags distclean distclean-compile \
-	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-libalgorithms_aHEADERS install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-libalgorithms_aHEADERS
+	clean-noinstLIBRARIES clean-noinstPROGRAMS ctags distclean \
+	distclean-compile distclean-generic distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-libalgorithms_aHEADERS \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags uninstall uninstall-am \
+	uninstall-libalgorithms_aHEADERS
 
-###############################################################################
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

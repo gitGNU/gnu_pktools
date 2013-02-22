@@ -412,7 +412,7 @@ int main(int argc,char **argv) {
     while(nchange&&iteration<maxIter_opt[0]){
       double hThreshold=maxSlope_opt[0]*dimx;
       Vector2d<float> newOutput;
-      nchange=morphFilter.morphology(currentOutput,newOutput,filter2d::ERODE,dimx,dimy,disc_opt[0],hThreshold);
+      nchange=morphFilter.morphology(currentOutput,newOutput,"erode",dimx,dimy,disc_opt[0],hThreshold);
       currentOutput=newOutput;
       dimx+=2;//change from theory: originally double cellCize
       dimy+=2;//change from theory: originally double cellCize
@@ -439,10 +439,10 @@ int main(int argc,char **argv) {
       std::cout << "iteration " << iteration << " with window size " << dimx << " and dh_max: " << hThreshold << std::endl;
       Vector2d<float> newOutput;
       try{
-        theFilter.morphology(outputData,currentOutput,filter2d::ERODE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
-        theFilter.morphology(currentOutput,outputData,filter2d::DILATE,dimx,dimy,disc_opt[0],maxSlope_opt[0]);
+        theFilter.morphology(outputData,currentOutput,"erode",dimx,dimy,disc_opt[0],maxSlope_opt[0]);
+        theFilter.morphology(currentOutput,outputData,"dilate",dimx,dimy,disc_opt[0],maxSlope_opt[0]);
         if(postFilter_opt[0]=="bunting"){//todo: implement doit in Filter2d on Vector2d
-          theFilter.doit(outputData,currentOutput,filter2d::MEDIAN,dimx,dimy,1,disc_opt[0]);
+          theFilter.doit(outputData,currentOutput,"median",dimx,dimy,1,disc_opt[0]);
           outputData=currentOutput;
         }
       }
@@ -468,8 +468,8 @@ int main(int argc,char **argv) {
     morphFilter.setNoValue(0);
     Vector2d<float> filterInput=outputData;
     try{
-      morphFilter.morphology(outputData,filterInput,filter2d::ERODE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
-      morphFilter.morphology(filterInput,outputData,filter2d::DILATE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(outputData,filterInput,"erode",dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(filterInput,outputData,"dilate",dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
     }
     catch(std::string errorString){
       cout << errorString << endl;
@@ -483,8 +483,8 @@ int main(int argc,char **argv) {
     morphFilter.setNoValue(0);
     Vector2d<float> filterInput=outputData;
     try{
-      morphFilter.morphology(outputData,filterInput,filter2d::DILATE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
-      morphFilter.morphology(filterInput,outputData,filter2d::ERODE,dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(outputData,filterInput,"dilate",dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
+      morphFilter.morphology(filterInput,outputData,"erode",dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
     }
     catch(std::string errorString){
       cout << errorString << endl;

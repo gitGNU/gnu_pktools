@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
   Optionpk<bool>  bbox_te_opt("te", "te", "Shows bounding box in GDAL format: xmin ymin xmax ymax ", false,0);
   Optionpk<bool>  centre_opt("c", "centre", "Image centre in projected X,Y coordinates ", false,0);
   Optionpk<bool>  colorTable_opt("ct", "colourtable", "Shows colour table ", false,0);
-  Optionpk<bool>  samples_opt("s", "samples", "Number of samples in image ", false,0);
-  Optionpk<bool>  lines_opt("l", "lines", "Number of lines in image ", false,0);
+  Optionpk<bool>  samples_opt("ns", "ns", "Number of samples in image ", false,0);
+  Optionpk<bool>  lines_opt("nl", "nl", "Number of lines in image ", false,0);
   Optionpk<bool>  nband_opt("nb", "nband", "Show number of bands in image", false,0);
   Optionpk<short>  band_opt("b", "band", "Band specific information", 0,0);
   Optionpk<bool>  dx_opt("dx", "dx", "Gets resolution in x (in m)", false,0);
@@ -228,9 +228,9 @@ int main(int argc, char *argv[])
         std::cout << "--ct none ";
     }
     if(samples_opt[0])
-      std::cout << "--samples " << imgReader.nrOfCol() << " ";
+      std::cout << "--ns " << imgReader.nrOfCol() << " ";
     if(lines_opt[0])
-      std::cout << "--rows " << imgReader.nrOfRow() << " ";
+      std::cout << "--nl " << imgReader.nrOfRow() << " ";
     if(nband_opt[0])
       std::cout << "--nband " << imgReader.nrOfBand() << " ";
     double minValue=0;

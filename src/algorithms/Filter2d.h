@@ -43,7 +43,7 @@ using namespace std;
 // using namespace cimg_library;
 namespace filter2d
 {
-  enum Type { MEDIAN=0, VAR=1 , MIN=2, MAX=3, SUM=4, MEAN=5, MINMAX=6, DILATE=7, ERODE=8, CLOSE=9, OPEN=10, HOMOG=11, SOBELX=12, SOBELY=13, SOBELXY=14, SOBELYX=-14, SMOOTH=15, DENSITY=16, MAJORITY=17, MIXED=18, SMOOTHNODATA=19, THRESHOLD=20, ISMIN=21, ISMAX=22, HETEROG=23, ORDER=24, STDEV=25};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25};
   
 class Filter2d
 {
@@ -51,6 +51,12 @@ public:
   Filter2d(void);
   Filter2d(const Vector2d<double> &taps);
   virtual ~Filter2d(){};
+  static FILTER_TYPE getFilterType(const std::string filterType){
+    std::map<std::string, FILTER_TYPE> m_filterMap;
+    initMap(m_filterMap);
+    return m_filterMap[filterType];
+  };
+
   void setTaps(const Vector2d<double> &taps);
   void setNoValue(double noValue=0){m_noValue=noValue;};
   void pushClass(short theClass=1){m_class.push_back(theClass);};
@@ -68,18 +74,49 @@ public:
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dimX, int dimY);
   void majorVoting(const string& inputFilename, const string& outputFilename,int dim=0,const vector<int> &prior=vector<int>());
   /* void homogeneousSpatial(const string& inputFilename, const string& outputFilename, int dim, bool disc=false, int noValue=0); */
-  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down=2, bool disc=false);
-  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, short down=1, bool disc=false);
-  template<class T1, class T2> void doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, int method, int dimX, int dimY, short down=1, bool disc=false);
+  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=2, bool disc=false);
+  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
+  template<class T1, class T2> void doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
   void median(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
   void var(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
-  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, bool disc=false, double angle=-190);
-  template<class T> unsigned long int morphology(const Vector2d<T>& input, Vector2d<T>& output, int method, int dimX, int dimY, bool disc=false, double hThreshold=0);
+  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, bool disc=false, double angle=-190);
+  template<class T> unsigned long int morphology(const Vector2d<T>& input, Vector2d<T>& output, const std::string& method, int dimX, int dimY, bool disc=false, double hThreshold=0);
   template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void dwt_texture(const string& inputFilename, const string& outputFilename,int dim, int scale, int down=1, int iband=0, bool verbose=false);
   
 private:
+  static void initMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
+    //initialize selMap
+    m_filterMap["stdev"]=filter2d::stdev;
+    m_filterMap["var"]=filter2d::var;
+    m_filterMap["min"]=filter2d::min;
+    m_filterMap["max"]=filter2d::max;
+    m_filterMap["sum"]=filter2d::sum;
+    m_filterMap["mean"]=filter2d::mean;
+    m_filterMap["minmax"]=filter2d::minmax;
+    m_filterMap["dilate"]=filter2d::dilate;
+    m_filterMap["erode"]=filter2d::erode;
+    m_filterMap["close"]=filter2d::close;
+    m_filterMap["open"]=filter2d::open;
+    m_filterMap["homog"]=filter2d::homog;
+    m_filterMap["sobelx"]=filter2d::sobelx;
+    m_filterMap["sobely"]=filter2d::sobely;
+    m_filterMap["sobelxy"]=filter2d::sobelxy;
+    m_filterMap["sobelyx"]=filter2d::sobelyx;
+    m_filterMap["smooth"]=filter2d::smooth;
+    m_filterMap["density"]=filter2d::density;
+    m_filterMap["majority"]=filter2d::majority;
+    m_filterMap["mixed"]=filter2d::mixed;
+    m_filterMap["smoothnodata"]=filter2d::smoothnodata;
+    m_filterMap["threshold"]=filter2d::threshold;
+    m_filterMap["ismin"]=filter2d::ismin;
+    m_filterMap["ismax"]=filter2d::ismax;
+    m_filterMap["heterog"]=filter2d::heterog;
+    m_filterMap["order"]=filter2d::order;
+    m_filterMap["median"]=filter2d::median;
+  }
+
   Vector2d<double> m_taps;
   double m_noValue;
   vector<short> m_class;
@@ -150,7 +187,7 @@ private:
     }
   }
 
-template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, int method, int dimX, int dimY, short down, bool disc)
+template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, const std::string& method, int dimX, int dimY, short down, bool disc)
 {
   statfactory::StatFactory stat;
   outputVector.resize((inputVector.size()+down-1)/down);
@@ -227,49 +264,49 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           }
         }
       }
-      switch(method){
-      case(MEDIAN):
+      switch(getFilterType(method)){
+      case(filter2d::median):
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=stat.median(windowBuffer);
         break;
-      case(VAR):{
+      case(filter2d::var):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=stat.var(windowBuffer);
         break;
       }
-      case(STDEV):{
+      case(filter2d::stdev):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=sqrt(stat.var(windowBuffer));
         break;
       }
-      case(MEAN):{
+      case(filter2d::mean):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=stat.mean(windowBuffer);
         break;
       }
-      case(MIN):{
+      case(filter2d::min):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=stat.min(windowBuffer);
         break;
       }
-      case(ISMIN):{
+      case(filter2d::ismin):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
         break;
       }
-      case(MINMAX):{
+      case(filter2d::minmax):{
         double min=0;
         double max=0;
         if(windowBuffer.empty())
@@ -283,21 +320,21 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         }
         break;
       }
-      case(MAX):{
+      case(filter2d::max):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=stat.max(windowBuffer);
         break;
       }
-      case(ISMAX):{
+      case(filter2d::ismax):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else
           outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
         break;
       }
-      case(ORDER):{
+      case(filter2d::order):{
         if(windowBuffer.empty())
           outBuffer[x/down]=m_noValue;
         else{
@@ -310,17 +347,17 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         }
         break;
       }
-      case(SUM):{
+      case(filter2d::sum):{
         outBuffer[x/down]=stat.sum(windowBuffer);
         break;
       }
-      case(HOMOG):
+      case(filter2d::homog):
         if(occurrence.size()==1)//all values in window must be the same
           outBuffer[x/down]=inBuffer[dimY/2][x];
         else//favorize original value in case of ties
           outBuffer[x/down]=m_noValue;
         break;
-      case(HETEROG):{
+      case(filter2d::heterog):{
         for(vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
           if(wit==windowBuffer.begin()+windowBuffer.size()/2)
             continue;
@@ -333,7 +370,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         }
         break;
       }
-      case(DENSITY):{
+      case(filter2d::density):{
         if(windowBuffer.size()){
           vector<short>::const_iterator vit=m_class.begin();
           while(vit!=m_class.end())
@@ -343,7 +380,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           outBuffer[x/down]=m_noValue;
         break;
       }
-      case(MAJORITY):{
+      case(filter2d::majority):{
         if(occurrence.size()){
           map<int,int>::const_iterator maxit=occurrence.begin();
           for(map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
@@ -359,7 +396,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           outBuffer[x/down]=m_noValue;
         break;
       }
-      case(THRESHOLD):{
+      case(filter2d::threshold):{
         assert(m_class.size()==m_threshold.size());
         if(windowBuffer.size()){
           outBuffer[x/down]=inBuffer[dimY/2][x];//initialize with original value (in case thresholds not met)
@@ -372,7 +409,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           outBuffer[x/down]=m_noValue;
         break;
       }
-      case(MIXED):{
+      case(filter2d::mixed):{
         enum MixType { BF=11, CF=12, MF=13, NF=20, W=30 };
         double nBF=occurrence[BF];
         double nCF=occurrence[CF];
@@ -419,7 +456,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
 //   }
 // };
 
-template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& input, Vector2d<T>& output, int method, int dimX, int dimY, bool disc, double hThreshold)
+template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& input, Vector2d<T>& output, const std::string& method, int dimX, int dimY, bool disc, double hThreshold)
 {
   unsigned long int nchange=0;
   assert(dimX);
@@ -510,14 +547,14 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
           }
         }
         if(statBuffer.size()){
-          switch(method){
-          case(DILATE):
+          switch(getFilterType(method)){
+          case(filter2d::dilate):
             if(output[y][x]<stat.max(statBuffer)-hThreshold){
               output[y][x]=stat.max(statBuffer);
               ++nchange;
             }
             break;
-          case(ERODE):
+          case(filter2d::erode):
             if(output[y][x]>stat.min(statBuffer)+hThreshold){
               output[y][x]=stat.min(statBuffer);
               ++nchange;
@@ -525,7 +562,7 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
             break;
           default:
             ostringstream ess;
-            ess << "Error:  morphology method " << method << " not supported, choose " << DILATE << " (dilate) or " << ERODE << " (erode)" << endl;
+            ess << "Error:  morphology method " << method << " not supported, choose " << filter2d::dilate << " (dilate) or " << filter2d::erode << " (erode)" << endl;
             throw(ess.str());
             break;
           }

@@ -2,6 +2,14 @@ AM_LDFLAGS = $(GSL_LIBS) $(GDAL_LDFLAGS) @AM_LDFLAGS@
 AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
 
 ###############################################################################
+# THE PROGRAMS TO BUILD
+###############################################################################
+
+# the program to build (the names of the final binaries)
+#do not want to install pktestoption
+noinst_PROGRAMS = pktestStat
+
+###############################################################################
 # THE LIBRARIES TO BUILD
 ###############################################################################
 
@@ -25,3 +33,7 @@ endif
 # the sources to add to the library and to add to the source distribution
 libalgorithms_a_SOURCES = $(libalgorithms_a_HEADERS) Egcs.cc Filter2d.cc Filter.cc ConfusionMatrix.cc svm.cpp
 ###############################################################################
+
+# list of sources for the binaries
+pktestStat_SOURCES = pktestStat.cc
+pktestStat_LDADD = $(GSL_LIBS) -lgslwrap $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a -lgslwrap

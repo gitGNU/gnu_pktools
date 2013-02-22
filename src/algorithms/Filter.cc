@@ -38,7 +38,7 @@ void filter::Filter::setTaps(const vector<double> &taps)
   assert(m_taps.size()%2);
 }
 
-void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down, int offset)
+void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -104,7 +104,7 @@ void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, sho
   }
 }
 
-void filter::Filter::applyFwhm(const ImgReaderGdal& input, ImgWriterGdal& output, const vector<double> &wavelengthIn, const vector<double> &wavelengthOut, const vector<double> &fwhm, bool verbose){
+void filter::Filter::applyFwhm(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, ImgWriterGdal& output, bool verbose){
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(wavelengthOut.size(),input.nrOfCol());
   const char* pszMessage;
@@ -118,8 +118,10 @@ void filter::Filter::applyFwhm(const ImgReaderGdal& input, ImgWriterGdal& output
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput;
     for(int x=0;x<input.nrOfCol();++x){
-      pixelInput=lineInput.selectCol(x);
-      applyFwhm<double>(pixelInput,wavelengthIn,pixelOutput,wavelengthOut, fwhm, verbose);
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        pixelInput[iband]=lineInput[iband][x];
+      applyFwhm<double>(wavelengthIn,pixelInput,wavelengthOut,fwhm, interpolationType, pixelOutput, verbose);
+      assert(pixelOutput.size()==wavelengthOut.size());
       for(int iband=0;iband<pixelOutput.size();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }

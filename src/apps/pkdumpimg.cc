@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output ascii file (Default is empty: use stdout", "");
   Optionpk<string> otype_opt("ot", "otype", "Data type for output ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string> oformat_opt("of", "oformat", "Output format (matrix form or list (x,y,z) form. Default is matrix form", "matrix");
-  Optionpk<int> band_opt("b", "band", "band index to crop (-1: crop all bands)", 0);
+  Optionpk<int> band_opt("b", "band", "band index to crop");
   Optionpk<string> extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
   Optionpk<double> ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)",0.0);
   Optionpk<double> uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)",0.0);
@@ -213,105 +213,111 @@ int main(int argc, char *argv[])
   //test
   // vector<double> readBuffer(readncol);
   vector<double> readBuffer(readncol+1);
-  assert(band_opt[0]>=0);
-  assert(band_opt[0]<imgReader.nrOfBand());
   assert(imgWriter.isGeoRef());
-  for(int irow=0;irow<ncroprow;++irow){
-    if(verbose_opt[0])
-      std::cout << irow << std::endl;
-    double x=0;
-    double y=0;
-    //convert irow to geo
-    imgWriter.image2geo(0,irow,x,y);
-    //lookup corresponding row for irow in this file
-    imgReader.geo2image(x,y,readCol,readRow);
-    if(readRow<0||readRow>=imgReader.nrOfRow()){
-      if(verbose_opt[0]>1)
-        std::cout << "skipping row " << readRow << std::endl;
-      continue;
-    }
-    try{
-      //test
-      // imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,band_opt[0],theResample);
-      if(endCol<imgReader.nrOfCol()-1)
-        imgReader.readData(readBuffer,GDT_Float64,startCol,endCol+1,readRow,band_opt[0],theResample);
-      else
-        imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,band_opt[0],theResample);
-      for(int ib=0;ib<ncropcol;++ib){
-        assert(imgWriter.image2geo(ib,irow,x,y));
-        //lookup corresponding row for irow in this file
-        imgReader.geo2image(x,y,readCol,readRow);
-        if(readCol<0||readCol>=imgReader.nrOfCol()){
-          if(oformat_opt[0]=="matrix"){
-            if(output_opt[0].empty())
-              std::cout << flag_opt[0] << " ";
-            else
-              outputStream << flag_opt[0] << " ";
-          }
-          else{
-            if(output_opt[0].empty())
-              std::cout << x << " " << y << " " << flag_opt[0] << endl;
-            else
-              outputStream << x << " " << y << " " << flag_opt[0] << endl;
-          }
-        }
-        else{
-          switch(theResample){
-          case(BILINEAR):
-            lowerCol=readCol-0.5;
-            lowerCol=static_cast<int>(lowerCol);
-            upperCol=readCol+0.5;
-            upperCol=static_cast<int>(upperCol);
-            if(lowerCol<0)
-              lowerCol=0;
-            if(upperCol>=imgReader.nrOfCol())
-              upperCol=imgReader.nrOfCol()-1;
+  if(band_opt.empty()){
+    for(int iband=0;iband<imgReader.nrOfBand();++iband)
+      band_opt.push_back(iband);
+  }
+  for(int iband=0;iband<band_opt.size();++iband){
+    assert(band_opt[iband]>=0);
+    assert(band_opt[iband]<imgReader.nrOfBand());
+    for(int irow=0;irow<ncroprow;++irow){
+      if(verbose_opt[0])
+        std::cout << irow << std::endl;
+      double x=0;
+      double y=0;
+      //convert irow to geo
+      imgWriter.image2geo(0,irow,x,y);
+      //lookup corresponding row for irow in this file
+      imgReader.geo2image(x,y,readCol,readRow);
+      if(readRow<0||readRow>=imgReader.nrOfRow()){
+        if(verbose_opt[0]>1)
+          std::cout << "skipping row " << readRow << std::endl;
+        continue;
+      }
+      try{
+        //test
+        // imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,band_opt[0],theResample);
+        if(endCol<imgReader.nrOfCol()-1)
+          imgReader.readData(readBuffer,GDT_Float64,startCol,endCol+1,readRow,band_opt[iband],theResample);
+        else
+          imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,band_opt[iband],theResample);
+        for(int ib=0;ib<ncropcol;++ib){
+          assert(imgWriter.image2geo(ib,irow,x,y));
+          //lookup corresponding row for irow in this file
+          imgReader.geo2image(x,y,readCol,readRow);
+          if(readCol<0||readCol>=imgReader.nrOfCol()){
             if(oformat_opt[0]=="matrix"){
               if(output_opt[0].empty())
-                std::cout << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " ";
+                std::cout << flag_opt[0] << " ";
               else
-                outputStream << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " ";
+                outputStream << flag_opt[0] << " ";
             }
-            else if(!imgReader.isNoData(readBuffer[upperCol-startCol])&&!imgReader.isNoData(readBuffer[lowerCol-startCol])){
+            else{
+              if(output_opt[0].empty())
+                std::cout << x << " " << y << " " << flag_opt[0] << endl;
+              else
+                outputStream << x << " " << y << " " << flag_opt[0] << endl;
+            }
+          }
+          else{
+            switch(theResample){
+            case(BILINEAR):
+              lowerCol=readCol-0.5;
+              lowerCol=static_cast<int>(lowerCol);
+              upperCol=readCol+0.5;
+              upperCol=static_cast<int>(upperCol);
+              if(lowerCol<0)
+                lowerCol=0;
+              if(upperCol>=imgReader.nrOfCol())
+                upperCol=imgReader.nrOfCol()-1;
+              if(oformat_opt[0]=="matrix"){
+                if(output_opt[0].empty())
+                  std::cout << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " ";
+                else
+                  outputStream << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " ";
+              }
+              else if(!imgReader.isNoData(readBuffer[upperCol-startCol])&&!imgReader.isNoData(readBuffer[lowerCol-startCol])){
                 if(output_opt[0].empty())
                   std::cout << x << " " << y << " " << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " " << endl;
                 else
                   outputStream << x << " " << y << " " << (readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol] << " " << endl;
+              }
+              break;
+            default:
+              readCol=static_cast<int>(readCol);
+              readCol-=startCol;//we only start reading from startCol
+              assert(readCol>=0);
+              if(readCol>=readBuffer.size())
+                std::cout << "Error: " << readCol << " >= " << readBuffer.size() << std::endl;
+              assert(readCol<readBuffer.size());
+              if(oformat_opt[0]=="matrix"){
+                if(output_opt[0].empty())
+                  std::cout << readBuffer[readCol] << " ";
+                else
+                  outputStream << readBuffer[readCol] << " ";
+              }
+              else if(!imgReader.isNoData(readBuffer[readCol])){
+                if(output_opt[0].empty())
+                  std::cout << x << " " << y << " " << readBuffer[readCol] << std::endl;
+                else
+                  outputStream << x << " " << y << " " << readBuffer[readCol] << std::endl;
+              }
+              break;
             }
-            break;
-          default:
-            readCol=static_cast<int>(readCol);
-            readCol-=startCol;//we only start reading from startCol
-            assert(readCol>=0);
-            if(readCol>=readBuffer.size())
-              std::cout << "Error: " << readCol << " >= " << readBuffer.size() << std::endl;
-            assert(readCol<readBuffer.size());
-            if(oformat_opt[0]=="matrix"){
-              if(output_opt[0].empty())
-                std::cout << readBuffer[readCol] << " ";
-              else
-                outputStream << readBuffer[readCol] << " ";
-            }
-            else if(!imgReader.isNoData(readBuffer[readCol])){
-              if(output_opt[0].empty())
-                std::cout << x << " " << y << " " << readBuffer[readCol] << std::endl;
-              else
-                outputStream << x << " " << y << " " << readBuffer[readCol] << std::endl;
-            }
-            break;
           }
         }
       }
-    }
-    catch(string errorstring){
-      cout << errorstring << endl;
-      exit(1);
-    }
-    if(oformat_opt[0]=="matrix"){
-      if(output_opt[0].empty())
-        std::cout << std::endl;
-      else
-        outputStream << std::endl;
+      catch(string errorstring){
+        cout << errorstring << endl;
+        exit(1);
+      }
+      if(oformat_opt[0]=="matrix"){
+        if(output_opt[0].empty())
+          std::cout << std::endl;
+        else
+          outputStream << std::endl;
+      }
     }
   }
   if(extent_opt[0]!=""){

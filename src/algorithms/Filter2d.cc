@@ -389,7 +389,7 @@ void filter2d::Filter2d::median(const string& inputFilename, const string& outpu
   ImgWriterGdal output;
   input.open(inputFilename);
   output.open(outputFilename,input);
-  doit(input,output,MEDIAN,dim,disc);
+  doit(input,output,"median",dim,disc);
 }
 
 void filter2d::Filter2d::var(const string& inputFilename, const string& outputFilename,int dim, bool disc)
@@ -398,15 +398,15 @@ void filter2d::Filter2d::var(const string& inputFilename, const string& outputFi
   ImgWriterGdal output;
   input.open(inputFilename);
   output.open(outputFilename,input);
-  doit(input,output,VAR,dim,disc);
+  doit(input,output,"var",dim,disc);
 }
 
-void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dim, short down, bool disc)
+void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, bool disc)
 {
   doit(input,output,method,dim,dim,down,disc);
 }
 
-void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, short down, bool disc)
+void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
 {
   assert(dimX);
   assert(dimY);
@@ -501,49 +501,49 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
             }
 	  }
         }
-        switch(method){
-        case(MEDIAN):
+        switch(getFilterType(method)){
+        case(filter2d::median):
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
             outBuffer[x/down]=stat.median(windowBuffer);
           break;
-        case(VAR):{
+        case(filter2d::var):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
             outBuffer[x/down]=stat.var(windowBuffer);
           break;
         }
-        case(STDEV):{
+        case(filter2d::stdev):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
             outBuffer[x/down]=sqrt(stat.var(windowBuffer));
           break;
         }
-        case(MEAN):{
+        case(filter2d::mean):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
             outBuffer[x/down]=stat.mean(windowBuffer);
           break;
         }
-        case(MIN):{
+        case(filter2d::min):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
            outBuffer[x/down]=stat.min(windowBuffer);
           break;
         }
-        case(ISMIN):{
+        case(filter2d::ismin):{
            if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
             outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
           break;
         }
-        case(MINMAX):{
+        case(filter2d::minmax):{
           double min=0;
           double max=0;
           if(windowBuffer.empty())
@@ -557,21 +557,21 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           }
           break;
         }
-        case(MAX):{
+        case(filter2d::max):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
             outBuffer[x/down]=stat.max(windowBuffer);
           break;
         }
-        case(ISMAX):{
+        case(filter2d::ismax):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
             outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
           break;
         }
-        case(ORDER):{
+        case(filter2d::order):{
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else{
@@ -584,17 +584,17 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           }
           break;
         }
-        case(SUM):{
+        case(filter2d::sum):{
           outBuffer[x/down]=stat.sum(windowBuffer);
           break;
         }
-        case(HOMOG):
+        case(filter2d::homog):
 	  if(occurrence.size()==1)//all values in window must be the same
 	    outBuffer[x/down]=inBuffer[dimY/2][x];
 	  else//favorize original value in case of ties
 	    outBuffer[x/down]=m_noValue;
           break;
-        case(HETEROG):{
+        case(filter2d::heterog):{
           for(vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
             if(wit==windowBuffer.begin()+windowBuffer.size()/2)
               continue;
@@ -607,7 +607,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           }
           break;
         }
-        case(DENSITY):{
+        case(filter2d::density):{
 	  if(windowBuffer.size()){
 	    vector<short>::const_iterator vit=m_class.begin();
 	    while(vit!=m_class.end())
@@ -617,7 +617,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    outBuffer[x/down]=m_noValue;
           break;
 	}
-        case(MAJORITY):{
+        case(filter2d::majority):{
 	  if(occurrence.size()){
             map<int,int>::const_iterator maxit=occurrence.begin();
             for(map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
@@ -633,7 +633,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    outBuffer[x/down]=m_noValue;
           break;
         }
-        case(THRESHOLD):{
+        case(filter2d::threshold):{
           assert(m_class.size()==m_threshold.size());
 	  if(windowBuffer.size()){
             outBuffer[x/down]=inBuffer[dimY/2][x];//initialize with original value (in case thresholds not met)
@@ -646,7 +646,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    outBuffer[x/down]=m_noValue;
           break;
         }
-        case(MIXED):{
+        case(filter2d::mixed):{
           enum Type { BF=11, CF=12, MF=13, NF=20, W=30 };
           double nBF=occurrence[BF];
           double nCF=occurrence[CF];
@@ -799,7 +799,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 //   output.close();
 // }
 
-void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, int method, int dimX, int dimY, bool disc, double angle)
+void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, bool disc, double angle)
 {
   assert(dimX);
   assert(dimY);
@@ -932,16 +932,16 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	    }
           }
 	  if(statBuffer.size()){
-            switch(method){
-            case(DILATE):
+            switch(getFilterType(method)){
+            case(filter2d::dilate):
               outBuffer[x]=stat.max(statBuffer);
               break;
-            case(ERODE):
+            case(filter2d::erode):
               outBuffer[x]=stat.min(statBuffer);
               break;
             default:
               ostringstream ess;
-              ess << "Error:  morphology method " << method << " not supported, choose " << DILATE << " (dilate) or " << ERODE << " (erode)" << endl;
+              ess << "Error:  morphology method " << method << " not supported, choose " << filter2d::dilate << " (dilate) or " << filter2d::erode << " (erode)" << endl;
               throw(ess.str());
               break;
             }

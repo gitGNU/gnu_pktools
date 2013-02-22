@@ -39,8 +39,14 @@ int main(int argc, char *argv[])
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)", 0.0);
-  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)", 0.0);
+  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)");
+  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)");
+  Optionpk<double> cx_opt("x", "x", "x-coordinate of image centre to crop (in meter)");
+  Optionpk<double> cy_opt("y", "y", "y-coordinate of image centre to crop (in meter)");
+  Optionpk<double> nx_opt("nx", "nx", "image size in x to crop (in meter)");
+  Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
+  Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
+  Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
   Optionpk<int>  band_opt("b", "band", "band index to crop (-1: crop all bands)", -1);
   Optionpk<double> scale_opt("s", "scale", "output=scale*input+offset", 1);
   Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset", 0);
@@ -72,6 +78,12 @@ int main(int argc, char *argv[])
     colorTable_opt.retrieveOption(argc,argv);
     dx_opt.retrieveOption(argc,argv);
     dy_opt.retrieveOption(argc,argv);
+    cx_opt.retrieveOption(argc,argv);
+    cy_opt.retrieveOption(argc,argv);
+    nx_opt.retrieveOption(argc,argv);
+    ny_opt.retrieveOption(argc,argv);
+    ns_opt.retrieveOption(argc,argv);
+    nl_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     flag_opt.retrieveOption(argc,argv);
     resample_opt.retrieveOption(argc,argv);
@@ -118,6 +130,27 @@ int main(int argc, char *argv[])
   pfnProgress(progress,pszMessage,pProgressArg);
   ImgReaderGdal imgReader;
   ImgWriterGdal imgWriter;
+  //open input images to extract number of bands and spatial resolution
+  int ncropband=0;//total number of bands to write
+  double dx=(dx_opt.size())? dx_opt[0]:0;
+  double dy=(dy_opt.size())? dy_opt[0]:0;
+  for(int iimg=0;iimg<input_opt.size();++iimg){
+    imgReader.open(input_opt[iimg]);
+    if(dx_opt.empty()){
+      if(!iimg||imgReader.getDeltaX()<dx)
+        dx=imgReader.getDeltaX();
+    }
+    if(dy_opt.empty()){
+      if(!iimg||imgReader.getDeltaY()<dy)
+        dy=imgReader.getDeltaY();
+    }
+    if(band_opt[0]>=0)
+      ncropband+=band_opt.size();
+    else
+      ncropband+=imgReader.nrOfBand();
+    imgReader.close();
+  }
+
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
     cout << "possible output data types: ";
@@ -136,8 +169,6 @@ int main(int argc, char *argv[])
     else
       cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
   }
-  double dx=dx_opt[0];
-  double dy=dy_opt[0];
   //bounding box of cropped image
   double cropulx=ulx_opt[0];
   double cropuly=uly_opt[0];
@@ -152,23 +183,34 @@ int main(int argc, char *argv[])
         cerr << "Error: could not get extent from " << extent_opt[0] << endl;
         exit(1);
       }
-      if(ulx_opt[0]<cropulx)
-        cropulx=ulx_opt[0];
-      if(uly_opt[0]>cropuly)
-        cropuly=uly_opt[0];
-      if(lry_opt[0]<croplry)
-        croplry=lry_opt[0];
-      if(lrx_opt[0]>croplrx)
-        croplrx=lrx_opt[0];
       extentReader.close();
     }
     if(mask_opt[0])
       extentReader.open(extent_opt[0]);
   }
+  else if(cx_opt.size()&&cy_opt.size()&&nx_opt.size()&&ny_opt.size()){
+    ulx_opt[0]=cx_opt[0]-nx_opt[0]/2.0;
+    uly_opt[0]=cy_opt[0]+ny_opt[0]/2.0;
+    lrx_opt[0]=cx_opt[0]+nx_opt[0]/2.0;
+    lry_opt[0]=cy_opt[0]-ny_opt[0]/2.0;
+  }
+  else if(cx_opt.size()&&cy_opt.size()&&ns_opt.size()&&nl_opt.size()){
+    ulx_opt[0]=cx_opt[0]-ns_opt[0]*dx/2.0;
+    uly_opt[0]=cy_opt[0]+nl_opt[0]*dy/2.0;
+    lrx_opt[0]=cx_opt[0]+ns_opt[0]*dx/2.0;
+    lry_opt[0]=cy_opt[0]-nl_opt[0]*dy/2.0;
+  }
+  if(ulx_opt[0]<cropulx)
+    cropulx=ulx_opt[0];
+  if(uly_opt[0]>cropuly)
+    cropuly=uly_opt[0];
+  if(lry_opt[0]<croplry)
+    croplry=lry_opt[0];
+  if(lrx_opt[0]>croplrx)
+    croplrx=lrx_opt[0];
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
   //determine number of output bands
-  int ncropband=0;//total number of bands to write
   int writeBand=0;//write band
 
   while(scale_opt.size()<band_opt.size())
@@ -176,14 +218,6 @@ int main(int argc, char *argv[])
   while(offset_opt.size()<band_opt.size())
     offset_opt.push_back(offset_opt[0]);
 
-  for(int iimg=0;iimg<input_opt.size();++iimg){
-    imgReader.open(input_opt[iimg]);
-    if(band_opt[0]>=0)
-      ncropband+=band_opt.size();
-    else
-      ncropband+=imgReader.nrOfBand();
-    imgReader.close();
-  }
   for(int iimg=0;iimg<input_opt.size();++iimg){
     if(verbose_opt[0])
       cout << "opening image " << input_opt[iimg] << endl;
@@ -203,10 +237,10 @@ int main(int argc, char *argv[])
     int ncol=imgReader.nrOfCol();
     int ncropcol=0;
     int ncroprow=0;
-    if(!dx||!dy){
-      dx=imgReader.getDeltaX();
-      dy=imgReader.getDeltaY();
-    }
+    // if(!dx||!dy){
+    //   dx=imgReader.getDeltaX();
+    //   dy=imgReader.getDeltaY();
+    // }
     if(verbose_opt[0])
       cout << "size of " << input_opt[iimg] << ": " << ncol << " cols, "<< nrow << " rows" << endl;
     double uli,ulj,lri,lrj;//image coordinates

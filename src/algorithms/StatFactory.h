@@ -22,6 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include <math.h>
 #include <assert.h>
 #include <string>
@@ -38,12 +39,57 @@ using namespace std;
 namespace statfactory
 {
 
-  enum INTERPOLATION_TYPE {UNDEFINED=0,POLYNOMIAL=1,CSPLINE=2,PERIODIC=3,AKIMA=4,AKIMA_PERIODIC=5,LINEAR=6};
-      
 class StatFactory{
+
 public:
+  enum INTERPOLATION_TYPE {undefined=0,linear=1,polynomial=2,cspline=3,cspline_periodic=4,akima=5,akima_periodic=6};
   StatFactory(void){};
   virtual ~StatFactory(void){};
+  INTERPOLATION_TYPE getInterpolationType(const std::string interpolationType){
+    std::map<std::string, INTERPOLATION_TYPE> m_interpMap;
+    initMap(m_interpMap);
+    // gsl_interp_accel *acc=gsl_interp_accel_alloc();
+    // gsl_spline *spline=gsl_spline_alloc(m_interpMap["interpolationType"],theSize);
+    return m_interpMap[interpolationType];
+  };
+  static void allocAcc(gsl_interp_accel *&acc){
+    acc = gsl_interp_accel_alloc ();
+  };
+
+  static void getSpline(const std::string type, int size, gsl_spline *& spline){
+    std::map<std::string, INTERPOLATION_TYPE> m_interpMap;
+    initMap(m_interpMap);
+    switch(m_interpMap[type]){
+    case(polynomial):
+      spline=gsl_spline_alloc(gsl_interp_polynomial,size);
+      break;
+    case(cspline):
+      spline=gsl_spline_alloc(gsl_interp_cspline,size);
+      break;
+    case(cspline_periodic):
+      spline=gsl_spline_alloc(gsl_interp_cspline_periodic,size);
+      break;
+    case(akima):
+      spline=gsl_spline_alloc(gsl_interp_akima,size);
+      break;
+    case(akima_periodic):
+      spline=gsl_spline_alloc(gsl_interp_akima_periodic,size);
+      break;
+    case(linear):
+    default:
+      spline=gsl_spline_alloc(gsl_interp_linear,size);
+    break;
+    }
+    assert(spline);
+  };
+  static void initSpline(gsl_spline *spline, const double *x, const double *y, int size){
+    gsl_spline_init (spline, x, y, size);
+  };
+  static double evalSpline(gsl_spline *spline, double x, gsl_interp_accel *acc){
+    return gsl_spline_eval (spline, x, acc);
+  };
+
+
   template<class T> T max(const vector<T>& v) const;
   template<class T> T min(const vector<T>& v) const;
 //   template<class T> typename vector<T>::const_iterator max(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const;
@@ -75,15 +121,28 @@ public:
   template<class T> double correlation(const vector<T>& x, const vector<T>& y, int delay=0) const;
   template<class T> double cross_correlation(const vector<T>& x, const vector<T>& y, int maxdelay, vector<T>& z) const;
   template<class T> double linear_regression(const vector<T>& x, const vector<T>& y, double &c0, double &c1) const;
-  template<class T> void interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type=1);
-  template<class T> void interpolateUp(const vector< vector<T> >& input, const vector<double>& wavelengthIn, vector< vector<T> >& output, vector<double>& wavelengthOut, double start, double end, double step, int type=1);
+  template<class T> void interpolateUp(const vector<double>& wavelengthIn, const vector<T>& input, const vector<double>& wavelengthOut, const std::string& type, vector<T>& output, bool verbose=false);
+  template<class T> void interpolateUp(const vector<double>& wavelengthIn, const vector< vector<T> >& input, const vector<double>& wavelengthOut, const std::string& type, vector< vector<T> >& output, bool verbose=false);
+  // template<class T> void interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, const gsl_interp_type* type);
+  // template<class T> void interpolateUp(const vector< vector<T> >& input, const vector<double>& wavelengthIn, vector< vector<T> >& output, vector<double>& wavelengthOut, double start, double end, double step, const gsl_interp_type* type);
   template<class T> void interpolateUp(const vector<T>& input, vector<T>& output, int nbin);
   template<class T> void interpolateUp(double* input, int dim, vector<T>& output, int nbin);
   template<class T> void interpolateDown(const vector<T>& input, vector<T>& output, int nbin);
   template<class T> void interpolateDown(double* input, int dim, vector<T>& output, int nbin);
 
 private:
+  static void initMap(std::map<std::string, INTERPOLATION_TYPE>& m_interpMap){
+    //initialize selMap
+    m_interpMap["linear"]=linear;
+    m_interpMap["polynomial"]=polynomial;
+    m_interpMap["cspline"]=cspline;
+    m_interpMap["cspline_periodic"]=cspline_periodic;
+    m_interpMap["akima"]=akima;
+    m_interpMap["akima_periodic"]=akima_periodic;
+  }
+
 };
+
 
 template<class T> typename vector<T>::iterator StatFactory::max(const vector<T>& v, typename vector<T>::iterator begin, typename vector<T>::iterator end) const
 {
@@ -460,108 +519,67 @@ template<class T> double StatFactory::cross_correlation(const vector<T>& x, cons
 //alternatively: use GNU scientific library:
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
-  template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& input, const vector<double>& wavelengthIn, vector< vector<T> >& output, vector<double>& wavelengthOut, double start, double end, double step, int type){
-  int nsample=input.size();//first sample contains wavelength
-  int nband=wavelengthIn.size();    
+template<class T> void StatFactory::interpolateUp(const vector<double>& wavelengthIn, const vector<T>& input, const vector<double>& wavelengthOut, const std::string& type, vector<T>& output, bool verbose){
+  assert(wavelengthIn.size());
+  assert(input.size()==wavelengthIn.size());
+  assert(wavelengthOut.size());
+  int nband=wavelengthIn.size();
   output.clear();
-  wavelengthOut.clear();
-  output.resize(nsample);//first sample contains wavelength
-  start=(start)?start:floor(wavelengthIn[0]);
-  end=(end)?end:ceil(wavelengthIn.back());
-  for(double xi=start;xi<=end;xi+=step)
-    wavelengthOut.push_back(xi);
-  for(int isample=0;isample<nsample;++isample){
-    gsl_interp_accel *acc=gsl_interp_accel_alloc();
-    gsl_spline *spline;
-    switch(type){
-    case(POLYNOMIAL):
-      spline=gsl_spline_alloc(gsl_interp_polynomial,nband);
-      break;
-    case(CSPLINE):
-        spline=gsl_spline_alloc(gsl_interp_cspline,nband);
-        break;
-    case(PERIODIC):
-        spline=gsl_spline_alloc(gsl_interp_cspline_periodic,nband);
-        break;
-    case(AKIMA):
-        spline=gsl_spline_alloc(gsl_interp_akima,nband);
-        break;
-    case(AKIMA_PERIODIC):
-        spline=gsl_spline_alloc(gsl_interp_akima_periodic,nband);
-        break;
-    case(LINEAR):
-        spline=gsl_spline_alloc(gsl_interp_linear,nband);
-        break;
-    case(UNDEFINED):
-    default:{
-      string errorString="Error: interpolation type not defined: ";
-      errorString+=type;
-      throw(errorString);
-        break;
+  gsl_interp_accel *acc;
+  allocAcc(acc);
+  gsl_spline *spline;
+  getSpline(type,nband,spline);
+  assert(spline);
+  assert(&(wavelengthIn[0]));
+  assert(&(input[0]));
+  initSpline(spline,&(wavelengthIn[0]),&(input[0]),nband);
+  for(int index=0;index<wavelengthOut.size();++index){
+    if(type=="linear"){
+      if(wavelengthOut[index]<wavelengthIn.back()){
+        output.push_back(*(input.begin()));
+        continue;
+      }
+      else if(wavelengthOut[index]>wavelengthIn.back()){
+        output.push_back(input.back());
+        continue;
+      }
     }
-    }
-    gsl_spline_init(spline,&(wavelengthIn[0]),&(input[isample][0]),nband);      
-    for(double xi=start;xi<=end;xi+=step){
-      if(!type&&xi>wavelengthIn.back())
-        output[isample].push_back(output[isample].back());
-      else
-        output[isample].push_back(gsl_spline_eval(spline,xi,acc));
-    }
-    gsl_spline_free(spline);
-    gsl_interp_accel_free(acc);
+    double dout=evalSpline(spline,wavelengthOut[index],acc);
+    output.push_back(dout);
   }
-  }
+  gsl_spline_free(spline);
+  gsl_interp_accel_free(acc);
+}
 
-  template<class T> void StatFactory::interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, int type)
-{
-  int nsample=input.size()-1;//first sample contains wavelength
-  int nband=input[0].size();    
+template<class T> void StatFactory::interpolateUp(const vector<double>& wavelengthIn, const vector< vector<T> >& input, const vector<double>& wavelengthOut, const std::string& type, vector< vector<T> >& output, bool verbose){
+  assert(wavelengthIn.size());
+  assert(wavelengthOut.size());
+  int nsample=input.size();  
+  int nband=wavelengthIn.size();
   output.clear();
-  output.resize(nsample+1);//first sample contains wavelength
-  start=(start)?start:floor(input[0][0]);
-  end=(end)?end:ceil(input[0].back());
-  for(double xi=start;xi<=end;xi+=step)
-    output[0].push_back(xi);
-  for(int isample=1;isample<nsample+1;++isample){
-    gsl_interp_accel *acc=gsl_interp_accel_alloc();
-    gsl_spline *spline;
-    switch(type){
-    case(POLYNOMIAL):
-      spline=gsl_spline_alloc(gsl_interp_polynomial,nband);
-      break;
-    case(CSPLINE):
-        spline=gsl_spline_alloc(gsl_interp_cspline,nband);
-        break;
-    case(PERIODIC):
-        spline=gsl_spline_alloc(gsl_interp_cspline_periodic,nband);
-        break;
-    case(AKIMA):
-        spline=gsl_spline_alloc(gsl_interp_akima,nband);
-        break;
-    case(AKIMA_PERIODIC):
-        spline=gsl_spline_alloc(gsl_interp_akima_periodic,nband);
-        break;
-    case(LINEAR):
-        spline=gsl_spline_alloc(gsl_interp_linear,nband);
-        break;
-    case(UNDEFINED):
-    default:{
-      string errorString="Error: interpolation type not defined: ";
-      errorString+=type;
-      throw(errorString);
-        break;
+  output.resize(nsample);
+  gsl_interp_accel *acc;
+  allocAcc(acc);
+  gsl_spline *spline;
+  getSpline(type,nband,spline);
+  for(int isample=0;isample<nsample;++isample){
+    assert(input[isample].size()==wavelengthIn.size());
+    initSpline(spline,&(wavelengthIn[0]),&(input[isample][0]),nband);      
+    for(int index=0;index<wavelengthOut.size();++index){
+      if(type=="linear"){
+        if(wavelengthOut[index]<wavelengthIn.back())
+          output[isample].push_back(*(input.begin()));
+        else if(wavelengthOut[index]>wavelengthIn.back())
+          output[isample].push_back(input.back());
+      }
+      else{
+        double dout=evalSpline(spline,wavelengthOut[index],acc);
+        output.push_back(dout);
+      }
     }
-    }
-    gsl_spline_init(spline,&(input[0][0]),&(input[isample][0]),nband);      
-    for(double xi=start;xi<=end;xi+=step){
-      if(!type&&xi>input[0].back())
-        output[isample].push_back(output[isample].back());
-      else
-        output[isample].push_back(gsl_spline_eval(spline,xi,acc));
-    }
-    gsl_spline_free(spline);
-    gsl_interp_accel_free(acc);
   }
+  gsl_spline_free(spline);
+  gsl_interp_accel_free(acc);
 }
 
 template<class T> void StatFactory::interpolateUp(const vector<T>& input, vector<T>& output, int nbin)
