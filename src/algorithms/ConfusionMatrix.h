@@ -49,8 +49,10 @@ public:
   int getClassIndex(string className) const {
     int index=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),className));
     assert(index>=0);
-    assert(index<m_results.size());
-    return(index);
+    if(index<m_results.size())
+      return(index);
+    else
+      return(-1);
   }
   vector<string> getClassNames() const {return m_classes;};
   ~ConfusionMatrix();

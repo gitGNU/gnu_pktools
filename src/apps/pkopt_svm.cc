@@ -54,8 +54,8 @@ Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confus
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
   assert(grad.empty());
   vector<Vector2d<float> > *tf=reinterpret_cast<vector<Vector2d<float> >*> (my_func_data);
-  float gamma=x[0];
-  float ccost=x[1];
+  float ccost=x[0];
+  float gamma=x[1];
   double error=1.0/epsilon_tol_opt[0];
   double kappa=1.0;
   double oa=1.0;
@@ -85,7 +85,7 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   struct svm_model* svm;
   struct svm_problem prob;
   struct svm_node* x_space;
- prob.l=ntraining;
+  prob.l=ntraining;
   prob.y = Malloc(double,prob.l);
   prob.x = Malloc(struct svm_node *,prob.l);
   x_space = Malloc(struct svm_node,(nFeatures+1)*ntraining);
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
   Optionpk<float> gamma_opt("g", "gamma", "min max boundaries for gamma in kernel function (optional: initial value)",0);
   Optionpk<float> ccost_opt("cc", "ccost", "min and max boundaries the parameter C of C-SVC, epsilon-SVR, and nu-SVR (optional: initial value)",1);
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
-  Optionpk<string> algorithm_opt("a", "algorithm", "optimization algorithm (see http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms)","LN_COBYLA"); 
+  Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -474,36 +474,71 @@ int main(int argc, char *argv[])
     gamma_opt.push_back(0);//will be translated to 1.0/nFeatures
   assert(ccost_opt.size()==3);//min, init, max
   assert(gamma_opt.size()==3);//min, init, max
-  nlopt::opt optimizer=OptFactory::getOptimizer(algorithm_opt[0],2);
-  if(verbose_opt[0]>1)
-    std::cout << "optimization algorithm: " << optimizer.get_algorithm_name() << "..." << std::endl;
-  std::vector<double> lb(2);
-  std::vector<double> init(2);
-  std::vector<double> ub(2);
-  lb[0]=ccost_opt[0];
-  lb[1]=(gamma_opt[0]>0)? gamma_opt[0] : 1.0/trainingFeatures[0][0].size();
-  init[0]=ccost_opt[2];
-  init[1]=(gamma_opt[2]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
-  ub[0]=ccost_opt[1];
-  ub[1]=(gamma_opt[1]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
-  optimizer.set_min_objective(objFunction, &trainingFeatures);
-  optimizer.set_lower_bounds(lb);
-  optimizer.set_upper_bounds(ub);
-
-  if(verbose_opt[0]>1)
-    std::cout << "set stopping criteria" << std::endl;
-  //set stopping criteria
-  if(maxit_opt[0])
-    optimizer.set_maxeval(maxit_opt[0]);
-  else
-    optimizer.set_xtol_rel(tolerance_opt[0]);
-  double minf=0;
-  std::vector<double> x=init;
-  optimizer.optimize(x, minf);
-  double ccost=x[0];
-  double gamma=x[1];
-  if(verbose_opt[0])
-    std::cout << "optimized with " << optimizer.get_algorithm_name() << "..." << std::endl;
+  std::vector<double> x(2);
+  if(algorithm_opt[0]=="GRID"){
+    double minError=1000;
+    double minCost=0;
+    double minGamma=0;
+    const char* pszMessage;
+    void* pProgressArg=NULL;
+    GDALProgressFunc pfnProgress=GDALTermProgress;
+    double progress=0;
+    pfnProgress(progress,pszMessage,pProgressArg);
+    double ncost=log(ccost_opt[1])/log(10)-log(ccost_opt[0])/log(10);
+    double ngamma=log(gamma_opt[1])/log(10)-log(gamma_opt[0])/log(10);
+    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=10){
+      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=10){
+	x[0]=ccost;
+	x[1]=gamma;
+	std::vector<double> theGrad;
+	double error=objFunction(x,theGrad,&trainingFeatures);
+	if(error<minError){
+	  minError=error;
+	  minCost=ccost;
+	  minGamma=gamma;
+	  if(verbose_opt[0])
+	    std::cout << ccost << " " << gamma << error<< std::endl;
+	}
+	progress+=1.0/ncost/ngamma;
+	pfnProgress(progress,pszMessage,pProgressArg);
+      }
+    }
+    progress=1.0;
+    pfnProgress(progress,pszMessage,pProgressArg);
+    x[0]=minCost;
+    x[1]=minGamma;
+  }
+  else{
+    nlopt::opt optimizer=OptFactory::getOptimizer(algorithm_opt[0],2);
+    if(verbose_opt[0]>1)
+      std::cout << "optimization algorithm: " << optimizer.get_algorithm_name() << "..." << std::endl;
+    std::vector<double> lb(2);
+    std::vector<double> init(2);
+    std::vector<double> ub(2);
+    lb[0]=ccost_opt[0];
+    lb[1]=(gamma_opt[0]>0)? gamma_opt[0] : 1.0/trainingFeatures[0][0].size();
+    init[0]=ccost_opt[2];
+    init[1]=(gamma_opt[2]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
+    ub[0]=ccost_opt[1];
+    ub[1]=(gamma_opt[1]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
+    optimizer.set_min_objective(objFunction, &trainingFeatures);
+    optimizer.set_lower_bounds(lb);
+    optimizer.set_upper_bounds(ub);
+    if(verbose_opt[0]>1)
+      std::cout << "set stopping criteria" << std::endl;
+    //set stopping criteria
+    if(maxit_opt[0])
+      optimizer.set_maxeval(maxit_opt[0]);
+    else
+      optimizer.set_xtol_rel(tolerance_opt[0]);
+    double minf=0;
+    x=init;
+    optimizer.optimize(x, minf);
+    double ccost=x[0];
+    double gamma=x[1];
+    if(verbose_opt[0])
+      std::cout << "optimized with " << optimizer.get_algorithm_name() << "..." << std::endl;
+  }
   std::cout << " --ccost " << x[0];
   std::cout << " --gamma " << x[1];
   std::cout << std::endl;

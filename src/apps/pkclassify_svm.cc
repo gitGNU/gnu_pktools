@@ -242,8 +242,16 @@ int main(int argc, char *argv[])
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
 
+  map<string,short>classValueMap;
+  if(classname_opt.size()){
+    assert(classname_opt.size()==classvalue_opt.size());
+    for(int iclass=0;iclass<classname_opt.size();++iclass)
+      classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
+  }
+
   //----------------------------------- Training -------------------------------
   ConfusionMatrix cm;
+  vector<std::string> nameVector;
   vector< vector<double> > offset(nbag);
   vector< vector<double> > scale(nbag);
   map<string,Vector2d<float> > trainingMap;
@@ -308,6 +316,8 @@ int main(int argc, char *argv[])
       }
       if(!ibag){
         nclass=trainingPixels.size();
+	if(classname_opt.size())
+	  assert(nclass==classname_opt.size());
         nband=trainingPixels[0][0].size()-2;//X and Y//trainingPixels[0][0].size();
       }
       else{
@@ -407,10 +417,14 @@ int main(int argc, char *argv[])
       }
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
       while(mapit!=trainingMap.end()){
-	cm.pushBackClassName(mapit->first);
+	nameVector.push_back(mapit->first);
+	if(classValueMap.empty())
+	  cm.pushBackClassName(mapit->first);
+	else if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0)
+	  cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]));
 	++mapit;
       }
-      assert(cm.size()==nclass);
+      // assert(cm.size()==nclass);
     }//if(!ibag)
 
     //Calculate features of trainig set
@@ -495,10 +509,16 @@ int main(int argc, char *argv[])
       svm_cross_validation(&prob[ibag],&param[ibag],cv_opt[0],target);
       assert(param[ibag].svm_type != EPSILON_SVR&&param[ibag].svm_type != NU_SVR);//only for regression
 
-      for(int i=0;i<prob[ibag].l;i++)
-        cm.incrementResult(cm.getClass(prob[ibag].y[i]),cm.getClass(target[i]),1.0/nbag);
+      for(int i=0;i<prob[ibag].l;i++){
+	string refClassName=nameVector[prob[ibag].y[i]];
+	string className=nameVector[target[i]];
+	if(classValueMap.size())
+	  cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0/nbag);
+	else
+	  cm.incrementResult(cm.getClass(prob[ibag].y[i]),cm.getClass(target[i]),1.0/nbag);
+      }
       free(target);
-    }    
+    }
     if(verbose_opt[0]>1)
       std::cout << "SVM is now trained" << std::endl;
     // *NOTE* Because svm_model contains pointers to svm_problem, you can
@@ -537,19 +557,9 @@ int main(int argc, char *argv[])
     pfnProgress(progress,pszMessage,pProgressArg);
   //-------------------------------- open image file ------------------------------------
   if(input_opt[0].find(".shp")==string::npos){
-    //test
-    if(classname_opt.size()!=classvalue_opt.size())
-      std::cout << classname_opt.size() << "!=" << classvalue_opt.size() << std::endl;
-    assert(classname_opt.size()==classvalue_opt.size());
-    if(classname_opt.size())
-      assert(classname_opt.size()==nclass);
-    map<string,short>classValueMap;
-    if(classname_opt.empty())
+    if(classname_opt.empty()){
       std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
-    for(int iclass=0;iclass<nclass;++iclass){
-      if(classname_opt.size()==nclass)
-	classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
-      else
+      for(int iclass=0;iclass<nclass;++iclass)
 	classValueMap[type2string<short>(iclass)]=string2type<short>(cm.getClass(iclass));
     }
 	
@@ -857,7 +867,9 @@ int main(int argc, char *argv[])
         for(short iclass=0;iclass<nclass;++iclass){
           if(prOut[iclass][icol]>maxBag1){
             maxBag1=prOut[iclass][icol];
-            classOut[icol]=classValueMap[cm.getClass(iclass)];
+            // classOut[icol]=classValueMap[type2string<short>(iclass)];
+            classOut[icol]=classValueMap[nameVector[iclass]];
+            // classOut[icol]=classValueMap[cm.getClass(iclass)];
           }
 	  else if(prOut[iclass][icol]>maxBag2)
             maxBag2=prOut[iclass][icol];
@@ -964,7 +976,10 @@ int main(int argc, char *argv[])
 	imgWriterOgr.open(output_opt[ivalidation],imgReaderOgr);
 	if(verbose_opt[0])
 	  std::cout << "creating field class" << std::endl;
-	imgWriterOgr.createField("class",OFTString);
+	if(classValueMap.size())
+	  imgWriterOgr.createField("class",OFTInteger);
+	else
+	  imgWriterOgr.createField("class",OFTString);
       }
       OGRFeature *poFeature;
       unsigned int ifeature=0;
@@ -1065,15 +1080,20 @@ int main(int argc, char *argv[])
             std::cout << prOut[iclass] << " ";
           if(prOut[iclass]>maxBag){
             maxBag=prOut[iclass];
-            classOut=cm.getClass(iclass);
+	    classOut=nameVector[iclass];
+            // classOut=cm.getClass(iclass);
 	    //test
-	    assert(iclass==cm.getClassIndex(cm.getClass(iclass)));
+	    // assert(iclass==cm.getClassIndex(cm.getClass(iclass)));
           }
           // normBag+=prOut[iclass];
         }
         //look for class name
-        if(verbose_opt[0]>1)
-          std::cout << "->" << classOut << std::endl;
+        if(verbose_opt[0]>1){
+	  if(classValueMap.size())
+	    std::cout << "->" << classValueMap[classOut] << std::endl;
+	  else	    
+	    std::cout << "->" << classOut << std::endl;
+	}
         //normalize prOut and convert to percentage
         // for(int iclass=0;iclass<nreclass;++iclass){
         //   float prv=prOut[iclass];
@@ -1082,7 +1102,10 @@ int main(int argc, char *argv[])
         //   prOut[iclass]=static_cast<short>(prv+0.5);
         // }
 	if(output_opt.size()){
-	  poDstFeature->SetField("class",classOut.c_str());
+	  if(classValueMap.size())
+	    poDstFeature->SetField("class",classValueMap[classOut]);
+	  else	    
+	    poDstFeature->SetField("class",classOut.c_str());
 	  poDstFeature->SetFID( poFeature->GetFID() );
 	}
 	int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
@@ -1091,7 +1114,14 @@ int main(int argc, char *argv[])
 	  // //test
 	  // std::cout << classRef << "->" << type2string<int>(classRef) << std::endl;
 	  // std::cout << classOut << "->" << type2string<int>(classOut) << std::endl;
-	  cm.incrementResult(classRef,classOut,1);
+	  //todo: implement a validation option instead
+	  //todo: what if classValueMap.size() ?
+	  if(classRef!="0"){
+	    if(classValueMap.size())
+	      cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
+	    else
+	      cm.incrementResult(classRef,classOut,1);
+	  }
 	}
         CPLErrorReset();
 	if(output_opt.size()){
