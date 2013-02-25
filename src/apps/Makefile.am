@@ -51,8 +51,7 @@ pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
 pkextract_SOURCES = pkextract.cc
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
-pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgslwrap -lgdal
-
+pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl -lgslwrap -lgdal
 pkdsm2shadow_SOURCES = pkdsm2shadow.cc
 pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
