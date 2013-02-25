@@ -24,7 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 
 extern "C" {
-  void prospect_5b__(const double& N,const double& Cab,const double& Car, const double& Cbrown, const double& Cw, const double& Cm, double RT[][2]);
+  void prospect_5b__(const double& N,const double& Cab,const double& Car, const double& Cbrown, const double& Cw, const double& Cm, double RT[2][2101]);
 }
 
 namespace prospect

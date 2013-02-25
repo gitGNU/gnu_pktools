@@ -72,5 +72,5 @@ int main(int argc, char *argv[])
   prospectModel.getLeafSpectrum(leafReflectance,leafTransmittance);
   assert(leafReflectance.size()==leafTransmittance.size());
   for(int index=0;index<leafReflectance.size();++index)
-    std::cout << "400 " << leafReflectance[index] << " " << leafTransmittance[index] << std::endl;
+    std::cout << 400+index << " " << leafReflectance[index] << " " << leafTransmittance[index] << std::endl;
 }
