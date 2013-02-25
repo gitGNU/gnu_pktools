@@ -95,6 +95,7 @@ AC_CONFIG_FILES([
 Makefile
 src/base/Makefile
 src/algorithms/Makefile
+src/models/Makefile
 src/imageclasses/Makefile
 src/fileclasses/Makefile
 src/apps/Makefile

@@ -1,6 +1,6 @@
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(GDAL_CFLAGS) @AM_CXXFLAGS@
 AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a @AM_LDFLAGS@
-LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a
+LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/models/libmodels.a $(top_builddir)/src/imageclasses/libimageClasses.a
 ###############################################################################
 # THE PROGRAMS TO BUILD
 ###############################################################################
@@ -28,7 +28,7 @@ pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDF
 endif
 if USE_NLOPT
 bin_PROGRAMS += pksensormodel pkopt_svm
-pksensormodel_SOURCES = $(top_srcdir)/src/algorithms/SensorModel.h pksensormodel.h pksensormodel.cc
+pksensormodel_SOURCES = $(top_srcdir)/src/models/SensorModel.h pksensormodel.h pksensormodel.cc
 pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -lgslwrap
 pkopt_svm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h pkopt_svm.cc
 pkopt_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt

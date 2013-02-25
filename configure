@@ -5845,7 +5845,7 @@ fi
 # files to generate via autotools (.am or .in source files)
 ac_config_headers="$ac_config_headers config.h"
 
-ac_config_files="$ac_config_files Makefile src/base/Makefile src/algorithms/Makefile src/imageclasses/Makefile src/fileclasses/Makefile src/apps/Makefile"
+ac_config_files="$ac_config_files Makefile src/base/Makefile src/algorithms/Makefile src/models/Makefile src/imageclasses/Makefile src/fileclasses/Makefile src/apps/Makefile"
 
 
 # generate the final Makefile etc.
@@ -6603,6 +6603,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/base/Makefile") CONFIG_FILES="$CONFIG_FILES src/base/Makefile" ;;
     "src/algorithms/Makefile") CONFIG_FILES="$CONFIG_FILES src/algorithms/Makefile" ;;
+    "src/models/Makefile") CONFIG_FILES="$CONFIG_FILES src/models/Makefile" ;;
     "src/imageclasses/Makefile") CONFIG_FILES="$CONFIG_FILES src/imageclasses/Makefile" ;;
     "src/fileclasses/Makefile") CONFIG_FILES="$CONFIG_FILES src/fileclasses/Makefile" ;;
     "src/apps/Makefile") CONFIG_FILES="$CONFIG_FILES src/apps/Makefile" ;;
