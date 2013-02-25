@@ -32,4 +32,4 @@ libmodels_a_SOURCES = $(libmodels_a_HEADERS) Prospect.cc
 
 # list of sources for the binaries
 pktestProspect_SOURCES = pktestProspect.cc
-pktestProspect_LDADD = $(top_builddir)/src/models/libprospect.a $(top_builddir)/src/models/libmodels.a $(top_builddir)/src/models/libprospect.a /usr/local/src/g95-install/lib/gcc-lib/i686-pc-linux-gnu/4.0.3/libf95.a
+pktestProspect_LDADD = $(top_builddir)/src/models/libmodels.a $(top_builddir)/src/models/libprospect.a libf95.a
