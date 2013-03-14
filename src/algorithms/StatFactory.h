@@ -551,36 +551,36 @@ template<class T> void StatFactory::interpolateUp(const vector<double>& waveleng
   gsl_interp_accel_free(acc);
 }
 
-template<class T> void StatFactory::interpolateUp(const vector<double>& wavelengthIn, const vector< vector<T> >& input, const vector<double>& wavelengthOut, const std::string& type, vector< vector<T> >& output, bool verbose){
-  assert(wavelengthIn.size());
-  assert(wavelengthOut.size());
-  int nsample=input.size();  
-  int nband=wavelengthIn.size();
-  output.clear();
-  output.resize(nsample);
-  gsl_interp_accel *acc;
-  allocAcc(acc);
-  gsl_spline *spline;
-  getSpline(type,nband,spline);
-  for(int isample=0;isample<nsample;++isample){
-    assert(input[isample].size()==wavelengthIn.size());
-    initSpline(spline,&(wavelengthIn[0]),&(input[isample][0]),nband);      
-    for(int index=0;index<wavelengthOut.size();++index){
-      if(type=="linear"){
-        if(wavelengthOut[index]<wavelengthIn.back())
-          output[isample].push_back(*(input.begin()));
-        else if(wavelengthOut[index]>wavelengthIn.back())
-          output[isample].push_back(input.back());
-      }
-      else{
-        double dout=evalSpline(spline,wavelengthOut[index],acc);
-        output.push_back(dout);
-      }
-    }
-  }
-  gsl_spline_free(spline);
-  gsl_interp_accel_free(acc);
-}
+// template<class T> void StatFactory::interpolateUp(const vector<double>& wavelengthIn, const vector< vector<T> >& input, const vector<double>& wavelengthOut, const std::string& type, vector< vector<T> >& output, bool verbose){
+//   assert(wavelengthIn.size());
+//   assert(wavelengthOut.size());
+//   int nsample=input.size();  
+//   int nband=wavelengthIn.size();
+//   output.clear();
+//   output.resize(nsample);
+//   gsl_interp_accel *acc;
+//   allocAcc(acc);
+//   gsl_spline *spline;
+//   getSpline(type,nband,spline);
+//   for(int isample=0;isample<nsample;++isample){
+//     assert(input[isample].size()==wavelengthIn.size());
+//     initSpline(spline,&(wavelengthIn[0]),&(input[isample][0]),nband);      
+//     for(int index=0;index<wavelengthOut.size();++index){
+//       if(type=="linear"){
+//         if(wavelengthOut[index]<wavelengthIn.back())
+//           output[isample].push_back(*(input.begin()));
+//         else if(wavelengthOut[index]>wavelengthIn.back())
+//           output[isample].push_back(input.back());
+//       }
+//       else{
+//         double dout=evalSpline(spline,wavelengthOut[index],acc);
+//         output[isample].push_back(dout);
+//       }
+//     }
+//   }
+//   gsl_spline_free(spline);
+//   gsl_interp_accel_free(acc);
+// }
 
 template<class T> void StatFactory::interpolateUp(const vector<T>& input, vector<T>& output, int nbin)
 {

@@ -104,38 +104,56 @@ void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, sho
   }
 }
 
-void filter::Filter::applyFwhm(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, ImgWriterGdal& output, bool verbose){
-  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
-  Vector2d<double> lineOutput(wavelengthOut.size(),input.nrOfCol());
-  const char* pszMessage;
-  void* pProgressArg=NULL;
-  GDALProgressFunc pfnProgress=GDALTermProgress;
-  double progress=0;
-  pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
-    vector<double> pixelInput(input.nrOfBand());
-    vector<double> pixelOutput;
-    for(int x=0;x<input.nrOfCol();++x){
-      for(int iband=0;iband<input.nrOfBand();++iband)
-        pixelInput[iband]=lineInput[iband][x];
-      applyFwhm<double>(wavelengthIn,pixelInput,wavelengthOut,fwhm, interpolationType, pixelOutput, verbose);
-      assert(pixelOutput.size()==wavelengthOut.size());
-      for(int iband=0;iband<pixelOutput.size();++iband)
-        lineOutput[iband][x]=pixelOutput[iband];
-    }
-    for(int iband=0;iband<output.nrOfBand();++iband){
-      try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
-      }
-      catch(string errorstring){
-        cerr << errorstring << "in band " << iband << ", line " << y << endl;
-      }
-    }
-    progress=(1.0+y)/output.nrOfRow();
-    pfnProgress(progress,pszMessage,pProgressArg);
-  }
-}
+// void filter::Filter::applyFwhm(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, ImgWriterGdal& output, bool verbose){
+//   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+//   Vector2d<double> lineOutput(wavelengthOut.size(),input.nrOfCol());
+//   const char* pszMessage;
+//   void* pProgressArg=NULL;
+//   GDALProgressFunc pfnProgress=GDALTermProgress;
+//   double progress=0;
+//   pfnProgress(progress,pszMessage,pProgressArg);
+//   for(int y=0;y<input.nrOfRow();++y){
+//     for(int iband=0;iband<input.nrOfBand();++iband)
+//       input.readData(lineInput[iband],GDT_Float64,y,iband);
+//     applyFwhm<double>(wavelengthIn,lineInput,wavelengthOut,fwhm, interpolationType, lineOutput, verbose);
+//     for(int iband=0;iband<output.nrOfBand();++iband){
+//       try{
+//         output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+//       }
+//       catch(string errorstring){
+//         cerr << errorstring << "in band " << iband << ", line " << y << endl;
+//       }
+//     }
+//     progress=(1.0+y)/output.nrOfRow();
+//     pfnProgress(progress,pszMessage,pProgressArg);
+//   }
+// }
 
-
+// void filter::Filter::applySrf(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector< Vector2d<double> > &srf, const std::string& interpolationType, ImgWriterGdal& output, bool verbose){
+//   assert(output.nrOfBand()==srf.size());
+//   double centreWavelength=0;
+//   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+//   const char* pszMessage;
+//   void* pProgressArg=NULL;
+//   GDALProgressFunc pfnProgress=GDALTermProgress;
+//   double progress=0;
+//   pfnProgress(progress,pszMessage,pProgressArg);
+//   for(int y=0;y<input.nrOfRow();++y){
+//     for(int iband=0;iband<input.nrOfBand();++iband)
+//       input.readData(lineInput[iband],GDT_Float64,y,iband);
+//     for(int isrf=0;isrf<srf.size();++isrf){
+//       vector<double> lineOutput(input.nrOfCol());
+//       centreWavelength=applySrf<double>(wavelengthIn,lineInput,srf[isrf], interpolationType, lineOutput, verbose);
+//       for(int iband=0;iband<output.nrOfBand();++iband){
+//         try{
+//           output.writeData(lineOutput,GDT_Float64,y,isrf);
+//         }
+//         catch(string errorstring){
+//           cerr << errorstring << "in band " << iband << ", line " << y << endl;
+//         }
+//       }
+//     }
+//     progress=(1.0+y)/output.nrOfRow();
+//     pfnProgress(progress,pszMessage,pProgressArg);
+//   }
+// }

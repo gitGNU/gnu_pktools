@@ -40,7 +40,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation.");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median,variance,min,max,sum,mean,minmax,dilation,erosion,closing,opening,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev)", 0);
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median,variance,min,max,sum,mean,minmax,dilation,erosion,closing,opening,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev)", "median");
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
@@ -50,9 +50,10 @@ int main(int argc,char **argv) {
   Optionpk<std::string> tap_opt("tap", "tap", "text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps");
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
   Optionpk<double> fwhm_opt("fwhm", "fwhm", "list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...)");
+  Optionpk<std::string> srf_opt("srf", "srf", "list of ASCII files containing spectral response functions (two columns: wavelength response)");
   Optionpk<double> wavelengthIn_opt("win", "wavelengthIn", "list of wavelengths in input spectrum (-w band1 -w band2 ...)");
   Optionpk<double> wavelengthOut_opt("wout", "wavelengthOut", "list of wavelengths in output spectrum (-w band1 -w band2 ...)");
-  Optionpk<std::string> interpolationType_opt("interp", "interp", "type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html)","linear");
+  Optionpk<std::string> interpolationType_opt("interp", "interp", "type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html)","akima");
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
@@ -77,6 +78,7 @@ int main(int argc,char **argv) {
     tap_opt.retrieveOption(argc,argv);
     tapz_opt.retrieveOption(argc,argv);
     fwhm_opt.retrieveOption(argc,argv);
+    srf_opt.retrieveOption(argc,argv);
     wavelengthIn_opt.retrieveOption(argc,argv);
     wavelengthOut_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
@@ -128,9 +130,11 @@ int main(int argc,char **argv) {
   }
   try{
     assert(output_opt.size());
-    if(wavelengthOut_opt.size())
+    if(fwhm_opt.size()||srf_opt.size()){
       //todo: support down and offset
-      output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),wavelengthOut_opt.size(),theType,imageType,option_opt);
+      int nband=fwhm_opt.size()? fwhm_opt.size():srf_opt.size();
+      output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),nband,theType,imageType,option_opt);
+    }
     else
       output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],input.nrOfBand(),theType,imageType,option_opt);
   }
@@ -153,10 +157,10 @@ int main(int argc,char **argv) {
   else if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());
 
-  // if(input.isGeoRef()){
-  //   output.setProjection(input.getProjection());
-  //   output.copyGeoTransform(input);
-  // }
+  if(input.isGeoRef()){
+    output.setProjection(input.getProjection());
+    output.copyGeoTransform(input);
+  }
 
   filter2d::Filter2d filter2d;
   filter::Filter filter1d;
@@ -210,12 +214,96 @@ int main(int argc,char **argv) {
     filter1d.setTaps(tapz_opt);    
     filter1d.doit(input,output,down_opt[0]);
   }
-  else if(wavelengthOut_opt.size()){
+  else if(fwhm_opt.size()){
     if(verbose_opt[0])
-      std::cout << "spectral filtering to " << wavelengthOut_opt.size() << " bands with provided fwhm " << std::endl;
+      std::cout << "spectral filtering to " << fwhm_opt.size() << " bands with provided fwhm " << std::endl;
     assert(wavelengthOut_opt.size()==fwhm_opt.size());
     assert(wavelengthIn_opt.size());
-    filter1d.applyFwhm(wavelengthIn_opt,input,wavelengthOut_opt,fwhm_opt,interpolationType_opt[0],output,verbose_opt[0]);
+
+    Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+    Vector2d<double> lineOutput(wavelengthOut_opt.size(),input.nrOfCol());
+    const char* pszMessage;
+    void* pProgressArg=NULL;
+    GDALProgressFunc pfnProgress=GDALTermProgress;
+    double progress=0;
+    pfnProgress(progress,pszMessage,pProgressArg);
+    for(int y=0;y<input.nrOfRow();++y){
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        input.readData(lineInput[iband],GDT_Float64,y,iband);
+      filter1d.applyFwhm<double>(wavelengthIn_opt,lineInput,wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], lineOutput, verbose_opt[0]);
+      for(int iband=0;iband<output.nrOfBand();++iband){
+        try{
+          output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        }
+        catch(string errorstring){
+          cerr << errorstring << "in band " << iband << ", line " << y << endl;
+        }
+      }
+      progress=(1.0+y)/output.nrOfRow();
+      pfnProgress(progress,pszMessage,pProgressArg);
+    }
+    // filter1d.applyFwhm(wavelengthIn_opt,input,wavelengthOut_opt,fwhm_opt,interpolationType_opt[0],output,verbose_opt[0]);
+  }
+  else if(srf_opt.size()){
+    if(verbose_opt[0])
+      std::cout << "spectral filtering to " << srf_opt.size() << " bands with provided SRF " << std::endl;
+    assert(wavelengthIn_opt.size());
+    vector< Vector2d<double> > srf(srf_opt.size());//[0] srf_nr, [1]: wavelength, [2]: response
+    ifstream srfFile;
+    for(int isrf=0;isrf<srf_opt.size();++isrf){
+      srf[isrf].resize(2);
+      srfFile.open(srf_opt[isrf].c_str());
+      double v;
+      //add 0 to make sure srf is 0 at boundaries after interpolation step
+      srf[isrf][0].push_back(0);
+      srf[isrf][1].push_back(0);
+      srf[isrf][0].push_back(1);
+      srf[isrf][1].push_back(0);
+      while(srfFile >> v){
+        srf[isrf][0].push_back(v);
+        srfFile >> v;
+        srf[isrf][1].push_back(v);
+      }
+      srfFile.close();
+      //add 0 to make sure srf[isrf] is 0 at boundaries after interpolation step
+      srf[isrf][0].push_back(srf[isrf][0].back()+1);
+      srf[isrf][1].push_back(0);    
+      srf[isrf][0].push_back(srf[isrf][0].back()+1);
+      srf[isrf][1].push_back(0);
+      if(verbose_opt[0])
+        cout << "srf file details: " << srf[isrf][0].size() << " wavelengths defined" << endl;    
+    }
+    assert(output.nrOfBand()==srf.size());
+    double centreWavelength=0;
+    Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+    const char* pszMessage;
+    void* pProgressArg=NULL;
+    GDALProgressFunc pfnProgress=GDALTermProgress;
+    double progress=0;
+    pfnProgress(progress,pszMessage,pProgressArg);
+    for(int y=0;y<input.nrOfRow();++y){
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        input.readData(lineInput[iband],GDT_Float64,y,iband);
+      for(int isrf=0;isrf<srf.size();++isrf){
+        vector<double> lineOutput(input.nrOfCol());
+        double delta=1.0;
+        bool normalize=true;
+        centreWavelength=filter1d.applySrf<double>(wavelengthIn_opt,lineInput,srf[isrf], interpolationType_opt[0], lineOutput, delta, normalize, verbose_opt[0]);
+        if(verbose_opt[0])
+          std::cout << "centre wavelength srf " << isrf << ": " << centreWavelength << std::endl;
+        try{
+          output.writeData(lineOutput,GDT_Float64,y,isrf);
+        }
+        catch(string errorstring){
+          cerr << errorstring << "in srf " << srf_opt[isrf] << ", line " << y << endl;
+        }
+
+      }
+      progress=(1.0+y)/output.nrOfRow();
+      pfnProgress(progress,pszMessage,pProgressArg);
+    }
+
+    // filter1d.applySrf(wavelengthIn_opt,input,srf,interpolationType_opt[0],output,verbose_opt[0]);
   }
   else{
     if(colorTable_opt.size())
