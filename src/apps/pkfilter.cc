@@ -133,7 +133,7 @@ int main(int argc,char **argv) {
     if(fwhm_opt.size()||srf_opt.size()){
       //todo: support down and offset
       int nband=fwhm_opt.size()? fwhm_opt.size():srf_opt.size();
-      output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),nband,theType,imageType,option_opt);
+      output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
     }
     else
       output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],input.nrOfBand(),theType,imageType,option_opt);
@@ -228,12 +228,14 @@ int main(int argc,char **argv) {
     double progress=0;
     pfnProgress(progress,pszMessage,pProgressArg);
     for(int y=0;y<input.nrOfRow();++y){
+      if((y+1+down_opt[0]/2)%down_opt[0])
+        continue;
       for(int iband=0;iband<input.nrOfBand();++iband)
         input.readData(lineInput[iband],GDT_Float64,y,iband);
-      filter1d.applyFwhm<double>(wavelengthIn_opt,lineInput,wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], lineOutput, verbose_opt[0]);
+      filter1d.applyFwhm<double>(wavelengthIn_opt,lineInput,wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], lineOutput, down_opt[0], verbose_opt[0]);
       for(int iband=0;iband<output.nrOfBand();++iband){
         try{
-          output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+          output.writeData(lineOutput[iband],GDT_Float64,y/down_opt[0],iband);
         }
         catch(string errorstring){
           cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -282,6 +284,8 @@ int main(int argc,char **argv) {
     double progress=0;
     pfnProgress(progress,pszMessage,pProgressArg);
     for(int y=0;y<input.nrOfRow();++y){
+      if((y+1+down_opt[0]/2)%down_opt[0])
+        continue;
       for(int iband=0;iband<input.nrOfBand();++iband)
         input.readData(lineInput[iband],GDT_Float64,y,iband);
       for(int isrf=0;isrf<srf.size();++isrf){
@@ -292,7 +296,7 @@ int main(int argc,char **argv) {
         if(verbose_opt[0])
           std::cout << "centre wavelength srf " << isrf << ": " << centreWavelength << std::endl;
         try{
-          output.writeData(lineOutput,GDT_Float64,y,isrf);
+          output.writeData(lineOutput,GDT_Float64,y/down_opt[0],isrf);
         }
         catch(string errorstring){
           cerr << errorstring << "in srf " << srf_opt[isrf] << ", line " << y << endl;

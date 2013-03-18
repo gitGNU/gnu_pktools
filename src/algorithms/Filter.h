@@ -55,10 +55,10 @@ public:
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
 
-  template<class T> double applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta=1.0, bool normalize=false, bool verbose=false);
+  template<class T> double applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool verbose=false);
   // void applySrf(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector< Vector2d<double> > &srf, const std::string& interpolationType, ImgWriterGdal& output, bool verbose=false);
   template<class T> void applyFwhm(const vector<double> &wavelengthIn, const vector<double>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<double>& output, bool verbose=false);
-  template<class T> void applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, bool verbose=false);
+  template<class T> void applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
   // void applyFwhm(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, ImgWriterGdal& output, bool verbose=false);
 // int fir(double* input, int nbandIn, vector<double>& output, int startBand, const string& wavelength, const string& fwhm, bool verbose);
 // int fir(const vector<double>&input, vector<double>& output, int startBand, double fwhm, int ntaps, int down, int offset, bool verbose);
@@ -102,12 +102,12 @@ private:
 
 //input[band][sample], output[sample]
 //returns wavelength for which srf is maximum
-  template<class T> double Filter::applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta, bool normalize, bool verbose)
+  template<class T> double Filter::applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta, bool normalize, int down, bool verbose)
 {  
   assert(srf.size()==2);//[0]: wavelength, [1]: response function
   int nband=srf[0].size(); 
   unsigned int nsample=input[0].size();
-  output.resize(nsample);
+  output.resize((nsample+down-1)/down);
   double start=floor(wavelengthIn[0]);
   double end=ceil(wavelengthIn.back());
   if(verbose)
@@ -151,6 +151,8 @@ private:
   assert(splineOut);
 
   for(int isample=0;isample<nsample;++isample){
+    if((isample+1+down/2)%down)
+      continue;
     vector<T> inputValues;
     input.selectCol(isample,inputValues);
     assert(wavelengthIn.size()==inputValues.size());
@@ -164,10 +166,11 @@ private:
     assert(input_fine.size()==srf_fine.size());
     assert(input_fine.size()==wavelength_fine.size());
     stat.initSpline(splineOut,&(wavelength_fine[0]),&(product[0]),wavelength_fine.size());
+    //hiero
     if(normalize)
-      output[isample]=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
+      output[isample/down]=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
     else
-      output[isample]=gsl_spline_eval_integ(splineOut,start,end,accOut);
+      output[isample/down]=gsl_spline_eval_integ(splineOut,start,end,accOut);
   }
   gsl_spline_free(splineOut);
   gsl_interp_accel_free(accOut);
@@ -229,7 +232,7 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
 
 
   //input[inBand][sample], output[outBand][sample]
-template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, bool verbose){
+  template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down, bool verbose){
   double delta=1;//1 nm resolution
   vector<double> stddev(fwhm.size());
   for(int index=0;index<fwhm.size();++index)
@@ -249,7 +252,7 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
   }
   int nbandIn=wavelength_fine.size();
   int nbandOut=wavelengthOut.size();
-  output.resize(nbandOut,input[0].size());
+  output.resize(nbandOut,(input[0].size()+down-1)/down);
 
   gsl::matrix tf(nbandIn,nbandOut);
   vector<double> norm(nbandOut);
@@ -268,15 +271,17 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
   }
 
   for(int isample=0;isample<input[0].size();++isample){
+    if((isample+1+down/2)%down)
+      continue;
     vector<T> inputValues;
     input.selectCol(isample,inputValues);
     assert(wavelengthIn.size()==inputValues.size());
     for(int indexOut=0;indexOut<nbandOut;++indexOut){
       vector<double> input_fine;
       stat.interpolateUp(wavelengthIn,inputValues,wavelength_fine,interpolationType,input_fine,verbose);
-      output[indexOut][isample]=0;
+      output[indexOut][(isample+down-1)/down]=0;
       for(int indexIn=0;indexIn<nbandIn;++indexIn){
-        output[indexOut][isample]+=input_fine[indexIn]*tf(indexIn,indexOut)/norm[indexOut];
+        output[indexOut][(isample+down-1)/down]+=input_fine[indexIn]*tf(indexIn,indexOut)/norm[indexOut];
       }
     }
   }

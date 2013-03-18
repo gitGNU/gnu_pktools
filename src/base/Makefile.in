@@ -228,7 +228,7 @@ noinst_LIBRARIES = libbase.a
 libbase_adir = $(includedir)/base
 
 # the list of header files that belong to the library (to be installed later)
-libbase_a_HEADERS = PointData.h
+libbase_a_HEADERS = $(top_srcdir)/config.h PointData.h Vector2d.h IndexValue.h Optionpk.h PosValue.h
 
 # the sources to add to the library and to add to the source distribution
 libbase_a_SOURCES = $(libbase_a_HEADERS) PointData.cc
