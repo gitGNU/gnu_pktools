@@ -32,6 +32,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+build_triplet = @build@
+host_triplet = @host@
 bin_PROGRAMS = pkinfo$(EXEEXT) pkcrop$(EXEEXT) pkreclass$(EXEEXT) \
 	pkgetmask$(EXEEXT) pksetmask$(EXEEXT) pkcreatect$(EXEEXT) \
 	pkdumpimg$(EXEEXT) pkdumpogr$(EXEEXT) pksieve$(EXEEXT) \
@@ -52,7 +54,9 @@ subdir = src/apps
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_lib_gdal.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -70,16 +74,18 @@ pkascii2img_OBJECTS = $(am_pkascii2img_OBJECTS)
 pkascii2img_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 pkascii2img_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkascii2ogr_OBJECTS = pkascii2ogr.$(OBJEXT)
 pkascii2ogr_OBJECTS = $(am_pkascii2ogr_OBJECTS)
 pkascii2ogr_LDADD = $(LDADD)
 pkascii2ogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pkclassify_nn_SOURCES_DIST =  \
 	$(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h \
 	pkclassify_nn.cc
@@ -87,68 +93,77 @@ am__pkclassify_nn_SOURCES_DIST =  \
 @USE_FANN_TRUE@	pkclassify_nn-pkclassify_nn.$(OBJEXT)
 pkclassify_nn_OBJECTS = $(am_pkclassify_nn_OBJECTS)
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 @USE_FANN_TRUE@pkclassify_nn_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 @USE_FANN_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
-pkclassify_nn_LINK = $(CXXLD) $(pkclassify_nn_CXXFLAGS) $(CXXFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+pkclassify_nn_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(pkclassify_nn_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_pkclassify_svm_OBJECTS = svm.$(OBJEXT) pkclassify_svm.$(OBJEXT)
 pkclassify_svm_OBJECTS = $(am_pkclassify_svm_OBJECTS)
 pkclassify_svm_LDADD = $(LDADD)
 pkclassify_svm_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkcreatect_OBJECTS = pkcreatect.$(OBJEXT)
 pkcreatect_OBJECTS = $(am_pkcreatect_OBJECTS)
 pkcreatect_LDADD = $(LDADD)
 pkcreatect_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkcrop_OBJECTS = pkcrop.$(OBJEXT)
 pkcrop_OBJECTS = $(am_pkcrop_OBJECTS)
 pkcrop_LDADD = $(LDADD)
 pkcrop_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdiff_OBJECTS = pkdiff.$(OBJEXT)
 pkdiff_OBJECTS = $(am_pkdiff_OBJECTS)
 pkdiff_LDADD = $(LDADD)
 pkdiff_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdsm2shadow_OBJECTS = pkdsm2shadow.$(OBJEXT)
 pkdsm2shadow_OBJECTS = $(am_pkdsm2shadow_OBJECTS)
 pkdsm2shadow_LDADD = $(LDADD)
 pkdsm2shadow_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdumpimg_OBJECTS = pkdumpimg.$(OBJEXT)
 pkdumpimg_OBJECTS = $(am_pkdumpimg_OBJECTS)
 pkdumpimg_LDADD = $(LDADD)
 pkdumpimg_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdumpogr_OBJECTS = pkdumpogr.$(OBJEXT)
 pkdumpogr_OBJECTS = $(am_pkdumpogr_OBJECTS)
 pkdumpogr_LDADD = $(LDADD)
 pkdumpogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkeditogr_OBJECTS = pkeditogr.$(OBJEXT)
 pkeditogr_OBJECTS = $(am_pkeditogr_OBJECTS)
 pkeditogr_LDADD = $(LDADD)
 pkeditogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkegcs_OBJECTS = pkegcs.$(OBJEXT)
 pkegcs_OBJECTS = $(am_pkegcs_OBJECTS)
 pkegcs_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -156,16 +171,18 @@ am_pkextract_OBJECTS = pkextract.$(OBJEXT)
 pkextract_OBJECTS = $(am_pkextract_OBJECTS)
 pkextract_LDADD = $(LDADD)
 pkextract_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkfillnodata_OBJECTS = pkfillnodata.$(OBJEXT)
 pkfillnodata_OBJECTS = $(am_pkfillnodata_OBJECTS)
 pkfillnodata_LDADD = $(LDADD)
 pkfillnodata_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkfilter_OBJECTS = pkfilter.$(OBJEXT)
 pkfilter_OBJECTS = $(am_pkfilter_OBJECTS)
 pkfilter_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
@@ -176,8 +193,9 @@ pkfs_nn_OBJECTS = $(am_pkfs_nn_OBJECTS)
 @USE_FANN_TRUE@pkfs_nn_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 @USE_FANN_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 @USE_FANN_TRUE@	$(am__DEPENDENCIES_2)
-pkfs_nn_LINK = $(CXXLD) $(pkfs_nn_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+pkfs_nn_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(pkfs_nn_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_pkfs_svm_OBJECTS = svm.$(OBJEXT) pkfs_svm.$(OBJEXT)
 pkfs_svm_OBJECTS = $(am_pkfs_svm_OBJECTS)
 pkfs_svm_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
@@ -185,16 +203,18 @@ am_pkgetmask_OBJECTS = pkgetmask.$(OBJEXT)
 pkgetmask_OBJECTS = $(am_pkgetmask_OBJECTS)
 pkgetmask_LDADD = $(LDADD)
 pkgetmask_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkinfo_OBJECTS = pkinfo.$(OBJEXT)
 pkinfo_OBJECTS = $(am_pkinfo_OBJECTS)
 pkinfo_LDADD = $(LDADD)
 pkinfo_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pklas2img_SOURCES_DIST = pklas2img.cc
 @USE_LAS_TRUE@am_pklas2img_OBJECTS = pklas2img.$(OBJEXT)
 pklas2img_OBJECTS = $(am_pklas2img_OBJECTS)
@@ -203,16 +223,18 @@ am_pkmosaic_OBJECTS = pkmosaic.$(OBJEXT)
 pkmosaic_OBJECTS = $(am_pkmosaic_OBJECTS)
 pkmosaic_LDADD = $(LDADD)
 pkmosaic_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkndvi_OBJECTS = pkndvi.$(OBJEXT)
 pkndvi_OBJECTS = $(am_pkndvi_OBJECTS)
 pkndvi_LDADD = $(LDADD)
 pkndvi_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pkopt_svm_SOURCES_DIST =  \
 	$(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h \
 	pkopt_svm.cc
@@ -224,16 +246,18 @@ am_pkpolygonize_OBJECTS = pkpolygonize.$(OBJEXT)
 pkpolygonize_OBJECTS = $(am_pkpolygonize_OBJECTS)
 pkpolygonize_LDADD = $(LDADD)
 pkpolygonize_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkreclass_OBJECTS = pkreclass.$(OBJEXT)
 pkreclass_OBJECTS = $(am_pkreclass_OBJECTS)
 pkreclass_LDADD = $(LDADD)
 pkreclass_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pksensormodel_SOURCES_DIST =  \
 	$(top_srcdir)/src/models/SensorModel.h pksensormodel.h \
 	pksensormodel.cc
@@ -245,16 +269,18 @@ am_pksetmask_OBJECTS = pksetmask.$(OBJEXT)
 pksetmask_OBJECTS = $(am_pksetmask_OBJECTS)
 pksetmask_LDADD = $(LDADD)
 pksetmask_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pksieve_OBJECTS = pksieve.$(OBJEXT)
 pksieve_OBJECTS = $(am_pksieve_OBJECTS)
 pksieve_LDADD = $(LDADD)
 pksieve_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkstat_OBJECTS = pkstat.$(OBJEXT)
 pkstat_OBJECTS = $(am_pkstat_OBJECTS)
 pkstat_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
@@ -262,22 +288,32 @@ am_pkstatogr_OBJECTS = pkstatogr.$(OBJEXT)
 pkstatogr_OBJECTS = $(am_pkstatogr_OBJECTS)
 pkstatogr_LDADD = $(LDADD)
 pkstatogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.a \
-	$(top_builddir)/src/models/libmodels.a \
-	$(top_builddir)/src/imageclasses/libimageClasses.a
+	$(top_builddir)/src/algorithms/libalgorithms.la \
+	$(top_builddir)/src/models/libmodels.la \
+	$(top_builddir)/src/models/libprospect.la \
+	$(top_builddir)/src/imageclasses/libimageClasses.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
-CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
+CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 SOURCES = $(pkascii2img_SOURCES) $(pkascii2ogr_SOURCES) \
 	$(pkclassify_nn_SOURCES) $(pkclassify_svm_SOURCES) \
 	$(pkcreatect_SOURCES) $(pkcrop_SOURCES) $(pkdiff_SOURCES) \
@@ -309,7 +345,8 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(GDAL_CFLAGS) @AM_CXXFLAGS@
-AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a @AM_LDFLAGS@
+AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la @AM_LDFLAGS@
+AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -326,6 +363,8 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DSYMUTIL = @DSYMUTIL@
+DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
@@ -333,6 +372,9 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FANN_CFLAGS = @FANN_CFLAGS@
 FANN_LIBS = @FANN_LIBS@
+FC = @FC@
+FCFLAGS = @FCFLAGS@
+FGREP = @FGREP@
 FILECLASSES_OPT = @FILECLASSES_OPT@
 GDAL_CFLAGS = @GDAL_CFLAGS@
 GDAL_CONFIG = @GDAL_CONFIG@
@@ -348,15 +390,24 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBTOOL = @LIBTOOL@
+LIPO = @LIPO@
+LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
 NLOPT_CFLAGS = @NLOPT_CFLAGS@
 NLOPT_LIBS = @NLOPT_LIBS@
+NM = @NM@
+NMEDIT = @NMEDIT@
+OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OTOOL = @OTOOL@
+OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -369,6 +420,7 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
+SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -379,20 +431,30 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
+ac_ct_FC = @ac_ct_FC@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
 bindir = @bindir@
+build = @build@
 build_alias = @build_alias@
+build_cpu = @build_cpu@
+build_os = @build_os@
+build_vendor = @build_vendor@
 builddir = @builddir@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+host = @host@
 host_alias = @host_alias@
+host_cpu = @host_cpu@
+host_os = @host_os@
+host_vendor = @host_vendor@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -401,6 +463,7 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
+lt_ECHO = @lt_ECHO@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -416,7 +479,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/models/libmodels.a $(top_builddir)/src/imageclasses/libimageClasses.a
+LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.la $(top_builddir)/src/imageclasses/libimageClasses.la
 @USE_FANN_TRUE@pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
 @USE_FANN_TRUE@pkclassify_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 @USE_FANN_TRUE@pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
@@ -440,7 +503,7 @@ pkdumpimg_SOURCES = pkdumpimg.cc
 pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
 pksieve_SOURCES = pksieve.cc
 pkstat_SOURCES = $(top_srcdir)/src/algorithms/Histogram.h pkstat.cc
-pkstat_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses $(GSL_LIBS) $(AM_LDFLAGS)
+pkstat_LDADD = -L$(top_builddir)/src/fileclasses -llas -lfileClasses $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc
 pkegcs_SOURCES = pkegcs.cc
 pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
@@ -462,7 +525,7 @@ pkeditogr_SOURCES = pkeditogr.cc
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cc .cpp .o .obj
+.SUFFIXES: .cc .cpp .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -499,7 +562,7 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
 	for p in $$list; do echo "$$p $$p"; done | \
 	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p; \
+	while read p p1; do if test -f $$p || test -f $$p1; \
 	  then echo "$$p"; echo "$$p"; else :; fi; \
 	done | \
 	sed -e 'p;s,.*/,,;n;h' -e 's|.*|.|' \
@@ -513,8 +576,8 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	while read type dir files; do \
 	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
 	    test -z "$$files" || { \
-	      echo " $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
-	      $(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
 	    } \
 	; done
 
@@ -529,7 +592,13 @@ uninstall-binPROGRAMS:
 	cd "$(DESTDIR)$(bindir)" && rm -f $$files
 
 clean-binPROGRAMS:
-	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+	@list='$(bin_PROGRAMS)'; test -n "$$list" || exit 0; \
+	echo " rm -f" $$list; \
+	rm -f $$list || exit $$?; \
+	test -n "$(EXEEXT)" || exit 0; \
+	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
+	echo " rm -f" $$list; \
+	rm -f $$list
 pkascii2img$(EXEEXT): $(pkascii2img_OBJECTS) $(pkascii2img_DEPENDENCIES) 
 	@rm -f pkascii2img$(EXEEXT)
 	$(CXXLINK) $(pkascii2img_OBJECTS) $(pkascii2img_LDADD) $(LIBS)
@@ -673,6 +742,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
+.cc.lo:
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
 pkclassify_nn-pkclassify_nn.o: pkclassify_nn.cc
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pkclassify_nn_CXXFLAGS) $(CXXFLAGS) -MT pkclassify_nn-pkclassify_nn.o -MD -MP -MF $(DEPDIR)/pkclassify_nn-pkclassify_nn.Tpo -c -o pkclassify_nn-pkclassify_nn.o `test -f 'pkclassify_nn.cc' || echo '$(srcdir)/'`pkclassify_nn.cc
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/pkclassify_nn-pkclassify_nn.Tpo $(DEPDIR)/pkclassify_nn-pkclassify_nn.Po
@@ -728,6 +804,19 @@ pkfs_nn-pkfs_nn.obj: pkfs_nn.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cpp.lo:
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
+mostlyclean-libtool:
+	-rm -f *.lo
+
+clean-libtool:
+	-rm -rf .libs _libs
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
@@ -845,7 +934,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -900,7 +989,8 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -915,17 +1005,18 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic ctags distclean distclean-compile \
-	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS
+	clean-generic clean-libtool ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-binPROGRAMS
 
 #pkxcorimg_SOURCES= pkxcorimg.cc
 #pkgeom_SOURCES = pkgeom.cc

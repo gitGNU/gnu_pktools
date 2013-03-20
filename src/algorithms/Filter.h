@@ -55,7 +55,9 @@ public:
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
 
+  template<class T> double applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T output, double delta=1.0, bool normalize=false, bool verbose=false);
   template<class T> double applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool verbose=false);
+
   // void applySrf(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector< Vector2d<double> > &srf, const std::string& interpolationType, ImgWriterGdal& output, bool verbose=false);
   template<class T> void applyFwhm(const vector<double> &wavelengthIn, const vector<double>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<double>& output, bool verbose=false);
   template<class T> void applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
@@ -99,6 +101,83 @@ private:
   vector<short> m_class;
   vector<short> m_mask;
 };
+
+//input[band], output
+//returns wavelength for which srf is maximum
+  template<class T> double Filter::applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T output, double delta, bool normalize, bool verbose)
+{  
+  assert(srf.size()==2);//[0]: wavelength, [1]: response function
+  int nband=srf[0].size(); 
+  double start=floor(wavelengthIn[0]);
+  double end=ceil(wavelengthIn.back());
+  if(verbose)
+    std::cout << "wavelengths in [" << start << "," << end << "]" << std::endl << std::flush;
+
+  statfactory::StatFactory stat;
+
+  gsl_interp_accel *acc;
+  stat.allocAcc(acc);
+  gsl_spline *spline;
+  stat.getSpline(interpolationType,nband,spline);
+  stat.initSpline(spline,&(srf[0][0]),&(srf[1][0]),nband);
+  // gsl_interp_accel *acc=gsl_interp_accel_alloc();
+  // gsl_spline *spline=gsl_spline_alloc(gsl_interp_linear,nband);
+  // gsl_spline_init(spline,&(srf[0][0]),&(srf[1][0]),nband);
+  if(verbose)
+    std::cout << "calculating norm of srf" << std::endl << std::flush;
+  double norm=0;
+  norm=gsl_spline_eval_integ(spline,srf[0].front(),srf[0].back(),acc);
+  if(verbose)
+    std::cout << "norm of srf: " << norm << std::endl << std::flush;
+  gsl_spline_free(spline);
+  gsl_interp_accel_free(acc);  
+  //interpolate input and srf to delta
+  
+  vector<double> wavelength_fine;
+  for(double win=floor(wavelengthIn[0]);win<=ceil(wavelengthIn.back());win+=delta)
+    wavelength_fine.push_back(win);
+
+  if(verbose)
+    std::cout << "interpolate wavelengths to " << wavelength_fine.size() << " entries " << std::endl;
+  vector<double> srf_fine;//spectral response function, interpolated for wavelength_fine
+
+  stat.interpolateUp(srf[0],srf[1],wavelength_fine,interpolationType,srf_fine,verbose);
+  assert(srf_fine.size()==wavelength_fine.size());
+
+  gsl_interp_accel *accOut;
+  stat.allocAcc(accOut);
+  gsl_spline *splineOut;
+  stat.getSpline(interpolationType,wavelength_fine.size(),splineOut);
+  assert(splineOut);
+
+  assert(wavelengthIn.size()==input.size());
+  vector<double> input_fine;
+  vector<double> product(wavelength_fine.size());
+  stat.interpolateUp(wavelengthIn,input,wavelength_fine,interpolationType,input_fine,verbose);
+
+  for(int iband=0;iband<input_fine.size();++iband)
+    product[iband]=input_fine[iband]*srf_fine[iband];
+
+  assert(input_fine.size()==srf_fine.size());
+  assert(input_fine.size()==wavelength_fine.size());
+  stat.initSpline(splineOut,&(wavelength_fine[0]),&(product[0]),wavelength_fine.size());
+  if(normalize)
+    output=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
+  else
+    output=gsl_spline_eval_integ(splineOut,start,end,accOut);
+  gsl_spline_free(splineOut);
+  gsl_interp_accel_free(accOut);
+
+  double maxResponse=0;
+  int maxIndex=0;
+  for(int index=0;index<srf[1].size();++index){
+    if(maxResponse<srf[1][index]){
+      maxResponse=srf[1][index];
+      maxIndex=index;
+    }
+  }
+  return(srf[0][maxIndex]);
+}
 
 //input[band][sample], output[sample]
 //returns wavelength for which srf is maximum

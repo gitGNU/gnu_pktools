@@ -61,6 +61,11 @@ FileReaderAscii::FileReaderAscii(const std::string& filename)
   open(filename);
 }
 
+FileReaderAscii::FileReaderAscii(const std::string& filename, const char& fieldseparator)
+  : m_min(0),m_max(0),m_minRow(0),m_maxRow(0),m_fs(' '),m_comment(fieldseparator){
+  open(filename);
+}
+
 FileReaderAscii::~FileReaderAscii(void)
 {
 }
@@ -82,6 +87,7 @@ void FileReaderAscii::close(){
 }
 
 template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, int col){
+  reset();
   bool verbose=false;
   dataVector.clear();
   int nrow=0;
@@ -188,6 +194,7 @@ template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, 
 }
 
 template<class T> unsigned int FileReaderAscii::readData(vector<vector<T> > &dataVector, const vector<int> &cols){
+  reset();
   bool verbose=false;
   dataVector.clear();
   dataVector.resize(cols.size());

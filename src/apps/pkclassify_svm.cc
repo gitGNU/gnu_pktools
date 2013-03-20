@@ -560,10 +560,9 @@ int main(int argc, char *argv[])
     if(classname_opt.empty()){
       std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
       for(int iclass=0;iclass<nclass;++iclass){
-	classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
         if(verbose_opt[0]>0)
-          std::cout << iclass << " " << classValueMap[cm.getClass(iclass)] << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
-	// classValueMap[type2string<short>(iclass)]=string2type<short>(cm.getClass(iclass));
+          std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
+	classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
       }
     }
 	

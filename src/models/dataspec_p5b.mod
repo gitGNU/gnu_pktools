@@ -1,7 +1,8 @@
-G95 module created on Mon Feb 25 13:19:49 2013 from dataSpec_P5B.f90
-If you edit this, you'll get what you deserve.
-module-version 9
-(() () () () () () () () () () () () () () () () () () () () ())
+GFORTRAN module version '4' created from dataSpec_P5B.f90 on Tue Mar 19 18:14:11 2013
+MD5:f0cc64494108882b03c326c6c2307a57 -- If you edit this, you'll get what you deserve.
+
+(() () () () () () () () () () () () () () () () () () () () () () () ()
+() () ())
 
 ()
 
@@ -11,35 +12,52 @@ module-version 9
 
 ()
 
-(102 'dataspec_p5b' 'dataspec_p5b' 1 ((MODULE UNKNOWN UNKNOWN UNKNOWN
-NONE NONE) (UNKNOWN) 0 0 () () () '' () ())
-103 'i' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN NONE NONE) (
-INTEGER 4) 0 0 () () () '' () ())
-104 'k_brown' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN NONE
-NONE DIMENSION DATA) (REAL 8) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4) 0
-'1') (CONSTANT (INTEGER 4) 0 '2101')) () '' () ())
-105 'k_cab' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN NONE
-NONE DIMENSION DATA) (REAL 8) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4) 0
-'1') (CONSTANT (INTEGER 4) 0 '2101')) () '' () ())
-106 'k_car' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN NONE
-NONE DIMENSION DATA) (REAL 8) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4) 0
-'1') (CONSTANT (INTEGER 4) 0 '2101')) () '' () ())
-107 'k_cm' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN NONE NONE
-DIMENSION DATA) (REAL 8) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4) 0 '1')
-(CONSTANT (INTEGER 4) 0 '2101')) () '' () ())
-108 'k_cw' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN NONE NONE
-DIMENSION DATA) (REAL 8) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4) 0 '1')
-(CONSTANT (INTEGER 4) 0 '2101')) () '' () ())
-109 'lambda' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN NONE
-NONE DIMENSION DATA) (INTEGER 4) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4)
-0 '1') (CONSTANT (INTEGER 4) 0 '2101')) () '' () ())
-110 'nw' 'dataspec_p5b' 1 ((PARAMETER UNKNOWN UNKNOWN UNKNOWN NONE NONE)
-(INTEGER 4) 0 0 () (CONSTANT (INTEGER 4) 0 '2101') () () '' () ())
-111 'refractive' 'dataspec_p5b' 1 ((VARIABLE UNKNOWN UNKNOWN UNKNOWN
-NONE NONE DIMENSION DATA) (REAL 8) 0 0 () (1 EXPLICIT (CONSTANT (
-INTEGER 4) 0 '1') (CONSTANT (INTEGER 4) 0 '2101')) () '' () ())
+()
+
+(2 '__convert_r4_i4' '(intrinsic)' '__convert_r4_i4' 1 ((PROCEDURE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 FUNCTION ELEMENTAL PURE)
+(INTEGER 4 0 0 INTEGER ()) 0 0 () () 2 () () () 0 0)
+3 '__convert_r4_r8' '(intrinsic)' '__convert_r4_r8' 1 ((PROCEDURE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 FUNCTION ELEMENTAL PURE)
+(REAL 8 0 0 REAL ()) 0 0 () () 3 () () () 0 0)
+4 'dataspec_p5b' 'dataspec_p5b' 'dataspec_p5b' 1 ((MODULE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0
+() () () 0 0)
+5 'i' 'dataspec_p5b' 'i' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+6 'k_brown' 'dataspec_p5b' 'k_brown' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DIMENSION DATA) (REAL 8 0 0 REAL ()) 0
+0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '2101')) 0 () () () 0 0)
+7 'k_cab' 'dataspec_p5b' 'k_cab' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DIMENSION DATA) (REAL 8 0 0 REAL ()) 0
+0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '2101')) 0 () () () 0 0)
+8 'k_car' 'dataspec_p5b' 'k_car' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DIMENSION DATA) (REAL 8 0 0 REAL ()) 0
+0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '2101')) 0 () () () 0 0)
+9 'k_cm' 'dataspec_p5b' 'k_cm' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0 DIMENSION DATA) (REAL 8 0 0 REAL ()) 0 0 () (1
+EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER
+4 0 0 INTEGER ()) 0 '2101')) 0 () () () 0 0)
+10 'k_cw' 'dataspec_p5b' 'k_cw' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0 DIMENSION DATA) (REAL 8 0 0 REAL ()) 0 0 () (1
+EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER
+4 0 0 INTEGER ()) 0 '2101')) 0 () () () 0 0)
+11 'lambda' 'dataspec_p5b' 'lambda' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DIMENSION DATA) (INTEGER 4 0 0 INTEGER
+()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (
+CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '2101')) 0 () () () 0 0)
+12 'nw' 'dataspec_p5b' 'nw' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE 0 0) (INTEGER 4 0 0 INTEGER ()) 0 0 () (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '2101') () 0 () () () 0 0)
+13 'refractive' 'dataspec_p5b' 'refractive' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 DIMENSION DATA) (REAL 8 0 0 REAL ()) 0
+0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '2101')) 0 () () () 0 0)
 )
 
-('dataspec_p5b' 0 102 'i' 0 103 'k_brown' 0 104 'k_cab' 0 105 'k_car' 0
-106 'k_cm' 0 107 'k_cw' 0 108 'lambda' 0 109 'nw' 0 110 'refractive' 0
-111)
+('__convert_r4_i4' 0 2 '__convert_r4_r8' 0 3 'dataspec_p5b' 0 4 'i' 0 5
+'k_brown' 0 6 'k_cab' 0 7 'k_car' 0 8 'k_cm' 0 9 'k_cw' 0 10 'lambda' 0
+11 'nw' 0 12 'refractive' 0 13)

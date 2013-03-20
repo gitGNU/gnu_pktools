@@ -1,6 +1,7 @@
 AC_INIT([pktools], [2.4], [kempenep@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
+
 AX_LIB_GDAL()
 GDAL_FOUND="no"
 if test ! -z "$GDAL_CFLAGS" -a ! -z "$GDAL_LDFLAGS"; then
@@ -14,7 +15,9 @@ AC_MSG_WARN([$GDAL_OGR_ENABLED])
 
 # check for C++ compiler and the library compiler
 AC_PROG_CXX
-AC_PROG_RANLIB
+AC_PROG_FC
+LT_INIT
+#AC_PROG_RANLIB
 
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/apps/pkinfo.cc])

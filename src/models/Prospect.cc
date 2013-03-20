@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 void prospect::Prospect::getLeafSpectrum(std::vector<double>& leafReflectance, std::vector<double>& leafTransmittance) const{
   double RT[2][2101];//400 nm - 2500 nm
-  prospect_5b__(m_N,m_Cab,m_Car,m_Cbrown,m_Cw,m_Cm,RT);
+  prospect_5b_(m_N,m_Cab,m_Car,m_Cbrown,m_Cw,m_Cm,RT);
   leafReflectance.resize(2101);
   leafTransmittance.resize(2101);
   for(int index=0;index<2101;++index){

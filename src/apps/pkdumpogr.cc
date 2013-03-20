@@ -27,8 +27,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> input_opt("i", "input", "Input shape file", "");
-  Optionpk<string> output_opt("o", "output", "Output ASCII file", "");
+  Optionpk<string> input_opt("i", "input", "Input shape file");
+  Optionpk<string> output_opt("o", "output", "Output ASCII file");
   Optionpk<string> attribute_opt("n", "name", "names of the attributes to select. Each attribute is stored in a separate band. Default is ALL: write all attributes", "ALL");
   Optionpk<bool> pos_opt("pos","pos","include position (x and y)",false);
   Optionpk<bool> transpose_opt("t","transpose","transpose output (does not work for -n ALL ",false);
@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
+  assert(input_opt.size());
   ImgReaderOgr imgReader;
   try{
     imgReader.open(input_opt[0]);
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
     cerr << errorstring << endl;
   }
   ofstream outputFile;
-  if(output_opt[0]!="")
+  if(output_opt.size())
     outputFile.open(output_opt[0].c_str(),ios::out);
 
   ImgReaderOgr inputReader(input_opt[0]);
@@ -82,7 +83,7 @@ int main(int argc, char *argv[])
     }
     if(transpose_opt[0]){
       if(pos_opt[0]&&(inputReader.getGeometryType()==wkbPoint)){
-        if(output_opt[0]!=""){
+        if(output_opt.size()){
           outputFile << "X" << " ";
           for(int isample=0;isample<xvector.size();++isample){
             outputFile << xvector[isample];
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
         }
       }
       for(int ifield=0;ifield<theData.size();++ifield){
-        if(output_opt[0]!=""){
+        if(output_opt.size()){
           outputFile << ifield << " ";
           for(int isample=0;isample<theData[0].size();++isample){
             outputFile << theData[ifield][isample];
@@ -144,7 +145,7 @@ int main(int argc, char *argv[])
     }
     else{
       for(int isample=0;isample<theData[0].size();++isample){
-        if(output_opt[0]!=""){
+        if(output_opt.size()){
           outputFile << isample << " ";
           if(pos_opt[0])
             outputFile << xvector[isample] << " " << yvector[isample] << " ";
@@ -170,11 +171,11 @@ int main(int argc, char *argv[])
         }
       }
     }
-    if(output_opt[0]!="")
+    if(output_opt.size())
       outputFile.close();
   }
   else{
-    if(output_opt[0]!=""){
+    if(output_opt.size()){
       ofstream outputFile(output_opt[0].c_str(),ios::out);
       outputFile << imgReader;
       outputFile.close();

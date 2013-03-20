@@ -41,14 +41,14 @@ int main(int argc, char *argv[])
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=N_opt.retrieveOption(argc,argv);
-    doProcess=Cab_opt.retrieveOption(argc,argv);
-    doProcess=Car_opt.retrieveOption(argc,argv);
-    doProcess=Cbrown_opt.retrieveOption(argc,argv);
-    doProcess=Cw_opt.retrieveOption(argc,argv);
-    doProcess=Cm_opt.retrieveOption(argc,argv);
-    doProcess=fwhm_opt.retrieveOption(argc,argv);
-    doProcess=wavelengthIn_opt.retrieveOption(argc,argv);
-    doProcess=wavelengthOut_opt.retrieveOption(argc,argv);
+    Cab_opt.retrieveOption(argc,argv);
+    Car_opt.retrieveOption(argc,argv);
+    Cbrown_opt.retrieveOption(argc,argv);
+    Cw_opt.retrieveOption(argc,argv);
+    Cm_opt.retrieveOption(argc,argv);
+    fwhm_opt.retrieveOption(argc,argv);
+    wavelengthIn_opt.retrieveOption(argc,argv);
+    wavelengthOut_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(std::string predefinedString){//command line option contained license or version

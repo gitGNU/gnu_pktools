@@ -14,22 +14,25 @@ noinst_PROGRAMS = pktestProspect
 ###############################################################################
 
 # the library names to build (note we are building static libs only)
-noinst_LIBRARIES = libmodels.a
+#noinst_LIBRARIES = libmodels.a
+lib_LTLIBRARIES = libmodels.la libprospect.la
 
 # where to install the headers on the system
-libmodels_adir = $(includedir)/models
+libmodels_ladir = $(includedir)/models
 
 # the list of header files that belong to the library (to be installed later)
-libmodels_a_HEADERS = Prospect.h
+libmodels_la_HEADERS = Prospect.h
 
 if USE_NLOPT
-libmodels_a_HEADERS += SensorModel.h
+libmodels_la_HEADERS += SensorModel.h
 endif
 
 # the sources to add to the library and to add to the source distribution
-libmodels_a_SOURCES = $(libmodels_a_HEADERS) Prospect.cc 
+libmodels_la_SOURCES = $(libmodels_la_HEADERS) Prospect.cc 
+libprospect_la_SOURCES = dataSpec_P5B.f90 prospect_5B.f90 tav_abs.f90
 ###############################################################################
 
 # list of sources for the binaries
 pktestProspect_SOURCES = pktestProspect.cc
-pktestProspect_LDADD = $(top_builddir)/src/models/libmodels.a $(top_builddir)/src/models/libprospect.a libf95.a
+#pktestProspect_LDADD = $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.a libf95.a
+pktestProspect_LDADD = $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.la

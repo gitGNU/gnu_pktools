@@ -1,6 +1,6 @@
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(GDAL_CFLAGS) @AM_CXXFLAGS@
-AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/imageclasses/libimageClasses.a @AM_LDFLAGS@
-LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.a $(top_builddir)/src/models/libmodels.a $(top_builddir)/src/imageclasses/libimageClasses.a
+AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la @AM_LDFLAGS@
+LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.la $(top_builddir)/src/imageclasses/libimageClasses.la
 ###############################################################################
 # THE PROGRAMS TO BUILD
 ###############################################################################
@@ -44,7 +44,7 @@ pkdumpimg_SOURCES = pkdumpimg.cc
 pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
 pksieve_SOURCES = pksieve.cc
 pkstat_SOURCES = $(top_srcdir)/src/algorithms/Histogram.h pkstat.cc
-pkstat_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses $(GSL_LIBS) $(AM_LDFLAGS)
+pkstat_LDADD = -L$(top_builddir)/src/fileclasses -llas -lfileClasses $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc
 pkegcs_SOURCES = pkegcs.cc
 pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
