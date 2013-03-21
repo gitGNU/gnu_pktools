@@ -1,36 +1,41 @@
 Prospect.o: Prospect.cc Prospect.h /usr/include/assert.h \
- /usr/include/features.h /usr/include/bits/predefs.h \
- /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
- /usr/include/gnu/stubs.h /usr/include/gnu/stubs-32.h /usr/include/math.h \
- /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h \
- /usr/include/bits/huge_vall.h /usr/include/bits/inf.h \
- /usr/include/bits/nan.h /usr/include/bits/mathdef.h \
- /usr/include/bits/mathcalls.h /usr/include/bits/mathinline.h \
- /usr/include/c++/4.5/vector /usr/include/c++/4.5/bits/stl_algobase.h \
- /usr/include/c++/4.5/i686-linux-gnu/bits/c++config.h \
- /usr/include/c++/4.5/i686-linux-gnu/bits/os_defines.h \
- /usr/include/c++/4.5/i686-linux-gnu/bits/cpu_defines.h \
- /usr/include/c++/4.5/cstddef \
- /usr/lib/i386-linux-gnu/gcc/i686-linux-gnu/4.5.2/include/stddef.h \
- /usr/include/c++/4.5/bits/functexcept.h \
- /usr/include/c++/4.5/exception_defines.h \
- /usr/include/c++/4.5/bits/cpp_type_traits.h \
- /usr/include/c++/4.5/ext/type_traits.h \
- /usr/include/c++/4.5/ext/numeric_traits.h \
- /usr/include/c++/4.5/bits/stl_pair.h /usr/include/c++/4.5/bits/move.h \
- /usr/include/c++/4.5/bits/concept_check.h \
- /usr/include/c++/4.5/bits/stl_iterator_base_types.h \
- /usr/include/c++/4.5/bits/stl_iterator_base_funcs.h \
- /usr/include/c++/4.5/bits/stl_iterator.h \
- /usr/include/c++/4.5/debug/debug.h /usr/include/c++/4.5/bits/allocator.h \
- /usr/include/c++/4.5/i686-linux-gnu/bits/c++allocator.h \
- /usr/include/c++/4.5/ext/new_allocator.h /usr/include/c++/4.5/new \
- /usr/include/c++/4.5/exception /usr/include/c++/4.5/bits/stl_construct.h \
- /usr/include/c++/4.5/bits/stl_uninitialized.h \
- /usr/include/c++/4.5/bits/stl_vector.h \
- /usr/include/c++/4.5/initializer_list \
- /usr/include/c++/4.5/bits/stl_bvector.h \
- /usr/include/c++/4.5/bits/vector.tcc
+ /usr/include/features.h /usr/include/i386-linux-gnu/bits/predefs.h \
+ /usr/include/i386-linux-gnu/sys/cdefs.h \
+ /usr/include/i386-linux-gnu/bits/wordsize.h \
+ /usr/include/i386-linux-gnu/gnu/stubs.h \
+ /usr/include/i386-linux-gnu/gnu/stubs-32.h /usr/include/math.h \
+ /usr/include/i386-linux-gnu/bits/huge_val.h \
+ /usr/include/i386-linux-gnu/bits/huge_valf.h \
+ /usr/include/i386-linux-gnu/bits/huge_vall.h \
+ /usr/include/i386-linux-gnu/bits/inf.h \
+ /usr/include/i386-linux-gnu/bits/nan.h \
+ /usr/include/i386-linux-gnu/bits/mathdef.h \
+ /usr/include/i386-linux-gnu/bits/mathcalls.h \
+ /usr/include/i386-linux-gnu/bits/mathinline.h \
+ /usr/include/c++/4.6/vector /usr/include/c++/4.6/bits/stl_algobase.h \
+ /usr/include/c++/4.6/i686-linux-gnu/./bits/c++config.h \
+ /usr/include/c++/4.6/i686-linux-gnu/./bits/os_defines.h \
+ /usr/include/c++/4.6/i686-linux-gnu/./bits/cpu_defines.h \
+ /usr/include/c++/4.6/bits/functexcept.h \
+ /usr/include/c++/4.6/bits/exception_defines.h \
+ /usr/include/c++/4.6/bits/cpp_type_traits.h \
+ /usr/include/c++/4.6/ext/type_traits.h \
+ /usr/include/c++/4.6/ext/numeric_traits.h \
+ /usr/include/c++/4.6/bits/stl_pair.h /usr/include/c++/4.6/bits/move.h \
+ /usr/include/c++/4.6/bits/concept_check.h \
+ /usr/include/c++/4.6/bits/stl_iterator_base_types.h \
+ /usr/include/c++/4.6/bits/stl_iterator_base_funcs.h \
+ /usr/include/c++/4.6/bits/stl_iterator.h \
+ /usr/include/c++/4.6/debug/debug.h /usr/include/c++/4.6/bits/allocator.h \
+ /usr/include/c++/4.6/i686-linux-gnu/./bits/c++allocator.h \
+ /usr/include/c++/4.6/ext/new_allocator.h /usr/include/c++/4.6/new \
+ /usr/include/c++/4.6/exception /usr/include/c++/4.6/bits/stl_construct.h \
+ /usr/include/c++/4.6/bits/stl_uninitialized.h \
+ /usr/include/c++/4.6/bits/stl_vector.h \
+ /usr/include/c++/4.6/initializer_list \
+ /usr/include/c++/4.6/bits/stl_bvector.h \
+ /usr/include/c++/4.6/bits/range_access.h \
+ /usr/include/c++/4.6/bits/vector.tcc
 
 Prospect.h:
 
@@ -38,90 +43,88 @@ Prospect.h:
 
 /usr/include/features.h:
 
-/usr/include/bits/predefs.h:
+/usr/include/i386-linux-gnu/bits/predefs.h:
 
-/usr/include/sys/cdefs.h:
+/usr/include/i386-linux-gnu/sys/cdefs.h:
 
-/usr/include/bits/wordsize.h:
+/usr/include/i386-linux-gnu/bits/wordsize.h:
 
-/usr/include/gnu/stubs.h:
+/usr/include/i386-linux-gnu/gnu/stubs.h:
 
-/usr/include/gnu/stubs-32.h:
+/usr/include/i386-linux-gnu/gnu/stubs-32.h:
 
 /usr/include/math.h:
 
-/usr/include/bits/huge_val.h:
+/usr/include/i386-linux-gnu/bits/huge_val.h:
 
-/usr/include/bits/huge_valf.h:
+/usr/include/i386-linux-gnu/bits/huge_valf.h:
 
-/usr/include/bits/huge_vall.h:
+/usr/include/i386-linux-gnu/bits/huge_vall.h:
 
-/usr/include/bits/inf.h:
+/usr/include/i386-linux-gnu/bits/inf.h:
 
-/usr/include/bits/nan.h:
+/usr/include/i386-linux-gnu/bits/nan.h:
 
-/usr/include/bits/mathdef.h:
+/usr/include/i386-linux-gnu/bits/mathdef.h:
 
-/usr/include/bits/mathcalls.h:
+/usr/include/i386-linux-gnu/bits/mathcalls.h:
 
-/usr/include/bits/mathinline.h:
+/usr/include/i386-linux-gnu/bits/mathinline.h:
 
-/usr/include/c++/4.5/vector:
+/usr/include/c++/4.6/vector:
 
-/usr/include/c++/4.5/bits/stl_algobase.h:
+/usr/include/c++/4.6/bits/stl_algobase.h:
 
-/usr/include/c++/4.5/i686-linux-gnu/bits/c++config.h:
+/usr/include/c++/4.6/i686-linux-gnu/./bits/c++config.h:
 
-/usr/include/c++/4.5/i686-linux-gnu/bits/os_defines.h:
+/usr/include/c++/4.6/i686-linux-gnu/./bits/os_defines.h:
 
-/usr/include/c++/4.5/i686-linux-gnu/bits/cpu_defines.h:
+/usr/include/c++/4.6/i686-linux-gnu/./bits/cpu_defines.h:
 
-/usr/include/c++/4.5/cstddef:
+/usr/include/c++/4.6/bits/functexcept.h:
 
-/usr/lib/i386-linux-gnu/gcc/i686-linux-gnu/4.5.2/include/stddef.h:
+/usr/include/c++/4.6/bits/exception_defines.h:
 
-/usr/include/c++/4.5/bits/functexcept.h:
+/usr/include/c++/4.6/bits/cpp_type_traits.h:
 
-/usr/include/c++/4.5/exception_defines.h:
+/usr/include/c++/4.6/ext/type_traits.h:
 
-/usr/include/c++/4.5/bits/cpp_type_traits.h:
+/usr/include/c++/4.6/ext/numeric_traits.h:
 
-/usr/include/c++/4.5/ext/type_traits.h:
+/usr/include/c++/4.6/bits/stl_pair.h:
 
-/usr/include/c++/4.5/ext/numeric_traits.h:
+/usr/include/c++/4.6/bits/move.h:
 
-/usr/include/c++/4.5/bits/stl_pair.h:
+/usr/include/c++/4.6/bits/concept_check.h:
 
-/usr/include/c++/4.5/bits/move.h:
+/usr/include/c++/4.6/bits/stl_iterator_base_types.h:
 
-/usr/include/c++/4.5/bits/concept_check.h:
+/usr/include/c++/4.6/bits/stl_iterator_base_funcs.h:
 
-/usr/include/c++/4.5/bits/stl_iterator_base_types.h:
+/usr/include/c++/4.6/bits/stl_iterator.h:
 
-/usr/include/c++/4.5/bits/stl_iterator_base_funcs.h:
+/usr/include/c++/4.6/debug/debug.h:
 
-/usr/include/c++/4.5/bits/stl_iterator.h:
+/usr/include/c++/4.6/bits/allocator.h:
 
-/usr/include/c++/4.5/debug/debug.h:
+/usr/include/c++/4.6/i686-linux-gnu/./bits/c++allocator.h:
 
-/usr/include/c++/4.5/bits/allocator.h:
+/usr/include/c++/4.6/ext/new_allocator.h:
 
-/usr/include/c++/4.5/i686-linux-gnu/bits/c++allocator.h:
+/usr/include/c++/4.6/new:
 
-/usr/include/c++/4.5/ext/new_allocator.h:
+/usr/include/c++/4.6/exception:
 
-/usr/include/c++/4.5/new:
+/usr/include/c++/4.6/bits/stl_construct.h:
 
-/usr/include/c++/4.5/exception:
+/usr/include/c++/4.6/bits/stl_uninitialized.h:
 
-/usr/include/c++/4.5/bits/stl_construct.h:
+/usr/include/c++/4.6/bits/stl_vector.h:
 
-/usr/include/c++/4.5/bits/stl_uninitialized.h:
+/usr/include/c++/4.6/initializer_list:
 
-/usr/include/c++/4.5/bits/stl_vector.h:
+/usr/include/c++/4.6/bits/stl_bvector.h:
 
-/usr/include/c++/4.5/initializer_list:
+/usr/include/c++/4.6/bits/range_access.h:
 
-/usr/include/c++/4.5/bits/stl_bvector.h:
-
-/usr/include/c++/4.5/bits/vector.tcc:
+/usr/include/c++/4.6/bits/vector.tcc:
