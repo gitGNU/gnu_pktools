@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
+  Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class"); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
   Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*(u-v)^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
@@ -139,6 +140,7 @@ int main(int argc, char *argv[])
     offset_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
     priors_opt.retrieveOption(argc,argv);
+    priorimg_opt.retrieveOption(argc,argv);
     svm_type_opt.retrieveOption(argc,argv);
     kernel_type_opt.retrieveOption(argc,argv);
     kernel_degree_opt.retrieveOption(argc,argv);
@@ -236,7 +238,6 @@ int main(int argc, char *argv[])
     for(short iclass=0;iclass<priors_opt.size();++iclass)
       priors[iclass]/=normPrior;
   }
-
 
   //sort bands
   if(band_opt.size())
@@ -410,10 +411,12 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1){
         std::cout << "number of bands: " << nband << std::endl;
         std::cout << "number of classes: " << nclass << std::endl;
-        std::cout << "priors:";
-        for(short iclass=0;iclass<nclass;++iclass)
-          std::cout << " " << priors[iclass];
-        std::cout << std::endl;
+	if(priorimg_opt.empty()){
+	  std::cout << "priors:";
+	  for(short iclass=0;iclass<nclass;++iclass)
+	    std::cout << " " << priors[iclass];
+	  std::cout << std::endl;
+	}
       }
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
       while(mapit!=trainingMap.end()){
@@ -594,6 +597,28 @@ int main(int argc, char *argv[])
         exit(1);
       }
     }
+    ImgReaderGdal priorReader;
+    if(priorimg_opt.size()){
+      try{
+	if(verbose_opt[0]>=1)
+          std::cout << "opening prior image " << priorimg_opt[0] << std::endl;
+        priorReader.open(priorimg_opt[0]);
+        assert(priorReader.nrOfCol()==testImage.nrOfCol());
+        assert(priorReader.nrOfRow()==testImage.nrOfRow());
+      }
+      catch(string error){
+        cerr << error << std::endl;
+        exit(2);
+      }
+      catch(...){
+        cerr << "error catched" << std::endl;
+        exit(1);
+      }
+    }
+
+    if(priorimg_opt.size()){
+      //hiero
+    }
     int nrow=testImage.nrOfRow();
     int ncol=testImage.nrOfCol();
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
@@ -646,6 +671,9 @@ int main(int argc, char *argv[])
       vector<short> lineMask;
       if(mask_opt.size())
         lineMask.resize(maskReader.nrOfCol());
+      Vector2d<float> linePrior;
+      if(priorimg_opt.size())
+	 linePrior.resize(nclass,ncol);//prior prob for each class
       Vector2d<float> hpixel(ncol);
       Vector2d<float> prOut(nclass,ncol);//posterior prob for each class
       vector<float> entropy(ncol);
@@ -700,6 +728,21 @@ int main(int argc, char *argv[])
         }
         catch(string theError){
           cerr << "Error reading " << mask_opt[0] << ": " << theError << std::endl;
+          exit(3);
+        }
+        catch(...){
+          cerr << "error catched" << std::endl;
+          exit(3);
+        }
+      }
+      //read prior
+      if(priorimg_opt.size()){
+        try{
+	  for(int iclass=0;iclass<nclass;++iclass)
+	    priorReader.readData(linePrior[iclass],GDT_Float32,iline,iclass);
+        }
+        catch(string theError){
+          cerr << "Error reading " << priorimg_opt[0] << ": " << theError << std::endl;
           exit(3);
         }
         catch(...){
@@ -831,6 +874,8 @@ int main(int argc, char *argv[])
             classBag[ibag][icol]=0;
           }
           for(short iclass=0;iclass<nclass;++iclass){
+	    if(priorimg_opt.size())
+	      priors[iclass]=linePrior[iclass][icol];
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
@@ -953,6 +998,10 @@ int main(int argc, char *argv[])
     }
 
     testImage.close();
+    if(mask_opt.size())
+      maskReader.close();
+    if(priorimg_opt.size())
+      priorReader.close();
     if(prob_opt.size())
       probImage.close();
     if(entropy_opt.size())

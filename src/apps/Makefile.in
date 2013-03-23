@@ -76,7 +76,6 @@ am__DEPENDENCIES_1 =
 pkascii2img_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkascii2ogr_OBJECTS = pkascii2ogr.$(OBJEXT)
 pkascii2ogr_OBJECTS = $(am_pkascii2ogr_OBJECTS)
@@ -84,7 +83,6 @@ pkascii2ogr_LDADD = $(LDADD)
 pkascii2ogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pkclassify_nn_SOURCES_DIST =  \
 	$(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h \
@@ -106,7 +104,6 @@ pkclassify_svm_LDADD = $(LDADD)
 pkclassify_svm_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkcreatect_OBJECTS = pkcreatect.$(OBJEXT)
 pkcreatect_OBJECTS = $(am_pkcreatect_OBJECTS)
@@ -114,7 +111,6 @@ pkcreatect_LDADD = $(LDADD)
 pkcreatect_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkcrop_OBJECTS = pkcrop.$(OBJEXT)
 pkcrop_OBJECTS = $(am_pkcrop_OBJECTS)
@@ -122,7 +118,6 @@ pkcrop_LDADD = $(LDADD)
 pkcrop_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdiff_OBJECTS = pkdiff.$(OBJEXT)
 pkdiff_OBJECTS = $(am_pkdiff_OBJECTS)
@@ -130,7 +125,6 @@ pkdiff_LDADD = $(LDADD)
 pkdiff_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdsm2shadow_OBJECTS = pkdsm2shadow.$(OBJEXT)
 pkdsm2shadow_OBJECTS = $(am_pkdsm2shadow_OBJECTS)
@@ -138,7 +132,6 @@ pkdsm2shadow_LDADD = $(LDADD)
 pkdsm2shadow_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdumpimg_OBJECTS = pkdumpimg.$(OBJEXT)
 pkdumpimg_OBJECTS = $(am_pkdumpimg_OBJECTS)
@@ -146,7 +139,6 @@ pkdumpimg_LDADD = $(LDADD)
 pkdumpimg_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkdumpogr_OBJECTS = pkdumpogr.$(OBJEXT)
 pkdumpogr_OBJECTS = $(am_pkdumpogr_OBJECTS)
@@ -154,7 +146,6 @@ pkdumpogr_LDADD = $(LDADD)
 pkdumpogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkeditogr_OBJECTS = pkeditogr.$(OBJEXT)
 pkeditogr_OBJECTS = $(am_pkeditogr_OBJECTS)
@@ -162,7 +153,6 @@ pkeditogr_LDADD = $(LDADD)
 pkeditogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkegcs_OBJECTS = pkegcs.$(OBJEXT)
 pkegcs_OBJECTS = $(am_pkegcs_OBJECTS)
@@ -173,7 +163,6 @@ pkextract_LDADD = $(LDADD)
 pkextract_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkfillnodata_OBJECTS = pkfillnodata.$(OBJEXT)
 pkfillnodata_OBJECTS = $(am_pkfillnodata_OBJECTS)
@@ -181,7 +170,6 @@ pkfillnodata_LDADD = $(LDADD)
 pkfillnodata_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkfilter_OBJECTS = pkfilter.$(OBJEXT)
 pkfilter_OBJECTS = $(am_pkfilter_OBJECTS)
@@ -205,7 +193,6 @@ pkgetmask_LDADD = $(LDADD)
 pkgetmask_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkinfo_OBJECTS = pkinfo.$(OBJEXT)
 pkinfo_OBJECTS = $(am_pkinfo_OBJECTS)
@@ -213,7 +200,6 @@ pkinfo_LDADD = $(LDADD)
 pkinfo_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pklas2img_SOURCES_DIST = pklas2img.cc
 @USE_LAS_TRUE@am_pklas2img_OBJECTS = pklas2img.$(OBJEXT)
@@ -225,7 +211,6 @@ pkmosaic_LDADD = $(LDADD)
 pkmosaic_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkndvi_OBJECTS = pkndvi.$(OBJEXT)
 pkndvi_OBJECTS = $(am_pkndvi_OBJECTS)
@@ -233,7 +218,6 @@ pkndvi_LDADD = $(LDADD)
 pkndvi_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pkopt_svm_SOURCES_DIST =  \
 	$(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h \
@@ -248,7 +232,6 @@ pkpolygonize_LDADD = $(LDADD)
 pkpolygonize_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkreclass_OBJECTS = pkreclass.$(OBJEXT)
 pkreclass_OBJECTS = $(am_pkreclass_OBJECTS)
@@ -256,7 +239,6 @@ pkreclass_LDADD = $(LDADD)
 pkreclass_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am__pksensormodel_SOURCES_DIST =  \
 	$(top_srcdir)/src/models/SensorModel.h pksensormodel.h \
@@ -271,7 +253,6 @@ pksetmask_LDADD = $(LDADD)
 pksetmask_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pksieve_OBJECTS = pksieve.$(OBJEXT)
 pksieve_OBJECTS = $(am_pksieve_OBJECTS)
@@ -279,7 +260,6 @@ pksieve_LDADD = $(LDADD)
 pksieve_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 am_pkstat_OBJECTS = pkstat.$(OBJEXT)
 pkstat_OBJECTS = $(am_pkstat_OBJECTS)
@@ -290,7 +270,6 @@ pkstatogr_LDADD = $(LDADD)
 pkstatogr_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/algorithms/libalgorithms.la \
 	$(top_builddir)/src/models/libmodels.la \
-	$(top_builddir)/src/models/libprospect.la \
 	$(top_builddir)/src/imageclasses/libimageClasses.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -481,7 +460,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.la $(top_builddir)/src/imageclasses/libimageClasses.la
+#LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.la $(top_builddir)/src/imageclasses/libimageClasses.la
+LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/imageclasses/libimageClasses.la
 @USE_FANN_TRUE@pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
 @USE_FANN_TRUE@pkclassify_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 @USE_FANN_TRUE@pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)

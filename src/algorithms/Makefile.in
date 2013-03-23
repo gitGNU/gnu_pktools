@@ -16,7 +16,6 @@
 @SET_MAKE@
 
 
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -36,7 +35,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = pktestStat$(EXEEXT)
 @USE_FANN_TRUE@am__append_1 = myfann_cpp.h
 @USE_NLOPT_TRUE@am__append_2 = OptFactory.h
 subdir = src/algorithms
@@ -93,13 +91,6 @@ am__objects_2 = $(am__objects_1) $(am__objects_1)
 am_libalgorithms_la_OBJECTS = $(am__objects_2) Egcs.lo Filter2d.lo \
 	Filter.lo ConfusionMatrix.lo svm.lo
 libalgorithms_la_OBJECTS = $(am_libalgorithms_la_OBJECTS)
-PROGRAMS = $(noinst_PROGRAMS)
-am_pktestStat_OBJECTS = pktestStat.$(OBJEXT)
-pktestStat_OBJECTS = $(am_pktestStat_OBJECTS)
-am__DEPENDENCIES_1 =
-pktestStat_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/src/algorithms/libalgorithms.la \
-	$(top_builddir)/src/imageclasses/libimageClasses.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -122,9 +113,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libalgorithms_la_SOURCES) $(pktestStat_SOURCES)
-DIST_SOURCES = $(am__libalgorithms_la_SOURCES_DIST) \
-	$(pktestStat_SOURCES)
+SOURCES = $(libalgorithms_la_SOURCES)
+DIST_SOURCES = $(am__libalgorithms_la_SOURCES_DIST)
 am__libalgorithms_la_HEADERS_DIST = Egcs.h Filter2d.h Filter.h \
 	StatFactory.h ConfusionMatrix.h svm.h FeatureSelector.h \
 	myfann_cpp.h OptFactory.h
@@ -273,6 +263,14 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 ###############################################################################
+# THE PROGRAMS TO BUILD
+###############################################################################
+
+# the program to build (the names of the final binaries)
+#do not want to install pktestoption
+#noinst_PROGRAMS = pktestStat
+
+###############################################################################
 # THE LIBRARIES TO BUILD
 ###############################################################################
 
@@ -290,11 +288,6 @@ libalgorithms_la_HEADERS = Egcs.h Filter2d.h Filter.h StatFactory.h \
 
 # the sources to add to the library and to add to the source distribution
 libalgorithms_la_SOURCES = $(libalgorithms_la_HEADERS) Egcs.cc Filter2d.cc Filter.cc ConfusionMatrix.cc svm.cpp
-###############################################################################
-
-# list of sources for the binaries
-pktestStat_SOURCES = pktestStat.cc
-pktestStat_LDADD = $(GSL_LIBS) -lgslwrap $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la -lgslwrap
 all: all-am
 
 .SUFFIXES:
@@ -363,18 +356,6 @@ clean-libLTLIBRARIES:
 libalgorithms.la: $(libalgorithms_la_OBJECTS) $(libalgorithms_la_DEPENDENCIES) $(EXTRA_libalgorithms_la_DEPENDENCIES) 
 	$(CXXLINK) -rpath $(libdir) $(libalgorithms_la_OBJECTS) $(libalgorithms_la_LIBADD) $(LIBS)
 
-clean-noinstPROGRAMS:
-	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
-	echo " rm -f" $$list; \
-	rm -f $$list || exit $$?; \
-	test -n "$(EXEEXT)" || exit 0; \
-	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
-	echo " rm -f" $$list; \
-	rm -f $$list
-pktestStat$(EXEEXT): $(pktestStat_OBJECTS) $(pktestStat_DEPENDENCIES) $(EXTRA_pktestStat_DEPENDENCIES) 
-	@rm -f pktestStat$(EXEEXT)
-	$(CXXLINK) $(pktestStat_OBJECTS) $(pktestStat_LDADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -385,7 +366,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Egcs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Filter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Filter2d.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pktestStat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/svm.Plo@am__quote@
 
 .cc.o:
@@ -538,7 +518,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(libalgorithms_ladir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -576,7 +556,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-noinstPROGRAMS mostlyclean-am
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -648,21 +628,26 @@ uninstall-am: uninstall-libLTLIBRARIES \
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool clean-noinstPROGRAMS ctags \
-	distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-libLTLIBRARIES \
-	install-libalgorithms_laHEADERS install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-libLTLIBRARIES \
+	clean-libLTLIBRARIES clean-libtool ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am \
+	install-libLTLIBRARIES install-libalgorithms_laHEADERS \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-libLTLIBRARIES \
 	uninstall-libalgorithms_laHEADERS
 
+###############################################################################
+
+# list of sources for the binaries
+#pktestStat_SOURCES = pktestStat.cc
+#pktestStat_LDADD = $(GSL_LIBS) -lgslwrap $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la -lgslwrap
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

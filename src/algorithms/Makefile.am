@@ -7,7 +7,7 @@ AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
 
 # the program to build (the names of the final binaries)
 #do not want to install pktestoption
-noinst_PROGRAMS = pktestStat
+#noinst_PROGRAMS = pktestStat
 
 ###############################################################################
 # THE LIBRARIES TO BUILD
@@ -36,5 +36,5 @@ libalgorithms_la_SOURCES = $(libalgorithms_la_HEADERS) Egcs.cc Filter2d.cc Filte
 ###############################################################################
 
 # list of sources for the binaries
-pktestStat_SOURCES = pktestStat.cc
-pktestStat_LDADD = $(GSL_LIBS) -lgslwrap $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la -lgslwrap
+#pktestStat_SOURCES = pktestStat.cc
+#pktestStat_LDADD = $(GSL_LIBS) -lgslwrap $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la -lgslwrap
