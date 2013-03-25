@@ -692,7 +692,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
   }
 }
 
-void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down)
+void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose)
 {
   assert(dimX);
   assert(dimY);
@@ -711,7 +711,7 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
   int indexJ=0;
   for(int j=-dimY/2;j<(dimY+1)/2;++j){
     try{
-      input.readData(inBuffer[indexJ],GDT_Byte,abs(j));
+      input.readData(inBuffer[indexJ],GDT_Int16,abs(j));
     }
     catch(string errorstring){
       cerr << errorstring << "in line " << indexJ << endl;
@@ -727,7 +727,7 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
         //allocate buffer
         inBuffer.push_back(inBuffer.back());
         try{
-          input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2);
+          input.readData(inBuffer[inBuffer.size()-1],GDT_Int16,y+dimY/2);
         }
         catch(string errorstring){
           cerr << errorstring << "in line " << y << endl;
@@ -795,9 +795,12 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
     progress=(1.0+y/down)/output.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
     //write outBuffer to file
+    assert(outBuffer.size()==m_class.size());
+    assert(y<output.nrOfRow());
     for(int iclass=0;iclass<m_class.size();++iclass){
+      assert(outBuffer[iclass].size()==output.nrOfCol());
       try{
-        output.writeData(outBuffer,GDT_Float64,y/down,iclass);
+        output.writeData(outBuffer[iclass],GDT_Float64,y/down,iclass);
       }
       catch(string errorstring){
         cerr << errorstring << "in class " << iclass << ", line " << y << endl;

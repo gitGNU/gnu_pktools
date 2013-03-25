@@ -363,6 +363,47 @@ double ImgReaderGdal::getMax(int& x, int& y, int band) const{
     throw(static_cast<string>("Warning: not initialized"));
 }
 
+void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const
+{
+  GDALRasterBand  *poBand;
+  int             bGotMin, bGotMax;
+  double          adfMinMax[2];
+        
+  poBand = m_gds->GetRasterBand(band+1);
+  adfMinMax[0] = poBand->GetMinimum( &bGotMin );
+  adfMinMax[1] = poBand->GetMaximum( &bGotMax );
+  if( ! (bGotMin && bGotMax) )
+    GDALComputeRasterMinMax((GDALRasterBandH)poBand, FALSE, adfMinMax);
+    // GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
+  minValue=adfMinMax[0];
+  maxValue=adfMinMax[1];
+
+  vector<double> lineBuffer(endCol-startCol+1);
+  bool init=false;
+  assert(endRow<nrOfRow());
+  for(int irow=startCol;irow<endRow+1;++irow){
+    readData(lineBuffer,GDT_Float64,startCol,endCol,irow,band);
+    for(int icol=0;icol<lineBuffer.size();++icol){
+      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      if(valid){
+	if(!init){
+	  minValue=lineBuffer[icol];
+	  maxValue=lineBuffer[icol];
+	  init=true;
+	}
+	else{
+	  if(minValue>lineBuffer[icol])
+	    minValue=lineBuffer[icol];
+	  if(maxValue<lineBuffer[icol])
+	    maxValue=lineBuffer[icol];
+	}
+      }
+    }
+  }
+  if(!init)
+    throw(static_cast<string>("Warning: not initialized"));
+}
+
 void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool exhaustiveSearch) const
 {
   GDALRasterBand  *poBand;

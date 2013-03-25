@@ -75,6 +75,7 @@ public:
   template<typename T> void readDataBlock(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   template<typename T> void readData(vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
   template<typename T> void readData(vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=0) const;
+  void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
   void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=false) const;
   double getMin(int& col, int& row, int band=0) const;
   double getMax(int& col, int& row, int band=0) const;

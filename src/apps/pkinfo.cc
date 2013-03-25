@@ -249,7 +249,14 @@ int main(int argc, char *argv[])
 
     if(minmax_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
-      imgReader.getMinMax(minValue,maxValue,band_opt[0],true);
+      if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
+	double uli,ulj,lri,lrj;
+	imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
+	imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
+	imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),band_opt[0],minValue,maxValue);
+      }
+      else
+	imgReader.getMinMax(minValue,maxValue,band_opt[0],true);
       std::cout << "--min " << minValue << " --max " << maxValue << " ";
     }
     if(hist_opt[0]){

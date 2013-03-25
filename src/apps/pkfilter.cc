@@ -134,6 +134,8 @@ int main(int argc,char **argv) {
     assert(output_opt.size());
     if(filter2d::Filter2d::getFilterType(method_opt[0])==filter2d::mrf){
       assert(class_opt.size()>1);
+      if(verbose_opt[0])
+	std::cout << "opening output image " << output_opt[0] << std::endl;
       output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],class_opt.size(),theType,imageType,option_opt);
     }
     else if(fwhm_opt.size()||srf_opt.size()){
@@ -170,8 +172,9 @@ int main(int argc,char **argv) {
 
   filter2d::Filter2d filter2d;
   filter::Filter filter1d;
-  if(class_opt.size()&&verbose_opt[0]){
-    std::cout<< "class values: ";
+  if(class_opt.size()){
+    if(verbose_opt[0])
+      std::cout<< "class values: ";
     for(int iclass=0;iclass<class_opt.size();++iclass){
       if(!dimZ_opt.size())
         filter2d.pushClass(class_opt[iclass]);
@@ -425,7 +428,9 @@ int main(int argc,char **argv) {
       break;
     }
     case(filter2d::mrf):{//Markov Random Field
-      filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta_opt[0], true, down_opt[0]);
+      if(verbose_opt[0])
+	std::cout << "Markov Random Field filtering" << std::endl;
+      filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta_opt[0], true, down_opt[0], verbose_opt[0]);
       break;
     }
     case(filter2d::sobelx):{//Sobel edge detection in X

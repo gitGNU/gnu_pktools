@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
   Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
   Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
   Optionpk<int>  band_opt("b", "band", "band index to crop (-1: crop all bands)", -1);
+  Optionpk<double> autoscale_opt("as", "autoscale", "scale output to min and max, e.g., --autoscale 0 --autoscale 255");
   Optionpk<double> scale_opt("s", "scale", "output=scale*input+offset", 1);
   Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset", 0);
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
@@ -71,6 +72,7 @@ int main(int argc, char *argv[])
     lrx_opt.retrieveOption(argc,argv);
     lry_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    autoscale_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
@@ -217,6 +219,13 @@ int main(int argc, char *argv[])
     scale_opt.push_back(scale_opt[0]);
   while(offset_opt.size()<band_opt.size())
     offset_opt.push_back(offset_opt[0]);
+  if(autoscale_opt.size()){
+    assert(autoscale_opt.size()%2==0);
+    while(autoscale_opt.size()<band_opt.size()*2){
+      autoscale_opt.push_back(autoscale_opt[0]);
+      autoscale_opt.push_back(autoscale_opt[1]);
+    }
+  }
 
   for(int iimg=0;iimg<input_opt.size();++iimg){
     if(verbose_opt[0])
@@ -364,6 +373,17 @@ int main(int argc, char *argv[])
       endCol=0;
     else if(lri>=imgReader.nrOfCol())
       endCol=imgReader.nrOfCol()-1;
+    double startRow=ulj;
+    double endRow=lrj;
+    if(ulj<0)
+      startRow=0;
+    else if(ulj>=imgReader.nrOfRow())
+      startRow=imgReader.nrOfRow()-1;
+    if(lrj<0)
+      endRow=0;
+    else if(lrj>=imgReader.nrOfRow())
+      endRow=imgReader.nrOfRow()-1;
+
     int readncol=endCol-startCol+1;
     vector<double> readBuffer(readncol+1);
     int nband=(band_opt[0]<0)?imgReader.nrOfBand():band_opt.size();
@@ -373,6 +393,10 @@ int main(int argc, char *argv[])
 	cout << "extracting band " << readBand << endl;
 	pfnProgress(progress,pszMessage,pProgressArg);
       }
+      double theMin=0;
+      double theMax=0;
+      if(autoscale_opt.size())
+	imgReader.getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
       double readRow=0;
       double readCol=0;
       double lowerCol=0;
@@ -442,8 +466,18 @@ int main(int argc, char *argv[])
                 if(!valid)
                   writeBuffer.push_back(flag_opt[0]);
                 else{
-                  double theScale=(scale_opt.size()>1)?scale_opt[iband]:scale_opt[0];
-                  double theOffset=(offset_opt.size()>1)?offset_opt[iband]:offset_opt[0];
+                  double theScale=1;
+                  double theOffset=0;
+		  if(autoscale_opt.size()){
+		    theScale=(autoscale_opt[1]-autoscale_opt[0])/(theMax-theMin);
+		    theOffset=autoscale_opt[0]-theScale*theMin;
+		    //scale=(ubound-lbound)/(max-min)
+		    //output=scale*(input-min)+lbound
+		  }
+		  else{
+		    theScale=(scale_opt.size()>1)?scale_opt[iband]:scale_opt[0];
+		    theOffset=(offset_opt.size()>1)?offset_opt[iband]:offset_opt[0];
+		  }
                   switch(theResample){
                   case(BILINEAR):
                     lowerCol=readCol-0.5;
