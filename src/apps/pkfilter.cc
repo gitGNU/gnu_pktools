@@ -40,7 +40,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation.");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median,variance,min,max,sum,mean,minmax,dilation,erosion,closing,opening,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev)", "median");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median,variance,min,max,sum,mean,minmax,dilation,erosion,closing,opening,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf)", "median");
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
@@ -59,6 +59,7 @@ int main(int argc,char **argv) {
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<std::string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);
+  Optionpk<double> beta_opt("beta", "beta", "beta for Markov Random Field", 1.0);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -82,6 +83,7 @@ int main(int argc,char **argv) {
     wavelengthIn_opt.retrieveOption(argc,argv);
     wavelengthOut_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
+    beta_opt.retrieveOption(argc,argv);
     interpolationType_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -130,7 +132,11 @@ int main(int argc,char **argv) {
   }
   try{
     assert(output_opt.size());
-    if(fwhm_opt.size()||srf_opt.size()){
+    if(filter2d::Filter2d::getFilterType(method_opt[0])==filter2d::mrf){
+      assert(class_opt.size()>1);
+      output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],class_opt.size(),theType,imageType,option_opt);
+    }
+    else if(fwhm_opt.size()||srf_opt.size()){
       //todo: support down and offset
       int nband=fwhm_opt.size()? fwhm_opt.size():srf_opt.size();
       output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
@@ -416,6 +422,10 @@ int main(int argc,char **argv) {
     }
     case(filter2d::heterog):{//spatially heterogeneous
       filter2d.doit(input,output,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      break;
+    }
+    case(filter2d::mrf):{//Markov Random Field
+      filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta_opt[0], true, down_opt[0]);
       break;
     }
     case(filter2d::sobelx):{//Sobel edge detection in X

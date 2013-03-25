@@ -692,6 +692,120 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
   }
 }
 
+void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down)
+{
+  assert(dimX);
+  assert(dimY);
+  assert(m_class.size()>1);
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  Vector2d<short> inBuffer(dimY,input.nrOfCol());
+  Vector2d<double> outBuffer(m_class.size(),(input.nrOfCol()+down-1)/down);
+  assert(input.nrOfBand()==1);
+  assert(output.nrOfBand()==m_class.size());
+  //initialize last half of inBuffer
+  int indexI=0;
+  int indexJ=0;
+  for(int j=-dimY/2;j<(dimY+1)/2;++j){
+    try{
+      input.readData(inBuffer[indexJ],GDT_Byte,abs(j));
+    }
+    catch(string errorstring){
+      cerr << errorstring << "in line " << indexJ << endl;
+    }
+    ++indexJ;
+  }
+  for(int y=0;y<input.nrOfRow();++y){
+    if(y){//inBuffer already initialized for y=0
+      //erase first line from inBuffer
+      inBuffer.erase(inBuffer.begin());
+      //read extra line and push back to inBuffer if not out of bounds
+      if(y+dimY/2<input.nrOfRow()){
+        //allocate buffer
+        inBuffer.push_back(inBuffer.back());
+        try{
+          input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2);
+        }
+        catch(string errorstring){
+          cerr << errorstring << "in line " << y << endl;
+        }
+      }
+      else{
+        int over=y+dimY/2-input.nrOfRow();
+        int index=(inBuffer.size()-1)-over;
+        assert(index>=0);
+        assert(index<inBuffer.size());
+        inBuffer.push_back(inBuffer[index]);
+      }
+    }
+    if((y+1+down/2)%down)
+      continue;
+    for(int x=0;x<input.nrOfCol();++x){
+      if((x+1+down/2)%down)
+        continue;
+      vector<short> potential(m_class.size());
+      for(int iclass=0;iclass<m_class.size();++iclass){
+        potential[iclass]=0;
+        outBuffer[iclass][x/down]=0;
+      }
+      vector<double> windowBuffer;
+      for(int j=-dimY/2;j<(dimY+1)/2;++j){
+        for(int i=-dimX/2;i<(dimX+1)/2;++i){
+          if(i!=0&&j!=0&&!eightConnectivity)
+            continue;
+          if(i==0&&j==0)
+            continue;
+          indexI=x+i;
+          //check if out of bounds
+          if(indexI<0)
+            indexI=-indexI;
+          else if(indexI>=input.nrOfCol())
+            indexI=input.nrOfCol()-i;
+          if(y+j<0)
+            indexJ=-j;
+          else if(y+j>=input.nrOfRow())
+            indexJ=dimY/2-j;
+          else
+            indexJ=dimY/2+j;
+          bool masked=false;
+          for(int imask=0;imask<m_mask.size();++imask){
+            if(inBuffer[indexJ][indexI]==m_mask[imask]){
+              masked=true;
+              break;
+            }
+          }
+          if(!masked){
+            for(int iclass=0;iclass<m_class.size();++iclass){
+              if(inBuffer[indexJ][indexI]==m_class[iclass])
+                potential[iclass]+=1;
+            }
+          }
+        }
+      }
+      for(int iclass=0;iclass<m_class.size();++iclass){
+        if(eightConnectivity)//todo: normalize by 1/z ?
+          outBuffer[iclass][x/down]=exp(-beta*(8-potential[iclass]));
+        else
+          outBuffer[iclass][x/down]=exp(-beta*(4-potential[iclass]));
+      }
+    }
+    progress=(1.0+y/down)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+    //write outBuffer to file
+    for(int iclass=0;iclass<m_class.size();++iclass){
+      try{
+        output.writeData(outBuffer,GDT_Float64,y/down,iclass);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in class " << iclass << ", line " << y << endl;
+      }
+    }
+  }
+}
+
 //todo: re-implement without dependency of CImg and reg libraries
 // void filter2d::Filter2d::dwt_texture(const string& inputFilename, const string& outputFilename,int dim, int scale, int down, int iband, bool verbose)
 // {

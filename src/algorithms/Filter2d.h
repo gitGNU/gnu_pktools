@@ -43,7 +43,7 @@ using namespace std;
 // using namespace cimg_library;
 namespace filter2d
 {
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, mrf=26};
   
 class Filter2d
 {
@@ -76,6 +76,7 @@ public:
   /* void homogeneousSpatial(const string& inputFilename, const string& outputFilename, int dim, bool disc=false, int noValue=0); */
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=2, bool disc=false);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
+  void mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity=true, short down=1);
   template<class T1, class T2> void doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
   void median(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
   void var(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
@@ -88,6 +89,7 @@ public:
 private:
   static void initMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
     //initialize selMap
+    m_filterMap["mrf"]=filter2d::mrf;
     m_filterMap["stdev"]=filter2d::stdev;
     m_filterMap["var"]=filter2d::var;
     m_filterMap["min"]=filter2d::min;

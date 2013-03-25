@@ -616,9 +616,6 @@ int main(int argc, char *argv[])
       }
     }
 
-    if(priorimg_opt.size()){
-      //hiero
-    }
     int nrow=testImage.nrOfRow();
     int ncol=testImage.nrOfCol();
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
@@ -675,7 +672,8 @@ int main(int argc, char *argv[])
       if(priorimg_opt.size())
 	 linePrior.resize(nclass,ncol);//prior prob for each class
       Vector2d<float> hpixel(ncol);
-      Vector2d<float> prOut(nclass,ncol);//posterior prob for each class
+      vector<float> prOut(nclass);//posterior prob for each (internal) class
+      Vector2d<float> probOut(nclass,ncol);//posterior prob for each output class
       vector<float> entropy(ncol);
       Vector2d<char> classBag;//classified line for writing to image file
       if(classBag_opt.size())
@@ -819,7 +817,7 @@ int main(int argc, char *argv[])
           continue;//next column
         }
         for(short iclass=0;iclass<nclass;++iclass)
-          prOut[iclass][icol]=0;
+          prOut[iclass]=0;
         //----------------------------------- classification -------------------
         for(int ibag=0;ibag<nbag;++ibag){
           //calculate image features
@@ -875,22 +873,23 @@ int main(int argc, char *argv[])
           }
           for(short iclass=0;iclass<nclass;++iclass){
 	    if(priorimg_opt.size())
-	      priors[iclass]=linePrior[iclass][icol];
+	      priors[iclass]=linePrior[classValueMap[cm.getClass(iclass)]][icol];//todo: check if correct for all cases... (automatic classValueMap and manual input for names and values)
+	      // priors[iclass]=linePrior[iclass][icol];
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
               // prOut[iclass][icol]+=prValues[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
-              prOut[iclass][icol]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
+              prOut[iclass]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
               break;
             case(1)://product rule
               // prOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*prValues[iclass];//add probabilities for each bag
-              prOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
+              prOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
               break;
             case(2)://max rule
               // if(prValues[iclass]>prOut[iclass][icol])
               //   prOut[iclass][icol]=prValues[iclass];
-              if(result[iclass]>prOut[iclass][icol])
-                prOut[iclass][icol]=result[iclass];
+              if(result[iclass]>prOut[iclass])
+                prOut[iclass]=result[iclass];
               break;
             }
             if(classBag_opt.size()){
@@ -913,25 +912,28 @@ int main(int argc, char *argv[])
         float maxBag2=0;//second max probability
         float normBag=0;
         for(short iclass=0;iclass<nclass;++iclass){
-          if(prOut[iclass][icol]>maxBag1){
-            maxBag1=prOut[iclass][icol];
+          if(prOut[iclass]>maxBag1){
+            maxBag1=prOut[iclass];
             // classOut[icol]=classValueMap[type2string<short>(iclass)];
             classOut[icol]=classValueMap[nameVector[iclass]];
             // classOut[icol]=classValueMap[cm.getClass(iclass)];
           }
-	  else if(prOut[iclass][icol]>maxBag2)
-            maxBag2=prOut[iclass][icol];
-          normBag+=prOut[iclass][icol];
+	  else if(prOut[iclass]>maxBag2)
+            maxBag2=prOut[iclass];
+          normBag+=prOut[iclass];
         }
         //normalize prOut and convert to percentage
         entropy[icol]=0;
         for(short iclass=0;iclass<nclass;++iclass){
-          float prv=prOut[iclass][icol];
+          float prv=prOut[iclass];
           prv/=normBag;
           entropy[icol]-=prv*log(prv)/log(2);
           prv*=100.0;
             
-          prOut[iclass][icol]=static_cast<short>(prv+0.5);
+          prOut[iclass]=static_cast<short>(prv+0.5);
+          assert(classValueMap[nameVector[iclass]]<probOut.size());
+          assert(classValueMap[nameVector[iclass]]>=0);
+          probOut[classValueMap[nameVector[iclass]]][icol]=static_cast<short>(prv+0.5);
         }
         entropy[icol]/=log(nclass)/log(2);
         entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
@@ -964,7 +966,7 @@ int main(int argc, char *argv[])
           classImageBag.writeData(classBag[ibag],GDT_Byte,iline,ibag);
       if(prob_opt.size()){
         for(short iclass=0;iclass<nclass;++iclass)
-          probImage.writeData(prOut[iclass],GDT_Float32,iline,iclass);
+          probImage.writeData(probOut[iclass],GDT_Float32,iline,iclass);
       }
       if(entropy_opt.size()){
         entropyImage.writeData(entropy,GDT_Float32,iline);
