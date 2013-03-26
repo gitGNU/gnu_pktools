@@ -692,11 +692,20 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
   }
 }
 
-void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose)
+void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
+  assert(m_class.size()>1);
+  Vector2d<double> fullBeta(m_class.size(),m_class.size());
+  for(int iclass1=0;iclass1<m_class.size();++iclass1)
+    for(int iclass2=0;iclass2<m_class.size();++iclass2)
+      fullBeta[iclass1][iclass2]=beta;
+  mrf(input,output,dimX,dimY,fullBeta,eightConnectivity,down,verbose);
+}
+
+//beta[classTo][classFrom]
+void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
 {
   assert(dimX);
   assert(dimY);
-  assert(m_class.size()>1);
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -706,6 +715,8 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
   Vector2d<double> outBuffer(m_class.size(),(input.nrOfCol()+down-1)/down);
   assert(input.nrOfBand()==1);
   assert(output.nrOfBand()==m_class.size());
+  assert(m_class.size()>1);
+  assert(beta.size()==m_class.size());
   //initialize last half of inBuffer
   int indexI=0;
   int indexJ=0;
@@ -785,11 +796,14 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
           }
         }
       }
-      for(int iclass=0;iclass<m_class.size();++iclass){
-        if(eightConnectivity)//todo: normalize by 1/z ?
-          outBuffer[iclass][x/down]=exp(-beta*(8-potential[iclass]));
-        else
-          outBuffer[iclass][x/down]=exp(-beta*(4-potential[iclass]));
+      for(int iclass1=0;iclass1<m_class.size();++iclass1){
+	assert(beta[iclass1].size()==m_class.size());
+	for(int iclass2=0;iclass2<m_class.size();++iclass2){
+	  if(eightConnectivity)
+	    outBuffer[iclass1][x/down]=exp(-beta[iclass1][iclass2]*(dimX*dimY-1-potential[iclass1]))/(exp(-beta[iclass1][iclass2]*(dimX*dimY-1-potential[iclass1]))+exp(-beta[iclass1][iclass2]*(potential[iclass1])));
+	  else
+	    outBuffer[iclass1][x/down]=exp(-beta[iclass1][iclass2]*(dimX+dimY-1-potential[iclass1]))/(exp(-beta[iclass1][iclass2]*(dimX+dimY-1-potential[iclass1]))+exp(-beta[iclass1][iclass2]*(potential[iclass1])));
+	}
       }
     }
     progress=(1.0+y/down)/output.nrOfRow();

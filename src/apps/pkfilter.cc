@@ -28,6 +28,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Vector2d.h"
 #include "algorithms/Filter2d.h"
 #include "algorithms/Filter.h"
+#include "fileclasses/FileReaderAscii.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
@@ -59,7 +60,7 @@ int main(int argc,char **argv) {
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<std::string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);
-  Optionpk<double> beta_opt("beta", "beta", "beta for Markov Random Field", 1.0);
+  Optionpk<string> beta_opt("beta", "beta", "ASCII file with beta for each class transition in Markov Random Field");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -430,7 +431,31 @@ int main(int argc,char **argv) {
     case(filter2d::mrf):{//Markov Random Field
       if(verbose_opt[0])
 	std::cout << "Markov Random Field filtering" << std::endl;
-      filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta_opt[0], true, down_opt[0], verbose_opt[0]);
+      if(beta_opt.size()){
+	//in file: classFrom classTo
+	//in variable: beta[classTo][classFrom]
+	FileReaderAscii betaReader(beta_opt[0]);
+	Vector2d<double> beta(class_opt.size(),class_opt.size());
+	vector<int> cols(class_opt.size());
+	for(int iclass=0;iclass<class_opt.size();++iclass)
+	  cols[iclass]=iclass;
+	betaReader.readData(beta,cols);
+	if(verbose_opt[0]){
+	  std::cout << "using values for beta:" << std::endl;
+	  for(int iclass1=0;iclass1<class_opt.size();++iclass1)
+	    std::cout << "      " << iclass1 << " (" << class_opt[iclass1] << ")";
+	  std::cout << std::endl;
+	  for(int iclass1=0;iclass1<class_opt.size();++iclass1){
+	    std::cout << iclass1 << " (" << class_opt[iclass1] << ")";
+	    for(int iclass2=0;iclass2<class_opt.size();++iclass2)
+	      std::cout << " " << beta[iclass2][iclass1] << " (" << class_opt[iclass2] << ")";
+	    std::cout << std::endl;
+	  }
+	}
+	filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta, true, down_opt[0], verbose_opt[0]);
+      }
+      else
+	filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], 1, true, down_opt[0], verbose_opt[0]);
       break;
     }
     case(filter2d::sobelx):{//Sobel edge detection in X

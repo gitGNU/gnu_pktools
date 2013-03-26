@@ -563,12 +563,11 @@ int main(int argc, char *argv[])
     if(classname_opt.empty()){
       std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
       for(int iclass=0;iclass<nclass;++iclass){
-        if(verbose_opt[0]>0)
+        if(verbose_opt[0])
           std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
 	classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
       }
     }
-	
     ImgReaderGdal testImage;
     try{
       if(verbose_opt[0]>=1)
@@ -672,8 +671,7 @@ int main(int argc, char *argv[])
       if(priorimg_opt.size())
 	 linePrior.resize(nclass,ncol);//prior prob for each class
       Vector2d<float> hpixel(ncol);
-      vector<float> prOut(nclass);//posterior prob for each (internal) class
-      Vector2d<float> probOut(nclass,ncol);//posterior prob for each output class
+      Vector2d<float> probOut(nclass,ncol);//posterior prob for each (internal) class
       vector<float> entropy(ncol);
       Vector2d<char> classBag;//classified line for writing to image file
       if(classBag_opt.size())
@@ -717,7 +715,7 @@ int main(int argc, char *argv[])
         exit(3);
       }
       assert(nband==hpixel[0].size());
-      if(verbose_opt[0]==2)
+      if(verbose_opt[0]>1)
         std::cout << "used bands: " << nband << std::endl;
       //read mask
       if(!lineMask.empty()){
@@ -736,11 +734,14 @@ int main(int argc, char *argv[])
       //read prior
       if(priorimg_opt.size()){
         try{
-	  for(int iclass=0;iclass<nclass;++iclass)
+	  for(short iclass=0;iclass<nclass;++iclass){
+	    if(verbose_opt.size()>1)
+	      std::cout << "Reading " << priorimg_opt[0] << " band " << iclass << " line " << iline << std::endl;
 	    priorReader.readData(linePrior[iclass],GDT_Float32,iline,iclass);
+	  }
         }
         catch(string theError){
-          cerr << "Error reading " << priorimg_opt[0] << ": " << theError << std::endl;
+	  std::cerr << "Error reading " << priorimg_opt[0] << ": " << theError << std::endl;
           exit(3);
         }
         catch(...){
@@ -817,7 +818,9 @@ int main(int argc, char *argv[])
           continue;//next column
         }
         for(short iclass=0;iclass<nclass;++iclass)
-          prOut[iclass]=0;
+          probOut[iclass][icol]=0;
+	if(verbose_opt[0]>1)
+	  std::cout << "begin classification " << std::endl;
         //----------------------------------- classification -------------------
         for(int ibag=0;ibag<nbag;++ibag){
           //calculate image features
@@ -871,25 +874,32 @@ int main(int argc, char *argv[])
             maxP=0;
             classBag[ibag][icol]=0;
           }
+	  double normPrior=0;
+	  if(priorimg_opt.size()){
+	    for(short iclass=0;iclass<nclass;++iclass)
+	      normPrior+=linePrior[iclass][icol];
+	  }
           for(short iclass=0;iclass<nclass;++iclass){
 	    if(priorimg_opt.size())
-	      priors[iclass]=linePrior[classValueMap[cm.getClass(iclass)]][icol];//todo: check if correct for all cases... (automatic classValueMap and manual input for names and values)
-	      // priors[iclass]=linePrior[iclass][icol];
+	      priors[iclass]=linePrior[iclass][icol]/normPrior;//todo: check if correct for all cases... (automatic classValueMap and manual input for names and values)
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
-              // prOut[iclass][icol]+=prValues[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
-              prOut[iclass]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
+              // probOut[iclass][icol]+=prValues[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
+              probOut[iclass][icol]+=result[iclass]*priors[iclass];//add probabilities for each bag
+              // probOut[iclass][icol]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
               break;
             case(1)://product rule
-              // prOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*prValues[iclass];//add probabilities for each bag
-              prOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
+              // probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*prValues[iclass];//add probabilities for each bag
+              probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
               break;
             case(2)://max rule
-              // if(prValues[iclass]>prOut[iclass][icol])
-              //   prOut[iclass][icol]=prValues[iclass];
-              if(result[iclass]>prOut[iclass])
-                prOut[iclass]=result[iclass];
+              // if(prValues[iclass]>probOut[iclass][icol])
+              //   probOut[iclass][icol]=prValues[iclass];
+              if(priors[iclass]*result[iclass]>probOut[iclass][icol])
+                probOut[iclass][icol]=priors[iclass]*result[iclass];
+              // if(result[iclass]>probOut[iclass][icol])
+              //   probOut[iclass][icol]=result[iclass];
               break;
             }
             if(classBag_opt.size()){
@@ -912,28 +922,28 @@ int main(int argc, char *argv[])
         float maxBag2=0;//second max probability
         float normBag=0;
         for(short iclass=0;iclass<nclass;++iclass){
-          if(prOut[iclass]>maxBag1){
-            maxBag1=prOut[iclass];
+          if(probOut[iclass][icol]>maxBag1){
+            maxBag1=probOut[iclass][icol];
             // classOut[icol]=classValueMap[type2string<short>(iclass)];
             classOut[icol]=classValueMap[nameVector[iclass]];
             // classOut[icol]=classValueMap[cm.getClass(iclass)];
           }
-	  else if(prOut[iclass]>maxBag2)
-            maxBag2=prOut[iclass];
-          normBag+=prOut[iclass];
+	  else if(probOut[iclass][icol]>maxBag2)
+            maxBag2=probOut[iclass][icol];
+          normBag+=probOut[iclass][icol];
         }
-        //normalize prOut and convert to percentage
+        //normalize probOut and convert to percentage
         entropy[icol]=0;
         for(short iclass=0;iclass<nclass;++iclass){
-          float prv=prOut[iclass];
+          float prv=probOut[iclass][icol];
           prv/=normBag;
           entropy[icol]-=prv*log(prv)/log(2);
           prv*=100.0;
             
-          prOut[iclass]=static_cast<short>(prv+0.5);
-          assert(classValueMap[nameVector[iclass]]<probOut.size());
-          assert(classValueMap[nameVector[iclass]]>=0);
-          probOut[classValueMap[nameVector[iclass]]][icol]=static_cast<short>(prv+0.5);
+          probOut[iclass][icol]=static_cast<short>(prv+0.5);
+          // assert(classValueMap[nameVector[iclass]]<probOut.size());
+          // assert(classValueMap[nameVector[iclass]]>=0);
+          // probOut[classValueMap[nameVector[iclass]]][icol]=static_cast<short>(prv+0.5);
         }
         entropy[icol]/=log(nclass)/log(2);
         entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
@@ -1059,9 +1069,9 @@ int main(int argc, char *argv[])
         
         imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature);
         assert(validationPixel.size()==nband);
-        vector<float> prOut(nclass);//posterior prob for each reclass
+        vector<float> probOut(nclass);//posterior prob for each reclass
         for(short iclass=0;iclass<nclass;++iclass)
-          prOut[iclass]=0;
+          probOut[iclass]=0;
         for(int ibag=0;ibag<nbag;++ibag){
           for(int iband=0;iband<nband;++iband){
             validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
@@ -1111,14 +1121,14 @@ int main(int argc, char *argv[])
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
-              prOut[iclass]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
+              probOut[iclass]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
               break;
             case(1)://product rule
-              prOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
+              probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
               break;
             case(2)://max rule
-              if(result[iclass]>prOut[iclass])
-                prOut[iclass]=result[iclass];
+              if(result[iclass]>probOut[iclass])
+                probOut[iclass]=result[iclass];
               break;
             }
           }
@@ -1131,15 +1141,15 @@ int main(int argc, char *argv[])
         string classOut="Unclassified";
         for(short iclass=0;iclass<nclass;++iclass){
           if(verbose_opt[0]>1)
-            std::cout << prOut[iclass] << " ";
-          if(prOut[iclass]>maxBag){
-            maxBag=prOut[iclass];
+            std::cout << probOut[iclass] << " ";
+          if(probOut[iclass]>maxBag){
+            maxBag=probOut[iclass];
 	    classOut=nameVector[iclass];
             // classOut=cm.getClass(iclass);
 	    //test
 	    // assert(iclass==cm.getClassIndex(cm.getClass(iclass)));
           }
-          // normBag+=prOut[iclass];
+          // normBag+=probOut[iclass];
         }
         //look for class name
         if(verbose_opt[0]>1){
@@ -1148,12 +1158,12 @@ int main(int argc, char *argv[])
 	  else	    
 	    std::cout << "->" << classOut << std::endl;
 	}
-        //normalize prOut and convert to percentage
+        //normalize probOut and convert to percentage
         // for(int iclass=0;iclass<nreclass;++iclass){
-        //   float prv=prOut[iclass];
+        //   float prv=probOut[iclass];
         //   prv/=normBag;
         //   prv*=100.0;
-        //   prOut[iclass]=static_cast<short>(prv+0.5);
+        //   probOut[iclass]=static_cast<short>(prv+0.5);
         // }
 	if(output_opt.size()){
 	  if(classValueMap.size())
