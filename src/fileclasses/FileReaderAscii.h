@@ -23,6 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <vector>
 #include <fstream>
+#include "base/Optionpk.h"
 
 //--------------------------------------------------------------------------
 class FileReaderAscii
@@ -32,15 +33,17 @@ public:
   FileReaderAscii(const std::string& filename);
   FileReaderAscii(const std::string& filename, const char& fieldseparator);
   ~FileReaderAscii(void);
-  void reset(){m_ifstream.clear();m_ifstream.seekg(0,ios::beg);};
+  void reset(){m_ifstream.clear();m_ifstream.seekg(0,std::ios::beg);};
   void open(const std::string& filename);
   void close(void);
   void setFieldSeparator(const char& fieldseparator){m_fs=fieldseparator;};
   void setMinRow(int minRow){m_minRow=minRow;};
   void setMaxRow(int maxRow){m_maxRow=maxRow;};
   void setComment(char comment){m_comment=comment;};
-  template<class T> unsigned int readData(vector<vector<T> > &dataVector, const vector<int> &cols);
-  template<class T> unsigned int readData(vector<T> &dataVector, int col);
+  unsigned int nrOfCol(bool checkCols=false);
+  unsigned int nrOfRow(bool checkCols=false);
+  template<class T> unsigned int readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, bool verbose=false);
+  template<class T> unsigned int readData(std::vector<T> &dataVector, int col, bool verbose=false);
   protected:
   std::string m_filename;
   std::ifstream m_ifstream;
@@ -52,50 +55,15 @@ public:
   int m_maxRow;
 };
 
-FileReaderAscii::FileReaderAscii(void)
-  : m_min(0),m_max(0),m_minRow(0),m_maxRow(0),m_fs(' '),m_comment('#'){
-}
-
-FileReaderAscii::FileReaderAscii(const std::string& filename)
-  : m_min(0),m_max(0),m_minRow(0),m_maxRow(0),m_fs(' '),m_comment('#'){
-  open(filename);
-}
-
-FileReaderAscii::FileReaderAscii(const std::string& filename, const char& fieldseparator)
-  : m_min(0),m_max(0),m_minRow(0),m_maxRow(0),m_fs(' '),m_comment(fieldseparator){
-  open(filename);
-}
-
-FileReaderAscii::~FileReaderAscii(void)
-{
-}
-
-void FileReaderAscii::open(const std::string& filename){
-  m_filename=filename;
-  m_ifstream.open(filename.c_str(),ios_base::in);
-  if(!(m_ifstream)){
-    string errorString;
-    errorString="Error: could not open file ";
-    errorString+=filename;
-    throw(errorString);
-  }
-}
-
-void FileReaderAscii::close(){
-  m_ifstream.close();
-  //  m_ifstream.clear();
-}
-
-template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, int col){
+template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVector, int col, bool verbose){
   reset();
-  bool verbose=false;
   dataVector.clear();
   int nrow=0;
   bool withinRange=true;
   if(m_fs>' '&&m_fs<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
     if(verbose)
-      cout << "reading csv file " << m_filename << endl;
-    string csvRecord;
+      std::cout << "reading csv file " << m_filename << std::endl;
+    std::string csvRecord;
     while(getline(m_ifstream,csvRecord)){//read a line
       withinRange=true;
       if(nrow<m_minRow)
@@ -104,13 +72,13 @@ template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, 
         if(nrow>m_maxRow)
           withinRange=false;
       if(withinRange){
-        istringstream csvstream(csvRecord);
-        string item;
+        std::istringstream csvstream(csvRecord);
+        std::string item;
         int ncol=0;
         bool isComment=false;
         while(getline(csvstream,item,m_fs)){//read a column
           if(verbose)
-            cout << item << " ";
+            std::cout << item << " ";
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
             if(pos>0)
@@ -131,9 +99,12 @@ template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, 
             break;
         }
         if(verbose)
-          cout << endl;
-        if(dataVector.size())
-          assert(ncol>=col);
+          std::cout << std::endl;
+        if(dataVector.size()&&ncol>=col){
+          std::ostringstream ess;
+          ess << "Error: different number of cols found in line " << nrow << " (" << ncol << ")" << std::endl;
+          throw(ess.str());
+        }
       }
       ++nrow;
     }
@@ -142,7 +113,7 @@ template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, 
   else{//space or tab delimited fields
     if(verbose)
       std::cout << "space or tab delimited fields" << std::endl;
-    string spaceRecord;
+    std::string spaceRecord;
     while(!getline(m_ifstream, spaceRecord).eof()){
       withinRange=true;
       if(nrow<m_minRow)
@@ -152,15 +123,15 @@ template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, 
           withinRange=false;
       if(withinRange){
         if(verbose>1)
-          cout << spaceRecord << endl;
-        istringstream lineStream(spaceRecord);
-        string item;
+          std::cout << spaceRecord << std::endl;
+        std::istringstream lineStream(spaceRecord);
+        std::string item;
         int ncol=0;
         bool isComment=false;
         while(lineStream >> item){
           if(verbose)
-            cout << item << " ";
-          // istringstream itemStream(item);
+            std::cout << item << " ";
+          // std::istringstream itemStream(item);
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
             if(pos>0)
@@ -181,11 +152,14 @@ template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, 
             break;
         }
         if(verbose>1)
-          cout << endl;
+          std::cout << std::endl;
         if(verbose)
-          cout << "number of columns: " << ncol << endl;
-        if(dataVector.size())
-          assert(ncol>=col);
+          std::cout << "number of columns: " << ncol << std::endl;
+        if(dataVector.size()&&ncol>=col){
+          std::ostringstream ess;
+          ess << "Error: different number of cols found in line " << nrow << " (" << ncol << ")" << std::endl;
+          throw(ess.str());
+        }
       }
       ++nrow;
     }
@@ -193,17 +167,16 @@ template<class T> unsigned int FileReaderAscii::readData(vector<T> &dataVector, 
   return dataVector.size();
 }
 
-template<class T> unsigned int FileReaderAscii::readData(vector<vector<T> > &dataVector, const vector<int> &cols){
+template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, bool verbose){
   reset();
-  bool verbose=false;
   dataVector.clear();
   dataVector.resize(cols.size());
   int nrow=0;
   bool withinRange=true;
   if(m_fs>' '&&m_fs<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
     if(verbose)
-      cout << "reading csv file " << m_filename << endl;
-    string csvRecord;
+      std::cout << "reading csv file " << m_filename << std::endl;
+    std::string csvRecord;
     while(getline(m_ifstream,csvRecord)){//read a line
       withinRange=true;
       if(nrow<m_minRow)
@@ -212,13 +185,13 @@ template<class T> unsigned int FileReaderAscii::readData(vector<vector<T> > &dat
         if(nrow>m_maxRow)
           withinRange=false;
       if(withinRange){
-        istringstream csvstream(csvRecord);
-        string item;
+        std::istringstream csvstream(csvRecord);
+        std::string item;
         int ncol=0;
         bool isComment=false;
         while(getline(csvstream,item,m_fs)){//read a column
           if(verbose)
-            cout << item << " ";
+            std::cout << item << " ";
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
             if(pos>0)
@@ -241,7 +214,7 @@ template<class T> unsigned int FileReaderAscii::readData(vector<vector<T> > &dat
             break;
         }
         if(verbose)
-          cout << endl;
+          std::cout << std::endl;
         if(dataVector.back().size())
           assert(ncol>=cols[0]);
       }
@@ -252,7 +225,7 @@ template<class T> unsigned int FileReaderAscii::readData(vector<vector<T> > &dat
   else{//space or tab delimited fields
     if(verbose)
       std::cout << "space or tab delimited fields" << std::endl;
-    string spaceRecord;
+    std::string spaceRecord;
     while(!getline(m_ifstream, spaceRecord).eof()){
       withinRange=true;
       if(nrow<m_minRow)
@@ -262,15 +235,15 @@ template<class T> unsigned int FileReaderAscii::readData(vector<vector<T> > &dat
           withinRange=false;
       if(withinRange){
         if(verbose>1)
-          cout << spaceRecord << endl;
-        istringstream lineStream(spaceRecord);
-        string item;
+          std::cout << spaceRecord << std::endl;
+        std::istringstream lineStream(spaceRecord);
+        std::string item;
         int ncol=0;
         bool isComment=false;
         while(lineStream >> item){
           if(verbose)
-            cout << item << " ";
-          // istringstream itemStream(item);
+            std::cout << item << " ";
+          // std::istringstream itemStream(item);
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
             if(pos>0)
@@ -293,9 +266,9 @@ template<class T> unsigned int FileReaderAscii::readData(vector<vector<T> > &dat
             break;
         }
         if(verbose>1)
-          cout << endl;
+          std::cout << std::endl;
         if(verbose)
-          cout << "number of columns: " << ncol << endl;
+          std::cout << "number of columns: " << ncol << std::endl;
         if(dataVector.back().size())
           assert(ncol>=cols[0]);
       }

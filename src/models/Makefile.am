@@ -15,7 +15,7 @@ noinst_PROGRAMS = pktestProspect
 
 # the library names to build (note we are building static libs only)
 #noinst_LIBRARIES = libmodels.a
-lib_LTLIBRARIES = libmodels.la libprospect.la
+lib_LTLIBRARIES = libprospect.la libmodels.la
 
 # where to install the headers on the system
 libmodels_ladir = $(includedir)/models
@@ -29,6 +29,8 @@ endif
 
 # the sources to add to the library and to add to the source distribution
 libmodels_la_SOURCES = $(libmodels_la_HEADERS) Prospect.cc 
+libmodels_la_LIBADD = $(top_builddir)/src/models/libprospect.la
+
 libprospect_la_SOURCES = dataSpec_P5B.f90 prospect_5B.f90 tav_abs.f90
 ###############################################################################
 

@@ -1,7 +1,7 @@
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(GDAL_CFLAGS) @AM_CXXFLAGS@
-AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la @AM_LDFLAGS@
+AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la $(top_builddir)/src/fileclasses/libfileClasses.la @AM_LDFLAGS@
 #LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.la $(top_builddir)/src/imageclasses/libimageClasses.la
-LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/imageclasses/libimageClasses.la
+LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/imageclasses/libimageClasses.la $(top_builddir)/src/fileclasses/libfileClasses.la
 ###############################################################################
 # THE PROGRAMS TO BUILD
 ###############################################################################
@@ -25,7 +25,7 @@ endif
 if USE_LAS
 bin_PROGRAMS += pklas2img
 pklas2img_SOURCES = pklas2img.cc
-pklas2img_LDADD = -L$(top_builddir)/src/fileclasses -lfileClasses -llas $(AM_LDFLAGS)
+pklas2img_LDADD = -llas $(AM_LDFLAGS)
 endif
 if USE_NLOPT
 bin_PROGRAMS += pksensormodel pkopt_svm
@@ -45,7 +45,7 @@ pkdumpimg_SOURCES = pkdumpimg.cc
 pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
 pksieve_SOURCES = pksieve.cc
 pkstat_SOURCES = $(top_srcdir)/src/algorithms/Histogram.h pkstat.cc
-pkstat_LDADD = -L$(top_builddir)/src/fileclasses -llas -lfileClasses $(GSL_LIBS) $(AM_LDFLAGS)
+pkstat_LDADD = -llas $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc
 pkegcs_SOURCES = pkegcs.cc
 pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
