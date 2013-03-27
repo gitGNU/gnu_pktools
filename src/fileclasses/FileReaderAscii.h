@@ -100,7 +100,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
         }
         if(verbose)
           std::cout << std::endl;
-        if(dataVector.size()&&ncol>=col){
+        if(dataVector.size()&&ncol<=col){
           std::ostringstream ess;
           ess << "Error: different number of cols found in line " << nrow << " (" << ncol << ")" << std::endl;
           throw(ess.str());
@@ -155,7 +155,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
           std::cout << std::endl;
         if(verbose)
           std::cout << "number of columns: " << ncol << std::endl;
-        if(dataVector.size()&&ncol>=col){
+        if(dataVector.size()&&ncol<=col){
           std::ostringstream ess;
           ess << "Error: different number of cols found in line " << nrow << " (" << ncol << ")" << std::endl;
           throw(ess.str());
