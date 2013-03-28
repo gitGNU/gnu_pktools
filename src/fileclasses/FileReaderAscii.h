@@ -40,8 +40,8 @@ public:
   void setMinRow(int minRow){m_minRow=minRow;};
   void setMaxRow(int maxRow){m_maxRow=maxRow;};
   void setComment(char comment){m_comment=comment;};
-  unsigned int nrOfCol(bool checkCols=false);
-  unsigned int nrOfRow(bool checkCols=false);
+  unsigned int nrOfCol(bool checkCols=false, bool verbose=false);
+  unsigned int nrOfRow(bool checkCols=false, bool verbose=false);
   template<class T> unsigned int readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, bool verbose=false);
   template<class T> unsigned int readData(std::vector<T> &dataVector, int col, bool verbose=false);
   protected:

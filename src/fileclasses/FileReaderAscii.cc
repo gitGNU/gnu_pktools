@@ -55,9 +55,8 @@ void FileReaderAscii::close(){
   //  m_ifstream.clear();
 }
 
-unsigned int FileReaderAscii::nrOfCol(bool checkCols){
+unsigned int FileReaderAscii::nrOfCol(bool checkCols, bool verbose){
   reset();
-  bool verbose=false;
   unsigned int totalCol=0;
   unsigned int nrow=0;
   if(m_fs>' '&&m_fs<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
@@ -67,7 +66,7 @@ unsigned int FileReaderAscii::nrOfCol(bool checkCols){
     while(getline(m_ifstream,csvRecord)){//read a line
       std::istringstream csvstream(csvRecord);
       std::string item;
-      int ncol=0;
+      unsigned int ncol=0;
       bool isComment=false;
       while(getline(csvstream,item,m_fs)){//read a column
         if(verbose)
@@ -87,8 +86,10 @@ unsigned int FileReaderAscii::nrOfCol(bool checkCols){
           break;
       }
       if(verbose)
-        std::cout << std::endl;
-      if(checkCols){
+        std::cout << std::endl << "number of columns: " << ncol << std::endl;
+      if(!totalCol)
+        totalCol=ncol;
+      else if(checkCols){
         if(totalCol!=ncol){
           std::ostringstream ess;
           ess << "Error: different number of cols found in line " << nrow << " (" << ncol << "!=" << totalCol << ")" << std::endl;
@@ -109,7 +110,7 @@ unsigned int FileReaderAscii::nrOfCol(bool checkCols){
         std::cout << spaceRecord << std::endl;
       std::istringstream lineStream(spaceRecord);
       std::string item;
-      int ncol=0;
+      unsigned int ncol=0;
       bool isComment=false;
       while(lineStream >> item){
         if(verbose)
@@ -130,7 +131,9 @@ unsigned int FileReaderAscii::nrOfCol(bool checkCols){
       }
       if(verbose)
         std::cout << std::endl << "number of columns: " << ncol << std::endl;
-      if(checkCols){
+      if(!totalCol)
+        totalCol=ncol;
+      else if(checkCols){
         if(totalCol!=ncol){
           std::ostringstream ess;
           ess << "Error: different number of cols found in line " << nrow << " (" << ncol << "!=" << totalCol << ")" << std::endl;
@@ -142,11 +145,11 @@ unsigned int FileReaderAscii::nrOfCol(bool checkCols){
       ++nrow;
     }
   }
+  return totalCol;
 }
 
-unsigned int FileReaderAscii::nrOfRow(bool checkCols){
+unsigned int FileReaderAscii::nrOfRow(bool checkCols, bool verbose){
   reset();
-  bool verbose=false;
   unsigned int totalCol=0;
   unsigned int nrow=0;
   unsigned int ncomment=0;
@@ -157,7 +160,7 @@ unsigned int FileReaderAscii::nrOfRow(bool checkCols){
     while(getline(m_ifstream,csvRecord)){//read a line
       std::istringstream csvstream(csvRecord);
       std::string item;
-      int ncol=0;
+      unsigned int ncol=0;
       bool isComment=false;
       while(getline(csvstream,item,m_fs)){//read a column
         if(verbose)
@@ -200,7 +203,7 @@ unsigned int FileReaderAscii::nrOfRow(bool checkCols){
         std::cout << spaceRecord << std::endl;
       std::istringstream lineStream(spaceRecord);
       std::string item;
-      int ncol=0;
+      unsigned int ncol=0;
       bool isComment=false;
       while(lineStream >> item){
         if(verbose)
@@ -229,9 +232,10 @@ unsigned int FileReaderAscii::nrOfRow(bool checkCols){
           ess << "Error: different number of cols found in line " << nrow << " (" << ncol << "!=" << totalCol << ")" << std::endl;
           throw(ess.str());
         }
-        ++nrow;
       }
+      ++nrow;
     }
   }
+  return nrow;
 }
 

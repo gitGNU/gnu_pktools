@@ -55,11 +55,11 @@ public:
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
 
-  template<class T> double applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T output, double delta=1.0, bool normalize=false, bool verbose=false);
+  template<class T> double applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
   template<class T> double applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool verbose=false);
 
   // void applySrf(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector< Vector2d<double> > &srf, const std::string& interpolationType, ImgWriterGdal& output, bool verbose=false);
-  template<class T> void applyFwhm(const vector<double> &wavelengthIn, const vector<double>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<double>& output, bool verbose=false);
+  template<class T> void applyFwhm(const vector<double> &wavelengthIn, const vector<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<T>& output, bool verbose=false);
   template<class T> void applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
   // void applyFwhm(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, ImgWriterGdal& output, bool verbose=false);
 // int fir(double* input, int nbandIn, vector<double>& output, int startBand, const string& wavelength, const string& fwhm, bool verbose);
@@ -104,7 +104,7 @@ private:
 
 //input[band], output
 //returns wavelength for which srf is maximum
-  template<class T> double Filter::applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T output, double delta, bool normalize, bool verbose)
+  template<class T> double Filter::applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta, bool normalize, bool verbose)
 {  
   assert(srf.size()==2);//[0]: wavelength, [1]: response function
   int nband=srf[0].size(); 
@@ -155,6 +155,8 @@ private:
   vector<double> product(wavelength_fine.size());
   stat.interpolateUp(wavelengthIn,input,wavelength_fine,interpolationType,input_fine,verbose);
 
+  if(verbose)
+    std::cout << "input_fine.size(): " << input_fine.size() << std::endl;
   for(int iband=0;iband<input_fine.size();++iband)
     product[iband]=input_fine[iband]*srf_fine[iband];
 
@@ -265,7 +267,7 @@ private:
   return(srf[0][maxIndex]);
 }
 
-template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, const vector<double>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<double>& output, bool verbose){
+template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, const vector<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<T>& output, bool verbose){
   double delta=1;//1 nm resolution
   vector<double> stddev(fwhm.size());
   for(int index=0;index<fwhm.size();++index)
