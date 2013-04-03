@@ -802,7 +802,8 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
 	assert(beta[iclass1].size()==m_class.size());
         double pot=0;
         for(int iclass2=0;iclass2<m_class.size();++iclass2)
-          pot+=potential[iclass2]*beta[iclass1][iclass2];
+	  if(iclass2!=iclass1)
+	    pot+=potential[iclass2]*beta[iclass1][iclass2];
         double prior=exp(-pot);
         outBuffer[iclass1][x/down]=prior;
         norm+=prior;
