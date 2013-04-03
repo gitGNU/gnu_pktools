@@ -789,6 +789,7 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
             }
           }
           if(!masked){
+            // if(inBuffer[dimY/2][x]//centre pixel
             for(int iclass=0;iclass<m_class.size();++iclass){
               if(inBuffer[indexJ][indexI]==m_class[iclass])
                 potential[iclass]+=1;
@@ -796,14 +797,19 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
           }
         }
       }
+      double norm=0;
       for(int iclass1=0;iclass1<m_class.size();++iclass1){
 	assert(beta[iclass1].size()==m_class.size());
-	for(int iclass2=0;iclass2<m_class.size();++iclass2){
-	  if(eightConnectivity)
-	    outBuffer[iclass1][x/down]=exp(-beta[iclass1][iclass2]*(dimX*dimY-1-potential[iclass1]))/(exp(-beta[iclass1][iclass2]*(dimX*dimY-1-potential[iclass1]))+exp(-beta[iclass1][iclass2]*(potential[iclass1])));
-	  else
-	    outBuffer[iclass1][x/down]=exp(-beta[iclass1][iclass2]*(dimX+dimY-1-potential[iclass1]))/(exp(-beta[iclass1][iclass2]*(dimX+dimY-1-potential[iclass1]))+exp(-beta[iclass1][iclass2]*(potential[iclass1])));
-	}
+        double pot=0;
+        for(int iclass2=0;iclass2<m_class.size();++iclass2)
+          pot+=potential[iclass2]*beta[iclass1][iclass2];
+        double prior=exp(-pot);
+        outBuffer[iclass1][x/down]=prior;
+        norm+=prior;
+      }
+      if(norm){
+        for(int iclass1=0;iclass1<m_class.size();++iclass1)
+          outBuffer[iclass1][x/down]/=norm;
       }
     }
     progress=(1.0+y/down)/output.nrOfRow();
