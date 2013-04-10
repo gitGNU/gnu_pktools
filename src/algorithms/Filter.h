@@ -274,8 +274,8 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
     stddev[index]=fwhm[index]/2.0/sqrt(2*log(2.0));//http://mathworld.wolfram.com/FullWidthatHalfMaximum.html
   assert(wavelengthOut.size()==fwhm.size());
   assert(wavelengthIn.size()==input.size());
-  assert(wavelengthIn[0]<wavelengthOut[0]);
-  assert(wavelengthIn.back()>wavelengthOut.back());
+  assert(wavelengthIn[0]<=wavelengthOut[0]);
+  assert(wavelengthIn.back()>=wavelengthOut.back());
   statfactory::StatFactory stat;
   vector<double> input_fine;
   vector<double> wavelength_fine;
