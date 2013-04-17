@@ -474,6 +474,13 @@ int main(int argc, char *argv[])
     gamma_opt.push_back(0);//will be translated to 1.0/nFeatures
   assert(ccost_opt.size()==3);//min, init, max
   assert(gamma_opt.size()==3);//min, init, max
+  assert(gamma_opt[0]<gamma_opt[1]);
+  assert(gamma_opt[0]<gamma_opt[2]);
+  assert(gamma_opt[2]<gamma_opt[1]);
+  assert(ccost_opt[0]<ccost_opt[1]);
+  assert(ccost_opt[0]<ccost_opt[2]);
+  assert(ccost_opt[2]<ccost_opt[1]);
+
   std::vector<double> x(2);
   if(algorithm_opt[0]=="GRID"){
     double minError=1000;
@@ -515,6 +522,7 @@ int main(int argc, char *argv[])
     std::vector<double> lb(2);
     std::vector<double> init(2);
     std::vector<double> ub(2);
+
     lb[0]=ccost_opt[0];
     lb[1]=(gamma_opt[0]>0)? gamma_opt[0] : 1.0/trainingFeatures[0][0].size();
     init[0]=ccost_opt[2];
@@ -533,7 +541,21 @@ int main(int argc, char *argv[])
       optimizer.set_xtol_rel(tolerance_opt[0]);
     double minf=0;
     x=init;
-    optimizer.optimize(x, minf);
+    try{
+      optimizer.optimize(x, minf);
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(1);
+    }
+    catch (exception& e){
+      cout << e.what() << endl;
+    }
+    catch(...){
+      cerr << "error catched" << std::endl;
+      exit(1);
+    }
+
     double ccost=x[0];
     double gamma=x[1];
     if(verbose_opt[0])
@@ -542,4 +564,4 @@ int main(int argc, char *argv[])
   std::cout << " --ccost " << x[0];
   std::cout << " --gamma " << x[1];
   std::cout << std::endl;
-}      
+}

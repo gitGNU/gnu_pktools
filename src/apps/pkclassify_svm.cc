@@ -759,14 +759,16 @@ int main(int argc, char *argv[])
           for(short ivalue=0;ivalue<maskValue_opt.size();++ivalue){
             if(maskValue_opt[ivalue]>=0){//values set in maskValue_opt are invalid
               if(lineMask[icol]==maskValue_opt[ivalue]){
-                theMask=(flag_opt.size()==maskValue_opt.size())? flag_opt[ivalue] : flag_opt[0];// lineMask[icol];
+                // theMask=(flag_opt.size()==maskValue_opt.size())? flag_opt[ivalue] : flag_opt[0];
+                theMask=lineMask[icol];
                 masked=true;
                 break;
               }
             }
             else{//only values set in maskValue_opt are valid
               if(lineMask[icol]!=-maskValue_opt[ivalue]){
-                  theMask=(flag_opt.size()==maskValue_opt.size())? flag_opt[ivalue] : flag_opt[0];// lineMask[icol];
+                theMask=lineMask[icol];
+		// theMask=(flag_opt.size()==maskValue_opt.size())? flag_opt[ivalue] : flag_opt[0];
                 masked=true;
               }
               else{
