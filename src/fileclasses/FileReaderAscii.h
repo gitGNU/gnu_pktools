@@ -42,8 +42,8 @@ public:
   void setComment(char comment){m_comment=comment;};
   unsigned int nrOfCol(bool checkCols=false, bool verbose=false);
   unsigned int nrOfRow(bool checkCols=false, bool verbose=false);
-  template<class T> unsigned int readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, bool verbose=false);
-  template<class T> unsigned int readData(std::vector<T> &dataVector, int col, bool verbose=false);
+  template<class T> unsigned int readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, double scale=1.0, double offset=0.0, bool verbose=false);
+  template<class T> unsigned int readData(std::vector<T> &dataVector, int col, double scale=1.0, double offset=0, bool verbose=false);
   protected:
   std::string m_filename;
   std::ifstream m_ifstream;
@@ -55,7 +55,7 @@ public:
   int m_maxRow;
 };
 
-template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVector, int col, bool verbose){
+template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVector, int col, double scale, double offset, bool verbose){
   reset();
   dataVector.clear();
   int nrow=0;
@@ -90,7 +90,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
             isComment=true;
           }
           if(ncol==col){
-            T value=string2type<T>(item);
+            T value=scale*string2type<T>(item)+offset;
             if((value>=m_min&&value<=m_max)||m_max<=m_min)
               dataVector.push_back(value);
           }
@@ -142,7 +142,8 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
               std::cout << "comment found, string is " << item << std::endl;
             isComment=true;
           }
-          T value=string2type<T>(item);
+          T value=scale*string2type<T>(item)+offset;
+          // T value=string2type<T>(item);
           if(ncol==col){
             if((value>=m_min&&value<=m_max)||m_max<=m_min)
               dataVector.push_back(value);
@@ -167,7 +168,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
   return dataVector.size();
 }
 
-template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, bool verbose){
+template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, double scale, double offset, bool verbose){
   reset();
   dataVector.clear();
   dataVector.resize(cols.size());
@@ -204,7 +205,8 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
           }
           for(int icol=0;icol<cols.size();++icol){
             if(ncol==cols[icol]){
-              T value=string2type<T>(item);
+              T value=scale*string2type<T>(item)+offset;
+              // T value=string2type<T>(item);
               if((value>=m_min&&value<=m_max)||m_max<=m_min)
                 dataVector[icol].push_back(value);
             }
@@ -254,7 +256,8 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
               std::cout << "comment found, string is " << item << std::endl;
             isComment=true;
           }
-          T value=string2type<T>(item);
+          T value=scale*string2type<T>(item)+offset;
+          // T value=string2type<T>(item);
           for(int icol=0;icol<cols.size();++icol){
             if(ncol==cols[icol]){
               if((value>=m_min&&value<=m_max)||m_max<=m_min)
