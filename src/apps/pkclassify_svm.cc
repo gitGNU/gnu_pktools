@@ -243,7 +243,8 @@ int main(int argc, char *argv[])
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
 
-  map<string,short>classValueMap;
+  map<string,short> classValueMap;
+  vector<std::string> nameVector;
   if(classname_opt.size()){
     assert(classname_opt.size()==classvalue_opt.size());
     for(int iclass=0;iclass<classname_opt.size();++iclass)
@@ -252,7 +253,6 @@ int main(int argc, char *argv[])
 
   //----------------------------------- Training -------------------------------
   ConfusionMatrix cm;
-  vector<std::string> nameVector;
   vector< vector<double> > offset(nbag);
   vector< vector<double> > scale(nbag);
   map<string,Vector2d<float> > trainingMap;
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
       // trainingMap.erase(0);
 
       //convert map to vector
-      short iclass=0;
+      // short iclass=0;
       if(verbose_opt[0]>1)
         std::cout << "training pixels: " << std::endl;
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
@@ -421,10 +421,19 @@ int main(int argc, char *argv[])
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
       while(mapit!=trainingMap.end()){
 	nameVector.push_back(mapit->first);
-	if(classValueMap.empty())
+	if(classValueMap.size()){
+	  //check if name in training is covered by classname_opt (values can not be 0)
+	  if(classValueMap[mapit->first]>0){
+	    if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0)
+	      cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]));
+	  }
+	  else{
+	    std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
+	    exit(1);
+	  }
+	}
+	else
 	  cm.pushBackClassName(mapit->first);
-	else if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0)
-	  cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]));
 	++mapit;
       }
       // assert(cm.size()==nclass);
