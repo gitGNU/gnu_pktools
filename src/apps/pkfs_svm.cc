@@ -566,7 +566,7 @@ int main(int argc, char *argv[])
         case(SFFS):
           subset.clear();//needed to clear in case of floating and brute force search
 	  //test
-          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,2);//verbose_opt[0]);
+          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
           break;
         case(SFS):
           cost=selector.forward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
