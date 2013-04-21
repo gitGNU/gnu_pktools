@@ -152,6 +152,7 @@ template<class T> double FeatureSelector::backward(vector< Vector2d<T> >& v, dou
 
 //floating search
 template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures, short verbose){
+  double epsilon=0.001;
   vector<T> cost;
   int maxLevels=v[0][0].size();
   if(maxFeatures<1)
@@ -183,7 +184,7 @@ template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, dou
     while(k>1){
       int x_r;
       double cost_r=removeFeature(v,*getCost,subset,x_r,verbose);
-      if(cost_r>cost[k-1]){
+      if(cost_r>cost[k-1]+epsilon){
 	--k;
 	cost[k]=cost_r;
 	cost.pop_back();

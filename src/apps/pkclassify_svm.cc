@@ -182,18 +182,16 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
+  assert(training_opt.size());
+
   if(verbose_opt[0]>=1){
     if(input_opt.size())
-      std::cout << "image filename: " << input_opt[0] << std::endl;
+      std::cout << "input filename: " << input_opt[0] << std::endl;
     if(mask_opt.size())
       std::cout << "mask filename: " << mask_opt[0] << std::endl;
-    if(training_opt[0].size()){
-      std::cout << "training shape file: " << std::endl;
-      for(int ifile=0;ifile<training_opt.size();++ifile)
-        std::cout << training_opt[ifile] << std::endl;
-    }
-    else
-      cerr << "no training file set!" << std::endl;
+    std::cout << "training shape file: " << std::endl;
+    for(int ifile=0;ifile<training_opt.size();++ifile)
+      std::cout << training_opt[ifile] << std::endl;
     std::cout << "verbose: " << verbose_opt[0] << std::endl;
   }
   unsigned short nbag=(training_opt.size()>1)?training_opt.size():bag_opt[0];

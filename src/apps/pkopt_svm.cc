@@ -38,6 +38,8 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
 //global parameters used in objective function
 map<string,short> classValueMap;
 vector<std::string> nameVector;
+vector<unsigned int> nctraining;
+vector<unsigned int> nctest;
 Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
 Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*(u-v)^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
 Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
@@ -66,8 +68,16 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   //todo: calculate kappa using cross validation
   unsigned short nclass=tf->size();
   unsigned int ntraining=0;
-  for(int iclass=0;iclass<nclass;++iclass)
-    ntraining+=(*tf)[iclass].size();
+  unsigned int ntest=0;
+  for(int iclass=0;iclass<nclass;++iclass){
+    ntraining+=nctraining[iclass];
+    ntest+=nctest[iclass];
+  }
+  if(ntest)
+    assert(!cv_opt[0]);
+  if(!cv_opt[0])
+    assert(ntest);
+    // ntraining+=(*tf)[iclass].size();
   unsigned short nFeatures=(*tf)[0][0].size();
   struct svm_parameter param;
   param.svm_type = svm_type_opt[0];
@@ -96,7 +106,8 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   unsigned long int spaceIndex=0;
   int lIndex=0;
   for(int iclass=0;iclass<nclass;++iclass){
-    for(int isample=0;isample<(*tf)[iclass].size();++isample){
+    // for(int isample=0;isample<(*tf)[iclass].size();++isample){
+    for(int isample=0;isample<nctraining[iclass];++isample){
       prob.x[lIndex]=&(x_space[spaceIndex]);
       for(int ifeature=0;ifeature<nFeatures;++ifeature){
         x_space[spaceIndex].index=ifeature+1;
@@ -119,9 +130,6 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   if(verbose_opt[0]>2)
     std::cout << "SVM is now trained" << std::endl;
 
-  if(cv_opt[0]>0){
-    //todo: distinct between independent test input and cross validation
-  }
   ConfusionMatrix cm;
   //set names in confusion matrix using nameVector
   for(int iname=0;iname<nameVector.size();++iname){
@@ -130,23 +138,46 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
     else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
       cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
   }
-
-  double *target = Malloc(double,prob.l);
-  svm_cross_validation(&prob,&param,cv_opt[0],target);
-  assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
-  int total_correct=0;
-  for(int i=0;i<prob.l;i++){
-    string refClassName=nameVector[prob.y[i]];
-    string className=nameVector[target[i]];
-    if(classValueMap.size())
-      cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
-    else
-      cm.incrementResult(cm.getClass(prob.y[i]),cm.getClass(target[i]),1.0);
+  if(cv_opt[0]>0){
+    double *target = Malloc(double,prob.l);
+    svm_cross_validation(&prob,&param,cv_opt[0],target);
+    assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
+    for(int i=0;i<prob.l;i++){
+      string refClassName=nameVector[prob.y[i]];
+      string className=nameVector[target[i]];
+      if(classValueMap.size())
+	cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
+      else
+	cm.incrementResult(cm.getClass(prob.y[i]),cm.getClass(target[i]),1.0);
+    }
+    free(target);
   }
-  if(verbose_opt[0])
+  else{
+    struct svm_node *x_test;
+    x_test = Malloc(struct svm_node,(nFeatures+1));
+    for(int iclass=0;iclass<nclass;++iclass){
+      for(int isample=0;isample<nctest[iclass];++isample){
+	for(int ifeature=0;ifeature<nFeatures;++ifeature){
+	  x_test[ifeature].index=ifeature+1;
+	  x_test[ifeature].value=(*tf)[iclass][nctraining[iclass]+isample][ifeature];
+	}
+	x_test[nFeatures].index=-1;
+	double predict_label=0;
+	//todo: make distinction between svm_predict and svm_predict_probability?
+	predict_label = svm_predict(svm,x_test);
+	string refClassName=nameVector[iclass];
+	string className=nameVector[static_cast<short>(predict_label)];
+	if(classValueMap.size())
+	  cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
+	else
+	  cm.incrementResult(refClassName,className,1.0);
+      }
+    }
+    free(x_test);
+  }
+  if(verbose_opt[0]>1)
     std::cout << cm << std::endl;
   assert(cm.nReference());
-  free(target);
   free(prob.y);
   free(prob.x);
   free(x_space);
@@ -172,6 +203,7 @@ int main(int argc, char *argv[])
 {
   map<short,int> reclassMap;
   vector<int> vreclass;
+  Optionpk<string> input_opt("i", "input", "input image"); 
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   // Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
@@ -190,7 +222,8 @@ int main(int argc, char *argv[])
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
-    doProcess=training_opt.retrieveOption(argc,argv);
+    doProcess=input_opt.retrieveOption(argc,argv);
+    training_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     // reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
@@ -230,13 +263,21 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  assert(training_opt[0].size());
-  if(verbose_opt[0]>=1)
-    std::cout << "training shape file: " << training_opt[0] << std::endl;
+  assert(training_opt.size());
+  if(input_opt.size())
+    cv_opt[0]=0;
+
+  if(verbose_opt[0]>=1){
+    if(input_opt.size())
+      std::cout << "input filename: " << input_opt[0] << std::endl;
+    std::cout << "training shape file: " << std::endl;
+    for(int ifile=0;ifile<training_opt.size();++ifile)
+      std::cout << training_opt[ifile] << std::endl;
+    std::cout << "verbose: " << verbose_opt[0] << std::endl;
+  }
 
   unsigned int totalSamples=0;
-  // int nreclass=0;
-  // vector<int> vcode;//unique class codes in recode string
+  unsigned int totalTestSamples=0;
 
   unsigned short nclass=0;
   int nband=0;
@@ -245,6 +286,7 @@ int main(int argc, char *argv[])
   vector<double> offset;
   vector<double> scale;
   vector< Vector2d<float> > trainingPixels;//[class][sample][band]
+  vector< Vector2d<float> > testPixels;//[class][sample][band]
 
   // if(priors_opt.size()>1){//priors from argument list
   //   priors.resize(priors_opt.size());
@@ -274,16 +316,28 @@ int main(int argc, char *argv[])
   vector<string> fields;
   //organize training data
   trainingPixels.clear();
+  testPixels.clear();
   map<string,Vector2d<float> > trainingMap;
+  map<string,Vector2d<float> > testMap;
   if(verbose_opt[0]>=1)
-    std::cout << "reading imageShape file " << training_opt[0] << std::endl;
+    std::cout << "reading training file " << training_opt[0] << std::endl;
   try{
-    if(band_opt.size())
+    if(band_opt.size()){
       totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
-    else
+      if(input_opt.size())
+	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+    }
+    else{
       totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+      if(input_opt.size())
+	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+    }
     if(trainingMap.size()<2){
-      string errorstring="Error: could not read at least two classes from training file";
+      string errorstring="Error: could not read at least two classes from training input file";
+      throw(errorstring);
+    }
+    if(input_opt.size()&&testMap.size()<2){
+      string errorstring="Error: could not read at least two classes from test input file";
       throw(errorstring);
     }
   }
@@ -303,7 +357,8 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0]>1)
     std::cout << "training pixels: " << std::endl;
-  map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
+  map<string,Vector2d<float> >::iterator mapit;
+  mapit=trainingMap.begin();
   while(mapit!=trainingMap.end()){
     if(classValueMap.size()){
       //check if name in training is covered by classname_opt (values can not be 0)
@@ -334,6 +389,29 @@ int main(int argc, char *argv[])
     assert(nclass==classname_opt.size());
   nband=trainingPixels[0][0].size()-2;//X and Y//trainingPixels[0][0].size();
 
+  mapit=testMap.begin();
+  while(mapit!=testMap.end()){
+    if(classValueMap.size()){
+      //check if name in test is covered by classname_opt (values can not be 0)
+      if(classValueMap[mapit->first]>0){
+	;//ok, no need to print to std::cout 
+      }
+      else{
+	std::cerr << "Error: names in classname option are not complete, please check names in test vector and make sure classvalue is > 0" << std::endl;
+	exit(1);
+      }
+    }    
+    //no need to delete small classes for test sample
+    testPixels.push_back(mapit->second);
+    if(verbose_opt[0]>1)
+      std::cout << mapit->first << ": " << (mapit->second).size() << " samples" << std::endl;
+    ++mapit;
+  }
+  if(input_opt.size()){
+    assert(nclass==testPixels.size());
+    assert(nband=testPixels[0][0].size()-2);//X and Y//testPixels[0][0].size();
+    assert(!cv_opt[0]);
+  }
 
   //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
   //balance training data
@@ -359,7 +437,8 @@ int main(int argc, char *argv[])
     }
     assert(totalSamples==nclass*balance_opt[0]);
   }
-    
+
+  //no need to balance test sample    
   //set scale and offset
   offset.resize(nband);
   scale.resize(nband);
@@ -394,57 +473,6 @@ int main(int argc, char *argv[])
     }
   }
 
-  //recode vreclass to ordered vector, starting from 0 to nreclass
-  // vcode.clear();
-  // if(verbose_opt[0]>=1){
-  //   std::cout << "before recoding: " << std::endl;
-  //   for(int iclass = 0; iclass < vreclass.size(); iclass++)
-  //     std::cout << " " << vreclass[iclass];
-  //   std::cout << std::endl; 
-  // }
-  // vector<int> vord=vreclass;//ordered vector, starting from 0 to nreclass
-  // map<short,int> mreclass;
-  // for(int ic=0;ic<vreclass.size();++ic){
-  //   if(mreclass.find(vreclass[ic])==mreclass.end())
-  //     mreclass[vreclass[ic]]=iclass++;
-  // }
-  // for(int ic=0;ic<vreclass.size();++ic)
-  //   vord[ic]=mreclass[vreclass[ic]];
-  // //construct uniqe class codes
-  // while(!vreclass.empty()){
-  //   vcode.push_back(*(vreclass.begin()));
-  //   //delete all these entries from vreclass
-  //   vector<int>::iterator vit;
-  //   while((vit=find(vreclass.begin(),vreclass.end(),vcode.back()))!=vreclass.end())
-  //     vreclass.erase(vit);
-  // }
-  // if(verbose_opt[0]>=1){
-  //   std::cout << "recode values: " << std::endl;
-  //   for(int icode=0;icode<vcode.size();++icode)
-  //     std::cout << vcode[icode] << " ";
-  //   std::cout << std::endl;
-  // }
-  // vreclass=vord;
-  // if(verbose_opt[0]>=1){
-  //   std::cout << "after recoding: " << std::endl;
-  //   for(int iclass = 0; iclass < vord.size(); iclass++)
-  //     std::cout << " " << vord[iclass];
-  //   std::cout << std::endl; 
-  // }
-      
-  // vector<int> vuniqueclass=vreclass;
-  // //remove duplicate elements from vuniqueclass
-  // sort( vuniqueclass.begin(), vuniqueclass.end() );
-  // vuniqueclass.erase( unique( vuniqueclass.begin(), vuniqueclass.end() ), vuniqueclass.end() );
-  // nreclass=vuniqueclass.size();
-  // if(verbose_opt[0]>=1){
-  //   std::cout << "unique classes: " << std::endl;
-  //   for(int iclass = 0; iclass < vuniqueclass.size(); iclass++)
-  //     std::cout << " " << vuniqueclass[iclass];
-  //   std::cout << std::endl; 
-  //   std::cout << "number of reclasses: " << nreclass << std::endl;
-  // }
-    
   // if(priors_opt.size()==1){//default: equal priors for each class
   //   priors.resize(nclass);
   //   for(int iclass=0;iclass<nclass;++iclass)
@@ -461,21 +489,27 @@ int main(int argc, char *argv[])
     // std::cout << std::endl;
   }
 
-  //Calculate features of trainig set
+  //Calculate features of training (and test) set
+  nctraining.resize(nclass);
+  nctest.resize(nclass);
   vector< Vector2d<float> > trainingFeatures(nclass);
   for(int iclass=0;iclass<nclass;++iclass){
-    int nctraining=0;
     if(verbose_opt[0]>=1)
       std::cout << "calculating features for class " << iclass << std::endl;
-    if(random)
-      srand(time(NULL));
-    nctraining=trainingPixels[iclass].size();//bagSize_opt[0] given in % of training size
+    nctraining[iclass]=trainingPixels[iclass].size();
     if(verbose_opt[0]>=1)
-      std::cout << "nctraining class " << iclass << ": " << nctraining << std::endl;
-    int index=0;
-      
-    trainingFeatures[iclass].resize(nctraining);
-    for(int isample=0;isample<nctraining;++isample){
+      std::cout << "nctraining[" << iclass << "]: " << nctraining[iclass] << std::endl;
+    if(testPixels.size()>iclass){
+      nctest[iclass]=testPixels[iclass].size();
+      if(verbose_opt[0]>=1){
+	std::cout << "nctest[" << iclass << "]: " << nctest[iclass] << std::endl;
+      }
+    }
+    else
+      nctest[iclass]=0;
+    // trainingFeatures[iclass].resize(nctraining[iclass]);
+    trainingFeatures[iclass].resize(nctraining[iclass]+nctest[iclass]);
+    for(int isample=0;isample<nctraining[iclass];++isample){
       //scale pixel values according to scale and offset!!!
       for(int iband=0;iband<nband;++iband){
         assert(trainingPixels[iclass].size()>isample);
@@ -486,12 +520,21 @@ int main(int argc, char *argv[])
         trainingFeatures[iclass][isample].push_back((value-offset[iband])/scale[iband]);
       }
     }
-    assert(trainingFeatures[iclass].size()==nctraining);
+    // assert(trainingFeatures[iclass].size()==nctraining[iclass]);
+    for(int isample=0;isample<nctest[iclass];++isample){
+      //scale pixel values according to scale and offset!!!
+      for(int iband=0;iband<nband;++iband){
+        assert(testPixels[iclass].size()>isample);
+        assert(testPixels[iclass][isample].size()>iband+startBand);
+        assert(offset.size()>iband);
+        assert(scale.size()>iband);
+        float value=testPixels[iclass][isample][iband+startBand];
+        // testFeatures[iclass][isample].push_back((value-offset[iband])/scale[iband]);
+        trainingFeatures[iclass][nctraining[iclass]+isample].push_back((value-offset[iband])/scale[iband]);
+      }
+    }
+    assert(trainingFeatures[iclass].size()==nctraining[iclass]+nctest[iclass]);
   }
-    
-  unsigned int ntraining=0;
-  for(int iclass=0;iclass<nclass;++iclass)
-    ntraining+=trainingFeatures[iclass].size();
 
   assert(ccost_opt.size()>1);//must have boundaries at least (initial value is optional)
   if(ccost_opt.size()<3)//create initial value
@@ -525,7 +568,8 @@ int main(int argc, char *argv[])
 	x[0]=ccost;
 	x[1]=gamma;
 	std::vector<double> theGrad;
-	double error=objFunction(x,theGrad,&trainingFeatures);
+	double error=0;
+	error=objFunction(x,theGrad,&trainingFeatures);
 	if(error<minError){
 	  minError=error;
 	  minCost=ccost;
