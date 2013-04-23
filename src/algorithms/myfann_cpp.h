@@ -1585,7 +1585,7 @@ public:
                 //search class with maximum posterior probability
                 float maxP=-1;
                 for(int ic=0;ic<nclass;++ic){
-                float pv=(result[ic]+1.0)/2.0;//bring back to scale [0,1]
+                  float pv=(result[ic]+1.0)/2.0;//bring back to scale [0,1]
                   if(pv>maxP){
                     maxP=pv;
                     maxClass=ic;

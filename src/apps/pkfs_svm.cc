@@ -27,6 +27,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/svm.h"
 #include "pkclassify_nn.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
 enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
@@ -54,14 +58,12 @@ Optionpk<string> classname_opt("c", "class", "list of class names.");
 Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
 Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
-//todo: extend getCost with testFeatures
 double getCost(const vector<Vector2d<float> > &trainingFeatures)
 {
   unsigned short nclass=trainingFeatures.size();
   unsigned int ntraining=0;
   unsigned int ntest=0;
   for(int iclass=0;iclass<nclass;++iclass){
-    // ntraining+=trainingFeatures[iclass].size();
     ntraining+=nctraining[iclass];
     ntest+=nctest[iclass];
   }
@@ -123,11 +125,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   if(verbose_opt[0]>2)
     std::cout << "SVM is now trained" << std::endl;
 
-  if(cv_opt[0]>0){
-    //todo: distinct between independent test input and cross validation
-  }
-  else{
-  }
   ConfusionMatrix cm;
   //set names in confusion matrix using nameVector
   for(int iname=0;iname<nameVector.size();++iname){
@@ -140,7 +137,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
     double *target = Malloc(double,prob.l);
     svm_cross_validation(&prob,&param,cv_opt[0],target);
     assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
-    int total_correct=0;
     for(int i=0;i<prob.l;i++){
       string refClassName=nameVector[prob.y[i]];
       string className=nameVector[target[i]];
@@ -205,7 +201,6 @@ int main(int argc, char *argv[])
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
-  // Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
@@ -222,7 +217,6 @@ int main(int argc, char *argv[])
     training_opt.retrieveOption(argc,argv);
     maxFeatures_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
-    // reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
@@ -382,7 +376,6 @@ int main(int argc, char *argv[])
     trainingPixels.push_back(mapit->second);
     if(verbose_opt[0]>1)
       std::cout << mapit->first << ": " << (mapit->second).size() << " samples" << std::endl;
-    // ++iclass;
     ++mapit;
   }
   nclass=trainingPixels.size();
@@ -488,16 +481,6 @@ int main(int argc, char *argv[])
     //   std::cout << " " << priors[iclass];
     // std::cout << std::endl;
   }
-  // map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
-  // while(mapit!=trainingMap.end()){
-  //   nameVector.push_back(mapit->first);
-    // if(classValueMap.empty())
-    //   cm.pushBackClassName(mapit->first);
-    // else if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0)
-    //   cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]));
-  //   ++mapit;
-  // }
-
 
   //Calculate features of training (and test) set
   nctraining.resize(nclass);
@@ -517,7 +500,7 @@ int main(int argc, char *argv[])
     }
     else
       nctest[iclass]=0;
-    // trainingFeatures[iclass].resize(nctraining);
+
     trainingFeatures[iclass].resize(nctraining[iclass]+nctest[iclass]);
     for(int isample=0;isample<nctraining[iclass];++isample){
       //scale pixel values according to scale and offset!!!
@@ -530,7 +513,6 @@ int main(int argc, char *argv[])
         trainingFeatures[iclass][isample].push_back((value-offset[iband])/scale[iband]);
       }
     }
-    // assert(trainingFeatures[iclass].size()==nctraining[iclass]);
     for(int isample=0;isample<nctest[iclass];++isample){
       //scale pixel values according to scale and offset!!!
       for(int iband=0;iband<nband;++iband){
@@ -565,7 +547,6 @@ int main(int argc, char *argv[])
         switch(selMap[selector_opt[0]]){
         case(SFFS):
           subset.clear();//needed to clear in case of floating and brute force search
-	  //test
           cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
           break;
         case(SFS):

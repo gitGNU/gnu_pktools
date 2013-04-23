@@ -32,51 +32,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-// void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass);
-
-// void reclass(const vector<double>& result, const vector<short>& vreclass, const vector<double>& priors, unsigned short aggregation, vector<float>& theResultReclass){
-//   short nclass=result.size();
-//   assert(priors.size()==nclass);
-//   assert(theResultReclass.size()>1);//must have size nreclass!
-//   short nreclass=theResultReclass.size();
-//   vector<float> pValues(nclass);
-//   float normReclass=0;
-//   for(short iclass=0;iclass<nclass;++iclass){
-//     float pv=result[iclass];//todo: check if result from svm is [0,1]
-//     assert(pv>=0);
-//     assert(pv<=1);
-//     pv*=priors[iclass];
-//     pValues[iclass]=pv;
-//   }
-//   for(short iclass=0;iclass<nreclass;++iclass){
-//     theResultReclass[iclass]=0;
-//     float maxPaggreg=0;
-//     for(short ic=0;ic<nclass;++ic){
-//       if(vreclass[ic]==iclass){
-// 	switch(aggregation){
-// 	default:
-// 	case(1)://sum rule (sum posterior probabilities of aggregated individual classes)
-// 	  theResultReclass[iclass]+=pValues[ic];
-// 	break;
-// 	case(0):
-// 	case(2)://max rule (look for maximum post probability of aggregated individual classes)
-// 	  if(pValues[ic]>maxPaggreg){
-// 	    maxPaggreg=pValues[ic];
-// 	    theResultReclass[iclass]=maxPaggreg;
-// 	  }
-// 	break;
-// 	}
-//       }
-//     }
-//     normReclass+=theResultReclass[iclass];
-//   }
-//   for(short iclass=0;iclass<nreclass;++iclass){
-//     float prv=theResultReclass[iclass];
-//     prv/=normReclass;
-//     theResultReclass[iclass]=prv;
-//   }
-// }
-
 int main(int argc, char *argv[])
 {
   vector<double> priors;
@@ -222,8 +177,6 @@ int main(int argc, char *argv[])
   int nband=0;
   int startBand=2;//first two bands represent X and Y pos
 
-  // short nreclass=0;
-
   //normalize priors from command line
   if(priors_opt.size()>1){//priors from argument list
     priors.resize(priors_opt.size());
@@ -323,7 +276,6 @@ int main(int argc, char *argv[])
         assert(nclass==trainingPixels.size());
         assert(nband==trainingPixels[0][0].size()-2);
       }
-      // assert(vreclass.size()==nclass);
 
       //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
       //balance training data
@@ -434,10 +386,9 @@ int main(int argc, char *argv[])
 	  cm.pushBackClassName(mapit->first);
 	++mapit;
       }
-      // assert(cm.size()==nclass);
-    }//if(!ibag)
+    }
 
-    //Calculate features of trainig set
+    //Calculate features of training set
     vector< Vector2d<float> > trainingFeatures(nclass);
     for(short iclass=0;iclass<nclass;++iclass){
       int nctraining=0;
@@ -683,12 +634,6 @@ int main(int argc, char *argv[])
       Vector2d<char> classBag;//classified line for writing to image file
       if(classBag_opt.size())
         classBag.resize(nbag,ncol);
-      //read all bands of all pixels in this line in hline
-      // for(int iband=0;iband<testImage.nrOfBand();++iband){
-      // 	testImage.readData(buffer,GDT_Float32,iline,iband);
-      // 	for(int icol=0;icol<ncol;++icol)
-      // 	  hpixel[icol].push_back(buffer[icol]);
-      // }
       try{
         if(band_opt.size()){
           for(int iband=0;iband<band_opt.size();++iband){
@@ -766,7 +711,6 @@ int main(int argc, char *argv[])
           for(short ivalue=0;ivalue<maskValue_opt.size();++ivalue){
             if(maskValue_opt[ivalue]>=0){//values set in maskValue_opt are invalid
               if(lineMask[icol]==maskValue_opt[ivalue]){
-                // theMask=(flag_opt.size()==maskValue_opt.size())? flag_opt[ivalue] : flag_opt[0];
                 theMask=lineMask[icol];
                 masked=true;
                 break;
@@ -775,7 +719,6 @@ int main(int argc, char *argv[])
             else{//only values set in maskValue_opt are valid
               if(lineMask[icol]!=-maskValue_opt[ivalue]){
                 theMask=lineMask[icol];
-		// theMask=(flag_opt.size()==maskValue_opt.size())? flag_opt[ivalue] : flag_opt[0];
                 masked=true;
               }
               else{
@@ -793,26 +736,6 @@ int main(int argc, char *argv[])
           }
         }
         bool valid=false;
-        // if(band_opt.size()){
-        //   for(int iband=0;iband<band_opt.size();++iband){
-	//     assert(band_opt[iband]>0);
-	//     assert(band_opt[iband]<hpixel[icol].size());
-	//     if(hpixel[icol][band_opt[iband]]){
-	//       valid=true;
-	//       break;
-	//     }
-	//   }
-	// }
-	// else{
-	//   for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
-	//     assert(iband>0);
-	//     assert(iband<hpixel[icol].size());
-	//     if(hpixel[icol][iband]){
-	//       valid=true;
-	//       break;
-	//     }
-	//   }
-	// }
         for(int iband=0;iband<hpixel[icol].size();++iband){
           if(hpixel[icol][iband]){
             valid=true;
@@ -832,34 +755,13 @@ int main(int argc, char *argv[])
 	  std::cout << "begin classification " << std::endl;
         //----------------------------------- classification -------------------
         for(int ibag=0;ibag<nbag;++ibag){
-          //calculate image features
-          // fpixel[icol].clear();
-          // for(int iband=0;iband<nband;++iband)
-          //   fpixel[icol].push_back((hpixel[icol][iband]-offset[ibag][iband])/scale[ibag][iband]);
           vector<double> result(nclass);
-          // result=net[ibag].run(fpixel[icol]);
           struct svm_node *x;
-          // x = (struct svm_node *) malloc((fpixel[icol].size()+1)*sizeof(struct svm_node));
           x = (struct svm_node *) malloc((nband+1)*sizeof(struct svm_node));
-          // for(int i=0;i<fpixel[icol].size();++i){
-	  // if(band_opt.size()){
-	  //   for(int iband=0;iband<band_opt.size();++iband){
-	  //     x[iband].index=iband+1;
-	  //     x[iband].value=(hpixel[icol][band_opt[iband]]-offset[ibag][iband])/scale[ibag][iband];
-	  //   }
-	  // }
-	  // else{
-	  //   for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
-	  //     x[iband].index=iband+1;
-	  //     x[iband].value=(hpixel[icol][iband]-offset[ibag][iband])/scale[ibag][iband];
-	  //   }
-	  // }
           for(int iband=0;iband<nband;++iband){
             x[iband].index=iband+1;
-            // x[i].value=fpixel[icol][i];
             x[iband].value=(hpixel[icol][iband]-offset[ibag][iband])/scale[ibag][iband];
           }
-          // x[fpixel[icol].size()].index=-1;//to end svm feature vector
           x[nband].index=-1;//to end svm feature vector
           double predict_label=0;
           vector<float> prValues(nclass);
@@ -894,21 +796,14 @@ int main(int argc, char *argv[])
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
-              // probOut[iclass][icol]+=prValues[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
               probOut[iclass][icol]+=result[iclass]*priors[iclass];//add probabilities for each bag
-              // probOut[iclass][icol]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
-              break;
+               break;
             case(1)://product rule
-              // probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*prValues[iclass];//add probabilities for each bag
-              probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
+              probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
               break;
             case(2)://max rule
-              // if(prValues[iclass]>probOut[iclass][icol])
-              //   probOut[iclass][icol]=prValues[iclass];
               if(priors[iclass]*result[iclass]>probOut[iclass][icol])
                 probOut[iclass][icol]=priors[iclass]*result[iclass];
-              // if(result[iclass]>probOut[iclass][icol])
-              //   probOut[iclass][icol]=result[iclass];
               break;
             }
             if(classBag_opt.size()){
@@ -933,9 +828,7 @@ int main(int argc, char *argv[])
         for(short iclass=0;iclass<nclass;++iclass){
           if(probOut[iclass][icol]>maxBag1){
             maxBag1=probOut[iclass][icol];
-            // classOut[icol]=classValueMap[type2string<short>(iclass)];
             classOut[icol]=classValueMap[nameVector[iclass]];
-            // classOut[icol]=classValueMap[cm.getClass(iclass)];
           }
 	  else if(probOut[iclass][icol]>maxBag2)
             maxBag2=probOut[iclass][icol];
@@ -956,18 +849,6 @@ int main(int argc, char *argv[])
         }
         entropy[icol]/=log(nclass)/log(2);
         entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
-	// float maxDiff=maxBag1-maxBag2;
-	// if(active_opt.size()&&maxDiff){
-	//   if(maxDiff<activePoints.back().value){
-	//     activePoints.back().value=maxDiff;//replace largest value (last)
-	//     activePoints.back().posx=icol;
-	//     activePoints.back().posy=iline;
-	//     std::sort(activePoints.begin(),activePoints.end(),Increase_PosValue());//sort in ascending order (smallest first, largest last)
-	//     if(verbose_opt[0])
-	//       std::cout << activePoints.back().posx << " " << activePoints.back().posy << " " << activePoints.back().value << std::endl;
-	//   }
-	// }
-        //todo: select pixel with maximum entropy as active point
 	if(active_opt.size()){
 	  if(entropy[icol]>activePoints.back().value){
 	    activePoints.back().value=entropy[icol];//replace largest value (last)
@@ -1011,9 +892,6 @@ int main(int argc, char *argv[])
 	double x, y;
 	testImage.image2geo(activePoints[iactive].posx,activePoints[iactive].posy,x,y);
         std::string fieldname="id";//number of the point
-	//test
-	// pointMap["col"]=activePoints[iactive].posx;
-	// pointMap["row"]=activePoints[iactive].posy;
 	activeWriter.addPoint(x,y,pointMap,fieldname,++nactive);
       }
     }
@@ -1033,7 +911,6 @@ int main(int argc, char *argv[])
   }
   else{//classify shape file
     cm.clearResults();
-
     //notice that fields have already been set by readDataImageShape (taking into account appropriate bands)
     for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
       if(output_opt.size())
@@ -1078,7 +955,7 @@ int main(int argc, char *argv[])
         
         imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature);
         assert(validationPixel.size()==nband);
-        vector<float> probOut(nclass);//posterior prob for each reclass
+        vector<float> probOut(nclass);//posterior prob for each class
         for(short iclass=0;iclass<nclass;++iclass)
           probOut[iclass]=0;
         for(int ibag=0;ibag<nbag;++ibag){
@@ -1090,8 +967,6 @@ int main(int argc, char *argv[])
           if(verbose_opt[0]==2)
             std::cout << std::endl;
           vector<double> result(nclass);
-
-          // result=net[ibag].run(validationFeature);
           struct svm_node *x;
           x = (struct svm_node *) malloc((validationFeature.size()+1)*sizeof(struct svm_node));
           for(int i=0;i<validationFeature.size();++i){
@@ -1101,8 +976,6 @@ int main(int argc, char *argv[])
 
           x[validationFeature.size()].index=-1;//to end svm feature vector
           double predict_label=0;
-          // vector<float> pValues(nclass);
-          vector<float> prValues(nclass);
           if(!prob_est_opt[0]){
             predict_label = svm_predict(svm[ibag],x);
             for(short iclass=0;iclass<nclass;++iclass){
@@ -1116,14 +989,12 @@ int main(int argc, char *argv[])
             assert(svm_check_probability_model(svm[ibag]));
             predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
           }
-          if(verbose_opt[0]>1)
-            std::cout << "predict_label: " << predict_label << std::endl;
           if(verbose_opt[0]>1){
+            std::cout << "predict_label: " << predict_label << std::endl;
             for(int iclass=0;iclass<result.size();++iclass)
               std::cout << result[iclass] << " ";
             std::cout << std::endl;
           }
-	  // reclass(result,vreclass,priors,aggreg_opt[0],prValues);
 
           //calculate posterior prob of bag 
           for(short iclass=0;iclass<nclass;++iclass){
@@ -1154,11 +1025,7 @@ int main(int argc, char *argv[])
           if(probOut[iclass]>maxBag){
             maxBag=probOut[iclass];
 	    classOut=nameVector[iclass];
-            // classOut=cm.getClass(iclass);
-	    //test
-	    // assert(iclass==cm.getClassIndex(cm.getClass(iclass)));
           }
-          // normBag+=probOut[iclass];
         }
         //look for class name
         if(verbose_opt[0]>1){
@@ -1167,13 +1034,6 @@ int main(int argc, char *argv[])
 	  else	    
 	    std::cout << "->" << classOut << std::endl;
 	}
-        //normalize probOut and convert to percentage
-        // for(int iclass=0;iclass<nreclass;++iclass){
-        //   float prv=probOut[iclass];
-        //   prv/=normBag;
-        //   prv*=100.0;
-        //   probOut[iclass]=static_cast<short>(prv+0.5);
-        // }
 	if(output_opt.size()){
 	  if(classValueMap.size())
 	    poDstFeature->SetField("class",classValueMap[classOut]);
@@ -1184,11 +1044,6 @@ int main(int argc, char *argv[])
 	int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
 	if(labelIndex>=0){
 	  string classRef=poFeature->GetFieldAsString(labelIndex);
-	  // //test
-	  // std::cout << classRef << "->" << type2string<int>(classRef) << std::endl;
-	  // std::cout << classOut << "->" << type2string<int>(classOut) << std::endl;
-	  //todo: implement a validation option instead
-	  //todo: what if classValueMap.size() ?
 	  if(classRef!="0"){
 	    if(classValueMap.size())
 	      cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
