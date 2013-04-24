@@ -1,0 +1,11 @@
+\section examples_pkgetmask Examples of pkgetmask
+\code
+pkgetmask -i input.tif -o output.tif --min 0 -t 1 -f 0
+\endcode
+create mask, setting all negative values to 0 (rest to 1)
+
+\code
+pkgetmask -i input.tif -o output.tif --min 0 --max 10 --min 0 --max 250 -b 0 -b 1
+\endcode
+create mask. Mask is set to 0 (default value for -f) if either band 0 is not between 0 and 10 OR (default operator) band 1 is not between 0 and 250. Else mask is set to 1 (default value for -t) 
+

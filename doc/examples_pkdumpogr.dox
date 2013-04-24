@@ -1,0 +1,15 @@
+\section examples_pkdumpogr Examples of pkdumpogr
+\code
+pkdumpogr -i input.shp
+\endcode
+dump entire content of vector file to standard output
+
+\code
+pkdumpogr -i input.shp -o output.txt -n ATTRIBUTE -pos
+\endcode
+dump only ATTRIBUTE of vector file including x and y position and output to ASCII file
+
+\code
+pkdumpogr -i input.shp -o output.txt -n ATTRIBUTE1 -n ATTRIBUTE2 -t
+\endcode
+dump the two attributes ATTRIBUTE1 and ATTRIBUTE2 of vector file and transpose output 

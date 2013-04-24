@@ -1,0 +1,26 @@
+\section examples_pkpolygonize Examples of pkpolygonize
+\code
+pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 0 -f 255
+\endcode
+copy pixel values from input.tif to output.tif, applying mask.tif, setting all values to 255 where mask is 0.
+
+\code
+pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 1 -f 255 --operator '!'
+\endcode
+copy values from input.tif to output.tif, but set all values to 255 if mask is not 1
+
+\code
+pksetmask -i input.tif -m mask1.tif -m mask2.tif -o output.tif -ot Byte -t 0 -f 255
+\endcode
+copy pixel values from input.tif to output.tif, applying two masks, setting all values to 255 where either mask is 0.
+
+\code
+pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 0 -t 1 -f 255 -f 255
+\endcode
+copy pixel values from input.tif to output.tif, applying single masks, setting all values to 255 where mask is either 0 or 1.
+
+\code
+pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 0 -t 1 -f 255 -f 255
+\endcode
+copy pixel values from input.tif to output.tif, applying single masks, setting all values to 255 where mask is either 0 or 1.
+

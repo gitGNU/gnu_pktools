@@ -1,0 +1,18 @@
+\section examples_pkpolygonize Examples of pkpolygonize
+\code
+pkreclass -i input1.tif -o output.tif -c 1 -r 0 -c 2 -r 0
+\endcode
+replace pixel values 1 and 2 with value 0
+
+\code
+pkreclass -i vector.shp -o output.shp -c FROM -r TO -n INFIELD
+\endcode
+replace FROM with TO in field INFIELD (of type string) in vector file vector.shp and write to new vector output.shp
+
+for((i=0;i<256;++i));do if(($i<100));then echo "$i 1";else echo "$i 0";fi;done > code.txt; pkreclass -i input1.tif -o output.tif –code code.txt; # replace all values smaller than 100 with 1, all other values with 0
+
+\code
+pkreclass -i input1.tif -o output.tif $(for((i=0;i<256;++i));do if(($i<100));then echo -n " -c $i " " -r 1";else echo " -c $i " " -r 0";fi;done)
+\endcode
+same as previous but without temporary file 
+

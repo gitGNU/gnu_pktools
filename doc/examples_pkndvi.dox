@@ -1,0 +1,5 @@
+\section examples_pkpolygonize Examples of pkpolygonize
+\code
+pkpolygonize -i input.tif -m input.tif -o ouput.shp
+\endcode
+create vector file from raster image (typically a classification image), based on pixel (land cover class) values. 

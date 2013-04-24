@@ -1,0 +1,12 @@
+\section examples_pkstatogr Examples of pkstatogr
+\code
+pkstatogr -i input.shp -f FIELDID -n 100
+\endcode
+report histogram of values in FIELDID (to standard output)
+
+\code
+pkstatogr -i input.shp -f FIELDID -min -max -mean -stdev
+\endcode
+report min, max, mean and standard deviation of values in FIELDID (to standard output) 
+
+

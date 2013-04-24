@@ -1,0 +1,5 @@
+\section examples_pkpolygonize Examples of pkpolygonize
+\code
+pksieve -i input.tif -c 8 -s 5 -o ouput.shp
+\endcode
+merge all patches smaller than 5 pixels into bigger classes, using 8 connectivity (horizontal, vertical and diagonal) 
