@@ -23,16 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <vector>
 #include <iostream>
-// #include <gsl/gsl_matrix.h>
-// #include <gsl/gsl_vector.h>
-// #include <gsl/gsl_permutation.h>
-// #include <gsl/gsl_linalg.h>
-// #include <gsl/gsl_blas.h>
-// #include <gsl/gsl_rng.h>
-// #include <gsl/gsl_randist.h>
-#include <gslwrap/vector_double.h>
-#include <gslwrap/matrix_double.h>
-#include <gslwrap/matrix_vector_operators.h>
+#include <armadillo>
 #include "ogr_spatialref.h"
 
 #ifndef PI
@@ -50,8 +41,8 @@ namespace SensorModel
   class SensorModel{
   public:
     SensorModel(void){
-      m_bcpos.resize(3);
-      m_bcatt.resize(3);
+      m_bcpos.set_size(3);
+      m_bcatt.set_size(3);
       m_bcpos[0]=0;
       m_bcpos[1]=0;
       m_bcpos[2]=0;
@@ -60,8 +51,8 @@ namespace SensorModel
       m_bcatt[2]=0;
     };
     SensorModel(int theModel) : m_model(theModel){
-      m_bcpos.resize(3);
-      m_bcatt.resize(3);
+      m_bcpos.set_size(3);
+      m_bcatt.set_size(3);
       m_bcpos[0]=0;
       m_bcpos[1]=0;
       m_bcpos[2]=0;
@@ -84,117 +75,117 @@ namespace SensorModel
     double getF() const {return m_fc;};
     void setPPx(double ppx){m_ppx=ppx;};
     void setPPy(double ppy){m_ppy=ppy;};
-    void setBoresightPos(const gsl::vector& bcpos){m_bcpos=bcpos;};
-    void setBoresightAtt(const gsl::vector& bcatt){m_bcatt=bcatt;};
-    gsl::vector getBoresightPos() const{return m_bcpos;};
-    gsl::vector getBoresightAtt() const{return m_bcatt;};
+    void setBoresightPos(const arma::vec& bcpos){m_bcpos=bcpos;};
+    void setBoresightAtt(const arma::vec& bcatt){m_bcatt=bcatt;};
+    arma::vec getBoresightPos() const{return m_bcpos;};
+    arma::vec getBoresightAtt() const{return m_bcatt;};
     void setPolynome(const std::vector<double>& polynome) {m_polynome=polynome;};
     void setDatum(const std::string& theDatum="WGS84"){m_spatialref.SetWellKnownGeogCS(theDatum.c_str());};
-    double getZenith(const gsl::vector& att_platform, int row, int column) const{
-      gsl::vector normallevel(3);
-      gsl::vector normalplatform(3);
+    double getZenith(const arma::vec& att_platform, int row, int column) const{
+      arma::vec normallevel(3);
+      arma::vec normalplatform(3);
 
-      gsl::vector apl_deg=att_platform;
+      arma::vec apl_deg=att_platform;
       apl_deg+=m_bcatt;
-      gsl::vector apl_rad(3);
-      apl_rad[0]=deg2rad(apl_deg[0]);//roll
-      apl_rad[1]=deg2rad(apl_deg[1]);//pitch
-      apl_rad[2]=deg2rad(apl_deg[2]);//yaw
+      arma::vec apl_rad(3);
+      apl_rad(0)=deg2rad(apl_deg(0));//roll
+      apl_rad(1)=deg2rad(apl_deg(1));//pitch
+      apl_rad(2)=deg2rad(apl_deg(2));//yaw
 
       if(getModel()==PUSHBROOM){
-        gsl::vector scanAngle(2);
+        arma::vec scanAngle(2);
         scanAngle=scanAngle_PB(row,column);
-        apl_rad[0]+=scanAngle[1];
-        apl_rad[1]+=scanAngle[0];
+        apl_rad(0)+=scanAngle(1);
+        apl_rad(1)+=scanAngle(0);
       }
       else if(getModel()==WHISKBROOM){
-        apl_rad[0]+=0;
-        apl_rad[1]=tan(scanAngle_WB(column));
+        apl_rad(0)+=0;
+        apl_rad(1)=tan(scanAngle_WB(column));
       }
       else//not implemented?
         assert(0);
-      normallevel[0]=0;
-      normallevel[1]=0;
-      normallevel[2]=-1;
-      gsl::matrix rotM(3,3);
-      rotM=getRz(apl_rad[2])*getRy(apl_rad[1])*getRx(apl_rad[0]);
+      normallevel(0)=0;
+      normallevel(1)=0;
+      normallevel(2)=-1;
+      arma::Mat<double> rotM(3,3);
+      rotM=getRz(apl_rad(2))*getRy(apl_rad(1))*getRx(apl_rad(0));
       normalplatform=rotM*normallevel;
-      return rad2deg(acos(-normalplatform[2]));
+      return rad2deg(acos(-normalplatform(2)));
     };
-    gsl::vector getPos(const gsl::vector& pos_platform, const gsl::vector& att_platform, int row, int column, double elevation) const{
-      gsl::vector thePosition(3);
-      gsl::vector pos_ellips(3);
-      gsl::vector ppl_deg=pos_platform;
-      gsl::vector apl_deg=att_platform;
+    arma::vec getPos(const arma::vec& pos_platform, const arma::vec& att_platform, int row, int column, double elevation) const{
+      arma::vec thePosition(3);
+      arma::vec pos_ellips(3);
+      arma::vec ppl_deg=pos_platform;
+      arma::vec apl_deg=att_platform;
       ppl_deg+=m_bcpos;
       apl_deg+=m_bcatt;
-      gsl::vector ppl_rad(3);
-      gsl::vector apl_rad(3);
-      ppl_rad[0]=deg2rad(ppl_deg[0]);
-      ppl_rad[1]=deg2rad(ppl_deg[1]);
-      ppl_rad[2]=ppl_deg[2];//add geoid elevation if necessary...
-      apl_rad[0]=deg2rad(apl_deg[0]);//roll
-      apl_rad[1]=deg2rad(apl_deg[1]);//pitch
-      apl_rad[2]=deg2rad(apl_deg[2]);//yaw
-      gsl::vector pos_ecef=pECEF(ppl_rad,apl_rad,row,column);
+      arma::vec ppl_rad(3);
+      arma::vec apl_rad(3);
+      ppl_rad(0)=deg2rad(ppl_deg(0));
+      ppl_rad(1)=deg2rad(ppl_deg(1));
+      ppl_rad(2)=ppl_deg(2);//add geoid elevation if necessary...
+      apl_rad(0)=deg2rad(apl_deg(0));//roll
+      apl_rad(1)=deg2rad(apl_deg(1));//pitch
+      apl_rad(2)=deg2rad(apl_deg(2));//yaw
+      arma::vec pos_ecef=pECEF(ppl_rad,apl_rad,row,column);
       pos_ellips=ecef2geo(pos_ecef);
-      pos_ellips[2]=0;
+      pos_ellips(2)=0;
       thePosition=getXYatZ(elevation,ppl_deg,pos_ellips);
       return thePosition;
     };
-    double getDistGeo(const gsl::vector& pos1, const gsl::vector& pos2) const{
-      double lon1=pos1[0];
-      double lat1=pos1[1];
-      double lon2=pos2[0];
-      double lat2=pos2[1];
+    double getDistGeo(const arma::vec& pos1, const arma::vec& pos2) const{
+      double lon1=pos1(0);
+      double lat1=pos1(1);
+      double lon2=pos2(0);
+      double lat2=pos2(1);
       double result;
       //simplified formula (spherical approximation)
       // result=2*asin(sqrt(pow(sin((lat1-lat2)/2),2) + cos(lat1)*cos(lat2)*pow(sin((lon1-lon2)/2),2)));
       //using loxodromes
-      result=(pos1[1]==pos2[1]) ? lox2(deg2rad(pos1[1]),deg2rad(pos1[0]),deg2rad(pos2[0])) : lox1(deg2rad(pos1[1]),deg2rad(pos1[0]),deg2rad(pos2[1]),deg2rad(pos2[0]));
+      result=(pos1(1)==pos2(1)) ? lox2(deg2rad(pos1(1)),deg2rad(pos1(0)),deg2rad(pos2(0))) : lox1(deg2rad(pos1(1)),deg2rad(pos1(0)),deg2rad(pos2(1)),deg2rad(pos2(0)));
       return result;
     };
-    gsl::vector geo2ecef(const gsl::vector& pos_geo) const{
-      gsl::vector pos_ecef(3);
-      double nu=getNu(pos_geo[1]);
-      double f1=(nu+pos_geo[2])*cos(pos_geo[1]);
+    arma::vec geo2ecef(const arma::vec& pos_geo) const{
+      arma::vec pos_ecef(3);
+      double nu=getNu(pos_geo(1));
+      double f1=(nu+pos_geo(2))*cos(pos_geo(1));
       double e1=getE1();
-      pos_ecef[0]=f1*cos(pos_geo[0]);
-      pos_ecef[1]=f1*sin(pos_geo[0]);
-      pos_ecef[2]=(nu*(1-e1*e1)+pos_geo[2])*sin(pos_geo[1]);
+      pos_ecef(0)=f1*cos(pos_geo(0));
+      pos_ecef(1)=f1*sin(pos_geo(0));
+      pos_ecef(2)=(nu*(1-e1*e1)+pos_geo(2))*sin(pos_geo(1));
       return pos_ecef;
     };
-    gsl::vector ecef2geo(const gsl::vector& pos_ecef) const{
-      gsl::vector pos_geo(3);
-      pos_geo[0]=atan2(pos_ecef[1],pos_ecef[0]);
-      while(pos_geo[0]>2*PI)
-        pos_geo[0]-=2*PI;
-      double r=sqrt(pos_ecef[0]*pos_ecef[0]+pos_ecef[1]*pos_ecef[1]);
+    arma::vec ecef2geo(const arma::vec& pos_ecef) const{
+      arma::vec pos_geo(3);
+      pos_geo(0)=atan2(pos_ecef(1),pos_ecef(0));
+      while(pos_geo(0)>2*PI)
+        pos_geo(0)-=2*PI;
+      double r=sqrt(pos_ecef(0)*pos_ecef(0)+pos_ecef(1)*pos_ecef(1));
       double f_earth=1.0/m_spatialref.GetInvFlattening();
       double e2=f_earth*(2-f_earth);
       double Ae=m_spatialref.GetSemiMajor();
-      pos_geo[1]=atan(pos_ecef[2]/r);
+      pos_geo(1)=atan(pos_ecef(2)/r);
       double c=1;
       double lat=1E+30;
       int iterations=0;
-      while(sqrt((pos_geo[1]-lat)*(pos_geo[1]-lat))>1E-15){
+      while(sqrt((pos_geo(1)-lat)*(pos_geo(1)-lat))>1E-15){
         ++iterations;
-        lat=pos_geo[1];
+        lat=pos_geo(1);
         c=1.0/sqrt(1-e2*sin(lat)*sin(lat));
-        pos_geo[1]=atan((pos_ecef[2]+Ae*c*e2*sin(lat))/r);
+        pos_geo(1)=atan((pos_ecef(2)+Ae*c*e2*sin(lat))/r);
       }
-      pos_geo[2]=r/cos(pos_geo[1])-Ae*c;
-      pos_geo[0]=rad2deg(pos_geo[0]);
-      pos_geo[1]=rad2deg(pos_geo[1]);
+      pos_geo(2)=r/cos(pos_geo(1))-Ae*c;
+      pos_geo(0)=rad2deg(pos_geo(0));
+      pos_geo(1)=rad2deg(pos_geo(1));
       return pos_geo;
     };
   private:
     //line function; In this function, point 0 is the platform position, point 1 is the ellipsoid position
-    gsl::vector getXYatZ (double inZ, gsl::vector p0, gsl::vector p1) const{
-      gsl::vector posatz(3);
-      posatz[0]=p0[0]+(p0[0]-p1[0])/(p0[2]-p1[2])*(inZ-p0[2]);
-      posatz[1]=p0[1]+(p0[1]-p1[1])/(p0[2]-p1[2])*(inZ-p0[2]);
-      posatz[2]=inZ;
+    arma::vec getXYatZ (double inZ, arma::vec p0, arma::vec p1) const{
+      arma::vec posatz(3);
+      posatz(0)=p0(0)+(p0(0)-p1(0))/(p0(2)-p1(2))*(inZ-p0(2));
+      posatz(1)=p0(1)+(p0(1)-p1(1))/(p0(2)-p1(2))*(inZ-p0(2));
+      posatz(2)=inZ;
       return posatz;
     };
     //get First eccentricity of the Earth's surface 
@@ -228,68 +219,66 @@ namespace SensorModel
       poCT->Transform(1,&lon,&lat);
     };
 
-    gsl::vector pECEF(const gsl::vector& pos, const gsl::vector& attitude, int row, int column) const{
-      gsl::vector A(3);
-      gsl::matrix B(3,3);
-      B.set_element(0,0,-sin(pos[1])*cos(pos[0]));
-      B.set_element(0,1,-sin(pos[0]));
-      B.set_element(0,2,-cos(pos[1])*cos(pos[0]));
-      B.set_element(1,0,-sin(pos[1])*sin(pos[0]));
-      B.set_element(1,1,cos(pos[0]));
-      B.set_element(1,2,-cos(pos[1])*sin(pos[0]));
-      B.set_element(2,0,cos(pos[1]));
-      B.set_element(2,1,0);
-      B.set_element(2,2,-sin(pos[1]));
+    arma::vec pECEF(const arma::vec& pos, const arma::vec& attitude, int row, int column) const{
+      arma::vec A(3);
+      arma::Mat<double> B(3,3);
+      B(0,0)=-sin(pos(1))*cos(pos(0));
+      B(0,1)=-sin(pos(0));
+      B(0,2)=-cos(pos(1))*cos(pos(0));
+      B(1,0)=-sin(pos(1))*sin(pos(0));
+      B(1,1)=cos(pos(0));
+      B(1,2)=-cos(pos(1))*sin(pos(0));
+      B(2,0)=cos(pos(1));
+      B(2,1)=0;
+      B(2,2)=-sin(pos(1));
       A=geo2ecef(pos);
-      gsl::vector C(3);
-      A+=B*SV(row,column,attitude,pos[2]);
+      arma::vec C(3);
+      A+=B*SV(row,column,attitude,pos(2));
       return A;
     };
-    gsl::vector getIV(int row, int column) const{
-      gsl::vector iv(3);
-      iv[0]=0;
-      gsl::vector scanAngle(2);
+    arma::vec getIV(int row, int column) const{
+      arma::vec iv(3);
+      iv(0)=0;
+      arma::vec scanAngle(2);
       if(getModel()==PUSHBROOM){
         scanAngle=scanAngle_PB(row,column);
-        iv[0]=scanAngle[1];
-        iv[1]=tan(scanAngle[0]);
+        iv(0)=scanAngle(1);
+        iv(1)=tan(scanAngle(0));
       }
       else if(getModel()==WHISKBROOM){
-        iv[0]=0;
-        iv[1]=tan(scanAngle_WB(column));
+        iv(0)=0;
+        iv(1)=tan(scanAngle_WB(column));
       }
       else//not implemented?
         assert(0);
-      iv[2]=-1.0;
+      iv(2)=-1.0;
       return iv;
     };
     double scanAngle_WB(int column) const{
       return (-m_fov/2.0+column*(m_fov/(m_ncol-1)));
     };
-    gsl::vector SV(int row, int column, const gsl::vector& attitude, double z) const{
-      gsl::vector rv(3);
-      gsl::matrix rotM(3,3);
-      rotM=getRz(attitude[2])*getRy(attitude[1])*getRx(attitude[0]);
+    arma::vec SV(int row, int column, const arma::vec& attitude, double z) const{
+      arma::vec rv(3);
+      arma::Mat<double> rotM(3,3);
+      rotM=getRz(attitude(2))*getRy(attitude(1))*getRx(attitude(0));
       rv=rotM*getIV(row,column);
-      double height=rv[2];
-      // gsl_blas_dscal(z/height,&rv);
-      // return rv;
-      rv*=z/height;
+      double height=rv(2);
+      rv=rv*z/height;
       return rv;
     };
-    gsl::vector scanAngle_PB(int row, int column) const{
-      gsl::vector alpha(2);
+    arma::vec scanAngle_PB(int row, int column) const{
+      arma::vec alpha(2);
       double r=corr_along(column);
       double theAx=(column<m_ppx) ? m_dx*0.000001*(m_ppx-(column+corr_across(column))) : m_dx*0.000001*(m_ppx-(column-corr_across(column)));
       double theAy=m_dy*0.000001*(m_ppy-r);
-      alpha[0]=(getModel()==FRAME) ? atan(theAx/getF()) : atan(-theAx/getF());
-      alpha[1]=atan(-theAy/getF());
+      alpha(0)=(getModel()==FRAME) ? atan(theAx/getF()) : atan(-theAx/getF());
+      alpha(1)=atan(-theAy/getF());
       return alpha;
     };
     //geocentric coordinate system is right-handed, orthogogal Cartesian system with its origin at the centre of the earth. The direct Helmert transformation from lat/lon and ellipsoid height to geocentric x,y,z is returned in posX, posY, posZ
     //Euclidian distance between points on sphere
     //Euclidian distance between two vectors
-    double getDist(const gsl::vector& v1, const gsl::vector& v2) const{gsl::vector dv=v1;dv-=v2;return dv.norm2();};
+    double getDist(const arma::vec& v1, const arma::vec& v2) const{arma::vec dv=v1;dv-=v2;return arma::norm(dv,2);};
     double lox1(double lat1, double lon1, double lat2, double lon2) const{
       double result=(M(lat2)-M(lat1))/cos(Az(lat1,lon1,lat2,lon2));
       return result;
@@ -348,43 +337,44 @@ namespace SensorModel
       }
       return result;
     };
-    gsl::matrix getRx(double theta) const{
-      gsl::matrix Rx(3,3);
-      Rx.set_element(0,0,1);
-      Rx.set_element(0,1,0);
-      Rx.set_element(0,2,0);
-      Rx.set_element(1,0,0);
-      Rx.set_element(1,1,cos(theta));
-      Rx.set_element(1,2,-sin(theta));
-      Rx.set_element(2,0,0);
-      Rx.set_element(2,1,sin(theta));
-      Rx.set_element(2,2,cos(theta));
+    arma::Mat<double> getRx(double theta) const{
+      arma::Mat<double> Rx(3,3);
+      Rx(0,0)=1;
+      Rx(0,1)=0;
+      Rx(0,2)=0;
+      Rx(1,0)=0;
+      Rx(1,1)=cos(theta);
+      Rx(1,2)=-sin(theta);
+      Rx(2,0)=0;
+      Rx(2,1)=sin(theta);
+      Rx(2,2)=cos(theta);
       return Rx;
     };    
-    gsl::matrix getRy(double theta) const{
-      gsl::matrix Ry(3,3);
-      Ry.set_element(0,0,cos(theta));
-      Ry.set_element(0,1,0);
-      Ry.set_element(0,2,sin(theta));
-      Ry.set_element(1,0,0);
-      Ry.set_element(1,1,1);
-      Ry.set_element(1,2,0);
-      Ry.set_element(2,0,-sin(theta));
-      Ry.set_element(2,1,0);
-      Ry.set_element(2,2,cos(theta));
+    arma::Mat<double> getRy(double theta) const{
+      arma::Mat<double> Ry(3,3);
+      Ry(0,0)=cos(theta);
+      Ry(0,1)=0;
+      Ry(0,2)=sin(theta);
+      Ry(1,0)=0;
+      Ry(1,1)=1;
+      Ry(1,2)=0;
+      Ry(2,0)=-sin(theta);
+      Ry(2,1)=0;
+      Ry(2,2)=cos(theta);
       return Ry;
     };    
-    gsl::matrix getRz(double theta) const{
-      gsl::matrix Rz(3,3);
-      Rz.set_element(0,0,cos(theta));
-      Rz.set_element(0,1,-sin(theta));
-      Rz.set_element(0,2,0);
-      Rz.set_element(1,0,sin(theta));
-      Rz.set_element(1,1,cos(theta));
-      Rz.set_element(1,2,0);
-      Rz.set_element(2,0,0);
-      Rz.set_element(2,1,0);
-      Rz.set_element(2,2,1);
+
+    arma::Mat<double> getRz(double theta) const{
+      arma::Mat<double> Rz(3,3);
+      Rz(0,0)=cos(theta);
+      Rz(0,1)=-sin(theta);
+      Rz(0,2)=0;
+      Rz(1,0)=sin(theta);
+      Rz(1,1)=cos(theta);
+      Rz(1,2)=0;
+      Rz(2,0)=0;
+      Rz(2,1)=0;
+      Rz(2,2)=1;
       return Rz;
     };    
     int m_model;
@@ -401,8 +391,8 @@ namespace SensorModel
     int m_nrow;
     double m_dx;
     double m_dy;
-    gsl::vector m_bcpos;
-    gsl::vector m_bcatt;
+    arma::vec m_bcpos;
+    arma::vec m_bcatt;
     std::vector<double> m_polynome;
   };
 }

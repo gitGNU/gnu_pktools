@@ -32,10 +32,10 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   assert(grad.empty());
   double error=0;
   DataModel *dm=reinterpret_cast<DataModel*> (my_func_data);
-  gsl::vector bc_att(3);
-  bc_att[0]=x[0];
-  bc_att[1]=x[1];
-  bc_att[2]=x[2];
+  arma::vec bc_att(3);
+  bc_att(0)=x[0];
+  bc_att(1)=x[1];
+  bc_att(2)=x[2];
   dm->setBoresightAtt(bc_att);
   for(unsigned int ipoint=0;ipoint<dm->getSize();++ipoint){
     double e=dm->getDistGeo(ipoint);
@@ -190,8 +190,8 @@ int main(int argc, char *argv[])
   theModel.setPPy(ppy_opt[0]);
   theModel.setPolynome(polynome_opt);
   theModel.setDatum(datum_opt[0]);
-  // gsl::vector bc_pos(3);
-  gsl::vector bc_att(3);
+  // arma::vec bc_pos(3);
+  arma::vec bc_att(3);
   // while(bcpos_opt.size()<3)
   //   bcpos_opt.push_back(bcpos_opt[0]);
   while(bcatt_opt.size()<3)
@@ -199,16 +199,16 @@ int main(int argc, char *argv[])
   if(bcrad_opt[0]){
     // bc_pos[0]=theModel.rad2deg(bcpos_opt[0]);
     // bc_pos[1]=theModel.rad2deg(bcpos_opt[1]);
-    bc_att[0]=theModel.rad2deg(bcatt_opt[0]);
-    bc_att[1]=theModel.rad2deg(bcatt_opt[1]);
-    bc_att[2]=theModel.rad2deg(bcatt_opt[2]);
+    bc_att(0)=theModel.rad2deg(bcatt_opt[0]);
+    bc_att(1)=theModel.rad2deg(bcatt_opt[1]);
+    bc_att(2)=theModel.rad2deg(bcatt_opt[2]);
   }
   else{
-    // bc_pos[0]=bcpos_opt[0];
-    // bc_pos[1]=bcpos_opt[1];
-    bc_att[0]=bcatt_opt[0];
-    bc_att[1]=bcatt_opt[1];
-    bc_att[2]=bcatt_opt[2];
+    // bc_pos(0)=bcpos_opt(0);
+    // bc_pos(1)=bcpos_opt(1);
+    bc_att(0)=bcatt_opt[0];
+    bc_att(1)=bcatt_opt[1];
+    bc_att(2)=bcatt_opt[2];
   }
   // bc_pos[2]=bcpos_opt[2];
   // theModel.setBoresightPos(bc_pos);
@@ -246,9 +246,9 @@ int main(int argc, char *argv[])
         istringstream csvstream(csvRecord);
         string item;
         int icol=0;//first column is id
-        gsl::vector thePosGCP(3);
-        gsl::vector thePosPlatform(3);
-        gsl::vector theAttPlatform(3);
+        arma::vec thePosGCP(3);
+        arma::vec thePosPlatform(3);
+        arma::vec theAttPlatform(3);
         while(getline(csvstream,item,fs_opt[0])){//read a column
           if(verbose_opt[0]>1)
             std::cout << item << " ";
@@ -268,59 +268,59 @@ int main(int argc, char *argv[])
           case(3)://X
             dvalue=atof(item.c_str());
             if(gcprad_opt[0])
-              thePosGCP[0]=theModel.rad2deg(dvalue);
+              thePosGCP(0)=theModel.rad2deg(dvalue);
             else
-              thePosGCP[0]=dvalue;
+              thePosGCP(0)=dvalue;
             break;
           case(4)://Y
             dvalue=atof(item.c_str());
             if(gcprad_opt[0])
-              thePosGCP[1]=theModel.rad2deg(dvalue);
+              thePosGCP(1)=theModel.rad2deg(dvalue);
             else
-              thePosGCP[1]=dvalue;
+              thePosGCP(1)=dvalue;
             break;
           case(5)://Z
             dvalue=atof(item.c_str());
-            thePosGCP[2]=dvalue;
+            thePosGCP(2)=dvalue;
             break;
           case(6)://XL
             dvalue=atof(item.c_str());
             if(pplrad_opt[0])
-              thePosPlatform[0]=theModel.rad2deg(dvalue);
+              thePosPlatform(0)=theModel.rad2deg(dvalue);
             else
-              thePosPlatform[0]=dvalue;
+              thePosPlatform(0)=dvalue;
             break;
           case(7)://YL
             dvalue=atof(item.c_str());
             if(pplrad_opt[0])
-              thePosPlatform[1]=theModel.rad2deg(dvalue);
+              thePosPlatform(1)=theModel.rad2deg(dvalue);
             else
-              thePosPlatform[1]=dvalue;
+              thePosPlatform(1)=dvalue;
             break;
           case(8)://ZL
             dvalue=atof(item.c_str());
-            thePosPlatform[2]=dvalue;
+            thePosPlatform(2)=dvalue;
             break;
           case(9)://Roll
             dvalue=atof(item.c_str());
             if(aplrad_opt[0])
-              theAttPlatform[0]=theModel.rad2deg(dvalue);
+              theAttPlatform(0)=theModel.rad2deg(dvalue);
             else
-              theAttPlatform[0]=dvalue;
+              theAttPlatform(0)=dvalue;
             break;
           case(10)://Pitch
             dvalue=atof(item.c_str());
             if(aplrad_opt[0])
-              theAttPlatform[1]=theModel.rad2deg(dvalue);
+              theAttPlatform(1)=theModel.rad2deg(dvalue);
             else
-              theAttPlatform[1]=dvalue;
+              theAttPlatform(1)=dvalue;
             break;
           case(11)://Yaw
             dvalue=atof(item.c_str());
             if(aplrad_opt[0])
-              theAttPlatform[2]=theModel.rad2deg(dvalue);
+              theAttPlatform(2)=theModel.rad2deg(dvalue);
             else
-              theAttPlatform[2]=dvalue;
+              theAttPlatform(2)=dvalue;
             break;
           case(12)://track
             break;
@@ -332,10 +332,10 @@ int main(int argc, char *argv[])
         }
         if(s_srs_opt[0]!=4326){
           if(verbose_opt[0]>1)
-            std::cout << "transforming: " << thePosGCP[0] << ", " << thePosGCP[1] << ", " << thePosGCP[2] << std::endl;
-          poCT->Transform(1,&(thePosGCP[0]),&(thePosGCP[1]),&(thePosGCP[2]));
+            std::cout << "transforming: " << thePosGCP(0) << ", " << thePosGCP(1) << ", " << thePosGCP(2) << std::endl;
+          poCT->Transform(1,&(thePosGCP(0)),&(thePosGCP(1)),&(thePosGCP(2)));
           if(verbose_opt[0]>1)
-            std::cout << "into: " << thePosGCP[0] << ", " << thePosGCP[1] << ", " << thePosGCP[2] << std::endl;
+            std::cout << "into: " << thePosGCP(0) << ", " << thePosGCP(1) << ", " << thePosGCP(2) << std::endl;
           // poCT->Transform(1,&(thePosPlatform[0]),&(thePosPlatform[1]),&(thePosPlatform[2]));
         }
         theDataModel.pushPosGCP(thePosGCP);
@@ -354,9 +354,9 @@ int main(int argc, char *argv[])
         istringstream lineStream(spaceRecord);
         string item;
         int icol=0;
-        gsl::vector thePosGCP(3);
-        gsl::vector thePosPlatform(3);
-        gsl::vector theAttPlatform(3);
+        arma::vec thePosGCP(3);
+        arma::vec thePosPlatform(3);
+        arma::vec theAttPlatform(3);
         while(lineStream >> item){
           if(verbose_opt[0]>1)
             std::cout << item << " ";
@@ -377,59 +377,59 @@ int main(int argc, char *argv[])
           case(3)://X
             itemStream >> dvalue;
             if(gcprad_opt[0])
-              thePosGCP[0]=theModel.rad2deg(dvalue);
+              thePosGCP(0)=theModel.rad2deg(dvalue);
             else
-              thePosGCP[0]=dvalue;
+              thePosGCP(0)=dvalue;
             break;
           case(4)://Y
             itemStream >> dvalue;
             if(gcprad_opt[0])
-              thePosGCP[1]=theModel.rad2deg(dvalue);
+              thePosGCP(1)=theModel.rad2deg(dvalue);
             else
-              thePosGCP[1]=dvalue;
+              thePosGCP(1)=dvalue;
             break;
           case(5)://Z
             itemStream >> dvalue;
-            thePosGCP[2]=dvalue;
+            thePosGCP(2)=dvalue;
             break;
           case(6)://XL
             itemStream >> dvalue;
             if(pplrad_opt[0])
-              thePosPlatform[0]=theModel.rad2deg(dvalue);
+              thePosPlatform(0)=theModel.rad2deg(dvalue);
             else
-              thePosPlatform[0]=dvalue;
+              thePosPlatform(0)=dvalue;
             break;
           case(7)://YL
             itemStream >> dvalue;
             if(pplrad_opt[0])
-              thePosPlatform[1]=theModel.rad2deg(dvalue);
+              thePosPlatform(1)=theModel.rad2deg(dvalue);
             else
-              thePosPlatform[1]=dvalue;
+              thePosPlatform(1)=dvalue;
             break;
           case(8)://ZL
             itemStream >> dvalue;
-            thePosPlatform[2]=dvalue;
+            thePosPlatform(2)=dvalue;
             break;
           case(9)://Roll
             itemStream >> dvalue;
             if(aplrad_opt[0])
-              theAttPlatform[0]=theModel.rad2deg(dvalue);
+              theAttPlatform(0)=theModel.rad2deg(dvalue);
             else
-              theAttPlatform[0]=dvalue;
+              theAttPlatform(0)=dvalue;
             break;
           case(10)://Pitch
             itemStream >> dvalue;
             if(aplrad_opt[0])
-              theAttPlatform[1]=theModel.rad2deg(dvalue);
+              theAttPlatform(1)=theModel.rad2deg(dvalue);
             else
-              theAttPlatform[1]=dvalue;
+              theAttPlatform(1)=dvalue;
             break;
           case(11)://Yaw
             itemStream >> dvalue;
             if(aplrad_opt[0])
-              theAttPlatform[2]=theModel.rad2deg(dvalue);
+              theAttPlatform(2)=theModel.rad2deg(dvalue);
             else
-              theAttPlatform[2]=dvalue;
+              theAttPlatform(2)=dvalue;
             break;
           case(12)://track
             break;
@@ -441,10 +441,10 @@ int main(int argc, char *argv[])
         }
         if(s_srs_opt[0]!=4326){
           if(verbose_opt[0]>1)
-            std::cout << "transforming: " << thePosGCP[0] << ", " << thePosGCP[1] << ", " << thePosGCP[2] << std::endl;
-          poCT->Transform(1,&(thePosGCP[0]),&(thePosGCP[1]),&(thePosGCP[2]));
+            std::cout << "transforming: " << thePosGCP(0) << ", " << thePosGCP(1) << ", " << thePosGCP(2) << std::endl;
+          poCT->Transform(1,&(thePosGCP(0)),&(thePosGCP(1)),&(thePosGCP(2)));
           if(verbose_opt[0]>1)
-            std::cout << "into: " << thePosGCP[0] << ", " << thePosGCP[1] << ", " << thePosGCP[2] << std::endl;
+            std::cout << "into: " << thePosGCP(0) << ", " << thePosGCP(1) << ", " << thePosGCP(2) << std::endl;
           // poCT->Transform(1,&(thePosPlatform[0]),&(thePosPlatform[1]),&(thePosPlatform[2]));
         }
         theDataModel.pushPosGCP(thePosGCP);
@@ -465,8 +465,8 @@ int main(int argc, char *argv[])
     if(verbose_opt[0]>1)
       std::cout << "ipoint: " << ipoint << std::endl;
     vID.push_back(ipoint);
-    gsl::vector thePosPlatform(3);
-    gsl::vector theAttPlatform(3);
+    arma::vec thePosPlatform(3);
+    arma::vec theAttPlatform(3);
     assert(row_opt.size()>ipoint);
     assert(col_opt.size()>ipoint);
     theDataModel.pushRow(row_opt[ipoint]);
@@ -474,33 +474,33 @@ int main(int argc, char *argv[])
     if(z_opt.size()>ipoint){
       // assert(x_opt.size()>ipoint);
       // assert(y_opt.size()>ipoint);
-      gsl::vector thePosGCP(3);
+      arma::vec thePosGCP(3);
       if(x_opt.size()>ipoint&&y_opt.size()>ipoint){
         if(gcprad_opt[0]){
-          thePosGCP[0]=theModel.rad2deg(x_opt[ipoint]);
-          thePosGCP[1]=theModel.rad2deg(y_opt[ipoint]);
+          thePosGCP(0)=theModel.rad2deg(x_opt[ipoint]);
+          thePosGCP(1)=theModel.rad2deg(y_opt[ipoint]);
         }
         else{
-          thePosGCP[0]=x_opt[ipoint];
-          thePosGCP[1]=y_opt[ipoint];
+          thePosGCP(0)=x_opt[ipoint];
+          thePosGCP(1)=y_opt[ipoint];
         }
       }
-      thePosGCP[2]=z_opt[ipoint];
+      thePosGCP(2)=z_opt[ipoint];
       if(s_srs_opt[0]!=4326)
-        poCT->Transform(1,&(thePosGCP[0]),&(thePosGCP[1]),&(thePosGCP[2]));
+        poCT->Transform(1,&(thePosGCP(0)),&(thePosGCP(1)),&(thePosGCP(2)));
       theDataModel.pushPosGCP(thePosGCP);
     }
     assert(yl_opt.size()>ipoint);
     assert(zl_opt.size()>ipoint);
     if(pplrad_opt[0]){
-      thePosPlatform[0]=theModel.rad2deg(xl_opt[ipoint]);
-      thePosPlatform[1]=theModel.rad2deg(yl_opt[ipoint]);
+      thePosPlatform(0)=theModel.rad2deg(xl_opt[ipoint]);
+      thePosPlatform(1)=theModel.rad2deg(yl_opt[ipoint]);
     }
     else{
-      thePosPlatform[0]=xl_opt[ipoint];
-      thePosPlatform[1]=yl_opt[ipoint];
+      thePosPlatform(0)=xl_opt[ipoint];
+      thePosPlatform(1)=yl_opt[ipoint];
     }
-    thePosPlatform[2]=zl_opt[ipoint];
+    thePosPlatform(2)=zl_opt[ipoint];
     // if(s_srs_opt[0]!=4326)
     //   poCT->Transform(1,&(thePosPlatform[0]),&(thePosPlatform[1]),&(thePosPlatform[2]));
     theDataModel.pushPosPlatform(thePosPlatform);
@@ -509,14 +509,14 @@ int main(int argc, char *argv[])
     assert(pitch_opt.size()>ipoint);
     assert(yaw_opt.size()>ipoint);
     if(aplrad_opt[0]){
-      theAttPlatform[0]=theModel.rad2deg(roll_opt[ipoint]);
-      theAttPlatform[1]=theModel.rad2deg(pitch_opt[ipoint]);
-      theAttPlatform[2]=theModel.rad2deg(yaw_opt[ipoint]);
+      theAttPlatform(0)=theModel.rad2deg(roll_opt[ipoint]);
+      theAttPlatform(1)=theModel.rad2deg(pitch_opt[ipoint]);
+      theAttPlatform(2)=theModel.rad2deg(yaw_opt[ipoint]);
     }
     else{
-      theAttPlatform[0]=roll_opt[ipoint];
-      theAttPlatform[1]=pitch_opt[ipoint];
-      theAttPlatform[2]=yaw_opt[ipoint];
+      theAttPlatform(0)=roll_opt[ipoint];
+      theAttPlatform(1)=pitch_opt[ipoint];
+      theAttPlatform(2)=yaw_opt[ipoint];
     }
     theDataModel.pushAttPlatform(theAttPlatform);
   }
@@ -527,10 +527,10 @@ int main(int argc, char *argv[])
     for(int ipoint=0;ipoint<vID.size();++ipoint){
       if(verbose_opt[0]>1)
         std::cout << "point: " << ipoint << std::endl;
-      gsl::vector pos_platform=theDataModel.getPosPlatform(ipoint);
-      gsl::vector att_platform=theDataModel.getAttPlatform(ipoint);
-      gsl::vector pos_calc=theDataModel.getPos(ipoint);
-      gsl::vector pos_gcp=theDataModel.getPosGCP(ipoint);
+      arma::vec pos_platform=theDataModel.getPosPlatform(ipoint);
+      arma::vec att_platform=theDataModel.getAttPlatform(ipoint);
+      arma::vec pos_calc=theDataModel.getPos(ipoint);
+      arma::vec pos_gcp=theDataModel.getPosGCP(ipoint);
       ostringstream gcpss;
       double e=theDataModel.getModel().getDistGeo(pos_gcp,pos_calc);
       if(e>=theDataModel.getThreshold()){
@@ -608,11 +608,11 @@ int main(int argc, char *argv[])
   for(int ipoint=0;ipoint<vID.size();++ipoint){
     if(verbose_opt[0]>1)
       std::cout << "point: " << ipoint << std::endl;
-    gsl::vector pos_platform=theDataModel.getPosPlatform(ipoint);
-    gsl::vector att_platform=theDataModel.getAttPlatform(ipoint);
+    arma::vec pos_platform=theDataModel.getPosPlatform(ipoint);
+    arma::vec att_platform=theDataModel.getAttPlatform(ipoint);
 
-    gsl::vector pos_calc;
-    gsl::vector pos_gcp;
+    arma::vec pos_calc;
+    arma::vec pos_gcp;
     if(input_opt.size()||x_opt.size())
       pos_gcp=theDataModel.getPosGCP(ipoint);
     else
@@ -628,20 +628,20 @@ int main(int argc, char *argv[])
 
     ostringstream gcpss;
     gcpss.precision(12);
-    poCT->Transform(1,&(pos_gcp[0]),&(pos_gcp[1]),&(pos_gcp[2]));
-    gcpss << pos_gcp[0] << " " << pos_gcp[1] << " " << pos_gcp[2] << " ";
+    poCT->Transform(1,&(pos_gcp(0)),&(pos_gcp(1)),&(pos_gcp(2)));
+    gcpss << pos_gcp(0) << " " << pos_gcp(1) << " " << pos_gcp(2) << " ";
     gcpss << errorv.back() << " ";
 
-    poCT->Transform(1,&(pos_calc[0]),&(pos_calc[1]),&(pos_calc[2]));
+    poCT->Transform(1,&(pos_calc(0)),&(pos_calc(1)),&(pos_calc(2)));
 
     if(output_opt.size()){
-      outputStream << setprecision(12) << vID[ipoint] << " " << theDataModel.getRow(ipoint) << " " << theDataModel.getCol(ipoint) << " " << pos_calc[0] << " " << pos_calc[1] << " " << pos_calc[2] << " " << gcpss.str();
+      outputStream << setprecision(12) << vID[ipoint] << " " << theDataModel.getRow(ipoint) << " " << theDataModel.getCol(ipoint) << " " << pos_calc(0) << " " << pos_calc(1) << " " << pos_calc(2) << " " << gcpss.str();
       if(getzenith_opt[0])
         outputStream << " " << theDataModel.getModel().getZenith(att_platform,theDataModel.getRow(ipoint),theDataModel.getCol(ipoint));
       outputStream << std::endl;
     }
     else{
-      std::cout << setprecision(12) << vID[ipoint] << " " << theDataModel.getRow(ipoint) << " " << theDataModel.getCol(ipoint) << " " << pos_calc[0] << " " << pos_calc[1] << " " << pos_calc[2] << " " << gcpss.str();
+      std::cout << setprecision(12) << vID[ipoint] << " " << theDataModel.getRow(ipoint) << " " << theDataModel.getCol(ipoint) << " " << pos_calc(0) << " " << pos_calc(1) << " " << pos_calc(2) << " " << gcpss.str();
       if(getzenith_opt[0])
         std::cout << " " << theDataModel.getModel().getZenith(att_platform,theDataModel.getRow(ipoint),theDataModel.getCol(ipoint));
       std::cout << std::endl;

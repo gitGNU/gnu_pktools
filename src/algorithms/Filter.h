@@ -22,9 +22,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 #include <iostream>
-#include <gslwrap/vector_double.h>
-#include <gslwrap/matrix_double.h>
-#include <gslwrap/matrix_vector_operators.h>
 #include "StatFactory.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
@@ -120,9 +117,6 @@ private:
   gsl_spline *spline;
   stat.getSpline(interpolationType,nband,spline);
   stat.initSpline(spline,&(srf[0][0]),&(srf[1][0]),nband);
-  // gsl_interp_accel *acc=gsl_interp_accel_alloc();
-  // gsl_spline *spline=gsl_spline_alloc(gsl_interp_linear,nband);
-  // gsl_spline_init(spline,&(srf[0][0]),&(srf[1][0]),nband);
   if(verbose)
     std::cout << "calculating norm of srf" << std::endl << std::flush;
   double norm=0;
@@ -201,9 +195,6 @@ private:
   gsl_spline *spline;
   stat.getSpline(interpolationType,nband,spline);
   stat.initSpline(spline,&(srf[0][0]),&(srf[1][0]),nband);
-  // gsl_interp_accel *acc=gsl_interp_accel_alloc();
-  // gsl_spline *spline=gsl_spline_alloc(gsl_interp_linear,nband);
-  // gsl_spline_init(spline,&(srf[0][0]),&(srf[1][0]),nband);
   if(verbose)
     std::cout << "calculating norm of srf" << std::endl << std::flush;
   double norm=0;
@@ -292,22 +283,23 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
     
   int nbandOut=wavelengthOut.size();
   output.resize(nbandOut);
-  gsl::matrix tf(nbandIn,nbandOut);
+  Vector2d<double> tf(nbandIn,nbandOut);
   for(int indexOut=0;indexOut<nbandOut;++indexOut){
     double norm=0;
     for(int indexIn=0;indexIn<nbandIn;++indexIn){
-      tf(indexIn,indexOut)=
+      // tf(indexIn,indexOut)=
+      tf[indexIn][indexOut]=
         exp((wavelengthOut[indexOut]-wavelength_fine[indexIn])
             *(wavelength_fine[indexIn]-wavelengthOut[indexOut])
             /2.0/stddev[indexOut]
             /stddev[indexOut]);
-      tf(indexIn,indexOut)/=sqrt(2.0*M_PI);
-      tf(indexIn,indexOut)/=stddev[indexOut];
-      norm+=tf(indexIn,indexOut);
+      tf[indexIn][indexOut]/=sqrt(2.0*M_PI);
+      tf[indexIn][indexOut]/=stddev[indexOut];
+      norm+=tf[indexIn][indexOut];
     }
     output[indexOut]=0;
     for(int indexIn=0;indexIn<nbandIn;++indexIn)
-      output[indexOut]+=input_fine[indexIn]*tf(indexIn,indexOut)/norm;
+      output[indexOut]+=input_fine[indexIn]*tf[indexIn][indexOut]/norm;
   }
 }
 
@@ -335,19 +327,19 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
   int nbandOut=wavelengthOut.size();
   output.resize(nbandOut,(input[0].size()+down-1)/down);
 
-  gsl::matrix tf(nbandIn,nbandOut);
+  Vector2d<double> tf(nbandIn,nbandOut);
   vector<double> norm(nbandOut);
   for(int indexOut=0;indexOut<nbandOut;++indexOut){
     norm[indexOut]=0;
     for(int indexIn=0;indexIn<nbandIn;++indexIn){
-      tf(indexIn,indexOut)=
+      tf[indexIn][indexOut]=
         exp((wavelengthOut[indexOut]-wavelength_fine[indexIn])
             *(wavelength_fine[indexIn]-wavelengthOut[indexOut])
             /2.0/stddev[indexOut]
             /stddev[indexOut]);
-      tf(indexIn,indexOut)/=sqrt(2.0*M_PI);
-      tf(indexIn,indexOut)/=stddev[indexOut];
-      norm[indexOut]+=tf(indexIn,indexOut);
+      tf[indexIn][indexOut]/=sqrt(2.0*M_PI);
+      tf[indexIn][indexOut]/=stddev[indexOut];
+      norm[indexOut]+=tf[indexIn][indexOut];
     }
   }
 
@@ -362,7 +354,7 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
       stat.interpolateUp(wavelengthIn,inputValues,wavelength_fine,interpolationType,input_fine,verbose);
       output[indexOut][(isample+down-1)/down]=0;
       for(int indexIn=0;indexIn<nbandIn;++indexIn){
-        output[indexOut][(isample+down-1)/down]+=input_fine[indexIn]*tf(indexIn,indexOut)/norm[indexOut];
+        output[indexOut][(isample+down-1)/down]+=input_fine[indexIn]*tf[indexIn][indexOut]/norm[indexOut];
       }
     }
   }

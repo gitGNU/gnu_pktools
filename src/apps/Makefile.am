@@ -29,8 +29,9 @@ pklas2img_LDADD = -llas $(AM_LDFLAGS)
 endif
 if USE_NLOPT
 bin_PROGRAMS += pksensormodel pkopt_svm
+pksensormodel_LDFLAGS = -O1
 pksensormodel_SOURCES = $(top_srcdir)/src/models/SensorModel.h pksensormodel.h pksensormodel.cc
-pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -lgslwrap
+pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -larmadillo #-lgslwrap
 pkopt_svm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h pkopt_svm.cc
 pkopt_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt
 endif
@@ -53,7 +54,7 @@ pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal
 pkextract_SOURCES = pkextract.cc
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
-pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl -lgslwrap -lgdal
+pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl -lgdal #-lgslwrap
 pkdsm2shadow_SOURCES = pkdsm2shadow.cc
 pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc

@@ -37,4 +37,4 @@ libalgorithms_la_SOURCES = $(libalgorithms_la_HEADERS) Egcs.cc Filter2d.cc Filte
 
 # list of sources for the binaries
 #pktestStat_SOURCES = pktestStat.cc
-#pktestStat_LDADD = $(GSL_LIBS) -lgslwrap $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la -lgslwrap
+#pktestStat_LDADD = $(GSL_LIBS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la
