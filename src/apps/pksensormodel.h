@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define _PKSENSORMODEL_H_
 #include <vector>
 #include <gslwrap/matrix_double.h>
-#include "algorithms/SensorModel.h"
+#include "models/SensorModel.h"
 
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
 
