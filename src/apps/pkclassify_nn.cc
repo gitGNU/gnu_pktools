@@ -795,6 +795,7 @@ int main(int argc, char *argv[])
 	      normPrior+=linePrior[iclass][icol];
 	  }
           for(int iclass=0;iclass<nclass;++iclass){
+	    result[iclass]=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
 	    if(priorimg_opt.size())
 	      priors[iclass]=linePrior[iclass][icol]/normPrior;//todo: check if correct for all cases... (automatic classValueMap and manual input for names and values)
             switch(comb_opt[0]){
@@ -979,6 +980,7 @@ int main(int argc, char *argv[])
           }
           //calculate posterior prob of bag 
           for(int iclass=0;iclass<nclass;++iclass){
+	    result[iclass]=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
