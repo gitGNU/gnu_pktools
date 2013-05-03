@@ -81,7 +81,7 @@ public:
   template<class T1, class T2> void doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
   void median(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
   void var(const string& inputFilename, const string& outputFilename, int dim, bool disc=false);
-  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, bool disc=false, double angle=-190);
+  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const vector<double> &angle, bool disc=false);
   template<class T> unsigned long int morphology(const Vector2d<T>& input, Vector2d<T>& output, const std::string& method, int dimX, int dimY, bool disc=false, double hThreshold=0);
   template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);

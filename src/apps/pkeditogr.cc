@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input image");
   Optionpk<string> output_opt("o", "output", "Output mask file");
+  Optionpk<string> selectField_opt("select", "select", "select field (combined with like opt)");
+  Optionpk<string> like_opt("like", "like", "substring(s) to be found in select field (if multiple substrings are provided, feature will be selected if one of them is found)");
   Optionpk<string> field_opt("f", "field", "output field names (number must exactly match input fields)");
   Optionpk<long int> setfeature_opt("sf", "sf", "id of feature(s) to set (start from 0)");
   Optionpk<string> setname_opt("sn", "sn", "name(s) of field(s) to set");
@@ -42,6 +44,8 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    selectField_opt.retrieveOption(argc,argv);
+    like_opt.retrieveOption(argc,argv);
     field_opt.retrieveOption(argc,argv);
     addname_opt.retrieveOption(argc,argv);
     addtype_opt.retrieveOption(argc,argv);
@@ -134,6 +138,24 @@ int main(int argc, char *argv[])
   OGRFeature *poFeature;
   while((poFeature = ogrReader.getLayer()->GetNextFeature()) != NULL ){
     ++ifeature;
+    bool doSelect;
+    if(like_opt.empty())
+      doSelect=true;
+    else{
+      doSelect=false;
+      int fieldIndex=poFeature->GetFieldIndex(selectField_opt[0].c_str());
+      string fieldValue=poFeature->GetFieldAsString(fieldIndex);
+      for(int ilike=0;ilike<like_opt.size();++ilike){
+	if(fieldValue.find(like_opt[ilike])!=std::string::npos){
+	  if(verbose_opt[0])
+	    std::cout << "found " << like_opt[ilike] << " in " << fieldValue << std::endl;
+	  doSelect=true;
+	  break;
+	}
+      }
+    }
+    if(!doSelect)
+      continue;
     OGRFeature *poDstFeature = NULL;
     poDstFeature=ogrWriter.createFeature();
     if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){

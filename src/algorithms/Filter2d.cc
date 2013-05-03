@@ -488,7 +488,6 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    }
 	    if(!masked){
               vector<short>::const_iterator vit=m_class.begin();
-              //todo: test if this works (only add occurrence if within defined classes)!
               if(!m_class.size())
                 ++occurrence[inBuffer[indexJ][indexI]];
               else{
@@ -937,7 +936,7 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
 //   output.close();
 // }
 
-void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, bool disc, double angle)
+void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const vector<double> &angle, bool disc)
 {
   assert(dimX);
   assert(dimY);
@@ -983,7 +982,6 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	outBuffer[x]=currentValue;
 	vector<double> statBuffer;
 	bool currentMasked=false;
-        double rse=0;
 	for(int imask=0;imask<m_mask.size();++imask){
 	  if(currentValue==m_mask[imask]){
 	    currentMasked=true;
@@ -999,42 +997,40 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	      if(disc&&(i*i+j*j>(dimX/2)*(dimY/2)))
 		continue;
               bool masked=false;
-	      if(angle>=-180){
-	      	// double theta;
-	      	// if(i>0)
-	      	//   theta=atan(static_cast<double>(j)/(static_cast<double>(i)));
-	      	// else if(i<0)
-	      	//   theta=PI+atan(static_cast<double>(j)/(static_cast<double>(i)));
-	      	// else if(j>0)
-	      	//   theta=PI/2.0;
-	      	// else if(j<0)
-	      	//   theta=3.0*PI/2.0;
-                // rse=sqrt((theta-DEG2RAD(angle))*(theta-DEG2RAD(angle))/theta/theta);
-                // //test
-                if(angle<45||angle>315)
-                  if((j!=0)||(i>0))//RIGHT
-                    continue;
-                if(angle>135&&angle<225)
-                  if(j!=0||i<0)//LEFT
-                    continue;
-                if(angle>45&&angle<135)
-                  if(j<0||i!=0)//UP
-                    continue;
-                if(angle>225&&angle<315)
-                  if(j>0||i!=0)//DOWN
-                    continue;
-                if(angle>270&&angle<360)
-                  if(j>0||i>0)//LOWER RIGHT
-                    continue;
-                if(angle>0&&angle<90)
-                  if(j<0||i>0)//UPPER RIGHT
-                    continue;
-                if(angle>180&&angle<270)
-                  if(j>0||i<0)//LOWER LEFT
-                    continue;
-                if(angle>90&&angle<180)
-                  if(j<0||i<0)//UPPER LEFT
-                    continue;
+	      if(angle.size()){
+	      	double theta;
+		//use polar coordinates in radians
+	      	if(i>0){
+		  if(j<0)
+		    theta=atan(static_cast<double>(-j)/(static_cast<double>(i)));
+		  else
+		    theta=-atan(static_cast<double>(j)/(static_cast<double>(i)));
+		}
+	      	else if(i<0){
+		  if(j<0)
+		    theta=PI-atan(static_cast<double>(-j)/(static_cast<double>(-i)));
+		  else
+		    theta=PI+atan(static_cast<double>(j)/(static_cast<double>(-i)));
+		}
+	      	else if(j<0)
+	      	  theta=PI/2.0;
+	      	else if(j>0)
+	      	  theta=3.0*PI/2.0;
+		//convert to North (0), East (90), South (180), West (270) in degrees
+		theta=360-(theta/PI*180)+90;
+		if(theta<0)
+		  theta+=360;
+		while(theta>360)
+		  theta-=360;
+		bool alligned=false;
+		for(int iangle=0;iangle<angle.size();++iangle){
+		  if(sqrt((theta-angle[iangle])*(theta-angle[iangle]))<10){
+		    alligned=true;
+		    break;
+		  }
+		}
+		if(!alligned)
+		  continue;
 	      }
 	      indexI=x+i;
 	      //check if out of bounds

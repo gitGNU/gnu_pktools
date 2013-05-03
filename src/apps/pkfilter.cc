@@ -40,8 +40,8 @@ int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input image file");
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
-  Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation.");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median,variance,min,max,sum,mean,minmax,dilation,erosion,closing,opening,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf)", "median");
+  Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median,variance,min,max,sum,mean,minmax,dilate,erode,close,open,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf)", "median");
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
@@ -166,11 +166,6 @@ int main(int argc,char **argv) {
   else if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());
 
-  if(input.isGeoRef()){
-    output.setProjection(input.getProjection());
-    output.copyGeoTransform(input);
-  }
-
   filter2d::Filter2d filter2d;
   filter::Filter filter1d;
   if(class_opt.size()){
@@ -187,8 +182,9 @@ int main(int argc,char **argv) {
     if(verbose_opt[0])
       std::cout<< std::endl;
   }
-  if(mask_opt.size()&&verbose_opt[0]){
-    std::cout<< "mask values: ";
+  if(mask_opt.size()){
+    if(verbose_opt[0])
+      std::cout<< "mask values: ";
     for(int imask=0;imask<mask_opt.size();++imask){
       if(verbose_opt[0])
         std::cout<< mask_opt[imask] << " ";
@@ -330,23 +326,17 @@ int main(int argc,char **argv) {
         filter1d.morphology(input,output,"dilate",dimZ_opt[0]);
       }
       else{
-        if(angle_opt.size())
-          filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
-        else
-          filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],disc_opt[0]);
+	filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
       break;
     case(filter2d::erode):
-      if(dimZ_opt[0]>0){
+      if(dimZ_opt.size()>0){
         if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
         filter1d.morphology(input,output,"erode",dimZ_opt[0]);
       }
       else{
-        if(angle_opt.size())
-          filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
-        else
-          filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],disc_opt[0]);
+	filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
       break;
     case(filter2d::close):{//closing
@@ -359,10 +349,7 @@ int main(int argc,char **argv) {
           filter1d.morphology(input,tmpout,"dilate",dimZ_opt[0]);
         }
         else{
-          if(angle_opt.size())
-            filter2d.morphology(input,tmpout,"dilate",dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
-          else
-            filter2d.morphology(input,tmpout,"dilate",dimX_opt[0],dimY_opt[0],disc_opt[0]);
+	  filter2d.morphology(input,tmpout,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
         }
       }
       catch(std::string errorString){
@@ -376,10 +363,7 @@ int main(int argc,char **argv) {
         filter1d.morphology(tmpin,output,"erode",dimZ_opt[0]);
       }
       else{
-        if(angle_opt.size())
-          filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
-        else
-          filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],disc_opt[0]);
+          filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
       tmpin.close();
       if(remove(tmps.str().c_str( )) !=0){
@@ -396,10 +380,7 @@ int main(int argc,char **argv) {
         filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
       }
       else{
-        if(angle_opt.size())
-          filter2d.morphology(input,tmpout,"erode",dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
-        else
-          filter2d.morphology(input,tmpout,"erode",dimX_opt[0],dimY_opt[0],disc_opt[0]);
+	filter2d.morphology(input,tmpout,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
       tmpout.close();
       ImgReaderGdal tmpin;
@@ -408,10 +389,7 @@ int main(int argc,char **argv) {
         filter1d.morphology(tmpin,output,"dilate",dimZ_opt[0]);
       }
       else{
-        if(angle_opt.size())
-          filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],disc_opt[0],angle_opt[0]);
-        else
-          filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],disc_opt[0]);
+	filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
       tmpin.close();
       if(remove(tmps.str().c_str( )) !=0){

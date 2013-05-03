@@ -286,6 +286,10 @@ int main(int argc,char **argv) {
       outputWriter.geo2image(thePoint.GetX(),thePoint.GetY(),dcol,drow);
       int icol=static_cast<int>(dcol);
       int irow=static_cast<int>(drow);
+      if(irow<0||irow>=nrow)
+	continue;
+      if(icol<0||icol>=ncol)
+	continue;
       assert(irow>=0);
       assert(irow<nrow);
       assert(icol>=0);
