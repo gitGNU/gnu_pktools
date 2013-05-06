@@ -70,6 +70,8 @@ version 2.4
 	bug solved in update of progress bar
 	support of standard deviation
 	default empty classes
+	bug solved in down option: spatial resolution was not stored properly
+	directional morphological filtering now supports multiple angles
  - pkgetmask
 	options min and max are now set with -min (--min) and -max (--max)
  - pkstatogr

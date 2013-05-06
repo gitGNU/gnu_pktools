@@ -5,7 +5,7 @@ pkcrop -i input.tif -ulx 100 -uly 1000 -lrx 600 -lry 100 -o output.tif
 crop image.tif to the given bounding box
 
 \code
-pkcrop -i input.tif -e polygon.shp -o output.tif
+pkcrop -i input.tif -e extent.shp -o output.tif
 gdal_rasterize -i -burn 0 -l extent extent.shp output.tif
 \endcode
 crop image.tif to the envelop of the given polygon and mask all pixels outside polygon as 0 (using gdal_rasterize)
