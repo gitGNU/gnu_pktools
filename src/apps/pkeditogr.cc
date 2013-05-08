@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
   Optionpk<string> like_opt("like", "like", "substring(s) to be found in select field. If multiple substrings are provided, feature will be selected if one of them is found (default) or all of them are found (stringent option is set)");
   Optionpk<bool> stringent_opt("st", "stringent", "all substring(s) in like option must be found in order to select feature)",false);
   Optionpk<string> field_opt("f", "field", "output field names (number must exactly match input fields)");
+  //renaming fields can also be done via ogr2ogr using the -sql option:
+  //ogr2ogr outdataset indataset -sql "SELECT src_field1 AS dst_field1, src_field2 AS dst_field2 FROM sourcelayer"
   Optionpk<long int> setfeature_opt("sf", "sf", "id of feature(s) to set (start from 0)");
   Optionpk<string> setname_opt("sn", "sn", "name(s) of field(s) to set");
   Optionpk<string> setvalue_opt("sv", "sv", "value(s) of field(s) to set");
