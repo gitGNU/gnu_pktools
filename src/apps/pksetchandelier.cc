@@ -30,11 +30,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <config.h>
 #endif
 
-double PointData::m_tau=0;
-double PointData::m_deltaT=0;
-double PointData::m_epsilon=0.00001;
-double PointData::m_flag=1000;
-
 int main(int argc, char *argv[])
 {
   std::string versionString="version ";

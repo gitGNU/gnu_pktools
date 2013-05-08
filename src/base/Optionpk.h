@@ -315,6 +315,15 @@ template<class T> void Optionpk<T>::setAll(const std::string& shortName, const s
 ///specialization for bool
 template<> void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo);
 
+template<> void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
+{
+  m_shortName=shortName;
+  m_longName=longName;
+  m_hasArgument=false;
+  m_help=helpInfo;
+  m_hide=0;
+}
+
 ///specialization for bool
 template<> void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const bool& defaultValue, short hide);
 

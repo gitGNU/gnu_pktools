@@ -13,7 +13,6 @@ AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
 # THE LIBRARIES TO BUILD
 ###############################################################################
 
-# the library names to build (note we are building static libs only)
 #noinst_LIBRARIES = libalgorithms.a
 lib_LTLIBRARIES = libalgorithms.la
 

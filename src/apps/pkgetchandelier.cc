@@ -77,12 +77,6 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   return rmse;
 }
 
-double PointData::m_tau=0;
-double PointData::m_deltaT=0;
-double PointData::m_epsilon=0.00001;
-double PointData::m_flag=1000;
-double PointData::m_residual=0;
-
 int main(int argc, char *argv[])
 {
   std::string versionString="version ";

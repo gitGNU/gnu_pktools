@@ -1,7 +1,7 @@
 AM_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(GDAL_CFLAGS) @AM_CXXFLAGS@
-AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la $(top_builddir)/src/fileclasses/libfileClasses.la @AM_LDFLAGS@
+AM_LDFLAGS = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/imageclasses/libimageClasses.la $(top_builddir)/src/fileclasses/libfileClasses.la $(top_builddir)/src/base/libbase.la @AM_LDFLAGS@
 #LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/models/libprospect.la $(top_builddir)/src/imageclasses/libimageClasses.la
-LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/imageclasses/libimageClasses.la $(top_builddir)/src/fileclasses/libfileClasses.la
+LDADD = $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms.la $(top_builddir)/src/models/libmodels.la $(top_builddir)/src/imageclasses/libimageClasses.la $(top_builddir)/src/fileclasses/libfileClasses.la $(top_builddir)/src/base/libbase.la
 ###############################################################################
 # THE PROGRAMS TO BUILD
 ###############################################################################
@@ -29,9 +29,9 @@ pklas2img_LDADD = -llas $(AM_LDFLAGS)
 endif
 if USE_NLOPT
 bin_PROGRAMS += pksensormodel pkopt_svm
-pksensormodel_LDFLAGS = -O1
+#pksensormodel_LDFLAGS = -O1
 pksensormodel_SOURCES = $(top_srcdir)/src/models/SensorModel.h pksensormodel.h pksensormodel.cc
-pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -larmadillo #-lgslwrap
+pksensormodel_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lm -larmadillo
 pkopt_svm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h pkopt_svm.cc
 pkopt_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt
 endif
@@ -66,6 +66,7 @@ pkfs_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
 pkeditogr_SOURCES = pkeditogr.cc
+pkeditogr_LDADD = $(AM_LDFLAGS)
 #pkxcorimg_SOURCES= pkxcorimg.cc
 #pkgeom_SOURCES = pkgeom.cc
 ###############################################################################

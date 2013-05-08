@@ -16,7 +16,7 @@ libfileClasses_ladir = $(includedir)/fileclasses
 libfileClasses_la_HEADERS = FileReaderAscii.h
 
 # the sources to add to the library and to add to the source distribution
-libfileClasses_la_SOURCES = $(libfileClasses_a_HEADERS) FileReaderAscii.cc
+libfileClasses_la_SOURCES = $(libfileClasses_la_HEADERS) FileReaderAscii.cc
 
 if USE_LAS
 # the list of header files that belong to the library (to be installed later)
