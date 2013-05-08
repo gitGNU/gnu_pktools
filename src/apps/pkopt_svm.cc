@@ -560,7 +560,8 @@ int main(int argc, char *argv[])
     void* pProgressArg=NULL;
     GDALProgressFunc pfnProgress=GDALTermProgress;
     double progress=0;
-    pfnProgress(progress,pszMessage,pProgressArg);
+    if(!verbose_opt[0])
+      pfnProgress(progress,pszMessage,pProgressArg);
     double ncost=log(ccost_opt[1])/log(10)-log(ccost_opt[0])/log(10);
     double ngamma=log(gamma_opt[1])/log(10)-log(gamma_opt[0])/log(10);
     for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=10){
@@ -575,14 +576,16 @@ int main(int argc, char *argv[])
 	  minCost=ccost;
 	  minGamma=gamma;
 	  if(verbose_opt[0])
-	    std::cout << ccost << " " << gamma << error<< std::endl;
+	    std::cout << ccost << " " << gamma << " " << error<< std::endl;
 	}
 	progress+=1.0/ncost/ngamma;
-	pfnProgress(progress,pszMessage,pProgressArg);
+	if(!verbose_opt[0])
+	  pfnProgress(progress,pszMessage,pProgressArg);
       }
     }
     progress=1.0;
-    pfnProgress(progress,pszMessage,pProgressArg);
+    if(!verbose_opt[0])
+      pfnProgress(progress,pszMessage,pProgressArg);
     x[0]=minCost;
     x[1]=minGamma;
   }

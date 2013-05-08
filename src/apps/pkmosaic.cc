@@ -661,8 +661,8 @@ int main(int argc, char *argv[])
                   val_new*=weight_opt[ifile];
                   storeBuffer[iband][ib].push_back(val_new);
                   assert(ifile>0);
-                  assert(weight_opt[ifile]>=0);
-                  assert(storeBuffer[iband][ib].back()>=0);
+                  // assert(weight_opt[ifile]>=0);
+                  // assert(storeBuffer[iband][ib].back()>=0);
                 }
                 break;
               }
