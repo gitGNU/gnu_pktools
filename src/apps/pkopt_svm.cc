@@ -219,6 +219,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
   Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
+  Optionpk<double> step_opt("step","step","multiplicative step for GRID search (-step cost -step gamma)",2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -249,6 +250,7 @@ int main(int argc, char *argv[])
     costfunction_opt.retrieveOption(argc,argv);
     maxit_opt.retrieveOption(argc,argv);
     tolerance_opt.retrieveOption(argc,argv);
+    step_opt.retrieveOption(argc,argv);
     algorithm_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
@@ -553,6 +555,8 @@ int main(int argc, char *argv[])
 
   std::vector<double> x(2);
   if(algorithm_opt[0]=="GRID"){
+    if(step_opt.size()<2)//[0] for cost, [1] for gamma
+      step_opt.push_back(step_opt.back());
     double minError=1000;
     double minCost=0;
     double minGamma=0;
@@ -564,8 +568,8 @@ int main(int argc, char *argv[])
       pfnProgress(progress,pszMessage,pProgressArg);
     double ncost=log(ccost_opt[1])/log(10)-log(ccost_opt[0])/log(10);
     double ngamma=log(gamma_opt[1])/log(10)-log(gamma_opt[0])/log(10);
-    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=10){
-      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=10){
+    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=step_opt[0]){
+      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=step_opt[1]){
 	x[0]=ccost;
 	x[1]=gamma;
 	std::vector<double> theGrad;
@@ -575,9 +579,9 @@ int main(int argc, char *argv[])
 	  minError=error;
 	  minCost=ccost;
 	  minGamma=gamma;
-	  if(verbose_opt[0])
-	    std::cout << ccost << " " << gamma << " " << error<< std::endl;
 	}
+	if(verbose_opt[0])
+	  std::cout << ccost << " " << gamma << " " << error<< std::endl;
 	progress+=1.0/ncost/ngamma;
 	if(!verbose_opt[0])
 	  pfnProgress(progress,pszMessage,pProgressArg);
