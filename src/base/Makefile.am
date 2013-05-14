@@ -24,6 +24,7 @@ libbase_la_HEADERS = $(top_srcdir)/config.h Vector2d.h IndexValue.h Optionpk.h P
 
 # the sources to add to the library and to add to the source distribution
 ###############################################################################
+libbase_la_SOURCES = $(libbase_la_HEADERS)
 
 # list of sources for the binaries
 pktestOption_SOURCES = pktestOption.cc
