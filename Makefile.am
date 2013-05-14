@@ -5,6 +5,5 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src/base \
 	src/imageclasses \
 	src/algorithms \
-	src/models \
 	$(FILECLASSES_OPT) \
 	src/apps

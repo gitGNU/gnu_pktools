@@ -17,7 +17,6 @@ AC_MSG_WARN([$GDAL_OGR_ENABLED])
 AC_PROG_CXX
 AC_PROG_FC
 LT_INIT
-#AC_PROG_RANLIB
 
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/apps/pkinfo.cc])
@@ -98,7 +97,6 @@ AC_CONFIG_FILES([
 Makefile
 src/base/Makefile
 src/algorithms/Makefile
-src/models/Makefile
 src/imageclasses/Makefile
 src/fileclasses/Makefile
 src/apps/Makefile

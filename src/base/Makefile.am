@@ -20,10 +20,9 @@ lib_LTLIBRARIES = libbase.la
 libbase_ladir = $(includedir)/base
 
 # the list of header files that belong to the library (to be installed later)
-libbase_la_HEADERS = $(top_srcdir)/config.h PointData.h Vector2d.h IndexValue.h Optionpk.h PosValue.h
+libbase_la_HEADERS = $(top_srcdir)/config.h Vector2d.h IndexValue.h Optionpk.h PosValue.h
 
 # the sources to add to the library and to add to the source distribution
-libbase_la_SOURCES = $(libbase_la_HEADERS) PointData.cc
 ###############################################################################
 
 # list of sources for the binaries
@@ -33,5 +32,5 @@ pktestOption_SOURCES = pktestOption.cc
 # HEADERS USED FOR BUILDING BUT NOT TO BE INSTALLED
 ###############################################################################
 
-#noinst_HEADERS = Optionpk.h PosValue.h Vector2d.h PointData.h
+#noinst_HEADERS = Optionpk.h PosValue.h Vector2d.h
 ###############################################################################
