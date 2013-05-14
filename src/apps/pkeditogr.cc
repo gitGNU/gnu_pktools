@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "Input image");
   Optionpk<string> output_opt("o", "output", "Output mask file");
   Optionpk<string> selectField_opt("select", "select", "select field (combined with like opt)");
-  Optionpk<string> like_opt("like", "like", "substring(s) to be found in select field. If multiple substrings are provided, feature will be selected if one of them is found (default) or all of them are found (stringent option is set)");
-  Optionpk<bool> stringent_opt("st", "stringent", "all substring(s) in like option must be found in order to select feature)",false);
+  Optionpk<string> like_opt("like", "like", "substring(s) to be found in select field. If multiple substrings are provided, feature will be selected if one of them is found (stringent option must be false)");
+  Optionpk<bool> stringent_opt("st", "stringent", "string in like option must exactly match to select feature)",false);
   Optionpk<string> field_opt("f", "field", "output field names (number must exactly match input fields)");
   //renaming fields can also be done via ogr2ogr using the -sql option:
   //ogr2ogr outdataset indataset -sql "SELECT src_field1 AS dst_field1, src_field2 AS dst_field2 FROM sourcelayer"
@@ -148,23 +148,23 @@ int main(int argc, char *argv[])
     if(like_opt.empty())
       doSelect=true;
     else{
-      doSelect=stringent_opt[0];
       int fieldIndex=poFeature->GetFieldIndex(selectField_opt[0].c_str());
       string fieldValue=poFeature->GetFieldAsString(fieldIndex);
-      for(int ilike=0;ilike<like_opt.size();++ilike){
-	if(fieldValue.find(like_opt[ilike])!=std::string::npos){
-	  if(verbose_opt[0])
-	    std::cout << "found " << like_opt[ilike] << " in " << fieldValue << std::endl;
-          if(stringent_opt[0])
-            continue;
-          else{
+      if(stringent_opt[0]){
+        if(fieldValue==like_opt[0])
+          doSelect=true;
+        else
+          doSelect=false;
+      }
+      else{
+        doSelect=false;
+        for(int ilike=0;ilike<like_opt.size();++ilike){
+          if(fieldValue.find(like_opt[ilike])!=std::string::npos){
+            if(verbose_opt[0])
+              std::cout << "found " << like_opt[ilike] << " in " << fieldValue << std::endl;
             doSelect=true;
             break;
           }
-        }
-        else if(stringent_opt[0]){
-          doSelect=false;
-          break;
         }
       }
     }
