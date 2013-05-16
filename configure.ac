@@ -93,16 +93,17 @@ AC_SUBST([LIBS])
 
 # files to generate via autotools (.am or .in source files)
 AC_CONFIG_HEADERS([config.h])
-AM_CONDITIONAL(USE_LAS, true)AM_COND_IF([USE_LAS],
-	[AC_CONFIG_FILES([src/lasclasses/Makefile])])
-AC_CONFIG_FILES([
-Makefile
-src/base/Makefile
-src/algorithms/Makefile
-src/imageclasses/Makefile
-src/fileclasses/Makefile
-src/apps/Makefile
-])
 
+AM_COND_IF([USE_LAS],
+	[AC_CONFIG_FILES([
+	src/lasclasses/Makefile])])
+AC_CONFIG_FILES([
+	Makefile
+	src/base/Makefile
+	src/algorithms/Makefile
+	src/imageclasses/Makefile
+	src/fileclasses/Makefile
+	src/apps/Makefile
+	])
 # generate the final Makefile etc.
 AC_OUTPUT
