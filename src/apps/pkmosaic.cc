@@ -28,6 +28,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
 
+namespace mrule{
+  enum MRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, maxvote=6, median=7,sum=8};
+}
+
 using namespace std;
 
 int main(int argc, char *argv[])
@@ -50,7 +54,7 @@ int main(int argc, char *argv[])
   Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
   Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
   Optionpk<string>  description_opt("\0", "description", "Set image description", "");
-  Optionpk<int> mrule_opt("m", "mrule", "Mosaic rule for mosaic (0: overwrite, 1: max ndvi, 2: max Band, 3: min Band, 4: valid Band, 5: mean value, 6: max voting (only for byte images), 7: median, 8: (weighted) sum", 0);
+  Optionpk<string> mrule_opt("m", "mrule", "Mosaic rule for mosaic (overwrite, maxndvi, maxband, minband, validband, mean, maxvote (only for byte images), median, sum", "overwrite");
   Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
   Optionpk<int> validBand_opt("vb", "validBand", "valid band index(es)", 0);
   Optionpk<double> invalid_opt("t", "invalid", "invalid value for valid band", 0);
@@ -100,6 +104,20 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  std::map<std::string, mrule::MRULE_TYPE> mruleMap;
+  //initialize mruleMap
+  enum MRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, maxvote=6, median=7,sum=8};
+
+  mruleMap["overwrite"]=mrule::overwrite;
+  mruleMap["maxndvi"]=mrule::maxndvi;
+  mruleMap["maxband"]=mrule::maxband;
+  mruleMap["minband"]=mrule::minband;
+  mruleMap["validband"]=mrule::validband;
+  mruleMap["mean"]=mrule::mean;
+  mruleMap["maxvote"]=mrule::maxvote;
+  mruleMap["median"]=mrule::median;
+  mruleMap["sum"]=mrule::sum;
 
   while(invalid_opt.size()<validBand_opt.size())
     invalid_opt.push_back(invalid_opt[0]);
@@ -197,33 +215,33 @@ int main(int argc, char *argv[])
       cout << "Bounding Box (ULX ULY LRX LRY): " << fixed << setprecision(6) << theULX << " " << theULY << " " << theLRX << " " << theLRY << endl;
     if(!init){
       if(verbose_opt[0]){
-        switch(mrule_opt[0]){
+        switch(mruleMap[mrule_opt[0]]){
         default:
-        case(0):
+        case(mrule::overwrite):
           cout << "Mosaic rule: overwrite" << endl;
           break;
-        case(1):
+        case(mrule::maxndvi):
           cout << "Mosaic rule: max ndvi" << endl;
           break;
-        case(2):
+        case(mrule::maxband):
           cout << "Mosaic rule: max band" << endl;
           break;
-        case(3):
+        case(mrule::minband):
           cout << "Mosaic rule: min band" << endl;
           break;
-        case(4):
+        case(mrule::validband):
           cout << "Mosaic rule: valid band" << endl;
           break;
-        case(5):
+        case(mrule::mean):
           cout << "Mosaic rule: mean value" << endl;
           break;
-        case(6):
+        case(mrule::maxvote):
           cout << "Mosaic rule: max voting (only for byte images)" << endl;
           break;
-        case(7):
+        case(mrule::median):
           cout << "Mosaic rule: median" << endl;
           break;
-        case(8):
+        case(mrule::sum):
           cout << "Mosaic rule: sum" << endl;
           break;
         }
@@ -342,7 +360,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]){
     std::cout << weight_opt << std::endl;
   }
-  if(mrule_opt[0]==6){
+  if(mruleMap[mrule_opt[0]]==mrule::maxvote){
     nwriteBand=(file_opt[0])? class_opt.size()+1:class_opt.size();
   }
   else
@@ -384,9 +402,9 @@ int main(int argc, char *argv[])
   Vector2d<short> maxBuffer;//buffer used for maximum voting
   Vector2d<double> readBuffer(nband);
   statfactory::StatFactory stat;
-  if(mrule_opt[0]==1)//ndvi
+  if(mruleMap[mrule_opt[0]]==maxndvi)//ndvi
     assert(ruleBand_opt.size()==2);
-  if(mrule_opt[0]==6){//max voting
+  if(mruleMap[mrule_opt[0]]==mrule::maxvote){//max voting
     maxBuffer.resize(imgWriter.nrOfCol(),256);//use only byte images for max voting
     for(int iclass=0;iclass<class_opt.size();++iclass)
       assert(class_opt[iclass]<maxBuffer.size());
@@ -405,12 +423,12 @@ int main(int argc, char *argv[])
     Vector2d< vector<double> > storeBuffer;
     vector<bool> writeValid(ncol);
 
-    if(mrule_opt[0]==5||mrule_opt[0]==7||mrule_opt[0]==8)//mean, median or (weighted) sum value
+    if(mruleMap[mrule_opt[0]]==mrule::mean||mruleMap[mrule_opt[0]]==mrule::median||mruleMap[mrule_opt[0]]==mrule::sum)//mean, median or (weighted) sum value
       storeBuffer.resize(nband,ncol);
     for(int icol=0;icol<imgWriter.nrOfCol();++icol){
       writeValid[icol]=false;
       fileBuffer[icol]=0;
-      if(mrule_opt[0]==6){//max voting
+      if(mruleMap[mrule_opt[0]]==mrule::maxvote){//max voting
         for(int iclass=0;iclass<256;++iclass)
           maxBuffer[icol][iclass]=0;
       }
@@ -516,8 +534,8 @@ int main(int argc, char *argv[])
 	if(readValid){
           if(writeValid[ib]){
             int iband=0;
-	    switch(mrule_opt[0]){
-	    case(1):{//max ndvi
+	    switch(mruleMap[mrule_opt[0]]){
+	    case(mrule::maxndvi):{//max ndvi
               double red_current=writeBuffer[ruleBand_opt[0]][ib];
               double nir_current=writeBuffer[ruleBand_opt[1]][ib];
 	      double ndvi_current=0;
@@ -567,9 +585,9 @@ int main(int argc, char *argv[])
               }
 	      break;
             }
-	    case(2):
-            case(3):
-            case(4)://max,min,valid band
+	    case(mrule::maxband):
+            case(mrule::minband):
+            case(mrule::validband)://max,min,valid band
               val_current=writeBuffer[ruleBand_opt[0]][ib];
               switch(resample_opt[0]){
               case(BILINEAR):
@@ -583,7 +601,7 @@ int main(int argc, char *argv[])
                   upperCol=imgReader.nrOfCol()-1;
                 val_new=(readCol-0.5-lowerCol)*readBuffer[ruleBand_opt[0]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ruleBand_opt[0]][lowerCol-startCol];
                 val_new*=weight_opt[ifile];
-                if((mrule_opt[0]==2&&val_new>val_current)||(mrule_opt[0]==3&&val_new<val_current)||(mrule_opt[0]==4)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
+                if((mruleMap[mrule_opt[0]]==mrule::maxband&&val_new>val_current)||(mruleMap[mrule_opt[0]]==mrule::minband&&val_new<val_current)||(mruleMap[mrule_opt[0]]==mrule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
                     val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
                     val_new*=weight_opt[ifile];
@@ -597,7 +615,7 @@ int main(int argc, char *argv[])
                 readCol=static_cast<int>(readCol);
                 val_new=readBuffer[ruleBand_opt[0]][readCol-startCol];
                 val_new*=weight_opt[ifile];
-                if((mrule_opt[0]==2&&val_new>val_current)||(mrule_opt[0]==3&&val_new<val_current)||(mrule_opt[0]==4)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
+                if((mruleMap[mrule_opt[0]]==mrule::maxband&&val_new>val_current)||(mruleMap[mrule_opt[0]]==mrule::minband&&val_new<val_current)||(mruleMap[mrule_opt[0]]==mrule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
                     val_new=readBuffer[iband][readCol-startCol];
                     val_new*=weight_opt[ifile];
@@ -609,7 +627,7 @@ int main(int argc, char *argv[])
                 break;
               }
 	      break;
-            case(6)://max voting (only for Byte images)
+            case(mrule::maxvote)://max voting (only for Byte images)
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -635,9 +653,9 @@ int main(int argc, char *argv[])
                 break;
 	      }
               break;
-            case(5)://mean value
-	    case(7)://median value
-	    case(8)://sum value
+            case(mrule::mean)://mean value
+	    case(mrule::median)://median value
+	    case(mrule::sum)://sum value
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -668,7 +686,7 @@ int main(int argc, char *argv[])
               }
               ++fileBuffer[ib];
 	      break;
-	    case(0):
+	    case(mrule::overwrite):
 	    default:
               switch(resample_opt[0]){
               case(BILINEAR):
@@ -703,10 +721,10 @@ int main(int argc, char *argv[])
 	  else{
             writeValid[ib]=true;//readValid was true
             int iband=0;
-	    switch(mrule_opt[0]){
-            case(5):
-            case(7):
-            case(8):
+	    switch(mruleMap[mrule_opt[0]]){
+            case(mrule::mean):
+            case(mrule::median):
+            case(mrule::sum):
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -734,7 +752,7 @@ int main(int argc, char *argv[])
               }
               ++fileBuffer[ib];
               break;
-            case(6):
+            case(mrule::maxvote):
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -796,7 +814,7 @@ int main(int argc, char *argv[])
       }
       imgReader.close();
     }
-    if(mrule_opt[0]==6){
+    if(mruleMap[mrule_opt[0]]==mrule::maxvote){
       vector<short> classBuffer(imgWriter.nrOfCol());
       if(class_opt.size()>1){
         for(int iclass=0;iclass<class_opt.size();++iclass){
@@ -834,18 +852,18 @@ int main(int argc, char *argv[])
         // assert(writeBuffer[bands[iband]].size()==imgWriter.nrOfCol());
         assert(writeBuffer[iband].size()==imgWriter.nrOfCol());
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
-          switch(mrule_opt[0]){
-          case(5):
+          switch(mruleMap[mrule_opt[0]]){
+          case(mrule::mean):
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
             break;
-          case(7):
+          case(mrule::median):
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
             break;
-          case(8)://sum
+          case(mrule::sum)://sum
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);

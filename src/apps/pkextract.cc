@@ -33,6 +33,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define PI 3.1415926535897932384626433832795
 #endif
 
+namespace rule{
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6};
+}
 
 int main(int argc, char *argv[])
 {
@@ -40,7 +43,7 @@ int main(int argc, char *argv[])
   Optionpk<string> sample_opt("s", "sample", "Input sample file (shape) or class file (e.g. Corine CLC) if class option is set", "");
   Optionpk<string> mask_opt("m", "mask", "Mask image file", "");
   Optionpk<int> invalid_opt("f", "flag", "Mask value where image is invalid. If a single mask is used, more flags can be set. If more masks are used, use one value for each mask.", 1);
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or 0 to extract all non-flagged pixels from sample file", 0);
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or leave empty to extract all non-flagged pixels from sample file");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)", "");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
   Optionpk<bool> keepFeatures_opt("k", "keep", "Keep original features in output vector file", false);
@@ -59,7 +62,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
   Optionpk<bool> polygon_opt("l", "line", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
   Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
-  Optionpk<short> rule_opt("r", "rule", "rule how to report image information per feature. 0: value at each point (or at centroid of the polygon if line is not set), 1: mean value (written to centroid of polygon if line is not set), 2: proportion classes, 3: custom, 4: minimum of polygon).", 0);
+  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid of the polygon if line is set), mean (mean value written to centroid of polygon if line is set), proportion, minimum (of polygon), maximum (of polygon), maxvote.", "point");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -98,6 +101,14 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  std::map<std::string, rule::RULE_TYPE> ruleMap;
+  //initialize ruleMap
+  ruleMap["point"]=rule::point;
+  ruleMap["mean"]=rule::mean;
+  ruleMap["proportion"]=rule::proportion;
+  ruleMap["custom"]=rule::custom;
+  ruleMap["maxvote"]=rule::maxvote;
 
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
@@ -216,7 +227,7 @@ int main(int argc, char *argv[])
 
   assert(sample_opt[0]!="");
   if((sample_opt[0].find(".tif"))!=std::string::npos){//raster file
-    if(!class_opt[0]){
+    if(class_opt.empty()){
       std::cout << "Warning: no classes selected, if classes must be extracted, set to -1 for all classes using option -c -1" << std::endl;
       ImgReaderGdal classReader;
       ImgWriterOgr ogrWriter;
@@ -753,8 +764,10 @@ int main(int argc, char *argv[])
       sampleReader.getFields(fieldnames);
       assert(fieldnames.size()==ogrWriter.getFieldCount());
       map<std::string,double> pointAttributes;
-      switch(rule_opt[0]){
-      case(2):{//proportion for each class
+
+      switch(ruleMap[rule_opt[0]]){
+        // switch(rule_opt[0]){
+      case(rule::proportion):{//proportion for each class
         for(int iclass=0;iclass<class_opt.size();++iclass){
           ostringstream cs;
           cs << class_opt[iclass];
@@ -764,14 +777,16 @@ int main(int argc, char *argv[])
           ogrWriter.createField("origId",OFTInteger);//the fieldId of the original feature
         break;
       }
-      case(3):
-      case(4):
+      case(rule::custom):
+      case(rule::minimum):
+      case(rule::maximum):
+      case(rule::maxvote):
         ogrWriter.createField(label_opt[0],fieldType);
       if(test_opt.size())
 	ogrTestWriter.createField(label_opt[0],fieldType);
         break;
-      case(0):
-      case(1):
+      case(rule::point):
+      case(rule::mean):
       default:{
         if(keepFeatures_opt[0]){
           ogrWriter.createField("origId",OFTInteger);//the fieldId of the original feature
@@ -1122,7 +1137,7 @@ int main(int argc, char *argv[])
 
             double ulx,uly,lrx,lry;
             double uli,ulj,lri,lrj;
-            if(polygon_opt[0]&&rule_opt[0]==0){
+            if(polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point){
               ulx=writeCentroidPoint.getX();
               uly=writeCentroidPoint.getY();
               lrx=ulx;
@@ -1169,7 +1184,7 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             }
-            else if(rule_opt[0]==1){
+            else if(ruleMap[rule_opt[0]]==rule::mean){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
@@ -1177,15 +1192,18 @@ int main(int argc, char *argv[])
 	    }
             //previously here
             vector<double> polyValues;
-            switch(rule_opt[0]){
-            case(0):
-            case(1):
+            switch(ruleMap[rule_opt[0]]){
+            case(rule::point):
+            case(rule::mean):
             default:
               polyValues.resize(nband);
             break;
-            case(2):
-            case(3):
-            case(4):
+            case(rule::proportion):
+            case(rule::custom):
+            case(rule::minimum):
+            case(rule::maximum):
+            case(rule::maxvote):
+              assert(class_opt.size());
               polyValues.resize(class_opt.size());
             break;
             }
@@ -1293,7 +1311,7 @@ int main(int argc, char *argv[])
                   OGRFeature *writePointFeature;
                   if(!polygon_opt[0]){
                     //create feature
-                    if(rule_opt[0]!=1){//do not create in case of mean value (only create point at centroid
+                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only create point at centroid
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -1318,19 +1336,21 @@ int main(int argc, char *argv[])
                     imgReader.readData(value,GDT_Float64,i,j,theBand);
                     if(verbose_opt[0]>1)
                       std::cout << ": " << value << std::endl;
-                    if(polygon_opt[0]||rule_opt[0]==1){
+                    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
                       int iclass=0;
-                      switch(rule_opt[0]){
-                      case(0)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
+                      switch(ruleMap[rule_opt[0]]){
+                      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
                       default:
                         polyValues[iband]=value;
                         break;
-                      case(1)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
+                      case(rule::mean)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
                         polyValues[iband]+=value;
                       break;
-                      case(2):
-                      case(3):
-                      case(4):
+                      case(rule::proportion):
+                      case(rule::custom):
+                      case(rule::minimum):
+                      case(rule::maximum):
+                      case(rule::maxvote):
                         for(iclass=0;iclass<class_opt.size();++iclass){
                           if(value==class_opt[iclass]){
                             assert(polyValues.size()>iclass);
@@ -1383,7 +1403,7 @@ int main(int argc, char *argv[])
                   if(!polygon_opt[0]){
                     // if(keepFeatures_opt[0])
                     //   writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
-                    if(rule_opt[0]!=1){//do not create in case of mean value (only at centroid)
+                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only at centroid)
                       if(keepFeatures_opt[0])
                         writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
                       //write feature
@@ -1414,7 +1434,7 @@ int main(int argc, char *argv[])
 	    }
             // //test
             // std::cout << "before write polygon" << std::endl;
-            if(polygon_opt[0]||rule_opt[0]==1){
+            if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
               //do not create if no points found within polygon
               if(!nPointPolygon)
                 continue;
@@ -1432,7 +1452,7 @@ int main(int argc, char *argv[])
                   std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
                 //write polygon feature
               }
-              else{//write mean value of polygon to centroid point (rule_opt[0]==1)
+              else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean)
                 //create feature
                 if(verbose_opt[0]>1)
                   std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
@@ -1445,8 +1465,8 @@ int main(int argc, char *argv[])
                 if(verbose_opt[0]>1)
                   std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
               }
-              switch(rule_opt[0]){
-              case(0)://value at each point (or at centroid of polygon if line is not set
+              switch(ruleMap[rule_opt[0]]){
+              case(rule::point)://value at each point (or at centroid of polygon if line is not set
               default:{
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
@@ -1518,7 +1538,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(1):{//mean value (written to centroid of polygon if line is not set
+              case(rule::mean):{//mean value (written to centroid of polygon if line is not set
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 for(int index=0;index<polyValues.size();++index){
@@ -1587,7 +1607,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(2):{//proportion classes
+              case(rule::proportion):{//proportion classes
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 stat.normalize_pct(polyValues);
@@ -1603,7 +1623,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(3):{//custom
+              case(rule::custom):{//custom
                 assert(polygon_opt[0]);//not implemented for points
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
@@ -1628,13 +1648,13 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(4):{//minimum of polygon
+              case(rule::minimum):{
+                //minimum of polygon
                 assert(polygon_opt[0]);//not implemented for points
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 //search for min class
-                //todo: change to minClass=stat.max(class_opt) once Optionpk is implemented...
-                int minClass=class_opt[class_opt.size()-1];//!hard coded for now, maximum class is last entry in class_opt
+                int minClass=stat.max(class_opt);
                 for(int iclass=0;iclass<class_opt.size();++iclass){
                   if(polyValues[iclass]>0){
                     if(verbose_opt[0]>1)
@@ -1646,6 +1666,42 @@ int main(int argc, char *argv[])
                 if(verbose_opt[0]>0)
                   std::cout << "minClass: " << minClass << std::endl;
                 writePolygonFeature->SetField(label_opt[0].c_str(),minClass);
+                break;
+              }
+              case(rule::maximum):{
+                //maximum of polygon
+                assert(polygon_opt[0]);//not implemented for points
+                if(verbose_opt[0])
+                  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+                //search for max class
+                int maxClass=stat.min(class_opt);
+                for(int iclass=0;iclass<class_opt.size();++iclass){
+                  if(polyValues[iclass]>0){
+                    if(verbose_opt[0]>1)
+                      std::cout << class_opt[iclass] << ": " << polyValues[iclass] << std::endl;
+                    if(class_opt[iclass]>maxClass)
+                      maxClass=class_opt[iclass];
+                  }
+                }
+                if(verbose_opt[0]>0)
+                  std::cout << "maxClass: " << maxClass << std::endl;
+                writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
+                break;
+              }
+              case(rule::maxvote):{
+                //maximum votes in polygon
+                assert(polygon_opt[0]);//not implemented for points
+                if(verbose_opt[0])
+                  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+                //search for class with maximum votes
+                int maxClass=stat.min(class_opt);
+                vector<double>::iterator maxit;
+                maxit=stat.max(polyValues,polyValues.begin(),polyValues.end());
+                int maxIndex=distance(polyValues.begin(),maxit);
+                maxClass=class_opt[maxIndex];
+                if(verbose_opt[0]>0)
+                  std::cout << "maxClass: " << maxClass << std::endl;
+                writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
                 break;
               }
               }
@@ -1695,7 +1751,7 @@ int main(int argc, char *argv[])
 
             double ulx,uly,lrx,lry;
             double uli,ulj,lri,lrj;
-            if(polygon_opt[0]&&rule_opt[0]==0){
+            if(polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point){
               ulx=writeCentroidPoint.getX();
               uly=writeCentroidPoint.getY();
               lrx=ulx;
@@ -1742,7 +1798,7 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             }
-            else if(rule_opt[0]==1){
+            else if(ruleMap[rule_opt[0]]==rule::mean){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
@@ -1750,15 +1806,18 @@ int main(int argc, char *argv[])
 	    }
             //previously here
             vector<double> polyValues;
-            switch(rule_opt[0]){
-            case(0):
-            case(1):
+            switch(ruleMap[rule_opt[0]]){
+            case(rule::point):
+            case(rule::mean):
             default:
               polyValues.resize(nband);
             break;
-            case(2):
-            case(3):
-            case(4):
+            case(rule::proportion):
+            case(rule::custom):
+            case(rule::minimum):
+            case(rule::maximum):
+            case(rule::maxvote):
+              assert(class_opt.size());
               polyValues.resize(class_opt.size());
             break;
             }
@@ -1866,7 +1925,7 @@ int main(int argc, char *argv[])
                   OGRFeature *writePointFeature;
                   if(!polygon_opt[0]){
                     //create feature
-                    if(rule_opt[0]!=1){//do not create in case of mean value (only create point at centroid
+                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only create point at centroid
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -1891,19 +1950,21 @@ int main(int argc, char *argv[])
                     imgReader.readData(value,GDT_Float64,i,j,theBand);
                     if(verbose_opt[0]>1)
                       std::cout << ": " << value << std::endl;
-                    if(polygon_opt[0]||rule_opt[0]==1){
+                    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
                       int iclass=0;
-                      switch(rule_opt[0]){
-                      case(0)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
+                      switch(ruleMap[rule_opt[0]]){
+                      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
                       default:
                         polyValues[iband]=value;
                         break;
-                      case(1)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
+                      case(rule::mean)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
                         polyValues[iband]+=value;
                       break;
-                      case(2):
-                      case(3):
-                      case(4):
+                      case(rule::proportion):
+                      case(rule::custom):
+                      case(rule::minimum):
+                      case(rule::maximum):
+                      case(rule::maxvote):
                         for(iclass=0;iclass<class_opt.size();++iclass){
                           if(value==class_opt[iclass]){
                             assert(polyValues.size()>iclass);
@@ -1956,7 +2017,7 @@ int main(int argc, char *argv[])
                   if(!polygon_opt[0]){
                     if(keepFeatures_opt[0])
                       writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
-                    if(rule_opt[0]!=1){//do not create in case of mean value (only at centroid)
+                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only at centroid)
                       //write feature
                       if(verbose_opt[0]>1)
                         std::cout << "creating point feature" << std::endl;
@@ -1985,7 +2046,7 @@ int main(int argc, char *argv[])
             }
             // //test
             // std::cout << "before write polygon" << std::endl;
-            if(polygon_opt[0]||rule_opt[0]==1){
+            if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
               //add ring to polygon
               if(polygon_opt[0]){
                 writePolygon.addRing(&writeRing);
@@ -2000,7 +2061,7 @@ int main(int argc, char *argv[])
                   std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
                 //write polygon feature
               }
-              else{//write mean value of polygon to centroid point (rule_opt[0]==1)
+              else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean)
                 //create feature
                 if(verbose_opt[0]>1)
                   std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
@@ -2013,7 +2074,7 @@ int main(int argc, char *argv[])
                 if(verbose_opt[0]>1)
                   std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
               }
-              switch(rule_opt[0]){
+              switch(ruleMap[rule_opt[0]]){
               case(0)://value at each point (or at centroid of polygon if line is not set
               default:{
                 if(verbose_opt[0])
@@ -2082,7 +2143,7 @@ int main(int argc, char *argv[])
                 }//for index
                 break;
               }//case 0 and default
-              case(1):{//mean value (written to centroid of polygon if line is not set
+              case(rule::mean):{//mean value (written to centroid of polygon if line is not set
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 for(int index=0;index<polyValues.size();++index){
@@ -2148,7 +2209,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(2):{//proportion classes
+              case(rule::proportion):{//proportion classes
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 stat.normalize_pct(polyValues);
@@ -2164,7 +2225,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(3):{//custom
+              case(rule::custom):{//custom
                 assert(polygon_opt[0]);//not implemented for points
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
@@ -2189,13 +2250,12 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(4):{//minimum of polygon
+              case(rule::minimum):{//minimum of polygon
                 assert(polygon_opt[0]);//not implemented for points
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
                 //search for min class
-                //todo: change to minClass=stat.max(class_opt) once Optionpk is implemented...
-                int minClass=class_opt[class_opt.size()-1];//!hard coded for now, maximum class is last entry in class_opt
+                int minClass=stat.max(class_opt);
                 for(int iclass=0;iclass<class_opt.size();++iclass){
                   if(polyValues[iclass]>0){
                     if(verbose_opt[0]>1)
@@ -2208,6 +2268,36 @@ int main(int argc, char *argv[])
                   std::cout << "minClass: " << minClass << std::endl;
                 writePolygonFeature->SetField(label_opt[0].c_str(),minClass);
                 break;
+              }
+              case(rule::maximum):{//maximum of polygon
+                assert(polygon_opt[0]);//not implemented for points
+                if(verbose_opt[0])
+                  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+                //search for max class
+                int maxClass=stat.min(class_opt);
+                for(int iclass=0;iclass<class_opt.size();++iclass){
+                  if(polyValues[iclass]>0){
+                    if(verbose_opt[0]>1)
+                      std::cout << class_opt[iclass] << ": " << polyValues[iclass] << std::endl;
+                    if(class_opt[iclass]>maxClass)
+                      maxClass=class_opt[iclass];
+                  }
+                }
+                if(verbose_opt[0]>0)
+                  std::cout << "maxClass: " << maxClass << std::endl;
+                writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
+                break;
+              }
+              case(rule::maxvote):{//maximum votes in polygon
+                assert(polygon_opt[0]);//not implemented for points
+                if(verbose_opt[0])
+                  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+                //search for max votes
+                int maxClass=stat.min(class_opt);
+                vector<double>::iterator maxit;
+                maxit=stat.max(polyValues,polyValues.begin(),polyValues.end());
+                int maxIndex=distance(polyValues.begin(),maxit);
+                maxClass=class_opt[maxIndex];
               }
               }
               if(polygon_opt[0]){
