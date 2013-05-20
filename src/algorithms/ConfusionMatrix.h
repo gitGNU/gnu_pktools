@@ -23,6 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <vector>
 #include "base/Vector2d.h"
+#include "base/Optionpk.h"
 
 using namespace std;
 
@@ -35,8 +36,8 @@ public:
   ConfusionMatrix& operator=(const ConfusionMatrix& cm);
   short size() const {return m_results.size();};
   void resize(short nclass);
-  void setClassNames(const vector<string>& classNames);
-  void pushBackClassName(const string& className);
+  void setClassNames(const vector<string>& classNames, bool doSort=false);
+  void pushBackClassName(const string& className, bool doSort=false);
   void setResults(const Vector2d<double>& theResults);
   void setResult(const string& theRef, const string& theClass, double theResult);
   void incrementResult(const string& theRef, const string& theClass, double theIncrement);
@@ -69,6 +70,7 @@ public:
   ConfusionMatrix operator+(const ConfusionMatrix &cm){
     return ConfusionMatrix(*this)+=cm;
   }
+  void sortClassNames();
   friend ostream& operator<<(ostream& os, const ConfusionMatrix &cm){
     for(int iclass=0;iclass<cm.nClasses();++iclass)
       os << "\t" << cm.m_classes[iclass];

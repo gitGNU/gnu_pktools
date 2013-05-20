@@ -21,6 +21,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <numeric>
 
+bool compareClass(const string& string1, const string& string2){
+  int int1=string2type<int>(string1);
+  int int2=string2type<int>(string2);
+  return(int1<int2);
+};
 
 ConfusionMatrix::ConfusionMatrix()
   : m_classes(),m_results()
@@ -88,6 +93,10 @@ ConfusionMatrix& ConfusionMatrix::operator*=(double weight)
   return *this;
 }
 
+void ConfusionMatrix::sortClassNames(){
+  sort(m_classes.begin(),m_classes.end(),compareClass);
+}
+
 ConfusionMatrix ConfusionMatrix::operator*(double weight)
 {
   ConfusionMatrix result = *this;//make a copy of myself
@@ -105,14 +114,18 @@ void ConfusionMatrix::resize(short nclass){
   m_results.resize(nclass,nclass);
 }
 
-void ConfusionMatrix::setClassNames(const vector<string>& classNames){
+void ConfusionMatrix::setClassNames(const vector<string>& classNames, bool doSort){
   m_classes=classNames;
+  if(doSort)
+    sortClassNames();
   if(m_results.size()!=m_classes.size())
     m_results.resize(m_classes.size(),m_classes.size());
 }
 
-void ConfusionMatrix::pushBackClassName(const string& className){
+void ConfusionMatrix::pushBackClassName(const string& className, bool doSort){
   m_classes.push_back(className);
+  if(doSort)
+    sortClassNames();
   if(m_results.size()!=m_classes.size())
     m_results.resize(m_classes.size(),m_classes.size());
 }  

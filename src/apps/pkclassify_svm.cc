@@ -369,13 +369,14 @@ int main(int argc, char *argv[])
 	}
       }
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
+      bool doSort=true;
       while(mapit!=trainingMap.end()){
 	nameVector.push_back(mapit->first);
 	if(classValueMap.size()){
 	  //check if name in training is covered by classname_opt (values can not be 0)
 	  if(classValueMap[mapit->first]>0){
 	    if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0)
-	      cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]));
+	      cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]),doSort);
 	  }
 	  else{
 	    std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
@@ -383,10 +384,15 @@ int main(int argc, char *argv[])
 	  }
 	}
 	else
-	  cm.pushBackClassName(mapit->first);
+	  cm.pushBackClassName(mapit->first,doSort);
 	++mapit;
       }
-    }
+      if(priors_opt.size()==nameVector.size()){
+	std::cerr << "Warning: please check if priors are provided in correct order!!!" << std::endl;
+	for(int iclass=0;iclass<nameVector.size();++iclass)
+	  std::cerr << nameVector[iclass] << " " << priors_opt[iclass] << std::endl;
+      }
+    }//if(!ibag)
 
     //Calculate features of training set
     vector< Vector2d<float> > trainingFeatures(nclass);
