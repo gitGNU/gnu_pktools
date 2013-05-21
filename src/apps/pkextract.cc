@@ -875,7 +875,7 @@ int main(int argc, char *argv[])
         assert(poGeometry!=NULL);
         try{
           if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint ){
-            assert(class_opt.size()==1);//class_opt not implemented for point yet
+            assert(class_opt.size()<=1);//class_opt not implemented for point yet
             OGRPoint *poPoint = (OGRPoint *) poGeometry;
             x=poPoint->getX();
             y=poPoint->getY();
