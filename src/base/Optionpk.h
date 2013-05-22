@@ -29,7 +29,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iomanip>
 #include <sstream>
 #include <typeinfo>
-#include "gdal/ogr_feature.h"
+#include "ogr_feature.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
