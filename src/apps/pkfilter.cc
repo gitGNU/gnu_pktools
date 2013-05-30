@@ -57,7 +57,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> interpolationType_opt("interp", "interp", "type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html)","akima");
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
   Optionpk<std::string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling)", 1);
   Optionpk<string> beta_opt("beta", "beta", "ASCII file with beta for each class transition in Markov Random Field");
@@ -158,10 +158,12 @@ int main(int argc,char **argv) {
     output.setGeoTransform(ulx,uly,deltaX*down_opt[0],deltaY*down_opt[0],rot1,rot2);
   }
   if(colorTable_opt.size()){
-    if(verbose_opt[0])
-      cout << "set colortable " << colorTable_opt[0] << endl;
-    assert(output.getDataType()==GDT_Byte);
-    output.setColorTable(colorTable_opt[0]);
+    if(colorTable_opt[0]!="none"){
+      if(verbose_opt[0])
+	cout << "set colortable " << colorTable_opt[0] << endl;
+      assert(output.getDataType()==GDT_Byte);
+      output.setColorTable(colorTable_opt[0]);
+    }
   }
   else if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());

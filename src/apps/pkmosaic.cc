@@ -106,8 +106,8 @@ int main(int argc, char *argv[])
   }
 
   std::map<std::string, mrule::MRULE_TYPE> mruleMap;
-  //initialize mruleMap
-  enum MRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, maxvote=6, median=7,sum=8};
+  // //initialize mruleMap
+  // enum MRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, maxvote=6, median=7,sum=8};
 
   mruleMap["overwrite"]=mrule::overwrite;
   mruleMap["maxndvi"]=mrule::maxndvi;
@@ -402,7 +402,7 @@ int main(int argc, char *argv[])
   Vector2d<short> maxBuffer;//buffer used for maximum voting
   Vector2d<double> readBuffer(nband);
   statfactory::StatFactory stat;
-  if(mruleMap[mrule_opt[0]]==maxndvi)//ndvi
+  if(mruleMap[mrule_opt[0]]==mrule::maxndvi)//ndvi
     assert(ruleBand_opt.size()==2);
   if(mruleMap[mrule_opt[0]]==mrule::maxvote){//max voting
     maxBuffer.resize(imgWriter.nrOfCol(),256);//use only byte images for max voting

@@ -30,6 +30,15 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/svm.h"
 #include "pkclassify_nn.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+namespace svm{
+  enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};
+  enum KERNEL_TYPE {linear=0,polynomial=1,radial=2,sigmoid=3};
+}
+
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
 int main(int argc, char *argv[])
@@ -50,19 +59,19 @@ int main(int argc, char *argv[])
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
   Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class"); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
-  Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
-  Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*(u-v)^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
+  Optionpk<std::string> svm_type_opt("svmt", "svmtype", "type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
+  Optionpk<std::string> kernel_type_opt("kt", "kerneltype", "type of kernel function (linear,polynomial,radial,sigmoid) ","radial");
   Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
   Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
   Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
-  Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C-SVC, epsilon-SVR, and nu-SVR",1);
-  Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu-SVC, one-class SVM, and nu-SVR",0.5);
-  Optionpk<float> epsilon_loss_opt("eloss", "eloss", "the epsilon in loss function of epsilon-SVR",0.1);
+  Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C_SVC, epsilon_SVR, and nu_SVR",1);
+  Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu_SVC, one_class SVM, and nu_SVR",0.5);
+  Optionpk<float> epsilon_loss_opt("eloss", "eloss", "the epsilon in loss function of epsilon_SVR",0.1);
   Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);
   Optionpk<float> epsilon_tol_opt("etol", "etol", "the tolerance of termination criterion",0.001);
   Optionpk<bool> shrinking_opt("shrink", "shrink", "whether to use the shrinking heuristics",false);
   Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",false);
-  // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
+  // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C_SVC",true);
   Optionpk<unsigned short> comb_opt("comb", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
@@ -136,6 +145,21 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  std::map<std::string, svm::SVM_TYPE> svmMap;
+
+  svmMap["C_SVC"]=svm::C_SVC;
+  svmMap["nu_SVC"]=svm::nu_SVC;
+  svmMap["one_class"]=svm::one_class;
+  svmMap["epsilon_SVR"]=svm::epsilon_SVR;
+  svmMap["nu_SVR"]=svm::nu_SVR;
+
+  std::map<std::string, svm::KERNEL_TYPE> kernelMap;
+
+  kernelMap["linear"]=svm::linear;
+  kernelMap["polynomial"]=svm::polynomial;
+  kernelMap["radial"]=svm::radial;
+  kernelMap["sigmoid;"]=svm::sigmoid;
 
   assert(training_opt.size());
 
@@ -448,8 +472,8 @@ int main(int argc, char *argv[])
     assert(lIndex==prob[ibag].l);
 
     //set SVM parameters through command line options
-    param[ibag].svm_type = svm_type_opt[0];
-    param[ibag].kernel_type = kernel_type_opt[0];
+    param[ibag].svm_type = svmMap[svm_type_opt[0]];
+    param[ibag].kernel_type = kernelMap[kernel_type_opt[0]];
     param[ibag].degree = kernel_degree_opt[0];
     param[ibag].gamma = (gamma_opt[0]>0)? gamma_opt[0] : 1.0/nFeatures;
     param[ibag].coef0 = coef0_opt[0];

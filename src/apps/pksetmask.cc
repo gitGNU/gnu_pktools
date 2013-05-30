@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
   Optionpk<int> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask.", 1);
   Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each invalid option", '=');
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid", 0);
-  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
   // if(verbose_opt[0])
   //   cout << "opening output image file " << output_opt[0] << endl;
   // outputWriter.open(output_opt[0],inputReader);
-  if(colorTable_opt[0]!=""){
+  if(colorTable_opt.size()){
     if(colorTable_opt[0]!="none")
       outputWriter.setColorTable(colorTable_opt[0]);
   }

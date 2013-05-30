@@ -31,17 +31,23 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <config.h>
 #endif
 
-#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
+namespace svm{
+  enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};
+  enum KERNEL_TYPE {linear=0,polynomial=1,radial=2,sigmoid=3};
+}
 
 enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
+
+
+#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
 //global parameters used in cost function getCost
 map<string,short> classValueMap;
 vector<std::string> nameVector;
 vector<unsigned int> nctraining;
 vector<unsigned int> nctest;
-Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
-Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*(u-v)^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
+Optionpk<std::string> svm_type_opt("svmt", "svmtype", "type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
+Optionpk<std::string> kernel_type_opt("kt", "kerneltype", "type of kernel function (linear,polynomial,radial,sigmoid) ","radial");
 Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
 Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
 Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
@@ -60,6 +66,21 @@ Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confus
 
 double getCost(const vector<Vector2d<float> > &trainingFeatures)
 {
+  std::map<std::string, svm::SVM_TYPE> svmMap;
+
+  svmMap["C_SVC"]=svm::C_SVC;
+  svmMap["nu_SVC"]=svm::nu_SVC;
+  svmMap["one_class"]=svm::one_class;
+  svmMap["epsilon_SVR"]=svm::epsilon_SVR;
+  svmMap["nu_SVR"]=svm::nu_SVR;
+
+  std::map<std::string, svm::KERNEL_TYPE> kernelMap;
+
+  kernelMap["linear"]=svm::linear;
+  kernelMap["polynomial"]=svm::polynomial;
+  kernelMap["radial"]=svm::radial;
+  kernelMap["sigmoid;"]=svm::sigmoid;
+
   unsigned short nclass=trainingFeatures.size();
   unsigned int ntraining=0;
   unsigned int ntest=0;
@@ -74,8 +95,8 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   unsigned short nFeatures=trainingFeatures[0][0].size();
 
   struct svm_parameter param;
-  param.svm_type = svm_type_opt[0];
-  param.kernel_type = kernel_type_opt[0];
+  param.svm_type = svmMap[svm_type_opt[0]];
+  param.kernel_type = kernelMap[kernel_type_opt[0]];
   param.degree = kernel_degree_opt[0];
   param.gamma = (gamma_opt[0]>0)? gamma_opt[0] : 1.0/nFeatures;
   param.coef0 = coef0_opt[0];
@@ -197,7 +218,7 @@ int main(int argc, char *argv[])
   // vector<double> priors;
   
   //--------------------------- command line options ------------------------------------
-  Optionpk<string> input_opt("i", "input", "input image"); 
+  Optionpk<string> input_opt("i", "input", "input test set (leave empty to perform a cross validation based on training only)"); 
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);

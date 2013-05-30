@@ -61,3 +61,5 @@ echo "Savannah repository for homepage can only be maintained via cvs"
 #cvs add *
 #cvs commit -m "update of repository homepage"
 #rm -r ~/tmp/pktools
+echo "ftp to downloads"
+#sftp kempenep@download.savannah.gnu.org:/releases/pktools

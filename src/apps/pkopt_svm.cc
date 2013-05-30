@@ -31,6 +31,15 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/svm.h"
 #include "pkclassify_nn.h"
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+namespace svm{
+  enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};
+  enum KERNEL_TYPE {linear=0,polynomial=1,radial=2,sigmoid=3};
+}
+
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
                                     //declare objective function
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data);
@@ -40,8 +49,8 @@ map<string,short> classValueMap;
 vector<std::string> nameVector;
 vector<unsigned int> nctraining;
 vector<unsigned int> nctest;
-Optionpk<unsigned short> svm_type_opt("svmt", "svmtype", "type of SVM (0: C-SVC, 1: nu-SVC, 2: one-class SVM, 3: epsilon-SVR,	4: nu-SVR)",0);
-Optionpk<unsigned short> kernel_type_opt("kt", "kerneltype", "type of kernel function (0: linear: u'*v, 1: polynomial: (gamma*u'*v + coef0)^degree, 2: radial basis function: exp(-gamma*(u-v)^2), 3: sigmoid: tanh(gamma*u'*v + coef0), 4: precomputed kernel (kernel values in training_set_file)",2);
+Optionpk<std::string> svm_type_opt("svmt", "svmtype", "type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
+Optionpk<std::string> kernel_type_opt("kt", "kerneltype", "type of kernel function (linear,polynomial,radial,sigmoid) ","radial");
 Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
 Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
 Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu-SVC, one-class SVM, and nu-SVR",0.5);
@@ -58,6 +67,22 @@ Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same o
 Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
+
+  std::map<std::string, svm::SVM_TYPE> svmMap;
+
+  svmMap["C_SVC"]=svm::C_SVC;
+  svmMap["nu_SVC"]=svm::nu_SVC;
+  svmMap["one_class"]=svm::one_class;
+  svmMap["epsilon_SVR"]=svm::epsilon_SVR;
+  svmMap["nu_SVR"]=svm::nu_SVR;
+
+  std::map<std::string, svm::KERNEL_TYPE> kernelMap;
+
+  kernelMap["linear"]=svm::linear;
+  kernelMap["polynomial"]=svm::polynomial;
+  kernelMap["radial"]=svm::radial;
+  kernelMap["sigmoid;"]=svm::sigmoid;
+
   assert(grad.empty());
   vector<Vector2d<float> > *tf=reinterpret_cast<vector<Vector2d<float> >*> (my_func_data);
   float ccost=x[0];
@@ -80,8 +105,8 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
     // ntraining+=(*tf)[iclass].size();
   unsigned short nFeatures=(*tf)[0][0].size();
   struct svm_parameter param;
-  param.svm_type = svm_type_opt[0];
-  param.kernel_type = kernel_type_opt[0];
+  param.svm_type = svmMap[svm_type_opt[0]];
+  param.kernel_type = kernelMap[kernel_type_opt[0]];
   param.degree = kernel_degree_opt[0];
   param.gamma = gamma;
   param.coef0 = coef0_opt[0];
