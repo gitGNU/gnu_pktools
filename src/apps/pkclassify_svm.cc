@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
   Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);
   Optionpk<float> epsilon_tol_opt("etol", "etol", "the tolerance of termination criterion",0.001);
   Optionpk<bool> shrinking_opt("shrink", "shrink", "whether to use the shrinking heuristics",false);
-  Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",false);
+  Optionpk<bool> prob_est_opt("pe", "probest", "whether to train a SVC or SVR model for probability estimates",true,2);
   // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C_SVC",true);
   Optionpk<unsigned short> comb_opt("comb", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations", 1);

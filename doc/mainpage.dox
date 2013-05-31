@@ -42,10 +42,10 @@ You are welcome to refer to pktools as: http://pktools.nongnu.org (Pieter Kempen
 contact: kempenep at gmail.com
 
 \section pktools_installation Installation
-Download the latest release from http://download.savannah.gnu.org/releases/pktools/ (e.g., pktools-2.3.tar.gz)
+Download the latest release from http://download.savannah.gnu.org/releases/pktools/ (e.g., pktools-2.4.tar.gz)
 \code
-tar xzvf pktools-2.3.tar.gz
-cd pktools-2.3
+tar xzvf pktools-2.4.tar.gz
+cd pktools-2.4
 \endcode
 Basic installation (please refer to INSTALL file for more advanced configuration)
 \code

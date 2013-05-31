@@ -58,7 +58,7 @@ echo "Savannah repository for homepage can only be maintained via cvs"
 #rm *
 #cvs rm *
 #rsync -avz <orig html>/ ~/tmp/pktools/html
-#cvs add *
+#cvs add *.*
 #cvs commit -m "update of repository homepage"
 #rm -r ~/tmp/pktools
 echo "ftp to downloads"
