@@ -24,6 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <fstream>
 #include "base/Optionpk.h"
+#include <armadillo>
 
 //--------------------------------------------------------------------------
 class FileReaderAscii
@@ -42,8 +43,9 @@ public:
   void setComment(char comment){m_comment=comment;};
   unsigned int nrOfCol(bool checkCols=false, bool verbose=false);
   unsigned int nrOfRow(bool checkCols=false, bool verbose=false);
-  template<class T> unsigned int readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, double scale=1.0, double offset=0.0, bool verbose=false);
+  template<class T> unsigned int readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, double scale=1.0, double offset=0.0, bool transpose=false, bool verbose=false);
   template<class T> unsigned int readData(std::vector<T> &dataVector, int col, double scale=1.0, double offset=0, bool verbose=false);
+
   protected:
   std::string m_filename;
   std::ifstream m_ifstream;
@@ -168,10 +170,11 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
   return dataVector.size();
 }
 
-template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, double scale, double offset, bool verbose){
+template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector<T> > &dataVector, const std::vector<int> &cols, double scale, double offset, bool transpose, bool verbose){
   reset();
   dataVector.clear();
-  dataVector.resize(cols.size());
+  if(!transpose)
+    dataVector.resize(cols.size());
   int nrow=0;
   bool withinRange=true;
   if(m_fs>' '&&m_fs<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
@@ -179,6 +182,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
       std::cout << "reading csv file " << m_filename << std::endl;
     std::string csvRecord;
     while(getline(m_ifstream,csvRecord)){//read a line
+      std::vector<T> sampleVector;
       withinRange=true;
       if(nrow<m_minRow)
         withinRange=false;
@@ -207,8 +211,12 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
             if(ncol==cols[icol]){
               T value=scale*string2type<T>(item)+offset;
               // T value=string2type<T>(item);
-              if((value>=m_min&&value<=m_max)||m_max<=m_min)
-                dataVector[icol].push_back(value);
+              if((value>=m_min&&value<=m_max)||m_max<=m_min){
+                if(transpose)
+                  sampleVector.push_back(value);
+                else
+                  dataVector[icol].push_back(value);
+              }
             }
           }
           ++ncol;
@@ -217,9 +225,11 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
         }
         if(verbose)
           std::cout << std::endl;
-        if(dataVector.back().size())
-          assert(ncol>=cols[0]);
+        // if(dataVector.back().size())
+        //   assert(ncol>=cols[0]);
       }
+      if(transpose)
+        dataVector.push_back(sampleVector);
       ++nrow;
     }
     assert(dataVector.size());
@@ -229,6 +239,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
       std::cout << "space or tab delimited fields" << std::endl;
     std::string spaceRecord;
     while(!getline(m_ifstream, spaceRecord).eof()){
+      std::vector<T> sampleVector;
       withinRange=true;
       if(nrow<m_minRow)
         withinRange=false;
@@ -260,8 +271,12 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
           // T value=string2type<T>(item);
           for(int icol=0;icol<cols.size();++icol){
             if(ncol==cols[icol]){
-              if((value>=m_min&&value<=m_max)||m_max<=m_min)
-                dataVector[icol].push_back(value);
+              if((value>=m_min&&value<=m_max)||m_max<=m_min){
+                if(transpose)
+                  sampleVector.push_back(value);
+                else
+                  dataVector[icol].push_back(value);
+              }
             }
           }
           ++ncol;
@@ -272,12 +287,15 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
           std::cout << std::endl;
         if(verbose)
           std::cout << "number of columns: " << ncol << std::endl;
-        if(dataVector.back().size())
-          assert(ncol>=cols[0]);
+        // if(dataVector.back().size())
+        //   assert(ncol>=cols[0]);
       }
+      if(transpose)
+        dataVector.push_back(sampleVector);
       ++nrow;
     }
   }
   return dataVector.size();
 }
+
 #endif // _IMGREADERASCII_H_

@@ -38,6 +38,26 @@ void filter::Filter::setTaps(const vector<double> &taps)
   assert(m_taps.size()%2);
 }
 
+// void filter::Filter::dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family){
+//   int nsize=data.size();
+//   assert(nsize);
+//   gsl_wavelet *w;
+//   gsl_wavelet_workspace *work;
+//   w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
+//   work=gsl_wavelet_workspace_alloc(nsize);
+//   gsl_wavelet_transform_forward(w,&(data[0]),1,nsize,work);
+// }
+
+// void filter::Filter::dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family){
+//   int nsize=data.size();
+//   assert(nsize);
+//   gsl_wavelet *w;
+//   gsl_wavelet_workspace *work;
+//   w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
+//   work=gsl_wavelet_workspace_alloc(nsize);
+//   gsl_wavelet_transform_inverse(w,&(data[0]),1,nsize,work);
+// }
+
 void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
