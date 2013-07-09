@@ -31,7 +31,7 @@ using namespace std;
 namespace filter
 {
   
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwtForward=26, dwtInverse=27};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwtForward=26, dwtInverse=27, dwtQuantize=28};
 
 class Filter
 {
@@ -40,9 +40,12 @@ public:
   Filter(const vector<double> &taps);
   virtual ~Filter(){};
   static const gsl_wavelet_type* getWaveletType(const std::string waveletType){
-    std::map<std::string, const gsl_wavelet_type* > m_waveletMap;
-    initWaveletMap(m_waveletMap);
-    return m_waveletMap[waveletType];
+    if(waveletType=="daubechies") return(gsl_wavelet_daubechies);
+    if(waveletType=="daubechies_centered") return(gsl_wavelet_daubechies_centered);
+    if(waveletType=="haar") return(gsl_wavelet_haar);
+    if(waveletType=="haar_centered") return(gsl_wavelet_haar_centered);
+    if(waveletType=="bspline") return(gsl_wavelet_bspline);
+    if(waveletType=="bspline_centered") return(gsl_wavelet_bspline_centered);
   }
   static FILTER_TYPE getFilterType(const std::string filterType){
     std::map<std::string, FILTER_TYPE> m_filterMap;
@@ -63,24 +66,16 @@ public:
 
   template<class T> void applyFwhm(const vector<double> &wavelengthIn, const vector<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<T>& output, bool verbose=false);
   template<class T> void applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
-  // void dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family);
-  // void dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family);
+  void dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family);
+  void dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family);
 
 private:
-  static void initWaveletMap(std::map<std::string, const gsl_wavelet_type*> m_waveletMap){
-    //initialize Map
-    m_waveletMap["daubechies"]=gsl_wavelet_daubechies;
-    m_waveletMap["daubechies_centered"]=gsl_wavelet_daubechies_centered;
-    m_waveletMap["haar"]=gsl_wavelet_haar;
-    m_waveletMap["haar_centered"]=gsl_wavelet_haar_centered;
-    m_waveletMap["bspline"]=gsl_wavelet_bspline;
-    m_waveletMap["bspline_centered"]=gsl_wavelet_bspline_centered;
-  }
 
   static void initFilterMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
     //initialize Map
     m_filterMap["dwtForward"]=filter::dwtForward;
     m_filterMap["dwtInverse"]=filter::dwtInverse;
+    m_filterMap["dwtQuantize"]=filter::dwtQuantize;
     m_filterMap["stdev"]=filter::stdev;
     m_filterMap["var"]=filter::var;
     m_filterMap["min"]=filter::min;

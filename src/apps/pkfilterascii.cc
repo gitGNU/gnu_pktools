@@ -36,9 +36,10 @@ int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input ASCII file");
   Optionpk<std::string> output_opt("o", "output", "Output ASCII file");
   Optionpk<int> inputCols_opt("ic", "inputCols", "input columns (e.g., for three dimensional input data in first three columns use: -ic 0 -ic 1 -ic 2"); 
-  Optionpk<std::string> method_opt("f", "filter", "filter function (to be implemented: dwtForward, dwtInverse)");
-    Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
-    Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
+  Optionpk<std::string> method_opt("f", "filter", "filter function (to be implemented: dwtForward, dwtInverse,dwtQuantize)");
+  Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
+  Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
+  Optionpk<double> quantize_opt("q", "quantize", "Quantize threshold",0);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
   Optionpk<double> fwhm_opt("fwhm", "fwhm", "list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...)");
@@ -55,6 +56,9 @@ int main(int argc,char **argv) {
     output_opt.retrieveOption(argc,argv);
     inputCols_opt.retrieveOption(argc,argv);
     method_opt.retrieveOption(argc,argv);
+    wavelet_type_opt.retrieveOption(argc,argv);
+    family_opt.retrieveOption(argc,argv);
+    quantize_opt.retrieveOption(argc,argv);
     dimZ_opt.retrieveOption(argc,argv);
     tapz_opt.retrieveOption(argc,argv);
     fwhm_opt.retrieveOption(argc,argv);
@@ -158,7 +162,7 @@ int main(int argc,char **argv) {
   else{//no filtering
     if(verbose_opt[0])
       std::cout << "no filtering selected" << std::endl;
-    wavelengthOut=wavelengthIn;
+    // wavelengthOut=wavelengthIn;
     for(int icol=0;icol<inputCols_opt.size();++icol)
       filteredData[icol]=inputData[icol];
   }
@@ -166,12 +170,24 @@ int main(int argc,char **argv) {
   if(method_opt.size()){
     for(int icol=0;icol<inputCols_opt.size();++icol){
       switch(filter::Filter::getFilterType(method_opt[0])){
-      // case(filter::dwtForward):
-      //   filter1d.dwtForward(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
-      //   break;
-      // case(filter::dwtInverse):
-      //   filter1d.dwtInverse(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
-      //   break;
+      case(filter::dwtForward):
+        filter1d.dwtForward(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
+        break;
+      case(filter::dwtInverse):
+        filter1d.dwtInverse(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
+        break;
+      case(filter::dwtQuantize):{
+        int origSize=filteredData[icol].size();
+        filter1d.dwtForward(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
+        for(int iband=0;iband<filteredData[icol].size();++iband){
+          if(fabs(filteredData[icol][iband])<quantize_opt[0])
+            filteredData[icol][iband]=0;
+        }
+        filter1d.dwtInverse(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
+        //remove extended samples
+        filteredData[icol].erase(filteredData[icol].begin()+origSize,filteredData[icol].end());
+        break;
+      }
       default:
         if(verbose_opt[0])
           std::cout << "method to be implemented" << std::endl;
@@ -185,17 +201,17 @@ int main(int argc,char **argv) {
 
   if(transpose_opt[0]){
     for(int icol=0;icol<inputCols_opt.size();++icol){
-      for(int iband=0;iband<wavelengthOut.size();++iband){
+      for(int iband=0;iband<filteredData[icol].size();++iband){
         if(!output_opt.empty()){
           outputStream << filteredData[icol][iband];
-          if(iband<wavelengthOut.size()-1)
+          if(iband<filteredData[icol].size()-1)
             outputStream << " ";
           else
             outputStream << std::endl;
         }
         else{
           std::cout << filteredData[icol][iband];
-          if(iband<wavelengthOut.size()-1)
+          if(iband<filteredData[icol].size()-1)
             std::cout << " ";
           else
             std::cout << std::endl;
@@ -204,11 +220,20 @@ int main(int argc,char **argv) {
     }    
   }
   else{
-    for(int iband=0;iband<wavelengthOut.size();++iband){
-      if(!output_opt.empty())
-        outputStream << wavelengthOut[iband] << " ";
-      else
-        std::cout << wavelengthOut[iband] << " ";
+    int nband=wavelengthOut.size()? wavelengthOut.size() : filteredData[0].size();
+    for(int iband=0;iband<nband;++iband){
+      if(!output_opt.empty()){
+        if(wavelengthOut.size())
+          outputStream << wavelengthOut[iband] << " ";
+        else
+          outputStream << iband << " ";
+      }
+      else{
+        if(wavelengthOut.size())
+          std::cout << wavelengthOut[iband] << " ";
+        else
+          std::cout << iband << " ";
+      }
       for(int icol=0;icol<inputCols_opt.size();++icol){
         if(!output_opt.empty()){
           outputStream << filteredData[icol][iband];

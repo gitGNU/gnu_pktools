@@ -1,5 +1,5 @@
-AM_LDFLAGS = $(GDAL_LDFLAGS) @AM_LDFLAGS@
-AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
+AM_LDFLAGS = $(GSL_LDFLAGS) $(GDAL_LDFLAGS) @AM_LDFLAGS@
+AM_CXXFLAGS = -I$(top_srcdir)/src $(GSL_CFLAGS) $(GDAL_CFLAGS) @AM_CXXFLAGS@
 
 ###############################################################################
 # THE LIBRARIES TO BUILD

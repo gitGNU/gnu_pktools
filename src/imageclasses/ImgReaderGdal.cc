@@ -445,6 +445,45 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
   }
 }
 
+unsigned long int ImgReaderGdal::getHistogram(vector<unsigned long int>& histvector, double& min, double& max, int& nbin, int theBand) const{
+  double minValue=0;
+  double maxValue=0;
+  getMinMax(minValue,maxValue,theBand);
+  if(min<max&&min>minValue)
+    minValue=min;
+  else
+    min=minValue;
+  if(min<max&&max<maxValue)
+    maxValue=max;
+  else
+    max=maxValue;
+  if(nbin==0)
+    nbin=maxValue-minValue+1;
+  assert(nbin>0);
+  histvector.resize(nbin);
+  unsigned long int nsample=0;
+  unsigned long int ninvalid=0;
+  std::vector<double> lineBuffer(nrOfCol());
+  for(int i=0;i<nbin;histvector[i++]=0);
+  for(int irow=0;irow<nrOfRow();++irow){
+    readData(lineBuffer,GDT_Float64,irow,theBand);
+    for(int icol=0;icol<nrOfCol();++icol){
+      if(isNoData(lineBuffer[icol]))
+        ++ninvalid;
+      else if(lineBuffer[icol]>maxValue)
+        ++ninvalid;
+      else if(lineBuffer[icol]<minValue)
+        ++ninvalid;
+      else if(lineBuffer[icol]==maxValue)
+        ++histvector[nbin-1];
+      else
+        ++histvector[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*(nbin-1))];
+    }
+  }
+  unsigned long int nvalid=nrOfCol()*nrOfRow()-ninvalid;
+  return nvalid;
+}
+
 void ImgReaderGdal::getRange(vector<short>& range, int band) const
 {
   vector<short> lineBuffer(nrOfCol());

@@ -78,6 +78,7 @@ public:
   void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
   void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=false) const;
   double getMin(int& col, int& row, int band=0) const;
+  unsigned long int getHistogram(vector<unsigned long int>& histvector, double& min, double& max,int& nbin, int theBand=0) const;
   double getMax(int& col, int& row, int band=0) const;
   void getRefPix(double& refX, double &refY, int band=0) const;
   void getRange(vector<short>& range, int Band=0) const;

@@ -261,44 +261,46 @@ int main(int argc, char *argv[])
     }
     if(hist_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
-      imgReader.getMinMax(minValue,maxValue,band_opt[0]);
-      if(min_opt.size())
-        minValue=min_opt[0];
-      if(max_opt.size())
-        maxValue=max_opt[0];
       int nbin=nbin_opt[0];
-      if(nbin_opt[0]==0)
-	nbin=maxValue-minValue+1;
-      assert(nbin>0);
-      std::vector<unsigned long int> output(nbin);
-      unsigned long int nsample=0;
-      unsigned long int ninvalid=0;
-      std::vector<double> lineBuffer(imgReader.nrOfCol());
-      for(int i=0;i<nbin;output[i++]=0);
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
-	imgReader.readData(lineBuffer,GDT_Float64,irow,band_opt[0]);
-	for(int icol=0;icol<imgReader.nrOfCol();++icol){
-          if(imgReader.isNoData(lineBuffer[icol]))
-            ++ninvalid;
-          else if(lineBuffer[icol]>maxValue)
-            ++ninvalid;
-          else if(lineBuffer[icol]<minValue)
-            ++ninvalid;
-	  else if(lineBuffer[icol]==maxValue)
-	    ++output[nbin-1];
-	  // else if(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*nbin>=nbin){
-          //   //test
-          //   std::cout << "..." << lineBuffer[icol] << std::endl;
-	  //   ++output[nbin-1];
-          // }
-	  else
-	    ++output[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*nbin)];
-	}
-      }
-      nsample=imgReader.nrOfCol()*imgReader.nrOfRow()-ninvalid;
+      // imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+      // if(min_opt.size())
+      //   minValue=min_opt[0];
+      // if(max_opt.size())
+      //   maxValue=max_opt[0];
+      // if(nbin_opt[0]==0)
+      //   nbin=maxValue-minValue+1;
+      // assert(nbin>0);
+      // std::vector<unsigned long int> output(nbin);
+      // unsigned long int nsample=0;
+      // unsigned long int ninvalid=0;
+      // std::vector<double> lineBuffer(imgReader.nrOfCol());
+      // for(int i=0;i<nbin;output[i++]=0);
+      // for(int irow=0;irow<imgReader.nrOfRow();++irow){
+      //   imgReader.readData(lineBuffer,GDT_Float64,irow,band_opt[0]);
+      //   for(int icol=0;icol<imgReader.nrOfCol();++icol){
+      //     if(imgReader.isNoData(lineBuffer[icol]))
+      //       ++ninvalid;
+      //     else if(lineBuffer[icol]>maxValue)
+      //       ++ninvalid;
+      //     else if(lineBuffer[icol]<minValue)
+      //       ++ninvalid;
+      //     else if(lineBuffer[icol]==maxValue)
+      //       ++output[nbin-1];
+      //     else
+      //       ++output[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*nbin)];
+      //   }
+      // }
+      std::vector<unsigned long int> output(nbin_opt[0]);
+      minValue=0;
+      maxValue=0;
+      if(min_opt.size())
+        minValue=min_opt.size();
+      if(max_opt.size())
+        maxValue=max_opt.size();
+      unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0]);
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){
-	nsample+=output[bin];
+	// nsample+=output[bin];
         if(output[bin]>0){
           std::cout << (maxValue-minValue)*bin/(nbin-1)+minValue << " ";
           if(relative_opt[0])
