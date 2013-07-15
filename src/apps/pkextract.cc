@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
   }
   short theDim=boundary_opt[0];
   if(verbose_opt[0]>1)
-    std::cout << boundary_opt[0] << std::endl;
+    std::cout << "boundary: " << boundary_opt[0] << std::endl;
   ImgReaderGdal imgReader;
   try{
     imgReader.open(image_opt[0]);
@@ -398,18 +398,20 @@ int main(int argc, char *argv[])
                 if(p>theThreshold)
 		  continue;//do not select for now, go to next column
               }
-              else{//absolute value
+              else if(nvalid.size()>processClass){//absolute value
                 if(nvalid[processClass]>-theThreshold)
-		    continue;//do not select any more pixels for this class, go to next column to search for other classes
+                  continue;//do not select any more pixels for this class, go to next column to search for other classes
               }
 	      writeBuffer.push_back(sample);
 	      writeBufferClass.push_back(theClass);
 	      ++ntotalvalid;
-	      ++(nvalid[processClass]);
+              if(nvalid.size()>processClass)
+                ++(nvalid[processClass]);
 	    }
             else{
               ++ntotalinvalid;
-              ++(ninvalid[processClass]);
+              if(ninvalid.size()>processClass)
+                ++(ninvalid[processClass]);
             }
           }//processClass
         }//icol
@@ -468,8 +470,10 @@ int main(int argc, char *argv[])
       nsample=writeBuffer.size();
       if(verbose_opt[0]){
         std::cout << "total number of samples written: " << nsample << std::endl;
-        for(int iclass=0;iclass<class_opt.size();++iclass)
-          std::cout << "class " << class_opt[iclass] << " has " << nvalid[iclass] << " samples" << std::endl;
+        if(nvalid.size()==class_opt.size()){
+          for(int iclass=0;iclass<class_opt.size();++iclass)
+            std::cout << "class " << class_opt[iclass] << " has " << nvalid[iclass] << " samples" << std::endl;
+        }
       }
     }
     else{//class_opt[0]!=0
@@ -518,7 +522,7 @@ int main(int argc, char *argv[])
           int theClass=0;
           // double theClass=0;
           int processClass=-1;
-          if(class_opt[0]<0){//process every class except 0
+          if(class_opt.empty()){//process every class
             if(classBuffer[icol]){
               processClass=0;
               theClass=classBuffer[icol];
@@ -643,7 +647,7 @@ int main(int argc, char *argv[])
                 if(p>theThreshold)
                   continue;//do not select for now, go to next column
               }
-              else{//absolute value
+              else if(nvalid.size()>processClass){//absolute value
                 if(nvalid[processClass]>-theThreshold)
                   continue;//do not select any more pixels for this class, go to next column to search for other classes
               }
@@ -651,11 +655,13 @@ int main(int argc, char *argv[])
               //             writeBufferClass.push_back(class_opt[processClass]);
               writeBufferClass.push_back(theClass);
               ++ntotalvalid;
-              ++(nvalid[processClass]);
+              if(nvalid.size()>processClass)
+                ++(nvalid[processClass]);
             }
             else{
               ++ntotalinvalid;
-              ++(ninvalid[processClass]);
+              if(ninvalid.size()>processClass)
+                ++(ninvalid[processClass]);
             }
           }//processClass
         }//icol
@@ -716,8 +722,10 @@ int main(int argc, char *argv[])
       nsample=writeBuffer.size();
       if(verbose_opt[0]){
         std::cout << "total number of samples written: " << nsample << std::endl;
-        for(int iclass=0;iclass<class_opt.size();++iclass)
-          std::cout << "class " << class_opt[iclass] << " has " << nvalid[iclass] << " samples" << std::endl;
+        if(nvalid.size()==class_opt.size()){
+          for(int iclass=0;iclass<class_opt.size();++iclass)
+            std::cout << "class " << class_opt[iclass] << " has " << nvalid[iclass] << " samples" << std::endl;
+        }
       }
     }
   }
@@ -768,6 +776,7 @@ int main(int argc, char *argv[])
       switch(ruleMap[rule_opt[0]]){
         // switch(rule_opt[0]){
       case(rule::proportion):{//proportion for each class
+        assert(class_opt.size());
         for(int iclass=0;iclass<class_opt.size();++iclass){
           ostringstream cs;
           cs << class_opt[iclass];
@@ -781,9 +790,10 @@ int main(int argc, char *argv[])
       case(rule::minimum):
       case(rule::maximum):
       case(rule::maxvote):
+        assert(class_opt.size());
         ogrWriter.createField(label_opt[0],fieldType);
-      if(test_opt.size())
-	ogrTestWriter.createField(label_opt[0],fieldType);
+        if(test_opt.size())
+          ogrTestWriter.createField(label_opt[0],fieldType);
         break;
       case(rule::point):
       case(rule::mean):
@@ -1218,9 +1228,6 @@ int main(int argc, char *argv[])
                 imgReader.image2geo(i,j,x,y);
                 thePoint.setX(x);
                 thePoint.setY(y);
-                // //test
-                // writeRing.addPoint(&thePoint);
-                // if(thePoint.Within(&readPolygon)){
                 if(readPolygon.Contains(&thePoint)){
                   bool valid=true;
                   for(int imask=0;imask<mask_opt.size();++imask){
@@ -1432,8 +1439,6 @@ int main(int argc, char *argv[])
 		}
               }
 	    }
-            // //test
-            // std::cout << "before write polygon" << std::endl;
             if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
               //do not create if no points found within polygon
               if(!nPointPolygon)
@@ -1832,9 +1837,6 @@ int main(int argc, char *argv[])
                 imgReader.image2geo(i,j,x,y);
                 thePoint.setX(x);
                 thePoint.setY(y);
-                // //test
-                // writeRing.addPoint(&thePoint);
-                // if(thePoint.Within(&readPolygon)){
                 if(readPolygon.Contains(&thePoint)){
                   bool valid=true;
                   for(int imask=0;imask<mask_opt.size();++imask){
@@ -2044,8 +2046,6 @@ int main(int argc, char *argv[])
                 }
               }
             }
-            // //test
-            // std::cout << "before write polygon" << std::endl;
             if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
               //add ring to polygon
               if(polygon_opt[0]){

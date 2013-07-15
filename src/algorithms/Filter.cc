@@ -19,6 +19,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include "Filter.h"
 #include <assert.h>
+#include <math.h>
 #include <iostream>
 
 filter::Filter::Filter(void)
@@ -36,6 +37,32 @@ void filter::Filter::setTaps(const vector<double> &taps)
 {
   m_taps=taps;
   assert(m_taps.size()%2);
+}
+
+void filter::Filter::dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family){
+  //make sure data size if power of 2
+  while(data.size()&(data.size()-1))
+    data.push_back(data.back());
+  int nsize=data.size();
+  gsl_wavelet *w;
+  gsl_wavelet_workspace *work;
+  assert(nsize);
+  w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
+  work=gsl_wavelet_workspace_alloc(nsize);
+  gsl_wavelet_transform_forward(w,&(data[0]),1,nsize,work);
+}
+
+void filter::Filter::dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family){
+  //make sure data size if power of 2
+  while(data.size()&(data.size()-1))
+    data.push_back(data.back());
+  int nsize=data.size();
+  assert(nsize);
+  gsl_wavelet *w;
+  gsl_wavelet_workspace *work;
+  w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
+  work=gsl_wavelet_workspace_alloc(nsize);
+  gsl_wavelet_transform_inverse(w,&(data[0]),1,nsize,work);
 }
 
 void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset)

@@ -645,7 +645,7 @@ namespace FANN
            Parameters:
              num_data      - The number of training data
              num_input     - The number of inputs per training data
-             num_output    - The number of ouputs per training data
+             num_output    - The number of outputs per training data
              input      - The set of inputs (a pointer to an array of pointers to arrays of floating point data)
              output     - The set of desired outputs (a pointer to an array of pointers to arrays of floating point data)
 
@@ -850,13 +850,13 @@ public:
            Parameters:
              num_data      - The number of training data
              num_input     - The number of inputs per training data
-             num_output    - The number of ouputs per training data
+             num_output    - The number of outputs per training data
              user_function - The user suplied function
 
            Parameters for the user function:
              num        - The number of the training data set
              num_input  - The number of inputs per training data
-             num_output - The number of ouputs per training data
+             num_output - The number of outputs per training data
              input      - The set of inputs
              output     - The set of desired outputs
           
@@ -1485,6 +1485,26 @@ public:
 
       
 
+      void train_on_data(const std::vector< std::vector<fann_type> >& input,
+                         const std::vector< std::vector<fann_type> >& output,
+                         bool initWeights,
+                         unsigned int max_epochs,
+                         unsigned int epochs_between_reports,
+                         float desired_error)
+        {
+          if ((ann != NULL))
+            {
+              training_data data;
+              data.set_train_data(input,output);
+              if(data.train_data != NULL){
+                if(initWeights)
+                  init_weights(data);
+                fann_train_on_data(ann, data.train_data, max_epochs,
+                                   epochs_between_reports, desired_error);
+              }
+            }
+        }
+
         void train_on_data(const std::vector< Vector2d<fann_type> >& input,
                            unsigned int num_data,
                            bool initWeights,
@@ -1505,18 +1525,18 @@ public:
             }
         }
 
+      //cross validation for classification
         float cross_validation(std::vector< Vector2d<fann_type> >& trainingFeatures,
                                unsigned int ntraining,
                                unsigned short cv,
                                unsigned int max_epochs,
-                               unsigned int epochs_between_reports,
                                float desired_error,
-                               std::vector<unsigned short>& input,
-                               std::vector<unsigned short>& output,
+                               std::vector<unsigned short>& referenceVector,
+                               std::vector<unsigned short>& outputVector,
                                short verbose=0)
         {
-          input.clear();
-          output.clear();
+          referenceVector.clear();
+          outputVector.clear();
           assert(cv<ntraining);
           float rmse=0;
           int nclass=trainingFeatures.size();
@@ -1524,6 +1544,8 @@ public:
           int testclass=0;//class to leave out
           int testsample=0;//sample to leave out
           int nrun=(cv>1)? cv : ntraining;
+          if(nrun>ntraining)
+            nrun=ntraining;
           for(int irun=0;irun<nrun;++irun){
             if(verbose>1)
               std::cout << "run " << irun << std::endl;
@@ -1569,13 +1591,13 @@ public:
             if(verbose>1)
               cout << endl << "Set training data" << endl;
             bool initWeights=true;
+            unsigned int epochs_between_reports=0;
             train_on_data(trainingFeatures,ntraining-ntest,initWeights, max_epochs,
                           epochs_between_reports, desired_error);
             //cross validation with testFeatures
             if(verbose>1)
               cout << endl << "Cross validation" << endl;
 
-            //todo: run network and store result in vector
             vector<float> result(nclass);
             int maxClass=-1;
             for(int iclass=0;iclass<testFeatures.size();++iclass){
@@ -1592,8 +1614,8 @@ public:
                   }
                 }
                 assert(maxP>=0);
-                input.push_back(iclass);
-                output.push_back(maxClass);
+                referenceVector.push_back(iclass);
+                outputVector.push_back(maxClass);
               }
             }
 
@@ -1610,6 +1632,98 @@ public:
             }
           }
           // return(rmse);
+          return 0;
+        }
+
+      //cross validation for regresssion
+        float cross_validation(std::vector< std::vector<fann_type> >& input,
+                               std::vector< std::vector<fann_type> >& output,
+                               unsigned short cv,
+                               unsigned int max_epochs,
+                               float desired_error,
+                               std::vector< std::vector<fann_type> >& referenceVector,
+                               std::vector< std::vector<fann_type> >& outputVector,
+                               short verbose=0)
+        {
+          assert(input.size());
+          assert(output.size()==input.size());
+          unsigned int ntraining=input.size();
+          unsigned int noutput=output[0].size();
+          referenceVector.clear();
+          outputVector.clear();
+          assert(cv<ntraining);
+          float rmse=0;
+          std::vector< std::vector<fann_type> > testInput;
+          std::vector< std::vector<fann_type> > testOutput;
+          int testsample=0;//sample to leave out
+          int nrun=(cv>1)? cv : ntraining;
+          if(nrun>ntraining)
+            nrun=ntraining;
+          for(int irun=0;irun<nrun;++irun){
+            if(verbose>1)
+              std::cout << "run " << irun << std::endl;
+            //reset training sample from last run
+            if(verbose>1)
+              std::cout << "reset training sample from last run" << std::endl;
+            while(testInput.size()){
+              input.push_back(testInput.back());
+              testInput.pop_back();
+            }
+            while(testOutput.size()){
+              output.push_back(testOutput.back());
+              testOutput.pop_back();
+            }
+            assert(testInput.size()==testOutput.size());
+            if(verbose>1){
+              std::cout << "training size: " << input.size() << std::endl;
+              std::cout << "test size: " << testInput.size() << std::endl;
+            }
+            assert(input.size());
+            //create test sample
+            if(verbose>1)
+              std::cout << "create test sample" << std::endl;
+            unsigned int nsample=0;
+            int ntest=(cv>1)? ntraining/cv : 1; //n-fold cross validation or leave-one-out
+            while(nsample<ntest){
+              testInput.push_back(input[0]);
+              testOutput.push_back(output[0]);
+              input.erase(input.begin());
+              output.erase(output.begin());
+              assert(input.size());
+              assert(output.size());
+              assert(input.size()==output.size());
+              ++nsample;
+            }
+            assert(nsample==ntest);
+            assert(testInput.size()==testOutput.size());
+            //training with left out training set
+            if(verbose>1)
+              cout << endl << "Set training data" << endl;
+            bool initWeights=true;
+            unsigned int epochs_between_reports=0;
+            
+            train_on_data(input,output,initWeights, max_epochs,
+                          epochs_between_reports, desired_error);
+            //cross validation with testFeatures
+            if(verbose>1)
+              cout << endl << "Cross validation" << endl;
+
+            vector<fann_type> result(noutput);
+            for(int isample=0;isample<testInput.size();++isample){
+              result=run(testInput[isample]);
+              referenceVector.push_back(testOutput[isample]);
+              outputVector.push_back(result);
+            }
+          }
+          //reset from very last run
+          while(testInput.size()){
+            input.push_back(testInput.back());
+            testInput.pop_back();
+          }
+          while(testOutput.size()){
+            output.push_back(testOutput.back());
+            testOutput.pop_back();
+          }
           return 0;
         }
 

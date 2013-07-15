@@ -1106,3 +1106,22 @@ void filter2d::Filter2d::shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& ou
   shadowDsm(inputBuffer, outputBuffer, sza, saa, pixelSize, shadowFlag);
   output.writeDataBlock(outputBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,0);
 }
+
+void filter2d::Filter2d::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+  Vector2d<float> theBuffer;
+  for(int iband=0;iband<input.nrOfBand();++iband){
+    input.readDataBlock(theBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
+    dwtForward(theBuffer, wavelet_type, family);
+    output.writeDataBlock(theBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
+  }
+}
+
+void filter2d::Filter2d::dwtQuantize(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double quantize, bool verbose){
+  Vector2d<float> theBuffer;
+  for(int iband=0;iband<input.nrOfBand();++iband){
+    input.readDataBlock(theBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
+    std::cout << "filtering band " << iband << std::endl << std::flush;
+    dwtQuantize(theBuffer, wavelet_type, family, quantize);
+    output.writeDataBlock(theBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
+  }
+}

@@ -129,7 +129,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
                               ntraining,
                               cv_opt[0],
                               maxit_opt[0],
-                              0,
                               desired_error,
                               referenceVector,
                               outputVector,

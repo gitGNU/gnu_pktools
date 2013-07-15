@@ -34,7 +34,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <string>
 #include <map>
+#include <gsl/gsl_sort.h>
+#include <gsl/gsl_wavelet.h>
+#include <gsl/gsl_wavelet2d.h>
 #include "base/Vector2d.h"
+#include "Filter.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 #include "algorithms/StatFactory.h"
@@ -43,7 +47,7 @@ using namespace std;
 // using namespace cimg_library;
 namespace filter2d
 {
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, mrf=26};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, mrf=26, dwtForward=27, dwtInverse=28, dwtQuantize=29};
   
 class Filter2d
 {
@@ -72,6 +76,11 @@ public:
   template<class T1, class T2> void filter(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector);
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dim);
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dimX, int dimY);
+  void dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtQuantize(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double quantize, bool verbose=false);
+  template<class T> void dwtForward(Vector2d<T>& data, const std::string& wavelet_type, int family);
+  template<class T> void dwtQuantize(Vector2d<T>& data, const std::string& wavelet_type, int family, double quantize);
+  template<class T> void dwtInverse(Vector2d<T>& data, const std::string& wavelet_type, int family);
   void majorVoting(const string& inputFilename, const string& outputFilename,int dim=0,const vector<int> &prior=vector<int>());
   /* void homogeneousSpatial(const string& inputFilename, const string& outputFilename, int dim, bool disc=false, int noValue=0); */
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=2, bool disc=false);
@@ -118,6 +127,7 @@ private:
     m_filterMap["heterog"]=filter2d::heterog;
     m_filterMap["order"]=filter2d::order;
     m_filterMap["median"]=filter2d::median;
+    m_filterMap["dwtQuantize"]=filter2d::dwtQuantize;
   }
 
   Vector2d<double> m_taps;
@@ -626,6 +636,100 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
     progress/=output.nRows();
     pfnProgress(progress,pszMessage,pProgressArg);
   }
+}
+
+template<class T> void Filter2d::dwtForward(Vector2d<T>& theBuffer, const std::string& wavelet_type, int family){
+  //make sure data size if power of 2
+  int nRow=theBuffer.size();
+  assert(nRow);
+  int nCol=theBuffer[0].size();
+  assert(nCol);
+  while(theBuffer.size()&(theBuffer.size()-1))
+    theBuffer.push_back(theBuffer.back());
+  for(int irow=0;irow<theBuffer.size();++irow)
+    while(theBuffer[irow].size()&(theBuffer[irow].size()-1))
+      theBuffer[irow].push_back(theBuffer[irow].back());
+  double data[theBuffer.size()*theBuffer[0].size()];
+  for(int irow=0;irow<theBuffer.size();++irow){
+    for(int icol=0;icol<theBuffer[0].size();++icol){
+      int index=irow*theBuffer[0].size()+icol;
+      data[index]=theBuffer[irow][icol];
+    }
+  }
+  int nsize=theBuffer.size()*theBuffer[0].size();
+  gsl_wavelet *w;
+  gsl_wavelet_workspace *work;
+  assert(nsize);
+  w=gsl_wavelet_alloc(filter::Filter::getWaveletType(wavelet_type),family);
+  work=gsl_wavelet_workspace_alloc(nsize);
+  gsl_wavelet2d_nstransform_forward (w, data, theBuffer.size(), theBuffer.size(),theBuffer[0].size(), work);
+  theBuffer.erase(theBuffer.begin()+nRow,theBuffer.end());
+  for(int irow=0;irow<theBuffer.size();++irow){
+    theBuffer[irow].erase(theBuffer[irow].begin()+nCol,theBuffer[irow].end());
+    for(int icol=0;icol<theBuffer[irow].size();++icol){
+      int index=irow*theBuffer[irow].size()+icol;
+      theBuffer[irow][icol]=data[index];
+    }
+  }
+}
+
+template<class T> void Filter2d::dwtQuantize(Vector2d<T>& theBuffer, const std::string& wavelet_type, int family, double quantize){
+  //make sure data size if power of 2
+  int nRow=theBuffer.size();
+  assert(nRow);
+  int nCol=theBuffer[0].size();
+  assert(nCol);
+  while(theBuffer.size()&(theBuffer.size()-1))
+    theBuffer.push_back(theBuffer.back());
+  for(int irow=0;irow<theBuffer.size();++irow)
+    while(theBuffer[irow].size()&(theBuffer[irow].size()-1))
+      theBuffer[irow].push_back(theBuffer[irow].back());
+  double* data=new double[theBuffer.size()*theBuffer[0].size()];
+  double* abscoeff=new double[theBuffer.size()*theBuffer[0].size()];
+  size_t* p=new size_t[theBuffer.size()*theBuffer[0].size()];
+  for(int irow=0;irow<theBuffer.size();++irow){
+    for(int icol=0;icol<theBuffer[0].size();++icol){
+      int index=irow*theBuffer[0].size()+icol;
+      assert(index<theBuffer.size()*theBuffer[0].size());
+      data[index]=theBuffer[irow][icol];
+    }
+  }
+  int nsize=theBuffer.size()*theBuffer[0].size();
+  gsl_wavelet *w;
+  gsl_wavelet_workspace *work;
+  assert(nsize);
+  w=gsl_wavelet_alloc(filter::Filter::getWaveletType(wavelet_type),family);
+  work=gsl_wavelet_workspace_alloc(nsize);
+  gsl_wavelet2d_nstransform_forward (w, data, theBuffer.size(), theBuffer[0].size(),theBuffer[0].size(), work);
+  for(int irow=0;irow<theBuffer.size();++irow){
+    for(int icol=0;icol<theBuffer[0].size();++icol){
+      int index=irow*theBuffer[0].size()+icol;
+      abscoeff[index]=fabs(data[index]);
+      if(quantize<0){//absolute threshold
+        if(abscoeff[index]<-quantize)
+          data[index]=0;
+      }
+    }
+  }
+  if(quantize>0){//percentual threshold
+    int nc=quantize/100.0*nsize;
+    gsl_sort_index(p,abscoeff,1,nsize);
+    for(int i=0;(i+nc)<nsize;i++)
+      data[p[i]]=0;
+  }
+  gsl_wavelet2d_nstransform_inverse (w, data, theBuffer.size(), theBuffer[0].size(),theBuffer[0].size(), work);
+  for(int irow=0;irow<theBuffer.size();++irow){
+    for(int icol=0;icol<theBuffer[irow].size();++icol){
+      int index=irow*theBuffer[irow].size()+icol;
+      theBuffer[irow][icol]=data[index];
+    }
+  }
+  theBuffer.erase(theBuffer.begin()+nRow,theBuffer.end());
+  for(int irow=0;irow<theBuffer.size();++irow)
+    theBuffer[irow].erase(theBuffer[irow].begin()+nCol,theBuffer[irow].end());
+  delete[] data;
+  delete[] abscoeff;
+  delete[] p;
 }
 
 }

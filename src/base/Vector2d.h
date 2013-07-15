@@ -50,6 +50,14 @@ public:
   void selectCol(int col, T* output) const;
   vector<T> selectCol(int col);
   void selectCols(const list<int> &cols, Vector2d<T> &output) const;
+  void transpose(Vector2d<T> &output) const{
+    output.resize(nCols(),nRows());
+    for(int irow=0;irow<nRows();++irow){
+      for(int icol=0;icol<nCols();++icol){
+        output[icol][irow]=(*this)[irow][icol];
+      }
+    }
+  };
   void selectCols(const list<int> &cols);
   void sort(Vector2d<T>& output);  
   void scale(const vector<double> &scaleVector, const vector<double> &offsetVector, Vector2d<T>& scaledOutput);

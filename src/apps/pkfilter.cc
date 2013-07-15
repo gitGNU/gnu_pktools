@@ -45,6 +45,9 @@ int main(int argc,char **argv) {
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
+  Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
+  Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
+  Optionpk<double> quantize_opt("q", "quantize", "Quantize threshold (positive for percentage value, negative for absolute value)",0);
   Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding");
   Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class)", 0);
   Optionpk<short> mask_opt("m", "mask", "mask value(s) ");
@@ -52,8 +55,8 @@ int main(int argc,char **argv) {
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
   Optionpk<double> fwhm_opt("fwhm", "fwhm", "list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...)");
   Optionpk<std::string> srf_opt("srf", "srf", "list of ASCII files containing spectral response functions (two columns: wavelength response)");
-  Optionpk<double> wavelengthIn_opt("win", "wavelengthIn", "list of wavelengths in input spectrum (-w band1 -w band2 ...)");
-  Optionpk<double> wavelengthOut_opt("wout", "wavelengthOut", "list of wavelengths in output spectrum (-w band1 -w band2 ...)");
+  Optionpk<double> wavelengthIn_opt("win", "wavelengthIn", "list of wavelengths in input spectrum (-win band1 -win band2 ...)");
+  Optionpk<double> wavelengthOut_opt("wout", "wavelengthOut", "list of wavelengths in output spectrum (-wout band1 -wout band2 ...)");
   Optionpk<std::string> interpolationType_opt("interp", "interp", "type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html)","akima");
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
@@ -74,6 +77,9 @@ int main(int argc,char **argv) {
     dimY_opt.retrieveOption(argc,argv);
     dimZ_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
+    wavelet_type_opt.retrieveOption(argc,argv);
+    family_opt.retrieveOption(argc,argv);
+    quantize_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
@@ -506,6 +512,14 @@ int main(int argc,char **argv) {
       filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
       break;
     }
+    case(filter2d::dwtForward):
+      filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+      break;
+    case(filter2d::dwtQuantize):
+      if(verbose_opt[0])
+	std::cout << "Quantization filtering" << std::endl;
+      filter2d.dwtQuantize(input, output, wavelet_type_opt[0], family_opt[0], quantize_opt[0]);
+      break;
     case(filter2d::threshold):
       filter2d.setThresholds(threshold_opt);
       filter2d.setClasses(class_opt);//deliberate fall through
