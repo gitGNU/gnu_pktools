@@ -102,3 +102,9 @@ version 2.4
 	support doxygen to document code
  - doc
 	directory for doxy input files
+
+version 2.4.1
+ - pkfilterascii
+	filter spectra in ASCII file (including wavelet transform)
+ - pkfilter
+	discrete wavelet transform (dwtForward, dwtInverse, dwtQuantize)

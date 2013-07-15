@@ -1,4 +1,4 @@
-\section examples_pkpolygonize Examples of pkpolygonize
+\section examples_pksetmask Examples of pksetmask
 \code
 pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 0 -f 255
 \endcode

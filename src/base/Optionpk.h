@@ -29,6 +29,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iomanip>
 #include <sstream>
 #include <typeinfo>
+#include <cxxabi.h>
 #include "ogr_feature.h"
 
 #ifdef HAVE_CONFIG_H
@@ -282,7 +283,8 @@ template<class T> std::string Optionpk<T>::usageDoxygen() const
     helpss << setiosflags(ios::left) << setw(20) << longOption << " | ";
   else
     helpss << setiosflags(ios::left) << "                     | ";
-  helpss << setiosflags(ios::left) << setw(4) << typeid(T).name() << " | ";
+  int status;
+  helpss << setiosflags(ios::left) << setw(4) << abi::__cxa_demangle(typeid(T).name(),0,0,&status) << " | ";
   if(m_hasDefault)
     helpss <<setiosflags(ios::left) << setw(5) << type2string<T>(m_defaultValue) << " |";
   else

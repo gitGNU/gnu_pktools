@@ -11,7 +11,7 @@ gdal_rasterize -i -burn 0 -l extent extent.shp output.tif
 crop image.tif to the envelop of the given polygon and mask all pixels outside polygon as 0 (using gdal_rasterize)
 
 \code
-pkcrop -i input.tif -b 3 -b 2 -b 1
+pkcrop -i input.tif -b 3 -b 2 -b 1 -o output.tif
 \endcode
 extract bands 3,2,1 (starting from 0) in that order from multi-band raster image input.tif
 
@@ -26,6 +26,6 @@ pkcrop -i fimage.tif -as 0 -as 100 -ot Byte -o bimage.tif -ct colortable.txt
 auto scale raster floating point image fimage.tif to [0:100] and write as single byte image with the given colourtable 
 
 \code
-pkcrop -i large.tif $(pkinfo -i small.tif -bb) -o output.tif
+pkcrop -i large.tif $(pkinfo -i small.tif -bb -dx -dy) -o output.tif
 \endcode
-crop raster image large.tif to the bounding box of raster image small.tif   
+crop raster image large.tif to the bounding box of raster image small.tif and forcing to the same pixel size 
