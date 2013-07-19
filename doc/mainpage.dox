@@ -19,6 +19,8 @@ All utilities in pktools use command line options and have a built in help
 
 Currently the tools only work in a Linux environment
 
+Check the code statistics on http://www.ohloh.net/p/pktools
+
 \section pktools_license License
 
 pktools is written by Pieter Kempeneers and released under the GNU General Public License version3

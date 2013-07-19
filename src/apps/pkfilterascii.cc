@@ -24,6 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <sys/types.h>
 #include <stdio.h>
+#include <gsl/gsl_sort.h>
 #include "base/Optionpk.h"
 #include "base/Vector2d.h"
 #include "algorithms/Filter.h"
@@ -39,9 +40,9 @@ int main(int argc,char **argv) {
   Optionpk<std::string> method_opt("f", "filter", "filter function (to be implemented: dwtForward, dwtInverse,dwtQuantize)");
   Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
-  Optionpk<double> quantize_opt("q", "quantize", "Quantize threshold",0);
+  Optionpk<double> threshold_opt("qt", "threshold", "Quantize threshold value", 0);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
-  Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
+  Optionpk<double> tapZ_opt("tapz", "tapz", "taps used for spectral filtering");
   Optionpk<double> fwhm_opt("fwhm", "fwhm", "list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...)");
   Optionpk<std::string> srf_opt("srf", "srf", "list of ASCII files containing spectral response functions (two columns: wavelength response)");
   Optionpk<int> wavelengthIn_opt("win", "wavelengthIn", "column number of input ASCII file containing wavelengths");
@@ -58,9 +59,9 @@ int main(int argc,char **argv) {
     method_opt.retrieveOption(argc,argv);
     wavelet_type_opt.retrieveOption(argc,argv);
     family_opt.retrieveOption(argc,argv);
-    quantize_opt.retrieveOption(argc,argv);
+    threshold_opt.retrieveOption(argc,argv);
     dimZ_opt.retrieveOption(argc,argv);
-    tapz_opt.retrieveOption(argc,argv);
+    tapZ_opt.retrieveOption(argc,argv);
     fwhm_opt.retrieveOption(argc,argv);
     srf_opt.retrieveOption(argc,argv);
     wavelengthIn_opt.retrieveOption(argc,argv);
@@ -80,8 +81,8 @@ int main(int argc,char **argv) {
 
   Vector2d<double> inputData(inputCols_opt.size());
   Vector2d<double> filteredData(inputCols_opt.size());
-  vector<double> wavelengthIn;
-  vector<double> wavelengthOut;
+  std::vector<double> wavelengthIn;
+  std::vector<double> wavelengthOut;
   assert(input_opt.size());
   FileReaderAscii asciiReader(input_opt[0]);
   if(wavelengthIn_opt.size())
@@ -101,7 +102,7 @@ int main(int argc,char **argv) {
     if(verbose_opt[0])
       std::cout << "spectral filtering to " << fwhm_opt.size() << " bands with provided fwhm " << std::endl;
     assert(wavelengthOut_opt.size()==fwhm_opt.size());
-    vector<double> fwhmData(wavelengthOut_opt.size());
+    std::vector<double> fwhmData(wavelengthOut_opt.size());
     for(int icol=0;icol<inputCols_opt.size();++icol)
       filter1d.applyFwhm<double>(wavelengthIn,inputData[icol], wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], filteredData[icol],verbose_opt[0]);
     if(verbose_opt[0])
@@ -114,7 +115,7 @@ int main(int argc,char **argv) {
     Vector2d<double> srfData(srf_opt.size(),inputCols_opt.size());//transposed output
     if(verbose_opt[0])
       std::cout << "spectral filtering to " << srf_opt.size() << " bands with provided SRF " << std::endl;
-    vector< Vector2d<double> > srf(srf_opt.size());//[0] srf_nr, [1]: wavelength, [2]: response
+    std::vector< Vector2d<double> > srf(srf_opt.size());//[0] srf_nr, [1]: wavelength, [2]: response
     ifstream srfFile;
     for(int isrf=0;isrf<srf_opt.size();++isrf){
       srf[isrf].resize(2);
@@ -162,14 +163,29 @@ int main(int argc,char **argv) {
   else{//no filtering
     if(verbose_opt[0])
       std::cout << "no filtering selected" << std::endl;
-    // wavelengthOut=wavelengthIn;
     for(int icol=0;icol<inputCols_opt.size();++icol)
       filteredData[icol]=inputData[icol];
   }
   
   if(method_opt.size()){
+    switch(filter::Filter::getFilterType(method_opt[0])){
+    case(filter::smooth):
+      assert(dimZ_opt.size());
+      if(tapZ_opt.empty()){
+        tapZ_opt.resize(dimZ_opt[0]);
+        for(int itap=0;itap<dimZ_opt[0];++itap)
+          tapZ_opt[itap]=1.0/dimZ_opt[0];
+      }
+      filter1d.setTaps(tapZ_opt);
+      case(filter::dwtQuantize)://deliberate fall through
+      wavelengthOut=wavelengthIn;
+      break;
+    }
     for(int icol=0;icol<inputCols_opt.size();++icol){
       switch(filter::Filter::getFilterType(method_opt[0])){
+      case(filter::smooth):
+        filter1d.doit(inputData[icol],filteredData[icol]);
+        break;
       case(filter::dwtForward):
         filter1d.dwtForward(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
         break;
@@ -179,9 +195,23 @@ int main(int argc,char **argv) {
       case(filter::dwtQuantize):{
         int origSize=filteredData[icol].size();
         filter1d.dwtForward(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
+        std::vector<double> abscoeff(filteredData[icol].size());
         for(int iband=0;iband<filteredData[icol].size();++iband){
-          if(fabs(filteredData[icol][iband])<quantize_opt[0])
-            filteredData[icol][iband]=0;
+          abscoeff[iband]=fabs(filteredData[icol][iband]);
+          if(threshold_opt[0]<0){//absolute threshold
+            if(abscoeff[iband]<-threshold_opt[0])
+              filteredData[icol][iband]=0;
+          }
+          // if(fabs(filteredData[icol][iband])<threshold_opt[0])
+          //   filteredData[icol][iband]=0;
+        }
+        if(threshold_opt[0]>0){//percentual threshold
+          int nsize=abscoeff.size();
+          size_t* p=new size_t[nsize];
+          int nc=threshold_opt[0]/100.0*nsize;
+          gsl_sort_index(p,&(abscoeff[0]),1,nsize);
+          for(int i=0;(i+nc)<nsize;i++)
+            filteredData[icol][p[i]]=0;
         }
         filter1d.dwtInverse(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
         //remove extended samples
@@ -220,7 +250,24 @@ int main(int argc,char **argv) {
     }    
   }
   else{
-    int nband=wavelengthOut.size()? wavelengthOut.size() : filteredData[0].size();
+    // int nband=wavelengthOut.size()? wavelengthOut.size() : filteredData[0].size();
+    int nband=0;
+    switch(filter::Filter::getFilterType(method_opt[0])){
+    case(filter::dwtForward):
+      nband=filteredData[0].size();
+      break;
+    case(filter::dwtInverse):
+      nband=filteredData[0].size();
+      break;
+    case(filter::dwtQuantize):
+      nband=wavelengthOut.size();
+      assert(wavelengthOut.size()==nband);
+      assert(filteredData[0].size()==nband);
+      break;
+    default:
+      nband=wavelengthOut.size();
+      break;
+    }
     for(int iband=0;iband<nband;++iband){
       if(!output_opt.empty()){
         if(wavelengthOut.size())
