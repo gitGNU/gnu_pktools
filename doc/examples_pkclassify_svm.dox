@@ -1,0 +1,33 @@
+\section examples_pkclassify_svm Examples of pkclassify_svm
+\code
+pkclassify_svm -i input.tif -t training.shp -o output.tif -cv 2 -ct colourtable.txt -cc 1000 -g 0.1
+\endcode
+
+Classify input image input.tif with a support vector machine. A training sample that is provided as a vector (shp) file. It contains all features (same dimensionality as input.tif) in its fields (please check \ref pkextract "pkextract" on how to obtain such a file from a "clean" vector file containing locations only). A two-fold cross validation (cv) is performed (output on screen). The parameters cost and gamma of the support vector machine are set to 1000 and 0.1 respectively. A colourtable (a five column text file: image value, RED, GREEN, BLUE, ALPHA) has also been provided.
+
+\code
+pkclassify_svm -i input.tif -t training.shp -o output.tif -bs 33 -bag 3
+\endcode
+Classification using bootstrap aggregation. The training sample is randomly split in three subsamples (33% of the original sample each).
+
+\code
+pkclassify_svm -i input.tif -t training.shp -o output.tif -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 0.2 -p 1 -p 1 -p 1
+\endcode
+Classification using prior probabilities for each class. The priors are automatically normalized. The order in which the options -p are provide should respect the alphanumeric order of the class names (class 10 comes before 2...)
+
+
+
+replace pixel values 1 and 2 with value 0
+
+\code
+pkreclass -i vector.shp -o output.shp -c FROM -r TO -n INFIELD
+\endcode
+replace FROM with TO in field INFIELD (of type string) in vector file vector.shp and write to new vector output.shp
+
+for((i=0;i<256;++i));do if(($i<100));then echo "$i 1";else echo "$i 0";fi;done > code.txt; pkreclass -i input1.tif -o output.tif –code code.txt; # replace all values smaller than 100 with 1, all other values with 0
+
+\code
+pkreclass -i input1.tif -o output.tif $(for((i=0;i<256;++i));do if(($i<100));then echo -n " -c $i " " -r 1";else echo " -c $i " " -r 0";fi;done)
+\endcode
+same as previous but without temporary file 
+

@@ -361,6 +361,14 @@ int main(int argc, char *argv[])
 	  cm.pushBackClassName(mapit->first,doSort);
 	++mapit;
       }
+      if(classname_opt.empty()){
+        std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
+        for(int iclass=0;iclass<nclass;++iclass){
+          if(verbose_opt[0])
+            std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
+          classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
+        }
+      }
       if(priors_opt.size()==nameVector.size()){
 	std::cerr << "Warning: please check if priors are provided in correct order!!!" << std::endl;
 	for(int iclass=0;iclass<nameVector.size();++iclass)
@@ -539,14 +547,6 @@ int main(int argc, char *argv[])
     float progress=0;
   //-------------------------------- open image file ------------------------------------
   if(input_opt[0].find(".shp")==string::npos){
-    if(classname_opt.empty()){
-      std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
-      for(int iclass=0;iclass<nclass;++iclass){
-        if(verbose_opt[0])
-          std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
-	classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
-      }
-    }
     ImgReaderGdal testImage;
     try{
       if(verbose_opt[0]>=1)
@@ -989,14 +989,14 @@ int main(int argc, char *argv[])
             switch(comb_opt[0]){
             default:
             case(0)://sum rule
-              probOut[iclass]+=result[iclass]+static_cast<float>(1.0-nbag)/nbag*priors[iclass];//add probabilities for each bag
+              probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
               break;
             case(1)://product rule
-              probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//add probabilities for each bag
+              probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
               break;
             case(2)://max rule
-              if(result[iclass]>probOut[iclass])
-                probOut[iclass]=result[iclass];
+              if(priors[iclass]*result[iclass]>probOut[iclass])
+                probOut[iclass]=priors[iclass]*result[iclass];
               break;
             }
           }

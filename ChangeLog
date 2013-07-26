@@ -108,3 +108,12 @@ version 2.4.1
 	filter spectra in ASCII file (including wavelet transform)
  - pkfilter
 	discrete wavelet transform (dwtForward, dwtInverse, dwtQuantize)
+ - pkclassify_svm
+	priors for input vector file
+	todo: take priors into account for cross validation
+	ordering of labels before training
+ - pkclassify_nn
+	priors for input vector file
+	todo: take priors into account for cross validation
+	ordering of labels before training
+
