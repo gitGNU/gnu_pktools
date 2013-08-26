@@ -116,4 +116,6 @@ version 2.4.1
 	priors for input vector file
 	todo: take priors into account for cross validation
 	ordering of labels before training
-
+version 2.4.2
+ - pkinfo
+	bug fixed with -min and -max

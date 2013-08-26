@@ -294,9 +294,9 @@ int main(int argc, char *argv[])
       minValue=0;
       maxValue=0;
       if(min_opt.size())
-        minValue=min_opt.size();
+        minValue=min_opt[0];
       if(max_opt.size())
-        maxValue=max_opt.size();
+        maxValue=max_opt[0];
       unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0]);
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){
