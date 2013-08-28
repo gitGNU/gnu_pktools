@@ -36,12 +36,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <config.h>
 #endif
 
-using namespace std;
-
 ///throw this class when syntax error in command line option
-class BadConversion : public runtime_error {
+class BadConversion : public std::runtime_error {
  public:
- BadConversion(string const& s)
+ BadConversion(std::string const& s)
    : runtime_error(s)
     { }
 };
@@ -164,7 +162,7 @@ public:
   ///set help information
   void setHelp(const std::string& helpInfo){m_help=helpInfo;};
   bool retrieveOption(int argc, char ** argv);
-  template<class T1> friend ostream& operator<<(ostream & os, const Optionpk<T1>& theOption);
+  template<class T1> friend std::ostream& operator<<(std::ostream & os, const Optionpk<T1>& theOption);
 
   void setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo);
   void setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide);
@@ -207,7 +205,7 @@ private:
   short m_hide;
 };
 
-template<class T1> ostream& operator<<(ostream& os, const Optionpk<T1>& theOption)
+template<class T1> std::ostream& operator<<(std::ostream& os, const Optionpk<T1>& theOption)
 {
   os << theOption.getLongName() << ": ";
   for(int index=0;index<theOption.size();++index)
@@ -256,13 +254,13 @@ template<class T> std::string Optionpk<T>::usage() const
   shortOption.insert(0,"-");
   longOption.insert(0,"--");
   if(hasShortOption())
-    helpss << "   " << setiosflags(ios::left) << setw(4) << shortOption;
+    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(4) << shortOption;
   else
-    helpss << "   " << setiosflags(ios::left) << setw(4) << " ";
+    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(4) << " ";
   if(hasLongOption())
-    helpss << "   " << setiosflags(ios::left) << setw(20) << longOption;
+    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(20) << longOption;
   else
-    helpss << "   " << setiosflags(ios::left) << setw(20) << " ";
+    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(20) << " ";
   helpss << "   " << m_help;
   if(m_hasDefault)
     helpss << " (default: " << type2string<T>(m_defaultValue) << ")";
@@ -276,17 +274,17 @@ template<class T> std::string Optionpk<T>::usageDoxygen() const
   std::string longOption=m_longName;
 
   if(hasShortOption())
-    helpss << " | " << setiosflags(ios::left) << setw(6) << shortOption << " | ";
+    helpss << " | " << std::setiosflags(std::ios::left) << std::setw(6) << shortOption << " | ";
   else
-    helpss << " | " << setiosflags(ios::left) << "       | ";
+    helpss << " | " << std::setiosflags(std::ios::left) << "       | ";
   if(hasLongOption())
-    helpss << setiosflags(ios::left) << setw(20) << longOption << " | ";
+    helpss << std::setiosflags(std::ios::left) << std::setw(20) << longOption << " | ";
   else
-    helpss << setiosflags(ios::left) << "                     | ";
+    helpss << std::setiosflags(std::ios::left) << "                     | ";
   int status;
-  helpss << setiosflags(ios::left) << setw(4) << abi::__cxa_demangle(typeid(T).name(),0,0,&status) << " | ";
+  helpss << std::setiosflags(std::ios::left) << std::setw(4) << abi::__cxa_demangle(typeid(T).name(),0,0,&status) << " | ";
   if(m_hasDefault)
-    helpss <<setiosflags(ios::left) << setw(5) << type2string<T>(m_defaultValue) << " |";
+    helpss <<std::setiosflags(std::ios::left) << std::setw(5) << type2string<T>(m_defaultValue) << " |";
   else
     helpss << "      |";
   helpss << m_help << " | ";

@@ -26,7 +26,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ImgReaderOgr::ImgReaderOgr(void)
 {}
 
-ImgReaderOgr::ImgReaderOgr(const string& filename)
+ImgReaderOgr::ImgReaderOgr(const std::string& filename)
 {
   open(filename);
 }
@@ -37,7 +37,7 @@ ImgReaderOgr::~ImgReaderOgr(void)
 
 //---------------------------------------------------------------------------
 
-void ImgReaderOgr::open(const string& filename)
+void ImgReaderOgr::open(const std::string& filename)
 {
   m_filename = filename;
   setCodec();
@@ -56,7 +56,7 @@ void ImgReaderOgr::setCodec(void){
   //open the input OGR datasource. Datasources can be files, RDBMSes, directories full of files, or even remote web services depending on the driver being used. However, the datasource name is always a single string.
   m_datasource = OGRSFDriverRegistrar::Open(m_filename.c_str(), FALSE);//FAlSE: do not update
   if( m_datasource == NULL ){
-    string errorString="Open failed";
+    std::string errorString="Open failed";
     throw(errorString);
   }
 }
@@ -87,21 +87,21 @@ int ImgReaderOgr::getFieldCount(int layer) const
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if((poLayer = m_datasource->GetLayer(layer))==NULL){
-    string errorstring="Could not get layer";
+    std::string errorstring="Could not get layer";
     throw(errorstring);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   return(poFDefn->GetFieldCount());
 }
 
-int ImgReaderOgr::getFields(vector<string>& fields, int layer) const
+int ImgReaderOgr::getFields(std::vector<std::string>& fields, int layer) const
 {
   if(layer<0)
     layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if((poLayer = m_datasource->GetLayer(layer))==NULL){
-    string errorstring="Could not get layer";
+    std::string errorstring="Could not get layer";
     throw(errorstring);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -114,14 +114,14 @@ int ImgReaderOgr::getFields(vector<string>& fields, int layer) const
   return(fields.size());
 }
 
-int ImgReaderOgr::getFields(vector<OGRFieldDefn*>& fields, int layer) const
+int ImgReaderOgr::getFields(std::vector<OGRFieldDefn*>& fields, int layer) const
 {
   if(layer<0)
     layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if((poLayer = m_datasource->GetLayer(layer))==NULL){
-    string errorstring="Could not get layer";
+    std::string errorstring="Could not get layer";
     throw(errorstring);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -135,7 +135,7 @@ int ImgReaderOgr::getFields(vector<OGRFieldDefn*>& fields, int layer) const
   return(fields.size());
 }
 
-string ImgReaderOgr::getProjection(int layer) const
+std::string ImgReaderOgr::getProjection(int layer) const
 {
   if(m_datasource->GetLayer(layer)->GetSpatialRef()){
     char* ppszResult;
@@ -151,7 +151,7 @@ OGRwkbGeometryType ImgReaderOgr::getGeometryType(int layer) const
   return m_datasource->GetLayer(layer)->GetLayerDefn()->GetGeomType();
 }
 
-ostream& operator<<(ostream& theOstream, ImgReaderOgr& theImageReader){
+std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader){
   //An OGRDataSource can potentially have many layers associated with it. The number of layers available can be queried with OGRDataSource::GetLayerCount() and individual layers fetched by index using OGRDataSource::GetLayer(). However, we wil just fetch the layer by name.
   //todo: try to open and catch if failure...
   // ofstream fpoints(filename.c_str(),ios::out);
@@ -166,7 +166,7 @@ ostream& operator<<(ostream& theOstream, ImgReaderOgr& theImageReader){
   // theOstream << "X" << " " << "Y" << " ";
   for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
-      string fieldname=poFieldDefn->GetNameRef();
+      std::string fieldname=poFieldDefn->GetNameRef();
       theOstream << fieldname << " ";
   }
   theOstream << std::endl;
@@ -186,9 +186,9 @@ ostream& operator<<(ostream& theOstream, ImgReaderOgr& theImageReader){
       x=poPoint->getX();
       y=poPoint->getY();
     }
-    vector<string> vfields(poFDefn->GetFieldCount());
-    string featurename;
-    vector<string>::iterator fit=vfields.begin();
+    std::vector<std::string> vfields(poFDefn->GetFieldCount());
+    std::string featurename;
+    std::vector<std::string>::iterator fit=vfields.begin();
     for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
       *(fit++)=poFeature->GetFieldAsString(iField);
     }
@@ -203,7 +203,7 @@ ostream& operator<<(ostream& theOstream, ImgReaderOgr& theImageReader){
   return(theOstream);
 }
 
-// OGRLayer * ImgReaderOgr::executeSql(const string& output, const string& sqlStatement, OGRGeometry* spatialFilter)
+// OGRLayer * ImgReaderOgr::executeSql(const std::string& output, const std::string& sqlStatement, OGRGeometry* spatialFilter)
 // {
 //   OGRLayer *poResultSet;
 //   poResultSet = m_datasource->ExecuteSQL(sqlStatement.c_str(), spatialFilter,NULL );

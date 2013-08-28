@@ -23,13 +23,14 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #include "gdal_alg.h"
 }
+#include <string>
 #include "base/Optionpk.h"
 
 int main(int argc,char **argv) {
-  Optionpk<string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!", "");
+  Optionpk<std::string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!", "");
   Optionpk<int> band_opt("b", "band", "band(s) to process (Default is -1: process all bands)", -1);
-  Optionpk<string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ", "");
-  Optionpk<string> output_opt("o", "output", "Output image file", "");
+  Optionpk<std::string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ", "");
+  Optionpk<std::string> output_opt("o", "output", "Output image file", "");
   Optionpk<double> distance_opt("d", "distance", "Maximum number of pixels to search in all directions to find values to interpolate from (default is 3", 3);
   Optionpk<int> iteration_opt("it", "iteration", "Number of 3x3 smoothing filter passes to run (default 0)", 0);
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
@@ -44,7 +45,7 @@ int main(int argc,char **argv) {
     iteration_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
-  catch(string predefinedString){
+  catch(std::string predefinedString){
     std::cout << predefinedString << std::endl;
     exit(0);
   }
@@ -56,35 +57,35 @@ int main(int argc,char **argv) {
   GDALAllRegister();
   GDALDataset *gds_input;
   if(verbose_opt[0])
-    cout << "opening input file " << input_opt[0] << endl;
+    std::cout << "opening input file " << input_opt[0] << std::endl;
   gds_input = (GDALDataset *) GDALOpen(input_opt[0].c_str(), GA_ReadOnly);
   if(gds_input == NULL){
-    string errorString="FileOpenError";
+    std::string errorString="FileOpenError";
     throw(errorString);
   }
 
   GDALDataset *gds_mask;
   if(verbose_opt[0])
-    cout << "opening mask file " << mask_opt[0] << endl;
+    std::cout << "opening mask file " << mask_opt[0] << std::endl;
   gds_mask = (GDALDataset *) GDALOpen(mask_opt[0].c_str(), GA_ReadOnly );
   if(gds_mask == NULL){
-    string errorString="FileOpenError";
+    std::string errorString="FileOpenError";
     throw(errorString);
   }
   GDALRasterBand *maskBand;
   if(verbose_opt[0])
-    cout << "get mask raster band" << endl;
+    std::cout << "get mask raster band" << std::endl;
   maskBand=gds_mask->GetRasterBand(1);
   
 
   GDALDriver *poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(gds_input->GetDriver()->GetDescription());
   if( poDriver == NULL ){
-    string errorString="FileOpenError";
+    std::string errorString="FileOpenError";
     throw(errorString);
   }
   if(verbose_opt[0])
-    cout << "copying input file to " << output_opt[0] << endl;
+    std::cout << "copying input file to " << output_opt[0] << std::endl;
   poDriver->CopyFiles(output_opt[0].c_str(),input_opt[0].c_str());
   GDALDataset *gds_out;
   gds_out=(GDALDataset *) GDALOpen(output_opt[0].c_str(), GA_Update);
@@ -98,14 +99,14 @@ int main(int argc,char **argv) {
   for(unsigned short iband=0;iband<band_opt.size();++iband){
     targetBand=gds_out->GetRasterBand(band_opt[iband]+1);
     if(verbose_opt[0])
-      cout << "copying input file to " << output_opt[0] << endl;
+      std::cout << "copying input file to " << output_opt[0] << std::endl;
     double dfComplete=0.0;
     const char* pszMessage;
     void* pProgressArg=NULL;
     GDALProgressFunc pfnProgress=GDALTermProgress;
     pfnProgress(dfComplete,pszMessage,pProgressArg);
     if(GDALFillNodata(targetBand,maskBand,distance_opt[0],0,iteration_opt[0],NULL,pfnProgress,pProgressArg)!=CE_None){
-      cerr << CPLGetLastErrorMsg() << endl;
+      std::cerr << CPLGetLastErrorMsg() << std::endl;
       exit(1);
     }
     else{

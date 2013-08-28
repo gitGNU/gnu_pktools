@@ -36,13 +36,13 @@ Egcs::Egcs(unsigned short level)
   m_level=level;
 }
 
-unsigned short Egcs::cell2level(const string& cellCode) const{
+unsigned short Egcs::cell2level(const std::string& cellCode) const{
   size_t pos=cellCode.find("-");
-  string TILE=cellCode.substr(0,pos);
+  std::string TILE=cellCode.substr(0,pos);
   unsigned short level=0;
   int base_level=19-(TILE.size()/2-1)*3;
   int quad_level=0;
-  if(pos!=string::npos)
+  if(pos!=std::string::npos)
     quad_level=cellCode.size()-pos-1;
   if(quad_level>1)
     level=base_level-2;
@@ -94,15 +94,15 @@ void Egcs::force2grid(double& ulx, double& uly, double& lrx, double &lry) const{
   lry-=static_cast<int>(lry)%(static_cast<int>(dy));
 }
 
-void Egcs::cell2bb(const string& cellCode, int &ulx, int &uly, int &lrx, int &lry) const{
+void Egcs::cell2bb(const std::string& cellCode, int &ulx, int &uly, int &lrx, int &lry) const{
   size_t pos=cellCode.find("-");
-  string TILE=cellCode.substr(0,pos);
-  string TILEX=TILE.substr(0,TILE.size()/2);
-  string TILEY=TILE.substr(TILE.size()/2);
-  string QUAD;
+  std::string TILE=cellCode.substr(0,pos);
+  std::string TILEX=TILE.substr(0,TILE.size()/2);
+  std::string TILEY=TILE.substr(TILE.size()/2);
+  std::string QUAD;
   char QUAD1,QUAD2;
-  istringstream stilex(TILEX);
-  istringstream stiley(TILEY);
+  std::istringstream stilex(TILEX);
+  std::istringstream stiley(TILEY);
   int llx,lly;
   stilex >> llx;
   stiley >> lly;
@@ -110,10 +110,10 @@ void Egcs::cell2bb(const string& cellCode, int &ulx, int &uly, int &lrx, int &lr
   lly*=getBaseSize();
   switch((19-m_level)%3){
   case(0)://there should be no QUAD
-    assert(pos==string::npos);
+    assert(pos==std::string::npos);
     break;
   case(2)://there is a QUAD2
-    assert(pos+1!=string::npos);
+    assert(pos+1!=std::string::npos);
     QUAD=cellCode.substr(pos+1);
     QUAD2=QUAD.substr(1,1).c_str()[0];
     switch(QUAD2){
@@ -130,7 +130,7 @@ void Egcs::cell2bb(const string& cellCode, int &ulx, int &uly, int &lrx, int &lr
     }
   case(1)://QUAD1: deliberate fall through from case(2)!
     if(!QUAD.size()){
-      assert(pos+1!=string::npos);
+      assert(pos+1!=std::string::npos);
       QUAD=cellCode.substr(pos+1);
     }
     QUAD1=QUAD.substr(0,1).c_str()[0];
@@ -154,27 +154,27 @@ void Egcs::cell2bb(const string& cellCode, int &ulx, int &uly, int &lrx, int &lr
   lry=lly;
 }
 
-void Egcs::cell2mid(const string& cellCode, double& midX, double& midY) const{
+void Egcs::cell2mid(const std::string& cellCode, double& midX, double& midY) const{
   int ulx,uly,lrx,lry;
   cell2bb(cellCode,ulx,uly,lrx,lry);
   midX=(ulx+lrx)/2.0;
   midY=(lry+uly)/2.0;
 }
 
-string Egcs::geo2cell(double geoX, double geoY) const{
+std::string Egcs::geo2cell(double geoX, double geoY) const{
   int ndgts=7-(m_level+1)/3;
   double xcel=static_cast<int>(geoX)/getBaseSize();
   double ycel=static_cast<int>(geoY)/getBaseSize();
-  ostringstream osx;
-  ostringstream osy, osxy;
+  std::ostringstream osx;
+  std::ostringstream osy, osxy;
   // osx << setprecision(ndgts) << xcel;
   // osy << setprecision(ndgts) << ycel;
   // osx << setprecision(0) << fixed << geoX;
   // osy << setprecision(0) << fixed << geoY;
-  osx << fixed << geoX;
-  osy << fixed << geoY;
-  string quad1="";
-  string quad2="";
+  osx << std::fixed << geoX;
+  osy << std::fixed << geoY;
+  std::string quad1="";
+  std::string quad2="";
   switch((19-m_level)%3){
   case(2):
     if(static_cast<int>(geoX)%(getBaseSize()/2)>=getBaseSize()/2.0){

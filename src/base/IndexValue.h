@@ -20,8 +20,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _INDEXVALUE_H_
 #define _INDEXVALUE_H_
 
-using namespace std;
-
 struct IndexValue{
   int position;
   double value;

@@ -22,12 +22,13 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
 #include <iostream>
+extern "C" {
 #include <gsl/gsl_wavelet.h>
+}
 #include "StatFactory.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
-using namespace std;
 namespace filter
 {
   
@@ -37,7 +38,7 @@ class Filter
 {
 public:
   Filter(void);
-  Filter(const vector<double> &taps);
+  Filter(const std::vector<double> &taps);
   virtual ~Filter(){};
   static const gsl_wavelet_type* getWaveletType(const std::string waveletType){
     if(waveletType=="daubechies") return(gsl_wavelet_daubechies);
@@ -52,20 +53,20 @@ public:
     initFilterMap(m_filterMap);
     return m_filterMap[filterType];
   };
-  void setTaps(const vector<double> &taps);
+  void setTaps(const std::vector<double> &taps);
   void pushClass(short theClass=1){m_class.push_back(theClass);};
   void pushMask(short theMask=0){m_mask.push_back(theMask);};
-  template<class T> void doit(const vector<T>& input, vector<T>& output, int down=1, int offset=0);
-  template<class T> void doit(T* input, int inputSize, vector<T>& output, int down=1, int offset=0);
-  template<class T> void morphology(const vector<T>& input, vector<T>& output, const std::string& method, int dim, short down=1, int offset=0, bool verbose=0);
+  template<class T> void doit(const std::vector<T>& input, std::vector<T>& output, int down=1, int offset=0);
+  template<class T> void doit(T* input, int inputSize, std::vector<T>& output, int down=1, int offset=0);
+  template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down=1, int offset=0, bool verbose=0);
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
 
-  template<class T> double applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
-  template<class T> double applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool transposeInput=false, bool verbose=false);
+  template<class T> double applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
+  template<class T> double applySrf(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, std::vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool transposeInput=false, bool verbose=false);
 
-  template<class T> void applyFwhm(const vector<double> &wavelengthIn, const vector<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<T>& output, bool verbose=false);
-  template<class T> void applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
+  template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, std::vector<T>& output, bool verbose=false);
+  template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
   void dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family);
   void dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family);
 
@@ -104,14 +105,14 @@ private:
     m_filterMap["order"]=filter::order;
     m_filterMap["median"]=filter::median;
   }
-  vector<double> m_taps;
-  vector<short> m_class;
-  vector<short> m_mask;
+  std::vector<double> m_taps;
+  std::vector<short> m_class;
+  std::vector<short> m_mask;
 };
 
 //input[band], output
 //returns wavelength for which srf is maximum
-  template<class T> double Filter::applySrf(const vector<double> &wavelengthIn, const vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta, bool normalize, bool verbose)
+  template<class T> double Filter::applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta, bool normalize, bool verbose)
 {  
   assert(srf.size()==2);//[0]: wavelength, [1]: response function
   int nband=srf[0].size(); 
@@ -137,13 +138,13 @@ private:
   gsl_interp_accel_free(acc);  
   //interpolate input and srf to delta
   
-  vector<double> wavelength_fine;
+  std::vector<double> wavelength_fine;
   for(double win=floor(wavelengthIn[0]);win<=ceil(wavelengthIn.back());win+=delta)
     wavelength_fine.push_back(win);
 
   if(verbose)
     std::cout << "interpolate wavelengths to " << wavelength_fine.size() << " entries " << std::endl;
-  vector<double> srf_fine;//spectral response function, interpolated for wavelength_fine
+  std::vector<double> srf_fine;//spectral response function, interpolated for wavelength_fine
 
   stat.interpolateUp(srf[0],srf[1],wavelength_fine,interpolationType,srf_fine,verbose);
   assert(srf_fine.size()==wavelength_fine.size());
@@ -155,8 +156,8 @@ private:
   assert(splineOut);
 
   assert(wavelengthIn.size()==input.size());
-  vector<double> input_fine;
-  vector<double> product(wavelength_fine.size());
+  std::vector<double> input_fine;
+  std::vector<double> product(wavelength_fine.size());
   stat.interpolateUp(wavelengthIn,input,wavelength_fine,interpolationType,input_fine,verbose);
 
   if(verbose)
@@ -187,7 +188,7 @@ private:
 
 //input[band][sample], output[sample] (if !transposeInput)
 //returns wavelength for which srf is maximum
-  template<class T> double Filter::applySrf(const vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, vector<T>& output, double delta, bool normalize, int down, bool transposeInput, bool verbose)
+  template<class T> double Filter::applySrf(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, std::vector<T>& output, double delta, bool normalize, int down, bool transposeInput, bool verbose)
 {  
   assert(srf.size()==2);//[0]: wavelength, [1]: response function
   int nband=srf[0].size(); 
@@ -215,13 +216,13 @@ private:
   gsl_interp_accel_free(acc);  
   //interpolate input and srf to delta
   
-  vector<double> wavelength_fine;
+  std::vector<double> wavelength_fine;
   for(double win=floor(wavelengthIn[0]);win<=ceil(wavelengthIn.back());win+=delta)
     wavelength_fine.push_back(win);
 
   if(verbose)
     std::cout << "interpolate wavelengths to " << wavelength_fine.size() << " entries " << std::endl;
-  vector<double> srf_fine;//spectral response function, interpolated for wavelength_fine
+  std::vector<double> srf_fine;//spectral response function, interpolated for wavelength_fine
 
   stat.interpolateUp(srf[0],srf[1],wavelength_fine,interpolationType,srf_fine,verbose);
   assert(srf_fine.size()==wavelength_fine.size());
@@ -235,14 +236,14 @@ private:
   for(int isample=0;isample<nsample;++isample){
     if((isample+1+down/2)%down)
       continue;
-    vector<T> inputValues;
+    std::vector<T> inputValues;
     if(transposeInput)
       inputValues=input[isample];
     else
       input.selectCol(isample,inputValues);
     assert(wavelengthIn.size()==inputValues.size());
-    vector<double> input_fine;
-    vector<double> product(wavelength_fine.size());
+    std::vector<double> input_fine;
+    std::vector<double> product(wavelength_fine.size());
     stat.interpolateUp(wavelengthIn,inputValues,wavelength_fine,interpolationType,input_fine,verbose);
 
     for(int iband=0;iband<input_fine.size();++iband)
@@ -270,9 +271,9 @@ private:
   return(srf[0][maxIndex]);
 }
 
-template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, const vector<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, vector<T>& output, bool verbose){
+template<class T> void Filter::applyFwhm(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, std::vector<T>& output, bool verbose){
   double delta=1;//1 nm resolution
-  vector<double> stddev(fwhm.size());
+  std::vector<double> stddev(fwhm.size());
   for(int index=0;index<fwhm.size();++index)
     stddev[index]=fwhm[index]/2.0/sqrt(2*log(2.0));//http://mathworld.wolfram.com/FullWidthatHalfMaximum.html
   assert(wavelengthOut.size()==fwhm.size());
@@ -280,8 +281,8 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
   assert(wavelengthIn[0]<=wavelengthOut[0]);
   assert(wavelengthIn.back()>=wavelengthOut.back());
   statfactory::StatFactory stat;
-  vector<double> input_fine;
-  vector<double> wavelength_fine;
+  std::vector<double> input_fine;
+  std::vector<double> wavelength_fine;
   for(double win=floor(wavelengthIn[0]);win<=ceil(wavelengthIn.back());win+=delta)
     wavelength_fine.push_back(win);
   if(verbose){
@@ -317,13 +318,13 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
 
 
   //input[inBand][sample], output[outBand][sample]
-  template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, const Vector2d<T>& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down, bool verbose){
+  template<class T> void Filter::applyFwhm(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down, bool verbose){
   double delta=1;//1 nm resolution
-  vector<double> stddev(fwhm.size());
+  std::vector<double> stddev(fwhm.size());
   for(int index=0;index<fwhm.size();++index)
     stddev[index]=fwhm[index]/2.0/sqrt(2*log(2.0));//http://mathworld.wolfram.com/FullWidthatHalfMaximum.html
   statfactory::StatFactory stat;
-  vector<double> wavelength_fine;
+  std::vector<double> wavelength_fine;
   for(double win=floor(wavelengthIn[0]);win<=ceil(wavelengthIn.back());win+=delta)
     wavelength_fine.push_back(win);
   assert(wavelengthOut.size()==fwhm.size());
@@ -340,7 +341,7 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
   output.resize(nbandOut,(input[0].size()+down-1)/down);
 
   Vector2d<double> tf(nbandIn,nbandOut);
-  vector<double> norm(nbandOut);
+  std::vector<double> norm(nbandOut);
   for(int indexOut=0;indexOut<nbandOut;++indexOut){
     norm[indexOut]=0;
     for(int indexIn=0;indexIn<nbandIn;++indexIn){
@@ -358,11 +359,11 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
   for(int isample=0;isample<input[0].size();++isample){
     if((isample+1+down/2)%down)
       continue;
-    vector<T> inputValues;
+    std::vector<T> inputValues;
     input.selectCol(isample,inputValues);
     assert(wavelengthIn.size()==inputValues.size());
     for(int indexOut=0;indexOut<nbandOut;++indexOut){
-      vector<double> input_fine;
+      std::vector<double> input_fine;
       stat.interpolateUp(wavelengthIn,inputValues,wavelength_fine,interpolationType,input_fine,verbose);
       output[indexOut][(isample+down-1)/down]=0;
       for(int indexIn=0;indexIn<nbandIn;++indexIn){
@@ -372,7 +373,7 @@ template<class T> void Filter::applyFwhm(const vector<double> &wavelengthIn, con
   }
 }
 
-template<class T> void Filter::doit(const vector<T>& input, vector<T>& output, int down, int offset)
+template<class T> void Filter::doit(const std::vector<T>& input, std::vector<T>& output, int down, int offset)
 {
   output.resize((input.size()-offset+down-1)/down);
   int i=0;
@@ -404,13 +405,13 @@ template<class T> void Filter::doit(const vector<T>& input, vector<T>& output, i
   }
 }
 
-template<class T> void Filter::morphology(const vector<T>& input, vector<T>& output, const std::string& method, int dim, short down, int offset, bool verbose)
+template<class T> void Filter::morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down, int offset, bool verbose)
 {
   assert(dim);
   output.resize((input.size()-offset+down-1)/down);
   int i=0;
   statfactory::StatFactory stat;
-  vector<T> statBuffer;
+  std::vector<T> statBuffer;
   short binValue=0;
   //start: extend input with mirrored version of itself
   for(i=offset;i<dim/2;++i){
@@ -549,7 +550,7 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
       output[(i-offset+down-1)/down]=stat.min(statBuffer);
       break;
     default:
-      string errorString="method not supported";
+      std::string errorString="method not supported";
       throw(errorString);
       break;
     }
@@ -562,7 +563,7 @@ template<class T> void Filter::morphology(const vector<T>& input, vector<T>& out
   }
 }
 
-template<class T> void Filter::doit(T* input, int inputSize, vector<T>& output, int down, int offset)
+template<class T> void Filter::doit(T* input, int inputSize, std::vector<T>& output, int down, int offset)
 {
   output.resize((inputSize-offset+down-1)/down);
   int i=0;

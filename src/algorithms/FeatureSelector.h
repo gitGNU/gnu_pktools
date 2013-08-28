@@ -23,7 +23,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <vector>
 #include <list>
-#include <map>
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
@@ -31,35 +30,33 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "Vector2d.h"
 #include "gsl/gsl_combination.h"
 
-using namespace std;
-
 class FeatureSelector
 {
  public:
   FeatureSelector(){};
   ~FeatureSelector(){};
-  template<class T> double forwardUnivariate(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures, short verbose=0);
-  template<class T> double forward(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures, short verbose=0);
-  template<class T> double backward(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int minFeatures, short verbose=0);
-  template<class T> double floating(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures=0, short verbose=0);
-  template<class T> double bruteForce(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures=0, short verbose=0);
+  template<class T> double forwardUnivariate(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose=0);
+  template<class T> double forward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose=0);
+  template<class T> double backward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int minFeatures, short verbose=0);
+  template<class T> double floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose=0);
+  template<class T> double bruteForce(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose=0);
   
   private:
-    template<class T> double addFeature(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, short verbose=0);
-  template<class T> double removeFeature(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int& r, short verbose=0);  
+    template<class T> double addFeature(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, short verbose=0);
+  template<class T> double removeFeature(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int& r, short verbose=0);  
 };
 
 //sequential forward selection Univariate (N single best features)
-template<class T> double FeatureSelector::forwardUnivariate(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures=0, short verbose){
+template<class T> double FeatureSelector::forwardUnivariate(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose){
   int maxLevels=v[0][0].size();
   if(!maxFeatures)
     maxFeatures=maxLevels;
   int k=subset.size();
   if(k>=maxFeatures)
     return -1;
-  vector<IndexValue> cost(maxLevels);
-  list<int> tmpset=subset;//temporary set of selected features (levels)
-  vector< Vector2d<T> > tmp(v.size());
+  std::vector<IndexValue> cost(maxLevels);
+  std::list<int> tmpset=subset;//temporary set of selected features (levels)
+  std::vector< Vector2d<T> > tmp(v.size());
   for(int ilevel=0;ilevel<maxLevels;++ilevel){
     if(find(tmpset.begin(),tmpset.end(),ilevel)==tmpset.end()){
       tmpset.push_back(ilevel);
@@ -109,7 +106,7 @@ template<class T> double FeatureSelector::forwardUnivariate(vector< Vector2d<T> 
 }
 
 //sequential forward selection Multivariate (Combination of N best features)
-template<class T> double FeatureSelector::forward(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures=0, short verbose){
+template<class T> double FeatureSelector::forward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose){
   //Select feature with the best value (get maximal cost for 1 feature)
   double maxCost=0;
   int maxLevels=v[0][0].size();
@@ -118,7 +115,7 @@ template<class T> double FeatureSelector::forward(vector< Vector2d<T> >& v, doub
   while(subset.size()<maxFeatures){
     maxCost=addFeature(v,*getCost,subset,verbose);
     if(verbose){
-      for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
+      for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
         cout << *lit << " ";
       cout << endl;
       // cout << "added " << subset.back() << ", " << subset.size() << "/" << maxFeatures << " features selected with cost: " << maxCost << endl;
@@ -128,7 +125,7 @@ template<class T> double FeatureSelector::forward(vector< Vector2d<T> >& v, doub
 }
 
 //sequential backward selection
-template<class T> double FeatureSelector::backward(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int minFeatures, short verbose){
+template<class T> double FeatureSelector::backward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int minFeatures, short verbose){
   //Select features with least effect on cost when removed (obtain minFeatures eventually)
   double maxCost=0;
   int removedFeature;
@@ -141,7 +138,7 @@ template<class T> double FeatureSelector::backward(vector< Vector2d<T> >& v, dou
   while(subset.size()>minFeatures){
     maxCost=removeFeature(v,*getCost,subset,removedFeature,verbose);
     if(verbose){
-      for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
+      for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
         cout << *lit << " ";
       cout << endl;
       // cout << "removed " << removedFeature << ", " << subset.size() << "/" << minFeatures << " features remain with cost: " << maxCost << endl;
@@ -151,9 +148,9 @@ template<class T> double FeatureSelector::backward(vector< Vector2d<T> >& v, dou
 }
 
 //floating search
-template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures, short verbose){
+template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose){
   double epsilon=0.001;
-  vector<T> cost;
+  std::vector<T> cost;
   int maxLevels=v[0][0].size();
   if(maxFeatures<1)
     maxFeatures=maxLevels;
@@ -166,7 +163,7 @@ template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, dou
   if(verbose>1)
     cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << endl;
   else if(verbose){
-    for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
+    for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
       cout << *lit << " ";
     cout << endl;
   }
@@ -176,7 +173,7 @@ template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, dou
     if(verbose>1)
     cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << endl;
     else if(verbose){
-      for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
+      for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
         cout << *lit << " ";
       cout << " (cost: " << cost.back() << ")" << endl;
     }
@@ -191,7 +188,7 @@ template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, dou
 	if(verbose>1)
 	  cout << "removed " << x_r << ", " << cost.size()-1 << "/" << maxFeatures << " features remain with cost: " << cost_r << endl;
         else if(verbose){
-          for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
+          for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
             cout << *lit << " ";
           cout << " (cost: " << cost.back() << ")" << endl;
         }
@@ -210,7 +207,7 @@ template<class T> double FeatureSelector::floating(vector< Vector2d<T> >& v, dou
 }
 
 //brute force search (search for all possible combinations and select best)
-template<class T> double FeatureSelector::bruteForce(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int maxFeatures, short verbose){
+template<class T> double FeatureSelector::bruteForce(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose){
   int maxLevels=v[0][0].size();
   if(maxFeatures<1)
     maxFeatures=maxLevels;
@@ -221,9 +218,9 @@ template<class T> double FeatureSelector::bruteForce(vector< Vector2d<T> >& v, d
   gsl_combination *c;
   c=gsl_combination_calloc(v[0][0].size(),maxFeatures);
   
-  list<int> tmpset;//temporary set of selected features (levels)
-  vector< Vector2d<T> > tmpv(v.size());
-  list<int> catchset;//restore set in case of catch all the way to last level (no better cost)
+  std::list<int> tmpset;//temporary set of selected features (levels)
+  std::vector< Vector2d<T> > tmpv(v.size());
+  std::list<int> catchset;//restore set in case of catch all the way to last level (no better cost)
   //initialize maxCost with actual cost for current subset (-1 if empty subset) 
   double maxCost=-1;
   double cost;
@@ -259,18 +256,18 @@ template<class T> double FeatureSelector::bruteForce(vector< Vector2d<T> >& v, d
   if(maxCost<0) //no level added to better maxCost than current subset (catchset)
     subset=catchset;
   //test: assert list contains no duplicate elements
-  for(list<int>::iterator lit=subset.begin();lit!=subset.end();++lit){
-    list<int>::iterator lit2=lit;//start searching from next element
+  for(std::list<int>::iterator lit=subset.begin();lit!=subset.end();++lit){
+    std::list<int>::iterator lit2=lit;//start searching from next element
     assert(find(++lit2,subset.end(),*lit)==subset.end());
   }
   return maxCost;
 }
 
-template<class T> double FeatureSelector::addFeature(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, short verbose){
+template<class T> double FeatureSelector::addFeature(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, short verbose){
   //select feature with the best value (get maximal cost for 1 feature)
-  list<int> tmpset=subset;//temporary set of selected features (levels)
-  vector< Vector2d<T> > tmp(v.size());
-  list<int> catchset;//restore set in case of catch all the way to last level (no better cost)
+  std::list<int> tmpset=subset;//temporary set of selected features (levels)
+  std::vector< Vector2d<T> > tmp(v.size());
+  std::list<int> catchset;//restore set in case of catch all the way to last level (no better cost)
   //initialize maxCost with actual cost for current subset (-1 if empty subset) 
   double maxCost=-1;
   double cost;
@@ -304,19 +301,19 @@ template<class T> double FeatureSelector::addFeature(vector< Vector2d<T> >& v, d
   if(maxCost<0) //no level added to better maxCost than current subset (catchset)
     subset=catchset;
   //test: assert list contains no duplicate elements
-  for(list<int>::iterator lit=subset.begin();lit!=subset.end();++lit){
-    list<int>::iterator lit2=lit;//start searching from next element
+  for(std::list<int>::iterator lit=subset.begin();lit!=subset.end();++lit){
+    std::list<int>::iterator lit2=lit;//start searching from next element
     assert(find(++lit2,subset.end(),*lit)==subset.end());
   }
   return maxCost;
 }
 
-template<class T> double FeatureSelector::removeFeature(vector< Vector2d<T> >& v, double (*getCost)(const vector< Vector2d<T> >&), list<int>& subset, int& r, short verbose){
+template<class T> double FeatureSelector::removeFeature(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int& r, short verbose){
   //find the feature that has the least effect on the cost when it is removed from subset
-  list<int> tmpset=subset;//temporary set of selected features (levels)
-  vector< Vector2d<T> > tmp(v.size());
+  std::list<int> tmpset=subset;//temporary set of selected features (levels)
+  std::vector< Vector2d<T> > tmp(v.size());
   int nFeatures=subset.size();
-  list<int> catchset;//restore set in case of catch all the way to last level (no better cost)
+  std::list<int> catchset;//restore set in case of catch all the way to last level (no better cost)
   //initialize maxCost with actual cost for current subset (-1 if empty subset) 
   double maxCost=-1;
   int last;
@@ -325,7 +322,7 @@ template<class T> double FeatureSelector::removeFeature(vector< Vector2d<T> >& v
   if(subset.size()>maxLevels||subset.empty()){
     return maxCost;
   }
-  list<int>::const_iterator it;
+  std::list<int>::const_iterator it;
   for(int i=0;i<nFeatures;++i){
     last=tmpset.back();
     tmpset.pop_back();
@@ -354,8 +351,8 @@ template<class T> double FeatureSelector::removeFeature(vector< Vector2d<T> >& v
     subset=catchset;
   }
   //test: assert list contains no duplicate elements
-  for(list<int>::iterator lit=subset.begin();lit!=subset.end();++lit){
-    list<int>::iterator lit2=lit;//start searching from next element
+  for(std::list<int>::iterator lit=subset.begin();lit!=subset.end();++lit){
+    std::list<int>::iterator lit2=lit;//start searching from next element
     assert(find(++lit2,subset.end(),*lit)==subset.end());
   }
   return maxCost;

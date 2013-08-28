@@ -26,7 +26,7 @@ ImgReaderGdal::ImgReaderGdal(void)
   : m_gds(NULL), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0)
 {}
 
-void ImgReaderGdal::open(const string& filename)//, double magicX, double magicY)
+void ImgReaderGdal::open(const std::string& filename)//, double magicX, double magicY)
 {
   m_filename = filename;
   setCodec();//magicX,magicY);
@@ -50,13 +50,13 @@ void ImgReaderGdal::setCodec()//double magicX, double magicY)
   GDALAllRegister();
   m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
   if(m_gds == NULL){
-    string errorString="FileOpenError";
+    std::string errorString="FileOpenError";
     throw(errorString);
   }
   m_ncol= m_gds->GetRasterXSize();
   m_nrow= m_gds->GetRasterYSize();
   m_nband= m_gds->GetRasterCount();
-  m_isGeoRef=( static_cast<string>(m_gds->GetProjectionRef())  != "" );
+  m_isGeoRef=( static_cast<std::string>(m_gds->GetProjectionRef())  != "" );
   // m_magic_x=magicX;
   // m_magic_y=magicY;
   if(m_isGeoRef){
@@ -77,20 +77,20 @@ void ImgReaderGdal::setCodec()//double magicX, double magicY)
   }
 }
 
-string ImgReaderGdal::getProjection(void) const 
+std::string ImgReaderGdal::getProjection(void) const 
 {
-  string theProjection=m_gds->GetProjectionRef();
+  std::string theProjection=m_gds->GetProjectionRef();
   // size_t startpos,endpos;
-  // while((startpos=theProjection.find(",AUTHORITY"))!=string::npos){
+  // while((startpos=theProjection.find(",AUTHORITY"))!=std::string::npos){
   //   endpos=theProjection.find("]",startpos+1,1)+1;
   //   theProjection.erase(startpos,endpos-startpos);
   // }
   return theProjection;
 }
 
-string ImgReaderGdal::getProjectionRef(void) const 
+std::string ImgReaderGdal::getProjectionRef(void) const 
 {
-  string theProjection;
+  std::string theProjection;
   if(m_gds->GetProjectionRef())
     return(m_gds->GetProjectionRef());
   else
@@ -115,7 +115,7 @@ GDALColorTable* ImgReaderGdal::getColorTable(int band) const
   return (m_gds->GetRasterBand(band+1))->GetColorTable();
 }
 
-string ImgReaderGdal::getDriverDescription() const
+std::string ImgReaderGdal::getDriverDescription() const
 {
   return m_gds->GetDriver()->GetDescription();
 }
@@ -132,7 +132,7 @@ void ImgReaderGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, do
   deltaY=-adfGeoTransform[5];//convention of GDAL!
 }
 
-string ImgReaderGdal::getGeoTransform() const
+std::string ImgReaderGdal::getGeoTransform() const
 {
   if(!isGeoRef())
     return("");
@@ -145,7 +145,7 @@ string ImgReaderGdal::getGeoTransform() const
     double uly=adfGeoTransform[3];
     double rot2=adfGeoTransform[4];
     double deltaY=-adfGeoTransform[5];//convention of GDAL!
-    ostringstream s;
+    std::ostringstream s;
     s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
     return(s.str());
   }
@@ -167,7 +167,7 @@ char** ImgReaderGdal::getMetadata() const
     return (char**)"";
 }
 
-void ImgReaderGdal::getMetadata(list<string>& metadata) const
+void ImgReaderGdal::getMetadata(std::list<std::string>& metadata) const
 {
   char** cmetadata=m_gds->GetMetadata();
   while(*cmetadata!=NULL){
@@ -176,7 +176,7 @@ void ImgReaderGdal::getMetadata(list<string>& metadata) const
   }
 }
 
-string ImgReaderGdal::getDescription() const
+std::string ImgReaderGdal::getDescription() const
 {
   if(m_gds->GetDriver()->GetDescription()!=NULL)
     return m_gds->GetDriver()->GetDescription();
@@ -184,14 +184,14 @@ string ImgReaderGdal::getDescription() const
     return "";
 }
 
-string ImgReaderGdal::getMetadataItem() const 
+std::string ImgReaderGdal::getMetadataItem() const 
 {
   if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
     return m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME );
   else
     return "";
 }
-string ImgReaderGdal::getImageDescription() const 
+std::string ImgReaderGdal::getImageDescription() const 
 {
   if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
     return m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION");
@@ -199,7 +199,7 @@ string ImgReaderGdal::getImageDescription() const
     return "";
 }
 
-string ImgReaderGdal::getInterleave() const
+std::string ImgReaderGdal::getInterleave() const
 {
   if(m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE"))
     return m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE");
@@ -207,7 +207,7 @@ string ImgReaderGdal::getInterleave() const
     return("BAND");
 }
 
-string ImgReaderGdal::getCompression() const
+std::string ImgReaderGdal::getCompression() const
 {
   if(m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE"))
     return m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE");
@@ -307,7 +307,7 @@ bool ImgReaderGdal::covers(double ulx, double  uly, double lrx, double lry) cons
 
 double ImgReaderGdal::getMin(int& x, int& y, int band) const{
   double minValue=0;
-  vector<double> lineBuffer(nrOfCol());
+  std::vector<double> lineBuffer(nrOfCol());
   bool init=false;
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
@@ -331,12 +331,12 @@ double ImgReaderGdal::getMin(int& x, int& y, int band) const{
   if(init)
     return minValue;
   else
-    throw(static_cast<string>("Warning: not initialized"));
+    throw(static_cast<std::string>("Warning: not initialized"));
 }
 
 double ImgReaderGdal::getMax(int& x, int& y, int band) const{
   double maxValue=0;
-  vector<double> lineBuffer(nrOfCol());
+  std::vector<double> lineBuffer(nrOfCol());
   bool init=false;
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
@@ -360,7 +360,7 @@ double ImgReaderGdal::getMax(int& x, int& y, int band) const{
   if(init)
     return maxValue;
   else
-    throw(static_cast<string>("Warning: not initialized"));
+    throw(static_cast<std::string>("Warning: not initialized"));
 }
 
 void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const
@@ -378,7 +378,7 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
   minValue=adfMinMax[0];
   maxValue=adfMinMax[1];
 
-  vector<double> lineBuffer(endCol-startCol+1);
+  std::vector<double> lineBuffer(endCol-startCol+1);
   bool init=false;
   assert(endRow<nrOfRow());
   for(int irow=startCol;irow<endRow+1;++irow){
@@ -401,7 +401,7 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
     }
   }
   if(!init)
-    throw(static_cast<string>("Warning: not initialized"));
+    throw(static_cast<std::string>("Warning: not initialized"));
 }
 
 void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool exhaustiveSearch) const
@@ -419,7 +419,7 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
   minValue=adfMinMax[0];
   maxValue=adfMinMax[1];
   if(exhaustiveSearch){//force exhaustive search
-    vector<double> lineBuffer(nrOfCol());
+    std::vector<double> lineBuffer(nrOfCol());
     bool init=false;
     for(int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,GDT_Float64,irow,band);
@@ -441,11 +441,11 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
       }
     }
     if(!init)
-      throw(static_cast<string>("Warning: not initialized"));
+      throw(static_cast<std::string>("Warning: not initialized"));
   }
 }
 
-unsigned long int ImgReaderGdal::getHistogram(vector<unsigned long int>& histvector, double& min, double& max, int& nbin, int theBand) const{
+unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, int& nbin, int theBand) const{
   double minValue=0;
   double maxValue=0;
   getMinMax(minValue,maxValue,theBand);
@@ -484,9 +484,9 @@ unsigned long int ImgReaderGdal::getHistogram(vector<unsigned long int>& histvec
   return nvalid;
 }
 
-void ImgReaderGdal::getRange(vector<short>& range, int band) const
+void ImgReaderGdal::getRange(std::vector<short>& range, int band) const
 {
-  vector<short> lineBuffer(nrOfCol());
+  std::vector<short> lineBuffer(nrOfCol());
   range.clear();
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Int16,irow,band);
@@ -498,7 +498,7 @@ void ImgReaderGdal::getRange(vector<short>& range, int band) const
   sort(range.begin(),range.end());
 }
 
-int ImgReaderGdal::getNoDataValues(vector<double>& noDataValues) const
+int ImgReaderGdal::getNoDataValues(std::vector<double>& noDataValues) const
 {
   if(m_noDataValues.size()){
     noDataValues=m_noDataValues;
@@ -527,7 +527,7 @@ int ImgReaderGdal::pushNoDataValue(double noDataValue)
 
 void ImgReaderGdal::getRefPix(double& refX, double &refY, int band) const
 {
-  vector<double> lineBuffer(nrOfCol());
+  std::vector<double> lineBuffer(nrOfCol());
   double validCol=0;
   double validRow=0;
   int nvalidCol=0;

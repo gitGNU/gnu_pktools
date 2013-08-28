@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <numeric>
 
-bool compareClass(const string& string1, const string& string2){
+bool compareClass(const std::string& string1, const std::string& string2){
   int int1=string2type<int>(string1);
   int int2=string2type<int>(string2);
   return(int1<int2);
@@ -41,7 +41,7 @@ ConfusionMatrix::ConfusionMatrix(short nclass){
   resize(nclass);
 }
 
-ConfusionMatrix::ConfusionMatrix(const vector<string>& classNames){
+ConfusionMatrix::ConfusionMatrix(const std::vector<std::string>& classNames){
   setClassNames(classNames);
 }
 
@@ -107,14 +107,14 @@ ConfusionMatrix ConfusionMatrix::operator*(double weight)
 void ConfusionMatrix::resize(short nclass){
   m_classes.resize(nclass);
   for(short iclass=0;iclass<nclass;++iclass){
-    ostringstream osclass;
+    std::ostringstream osclass;
     osclass << iclass;
     m_classes[iclass]=osclass.str();
   }
   m_results.resize(nclass,nclass);
 }
 
-void ConfusionMatrix::setClassNames(const vector<string>& classNames, bool doSort){
+void ConfusionMatrix::setClassNames(const std::vector<std::string>& classNames, bool doSort){
   m_classes=classNames;
   if(doSort)
     sortClassNames();
@@ -122,7 +122,7 @@ void ConfusionMatrix::setClassNames(const vector<string>& classNames, bool doSor
     m_results.resize(m_classes.size(),m_classes.size());
 }
 
-void ConfusionMatrix::pushBackClassName(const string& className, bool doSort){
+void ConfusionMatrix::pushBackClassName(const std::string& className, bool doSort){
   m_classes.push_back(className);
   if(doSort)
     sortClassNames();
@@ -140,7 +140,7 @@ void ConfusionMatrix::clearResults(){
   m_results.resize(m_classes.size(),m_classes.size());
 }
 
-void ConfusionMatrix::setResult(const string& theRef, const string& theClass, double theResult){
+void ConfusionMatrix::setResult(const std::string& theRef, const std::string& theClass, double theResult){
   // int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
   // int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
   // assert(ir>=0);
@@ -152,7 +152,7 @@ void ConfusionMatrix::setResult(const string& theRef, const string& theClass, do
   m_results[ir][ic]=theResult;
 }
 
-void ConfusionMatrix::incrementResult(const string& theRef, const string& theClass, double theIncrement){
+void ConfusionMatrix::incrementResult(const std::string& theRef, const std::string& theClass, double theIncrement){
   int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
   int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
   assert(ir>=0);
@@ -164,7 +164,7 @@ void ConfusionMatrix::incrementResult(const string& theRef, const string& theCla
   m_results[ir][ic]+=theIncrement;
 }
 
-double ConfusionMatrix::nReference(const string& theRef) const{
+double ConfusionMatrix::nReference(const std::string& theRef) const{
   int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
   return accumulate(m_results[ir].begin(),m_results[ir].end(),0);
 }
@@ -176,7 +176,7 @@ double ConfusionMatrix::nReference() const{
   return nref;
 }
 
-double ConfusionMatrix::nClassified(const string& theClass) const{
+double ConfusionMatrix::nClassified(const std::string& theClass) const{
   int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
   double nclassified=0;
   for(int iref=0;iref<m_results.size();++iref){
@@ -186,7 +186,7 @@ double ConfusionMatrix::nClassified(const string& theClass) const{
   return(nclassified);
 }
 
-double ConfusionMatrix::pa(const string& theClass, double* se95) const{
+double ConfusionMatrix::pa(const std::string& theClass, double* se95) const{
   assert(m_results.size());
   assert(m_results.size()==m_classes.size());
   double producer=0;
@@ -205,7 +205,7 @@ double ConfusionMatrix::pa(const string& theClass, double* se95) const{
   return dpa;
 }
 
-int ConfusionMatrix::pa_pct(const string& theClass, double* se95) const{
+int ConfusionMatrix::pa_pct(const std::string& theClass, double* se95) const{
   double dpa=pa(theClass,se95);
   if(se95!=NULL)
     *se95=static_cast<double>(static_cast<int>(0.5+1000*(*se95)))/10.0;
@@ -213,7 +213,7 @@ int ConfusionMatrix::pa_pct(const string& theClass, double* se95) const{
 }
     
 
-double ConfusionMatrix::ua(const string& theClass, double* se95) const{
+double ConfusionMatrix::ua(const std::string& theClass, double* se95) const{
   assert(m_results.size());
   assert(m_results.size()==m_classes.size());
   double user=0;
@@ -231,7 +231,7 @@ double ConfusionMatrix::ua(const string& theClass, double* se95) const{
   return dua;
 }
 
-int ConfusionMatrix::ua_pct(const string& theClass,double* se95) const{
+int ConfusionMatrix::ua_pct(const std::string& theClass,double* se95) const{
   double dua=ua(theClass,se95);
   if(se95!=NULL)
     *se95=static_cast<double>(static_cast<int>(0.5+1000*(*se95)))/10.0;

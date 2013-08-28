@@ -27,7 +27,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "gdal_priv.h"
 #include "base/Vector2d.h"
 
-using namespace std;
+// using namespace std;
 
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
@@ -36,21 +36,21 @@ class ImgReaderGdal
 {
 public:
   ImgReaderGdal(void);
-  ImgReaderGdal(const string& filename){open(filename);};
+  ImgReaderGdal(const std::string& filename){open(filename);};
   ~ImgReaderGdal(void);
-  void open(const string& filename);//, double magicX=1, double magicY=1);
+  void open(const std::string& filename);//, double magicX=1, double magicY=1);
   void close(void);
   int nrOfCol(void) const { return m_ncol;};
   int nrOfRow(void) const { return m_nrow;};
   int nrOfBand(void) const { return m_nband;};
   bool isGeoRef() const {return m_isGeoRef;};
-  string getProjection(void) const;
-  string getProjectionRef(void) const;
-  string getGeoTransform() const;
+  std::string getProjection(void) const;
+  std::string getProjectionRef(void) const;
+  std::string getGeoTransform() const;
   void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const;
-  string getDescription() const;
-  string getMetadataItem() const;
-  string getImageDescription() const;
+  std::string getDescription() const;
+  std::string getMetadataItem() const;
+  std::string getImageDescription() const;
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
   bool getCentrePos(double& x, double& y) const;
   double getUlx() const {return (m_isGeoRef)? m_ulx : 0;};
@@ -58,7 +58,7 @@ public:
   double getLrx() const {return (m_isGeoRef)? m_ulx+nrOfCol()*m_delta_x : nrOfCol()-1;};
   double getLry() const {return (m_isGeoRef)? m_uly-nrOfRow()*m_delta_y : 0;};
   // bool getMagicPixel(double& magicX, double& magicY) const {magicX=m_magic_x;magicY=m_magic_y;};
-  int getNoDataValues(vector<double>& noDataValues) const;
+  int getNoDataValues(std::vector<double>& noDataValues) const;
   bool isNoData(double value) const{return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
   int pushNoDataValue(double noDataValue);
   CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {getRasterBand(band)->SetNoDataValue(noDataValue);};
@@ -69,36 +69,36 @@ public:
   double getDeltaX(void) const {return m_delta_x;};
   double getDeltaY(void) const {return m_delta_y;};
   template<typename T> void readData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
-  template<typename T> void readData(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
-  template<typename T> void readData(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=0) const;
+  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
+  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=0) const;
   template<typename T> void readDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
-  template<typename T> void readDataBlock(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
-  template<typename T> void readData(vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
-  template<typename T> void readData(vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=0) const;
+  template<typename T> void readDataBlock(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
+  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
+  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=0) const;
   void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
   void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=false) const;
   double getMin(int& col, int& row, int band=0) const;
-  unsigned long int getHistogram(vector<unsigned long int>& histvector, double& min, double& max,int& nbin, int theBand=0) const;
+  unsigned long int getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max,int& nbin, int theBand=0) const;
   double getMax(int& col, int& row, int band=0) const;
   void getRefPix(double& refX, double &refY, int band=0) const;
-  void getRange(vector<short>& range, int Band=0) const;
+  void getRange(std::vector<short>& range, int Band=0) const;
   GDALDataType getDataType(int band=0) const;
   GDALRasterBand* getRasterBand(int band=0);
   GDALColorTable* getColorTable(int band=0) const;
-  string getDriverDescription() const;
-  string getImageType() const{return getDriverDescription();};
-//   string getImageType() const{return "GTiff";};
-  string getInterleave() const;
-  string getCompression() const;
+  std::string getDriverDescription() const;
+  std::string getImageType() const{return getDriverDescription();};
+//   std::string getImageType() const{return "GTiff";};
+  std::string getInterleave() const;
+  std::string getCompression() const;
   GDALDataset* getDataset(){return m_gds;};
   char** getMetadata();
   char** getMetadata() const;
-  void getMetadata(list<string>& metadata) const;
+  void getMetadata(std::list<std::string>& metadata) const;
 
 protected:
   void setCodec();//double magicX, double magicY);
 
-  string m_filename;
+  std::string m_filename;
   GDALDataset *m_gds;
   int m_ncol;
   int m_nrow;
@@ -110,7 +110,7 @@ protected:
   // double m_magic_x;
   // double m_magic_y;
   bool m_isGeoRef;
-  vector<double> m_noDataValues;
+  std::vector<double> m_noDataValues;
 };
 
 //     adfGeoTransform[0] /* top left x */
@@ -133,7 +133,7 @@ template<typename T> void ImgReaderGdal::readData(T& value, const GDALDataType& 
   poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,dataType,0,0);
 }
 
-template<typename T> void ImgReaderGdal::readData(vector<T>& buffer, const GDALDataType& dataType, int minCol, int maxCol, int row, int band) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType, int minCol, int maxCol, int row, int band) const
 {
   //fetch raster band
   GDALRasterBand  *poBand;
@@ -150,10 +150,10 @@ template<typename T> void ImgReaderGdal::readData(vector<T>& buffer, const GDALD
   poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
 }
 
-template<typename T> void ImgReaderGdal::readData(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band, RESAMPLE resample) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band, RESAMPLE resample) const
 {
-  vector<T> readBuffer_upper;
-  vector<T> readBuffer_lower;
+  std::vector<T> readBuffer_upper;
+  std::vector<T> readBuffer_lower;
   if(buffer.size()!=maxCol-minCol+1)
     buffer.resize(maxCol-minCol+1);
   double upperRow=row-0.5;
@@ -188,7 +188,7 @@ template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer, cons
   }
 }
   
-template<typename T> void ImgReaderGdal::readDataBlock(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
 {
   //fetch raster band
   GDALRasterBand  *poBand;
@@ -228,12 +228,12 @@ template<typename T> void ImgReaderGdal::readDataBlock(vector<T>& buffer, const 
 //     poBand->RasterIO(GF_Read,minCol,minRow+irow,maxCol-minCol+1,1,&(buffer[irow*(maxCol-minCol+1)]),maxCol-minCol+1,1,dataType,0,0);
 // }
   
-template<typename T> void ImgReaderGdal::readData(vector<T>& buffer, const GDALDataType& dataType, int row, int band) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band) const
 {
   readData(buffer,dataType,0,nrOfCol()-1,row,band);
 }
 
-template<typename T> void ImgReaderGdal::readData(vector<T>& buffer, const GDALDataType& dataType, double row, int band, RESAMPLE resample) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band, RESAMPLE resample) const
 {
   readData(buffer,dataType,0,nrOfCol()-1,row,band,resample);
 }

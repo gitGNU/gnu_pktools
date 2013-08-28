@@ -645,6 +645,15 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    outBuffer[x/down]=m_noValue;
           break;
         }
+        case(filter2d::scramble):{//could be done more efficiently window by window with random shuffling entire buffer and assigning entire buffer at once to output image...
+	  if(windowBuffer.size()){
+            int randomIndex=std::rand()%windowBuffer.size();
+            outBuffer[x/down]=windowBuffer[randomIndex];
+          }
+          else
+	    outBuffer[x/down]=m_noValue;
+          break;
+        }
         case(filter2d::mixed):{
           enum Type { BF=11, CF=12, MF=13, NF=20, W=30 };
           double nBF=occurrence[BF];
@@ -826,6 +835,26 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
         cerr << errorstring << "in class " << iclass << ", line " << y << endl;
       }
     }
+  }
+}
+
+void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output, int offsetX, int offsetY, double randomSigma, RESAMPLE resample, bool verbose)
+{
+  assert(input.nrOfCol()==output.nrOfCol());
+  assert(input.nrOfRow()==output.nrOfRow());
+  assert(input.nrOfBand()==output.nrOfBand());
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  //process band per band in memory
+  Vector2d<double> inBuffer(input.nrOfRow(),output.nrOfCol());
+  Vector2d<double> outBuffer(input.nrOfRow(),output.nrOfCol());
+  for(int iband=0;iband<input.nrOfBand();++iband){
+    input.readDataBlock(inBuffer,GDT_Float64,0,inBuffer.nCols()-1,0,inBuffer.nRows()-1,iband);
+    shift(inBuffer,outBuffer,offsetX,offsetY,randomSigma,resample,verbose);
+    output.writeDataBlock(outBuffer,GDT_Float64,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
   }
 }
 

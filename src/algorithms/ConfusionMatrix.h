@@ -25,29 +25,27 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
 
-using namespace std;
-
 class ConfusionMatrix{
 public:
   ConfusionMatrix();
   ConfusionMatrix(short nclass);
-  ConfusionMatrix(const vector<string>& classNames);
+  ConfusionMatrix(const std::vector<std::string>& classNames);
   ConfusionMatrix(const ConfusionMatrix& cm);
   ConfusionMatrix& operator=(const ConfusionMatrix& cm);
   short size() const {return m_results.size();};
   void resize(short nclass);
-  void setClassNames(const vector<string>& classNames, bool doSort=false);
-  void pushBackClassName(const string& className, bool doSort=false);
+  void setClassNames(const std::vector<std::string>& classNames, bool doSort=false);
+  void pushBackClassName(const std::string& className, bool doSort=false);
   void setResults(const Vector2d<double>& theResults);
-  void setResult(const string& theRef, const string& theClass, double theResult);
-  void incrementResult(const string& theRef, const string& theClass, double theIncrement);
+  void setResult(const std::string& theRef, const std::string& theClass, double theResult);
+  void incrementResult(const std::string& theRef, const std::string& theClass, double theIncrement);
   void clearResults();
-  double nReference(const string& theRef) const;
+  double nReference(const std::string& theRef) const;
   double nReference() const;
-  double nClassified(const string& theRef) const;
+  double nClassified(const std::string& theRef) const;
   int nClasses() const {return m_classes.size();};
-  string getClass(int iclass) const {assert(iclass>=0);assert(iclass<m_classes.size());return m_classes[iclass];};
-  int getClassIndex(string className) const {
+  std::string getClass(int iclass) const {assert(iclass>=0);assert(iclass<m_classes.size());return m_classes[iclass];};
+  int getClassIndex(std::string className) const {
     int index=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),className));
     assert(index>=0);
     if(index<m_results.size())
@@ -55,13 +53,13 @@ public:
     else
       return(-1);
   }
-  vector<string> getClassNames() const {return m_classes;};
+  std::vector<std::string> getClassNames() const {return m_classes;};
   ~ConfusionMatrix();
-  double pa(const string& theClass, double* se95=NULL) const;
-  double ua(const string& theClass, double* se95=NULL) const;
+  double pa(const std::string& theClass, double* se95=NULL) const;
+  double ua(const std::string& theClass, double* se95=NULL) const;
   double oa(double* se95=NULL) const;
-  int pa_pct(const string& theClass, double* se95=NULL) const;
-  int ua_pct(const string& theClass, double* se95=NULL) const;
+  int pa_pct(const std::string& theClass, double* se95=NULL) const;
+  int ua_pct(const std::string& theClass, double* se95=NULL) const;
   int oa_pct(double* se95=NULL) const;
   double kappa() const;
   ConfusionMatrix& operator*=(double weight);
@@ -85,7 +83,7 @@ public:
     return os;
   };
 private:
-  vector<string> m_classes;
+  std::vector<std::string> m_classes;
   Vector2d<double> m_results;
 };
 

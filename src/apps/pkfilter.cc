@@ -41,14 +41,15 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median,var,min,max,sum,mean,minmax,dilate,erode,close,open,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf,dwtForward,dwtInverse,dwtQuantize)", "median");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median,var,min,max,sum,mean,minmax,dilate,erode,close,open,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf,dwtForward,dwtInverse,dwtQuantize,scramble,shift)", "median");
+  Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, must be odd", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, must be odd", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
   Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
   Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding");
-  Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class), or quantization for dwtQuantize", 0);
+  Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class), or quantization for dwtQuantize, or sigma for shift", 0);
   Optionpk<short> mask_opt("m", "mask", "mask value(s) ");
   Optionpk<std::string> tap_opt("tap", "tap", "text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps");
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
@@ -72,6 +73,7 @@ int main(int argc,char **argv) {
     disc_opt.retrieveOption(argc,argv);
     angle_opt.retrieveOption(argc,argv);
     method_opt.retrieveOption(argc,argv);
+    resample_opt.retrieveOption(argc,argv);
     dimX_opt.retrieveOption(argc,argv);
     dimY_opt.retrieveOption(argc,argv);
     dimZ_opt.retrieveOption(argc,argv);
@@ -408,6 +410,18 @@ int main(int argc,char **argv) {
     }
     case(filter2d::heterog):{//spatially heterogeneous
       filter2d.doit(input,output,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      break;
+    }
+    case(filter2d::shift):{//spatially heterogeneous
+      assert(input.nrOfBand());
+      assert(input.nrOfCol());
+      assert(input.nrOfRow());
+      try{
+        filter2d.shift(input,output,dimX_opt[0],dimY_opt[0],threshold_opt[0],filter2d::Filter2d::getResampleType(resample_opt[0]));
+      }
+      catch(string errorstring){
+        cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::mrf):{//Markov Random Field

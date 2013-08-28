@@ -23,8 +23,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _EGCS_H_
 #define _EGCS_H_
 
-using namespace std;
-
 class Egcs
 {
 public:
@@ -32,16 +30,16 @@ public:
   Egcs(unsigned short level);
   /* Egcs(unsigned short level); */
   ~Egcs();
-  unsigned short cell2level(const string& cellCode) const;
-  string geo2cell(double x, double y) const;
+  unsigned short cell2level(const std::string& cellCode) const;
+  std::string geo2cell(double x, double y) const;
   double getSize() const {return getBaseSize()*pow(2,(m_level-19)%3);};
   void setLevel(unsigned short level){m_level=level;};
   unsigned short getLevel() const{return m_level;};
   unsigned short res2level(double resolution) const;
   double getResolution() const;
   void force2grid(double& ulx, double& uly, double& lrx, double &lry) const;
-  void cell2bb(const string& cellCode, int &ulx, int &uly, int &lrx, int &lry) const;
-  void cell2mid(const string& cellCode, double& midX, double& midY) const;
+  void cell2bb(const std::string& cellCode, int &ulx, int &uly, int &lrx, int &lry) const;
+  void cell2mid(const std::string& cellCode, double& midX, double& midY) const;
 private:
   int getBaseSize() const {return pow(10,(m_level+1)/3);};
   unsigned short m_level;
