@@ -1,0 +1,8 @@
+\section faq_pksetmask Frequently asked questions about pksetmask
+
+ Q1. I want to mask my input image (a byte image with values between 0 and 254) with a mask that only covers a spatial subset of the input image. Within the spatial subset of the primary mask, all pixels must be set to 0 where the primary mask equals 1. Outside the spatial subset I want to set all pixel values to 255.
+
+ A1. This can be done using two masks, selecting the input image as the secondary mask. Choose the secondary operator acting on the secondary mask such that the condition is always true (e.g, < 255 ).
+\code
+pksetmask -i input.tif -m mask.tif -t 1 -f 0 --operator '='  -m input.tif -t 255 -f 255 --operator '<'  -o output.tif
+\endcode
