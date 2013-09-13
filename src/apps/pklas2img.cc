@@ -22,7 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
-#include "fileclasses/FileReaderLas.h"
+#include "lasclasses/FileReaderLas.h"
 #include "algorithms/StatFactory.h"
 #include "algorithms/Filter2d.h"
 

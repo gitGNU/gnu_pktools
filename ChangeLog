@@ -126,3 +126,5 @@ version 2.4.2
 	new methods for scrambling and shifting images
  - pkstatogr
 	make histogram more similar to pkstat with support of relative option
+ - pklas2img
+	correct for wrong include path for FileReaderLas.h (lasclasses instead of fileclasses)
