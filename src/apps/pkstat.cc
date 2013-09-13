@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
   Optionpk<double> min_opt("min","min","set minimum value",0);
   Optionpk<double> max_opt("max","max","set maximum value",0);
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
-  Optionpk<short> nbin_opt("bin","bin","number of bins to calculate histogram",10);
+  Optionpk<short> nbin_opt("bin","bin","number of bins to calculate histogram",0);
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
   Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> rmse_opt("e","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
@@ -101,9 +101,17 @@ int main(int argc, char *argv[])
     asciiReader.setMaxRow(range_opt[1]);
   asciiReader.readData(dataVector,col_opt);
   assert(dataVector.size());
+  statfactory::StatFactory stat;
   double minValue=min_opt[0];
   double maxValue=max_opt[0];
-  statfactory::StatFactory stat;
+  if(histogram_opt[0]){
+    if(nbin_opt[0]<1){
+      std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
+      if(maxValue<=minValue)
+        stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minValue,maxValue);
+      nbin_opt[0]=maxValue-minValue+1;
+    }
+  }
   for(int icol=0;icol<col_opt.size();++icol){
     if(!dataVector[icol].size()){
       std::cerr << "Warning: dataVector[" << icol << "] is empty" << std::endl;
@@ -132,6 +140,7 @@ int main(int argc, char *argv[])
       cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
     }
     if(histogram_opt[0]){
+      assert(nbin_opt[0]);
       if(verbose_opt[0])
         std::cout << "calculating histogram for col " << icol << std::endl;
       stat.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),statVector[icol],nbin_opt[0],minValue,maxValue);

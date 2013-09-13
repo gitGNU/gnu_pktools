@@ -31,7 +31,7 @@ FileReaderAscii::FileReaderAscii(const std::string& filename)
 }
 
 FileReaderAscii::FileReaderAscii(const std::string& filename, const char& fieldseparator)
-  : m_min(0),m_max(0),m_minRow(0),m_maxRow(0),m_fs(' '),m_comment(fieldseparator){
+  : m_min(0),m_max(0),m_minRow(0),m_maxRow(0),m_fs(fieldseparator),m_comment('#'){
   open(filename);
 }
 

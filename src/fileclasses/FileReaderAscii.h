@@ -83,13 +83,13 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
             std::cout << item << " ";
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
+            isComment=true;
             if(pos>0)
               item=item.substr(0,pos-1);
             else
               break;
             if(verbose)
               std::cout << "comment found, string is " << item << std::endl;
-            isComment=true;
           }
           if(ncol==col){
             T value=scale*string2type<T>(item)+offset;
@@ -136,13 +136,13 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
           // std::istringstream itemStream(item);
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
+            isComment=true;
             if(pos>0)
               item=item.substr(0,pos-1);
             else
               break;
             if(verbose)
               std::cout << "comment found, string is " << item << std::endl;
-            isComment=true;
           }
           T value=scale*string2type<T>(item)+offset;
           // T value=string2type<T>(item);
@@ -199,13 +199,13 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
             std::cout << item << " ";
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
+            isComment=true;
             if(pos>0)
               item=item.substr(0,pos-1);
             else
               break;
             if(verbose)
               std::cout << "comment found, string is " << item << std::endl;
-            isComment=true;
           }
           for(int icol=0;icol<cols.size();++icol){
             if(ncol==cols[icol]){
@@ -228,7 +228,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
         // if(dataVector.back().size())
         //   assert(ncol>=cols[0]);
       }
-      if(transpose)
+      if(sampleVector.size()&&transpose)
         dataVector.push_back(sampleVector);
       ++nrow;
     }
@@ -259,13 +259,13 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
           // std::istringstream itemStream(item);
           unsigned pos=item.find(m_comment);
           if(pos!=std::string::npos){
+            isComment=true;
             if(pos>0)
               item=item.substr(0,pos-1);
             else
               break;
             if(verbose)
               std::cout << "comment found, string is " << item << std::endl;
-            isComment=true;
           }
           T value=scale*string2type<T>(item)+offset;
           // T value=string2type<T>(item);
@@ -290,7 +290,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
         // if(dataVector.back().size())
         //   assert(ncol>=cols[0]);
       }
-      if(transpose)
+      if(sampleVector.size()&&transpose)
         dataVector.push_back(sampleVector);
       ++nrow;
     }

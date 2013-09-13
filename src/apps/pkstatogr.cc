@@ -29,9 +29,12 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input shape file", "");
   Optionpk<string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
+  Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
+  Optionpk<double> min_opt("min","min","set minimum value",0);
+  Optionpk<double> max_opt("max","max","set maximum value",0);
+  Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<short> nbin_opt("nbin", "nbin", "number of bins", 0);
-  Optionpk<bool> min_opt("min","min","calculate minimum value",false);
-  Optionpk<bool> max_opt("max","max","calculate maximum value",false);
+  Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
   Optionpk<bool> mean_opt("mean","mean","calculate mean value",false);
   Optionpk<bool> median_opt("median","median","calculate median value",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
@@ -42,9 +45,12 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     fieldname_opt.retrieveOption(argc,argv);
-    nbin_opt.retrieveOption(argc,argv);
+    minmax_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
+    histogram_opt.retrieveOption(argc,argv);
+    nbin_opt.retrieveOption(argc,argv);
+    relative_opt.retrieveOption(argc,argv);
     mean_opt.retrieveOption(argc,argv);
     median_opt.retrieveOption(argc,argv);
     stdev_opt.retrieveOption(argc,argv);
@@ -79,12 +85,26 @@ int main(int argc, char *argv[])
     theData.clear();
     inputReader.readData(theData,OFTReal,fieldname_opt[ifield],0,verbose_opt[0]);
     vector<int> binData;
-    double minimum=0;
-    double maximum=0;
-    int nbin=(nbin_opt[0]>1)? nbin_opt[0] : 2;
+    double minValue=min_opt[0];
+    double maxValue=max_opt[0];
+    if(histogram_opt[0]){
+      if(nbin_opt[0]<1){
+        if(maxValue<=minValue)
+          stat.minmax(theData,theData.begin(),theData.end(),minValue,maxValue);
+        nbin_opt[0]=maxValue-minValue+1;
+      }
+      assert(nbin_opt[0]);
+      try{
+        stat.distribution(theData,theData.begin(),theData.end(),binData,nbin_opt[0],minValue,maxValue);
+      }
+      catch(string theError){
+        std::cerr << "Warning: all identical values in data" << std::endl;
+        exit(1);
+      }
+    }
+    // int nbin=(nbin_opt[0]>1)? nbin_opt[0] : 2;
     std::cout << " --fname " << fieldname_opt[ifield];
     try{
-      stat.distribution(theData,theData.begin(),theData.end(),binData,nbin,minimum,maximum);
       double theMean=0;
       double theVar=0;
       stat.meanVar(theData,theMean,theVar);
@@ -92,18 +112,22 @@ int main(int argc, char *argv[])
         std::cout << " --mean " << theMean;
       if(stdev_opt[0])
         std::cout << " --stdev " << sqrt(theVar);
-      if(min_opt[0])
-        cout << " -m " << minimum;
-      if(max_opt[0])
-        cout << " -M " << maximum;
+      if(minmax_opt[0]){
+        cout << " -min " << stat.min(theData);
+        cout << " -max " << stat.max(theData);
+      }
       if(median_opt[0])
         std::cout << " -median " << stat.median(theData);
       if(size_opt[0])
         std::cout << " -size " << theData.size();
       std::cout << std::endl;
-      if(nbin_opt[0]>1){
-        for(int bin=0;bin<nbin;++bin)
-          std::cout << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(binData[bin])/theData.size() << std::endl;
+      if(histogram_opt[0]){
+        for(int bin=0;bin<nbin_opt[0];++bin){
+          if(relative_opt[0])
+            std::cout << (maxValue-minValue)*bin/(nbin_opt[0]-1)+minValue << " " << 100.0*static_cast<double>(binData[bin])/theData.size() << std::endl;
+          else
+            std::cout << (maxValue-minValue)*bin/(nbin_opt[0]-1)+minValue << " " << binData[bin] << std::endl;
+        }
       }
     }
     catch(string theError){
@@ -112,9 +136,9 @@ int main(int argc, char *argv[])
       if(stdev_opt[0])
         std::cout << " --stdev " << "0";
       if(min_opt[0])
-        cout << " -m " << theData.back();
+        cout << " -min " << theData.back();
       if(max_opt[0])
-        cout << " -M " << theData.back();
+        cout << " -max " << theData.back();
       if(median_opt[0])
         std::cout << " -median " << theData.back();
       if(size_opt[0])
