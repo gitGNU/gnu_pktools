@@ -9,6 +9,12 @@ The simplest way to compile this package is:
      `sh ./configure' instead to prevent `csh' from trying to execute
      `configure' itself.
      
+     You might need to execute:
+     
+     automake --add-missing
+
+     before you are able to configure
+     
      configure options (use ./configure --help for help info)
      
         --with-gdal=<path to gdal-config file>
