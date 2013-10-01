@@ -121,7 +121,7 @@ version 2.4.2
  - FileReaderAscii
 	corrected error for constructor with fieldseparator argument
  - pkinfo
-	bug fixed with -min and -max
+	bug fixed with -min and -max in hist (thanks to Giuseppe Amatuli for noticing)
  - pkfilter
 	new methods for scrambling and shifting images
  - pkstatogr

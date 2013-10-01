@@ -121,6 +121,10 @@ int main(int argc, char *argv[])
 
   while(invalid_opt.size()<validBand_opt.size())
     invalid_opt.push_back(invalid_opt[0]);
+  while(minValue_opt.size()<validBand_opt.size())
+    minValue_opt.push_back(minValue_opt[0]);
+  while(maxValue_opt.size()<validBand_opt.size())
+    maxValue_opt.push_back(maxValue_opt[0]);
   RESAMPLE theResample;
   switch(resample_opt[0]){
   case(BILINEAR):
