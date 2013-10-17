@@ -451,12 +451,10 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
   getMinMax(minValue,maxValue,theBand);
   if(min<max&&min>minValue)
     minValue=min;
-  else
-    min=minValue;
   if(min<max&&max<maxValue)
     maxValue=max;
-  else
-    max=maxValue;
+  min=minValue;
+  max=maxValue;
   if(nbin==0)
     nbin=maxValue-minValue+1;
   assert(nbin>0);
