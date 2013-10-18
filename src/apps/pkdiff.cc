@@ -42,11 +42,13 @@ int main(int argc, char *argv[])
   Optionpk<short> lzw_opt("\0", "lzw", "compression (default value is 1)", 1);
   Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is shape file(default is label)", "label");
   Optionpk<string> labelclass_opt("lc", "lclass", "name of the classified label in case output is shape file (default is class)", "class");
-  Optionpk<short> class_opt("c", "class", "numeric classes used (must cover range in input and reference raster image. Leave empty if range must be read from first input image (default)", 0);
+  // Optionpk<short> class_opt("c", "class", "numeric classes used (must cover range in input and reference raster image. Leave empty if range must be read from first input image (default)", 0);
   Optionpk<short> boundary_opt("\0", "boundary", "boundary for selecting the sample (default: 1)", 1);
   Optionpk<bool> disc_opt("\0", "circular", "use circular disc kernel boundary)", false);
   Optionpk<bool> homogeneous_opt("\0", "homogeneous", "only take homogeneous regions into account", false);
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
+  Optionpk<string> classname_opt("\0", "class", "list of class names."); 
+  Optionpk<short> classvalue_opt("\0", "reclass", "list of class values (use same order as in classname opt."); 
   Optionpk<short> verbose_opt("v", "verbose", "verbose (default value is 0)", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -67,10 +69,12 @@ int main(int argc, char *argv[])
     lzw_opt.retrieveOption(argc,argv);
     labelref_opt.retrieveOption(argc,argv);
     labelclass_opt.retrieveOption(argc,argv);
-    class_opt.retrieveOption(argc,argv);
+    // class_opt.retrieveOption(argc,argv);
     boundary_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
     homogeneous_opt.retrieveOption(argc,argv);
+    classname_opt.retrieveOption(argc,argv);
+    classvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -97,11 +101,15 @@ int main(int argc, char *argv[])
   vector<short> referenceRange;
   ConfusionMatrix cm;
   int nclass=0;
+  map<string,short> classValueMap;
+  vector<std::string> nameVector(255);//the inverse of the classValueMap
   vector<string> classNames;
   if(confusion_opt[0]){
-    if(class_opt.size()>1)
-      inputRange=class_opt;
-    else{
+    // if(class_opt.size()>1)
+    //   inputRange=class_opt;
+    // if(classvalue_opt.size()>1)
+    //   inputRange=classvalue_opt;
+    // else{
       try{
         if(verbose_opt[0])
           cout << "opening input image file " << input_opt[0] << endl;
@@ -113,7 +121,7 @@ int main(int argc, char *argv[])
       }
       inputReader.getRange(inputRange,band_opt[0]);
       inputReader.close();
-    }
+    // }
   
     for(int iflag=0;iflag<flag_opt.size();++iflag){
       vector<short>::iterator fit;
@@ -126,6 +134,15 @@ int main(int argc, char *argv[])
       cout << "nclass (inputRange.size()): " << nclass << endl;
       cout << "input range: " << endl;
     }
+    if(classname_opt.size()){
+      assert(classname_opt.size()==classvalue_opt.size());
+      for(int iclass=0;iclass<classname_opt.size();++iclass){
+        classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
+        assert(classvalue_opt[iclass]<nameVector.size());
+        nameVector[classvalue_opt[iclass]]=classname_opt[iclass];
+      }
+    }
+    // nclass=classValueMap.size();
     for(int rc=0;rc<inputRange.size();++rc){
       classNames.push_back(type2string(inputRange[rc]));
       if(verbose_opt[0])
@@ -138,6 +155,7 @@ int main(int argc, char *argv[])
         cout << iclass << " " << cm.getClass(iclass) << endl;
     }
   }
+
   unsigned int ntotalValidation=0;
   unsigned int nflagged=0;
   Vector2d<int> resultClass(nclass,nclass);
@@ -243,10 +261,24 @@ int main(int argc, char *argv[])
           //get x and y from readFeature
           double x,y;
           OGRGeometry *poGeometry;
+          OGRPolygon readPolygon;
+          OGRPoint centroidPoint;
+          OGRPoint *poPoint;
           poGeometry = readFeature->GetGeometryRef();
-          assert( poGeometry != NULL && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint );
-          OGRPoint *poPoint = (OGRPoint *) poGeometry;
-          //         writeFeature->SetGeometry(poPoint);
+          // assert( poGeometry != NULL && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint );
+          if(poGeometry==NULL)
+            continue;
+          else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+            readPolygon = *((OGRPolygon *) poGeometry);
+            readPolygon.Centroid(&centroidPoint);
+            poPoint=&centroidPoint;
+          }
+          else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
+            poPoint = (OGRPoint *) poGeometry;
+          else{
+            std::cerr << "Warning: skipping feature (not of type point or polygon)" << std::endl;
+            continue;
+          }
           x=poPoint->getX();
           y=poPoint->getY();
           short inputValue;
@@ -255,7 +287,14 @@ int main(int argc, char *argv[])
           short maskValue;
           short outputValue;
           //read referenceValue from feature
-          short referenceValue=readFeature->GetFieldAsInteger(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
+          short referenceValue;
+          string referenceClassName;
+          if(classValueMap.size()){
+            referenceClassName=readFeature->GetFieldAsString(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
+            referenceValue=classValueMap[referenceClassName];
+          }
+          else
+            referenceValue=readFeature->GetFieldAsInteger(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
           if(verbose_opt[0])
             cout << "reference value: " << referenceValue << endl;
           bool pixelFlagged=false;
@@ -358,15 +397,22 @@ int main(int argc, char *argv[])
                 writeFeature->SetField(labelclass_opt[0].c_str(),static_cast<int>(inputValue));
               if(confusion_opt[0]){
                 ++ntotalValidation;
-                int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-                int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
-                assert(rc<nclass);
-                assert(ic<nclass);
-                ++nvalidation[rc];
-                ++resultClass[rc][ic];
-                if(verbose_opt[0]>1)
-                  cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
-                cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+                if(classValueMap.size()){
+                  assert(inputValue<nameVector.size());
+                  string className=nameVector[inputValue];
+                  cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
+                }
+                else{
+                  int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
+                  int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+                  assert(rc<nclass);
+                  assert(ic<nclass);
+                  ++nvalidation[rc];
+                  ++resultClass[rc][ic];
+                  if(verbose_opt[0]>1)
+                    cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
+                  cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+                }
               }
               if(inputValue==referenceValue){//correct
                 if(valueE_opt[0]!=flag_opt[0])
@@ -404,19 +450,26 @@ int main(int argc, char *argv[])
                   if(!windowJ&&!windowI){//centre pixel
                     if(confusion_opt[0]){
                       ++ntotalValidation;
-                      int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-                      int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
-                      if(rc>=nclass)
-                        continue;
-                      if(ic>=nclass)
-                        continue;
-                      // assert(rc<nclass);
-                      // assert(ic<nclass);
-                      ++nvalidation[rc];
-                      ++resultClass[rc][ic];
-                      if(verbose_opt[0]>1)
-                        cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
-                      cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+                      if(classValueMap.size()){
+                        assert(inputValue<nameVector.size());
+                        string className=nameVector[inputValue];
+                        cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
+                      }
+                      else{
+                        int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
+                        int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+                        if(rc>=nclass)
+                          continue;
+                        if(ic>=nclass)
+                          continue;
+                        // assert(rc<nclass);
+                        // assert(ic<nclass);
+                        ++nvalidation[rc];
+                        ++resultClass[rc][ic];
+                        if(verbose_opt[0]>1)
+                          cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
+                        cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+                      }
                     }
                     if(inputValue==referenceValue){//correct
                       if(valueE_opt[0]!=flag_opt[0])
@@ -453,7 +506,7 @@ int main(int argc, char *argv[])
           maskReader.close();
       }
     }
-  }
+  }//reference is shape file
   else{
     ImgWriterGdal imgWriter;
     try{
