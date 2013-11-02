@@ -117,6 +117,10 @@ version 2.4.1
 	todo: take priors into account for cross validation
 	ordering of labels before training
 version 2.4.2
+ - todo: change all projection options to a_srs
+ - apps/Makefile.am
+	add GSL_LIBS to AM_LDFLAGS and LDADD
+	todo: remove redundancy in AM_LDFLAGS and LDADD
  - clean up of using namespace std in header files
  - FileReaderAscii
 	corrected error for constructor with fieldseparator argument
@@ -124,6 +128,9 @@ version 2.4.2
 	bug fixed with -min and -max in hist (thanks to Giuseppe Amatuli for noticing)
  - pkfilter
 	new methods for scrambling and shifting images
+	update help info for support of of even kernel sizes
+ - Filter2d
+	added support for even kernel sizes
  - pkstatogr
 	make histogram more similar to pkstat with support of relative option
  - pklas2img

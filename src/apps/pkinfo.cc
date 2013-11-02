@@ -293,6 +293,9 @@ int main(int argc, char *argv[])
       std::vector<unsigned long int> output(nbin_opt[0]);
       minValue=0;
       maxValue=0;
+      //todo: optimize such that getMinMax is only called once...
+      imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+      
       if(min_opt.size())
         minValue=min_opt[0];
       if(max_opt.size())
