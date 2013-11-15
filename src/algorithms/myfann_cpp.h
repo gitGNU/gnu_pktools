@@ -1540,7 +1540,7 @@ public:
           assert(cv<ntraining);
           float rmse=0;
           int nclass=trainingFeatures.size();
-          vector< Vector2d<float> > testFeatures(nclass);
+          std::vector< Vector2d<float> > testFeatures(nclass);
           int testclass=0;//class to leave out
           int testsample=0;//sample to leave out
           int nrun=(cv>1)? cv : ntraining;
@@ -1589,16 +1589,16 @@ public:
             assert(nsample==ntest);
             //training with left out training set
             if(verbose>1)
-              cout << endl << "Set training data" << endl;
+              std::cout << std::endl << "Set training data" << std::endl;
             bool initWeights=true;
             unsigned int epochs_between_reports=0;
             train_on_data(trainingFeatures,ntraining-ntest,initWeights, max_epochs,
                           epochs_between_reports, desired_error);
             //cross validation with testFeatures
             if(verbose>1)
-              cout << endl << "Cross validation" << endl;
+              std::cout << std::endl << "Cross validation" << std::endl;
 
-            vector<float> result(nclass);
+            std::vector<float> result(nclass);
             int maxClass=-1;
             for(int iclass=0;iclass<testFeatures.size();++iclass){
               assert(trainingFeatures[iclass].size());
@@ -1621,7 +1621,7 @@ public:
 
             // rmse+=test_data(testFeatures,ntest);
             // if(verbose>1)
-            //   cout << endl << "rmse: " << rmse << endl;
+            //   std::cout << std::endl << "rmse: " << rmse << std::endl;
           }
           // rmse/=nrun;
           //reset from very last run
@@ -1698,7 +1698,7 @@ public:
             assert(testInput.size()==testOutput.size());
             //training with left out training set
             if(verbose>1)
-              cout << endl << "Set training data" << endl;
+              std::cout << std::endl << "Set training data" << std::endl;
             bool initWeights=true;
             unsigned int epochs_between_reports=0;
             
@@ -1706,9 +1706,9 @@ public:
                           epochs_between_reports, desired_error);
             //cross validation with testFeatures
             if(verbose>1)
-              cout << endl << "Cross validation" << endl;
+              std::cout << std::endl << "Cross validation" << std::endl;
 
-            vector<fann_type> result(noutput);
+            std::vector<fann_type> result(noutput);
             for(int isample=0;isample<testInput.size();++isample){
               result=run(testInput[isample]);
               referenceVector.push_back(testOutput[isample]);

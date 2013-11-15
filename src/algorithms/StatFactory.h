@@ -32,9 +32,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <gsl/gsl_fit.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
-
-using namespace std;
-// using namespace NEWMAT;
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_cdf.h>
 
 namespace statfactory
 {
@@ -43,14 +43,20 @@ class StatFactory{
 
 public:
   enum INTERPOLATION_TYPE {undefined=0,linear=1,polynomial=2,cspline=3,cspline_periodic=4,akima=5,akima_periodic=6};
+  //todo: expand with other distributions as in http://www.gnu.org/software/gsl/manual/gsl-ref_toc.html#TOC320
+  enum DISTRIBUTION_TYPE {uniform=1,gaussian=2};
+
   StatFactory(void){};
   virtual ~StatFactory(void){};
   INTERPOLATION_TYPE getInterpolationType(const std::string interpolationType){
     std::map<std::string, INTERPOLATION_TYPE> m_interpMap;
     initMap(m_interpMap);
-    // gsl_interp_accel *acc=gsl_interp_accel_alloc();
-    // gsl_spline *spline=gsl_spline_alloc(m_interpMap["interpolationType"],theSize);
     return m_interpMap[interpolationType];
+  };
+  DISTRIBUTION_TYPE getDistributionType(const std::string distributionType){
+    std::map<std::string, DISTRIBUTION_TYPE> m_distMap;
+    initDist(m_distMap);
+    return m_distMap[distributionType];
   };
   static void allocAcc(gsl_interp_accel *&acc){
     acc = gsl_interp_accel_alloc ();
@@ -89,46 +95,72 @@ public:
     return gsl_spline_eval (spline, x, acc);
   };
 
+  static gsl_rng* getRandomGenerator(unsigned long int theSeed){
+    const gsl_rng_type * T;
+    gsl_rng * r;
+  
+    // select random number generator 
+    r = gsl_rng_alloc (gsl_rng_mt19937);
+    gsl_rng_set(r,theSeed);
+    return r;
+  }
 
-  template<class T> T max(const vector<T>& v) const;
-  template<class T> T min(const vector<T>& v) const;
-//   template<class T> typename vector<T>::const_iterator max(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const;
-  template<class T> typename vector<T>::const_iterator max(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const;
-  template<class T> typename vector<T>::iterator max(const vector<T>& v, typename vector<T>::iterator begin, typename vector<T>::iterator end) const;
-  template<class T> typename vector<T>::const_iterator absmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const;
-  template<class T> typename vector<T>::const_iterator min(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const;
-  template<class T> typename vector<T>::iterator min(const vector<T>& v, typename vector<T>::iterator begin, typename vector<T>::iterator end) const;
-  template<class T> typename vector<T>::const_iterator absmin(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const;
-  template<class T> void minmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, T& theMin, T& theMax) const;  
-  template<class T> T sum(const vector<T>& v) const;
-  template<class T> double mean(const vector<T>& v) const;
-  template<class T> T median(const vector<T>& v) const;
-  template<class T> double var(const vector<T>& v) const;
-  template<class T> double moment(const vector<T>& v, int n) const;
-  template<class T> double cmoment(const vector<T>& v, int n) const;
-  template<class T> double skewness(const vector<T>& v) const;
-  template<class T> double kurtosis(const vector<T>& v) const;
-  template<class T> void meanVar(const vector<T>& v, double& m1, double& v1) const;
-  template<class T1, class T2> void  scale2byte(const vector<T1>& input, vector<T2>& output, unsigned char lbound=0, unsigned char ubound=255) const;
-  template<class T> void distribution(const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end,  vector<int>& output, int nbin, T &minimum=0.0, T &maximum=0.0, const string &filename="");
-  template<class T> void cumulative (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<int>& output, int nbin, T &minimum, T &maximum);
-  template<class T> void  percentiles (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<T>& output, int nbin=10, T &minimum=0.0, T &maximum=0.0, const string &filename="");
-  template<class T> void signature(const vector<T>& input, double& k, double& alpha, double& beta, double e);
+  static double getRandomValue(const gsl_rng* r, const std::string type, double a=0, double b=0){
+    std::map<std::string, DISTRIBUTION_TYPE> m_distMap;
+    initDist(m_distMap);
+    double randValue=0;
+    switch(m_distMap[type]){
+    case(uniform):
+      randValue = gsl_rng_uniform(r);
+      break;
+    case(gaussian):
+    default:
+      randValue = gsl_ran_gaussian(r, a); 
+    break;
+    }
+    return randValue;
+  };
+  template<class T> T max(const std::vector<T>& v) const;
+  template<class T> T min(const std::vector<T>& v) const;
+//   template<class T> typename std::vector<T>::const_iterator max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
+  template<class T> typename std::vector<T>::const_iterator max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
+  template<class T> typename std::vector<T>::iterator max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
+  template<class T> typename std::vector<T>::const_iterator absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
+  template<class T> typename std::vector<T>::const_iterator min(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
+  template<class T> typename std::vector<T>::iterator min(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
+  template<class T> typename std::vector<T>::const_iterator absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
+  template<class T> void minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const;  
+  template<class T> T sum(const std::vector<T>& v) const;
+  template<class T> double mean(const std::vector<T>& v) const;
+  template<class T> T median(const std::vector<T>& v) const;
+  template<class T> double var(const std::vector<T>& v) const;
+  template<class T> double moment(const std::vector<T>& v, int n) const;
+  template<class T> double cmoment(const std::vector<T>& v, int n) const;
+  template<class T> double skewness(const std::vector<T>& v) const;
+  template<class T> double kurtosis(const std::vector<T>& v) const;
+  template<class T> void meanVar(const std::vector<T>& v, double& m1, double& v1) const;
+  template<class T1, class T2> void  scale2byte(const std::vector<T1>& input, std::vector<T2>& output, unsigned char lbound=0, unsigned char ubound=255) const;
+  template<class T> void distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end,  std::vector<double>& output, int nbin, T &minimum=0.0, T &maximum=0.0, double sigma=0, const std::string &filename="");
+  template<class T> void distribution(const std::vector<T>& input,  std::vector<double>& output, int nbin, double sigma=0, const std::string &filename=""){distribution(input,input.begin(),input.end(),output,nbin,0,0,sigma,filename);};
+  template<class T> void  distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX=0, T& maxX=0, T& minY=0, T& maxY=0, double sigma=0, const std::string& filename="");
+  template<class T> void cumulative (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<int>& output, int nbin, T &minimum, T &maximum);
+  template<class T> void  percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin=10, T &minimum=0.0, T &maximum=0.0, const std::string &filename="");
+  template<class T> void signature(const std::vector<T>& input, double& k, double& alpha, double& beta, double e);
   void signature(double m1, double m2, double& k, double& alpha, double& beta, double e);
-  template<class T> void normalize(const vector<T>& input, vector<double>& output);
-  template<class T> void normalize_pct(vector<T>& input);
-  template<class T> double rmse(const vector<T>& x, const vector<T>& y) const;
-  template<class T> double correlation(const vector<T>& x, const vector<T>& y, int delay=0) const;
-  template<class T> double cross_correlation(const vector<T>& x, const vector<T>& y, int maxdelay, vector<T>& z) const;
-  template<class T> double linear_regression(const vector<T>& x, const vector<T>& y, double &c0, double &c1) const;
-  template<class T> void interpolateUp(const vector<double>& wavelengthIn, const vector<T>& input, const vector<double>& wavelengthOut, const std::string& type, vector<T>& output, bool verbose=false);
-  template<class T> void interpolateUp(const vector<double>& wavelengthIn, const vector< vector<T> >& input, const vector<double>& wavelengthOut, const std::string& type, vector< vector<T> >& output, bool verbose=false);
-  // template<class T> void interpolateUp(const vector< vector<T> >& input, vector< vector<T> >& output, double start, double end, double step, const gsl_interp_type* type);
-  // template<class T> void interpolateUp(const vector< vector<T> >& input, const vector<double>& wavelengthIn, vector< vector<T> >& output, vector<double>& wavelengthOut, double start, double end, double step, const gsl_interp_type* type);
-  template<class T> void interpolateUp(const vector<T>& input, vector<T>& output, int nbin);
-  template<class T> void interpolateUp(double* input, int dim, vector<T>& output, int nbin);
-  template<class T> void interpolateDown(const vector<T>& input, vector<T>& output, int nbin);
-  template<class T> void interpolateDown(double* input, int dim, vector<T>& output, int nbin);
+  template<class T> void normalize(const std::vector<T>& input, std::vector<double>& output);
+  template<class T> void normalize_pct(std::vector<T>& input);
+  template<class T> double rmse(const std::vector<T>& x, const std::vector<T>& y) const;
+  template<class T> double correlation(const std::vector<T>& x, const std::vector<T>& y, int delay=0) const;
+  template<class T> double cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const;
+  template<class T> double linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
+  template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose=false);
+  template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector< std::vector<T> >& output, bool verbose=false);
+  // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, std::vector< std::vector<T> >& output, double start, double end, double step, const gsl_interp_type* type);
+  // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthIn, std::vector< std::vector<T> >& output, std::vector<double>& wavelengthOut, double start, double end, double step, const gsl_interp_type* type);
+  template<class T> void interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin);
+  template<class T> void interpolateUp(double* input, int dim, std::vector<T>& output, int nbin);
+  template<class T> void interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin);
+  template<class T> void interpolateDown(double* input, int dim, std::vector<T>& output, int nbin);
 
 private:
   static void initMap(std::map<std::string, INTERPOLATION_TYPE>& m_interpMap){
@@ -140,74 +172,79 @@ private:
     m_interpMap["akima"]=akima;
     m_interpMap["akima_periodic"]=akima_periodic;
   }
+  static void initDist(std::map<std::string, DISTRIBUTION_TYPE>& m_distMap){
+    //initialize distMap
+    m_distMap["gaussian"]=gaussian;
+    m_distMap["uniform"]=uniform;
+  }
 
 };
 
 
-template<class T> typename vector<T>::iterator StatFactory::max(const vector<T>& v, typename vector<T>::iterator begin, typename vector<T>::iterator end) const
+template<class T> typename std::vector<T>::iterator StatFactory::max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const
 {
-  typename vector<T>::iterator tmpIt=begin;
-  for (typename vector<T>::iterator it = begin; it!=end; ++it){
+  typename std::vector<T>::iterator tmpIt=begin;
+  for (typename std::vector<T>::iterator it = begin; it!=end; ++it){
     if(*tmpIt<*it)
       tmpIt=it;
   }
   return tmpIt;
 }
 
-template<class T> T StatFactory::max(const vector<T>& v) const
+template<class T> T StatFactory::max(const std::vector<T>& v) const
 {
   T maxValue=*(v.begin());
-  for (typename vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
+  for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(maxValue<*it)
       maxValue=*it;
   }
   return maxValue;
 }
 
-template<class T> T StatFactory::min(const vector<T>& v) const
+template<class T> T StatFactory::min(const std::vector<T>& v) const
 {
   T minValue=*(v.begin());
-  for (typename vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
+  for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(minValue>*it)
       minValue=*it;
   }
   return minValue;
 }
 
-template<class T> typename vector<T>::const_iterator StatFactory::absmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
+template<class T> typename std::vector<T>::const_iterator StatFactory::absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
-  typename vector<T>::const_iterator tmpIt=begin;
-  for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
+  typename std::vector<T>::const_iterator tmpIt=begin;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(abs(*tmpIt)<abs(*it))
       tmpIt=it;
   }
   return tmpIt;
 }
 
-template<class T> typename vector<T>::const_iterator StatFactory::min(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
+template<class T> typename std::vector<T>::const_iterator StatFactory::min(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
-  typename vector<T>::const_iterator tmpIt=begin;
-  for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
+  typename std::vector<T>::const_iterator tmpIt=begin;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(*tmpIt>*it)
       tmpIt=it;
   }
   return tmpIt;
 }
 
-template<class T> typename vector<T>::const_iterator StatFactory::absmin(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end) const
+template<class T> typename std::vector<T>::const_iterator StatFactory::absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
-  typename vector<T>::const_iterator tmpIt=begin;
-  for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
+  typename std::vector<T>::const_iterator tmpIt=begin;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(abs(*tmpIt)>abs(*it))
       tmpIt=it;
   }
 }
 
-template<class T> void StatFactory::minmax(const vector<T>& v, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, T& theMin, T& theMax) const
+template<class T> void StatFactory::minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const
 {
   theMin=*begin;
   theMax=*begin;
-  for (typename vector<T>::const_iterator it = begin; it!=end; ++it){
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(theMin>*it)
       theMin=*it;
     if(theMax<*it)
@@ -215,24 +252,24 @@ template<class T> void StatFactory::minmax(const vector<T>& v, typename vector<T
   }
 }
 
-template<class T> T StatFactory::sum(const vector<T>& v) const
+template<class T> T StatFactory::sum(const std::vector<T>& v) const
 {
-  typename vector<T>::const_iterator it;
+  typename std::vector<T>::const_iterator it;
   T tmpSum=0;
   for (it = v.begin(); it!= v.end(); ++it)
     tmpSum+=*it;
   return tmpSum;
 }
 
-template<class T> double StatFactory::mean(const vector<T>& v) const
+template<class T> double StatFactory::mean(const std::vector<T>& v) const
 {
   assert(v.size());
   return static_cast<double>(sum(v))/v.size();
 }
 
-template<class T> T StatFactory::median(const vector<T>& v) const
+template<class T> T StatFactory::median(const std::vector<T>& v) const
 {
-  vector<T> tmpV=v;
+  std::vector<T> tmpV=v;
   sort(tmpV.begin(),tmpV.end());
   if(tmpV.size()%2)
     return tmpV[tmpV.size()/2];
@@ -240,9 +277,9 @@ template<class T> T StatFactory::median(const vector<T>& v) const
     return 0.5*(tmpV[tmpV.size()/2-1]+tmpV[tmpV.size()/2]);
 }
 
-template<class T> double StatFactory::var(const vector<T>& v) const
+template<class T> double StatFactory::var(const std::vector<T>& v) const
 {
-  typename vector<T>::const_iterator it;
+  typename std::vector<T>::const_iterator it;
   double v1=0;
   double m1=mean(v);
   double n=v.size();
@@ -252,17 +289,17 @@ template<class T> double StatFactory::var(const vector<T>& v) const
   v1/=(n-1);
 //   if(v1<0){
 //     for (it = v.begin(); it!= v.end(); ++it)
-//       cout << *it << " ";
-//     cout << endl;
+//       std::cout << *it << " ";
+//     std::cout << std::endl;
 //   }
   assert(v1>=0);
   return v1;
 }
 
-template<class T> double StatFactory::moment(const vector<T>& v, int n) const
+template<class T> double StatFactory::moment(const std::vector<T>& v, int n) const
 {
   assert(v.size());
-  typename vector<T>::const_iterator it;
+  typename std::vector<T>::const_iterator it;
   double m=0;
 //   double m1=mean(v);
   for(it = v.begin(); it!= v.end(); ++it){
@@ -272,10 +309,10 @@ template<class T> double StatFactory::moment(const vector<T>& v, int n) const
 }
 
   //central moment
-template<class T> double StatFactory::cmoment(const vector<T>& v, int n) const
+template<class T> double StatFactory::cmoment(const std::vector<T>& v, int n) const
 {
   assert(v.size());
-  typename vector<T>::const_iterator it;
+  typename std::vector<T>::const_iterator it;
   double m=0;
   double m1=mean(v);
   for(it = v.begin(); it!= v.end(); ++it){
@@ -284,21 +321,21 @@ template<class T> double StatFactory::cmoment(const vector<T>& v, int n) const
   return m/v.size();
 }
 
-template<class T> double StatFactory::skewness(const vector<T>& v) const
+template<class T> double StatFactory::skewness(const std::vector<T>& v) const
 {
   return cmoment(v,3)/pow(var(v),1.5);
 }
 
-template<class T> double StatFactory::kurtosis(const vector<T>& v) const
+template<class T> double StatFactory::kurtosis(const std::vector<T>& v) const
 {
   double m2=cmoment(v,2);
   double m4=cmoment(v,4);
   return m4/m2/m2-3.0;
 }
 
-template<class T> void StatFactory::meanVar(const vector<T>& v, double& m1, double& v1) const
+template<class T> void StatFactory::meanVar(const std::vector<T>& v, double& m1, double& v1) const
 {
-  typename vector<T>::const_iterator it;
+  typename std::vector<T>::const_iterator it;
   v1=0;
   m1=mean(v);
   double n=v.size();
@@ -309,7 +346,7 @@ template<class T> void StatFactory::meanVar(const vector<T>& v, double& m1, doub
   assert(v1>=0);
 }
 
-template<class T1, class T2> void StatFactory::scale2byte(const vector<T1>& input, vector<T2>& output, unsigned char lbound,  unsigned char ubound) const
+template<class T1, class T2> void StatFactory::scale2byte(const std::vector<T1>& input, std::vector<T2>& output, unsigned char lbound,  unsigned char ubound) const
 {
   output.resize(input.size());
   T1 minimum=min(input);
@@ -320,7 +357,7 @@ template<class T1, class T2> void StatFactory::scale2byte(const vector<T1>& inpu
     output[i]=scale*(input[i]-(minimum))+lbound;
 }
 
-template<class T> void  StatFactory::distribution (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<int>& output, int nbin, T &minimum, T &maximum, const string &filename)
+template<class T> void  StatFactory::distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<double>& output, int nbin, T &minimum, T &maximum, double sigma, const std::string &filename)
 {
   if(maximum<=minimum)
     minmax(input,begin,end,minimum,maximum);
@@ -329,8 +366,8 @@ template<class T> void  StatFactory::distribution (const vector<T>& input, typen
   // if(!maximum)
   //   maximum=*(max(input,begin,end));
   if(maximum<=minimum){
-    ostringstream s;
-    s<<"Error: could not calculate distribution (min>=max) in " << filename;
+    std::ostringstream s;
+    s<<"Error: could not calculate distribution (min>=max)";
     throw(s.str());
   }
   assert(nbin>1);
@@ -339,28 +376,128 @@ template<class T> void  StatFactory::distribution (const vector<T>& input, typen
     output.resize(nbin);
     for(int i=0;i<nbin;output[i++]=0);
   }
-  typename vector<T>::const_iterator it;
+  typename std::vector<T>::const_iterator it;
   for(it=begin;it!=end;++it){
-    if(*it==maximum)
-      ++output[nbin-1];
-    else if(*it>=minimum && *it<maximum)
-      ++output[static_cast<int>(static_cast<double>((*it)-minimum)/(maximum-minimum)*nbin)];
+    if(sigma>0){
+      // minimum-=2*sigma;
+      // maximum+=2*sigma;
+      //create kde for Gaussian basis function
+      //todo: speed up by calculating first and last bin with non-zero contriubtion...
+      //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
+      for(int ibin=0;ibin<nbin;++ibin){
+        double icenter=minimum+static_cast<double>(maximum-minimum)*(ibin+0.5)/nbin;
+        double thePdf=gsl_ran_gaussian_pdf(*it-icenter, sigma);
+        output[ibin]+=thePdf;
+      }
+    }
+    else{
+      int theBin=0;
+      if(*it==maximum)
+        theBin=nbin-1;
+      else if(*it>=minimum && *it<maximum)
+        theBin=static_cast<int>(static_cast<double>((*it)-minimum)/(maximum-minimum)*nbin);
+      ++output[theBin];
+      // if(*it==maximum)
+      //   ++output[nbin-1];
+      // else if(*it>=minimum && *it<maximum)
+      //   ++output[static_cast<int>(static_cast<double>((*it)-minimum)/(maximum-minimum)*nbin)];
+    }
   }
   if(!filename.empty()){
-    ofstream outputfile;
+    std::ofstream outputfile;
     outputfile.open(filename.c_str());
     if(!outputfile){
-      ostringstream s;
+      std::ostringstream s;
       s<<"Error opening distribution file , " << filename;
       throw(s.str());
     }
     for(int bin=0;bin<nbin;++bin)
-      outputfile << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(output[bin])/input.size() << endl;
+      outputfile << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(output[bin])/input.size() << std::endl;
     outputfile.close();
   }
 }
 
-template<class T> void  StatFactory::percentiles (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<T>& output, int nbin, T &minimum, T &maximum, const string &filename)
+template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX, T& maxX, T& minY, T& maxY, double sigma, const std::string& filename)
+{
+  assert(inputX.size());
+  assert(inputX.size()==inputY.size());
+  unsigned long int npoint=inputX.size();
+  if(maxX<=minX)
+    minmax(inputX,inputX.begin(),inputX.end(),minX,maxX);
+  if(maxX<=minX){
+    std::ostringstream s;
+    s<<"Error: could not calculate distribution (minX>=maxX)";
+    throw(s.str());
+  }
+  if(maxY<=minY)
+    minmax(inputY,inputY.begin(),inputY.end(),minY,maxY);
+  if(maxY<=minY){
+    std::ostringstream s;
+    s<<"Error: could not calculate distribution (minY>=maxY)";
+    throw(s.str());
+  }
+  assert(nbin>1);
+  output.resize(nbin);
+  for(int i=0;i<nbin;++i){
+    output[i].resize(nbin);
+    for(int j=0;j<nbin;++j)
+      output[i][j]=0;
+  }
+  int binX=0;
+  int binY=0;
+  for(unsigned long int ipoint=0;ipoint<npoint;++ipoint){
+    if(inputX[ipoint]==maxX)
+       binX=nbin-1;
+    else
+      binX=static_cast<int>(static_cast<double>(inputX[ipoint]-minX)/(maxX-minX)*nbin);
+    if(inputY[ipoint]==maxY)
+       binY=nbin-1;
+    else
+      binY=static_cast<int>(static_cast<double>(inputY[ipoint]-minY)/(maxY-minY)*nbin);
+    assert(binX>=0);
+    assert(binX<output.size());
+    assert(binY>=0);
+    assert(binY<output[binX].size());
+    if(sigma>0){
+      // minX-=2*sigma;
+      // maxX+=2*sigma;
+      // minY-=2*sigma;
+      // maxY+=2*sigma;
+      //create kde for Gaussian basis function
+      //todo: speed up by calculating first and last bin with non-zero contriubtion...
+      for(int ibinX=0;ibinX<nbin;++ibinX){
+        double centerX=minX+static_cast<double>(maxX-minX)*ibinX/nbin;
+        double pdfX=gsl_ran_gaussian_pdf(inputX[ipoint]-centerX, sigma);
+        for(int ibinY=0;ibinY<nbin;++ibinY){
+          //calculate  \integral_ibinX^(ibinX+1)
+          double centerY=minY+static_cast<double>(maxY-minY)*ibinY/nbin;
+          double pdfY=gsl_ran_gaussian_pdf(inputY[ipoint]-centerY, sigma);
+          output[ibinX][binY]+=pdfX*pdfY;
+        }
+      }
+    }
+    else
+      ++output[binX][binY];
+  }
+  if(!filename.empty()){
+    std::ofstream outputfile;
+    outputfile.open(filename.c_str());
+    if(!outputfile){
+      std::ostringstream s;
+      s<<"Error opening distribution file , " << filename;
+      throw(s.str());
+    }
+    for(int bin=0;bin<nbin;++bin){
+      for(int bin=0;bin<nbin;++bin){
+        double value=static_cast<double>(output[binX][binY])/npoint;
+        outputfile << (maxX-minX)*bin/(nbin-1)+minX << " " << (maxY-minY)*bin/(nbin-1)+minY << " " << value << std::endl;
+      }
+    }
+    outputfile.close();
+  }
+}
+
+template<class T> void  StatFactory::percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin, T &minimum, T &maximum, const std::string &filename)
 {
   if(maximum<=minimum)
     minmax(input,begin,end,minimum,maximum);
@@ -394,48 +531,48 @@ template<class T> void  StatFactory::percentiles (const vector<T>& input, typena
       output[ibin]=median(inputBin);
   }
   if(!filename.empty()){
-    ofstream outputfile;
+    std::ofstream outputfile;
     outputfile.open(filename.c_str());
     if(!outputfile){
-      ostringstream s;
+      std::ostringstream s;
       s<<"error opening distribution file , " << filename;
       throw(s.str());
     }
     for(int ibin=0;ibin<nbin;++ibin)
-      outputfile << ibin*100.0/nbin << " " << static_cast<double>(output[ibin])/input.size() << endl;
+      outputfile << ibin*100.0/nbin << " " << static_cast<double>(output[ibin])/input.size() << std::endl;
     outputfile.close();
   }
 }
 
-// template<class T> void  StatFactory::cumulative (const vector<T>& input, typename vector<T>::const_iterator begin, typename vector<T>::const_iterator end, vector<int>& output, int nbin, T &minimum, T &maximum)
+// template<class T> void  StatFactory::cumulative (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<int>& output, int nbin, T &minimum, T &maximum)
 // {
 //   assert(nbin>1);
 //   assert(input.size());
 //   distribution(input,output,nbin,minimum,maximum);
-//   for(vector<int>::iterator it=begin+1;it!=end;++it)
+//   for(std::vector<int>::iterator it=begin+1;it!=end;++it)
 //     *it+=*(it-1);
 //   if(!filename.empty()){
-//     ofstream outputfile;
+//     std::ofstream outputfile;
 //     outputfile.open(filename.c_str());
 //     if(!outputfile){
-//       ostringstream s;
+//       std::ostringstream s;
 //       s<<"error opening cumulative file , " << filename;
 //       throw(s.str());
 //     }
 //     for(int bin=0;bin<nbin;++bin)
-//       outputfile << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(output[bin])/input.size() << endl;
+//       outputfile << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(output[bin])/input.size() << std::endl;
 //     outputfile.close();
 //   }
 // }
 
-template<class T> void StatFactory::signature(const vector<T>& input, double&k, double& alpha, double& beta, double e)
+template<class T> void StatFactory::signature(const std::vector<T>& input, double&k, double& alpha, double& beta, double e)
 {
   double m1=moment(input,1);
   double m2=moment(input,2);
   signature(m1,m2,k,alpha,beta,e);
 }
 
-template<class T> void StatFactory::normalize(const vector<T>& input, vector<double>& output){
+template<class T> void StatFactory::normalize(const std::vector<T>& input, std::vector<double>& output){
   double total=sum(input);
   if(total){
     output.resize(input.size());
@@ -446,16 +583,16 @@ template<class T> void StatFactory::normalize(const vector<T>& input, vector<dou
     output=input;
 }
 
-template<class T> void StatFactory::normalize_pct(vector<T>& input){
+template<class T> void StatFactory::normalize_pct(std::vector<T>& input){
   double total=sum(input);
   if(total){
-    typename vector<T>::iterator it;
+    typename std::vector<T>::iterator it;
     for(it=input.begin();it!=input.end();++it)
       *it=100.0*(*it)/total;
   }
 }
  
-template<class T> double StatFactory::rmse(const vector<T>& x, const vector<T>& y) const{
+template<class T> double StatFactory::rmse(const std::vector<T>& x, const std::vector<T>& y) const{
   assert(x.size()==y.size());
   assert(x.size());
   double mse=0;
@@ -466,7 +603,7 @@ template<class T> double StatFactory::rmse(const vector<T>& x, const vector<T>& 
   return sqrt(mse);
 }
 
-template<class T> double StatFactory::correlation(const vector<T>& x, const vector<T>& y, int delay) const{
+template<class T> double StatFactory::correlation(const std::vector<T>& x, const std::vector<T>& y, int delay) const{
   double meanX=0;
   double meanY=0;
   double varX=0;
@@ -495,7 +632,7 @@ template<class T> double StatFactory::correlation(const vector<T>& x, const vect
     return 0;
 }
 
-template<class T> double StatFactory::cross_correlation(const vector<T>& x, const vector<T>& y, int maxdelay, vector<T>& z) const{
+template<class T> double StatFactory::cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const{
   z.clear();
   double sumCorrelation=0;
   for (int delay=-maxdelay;delay<maxdelay;delay++) {
@@ -505,7 +642,7 @@ template<class T> double StatFactory::cross_correlation(const vector<T>& x, cons
   return sumCorrelation;
 }
 
-  template<class T> double StatFactory::linear_regression(const vector<T>& x, const vector<T>& y, double &c0, double &c1) const{
+  template<class T> double StatFactory::linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
   assert(x.size()==y.size());
   assert(x.size());
   double cov00;
@@ -519,7 +656,7 @@ template<class T> double StatFactory::cross_correlation(const vector<T>& x, cons
 //alternatively: use GNU scientific library:
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
-template<class T> void StatFactory::interpolateUp(const vector<double>& wavelengthIn, const vector<T>& input, const vector<double>& wavelengthOut, const std::string& type, vector<T>& output, bool verbose){
+template<class T> void StatFactory::interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose){
   assert(wavelengthIn.size());
   assert(input.size()==wavelengthIn.size());
   assert(wavelengthOut.size());
@@ -551,7 +688,7 @@ template<class T> void StatFactory::interpolateUp(const vector<double>& waveleng
   gsl_interp_accel_free(acc);
 }
 
-// template<class T> void StatFactory::interpolateUp(const vector<double>& wavelengthIn, const vector< vector<T> >& input, const vector<double>& wavelengthOut, const std::string& type, vector< vector<T> >& output, bool verbose){
+// template<class T> void StatFactory::interpolateUp(const std::vector<double>& wavelengthIn, const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector< std::vector<T> >& output, bool verbose){
 //   assert(wavelengthIn.size());
 //   assert(wavelengthOut.size());
 //   int nsample=input.size();  
@@ -582,7 +719,7 @@ template<class T> void StatFactory::interpolateUp(const vector<double>& waveleng
 //   gsl_interp_accel_free(acc);
 // }
 
-template<class T> void StatFactory::interpolateUp(const vector<T>& input, vector<T>& output, int nbin)
+template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin)
 {
   assert(input.size());
   assert(nbin);
@@ -603,7 +740,7 @@ template<class T> void StatFactory::interpolateUp(const vector<T>& input, vector
   }
 }
 
-template<class T> void StatFactory::interpolateUp(double* input, int dim, vector<T>& output, int nbin)
+template<class T> void StatFactory::interpolateUp(double* input, int dim, std::vector<T>& output, int nbin)
 {
   assert(nbin);
   output.clear();
@@ -622,7 +759,7 @@ template<class T> void StatFactory::interpolateUp(double* input, int dim, vector
   }
 }
 
-template<class T> void StatFactory::interpolateDown(const vector<T>& input, vector<T>& output, int nbin)
+template<class T> void StatFactory::interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin)
 {
   assert(input.size());
   assert(nbin);
@@ -640,7 +777,7 @@ template<class T> void StatFactory::interpolateDown(const vector<T>& input, vect
   }
 }
 
-template<class T> void StatFactory::interpolateDown(double* input, int dim, vector<T>& output, int nbin)
+template<class T> void StatFactory::interpolateDown(double* input, int dim, std::vector<T>& output, int nbin)
 {
   assert(nbin);
   output.clear();
@@ -667,7 +804,7 @@ template<class T> void StatFactory::interpolateDown(double* input, int dim, vect
 //   double g=exp(lgamma(1.0/beta));
 //   alpha=m1*g/exp(lgamma(2.0/beta));
 //   k=beta/(2*alpha*g);
-// //   cout << "y, alpha, beta: " << y << ", " << alpha << ", " << beta << endl;
+// //   std::cout << "y, alpha, beta: " << y << ", " << alpha << ", " << beta << std::endl;
 // }
 
 // double Histogram::F(double x)

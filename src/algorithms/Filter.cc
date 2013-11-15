@@ -131,6 +131,61 @@ void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, sho
   }
 }
 
+double filter::Filter::getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta, bool verbose)
+{  
+  assert(srf.size()==2);//[0]: wavelength, [1]: response function
+  int nband=srf[0].size(); 
+  double start=floor(wavelengthIn[0]);
+  double end=ceil(wavelengthIn.back());
+  if(verbose)
+    std::cout << "wavelengths in [" << start << "," << end << "]" << std::endl << std::flush;
+
+  statfactory::StatFactory stat;
+
+  gsl_interp_accel *acc;
+  stat.allocAcc(acc);
+  gsl_spline *spline;
+  stat.getSpline(interpolationType,nband,spline);
+  stat.initSpline(spline,&(srf[0][0]),&(srf[1][0]),nband);
+  if(verbose)
+    std::cout << "calculating norm of srf" << std::endl << std::flush;
+  double norm=0;
+  norm=gsl_spline_eval_integ(spline,srf[0].front(),srf[0].back(),acc);
+  if(verbose)
+    std::cout << "norm of srf: " << norm << std::endl << std::flush;
+  gsl_spline_free(spline);
+  gsl_interp_accel_free(acc);  
+  std::vector<double> wavelength_fine;
+  for(double win=floor(wavelengthIn[0]);win<=ceil(wavelengthIn.back());win+=delta)
+    wavelength_fine.push_back(win);
+
+  if(verbose)
+    std::cout << "interpolate wavelengths to " << wavelength_fine.size() << " entries " << std::endl;
+  std::vector<double> srf_fine;//spectral response function, interpolated for wavelength_fine
+
+  stat.interpolateUp(srf[0],srf[1],wavelength_fine,interpolationType,srf_fine,verbose);
+  assert(srf_fine.size()==wavelength_fine.size());
+
+  gsl_interp_accel *accOut;
+  stat.allocAcc(accOut);
+  gsl_spline *splineOut;
+  stat.getSpline(interpolationType,wavelength_fine.size(),splineOut);
+  assert(splineOut);
+
+  std::vector<double> wavelengthOut(wavelength_fine.size());
+
+  for(int iband=0;iband<wavelengthOut.size();++iband)
+    wavelengthOut[iband]=wavelength_fine[iband]*srf_fine[iband];
+
+  stat.initSpline(splineOut,&(wavelength_fine[0]),&(wavelengthOut[0]),wavelength_fine.size());
+  double centreWavelength=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
+  
+  gsl_spline_free(splineOut);
+  gsl_interp_accel_free(accOut);
+
+  return(centreWavelength);
+}
+
 // void filter::Filter::applyFwhm(const vector<double> &wavelengthIn, const ImgReaderGdal& input, const vector<double> &wavelengthOut, const vector<double> &fwhm, const std::string& interpolationType, ImgWriterGdal& output, bool verbose){
 //   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
 //   Vector2d<double> lineOutput(wavelengthOut.size(),input.nrOfCol());

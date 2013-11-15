@@ -6,7 +6,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 ###############################################################################
 
 # the program to build and install (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatogr pkegcs pkextract pkfillnodata pkfilter pkenhance pkfilterascii pkdsm2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkdiff pkclassify_svm pkfs_svm pkascii2ogr pkeditogr
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkenhance pkfilterascii pkdsm2shadow pkmosaic pkndvi pkpolygonize pkascii2img pkdiff pkclassify_svm pkfs_svm pkascii2ogr pkeditogr
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS =  pkxcorimg pkgeom
@@ -44,8 +44,8 @@ pkcreatect_SOURCES = pkcreatect.cc
 pkdumpimg_SOURCES = pkdumpimg.cc
 pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
 pksieve_SOURCES = pksieve.cc
-pkstat_SOURCES = $(top_srcdir)/src/algorithms/StatFactory.h pkstat.cc
-pkstat_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
+pkstatascii_SOURCES = $(top_srcdir)/src/algorithms/StatFactory.h pkstatascii.cc
+pkstatascii_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc
 pkegcs_SOURCES = pkegcs.cc
 pkegcs_LDADD = -lgdal $(AM_LDFLAGS) -lgdal

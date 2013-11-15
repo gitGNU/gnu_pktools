@@ -48,7 +48,7 @@ public:
   template <typename T> int readData(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   template <typename T> int readData(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   template <typename T> int readData(std::map<std::string,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
-  void shape2ascii(ostream& theOstream, const std::string& pointname, int layer=0, bool verbose=false);
+  void shape2ascii(std::ostream& theOstream, const std::string& pointname, int layer=0, bool verbose=false);
   unsigned long int getFeatureCount(int layer=0) const;
   int getFieldCount(int layer=0) const;
   OGRLayer* getLayer(int layer=0){return m_datasource->GetLayer(layer);};
@@ -65,7 +65,7 @@ public:
   template<typename T> int readSql(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer=0, bool pos=false, bool verbose=false);
   bool getExtent(double& ulx, double& uly, double& lrx, double& lry, int layer=0);
 
-  friend ostream& operator<<(ostream& theOstream, ImgReaderOgr& theImageReader);
+  friend std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader);
   
 protected:
   void setCodec(void);
@@ -82,36 +82,36 @@ template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& dat
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
-    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
   if(poLayer!=NULL){
     OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
     if(fields.empty()){
       fields.resize(poFDefn->GetFieldCount());
       if(verbose)
-        cout << "resized fields to " << fields.size() << endl;
+        std::cout << "resized fields to " << fields.size() << std::endl;
     }
     //start reading features from the layer
     OGRFeature *poFeature;
     if(verbose)
-      cout << "reset reading" << endl;
+      std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
     int posOffset=(pos)?2:0;
     if(verbose)
-      cout << "going through features" << endl << flush;
+      std::cout << "going through features" << std::endl << std::flush;
     int theClass=0;
     while( (poFeature = poLayer->GetNextFeature()) != NULL ){
       std::vector<T> theFeature;//(fields.size()+posOffset);//x,y+selectedfields
       if(verbose)
-        cout << "reading feature " << ifeature << endl << flush;
+        std::cout << "reading feature " << ifeature << std::endl << std::flush;
       OGRGeometry *poGeometry;
       poGeometry = poFeature->GetGeometryRef();
       if(verbose){
         if(poGeometry == NULL)
-          cerr << "no geometry defined" << endl << flush;
+          std::cerr << "no geometry defined" << std::endl << std::flush;
         else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-          cerr << "Warning: poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
+          std::cerr << "Warning: poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl << std::flush;
       }
       assert(poGeometry != NULL );
              // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
@@ -180,14 +180,14 @@ template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& dat
       ++ifeature;
     }
     if(verbose)
-      cout << "number of features read: " << ifeature << endl << flush;
+      std::cout << "number of features read: " << ifeature << std::endl << std::flush;
     typename std::map<int,Vector2d<T> >::const_iterator mit=data.begin();
     int nband=0;
     if(verbose)
-      cout << "read classes: " << flush;
+      std::cout << "read classes: " << std::flush;
     while(mit!=data.end()){
       if(verbose)
-        cout << mit->first << " " << flush;
+        std::cout << mit->first << " " << std::flush;
       if(!nband)
         nband=fields.size();
       if(pos)
@@ -197,7 +197,7 @@ template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& dat
       ++mit;
     }
     if(verbose)
-      cout << endl << flush;
+      std::cout << std::endl << std::flush;
     return(nband);
   }
   else{
@@ -215,7 +215,7 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
-    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
   if(poLayer!=NULL){
     OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -224,30 +224,30 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
     if(fields.empty()){
       fields.resize(poFDefn->GetFieldCount());
       if(verbose)
-        cout << "resized fields to " << fields.size() << endl;
+        std::cout << "resized fields to " << fields.size() << std::endl;
     }
 
     //start reading features from the layer
     OGRFeature *poFeature;
     if(verbose)
-      cout << "reset reading" << endl;
+      std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
     int posOffset=(pos)?2:0;
     if(verbose)
-      cout << "going through features to fill in string map" << endl << flush;
+      std::cout << "going through features to fill in string map" << std::endl << std::flush;
     std::string theClass;
     while( (poFeature = poLayer->GetNextFeature()) != NULL ){
       std::vector<T> theFeature;//(fields.size()+posOffset);//x,y+selectedfields
       if(verbose)
-        cout << "reading feature " << ifeature << endl << flush;
+        std::cout << "reading feature " << ifeature << std::endl << std::flush;
       OGRGeometry *poGeometry;
       poGeometry = poFeature->GetGeometryRef();
       if(verbose){
         if(poGeometry == NULL)
-          cerr << "no geometry defined" << endl << flush;
+          std::cerr << "no geometry defined" << std::endl << std::flush;
         else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-          cerr << "Warning: poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
+          std::cerr << "Warning: poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl << std::flush;
       }
       assert(poGeometry != NULL );
              // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
@@ -318,14 +318,14 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
       ++ifeature;
     }
     if(verbose)
-      cout << "number of features read: " << ifeature << endl << flush;
+      std::cout << "number of features read: " << ifeature << std::endl << std::flush;
     typename std::map<std::string,Vector2d<T> >::const_iterator mit=data.begin();
     int nband=0;
     if(verbose)
-      cout << "read classes: " << flush;
+      std::cout << "read classes: " << std::flush;
     while(mit!=data.end()){
       if(verbose)
-        cout << mit->first << " " << flush;
+        std::cout << mit->first << " " << std::flush;
       if(!nband)
         nband=fields.size();
       if(pos)
@@ -335,7 +335,7 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
       ++mit;
     }
     if(verbose)
-      cout << endl << flush;
+      std::cout << std::endl << std::flush;
     return(nband);
   }
   else{
@@ -352,27 +352,27 @@ template <typename T> int ImgReaderOgr::readXY(std::vector<T>& xVector, std::vec
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
-    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   //start reading features from the layer
   OGRFeature *poFeature;
   if(verbose)
-    cout << "reset reading" << endl;
+    std::cout << "reset reading" << std::endl;
   poLayer->ResetReading();
   unsigned long int ifeature=0;
   if(verbose)
-    cout << "going through features" << endl << flush;
+    std::cout << "going through features" << std::endl << std::flush;
   while( (poFeature = poLayer->GetNextFeature()) != NULL ){
     if(verbose)
-      cout << "reading feature " << ifeature << endl << flush;
+      std::cout << "reading feature " << ifeature << std::endl << std::flush;
     OGRGeometry *poGeometry;
     poGeometry = poFeature->GetGeometryRef();
     if(verbose){
       if(poGeometry == NULL)
-        cerr << "no geometry defined" << endl << flush;
+        std::cerr << "no geometry defined" << std::endl << std::flush;
       else// if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-        cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl;
+        std::cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl;
     }
     // assert(poGeometry != NULL 
     //        && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
@@ -400,21 +400,21 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
-    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   if(fields.empty()){
     fields.resize(poFDefn->GetFieldCount());
     if(verbose)
-      cout << "resized fields to " << fields.size() << endl;
+      std::cout << "resized fields to " << fields.size() << std::endl;
   }
   OGRGeometry *poGeometry;
   poGeometry = poFeature->GetGeometryRef();
   if(verbose){
     if(poGeometry == NULL)
-      cerr << "no geometry defined" << endl << flush;
+      std::cerr << "no geometry defined" << std::endl << std::flush;
     else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-      cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
+      std::cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl << std::flush;
   }
   assert(poGeometry != NULL);
          // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
@@ -497,36 +497,36 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
-    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   int nfield=(theField!="")? poFDefn->GetFieldCount() : 1;
   if(theField==""){
     //read first field available 
     if(verbose)
-      cout << "read first field from total of " << nfield << endl;
+      std::cout << "read first field from total of " << nfield << std::endl;
   }
 
   //start reading features from the layer
   OGRFeature *poFeature;
   if(verbose)
-    cout << "reset reading" << endl;
+    std::cout << "reset reading" << std::endl;
   poLayer->ResetReading();
   unsigned long int ifeature=0;
   if(verbose)
-    cout << "going through features" << endl << flush;
+    std::cout << "going through features" << std::endl << std::flush;
   while( (poFeature = poLayer->GetNextFeature()) != NULL ){
     // std::vector<T> theFeature;//(fields.size()+posOffset);//x,y+selectedfields
     T theFeature;
     if(verbose)
-      cout << "reading feature " << ifeature << endl << flush;
+      std::cout << "reading feature " << ifeature << std::endl << std::flush;
     OGRGeometry *poGeometry;
     poGeometry = poFeature->GetGeometryRef();
     if(verbose){
       if(poGeometry == NULL)
-        cerr << "no geometry defined" << endl << flush;
+        std::cerr << "no geometry defined" << std::endl << std::flush;
       else// if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-        cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl;
+        std::cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl;
     }
     // assert(poGeometry != NULL 
     //        && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
@@ -552,7 +552,7 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
     }
     data.push_back(theFeature);
     if(verbose)
-      cout << "feature is: " << theFeature << endl;
+      std::cout << "feature is: " << theFeature << std::endl;
     ++ifeature;
   }
   if(data.size()){
@@ -573,34 +573,34 @@ template <typename T> int ImgReaderOgr::readData(Vector2d<T>& data, const OGRFie
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
-    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   if(fields.empty()){
     fields.resize(poFDefn->GetFieldCount());
     if(verbose)
-      cout << "resized fields to " << fields.size() << endl;
+      std::cout << "resized fields to " << fields.size() << std::endl;
   }
   //start reading features from the layer
   OGRFeature *poFeature;
   if(verbose)
-    cout << "reset reading" << endl;
+    std::cout << "reset reading" << std::endl;
   poLayer->ResetReading();
   unsigned long int ifeature=0;
   int posOffset=(pos)?2:0;
   if(verbose)
-    cout << "going through features" << endl << flush;
+    std::cout << "going through features" << std::endl << std::flush;
   while( (poFeature = poLayer->GetNextFeature()) != NULL ){
     std::vector<T> theFeature;//(fields.size()+posOffset);//x,y+selectedfields
     if(verbose)
-      cout << "reading feature " << ifeature << endl << flush;
+      std::cout << "reading feature " << ifeature << std::endl << std::flush;
     OGRGeometry *poGeometry;
     poGeometry = poFeature->GetGeometryRef();
     if(verbose){
       if(poGeometry == NULL)
-        cerr << "no geometry defined" << endl << flush;
+        std::cerr << "no geometry defined" << std::endl << std::flush;
       else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-        cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
+        std::cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl << std::flush;
     }
     assert(poGeometry != NULL 
            && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
@@ -673,29 +673,29 @@ template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data
     if(fields.empty()){
       fields.resize(poFDefn->GetFieldCount());
       if(verbose)
-        cout << "resized fields to " << fields.size() << endl;
+        std::cout << "resized fields to " << fields.size() << std::endl;
     }
     //start reading features from the layer
     OGRFeature *poFeature;
     if(verbose)
-      cout << "reset reading" << endl;
+      std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
     int posOffset=(pos)?2:0;
     if(verbose)
-      cout << "going through features" << endl << flush;
+      std::cout << "going through features" << std::endl << std::flush;
     int theClass=0;
     while( (poFeature = poLayer->GetNextFeature()) != NULL ){
       std::vector<T> theFeature;//(fields.size()+posOffset);//x,y+selectedfields
       if(verbose)
-        cout << "reading feature " << ifeature << endl << flush;
+        std::cout << "reading feature " << ifeature << std::endl << std::flush;
       OGRGeometry *poGeometry;
       poGeometry = poFeature->GetGeometryRef();
       if(verbose){
         if(poGeometry == NULL)
-          cerr << "no geometry defined" << endl << flush;
+          std::cerr << "no geometry defined" << std::endl << std::flush;
         else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-          cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
+          std::cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl << std::flush;
       }
       assert(poGeometry != NULL 
              && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
@@ -746,14 +746,14 @@ template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data
       ++ifeature;
     }
     if(verbose)
-      cout << "number of features read: " << ifeature << endl << flush;
+      std::cout << "number of features read: " << ifeature << std::endl << std::flush;
     typename std::map<int,Vector2d<T> >::const_iterator mit=data.begin();
     int nband=0;
     if(verbose)
-      cout << "read classes: " << flush;
+      std::cout << "read classes: " << std::flush;
     while(mit!=data.end()){
       if(verbose)
-        cout << mit->first << " " << flush;
+        std::cout << mit->first << " " << std::flush;
       if(!nband)
         nband=fields.size();
       if(pos)
@@ -763,7 +763,7 @@ template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data
       ++mit;
     }
     if(verbose)
-      cout << endl << flush;
+      std::cout << std::endl << std::flush;
     return(nband);
   }
   else{
@@ -785,28 +785,28 @@ template<typename T> int ImgReaderOgr::readSql(Vector2d<T>& data, const OGRField
     if(fields.empty()){
       fields.resize(poFDefn->GetFieldCount());
       if(verbose)
-        cout << "resized fields to " << fields.size() << endl;
+        std::cout << "resized fields to " << fields.size() << std::endl;
     }
     //start reading features from the layer
     OGRFeature *poFeature;
     if(verbose)
-      cout << "reset reading" << endl;
+      std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
     int posOffset=(pos)?2:0;
     if(verbose)
-      cout << "going through features" << endl << flush;
+      std::cout << "going through features" << std::endl << std::flush;
     while( (poFeature = poLayer->GetNextFeature()) != NULL ){
       std::vector<T> theFeature;//(fields.size()+posOffset);//x,y+selectedfields
       if(verbose)
-        cout << "reading feature " << ifeature << endl << flush;
+        std::cout << "reading feature " << ifeature << std::endl << std::flush;
       OGRGeometry *poGeometry;
       poGeometry = poFeature->GetGeometryRef();
       if(verbose){
         if(poGeometry == NULL)
-          cerr << "no geometry defined" << endl << flush;
+          std::cerr << "no geometry defined" << std::endl << std::flush;
         else if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
-          cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << endl << flush;
+          std::cerr << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl << std::flush;
       }
       assert(poGeometry != NULL 
              && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
