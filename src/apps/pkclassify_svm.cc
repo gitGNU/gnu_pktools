@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
     if(verbose_opt[0])
       std::cout << "parameters ok, training" << std::endl;
     svm[ibag]=svm_train(&prob[ibag],&param[ibag]);
-    if(cv_opt[0]>0){
+    if(cv_opt[0]>1){
       double *target = Malloc(double,prob[ibag].l);
       svm_cross_validation(&prob[ibag],&param[ibag],cv_opt[0],target);
       assert(param[ibag].svm_type != EPSILON_SVR&&param[ibag].svm_type != NU_SVR);//only for regression
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
     // not free the memory used by svm_problem if you are still using the
     // svm_model produced by svm_train(). 
   }//for ibag
-  if(cv_opt[0]>0){
+  if(cv_opt[0]>1){
     assert(cm.nReference());
     std::cout << cm << std::endl;
     cout << "class #samples userAcc prodAcc" << endl;

@@ -66,21 +66,25 @@ template<typename T> unsigned int readDataImageShape(const string &filename,
       if(verbose)
         cout << *fit << " ";
       // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if(((*fit).substr(0,1)=="B")&&((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=string::npos)){
-        int theBand=atoi((*fit).substr(1).c_str());
-        if(bands.size()){
-          bool validBand=false;
-          for(int iband=0;iband<bands.size();++iband){
-            if(theBand==bands[iband])
-              validBand=true;
-          }
-          if(validBand)
-            ++fit;
-          else
-            fields.erase(fit);
-        }
-        else
-          ++fit;
+      if((*fit).substr(0,1)=="B"){
+	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=string::npos){
+	  int theBand=atoi((*fit).substr(1).c_str());
+	  if(bands.size()){
+	    bool validBand=false;
+	    for(int iband=0;iband<bands.size();++iband){
+	      if(theBand==bands[iband])
+		validBand=true;
+	    }
+	    if(validBand)
+	      ++fit;
+	    else
+	      fields.erase(fit);
+	  }
+	  else
+	    ++fit;
+	}
+	else if((*fit)=="B" || (*fit)=="Band")//B is only band
+	  ++fit;
       }
       else
         fields.erase(fit);
@@ -143,12 +147,16 @@ template<typename T> unsigned int readDataImageShape(const string &filename,
       if(verbose)
         cout << *fit << " ";
       // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if(((*fit).substr(0,1)=="B")&&((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=string::npos)){
-        int iband=atoi((*fit).substr(1).c_str());
-        if((start||end)&&(iband<start||iband>end))
-          fields.erase(fit);
-        else
-          ++fit;
+      if((*fit).substr(0,1)=="B"){
+	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=string::npos){
+	  int iband=atoi((*fit).substr(1).c_str());
+	  if((start||end)&&(iband<start||iband>end))
+	    fields.erase(fit);
+	  else
+	    ++fit;
+	}
+	else if(*fit=="B" || *fit=="Band")
+	  ++fit;
       }
       else
         fields.erase(fit);

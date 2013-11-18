@@ -154,7 +154,7 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
     else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
       cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
   }
-  if(cv_opt[0]>0){
+  if(cv_opt[0]>1){
     double *target = Malloc(double,prob.l);
     svm_cross_validation(&prob,&param,cv_opt[0],target);
     assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression

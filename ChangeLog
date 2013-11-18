@@ -142,4 +142,16 @@ version 2.4.2
 	default maximum distance changed from 3 to 0 (infinity)
  - still todo
 	change all projection options to a_srs
-	rename pkstat to pkstatascii
+ - pkclassify_nn.h
+	support reading ogr files with single feature (one band only: "B" or "Band")
+ - pkclassify_nn.cc
+	option -n for number of neurons
+	cross validation parameter can not be 1
+ - pkfs_nn.cc
+	cross validation parameter can not be 1
+ - pkclassify_svm.cc
+	cross validation parameter can not be 1
+ - pkopt_svm.cc
+	cross validation parameter can not be 1
+ - pkfs_svm.cc
+	cross validation parameter can not be 1
