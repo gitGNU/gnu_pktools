@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
     if(median_opt[0])
       cout << "median value column " << col_opt[icol] << ": " << stat.median(dataVector[icol]) << endl;
     if(minmax_opt[0]){
-      cout << "min value  column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
+      cout << "min value column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
       cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
     }
     if(histogram_opt[0]){
