@@ -1111,3 +1111,133 @@ void filter2d::Filter2d::dwtQuantize(const ImgReaderGdal& input, ImgWriterGdal& 
     output.writeDataBlock(theBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
   }
 }
+
+void filter2d::Filter2d::linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
+  Vector2d<float> inputBuffer;
+  vector< Vector2d<float> > outputBuffer;
+  input.readDataBlock(inputBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, band);
+  if(maxDistance<=0)
+    maxDistance=sqrt(input.nrOfCol()*input.nrOfRow());
+  linearFeature(inputBuffer,outputBuffer,angle,angleStep,maxDistance,eps, l1, a1, l2, a2,verbose);
+  for(int iband=0;iband<outputBuffer.size();++iband)
+    output.writeDataBlock(outputBuffer[iband],GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
+}
+
+void filter2d::Filter2d::linearFeature(const Vector2d<float>& input, vector< Vector2d<float> >& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, bool verbose)
+{
+  output.clear();
+  int nband=0;
+  if(l1)
+    ++nband;
+  if(a1)
+    ++nband;
+  if(l2)
+    ++nband;
+  if(a2)
+    ++nband;
+  output.resize(nband);
+  for(int iband=0;iband<output.size();++iband)
+    output[iband].resize(input.nRows(),input.nCols());
+  if(maxDistance<=0)
+    maxDistance=sqrt(input.nRows()*input.nCols());
+  int indexI=0;
+  int indexJ=0;
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nRows();++y){
+    for(int x=0;x<input.nCols();++x){
+      float currentValue=input[y][x];
+      //find values equal to current value with some error margin
+      //todo: add distance for two opposite directions
+      float lineDistance1=0;//longest line of object
+      float lineDistance2=maxDistance;//shortest line of object
+      float lineAngle1=0;//angle to longest line (North=0)
+      float lineAngle2=0;//angle to shortest line (North=0)
+      float northAngle=0;//rotating angle
+      for(northAngle=0;northAngle<180;northAngle+=angleStep){
+	if(angle<=360&&angle>=0&&angle!=northAngle)
+	  continue;
+	//test
+	if(verbose)
+	  std::cout << "northAngle: " << northAngle << std::endl;
+	float currentDistance=0;
+	float theDir=0;
+	for(short side=0;side<=1;side+=1){
+	  theDir=PI/2.0-DEG2RAD(northAngle)+side*PI;//in radians
+	  //test
+	  if(verbose)
+	    std::cout << "theDir in deg: " << RAD2DEG(theDir) << std::endl;
+	  if(theDir<0)
+	    theDir+=2*PI;
+	  //test
+	  if(verbose)
+	    std::cout << "theDir in deg: " << RAD2DEG(theDir) << std::endl;
+	  float nextValue=currentValue;
+	  for(float currentRay=1;currentRay<maxDistance;++currentRay){
+	    indexI=x+currentRay*cos(theDir);
+	    indexJ=y-currentRay*sin(theDir);
+	    if(indexJ<0||indexJ>=input.size())
+	      break;
+	    if(indexI<0||indexI>=input[indexJ].size())
+	      break;
+	    nextValue=input[indexJ][indexI];
+	    if(verbose){
+	      std::cout << "x: " << x << std::endl;
+	      std::cout << "y: " << y << std::endl;
+	      std::cout << "currentValue: " << currentValue << std::endl;
+	      std::cout << "theDir in degrees: " << RAD2DEG(theDir) << std::endl;
+	      std::cout << "cos(theDir): " << cos(theDir) << std::endl;
+	      std::cout << "sin(theDir): " << sin(theDir) << std::endl;
+	      std::cout << "currentRay: " << currentRay << std::endl;
+	      std::cout << "currentDistance: " << currentDistance << std::endl;
+	      std::cout << "indexI: " << indexI << std::endl;
+	      std::cout << "indexJ: " << indexJ << std::endl;
+	      std::cout << "nextValue: " << nextValue << std::endl;
+	    }
+	    if(fabs(currentValue-nextValue)<=eps){
+	      ++currentDistance;
+	      //test
+	      if(verbose)
+		std::cout << "currentDistance: " << currentDistance << ", continue" << std::endl;
+	    }
+	    else{
+	      if(verbose)
+		std::cout << "currentDistance: " << currentDistance << ", break" << std::endl;
+	      break;
+	    }
+	  }
+	}
+	if(lineDistance1<currentDistance){
+	  lineDistance1=currentDistance;
+	  lineAngle1=northAngle;
+	}
+	if(lineDistance2>currentDistance){
+	  lineDistance2=currentDistance;
+	  lineAngle2=northAngle;
+	}
+	if(verbose){
+	  std::cout << "lineDistance1: " << lineDistance1 << std::endl;
+	  std::cout << "lineAngle1: " << lineAngle1 << std::endl;
+	  std::cout << "lineDistance2: " << lineDistance2 << std::endl;
+	  std::cout << "lineAngle2: " << lineAngle2 << std::endl;
+	}
+      }
+      int iband=0;
+      if(l1)
+	output[iband++][y][x]=lineDistance1;
+      if(a1)
+	output[iband++][y][x]=lineAngle1;
+      if(l2)
+	output[iband++][y][x]=lineDistance2;
+      if(a2)
+	output[iband++][y][x]=lineAngle2;
+      assert(iband==nband);
+    }
+    progress=(1.0+y);
+    progress/=input.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}

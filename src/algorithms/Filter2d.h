@@ -28,6 +28,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define DEG2RAD(DEG) (DEG/180.0*PI)
 #endif
 
+#ifndef RAD2DEG
+#define RAD2DEG(RAD) (RAD/PI*180)
+#endif
+
 #include <assert.h>
 #include <math.h>
 #include <limits>
@@ -49,7 +53,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, mrf=26, dwtForward=27, dwtInverse=28, dwtQuantize=29, scramble=30, shift=31};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, mrf=26, dwtForward=27, dwtInverse=28, dwtQuantize=29, scramble=30, shift=31, linearfeature=32};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
@@ -111,7 +115,8 @@ public:
   void dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down=1, int iband=0, bool verbose=false);
   void shift(const ImgReaderGdal& input, ImgWriterGdal& output, int offsetX=0, int offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
   template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, int offsetX=0, int offsetY=0, double randomSigma=0, RESAMPLE resample=0, bool verbose=false);
-
+  void linearFeature(const Vector2d<float>& input, vector< Vector2d<float> >& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, bool verbose=false);
+  void linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, int band=0, bool verbose=false);
   
 private:
   static void initMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
@@ -147,6 +152,7 @@ private:
     m_filterMap["dwtQuantize"]=filter2d::dwtQuantize;
     m_filterMap["scramble"]=filter2d::scramble;
     m_filterMap["shift"]=filter2d::shift;
+    m_filterMap["linearfeature"]=filter2d::linearfeature;
   }
 
   Vector2d<double> m_taps;
@@ -155,6 +161,7 @@ private:
   std::vector<short> m_mask;
   std::vector<double> m_threshold;
 };
+
 
  template<class T1, class T2> void Filter2d::smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dim)
   {

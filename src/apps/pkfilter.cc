@@ -41,7 +41,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median,var,min,max,sum,mean,minmax,dilate,erode,close,open,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf,dwtForward,dwtInverse,dwtQuantize,scramble,shift)", "median");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median,var,min,max,sum,mean,minmax,dilate,erode,close,open,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf,dwtForward,dwtInverse,dwtQuantize,scramble,shift,linearfeature)", "median");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, better use odd value to avoid image shift", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, better use odd value to avoid image shift", 3);
@@ -64,6 +64,11 @@ int main(int argc,char **argv) {
   Optionpk<std::string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling). Use value n>1 for downsampling (aggregation)", 1);
   Optionpk<string> beta_opt("beta", "beta", "ASCII file with beta for each class transition in Markov Random Field");
+  Optionpk<double> eps_opt("eps","eps", "error marging for linear feature",0);
+  Optionpk<bool> l1_opt("l1","l1", "obtain longest object length for linear feature",false);
+  Optionpk<bool> l2_opt("l2","l2", "obtain shortest object length for linear feature",false);
+  Optionpk<bool> a1_opt("a1","a1", "obtain angle found for longest object length for linear feature",false);
+  Optionpk<bool> a2_opt("a2","a2", "obtain angle found for shortest object length for linear feature",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -91,6 +96,11 @@ int main(int argc,char **argv) {
     wavelengthOut_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     beta_opt.retrieveOption(argc,argv);
+    eps_opt.retrieveOption(argc,argv);
+    l1_opt.retrieveOption(argc,argv);
+    l2_opt.retrieveOption(argc,argv);
+    a1_opt.retrieveOption(argc,argv);
+    a2_opt.retrieveOption(argc,argv);
     interpolationType_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -144,6 +154,20 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	std::cout << "opening output image " << output_opt[0] << std::endl;
       output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],class_opt.size(),theType,imageType,option_opt);
+    }
+    else if(filter2d::Filter2d::getFilterType(method_opt[0])==filter2d::linearfeature){
+      if(verbose_opt[0])
+	std::cout << "opening output image " << output_opt[0] << std::endl;
+      int nband=0;
+      if(l1_opt[0])
+	++nband;
+      if(a1_opt[0])
+	++nband;
+      if(l2_opt[0])
+	++nband;
+      if(a2_opt[0])
+	++nband;
+      output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),nband,theType,imageType,option_opt);
     }
     else if(fwhm_opt.size()||srf_opt.size()){
       //todo: support down and offset
@@ -418,6 +442,23 @@ int main(int argc,char **argv) {
       assert(input.nrOfRow());
       try{
         filter2d.shift(input,output,dimX_opt[0],dimY_opt[0],threshold_opt[0],filter2d::Filter2d::getResampleType(resample_opt[0]));
+      }
+      catch(string errorstring){
+        cerr << errorstring << endl;
+      }
+      break;
+    }
+    case(filter2d::linearfeature):{
+      assert(input.nrOfBand());
+      assert(input.nrOfCol());
+      assert(input.nrOfRow());
+      float theAngle=361;
+      if(angle_opt.size())
+	theAngle=angle_opt[0];
+      if(verbose_opt[0])
+	std::cout << "using angle " << theAngle << std::endl;
+      try{
+        filter2d.linearFeature(input,output,theAngle,5,0,eps_opt[0],l1_opt[0],a1_opt[0],l2_opt[0],a2_opt[0],0,verbose_opt[0]);
       }
       catch(string errorstring){
         cerr << errorstring << endl;
