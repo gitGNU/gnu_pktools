@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
     if(verbose_opt[0])
       std::cout << "parameters ok, training" << std::endl;
     svm[ibag]=svm_train(&prob[ibag],&param[ibag]);
-    if(cv_opt[0]>0){
+    if(cv_opt[0]>1){
       double *target = Malloc(double,prob[ibag].l);
       svm_cross_validation(&prob[ibag],&param[ibag],cv_opt[0],target);
       assert(param[ibag].svm_type != EPSILON_SVR&&param[ibag].svm_type != NU_SVR);//only for regression
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
     // not free the memory used by svm_problem if you are still using the
     // svm_model produced by svm_train(). 
   }//for ibag
-  if(cv_opt[0]>0){
+  if(cv_opt[0]>1){
     assert(cm.nReference());
     std::cout << cm << std::endl;
     cout << "class #samples userAcc prodAcc" << endl;
@@ -541,8 +541,8 @@ int main(int argc, char *argv[])
       cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
     }
     std::cout << "Kappa: " << cm.kappa() << std::endl;
-    doa=cm.oa_pct(&se95_oa);
-    std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+    doa=cm.oa(&se95_oa);
+    std::cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << std::endl;
   }
 
   //--------------------------------- end of training -----------------------------------
@@ -732,7 +732,6 @@ int main(int argc, char *argv[])
           exit(3);
         }
       }
-    
       //process per pixel
       for(int icol=0;icol<ncol;++icol){
         assert(hpixel[icol].size()==nband);
@@ -1119,8 +1118,8 @@ int main(int argc, char *argv[])
 	cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
       }
       std::cout << "Kappa: " << cm.kappa() << std::endl;
-      doa=cm.oa_pct(&se95_oa);
-      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+      doa=cm.oa(&se95_oa);
+      std::cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << std::endl;
     }
   }
   try{

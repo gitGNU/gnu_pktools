@@ -84,23 +84,21 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int iband=0;iband<input.nrOfBand();++iband){
-    Vector2d<double> inBuffer(dimY);
+    Vector2d<double> inBuffer(dimY,input.nrOfCol());
     vector<double> outBuffer(input.nrOfCol());
     int indexI=0;
     int indexJ=0;
     //initialize last half of inBuffer
-    for(int y=0;y<dimY;++y){
-      inBuffer[y].resize(input.nrOfCol());
-      if(y<dimY/2)
-	continue;//skip first half
+    for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-	input.readData(inBuffer[y],GDT_Float64,indexJ,iband);
-	++indexJ;
+        input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
       }
       catch(string errorstring){
-	cerr << errorstring << "in band " << iband << ", line " << indexJ << endl;
+	cerr << errorstring << "in line " << indexJ << endl;
       }
+      ++indexJ;
     }
+
     for(int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
@@ -116,6 +114,13 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 	    cerr << errorstring << "in band " << iband << ", line " << y << endl;
 	  }
 	}
+        else{
+          int over=y+dimY/2-input.nrOfRow();
+          int index=(inBuffer.size()-1)-over;
+          assert(index>=0);
+          assert(index<inBuffer.size());
+          inBuffer.push_back(inBuffer[index]);
+        }
       }
       for(int x=0;x<input.nrOfCol();++x){
 	outBuffer[x]=0;
@@ -123,30 +128,30 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
         bool masked=false;
         if(noData){//only filter noData values
           for(int imask=0;imask<m_mask.size();++imask){
-            if(inBuffer[dimY/2][x]==m_mask[imask]){
+            if(inBuffer[(dimY-1)/2][x]==m_mask[imask]){
               masked=true;
               break;
             }
           }
           if(!masked){
-            outBuffer[x]=inBuffer[dimY/2][x];
+            outBuffer[x]=inBuffer[(dimY-1)/2][x];
             continue;
           }
         }
         assert(!noData||masked);
-	for(int j=-dimY/2;j<(dimY+1)/2;++j){
-	  for(int i=-dimX/2;i<(dimX+1)/2;++i){
+	for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+	  for(int i=-(dimX-1)/2;i<=dimX/2;++i){
 	    indexI=x+i;
-	    indexJ=dimY/2+j;
+	    indexJ=(dimY-1)/2+j;
 	    //check if out of bounds
-	    if(x<dimX/2)
+	    if(x<(dimX-1)/2)
 	      indexI=x+abs(i);
-	    else if(x>=input.nrOfCol()-dimX/2)
+	    else if(x>=input.nrOfCol()-(dimX-1)/2)
 	      indexI=x-abs(i);
-	    if(y<dimY/2)
-	      indexJ=dimY/2+abs(j);
-	    else if(y>=input.nrOfRow()-dimY/2)
-	      indexJ=dimY/2-abs(j);
+	    if(y<(dimY-1)/2)
+	      indexJ=(dimY-1)/2+abs(j);
+	    else if(y>=input.nrOfRow()-(dimY-1)/2)
+	      indexJ=(dimY-1)/2-abs(j);
             //do not take masked values into account
             masked=false;
 	    for(int imask=0;imask<m_mask.size();++imask){
@@ -156,8 +161,8 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 	      }
 	    }
 	    if(!masked){
-              outBuffer[x]+=(m_taps[dimY/2+j][dimX/2+i]*inBuffer[indexJ][indexI]);
-              norm+=m_taps[dimY/2+j][dimX/2+i];
+              outBuffer[x]+=(m_taps[(dimY-1)/2+j][(dimX-1)/2+i]*inBuffer[indexJ][indexI]);
+              norm+=m_taps[(dimY-1)/2+j][(dimX-1)/2+i];
             }
 	  }
         }
@@ -184,6 +189,12 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 
 void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& outputFilename,int dim,const vector<int> &prior)
 {
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
   bool usePriors=true;  
   if(prior.empty()){
     cout << "no prior information" << endl;
@@ -195,6 +206,7 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
       cout << " " << static_cast<short>(prior[iclass]);
     cout << endl;    
   }  
+
   ImgReaderGdal input;
   ImgWriterGdal output;
   input.open(inputFilename);
@@ -209,28 +221,25 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
     dimX=m_taps[0].size();
     dimY=m_taps.size();
   }
-  Vector2d<double> inBuffer(dimY);
+
+  assert(dimX);
+  assert(dimY);
+
+  Vector2d<double> inBuffer(dimY,input.nrOfCol());
   vector<double> outBuffer(input.nrOfCol());
-  //initialize last half of inBuffer
   int indexI=0;
   int indexJ=0;
-//   byte* tmpbuf=new byte[input.rowSize()];
-  for(int y=0;y<dimY;++y){
-    inBuffer[y].resize(input.nrOfCol());
-    if(y<dimY/2)
-      continue;//skip first half
-    try{
-      input.readData(inBuffer[y],GDT_Float64,indexJ++);
+  //initialize last half of inBuffer
+    for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+      try{
+        input.readData(inBuffer[indexJ],GDT_Float64,abs(j));
+      }
+      catch(string errorstring){
+	cerr << errorstring << "in line " << indexJ << endl;
+      }
+      ++indexJ;
     }
-    catch(string errorstring){
-      cerr << errorstring << "in line " << indexJ << endl;
-    }
-  }
-  const char* pszMessage;
-  void* pProgressArg=NULL;
-  GDALProgressFunc pfnProgress=GDALTermProgress;
-  double progress=0;
-  pfnProgress(progress,pszMessage,pProgressArg);
+
   for(int y=0;y<input.nrOfRow();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
@@ -246,23 +255,41 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
 	  cerr << errorstring << "in line" << y << endl;
 	}
       }
+      else{
+        int over=y+dimY/2-input.nrOfRow();
+        int index=(inBuffer.size()-1)-over;
+        assert(index>=0);
+        assert(index<inBuffer.size());
+        inBuffer.push_back(inBuffer[index]);
+      }
     }
     for(int x=0;x<input.nrOfCol();++x){
       outBuffer[x]=0;
       map<int,int> occurrence;
-      for(int j=-dimY/2;j<(dimY+1)/2;++j){
-	for(int i=-dimX/2;i<(dimX+1)/2;++i){
+      int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+      for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+        for(int i=-(dimX-1)/2;i<=dimX/2;++i){
 	  indexI=x+i;
-	  indexJ=dimY/2+j;
 	  //check if out of bounds
-	  if(x<dimX/2)
-	    indexI=x+abs(i);
-	  else if(x>=input.nrOfCol()-dimX/2)
-	    indexI=x-abs(i);
-	  if(y<dimY/2)
-	    indexJ=dimY/2+abs(j);
-	  else if(y>=input.nrOfRow()-dimY/2)
-	    indexJ=dimY/2-abs(j);
+          if(indexI<0)
+            indexI=-indexI;
+          else if(indexI>=input.nrOfCol())
+            indexI=input.nrOfCol()-i;
+          if(y+j<0)
+            indexJ=-j;
+          else if(y+j>=input.nrOfRow())
+            indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+          else
+            indexJ=(dimY-1)/2+j;
+
+	  // if(x<dimX/2)
+	  //   indexI=x+abs(i);
+	  // else if(x>=input.nrOfCol()-dimX/2)
+	  //   indexI=x-abs(i);
+	  // if(y<dimY/2)
+	  //   indexJ=dimY/2+abs(j);
+	  // else if(y>=input.nrOfRow()-dimY/2)
+	  //   indexJ=dimY/2-abs(j);
 	  if(usePriors){
 	    occurrence[inBuffer[indexJ][indexI]]+=prior[inBuffer[indexJ][indexI]-1];
 	  }	  
@@ -275,10 +302,10 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
 	if(mit->second>maxit->second)
 	  maxit=mit;
       }
-      if(occurrence[inBuffer[dimY/2][x]]<maxit->second)//
+      if(occurrence[inBuffer[(dimY-1)/2][x]]<maxit->second)//
 	outBuffer[x]=maxit->first;
       else//favorize original value in case of ties
-	outBuffer[x]=inBuffer[dimY/2][x];
+	outBuffer[x]=inBuffer[(dimY-1)/2][x];
     }
     //write outBuffer to file
     try{
@@ -293,95 +320,6 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
   input.close();
   output.close();
 }
-
-// void Filter2d::homogeneousSpatial(const string& inputFilename, const string& outputFilename, int dim, bool disc, int noValue)
-// {
-//   ImgReaderGdal input;
-//   ImgWriterGdal output;
-//   input.open(inputFilename);
-//   output.open(outputFilename,input);
-//   int dimX=0;//horizontal!!!
-//   int dimY=0;//vertical!!!
-//   assert(dim);
-//   dimX=dim;
-//   dimY=dim;
-//   Vector2d<double> inBuffer(dimY);
-//   vector<double> outBuffer(input.nrOfCol());
-//   //initialize last half of inBuffer
-//   int indexI=0;
-//   int indexJ=0;
-//   for(int y=0;y<dimY;++y){
-//     inBuffer[y].resize(input.nrOfCol());
-//     if(y<dimY/2)
-//       continue;//skip first half
-//     try{
-//       input.readData(inBuffer[y],GDT_Float64,indexJ++);
-//     }
-//     catch(string errorstring){
-//       cerr << errorstring << "in line " << indexJ << endl;
-//     }
-//   }
-//   const char* pszMessage;
-//   void* pProgressArg=NULL;
-//   GDALProgressFunc pfnProgress=GDALTermProgress;
-//   double progress=0;
-//   pfnProgress(progress,pszMessage,pProgressArg);
-//   for(int y=0;y<input.nrOfRow();++y){
-//     if(y){//inBuffer already initialized for y=0
-//       //erase first line from inBuffer
-//       inBuffer.erase(inBuffer.begin());
-//       //read extra line and push back to inBuffer if not out of bounds
-//       if(y+dimY/2<input.nrOfRow()){
-//         //allocate buffer
-//         inBuffer.push_back(inBuffer.back());
-//         try{
-//           input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2);
-//         }
-//         catch(string errorstring){
-//           cerr << errorstring << "in line " << y << endl;
-//         }
-//       }
-//     }
-//     for(int x=0;x<input.nrOfCol();++x){
-//       outBuffer[x]=0;
-//       map<int,int> occurrence;
-//       for(int j=-dimY/2;j<(dimY+1)/2;++j){
-// 	for(int i=-dimX/2;i<(dimX+1)/2;++i){
-//           if(disc&&(i*i+j*j>(dim/2)*(dim/2)))
-//             continue;
-//           indexI=x+i;
-//           //check if out of bounds
-//           if(indexI<0)
-//             indexI=-indexI;
-//           else if(indexI>=input.nrOfCol())
-//             indexI=input.nrOfCol()-indexI;
-//           if(y+j<0)
-//             indexJ=-j;
-//           else if(y+j>=input.nrOfRow())
-//             indexJ=dimY/2-j;
-//           else
-//             indexJ=dimY/2+j;
-//           ++occurrence[inBuffer[indexJ][indexI]];
-// 	}
-//       }
-//       if(occurrence.size()==1)//all values in window must be the same
-// 	outBuffer[x]=inBuffer[dimY/2][x];
-//       else//favorize original value in case of ties
-// 	outBuffer[x]=noValue;
-//     }
-//     //write outBuffer to file
-//     try{
-//       output.writeData(outBuffer,GDT_Float64,y);
-//     }
-//     catch(string errorstring){
-//       cerr << errorstring << "in line" << y << endl;
-//     }
-//     progress=(1.0+y)/input.nrOfRow();
-//     pfnProgress(progress,pszMessage,pProgressArg);
-//   }
-//   input.close();
-//   output.close();
-// }
 
 void filter2d::Filter2d::median(const string& inputFilename, const string& outputFilename,int dim, bool disc)
 {
@@ -408,21 +346,23 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 
 void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
 {
-  assert(dimX);
-  assert(dimY);
-  statfactory::StatFactory stat;
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
+
+  assert(dimX);
+  assert(dimY);
+
+  statfactory::StatFactory stat;
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     vector<double> outBuffer((input.nrOfCol()+down-1)/down);
-    //initialize last half of inBuffer
     int indexI=0;
     int indexJ=0;
-    for(int j=-dimY/2;j<(dimY+1)/2;++j){
+    //initialize last half of inBuffer
+    for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
         input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
       }
@@ -462,8 +402,9 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	outBuffer[x/down]=0;
 	vector<double> windowBuffer;
 	map<int,int> occurrence;
-	for(int j=-dimY/2;j<(dimY+1)/2;++j){
-	  for(int i=-dimX/2;i<(dimX+1)/2;++i){
+        int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+	for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+	  for(int i=-(dimX-1)/2;i<=dimX/2;++i){
 	    double d2=i*i+j*j;//square distance
             if(disc&&(d2>(dimX/2)*(dimY/2)))
               continue;
@@ -476,9 +417,9 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    if(y+j<0)
 	      indexJ=-j;
 	    else if(y+j>=input.nrOfRow())
-	      indexJ=dimY/2-j;
+	      indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
 	    else
-	      indexJ=dimY/2+j;
+	      indexJ=(dimY-1)/2+j;
 	    bool masked=false;
 	    for(int imask=0;imask<m_mask.size();++imask){
 	      if(inBuffer[indexJ][indexI]==m_mask[imask]){
@@ -539,7 +480,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
            if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+            outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[centre])? 1:0;
           break;
         }
         case(filter2d::minmax):{
@@ -552,7 +493,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
             if(min!=max)
               outBuffer[x/down]=0;
             else
-              outBuffer[x/down]=windowBuffer[dimX*dimY/2];//centre pixels
+              outBuffer[x/down]=windowBuffer[centre];//centre pixels
           }
           break;
         }
@@ -567,7 +508,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           if(windowBuffer.empty())
             outBuffer[x/down]=m_noValue;
           else
-            outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[dimX*dimY/2])? 1:0;
+            outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[centre])? 1:0;
           break;
         }
         case(filter2d::order):{
@@ -579,7 +520,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
             double theMin=stat.min(windowBuffer);
             double theMax=stat.max(windowBuffer);
             double scale=(ubound-lbound)/(theMax-theMin);
-            outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[dimX*dimY/2]-theMin)+lbound);
+            outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[centre]-theMin)+lbound);
           }
           break;
         }
@@ -589,7 +530,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         }
         case(filter2d::homog):
 	  if(occurrence.size()==1)//all values in window must be the same
-	    outBuffer[x/down]=inBuffer[dimY/2][x];
+	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
 	  else//favorize original value in case of ties
 	    outBuffer[x/down]=m_noValue;
           break;
@@ -597,9 +538,9 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           for(vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
             if(wit==windowBuffer.begin()+windowBuffer.size()/2)
               continue;
-            else if(*wit!=inBuffer[dimY/2][x])
+            else if(*wit!=inBuffer[(dimY-1)/2][x])
               outBuffer[x/down]=1;
-            else if(*wit==inBuffer[dimY/2][x]){//todo:wit mag niet central pixel zijn
+            else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
               outBuffer[x/down]=m_noValue;
               break;
             }
@@ -623,10 +564,10 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
               if(mit->second>maxit->second)
                 maxit=mit;
             }
-            if(occurrence[inBuffer[dimY/2][x]]<maxit->second)//
+            if(occurrence[inBuffer[(dimY-1)/2][x]]<maxit->second)//
               outBuffer[x/down]=maxit->first;
             else//favorize original value in case of ties
-              outBuffer[x/down]=inBuffer[dimY/2][x];
+              outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
 	  }
 	  else
 	    outBuffer[x/down]=m_noValue;
@@ -635,7 +576,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         case(filter2d::threshold):{
           assert(m_class.size()==m_threshold.size());
 	  if(windowBuffer.size()){
-            outBuffer[x/down]=inBuffer[dimY/2][x];//initialize with original value (in case thresholds not met)
+            outBuffer[x/down]=inBuffer[(dimY-1)/2][x];//initialize with original value (in case thresholds not met)
             for(int iclass=0;iclass<m_class.size();++iclass){
               if(100.0*(occurrence[m_class[iclass]])/windowBuffer.size()>m_threshold[iclass])
                 outBuffer[x/down]=m_class[iclass];
@@ -712,23 +653,25 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
 //beta[classTo][classFrom]
 void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
 {
-  assert(dimX);
-  assert(dimY);
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
+
+  assert(dimX);
+  assert(dimY);
+
   Vector2d<short> inBuffer(dimY,input.nrOfCol());
   Vector2d<double> outBuffer(m_class.size(),(input.nrOfCol()+down-1)/down);
   assert(input.nrOfBand()==1);
   assert(output.nrOfBand()==m_class.size());
   assert(m_class.size()>1);
   assert(beta.size()==m_class.size());
-  //initialize last half of inBuffer
   int indexI=0;
   int indexJ=0;
-  for(int j=-dimY/2;j<(dimY+1)/2;++j){
+  //initialize last half of inBuffer
+  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
     try{
       input.readData(inBuffer[indexJ],GDT_Int16,abs(j));
     }
@@ -771,8 +714,9 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
         outBuffer[iclass][x/down]=0;
       }
       vector<double> windowBuffer;
-      for(int j=-dimY/2;j<(dimY+1)/2;++j){
-        for(int i=-dimX/2;i<(dimX+1)/2;++i){
+      int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+      for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+        for(int i=-(dimX-1)/2;i<=dimX/2;++i){
           if(i!=0&&j!=0&&!eightConnectivity)
             continue;
           if(i==0&&j==0)
@@ -786,9 +730,9 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
           if(y+j<0)
             indexJ=-j;
           else if(y+j>=input.nrOfRow())
-            indexJ=dimY/2-j;
+            indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
           else
-            indexJ=dimY/2+j;
+            indexJ=(dimY-1)/2+j;
           bool masked=false;
           for(int imask=0;imask<m_mask.size();++imask){
             if(inBuffer[indexJ][indexI]==m_mask[imask]){
@@ -797,7 +741,6 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
             }
           }
           if(!masked){
-            // if(inBuffer[dimY/2][x]//centre pixel
             for(int iclass=0;iclass<m_class.size();++iclass){
               if(inBuffer[indexJ][indexI]==m_class[iclass])
                 potential[iclass]+=1;
@@ -967,16 +910,23 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 
 void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const vector<double> &angle, bool disc)
 {
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
   assert(dimX);
   assert(dimY);
+
   statfactory::StatFactory stat;
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     vector<double> outBuffer(input.nrOfCol());
-    //initialize last half of inBuffer
     int indexI=0;
     int indexJ=0;
-    for(int j=-dimY/2;j<(dimY+1)/2;++j){
+    //initialize last half of inBuffer
+    for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
 	input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
 	++indexJ;
@@ -985,11 +935,6 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	cerr << errorstring << "in line " << indexJ << endl;
       }
     }
-    const char* pszMessage;
-    void* pProgressArg=NULL;
-    GDALProgressFunc pfnProgress=GDALTermProgress;
-    double progress=0;
-    pfnProgress(progress,pszMessage,pProgressArg);
     for(int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
@@ -1005,12 +950,20 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	    cerr << errorstring << "in band " << iband << ", line " << y << endl;
 	  }
 	}
+        else{
+          int over=y+dimY/2-input.nrOfRow();
+          int index=(inBuffer.size()-1)-over;
+          assert(index>=0);
+          assert(index<inBuffer.size());
+          inBuffer.push_back(inBuffer[index]);
+        }
       }
       for(int x=0;x<input.nrOfCol();++x){
-        double currentValue=inBuffer[dimY/2][x];
+        double currentValue=inBuffer[(dimY-1)/2][x];
 	outBuffer[x]=currentValue;
 	vector<double> statBuffer;
 	bool currentMasked=false;
+        int centre=dimX*(dimY-1)/2+(dimX-1)/2;
 	for(int imask=0;imask<m_mask.size();++imask){
 	  if(currentValue==m_mask[imask]){
 	    currentMasked=true;
@@ -1021,11 +974,11 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	  outBuffer[x]=currentValue;
 	}
 	else{
-	  for(int j=-dimY/2;j<(dimY+1)/2;++j){
-	    for(int i=-dimX/2;i<(dimX+1)/2;++i){
-	      if(disc&&(i*i+j*j>(dimX/2)*(dimY/2)))
-		continue;
-              bool masked=false;
+          for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+            for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+              double d2=i*i+j*j;//square distance
+              if(disc&&(d2>(dimX/2)*(dimY/2)))
+                continue;
 	      if(angle.size()){
 	      	double theta;
 		//use polar coordinates in radians
@@ -1069,10 +1022,14 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 		indexI=input.nrOfCol()-i;
 	      if(y+j<0)
 		indexJ=-j;
-	      else if(y+j>=input.nrOfRow())
-		indexJ=dimY/2-j;//indexJ=inBuffer.size()-1-j;
-	      else
-		indexJ=dimY/2+j;
+              else if(y+j>=input.nrOfRow())
+                indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+              else
+                indexJ=(dimY-1)/2+j;
+              //todo: introduce novalue as this: ?
+              // if(inBuffer[indexJ][indexI]==m_noValue)
+              //   continue;
+              bool masked=false;
 	      for(int imask=0;imask<m_mask.size();++imask){
 		if(inBuffer[indexJ][indexI]==m_mask[imask]){
 		  masked=true;
@@ -1152,5 +1109,135 @@ void filter2d::Filter2d::dwtQuantize(const ImgReaderGdal& input, ImgWriterGdal& 
     std::cout << "filtering band " << iband << std::endl << std::flush;
     dwtQuantize(theBuffer, wavelet_type, family, quantize);
     output.writeDataBlock(theBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
+  }
+}
+
+void filter2d::Filter2d::linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
+  Vector2d<float> inputBuffer;
+  vector< Vector2d<float> > outputBuffer;
+  input.readDataBlock(inputBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, band);
+  if(maxDistance<=0)
+    maxDistance=sqrt(input.nrOfCol()*input.nrOfRow());
+  linearFeature(inputBuffer,outputBuffer,angle,angleStep,maxDistance,eps, l1, a1, l2, a2,verbose);
+  for(int iband=0;iband<outputBuffer.size();++iband)
+    output.writeDataBlock(outputBuffer[iband],GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
+}
+
+void filter2d::Filter2d::linearFeature(const Vector2d<float>& input, vector< Vector2d<float> >& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, bool verbose)
+{
+  output.clear();
+  int nband=0;
+  if(l1)
+    ++nband;
+  if(a1)
+    ++nband;
+  if(l2)
+    ++nband;
+  if(a2)
+    ++nband;
+  output.resize(nband);
+  for(int iband=0;iband<output.size();++iband)
+    output[iband].resize(input.nRows(),input.nCols());
+  if(maxDistance<=0)
+    maxDistance=sqrt(input.nRows()*input.nCols());
+  int indexI=0;
+  int indexJ=0;
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nRows();++y){
+    for(int x=0;x<input.nCols();++x){
+      float currentValue=input[y][x];
+      //find values equal to current value with some error margin
+      //todo: add distance for two opposite directions
+      float lineDistance1=0;//longest line of object
+      float lineDistance2=maxDistance;//shortest line of object
+      float lineAngle1=0;//angle to longest line (North=0)
+      float lineAngle2=0;//angle to shortest line (North=0)
+      float northAngle=0;//rotating angle
+      for(northAngle=0;northAngle<180;northAngle+=angleStep){
+	if(angle<=360&&angle>=0&&angle!=northAngle)
+	  continue;
+	//test
+	if(verbose)
+	  std::cout << "northAngle: " << northAngle << std::endl;
+	float currentDistance=0;
+	float theDir=0;
+	for(short side=0;side<=1;side+=1){
+	  theDir=PI/2.0-DEG2RAD(northAngle)+side*PI;//in radians
+	  //test
+	  if(verbose)
+	    std::cout << "theDir in deg: " << RAD2DEG(theDir) << std::endl;
+	  if(theDir<0)
+	    theDir+=2*PI;
+	  //test
+	  if(verbose)
+	    std::cout << "theDir in deg: " << RAD2DEG(theDir) << std::endl;
+	  float nextValue=currentValue;
+	  for(float currentRay=1;currentRay<maxDistance;++currentRay){
+	    indexI=x+currentRay*cos(theDir);
+	    indexJ=y-currentRay*sin(theDir);
+	    if(indexJ<0||indexJ>=input.size())
+	      break;
+	    if(indexI<0||indexI>=input[indexJ].size())
+	      break;
+	    nextValue=input[indexJ][indexI];
+	    if(verbose){
+	      std::cout << "x: " << x << std::endl;
+	      std::cout << "y: " << y << std::endl;
+	      std::cout << "currentValue: " << currentValue << std::endl;
+	      std::cout << "theDir in degrees: " << RAD2DEG(theDir) << std::endl;
+	      std::cout << "cos(theDir): " << cos(theDir) << std::endl;
+	      std::cout << "sin(theDir): " << sin(theDir) << std::endl;
+	      std::cout << "currentRay: " << currentRay << std::endl;
+	      std::cout << "currentDistance: " << currentDistance << std::endl;
+	      std::cout << "indexI: " << indexI << std::endl;
+	      std::cout << "indexJ: " << indexJ << std::endl;
+	      std::cout << "nextValue: " << nextValue << std::endl;
+	    }
+	    if(fabs(currentValue-nextValue)<=eps){
+	      ++currentDistance;
+	      //test
+	      if(verbose)
+		std::cout << "currentDistance: " << currentDistance << ", continue" << std::endl;
+	    }
+	    else{
+	      if(verbose)
+		std::cout << "currentDistance: " << currentDistance << ", break" << std::endl;
+	      break;
+	    }
+	  }
+	}
+	if(lineDistance1<currentDistance){
+	  lineDistance1=currentDistance;
+	  lineAngle1=northAngle;
+	}
+	if(lineDistance2>currentDistance){
+	  lineDistance2=currentDistance;
+	  lineAngle2=northAngle;
+	}
+	if(verbose){
+	  std::cout << "lineDistance1: " << lineDistance1 << std::endl;
+	  std::cout << "lineAngle1: " << lineAngle1 << std::endl;
+	  std::cout << "lineDistance2: " << lineDistance2 << std::endl;
+	  std::cout << "lineAngle2: " << lineAngle2 << std::endl;
+	}
+      }
+      int iband=0;
+      if(l1)
+	output[iband++][y][x]=lineDistance1;
+      if(a1)
+	output[iband++][y][x]=lineAngle1;
+      if(l2)
+	output[iband++][y][x]=lineDistance2;
+      if(a2)
+	output[iband++][y][x]=lineAngle2;
+      assert(iband==nband);
+    }
+    progress=(1.0+y);
+    progress/=input.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
   }
 }

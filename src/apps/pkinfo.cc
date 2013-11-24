@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
     metadata_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
   }
-  catch(string predefinedString){
+  catch(std::string predefinedString){
     std::cout << predefinedString << std::endl;
     exit(0);
   }
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
     if(centre_opt[0]){
       double theX, theY;
       imgReader.getCentrePos(theX,theY);
-      std::cout << setprecision(12) << " -x " << theX << " -y " << theY << " ";
+      std::cout << std::setprecision(12) << " -x " << theX << " -y " << theY << " ";
     }
     if(refpixel_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
       double refX,refY;
       //get centre of reference (centre of gravity) pixel in image
       imgReader.getRefPix(refX,refY,band_opt[0]);
-      cout << setprecision(12) << "-rx " << refX << " -ry " << refY << endl;
+      std::cout << std::setprecision(12) << "-rx " << refX << " -ry " << refY << std::endl;
       egcs.setLevel(egcs.res2level(imgReader.getDeltaX()));
       // unsigned short theLevel=egcs.getLevel(imgReader.getDeltaX());
       // egcs.setLevel(theLevel);
@@ -155,9 +155,9 @@ int main(int argc, char *argv[])
       double theULX, theULY, theLRX, theLRY;
       imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
       if(bbox_te_opt[0])
-        std::cout << setprecision(12) << "-te " << theULX << " " << theLRY << " " << theLRX << " " << theULY;
+        std::cout << std::setprecision(12) << "-te " << theULX << " " << theLRY << " " << theLRX << " " << theULY;
       else
-        std::cout << setprecision(12) << "--ulx=" << theULX << " --uly=" << theULY << " --lrx=" << theLRX << " --lry=" << theLRY << " ";
+        std::cout << std::setprecision(12) << "--ulx=" << theULX << " --uly=" << theULY << " --lrx=" << theLRX << " --lry=" << theLRY << " ";
       if(!ifile){
 	maxLRX=theLRX;
 	maxULY=theULY;
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
       if(extent_opt.size()){
         extentReader.open(extent_opt[0]);
         if(!(extentReader.getExtent(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
-          cerr << "Error: could not get extent from " << extent_opt[0] << std::endl;
+          std::cerr << "Error: could not get extent from " << extent_opt[0] << std::endl;
           exit(1);
         }
         // std::cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << std::endl;
@@ -208,13 +208,13 @@ int main(int argc, char *argv[])
       double ulx,uly,lrx,lry;
       imgReader.getBoundingBox(ulx,uly,lrx,lry);
       if(ulx_opt.size())
-        std::cout << " --ulx=" << fixed << ulx << " ";
+        std::cout << " --ulx=" << std::fixed << ulx << " ";
       if(uly_opt.size())
-        std::cout << " --uly=" << fixed << uly << " ";
+        std::cout << " --uly=" << std::fixed << uly << " ";
       if(lrx_opt.size())
-        std::cout << " --lrx=" << fixed << lrx << " ";
+        std::cout << " --lrx=" << std::fixed << lrx << " ";
       if(lry_opt.size())
-        std::cout << " --lry=" << fixed << lry << " ";
+        std::cout << " --lry=" << std::fixed << lry << " ";
     }
     if(colorTable_opt[0]){
       GDALColorTable* colorTable=imgReader.getColorTable();
@@ -293,6 +293,9 @@ int main(int argc, char *argv[])
       std::vector<unsigned long int> output(nbin_opt[0]);
       minValue=0;
       maxValue=0;
+      //todo: optimize such that getMinMax is only called once...
+      imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+      
       if(min_opt.size())
         minValue=min_opt[0];
       if(max_opt.size())
@@ -331,7 +334,7 @@ int main(int argc, char *argv[])
     if(geo_opt[0]&&!read_opt[0]){
       double ulx,uly,deltaX,deltaY,rot1,rot2;
       imgReader.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-      std::cout << " --geo " << setprecision(12) << ulx << " " << uly << " " << deltaX << " " << deltaY << " " << rot1 << " " << rot2 << " ";
+      std::cout << " --geo " << std::setprecision(12) << ulx << " " << uly << " " << deltaX << " " << deltaY << " " << rot1 << " " << rot2 << " ";
     }
     if(interleave_opt[0]){
       std::cout << " --interleave " << imgReader.getInterleave() << " ";
@@ -347,18 +350,18 @@ int main(int argc, char *argv[])
       // catch(...){
       // 	std::cout << "catched" << std::endl;
       // }
-      list<std::string> metaData;
+      std::list<std::string> metaData;
       imgReader.getMetadata(metaData);
-      list<std::string>::const_iterator lit=metaData.begin();
+      std::list<std::string>::const_iterator lit=metaData.begin();
       std::cout << " --description ";
       while(lit!=metaData.end())
       	std::cout << *(lit++) << " ";
     }
     if(metadata_opt[0]){
       std::cout << "Metadata: " << std::endl;
-      list<std::string> lmeta;
+      std::list<std::string> lmeta;
       imgReader.getMetadata(lmeta);
-      list<std::string>::const_iterator lit=lmeta.begin();
+      std::list<std::string>::const_iterator lit=lmeta.begin();
       while(lit!=lmeta.end()){
         std::cout << *lit << std::endl;
         ++lit;
@@ -404,14 +407,14 @@ int main(int argc, char *argv[])
   }
   if((bbox_opt[0]||bbox_te_opt[0])&&input_opt.size()>1){
     if(bbox_te_opt[0])
-      std::cout << setprecision(12) << "-te " << minULX << " " << minLRY << " " << maxLRX << " " << maxULY;
+      std::cout << std::setprecision(12) << "-te " << minULX << " " << minLRY << " " << maxLRX << " " << maxULY;
     else
-      std::cout << "union bounding box: " << setprecision(12) << "--ulx=" << minULX << " --uly=" << maxULY << " --lrx=" << maxLRX << " --lry=" << minLRY << std::endl;
+      std::cout << "union bounding box: " << std::setprecision(12) << "--ulx=" << minULX << " --uly=" << maxULY << " --lrx=" << maxLRX << " --lry=" << minLRY << std::endl;
     if(maxULX<minLRX&&minULY>maxLRY){
       if(bbox_te_opt[0])
-        std::cout << "intersect bounding box: " << setprecision(12) << "-te " << maxULX << " " << maxLRY << " " << minLRX << " --lry=" << minULY << std::endl;
+        std::cout << "intersect bounding box: " << std::setprecision(12) << "-te " << maxULX << " " << maxLRY << " " << minLRX << " --lry=" << minULY << std::endl;
       else
-        std::cout << "intersect bounding box: " << setprecision(12) << "--ulx=" << maxULX << " --uly=" << minULY << " --lrx=" << minLRX << " --lry=" << maxLRY << std::endl;
+        std::cout << "intersect bounding box: " << std::setprecision(12) << "--ulx=" << maxULX << " --uly=" << minULY << " --lrx=" << minLRX << " --lry=" << maxLRY << std::endl;
     }
     else
       std::cout << "no intersect" << std::endl;

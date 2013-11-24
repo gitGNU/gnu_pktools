@@ -20,8 +20,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _POSVALUE_H_
 #define _POSVALUE_H_
 
-using namespace std;
-
 struct PosValue{
   double posx;
   double posy;

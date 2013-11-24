@@ -163,7 +163,7 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
     else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
       cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
   }
-  if(cv_opt[0]>0){
+  if(cv_opt[0]>1){
     double *target = Malloc(double,prob.l);
     svm_cross_validation(&prob,&param,cv_opt[0],target);
     assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
@@ -219,7 +219,7 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
     std::cout << "kappa: " << kappa << std::endl;
   }
   double cost=(costfunction_opt[0])? oa : kappa;
-  if(cost)
+  if(cost>0)
     error=1.0/cost;
   return(error);
 }
@@ -565,10 +565,10 @@ int main(int argc, char *argv[])
 
   assert(ccost_opt.size()>1);//must have boundaries at least (initial value is optional)
   if(ccost_opt.size()<3)//create initial value
-    ccost_opt.push_back(0.5*(ccost_opt[0]+ccost_opt[1]));
+    ccost_opt.push_back(sqrt(ccost_opt[0]*ccost_opt[1]));
   assert(gamma_opt.size()>1);//must have boundaries at least (initial value is optional)
   if(gamma_opt.size()<3)//create initial value
-    gamma_opt.push_back(0);//will be translated to 1.0/nFeatures
+    gamma_opt.push_back(sqrt(gamma_opt[0]*gamma_opt[1]));//will be translated to 1.0/nFeatures
   assert(ccost_opt.size()==3);//min, init, max
   assert(gamma_opt.size()==3);//min, init, max
   assert(gamma_opt[0]<gamma_opt[1]);

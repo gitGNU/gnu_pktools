@@ -293,47 +293,34 @@ string ImgWriterGdal::setProjectionProj4(const string& projection)
   if(!m_isGeoRef)
     m_isGeoRef=true;
 
-    OGRSpatialReferenceH hSRS;  
-    char *pszResult = NULL;  
+  OGRSpatialReference theRef;
+  theRef.SetFromUserInput(projection.c_str());
+  char *wktString;
+  theRef.exportToWkt(&wktString);
+  assert(m_gds);
+  m_gds->SetProjection(wktString);
+  return(wktString);
+
+    // OGRSpatialReferenceH hSRS;  
+    // char *pszResult = NULL;  
   
-    CPLErrorReset();  
+    // CPLErrorReset();  
       
-    hSRS = OSRNewSpatialReference( NULL );  
-    if( OSRSetFromUserInput( hSRS, projection.c_str() ) == OGRERR_NONE )  
-        OSRExportToWkt( hSRS, &pszResult );  
-    else  
-    {  
-        // CPLError( CE_Failure, CPLE_AppDefined,  
-        //           "Translating source or target SRS failed:\n%s",  
-        //           projection.c_str() );  
-        ostringstream s;
-        s << "Error in set projection " << projection;
-        throw(s.str());
-        // exit( 1 );
-    }  
-    // m_gds->SetProjection(pszResult);
-
-    //due to error in Gdal? AUTHORITY fields do not seem to work!
-    string theProjection=pszResult;
-    // size_t startpos,endpos;
-    // while((startpos=theProjection.find(",AUTHORITY"))!=string::npos){
-    //   endpos=theProjection.find("]",startpos+1,1)+1;
-    //   theProjection.erase(startpos,endpos-startpos);
-    // }
-    assert(m_gds);
-    m_gds->SetProjection(theProjection.c_str());
-    OSRDestroySpatialReference( hSRS );  
+    // hSRS = OSRNewSpatialReference( NULL );  
+    // if( OSRSetFromUserInput( hSRS, projection.c_str() ) == OGRERR_NONE )  
+    //     OSRExportToWkt( hSRS, &pszResult );  
+    // else  
+    // {  
+    //     ostringstream s;
+    //     s << "Error in set projection " << projection;
+    //     throw(s.str());
+    // }  
+    // string theProjection=pszResult;
+    // assert(m_gds);
+    // m_gds->SetProjection(theProjection.c_str());
+    // OSRDestroySpatialReference( hSRS );  
   
-    // return pszResult;  
-    return theProjection;  
-
-//   OGRSpatialReference oSRS;
-//   char *pszSRS_WKT = NULL;
-//   oSRS.importFromProj4(projection.c_str());
-// //   oSRS.SetLAEA(52,10,4321000,3210000);//redundant but according to JRC standard
-//   oSRS.exportToWkt(&pszSRS_WKT);
-//   m_gds->SetProjection(pszSRS_WKT);
-//   CPLFree(pszSRS_WKT);
+    // return theProjection;  
 }
 
 void ImgWriterGdal::setProjection(const string& projection)

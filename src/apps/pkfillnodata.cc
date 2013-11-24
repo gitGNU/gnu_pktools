@@ -27,11 +27,11 @@ extern "C" {
 #include "base/Optionpk.h"
 
 int main(int argc,char **argv) {
-  Optionpk<std::string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!", "");
-  Optionpk<int> band_opt("b", "band", "band(s) to process (Default is -1: process all bands)", -1);
-  Optionpk<std::string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ", "");
-  Optionpk<std::string> output_opt("o", "output", "Output image file", "");
-  Optionpk<double> distance_opt("d", "distance", "Maximum number of pixels to search in all directions to find values to interpolate from (default is 3", 3);
+  Optionpk<std::string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!");
+  Optionpk<int> band_opt("b", "band", "band(s) to process (Default is -1: process all bands)");
+  Optionpk<std::string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ");
+  Optionpk<std::string> output_opt("o", "output", "Output image file");
+  Optionpk<double> distance_opt("d", "distance", "Maximum number of pixels to search in all directions to find values to interpolate from", 0);
   Optionpk<int> iteration_opt("it", "iteration", "Number of 3x3 smoothing filter passes to run (default 0)", 0);
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
@@ -54,6 +54,9 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
+  assert(input_opt.size());
+  assert(mask_opt.size());
+  assert(output_opt.size());
   GDALAllRegister();
   GDALDataset *gds_input;
   if(verbose_opt[0])
@@ -90,7 +93,7 @@ int main(int argc,char **argv) {
   GDALDataset *gds_out;
   gds_out=(GDALDataset *) GDALOpen(output_opt[0].c_str(), GA_Update);
 
-  if(band_opt[0]<0){
+  if(band_opt.empty()){
     band_opt.clear();
     for(int iband=0;iband<gds_input->GetRasterCount();++iband)
       band_opt.push_back(iband);

@@ -85,7 +85,7 @@ template<class T> double FeatureSelector::forwardUnivariate(std::vector< Vector2
     if(cost[ilevel].value>0)
       subset.push_back(cost[ilevel].position);
     if(verbose)
-      cout << "feature " << subset.back() << " has cost: " << cost[ilevel].value << endl;
+      std::cout << "feature " << subset.back() << " has cost: " << cost[ilevel].value << std::endl;
     ++ilevel;
   }
   double maxCost=-1;
@@ -116,9 +116,9 @@ template<class T> double FeatureSelector::forward(std::vector< Vector2d<T> >& v,
     maxCost=addFeature(v,*getCost,subset,verbose);
     if(verbose){
       for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
-        cout << *lit << " ";
-      cout << endl;
-      // cout << "added " << subset.back() << ", " << subset.size() << "/" << maxFeatures << " features selected with cost: " << maxCost << endl;
+        std::cout << *lit << " ";
+      std::cout << std::endl;
+      // std::cout << "added " << subset.back() << ", " << subset.size() << "/" << maxFeatures << " features selected with cost: " << maxCost << std::endl;
     }
   }//while
   return maxCost;
@@ -139,9 +139,9 @@ template<class T> double FeatureSelector::backward(std::vector< Vector2d<T> >& v
     maxCost=removeFeature(v,*getCost,subset,removedFeature,verbose);
     if(verbose){
       for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
-        cout << *lit << " ";
-      cout << endl;
-      // cout << "removed " << removedFeature << ", " << subset.size() << "/" << minFeatures << " features remain with cost: " << maxCost << endl;
+        std::cout << *lit << " ";
+      std::cout << std::endl;
+      // std::cout << "removed " << removedFeature << ", " << subset.size() << "/" << minFeatures << " features remain with cost: " << maxCost << std::endl;
     }
   }//while
   return maxCost;
@@ -161,21 +161,21 @@ template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v
   cost.push_back(addFeature(v,*getCost,subset,verbose));
   ++k;
   if(verbose>1)
-    cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << endl;
+    std::cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << std::endl;
   else if(verbose){
     for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
-      cout << *lit << " ";
-    cout << endl;
+      std::cout << *lit << " ";
+    std::cout << std::endl;
   }
   while(k<maxFeatures){
     cost.push_back(addFeature(v,*getCost,subset,verbose));
     ++k;
     if(verbose>1)
-    cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << endl;
+    std::cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << std::endl;
     else if(verbose){
       for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
-        cout << *lit << " ";
-      cout << " (cost: " << cost.back() << ")" << endl;
+        std::cout << *lit << " ";
+      std::cout << " (cost: " << cost.back() << ")" << std::endl;
     }
 
     while(k>1){
@@ -186,11 +186,11 @@ template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v
 	cost[k]=cost_r;
 	cost.pop_back();
 	if(verbose>1)
-	  cout << "removed " << x_r << ", " << cost.size()-1 << "/" << maxFeatures << " features remain with cost: " << cost_r << endl;
+	  std::cout << "removed " << x_r << ", " << cost.size()-1 << "/" << maxFeatures << " features remain with cost: " << cost_r << std::endl;
         else if(verbose){
           for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
-            cout << *lit << " ";
-          cout << " (cost: " << cost.back() << ")" << endl;
+            std::cout << *lit << " ";
+          std::cout << " (cost: " << cost.back() << ")" << std::endl;
         }
 	continue;
       }
@@ -199,7 +199,7 @@ template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v
 	break;
       }
       else if(verbose)
-	cout << "could not remove any feature" << endl;
+        std::cout << "could not remove any feature" << std::endl;
       cost.pop_back();
     }
   }
@@ -238,7 +238,7 @@ template<class T> double FeatureSelector::bruteForce(std::vector< Vector2d<T> >&
     catch(...){ //singular matrix encountered
       catchset=tmpset;//this tmpset resulted in failure of getCost
       if(verbose){
-	cout << "Could not get cost from set: " << endl;
+        std::cout << "Could not get cost from set: " << std::endl;
 	gsl_combination_fprintf(stdout,c," %u");
 	printf("\n");
       }      
@@ -288,7 +288,7 @@ template<class T> double FeatureSelector::addFeature(std::vector< Vector2d<T> >&
     catch(...){
       catchset=tmpset;//this tmpset resulted in singular matrix
       if(verbose)
-	cout << "Could not add feature " << tmpset.back() << endl;
+        std::cout << "Could not add feature " << tmpset.back() << std::endl;
       tmpset.pop_back();
       continue;
     }
@@ -336,7 +336,7 @@ template<class T> double FeatureSelector::removeFeature(std::vector< Vector2d<T>
     catch(...){
       catchset=tmpset;//this tmpset resulted in singular matrix
       if(verbose)
-	cout << "Could not remove feature " << last << endl;
+        std::cout << "Could not remove feature " << last << std::endl;
       tmpset.push_front(last);
       continue;
     }

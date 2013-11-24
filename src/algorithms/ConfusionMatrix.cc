@@ -66,16 +66,16 @@ ConfusionMatrix& ConfusionMatrix::operator=(const ConfusionMatrix& cm){
 ConfusionMatrix& ConfusionMatrix::operator+=(const ConfusionMatrix &cm)
 {
   if(cm.m_classes.size()!=this->m_classes.size()){
-    cerr << "error0: "<< cm.m_classes.size() << "!=" << this->m_classes.size() << endl;
+    std::cerr << "error0: "<< cm.m_classes.size() << "!=" << this->m_classes.size() << std::endl;
     exit(0);
   }
   if(cm.m_results.size()!=this->m_results.size()){
-    cerr << "error1: "<< cm.m_results.size() << "!=" << this->m_results.size() << endl;
+    std::cerr << "error1: "<< cm.m_results.size() << "!=" << this->m_results.size() << std::endl;
     exit(1);
   }
   for(int irow=0;irow<m_results.size();++irow){
     if(cm.m_results[irow].size()!=this->m_results[irow].size()){
-      cerr << "error2: " << cm.m_results[irow].size() << "!=" << this->m_results[irow].size() << endl;
+      std::cerr << "error2: " << cm.m_results[irow].size() << "!=" << this->m_results[irow].size() << std::endl;
       exit(2);
     }
     for(int icol=0;icol<m_results[irow].size();++icol)
@@ -157,7 +157,7 @@ void ConfusionMatrix::incrementResult(const std::string& theRef, const std::stri
   int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
   assert(ir>=0);
   if(ir>=m_results.size())
-    cerr << "Error: " << theRef << " not found in class ConfusionMatrix when incrementing for class " << theClass << endl;
+    std::cerr << "Error: " << theRef << " not found in class ConfusionMatrix when incrementing for class " << theClass << std::endl;
   assert(ir<m_results.size());
   assert(ic>=0);
   assert(ic<m_results[ir].size());

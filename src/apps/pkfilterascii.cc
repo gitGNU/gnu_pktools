@@ -229,6 +229,8 @@ int main(int argc,char **argv) {
   if(!output_opt.empty())
     outputStream.open(output_opt[0].c_str(),ios::out);
 
+  if(verbose_opt[0])
+    std::cout << "stream to output" << std::endl;
   if(transpose_opt[0]){
     for(int icol=0;icol<inputCols_opt.size();++icol){
       for(int iband=0;iband<filteredData[icol].size();++iband){
@@ -252,21 +254,29 @@ int main(int argc,char **argv) {
   else{
     // int nband=wavelengthOut.size()? wavelengthOut.size() : filteredData[0].size();
     int nband=0;
-    switch(filter::Filter::getFilterType(method_opt[0])){
-    case(filter::dwtForward):
-      nband=filteredData[0].size();
-      break;
-    case(filter::dwtInverse):
-      nband=filteredData[0].size();
-      break;
-    case(filter::dwtQuantize):
+    if(method_opt.size()){
+      switch(filter::Filter::getFilterType(method_opt[0])){
+      case(filter::dwtForward):
+        nband=filteredData[0].size();
+        break;
+      case(filter::dwtInverse):
+        nband=filteredData[0].size();
+        break;
+      case(filter::dwtQuantize):
+        nband=wavelengthOut.size();
+        assert(wavelengthOut.size()==nband);
+        assert(filteredData[0].size()==nband);
+        break;
+      default:
+        nband=wavelengthOut.size();
+        break;
+      }
+    }
+    else
       nband=wavelengthOut.size();
-      assert(wavelengthOut.size()==nband);
-      assert(filteredData[0].size()==nband);
-      break;
-    default:
-      nband=wavelengthOut.size();
-      break;
+    if(verbose_opt[0]){
+      std::cout << "number of bands: " << nband << std::endl;
+      std::cout << "wavelengthOut.size(): " << wavelengthOut.size() << std::endl;
     }
     for(int iband=0;iband<nband;++iband){
       if(!output_opt.empty()){

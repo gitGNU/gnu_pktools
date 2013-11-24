@@ -69,16 +69,16 @@ public:
     return ConfusionMatrix(*this)+=cm;
   }
   void sortClassNames();
-  friend ostream& operator<<(ostream& os, const ConfusionMatrix &cm){
+  friend std::ostream& operator<<(std::ostream& os, const ConfusionMatrix &cm){
     for(int iclass=0;iclass<cm.nClasses();++iclass)
       os << "\t" << cm.m_classes[iclass];
-    os << endl;
+    os << std::endl;
     assert(cm.m_classes.size()==cm.m_results.size());
     for(int irow=0;irow<cm.m_results.size();++irow){
       os << cm.m_classes[irow];
       for(int icol=0;icol<cm.m_results[irow].size();++icol)
         os << "\t" << cm.m_results[irow][icol];
-      os << endl;
+      os << std::endl;
     }
     return os;
   };

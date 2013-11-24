@@ -27,8 +27,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> input_opt("i", "input", "Input shape file", "");
-  Optionpk<string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
+  Optionpk<std::string> input_opt("i", "input", "Input shape file", "");
+  Optionpk<std::string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
   Optionpk<double> min_opt("min","min","set minimum value",0);
   Optionpk<double> max_opt("max","max","set maximum value",0);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     size_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
-  catch(string predefinedString){
+  catch(std::string predefinedString){
     std::cout << predefinedString << std::endl;
     exit(0);
   }
@@ -70,12 +70,12 @@ int main(int argc, char *argv[])
   try{
     imgReader.open(input_opt[0]);
   }
-  catch(string errorstring){
+  catch(std::string errorstring){
     std::cerr << errorstring << std::endl;
   }
 
   ImgReaderOgr inputReader(input_opt[0]);
-  vector<double> theData;
+  std::vector<double> theData;
   statfactory::StatFactory stat;
   //todo: implement ALL
 
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
       std::cout << "field: " << ifield << std::endl;
     theData.clear();
     inputReader.readData(theData,OFTReal,fieldname_opt[ifield],0,verbose_opt[0]);
-    vector<int> binData;
+    std::vector<double> binData;
     double minValue=min_opt[0];
     double maxValue=max_opt[0];
     if(histogram_opt[0]){
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
       try{
         stat.distribution(theData,theData.begin(),theData.end(),binData,nbin_opt[0],minValue,maxValue);
       }
-      catch(string theError){
+      catch(std::string theError){
         std::cerr << "Warning: all identical values in data" << std::endl;
         exit(1);
       }
@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
       if(stdev_opt[0])
         std::cout << " --stdev " << sqrt(theVar);
       if(minmax_opt[0]){
-        cout << " -min " << stat.min(theData);
-        cout << " -max " << stat.max(theData);
+        std::cout << " -min " << stat.min(theData);
+        std::cout << " -max " << stat.max(theData);
       }
       if(median_opt[0])
         std::cout << " -median " << stat.median(theData);
@@ -130,15 +130,15 @@ int main(int argc, char *argv[])
         }
       }
     }
-    catch(string theError){
+    catch(std::string theError){
       if(mean_opt[0])
         std::cout << " --mean " << theData.back();
       if(stdev_opt[0])
         std::cout << " --stdev " << "0";
       if(min_opt[0])
-        cout << " -min " << theData.back();
+        std::cout << " -min " << theData.back();
       if(max_opt[0])
-        cout << " -max " << theData.back();
+        std::cout << " -max " << theData.back();
       if(median_opt[0])
         std::cout << " -median " << theData.back();
       if(size_opt[0])

@@ -61,7 +61,7 @@ public:
   template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down=1, int offset=0, bool verbose=0);
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
-
+  double getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta=1.0, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, std::vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool transposeInput=false, bool verbose=false);
 
@@ -158,12 +158,15 @@ private:
   assert(wavelengthIn.size()==input.size());
   std::vector<double> input_fine;
   std::vector<double> product(wavelength_fine.size());
+  std::vector<double> wavelengthOut(wavelength_fine.size());
   stat.interpolateUp(wavelengthIn,input,wavelength_fine,interpolationType,input_fine,verbose);
 
   if(verbose)
     std::cout << "input_fine.size(): " << input_fine.size() << std::endl;
-  for(int iband=0;iband<input_fine.size();++iband)
+  for(int iband=0;iband<input_fine.size();++iband){
     product[iband]=input_fine[iband]*srf_fine[iband];
+    wavelengthOut[iband]=wavelength_fine[iband]*srf_fine[iband];
+  }
 
   assert(input_fine.size()==srf_fine.size());
   assert(input_fine.size()==wavelength_fine.size());
@@ -172,18 +175,23 @@ private:
     output=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
   else
     output=gsl_spline_eval_integ(splineOut,start,end,accOut);
+
+  stat.initSpline(splineOut,&(wavelength_fine[0]),&(wavelengthOut[0]),wavelength_fine.size());
+  double centreWavelength=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
+  
   gsl_spline_free(splineOut);
   gsl_interp_accel_free(accOut);
 
-  double maxResponse=0;
-  int maxIndex=0;
-  for(int index=0;index<srf[1].size();++index){
-    if(maxResponse<srf[1][index]){
-      maxResponse=srf[1][index];
-      maxIndex=index;
-    }
-  }
-  return(srf[0][maxIndex]);
+  // double maxResponse=0;
+  // int maxIndex=0;
+  // for(int index=0;index<srf[1].size();++index){
+    // if(maxResponse<srf[1][index]){
+    //   maxResponse=srf[1][index];
+    //   maxIndex=index;
+    // }
+  // }
+  // return(srf[0][maxIndex]);
+  return(centreWavelength);
 }
 
 //input[band][sample], output[sample] (if !transposeInput)
@@ -233,6 +241,8 @@ private:
   stat.getSpline(interpolationType,wavelength_fine.size(),splineOut);
   assert(splineOut);
 
+  std::vector<double> wavelengthOut;
+  double centreWavelength=0;
   for(int isample=0;isample<nsample;++isample){
     if((isample+1+down/2)%down)
       continue;
@@ -246,8 +256,11 @@ private:
     std::vector<double> product(wavelength_fine.size());
     stat.interpolateUp(wavelengthIn,inputValues,wavelength_fine,interpolationType,input_fine,verbose);
 
-    for(int iband=0;iband<input_fine.size();++iband)
+    for(int iband=0;iband<input_fine.size();++iband){
       product[iband]=input_fine[iband]*srf_fine[iband];
+      if(wavelengthOut.size()<input_fine.size())
+        wavelengthOut.push_back(wavelength_fine[iband]*srf_fine[iband]);
+    }
 
     assert(input_fine.size()==srf_fine.size());
     assert(input_fine.size()==wavelength_fine.size());
@@ -256,19 +269,25 @@ private:
       output[isample/down]=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
     else
       output[isample/down]=gsl_spline_eval_integ(splineOut,start,end,accOut);
+
+    stat.initSpline(splineOut,&(wavelength_fine[0]),&(wavelengthOut[0]),wavelength_fine.size());
+    if(centreWavelength>0);
+    else
+      centreWavelength=gsl_spline_eval_integ(splineOut,start,end,accOut)/norm;
   }
   gsl_spline_free(splineOut);
   gsl_interp_accel_free(accOut);
 
-  double maxResponse=0;
-  int maxIndex=0;
-  for(int index=0;index<srf[1].size();++index){
-    if(maxResponse<srf[1][index]){
-      maxResponse=srf[1][index];
-      maxIndex=index;
-    }
-  }
-  return(srf[0][maxIndex]);
+  // double maxResponse=0;
+  // int maxIndex=0;
+  // for(int index=0;index<srf[1].size();++index){
+    // if(maxResponse<srf[1][index]){
+    //   maxResponse=srf[1][index];
+    //   maxIndex=index;
+    // }
+  // }
+  // return(srf[0][maxIndex]);
+  return(centreWavelength);
 }
 
 template<class T> void Filter::applyFwhm(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, std::vector<T>& output, bool verbose){

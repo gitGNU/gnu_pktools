@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
   Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class"); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
-  Optionpk<unsigned int> nneuron_opt("\0", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
+  Optionpk<unsigned int> nneuron_opt("n", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
   Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
   Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
   Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
@@ -412,18 +412,40 @@ int main(int argc, char *argv[])
     const float desired_error = 0.0003;
     const unsigned int iterations_between_reports = (verbose_opt[0])? maxit_opt[0]+1:0;
     if(verbose_opt[0]>=1){
+      cout << "number of features: " << nFeatures << endl;
       cout << "creating artificial neural network with " << nneuron_opt.size() << " hidden layer, having " << endl;
       for(int ilayer=0;ilayer<nneuron_opt.size();++ilayer)
         cout << nneuron_opt[ilayer] << " ";
       cout << "neurons" << endl;
+      cout << "connection_opt[0]: " << connection_opt[0] << std::endl;
+      cout << "num_layers: " << num_layers << std::endl;
+      cout << "nFeatures: " << nFeatures << std::endl;
+      cout << "nneuron_opt[0]: " << nneuron_opt[0] << std::endl;
+      cout << "number of classes (nclass): " << nclass << std::endl;
     }
     switch(num_layers){
-    case(3):
-      net[ibag].create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nclass);
+    case(3):{
+      // net[ibag].create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nclass);//replace all create_sparse with create_sparse_array due to bug in FANN!
+      unsigned int layers[3];
+      layers[0]=nFeatures;
+      layers[1]=nneuron_opt[0];
+      layers[2]=nclass;
+      net[ibag].create_sparse_array(connection_opt[0],num_layers,layers);
       break;
-    case(4):
-      net[ibag].create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nneuron_opt[1], nclass);
+    }
+    case(4):{
+      unsigned int layers[4];
+      layers[0]=nFeatures;
+      layers[1]=nneuron_opt[0];
+      layers[2]=nneuron_opt[1];
+      layers[3]=nclass;
+      // layers.push_back(nFeatures);
+      // for(int ihidden=0;ihidden<nneuron_opt.size();++ihidden)
+      // 	layers.push_back(nneuron_opt[ihidden]);
+      // layers.push_back(nclass);
+      net[ibag].create_sparse_array(connection_opt[0],num_layers,layers);
       break;
+    }
     default:
       cerr << "Only 1 or 2 hidden layers are supported!" << endl;
       exit(1);
@@ -461,7 +483,7 @@ int main(int argc, char *argv[])
       net[ibag].print_parameters();
     }
       
-    if(cv_opt[0]){
+    if(cv_opt[0]>1){
       if(verbose_opt[0])
         std::cout << "cross validation" << std::endl;
       vector<unsigned short> referenceVector;
@@ -518,7 +540,7 @@ int main(int argc, char *argv[])
 
     }
   }//for ibag
-  if(cv_opt[0]>0){
+  if(cv_opt[0]>1){
     assert(cm.nReference());
     std::cout << cm << std::endl;
     cout << "class #samples userAcc prodAcc" << endl;

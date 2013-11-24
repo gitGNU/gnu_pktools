@@ -34,7 +34,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7};
 }
 
 int main(int argc, char *argv[])
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
   Optionpk<bool> polygon_opt("l", "line", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
   Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid of the polygon if line is set), mean (mean value written to centroid of polygon if line is set), proportion, minimum (of polygon), maximum (of polygon), maxvote.", "point");
+  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid of the polygon if line is set), centroid, mean (mean value written to centroid of polygon if line is set), proportion, minimum (of polygon), maximum (of polygon), maxvote.", "point");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
   //initialize ruleMap
   ruleMap["point"]=rule::point;
   ruleMap["mean"]=rule::mean;
+  ruleMap["centroid"]=rule::centroid;
   ruleMap["proportion"]=rule::proportion;
   ruleMap["custom"]=rule::custom;
   ruleMap["maxvote"]=rule::maxvote;
@@ -797,6 +798,7 @@ int main(int argc, char *argv[])
         break;
       case(rule::point):
       case(rule::mean):
+      case(rule::centroid):
       default:{
         if(keepFeatures_opt[0]){
           ogrWriter.createField("origId",OFTInteger);//the fieldId of the original feature
@@ -1147,7 +1149,7 @@ int main(int argc, char *argv[])
 
             double ulx,uly,lrx,lry;
             double uli,ulj,lri,lrj;
-            if(polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point){
+            if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
               ulx=writeCentroidPoint.getX();
               uly=writeCentroidPoint.getY();
               lrx=ulx;
@@ -1194,7 +1196,7 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             }
-            else if(ruleMap[rule_opt[0]]==rule::mean){
+            else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
@@ -1205,6 +1207,7 @@ int main(int argc, char *argv[])
             switch(ruleMap[rule_opt[0]]){
             case(rule::point):
             case(rule::mean):
+            case(rule::centroid):
             default:
               polyValues.resize(nband);
             break;
@@ -1318,7 +1321,7 @@ int main(int argc, char *argv[])
                   OGRFeature *writePointFeature;
                   if(!polygon_opt[0]){
                     //create feature
-                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only create point at centroid
+                    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid){//do not create in case of mean value (only create point at centroid
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -1343,16 +1346,17 @@ int main(int argc, char *argv[])
                     imgReader.readData(value,GDT_Float64,i,j,theBand);
                     if(verbose_opt[0]>1)
                       std::cout << ": " << value << std::endl;
-                    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
+                    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid){
                       int iclass=0;
                       switch(ruleMap[rule_opt[0]]){
                       case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
+                      case(rule::centroid):
                       default:
                         polyValues[iband]=value;
                         break;
                       case(rule::mean)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
                         polyValues[iband]+=value;
-                      break;
+                        break;
                       case(rule::proportion):
                       case(rule::custom):
                       case(rule::minimum):
@@ -1410,7 +1414,7 @@ int main(int argc, char *argv[])
                   if(!polygon_opt[0]){
                     // if(keepFeatures_opt[0])
                     //   writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
-                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only at centroid)
+                    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid){//do not create in case of mean value (only at centroid)
                       if(keepFeatures_opt[0])
                         writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
                       //write feature
@@ -1439,7 +1443,7 @@ int main(int argc, char *argv[])
 		}
               }
 	    }
-            if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
+            if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid){
               //do not create if no points found within polygon
               if(!nPointPolygon)
                 continue;
@@ -1471,7 +1475,7 @@ int main(int argc, char *argv[])
                   std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
               }
               switch(ruleMap[rule_opt[0]]){
-              case(rule::point)://value at each point (or at centroid of polygon if line is not set
+              case(rule::point)://value at each point (or at centroid of polygon if line is set)
               default:{
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
@@ -1543,9 +1547,13 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              case(rule::mean):{//mean value (written to centroid of polygon if line is not set
+              case(rule::mean):
+              case(rule::centroid):{//mean value (written to centroid of polygon if line is not set)
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+                //test
+                if(ruleMap[rule_opt[0]]==rule::centroid)
+                  assert(nPointPolygon<=1);
                 for(int index=0;index<polyValues.size();++index){
                   double theValue=polyValues[index];
                   // ostringstream fs;
@@ -1756,7 +1764,7 @@ int main(int argc, char *argv[])
 
             double ulx,uly,lrx,lry;
             double uli,ulj,lri,lrj;
-            if(polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point){
+            if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
               ulx=writeCentroidPoint.getX();
               uly=writeCentroidPoint.getY();
               lrx=ulx;
@@ -1803,7 +1811,7 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             }
-            else if(ruleMap[rule_opt[0]]==rule::mean){
+            else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
@@ -1814,6 +1822,7 @@ int main(int argc, char *argv[])
             switch(ruleMap[rule_opt[0]]){
             case(rule::point):
             case(rule::mean):
+            case(rule::centroid):
             default:
               polyValues.resize(nband);
             break;
@@ -1927,7 +1936,7 @@ int main(int argc, char *argv[])
                   OGRFeature *writePointFeature;
                   if(!polygon_opt[0]){
                     //create feature
-                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only create point at centroid
+                    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid){//do not create in case of mean value (only create point at centroid)
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -1952,10 +1961,11 @@ int main(int argc, char *argv[])
                     imgReader.readData(value,GDT_Float64,i,j,theBand);
                     if(verbose_opt[0]>1)
                       std::cout << ": " << value << std::endl;
-                    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
+                    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid){
                       int iclass=0;
                       switch(ruleMap[rule_opt[0]]){
                       case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
+                      case(rule::centroid):
                       default:
                         polyValues[iband]=value;
                         break;
@@ -2019,7 +2029,7 @@ int main(int argc, char *argv[])
                   if(!polygon_opt[0]){
                     if(keepFeatures_opt[0])
                       writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
-                    if(ruleMap[rule_opt[0]]!=rule::mean){//do not create in case of mean value (only at centroid)
+                    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid){//do not create in case of mean value (only at centroid)
                       //write feature
                       if(verbose_opt[0]>1)
                         std::cout << "creating point feature" << std::endl;
@@ -2046,7 +2056,7 @@ int main(int argc, char *argv[])
                 }
               }
             }
-            if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean){
+            if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid){
               //add ring to polygon
               if(polygon_opt[0]){
                 writePolygon.addRing(&writeRing);
@@ -2075,7 +2085,7 @@ int main(int argc, char *argv[])
                   std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
               }
               switch(ruleMap[rule_opt[0]]){
-              case(0)://value at each point (or at centroid of polygon if line is not set
+              case(rule::point)://value at each point (or at centroid of polygon if line is set)
               default:{
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
@@ -2143,9 +2153,13 @@ int main(int argc, char *argv[])
                 }//for index
                 break;
               }//case 0 and default
-              case(rule::mean):{//mean value (written to centroid of polygon if line is not set
+              case(rule::mean):
+              case(rule::centroid):{//mean value (written to centroid of polygon if line is not set
                 if(verbose_opt[0])
                   std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+                //test
+                if(ruleMap[rule_opt[0]]==rule::centroid)
+                  assert(nPointPolygon<=1);
                 for(int index=0;index<polyValues.size();++index){
                   double theValue=polyValues[index];
                   ostringstream fs;

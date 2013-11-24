@@ -62,9 +62,9 @@ public:
   void scale(const std::vector<double> &scaleVector, const std::vector<double> &offsetVector, Vector2d<T>& scaledOutput);
   void scale(const T lbound, const T ubound, std::vector<double> &scaleVector, std::vector<double> &offsetVector, Vector2d<T>& scaledOutput);
   Vector2d<T> operator=(const Vector2d<T>& v1);
-//   ostream& operator<<(ostream& os, const Vector2d<T>& v);
-//   template<class T> ostream& operator<<(ostream& os, const Vector2d<T>& v);
-  template<class T1> friend ostream& operator<<(ostream & os, const Vector2d<T1>& v);
+//   std::ostream& operator<<(std::ostream& os, const Vector2d<T>& v);
+//   template<class T> std::ostream& operator<<(std::ostream& os, const Vector2d<T>& v);
+  template<class T1> friend std::ostream& operator<<(std::ostream & os, const Vector2d<T1>& v);
   Vector2d<T> sum(const Vector2d<T>& v1, const Vector2d<T>& v2) const;
   T max(int& x, int& y, double maxValue) const;
 
@@ -192,13 +192,13 @@ template<class T> void Vector2d<T>::selectCols(const std::list<int> &cols)
 	(*this)[irow].erase(((*this)[irow]).begin()+icol);
 }
 
-template<class T1> ostream& operator<<(ostream& os, const Vector2d<T1>& v)
+template<class T1> std::ostream& operator<<(std::ostream& os, const Vector2d<T1>& v)
 {
   for(int irow=0;irow<v.size();++irow){
     for(int icol=0;icol<v[irow].size();++icol){
       os << v[irow][icol] << "\t";
     }
-    os << endl;
+    os << std::endl;
   }
   return os;
   // os << theOption.getLongName() << ": ";

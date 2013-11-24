@@ -117,14 +117,45 @@ version 2.4.1
 	todo: take priors into account for cross validation
 	ordering of labels before training
 version 2.4.2
+ - general
+	removed using namespace std from header files
  - clean up of using namespace std in header files
+ - apps/Makefile.am
+	add GSL_LIBS to AM_LDFLAGS and LDADD
+	todo: remove redundancy in AM_LDFLAGS and LDADD
+ - PosValue.h
+	remove using namespace std;
  - FileReaderAscii
 	corrected error for constructor with fieldseparator argument
+ - pkdiff
+	introduced short option -m for mask
  - pkinfo
 	bug fixed with -min and -max in hist (thanks to Giuseppe Amatuli for noticing)
  - pkfilter
 	new methods for scrambling and shifting images
+	update help info for support of of even kernel sizes
+ - Filter2d
+	added support for even kernel sizes
  - pkstatogr
 	make histogram more similar to pkstat with support of relative option
  - pklas2img
 	correct for wrong include path for FileReaderLas.h (lasclasses instead of fileclasses)
+ - pkfillnodata
+	default maximum distance changed from 3 to 0 (infinity)
+ - still todo
+	change all projection options to a_srs
+ - pkclassify_nn.h
+	support reading ogr files with single feature (one band only: "B" or "Band")
+ - pkclassify_nn.cc
+	changed create_sparse to create_spare_array due to error in FANN...
+	option -n for number of neurons
+	cross validation parameter can not be 1
+ - pkfs_nn.cc
+	cross validation parameter can not be 1
+	solved some bugs
+ - pkclassify_svm.cc
+	cross validation parameter can not be 1
+ - pkopt_svm.cc
+	cross validation parameter can not be 1
+ - pkfs_svm.cc
+	cross validation parameter can not be 1
