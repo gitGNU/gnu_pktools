@@ -563,7 +563,7 @@ int main(int argc, char *argv[])
       cost=getCost(trainingFeatures);
     }
     else{
-      while(cost-previousCost>epsilon_cost_opt[0]){
+      while(fabs(cost-previousCost)>epsilon_cost_opt[0]){
         previousCost=cost;
         switch(selMap[selector_opt[0]]){
         case(SFFS):

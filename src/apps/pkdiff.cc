@@ -27,16 +27,17 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> input_opt("i", "input", "Input image file.", "");
-  Optionpk<string> reference_opt("r", "reference", "Reference image file", "");
-  Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.", "");
-  Optionpk<string> mask_opt("\0", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also mflag option. (default is empty)", "");
-  Optionpk<string> colorTable_opt("\0", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string> input_opt("i", "input", "Input image file.");
+  Optionpk<string> reference_opt("r", "reference", "Reference image file");
+  Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.");
+  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also mflag option. (default is empty)");
+  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels (0)", 0);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label (default value is 1)", 1);
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label (default value is 2)", 2);
   Optionpk<short> flag_opt("f", "flag", "No value flag(s)", 0);
-  Optionpk<short> mflag_opt("m", "mflag", "Mask value(s) for invalid data (positive value), or for valid data (negative value). Default is 0", 0);
+  Optionpk<int> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
+  //  Optionpk<short> mflag_opt("t", "mflag", "Mask value(s) for invalid data (positive value), or for valid data (negative value). Default is 0", 0);
   Optionpk<short> band_opt("b", "band", "Band to extract (0)", 0);
   Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out) (default value is 0)", false);
   Optionpk<short> lzw_opt("\0", "lzw", "compression (default value is 1)", 1);
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
     valueO_opt.retrieveOption(argc,argv);
     valueC_opt.retrieveOption(argc,argv);
     flag_opt.retrieveOption(argc,argv);
-    mflag_opt.retrieveOption(argc,argv);
+    invalid_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     confusion_opt.retrieveOption(argc,argv);
     lzw_opt.retrieveOption(argc,argv);
@@ -95,8 +96,12 @@ int main(int argc, char *argv[])
       cout << " " << flag_opt[iflag];
     cout << endl;
   }
-  if(mask_opt[0]!="")
-    assert(mask_opt.size()==input_opt.size());
+
+  assert(input_opt.size());
+  assert(reference_opt.size());
+  if(mask_opt.size())
+    while(mask_opt.size()<input_opt.size())
+      mask_opt.push_back(mask_opt[0]);
   vector<short> inputRange;
   vector<short> referenceRange;
   ConfusionMatrix cm;
@@ -185,7 +190,7 @@ int main(int argc, char *argv[])
     pfnProgress(progress,pszMessage,pProgressArg);
   if(reference_opt[0].find(".shp")!=string::npos){
     for(int iinput=0;iinput<input_opt.size();++iinput){
-      if(output_opt[0]!="")
+      if(output_opt.size())
         assert(reference_opt.size()==output_opt.size());
       for(int iref=0;iref<reference_opt.size();++iref){
         if(verbose_opt[0])
@@ -194,7 +199,7 @@ int main(int argc, char *argv[])
         ImgReaderOgr referenceReader;
         try{
           inputReader.open(input_opt[iinput]);//,imagicX_opt[0],imagicY_opt[0]);
-          if(mask_opt[0]!=""){
+          if(mask_opt.size()){
             maskReader.open(mask_opt[iinput]);
             assert(inputReader.nrOfCol()==maskReader.nrOfCol());
             assert(inputReader.nrOfRow()==maskReader.nrOfRow());
@@ -210,7 +215,7 @@ int main(int argc, char *argv[])
 
         ImgWriterOgr ogrWriter;
         OGRLayer *writeLayer;
-        if(output_opt[0]!=""){
+        if(output_opt.size()){
           if(verbose_opt[0])
             cout << "creating output vector file " << output_opt[0] << endl;
           assert(output_opt[0].find(".shp")!=string::npos);
@@ -322,7 +327,7 @@ int main(int argc, char *argv[])
           if(static_cast<int>(i_centre)<0||static_cast<int>(i_centre)>=inputReader.nrOfCol())
             continue;
           OGRFeature *writeFeature;
-          if(output_opt[0]!=""){
+          if(output_opt.size()){
             writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
             if(verbose_opt[0])
               cout << "copying fields from " << reference_opt[0] << endl;
@@ -359,18 +364,18 @@ int main(int argc, char *argv[])
                   break;
                 }
               }
-              maskFlagged=false;//(mflag_opt[ivalue]>=0)?false:true;
-              if(mask_opt[0]!=""){
+              maskFlagged=false;//(invalid_opt[ivalue]>=0)?false:true;
+              if(mask_opt.size()){
                 maskReader.readData(maskValue,GDT_Int16,i,j,band_opt[0]);
-                for(int ivalue=0;ivalue<mflag_opt.size();++ivalue){
-                  if(mflag_opt[ivalue]>=0){//values set in mflag_opt are invalid
-                    if(maskValue==mflag_opt[ivalue]){
+                for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
+                  if(invalid_opt[ivalue]>=0){//values set in invalid_opt are invalid
+                    if(maskValue==invalid_opt[ivalue]){
                       maskFlagged=true;
                       break;
                     }
                   }
-                  else{//only values set in mflag_opt are valid
-                    if(maskValue!=-mflag_opt[ivalue])
+                  else{//only values set in invalid_opt are valid
+                    if(maskValue!=-invalid_opt[ivalue])
                       maskFlagged=true;
                     else{
                       maskFlagged=false;
@@ -393,7 +398,7 @@ int main(int argc, char *argv[])
             //flag if not all pixels are homogeneous or if at least one pixel flagged
           
             if(!windowHasFlag&&isHomogeneous){
-              if(output_opt[0]!="")
+              if(output_opt.size())
                 writeFeature->SetField(labelclass_opt[0].c_str(),static_cast<int>(inputValue));
               if(confusion_opt[0]){
                 ++ntotalValidation;
@@ -445,7 +450,7 @@ int main(int argc, char *argv[])
                     fs << labelclass_opt[0] << "_" << windowJ << "_" << windowI;
                   else
                     fs << labelclass_opt[0];
-                  if(output_opt[0]!="")
+                  if(output_opt.size())
                     writeFeature->SetField(fs.str().c_str(),static_cast<int>(inputValue));
                   if(!windowJ&&!windowI){//centre pixel
                     if(confusion_opt[0]){
@@ -486,7 +491,7 @@ int main(int argc, char *argv[])
               }
             }
           }
-          if(output_opt[0]!=""){
+          if(output_opt.size()){
             if(!windowAllFlagged){
               if(verbose_opt[0])
                 cout << "creating feature" << endl;
@@ -498,11 +503,11 @@ int main(int argc, char *argv[])
             OGRFeature::DestroyFeature( writeFeature );
           }
         }
-        if(output_opt[0]!="")
+        if(output_opt.size())
           ogrWriter.close();
         referenceReader.close();
         inputReader.close();
-        if(mask_opt[0]!="")
+        if(mask_opt.size())
           maskReader.close();
       }
     }
@@ -511,9 +516,9 @@ int main(int argc, char *argv[])
     ImgWriterGdal imgWriter;
     try{
       inputReader.open(input_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
-      if(mask_opt[0]!="")
+      if(mask_opt.size())
         maskReader.open(mask_opt[0]);
-      if(output_opt[0]!=""){
+      if(output_opt.size()){
         if(verbose_opt[0])
           cout << "opening output image " << output_opt[0] << endl;
         string compression=(lzw_opt[0])? "LZW":"NONE";
@@ -547,7 +552,7 @@ int main(int argc, char *argv[])
     vector<short> lineInput(inputReader.nrOfCol());
     vector<short> lineMask(maskReader.nrOfCol());
     vector<short> lineOutput;
-    if(output_opt[0]!="")
+    if(output_opt.size())
       lineOutput.resize(inputReader.nrOfCol());
 
     int irow=0;
@@ -581,7 +586,7 @@ int main(int argc, char *argv[])
           cout << referenceRange[rc] << endl;
       }
       if(referenceRange.size()!=inputRange.size()){
-        if(confusion_opt[0]||output_opt[0]!=""){
+        if(confusion_opt[0]||output_opt.size()){
           cout << "reference range is not equal to input range!" << endl;
           cout << "Kappa: " << 0 << endl;    
           cout << "total weighted: " << 0 << endl;
@@ -595,8 +600,8 @@ int main(int argc, char *argv[])
     for(irow=0;irow<inputReader.nrOfRow()&&!isDifferent;++irow){
       //read line in lineInput, lineReference and lineMask
       inputReader.readData(lineInput,GDT_Int16,irow,band_opt[0]);
-      if(mask_opt[0]!="")
-        maskReader.readData(lineMask,GDT_Int16,irow,band_opt[0]);
+      if(mask_opt.size())
+        maskReader.readData(lineMask,GDT_Int16,irow);
       double x,y;//geo coordinates
       double ireference,jreference;//image coordinates in reference image
       for(icol=0;icol<inputReader.nrOfCol();++icol){
@@ -624,15 +629,15 @@ int main(int argc, char *argv[])
         bool flagged=false;
         for(int iflag=0;iflag<flag_opt.size();++iflag){
           if((lineInput[icol]==flag_opt[iflag])||(lineReference[ireference]==flag_opt[iflag])){
-            if(output_opt[0]!="")
+            if(output_opt.size())
               lineOutput[icol]=flag_opt[iflag];
             flagged=true;
             break;
           }
         }
-        if(mask_opt[0]!=""){
-          for(int ivalue=0;ivalue<mflag_opt.size();++ivalue){
-            if(lineMask[icol]==mflag_opt[ivalue]){
+        if(mask_opt.size()){
+          for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
+            if(lineMask[icol]==invalid_opt[ivalue]){
               flagged=true;
               break;
             }
@@ -652,7 +657,7 @@ int main(int argc, char *argv[])
             cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
           }
           if(lineInput[icol]==lineReference[ireference]){//correct
-            if(output_opt[0]!=""){
+            if(output_opt.size()){
               if(valueE_opt[0]!=flag_opt[0])
                 lineOutput[icol]=valueE_opt[0];
               else
@@ -664,7 +669,7 @@ int main(int argc, char *argv[])
               isDifferent=true;
               break;
             }
-            if(output_opt[0]!=""){
+            if(output_opt.size()){
               if(lineInput[icol]<20){//forest
                 if(lineReference[icol]>=20)//gain
                   lineOutput[icol]=lineInput[icol]*10+1;//GAIN is 111,121,131
@@ -685,11 +690,11 @@ int main(int argc, char *argv[])
         }
         else{
           ++nflagged;
-          if(output_opt[0]!="")
+          if(output_opt.size())
             lineOutput[icol]=flag_opt[0];
         }
       }
-      if(output_opt[0]!=""){
+      if(output_opt.size()){
         try{
           imgWriter.writeData(lineOutput,GDT_Int16,irow);
         }
@@ -709,7 +714,7 @@ int main(int argc, char *argv[])
       if(!verbose_opt[0])
         pfnProgress(progress,pszMessage,pProgressArg);
     }
-    if(output_opt[0]!="")
+    if(output_opt.size())
       imgWriter.close();
     else if(!confusion_opt[0]){
       if(isDifferent)
@@ -719,7 +724,7 @@ int main(int argc, char *argv[])
     }
     referenceReader.close();
     inputReader.close();
-    if(mask_opt[0]!="")
+    if(mask_opt.size())
       maskReader.close();
   }
 
@@ -796,8 +801,8 @@ int main(int argc, char *argv[])
       dpa=cm.pa_pct(classNames[iclass],&se95_pa);
       cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
     }
-    doa=cm.oa_pct(&se95_oa);
+    doa=cm.oa(&se95_oa);
     cout << "Kappa: " << cm.kappa() << endl;
-    cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << endl;
+    cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << endl;
   }
 }

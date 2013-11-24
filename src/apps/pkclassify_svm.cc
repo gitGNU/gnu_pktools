@@ -541,8 +541,8 @@ int main(int argc, char *argv[])
       cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
     }
     std::cout << "Kappa: " << cm.kappa() << std::endl;
-    doa=cm.oa_pct(&se95_oa);
-    std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+    doa=cm.oa(&se95_oa);
+    std::cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << std::endl;
   }
 
   //--------------------------------- end of training -----------------------------------
@@ -732,7 +732,6 @@ int main(int argc, char *argv[])
           exit(3);
         }
       }
-    
       //process per pixel
       for(int icol=0;icol<ncol;++icol){
         assert(hpixel[icol].size()==nband);
@@ -1119,8 +1118,8 @@ int main(int argc, char *argv[])
 	cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
       }
       std::cout << "Kappa: " << cm.kappa() << std::endl;
-      doa=cm.oa_pct(&se95_oa);
-      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+      doa=cm.oa(&se95_oa);
+      std::cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << std::endl;
     }
   }
   try{

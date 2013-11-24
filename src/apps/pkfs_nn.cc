@@ -82,12 +82,25 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
     cout << "neurons" << endl;
   }
   switch(num_layers){
-  case(3):
-    net.create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nclass);
+  case(3):{
+    unsigned int layers[3];
+    layers[0]=nFeatures;
+    layers[1]=nneuron_opt[0];
+    layers[2]=nclass;
+    net.create_sparse_array(connection_opt[0],num_layers,layers);
+    // net.create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nclass);
     break;
-  case(4):
-    net.create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nneuron_opt[1], nclass);
+  }
+  case(4):{
+    unsigned int layers[4];
+    layers[0]=nFeatures;
+    layers[1]=nneuron_opt[0];
+    layers[2]=nneuron_opt[1];
+    layers[3]=nclass;
+    net.create_sparse_array(connection_opt[0],num_layers,layers);
+    // net.create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nneuron_opt[1], nclass);
     break;
+  }
   default:
     cerr << "Only 1 or 2 hidden layers are supported!" << endl;
     exit(1);
@@ -95,7 +108,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   }
 
   net.set_learning_rate(learning_opt[0]);
-
   //   net.set_activation_steepness_hidden(1.0);
   //   net.set_activation_steepness_output(1.0);
     
@@ -116,8 +128,9 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
     else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
       cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
   }
-  vector<Vector2d<float> > tmpFeatures;
+  vector<Vector2d<float> > tmpFeatures(nclass);
   for(int iclass=0;iclass<nclass;++iclass){
+    tmpFeatures[iclass].resize(trainingFeatures[iclass].size(),nFeatures);
     for(unsigned int isample=0;isample<nctraining[iclass];++isample){
 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
           tmpFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][isample][ifeature];
@@ -142,8 +155,14 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
 	cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1.0);
     }
   }
-  else{
+  else{//not working yet. please repair...
+    assert(cv_opt[0]>0);
     bool initWeights=true;
+    //test
+    cout << "tempFeatures.size(): " << tmpFeatures.size() << endl;
+    cout << "ntraining: " << ntraining << endl;
+    cout << "initWeights: " << initWeights << endl;
+    cout << "maxit_opt.size(): " << maxit_opt.size() << endl;
     net.train_on_data(tmpFeatures,ntraining,initWeights, maxit_opt[0],
                       iterations_between_reports, desired_error);
     vector<Vector2d<float> > testFeatures(nclass);
@@ -155,6 +174,8 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
           testFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][nctraining[iclass]+isample][ifeature];
         }
+	//test
+	cout << "isample:" << isample<< endl;
         result=net.run(testFeatures[iclass][isample]);
         string refClassName=nameVector[iclass];
         float maxP=-1;
@@ -165,13 +186,19 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
             maxClass=ic;
           }
         }
+	//test
+	cout << "maxClass:" << maxClass << "(" << nameVector.size() << ")" << endl;
         string className=nameVector[maxClass];
+	//test
+	cout << "className:" << nameVector[maxClass] << endl;
         if(classValueMap.size())
           cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
         else
           cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1.0);
       }
     }
+    //test
+    cout << "debug12" << endl;
   }
   assert(cm.nReference());
   return(cm.kappa());
@@ -241,7 +268,9 @@ int main(int argc, char *argv[])
   selMap["sbs"]=SBS;
   selMap["bfs"]=BFS;
 
-  assert(training_opt[0].size());
+  assert(training_opt.size());
+  if(input_opt.size())
+    cv_opt[0]=0;
   if(verbose_opt[0]>=1)
     std::cout << "training shape file: " << training_opt[0] << std::endl;
 
@@ -348,6 +377,7 @@ int main(int argc, char *argv[])
       std::cout << mapit->first << ": " << (mapit->second).size() << " samples" << std::endl;
     ++mapit;
   }
+  nclass=trainingPixels.size();
   if(classname_opt.size())
     assert(nclass==classname_opt.size());
   nband=trainingPixels[0][0].size()-2;//X and Y//trainingPixels[0][0].size();
@@ -511,7 +541,7 @@ int main(int argc, char *argv[])
       cost=getCost(trainingFeatures);
     }
     else{
-      while(cost-previousCost>epsilon_cost_opt[0]){
+      while(fabs(cost-previousCost)>epsilon_cost_opt[0]){
         previousCost=cost;
         switch(selMap[selector_opt[0]]){
         case(SFFS):
