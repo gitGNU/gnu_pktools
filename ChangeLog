@@ -140,8 +140,6 @@ version 2.4.2
 	correct for wrong include path for FileReaderLas.h (lasclasses instead of fileclasses)
  - pkfillnodata
 	default maximum distance changed from 3 to 0 (infinity)
- - still todo
-	change all projection options to a_srs
  - pkclassify_nn.h
 	support reading ogr files with single feature (one band only: "B" or "Band")
  - pkclassify_nn.cc
@@ -155,3 +153,8 @@ version 2.4.2
 	cross validation parameter can not be 1
  - pkfs_svm.cc
 	cross validation parameter can not be 1
+ - pkstat.cc->pkstatascii.cc
+	renamed to pkstatascii.cc to avoid confusion with raster data (e.g., pkinfo --stat)
+	support of transposed output
+ - still todo
+	change all projection options to a_srs

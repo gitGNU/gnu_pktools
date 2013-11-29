@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<char> comment_opt("comment","comment","comment character",'#');
   Optionpk<bool> output_opt("o","output","output the selected columns",false);
+  Optionpk<bool> transpose_opt("t","transpose","transpose input ascii vector (use in combination with --output)",false);
   Optionpk<int> col_opt("c", "column", "column nr, starting from 0", 0);
   Optionpk<int> range_opt("r", "range", "rows to start/end reading. Use -r 1 -r 10 to read first 10 rows where first row is header. Use 0 to read all rows with no header.", 0);
   Optionpk<bool> size_opt("size","size","sample size",false);
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
     fs_opt.retrieveOption(argc,argv);
     comment_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    transpose_opt.retrieveOption(argc,argv);
     col_opt.retrieveOption(argc,argv);
     range_opt.retrieveOption(argc,argv);
     size_opt.retrieveOption(argc,argv);
@@ -262,13 +264,25 @@ int main(int argc, char *argv[])
   }
   
   if(output_opt[0]){
-    for(int irow=0;irow<dataVector.begin()->size();++irow){
+    if(transpose_opt[0]){
       for(int icol=0;icol<col_opt.size();++icol){
-        cout << dataVector[icol][irow];
-        if(icol<col_opt.size()-1)
-          cout << " ";
+        for(int irow=0;irow<dataVector.begin()->size();++irow){
+          cout << dataVector[icol][irow];
+          if(irow<dataVector.begin()->size()-1)
+            cout << " ";
+        }
+        cout << endl;
       }
-      cout << endl;
+    }
+    else{
+      for(int irow=0;irow<dataVector.begin()->size();++irow){
+        for(int icol=0;icol<col_opt.size();++icol){
+          cout << dataVector[icol][irow];
+          if(icol<col_opt.size()-1)
+            cout << " ";
+        }
+        cout << endl;
+      }
     }
   }
 }
