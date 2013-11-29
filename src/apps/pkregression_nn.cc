@@ -191,12 +191,25 @@ int main(int argc, char *argv[])
   }
 
   switch(num_layers){
-  case(3):
-    net.create_sparse(connection_opt[0],num_layers, ninput, nneuron_opt[0], noutput);
+  case(3):{
+      unsigned int layers[3];
+      layers[0]=ninput;
+      layers[1]=nneuron_opt[0];
+      layers[2]=noutput;
+      net.create_sparse_array(connection_opt[0],num_layers,layers);
+    // net.create_sparse(connection_opt[0],num_layers, ninput, nneuron_opt[0], noutput);
     break;
-  case(4):
-    net.create_sparse(connection_opt[0],num_layers, ninput, nneuron_opt[0], nneuron_opt[1], noutput);
+  }
+  case(4):{
+      unsigned int layers[3];
+      layers[0]=ninput;
+      layers[1]=nneuron_opt[0];
+      layers[2]=nneuron_opt[1];
+      layers[3]=noutput;
+      net.create_sparse_array(connection_opt[0],num_layers,layers);
+    // net.create_sparse(connection_opt[0],num_layers, ninput, nneuron_opt[0], nneuron_opt[1], noutput);
     break;
+  }
   default:
     cerr << "Only 1 or 2 hidden layers are supported!" << endl;
     exit(1);

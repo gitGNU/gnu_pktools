@@ -417,19 +417,35 @@ int main(int argc, char *argv[])
       for(int ilayer=0;ilayer<nneuron_opt.size();++ilayer)
         cout << nneuron_opt[ilayer] << " ";
       cout << "neurons" << endl;
-      //test
       cout << "connection_opt[0]: " << connection_opt[0] << std::endl;
       cout << "num_layers: " << num_layers << std::endl;
       cout << "nFeatures: " << nFeatures << std::endl;
       cout << "nneuron_opt[0]: " << nneuron_opt[0] << std::endl;
+      cout << "number of classes (nclass): " << nclass << std::endl;
     }
     switch(num_layers){
-    case(3):
-      net[ibag].create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nclass);
+    case(3):{
+      // net[ibag].create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nclass);//replace all create_sparse with create_sparse_array due to bug in FANN!
+      unsigned int layers[3];
+      layers[0]=nFeatures;
+      layers[1]=nneuron_opt[0];
+      layers[2]=nclass;
+      net[ibag].create_sparse_array(connection_opt[0],num_layers,layers);
       break;
-    case(4):
-      net[ibag].create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nneuron_opt[1], nclass);
+    }
+    case(4):{
+      unsigned int layers[4];
+      layers[0]=nFeatures;
+      layers[1]=nneuron_opt[0];
+      layers[2]=nneuron_opt[1];
+      layers[3]=nclass;
+      // layers.push_back(nFeatures);
+      // for(int ihidden=0;ihidden<nneuron_opt.size();++ihidden)
+      // 	layers.push_back(nneuron_opt[ihidden]);
+      // layers.push_back(nclass);
+      net[ibag].create_sparse_array(connection_opt[0],num_layers,layers);
       break;
+    }
     default:
       cerr << "Only 1 or 2 hidden layers are supported!" << endl;
       exit(1);
