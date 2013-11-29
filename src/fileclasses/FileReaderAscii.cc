@@ -71,7 +71,7 @@ unsigned int FileReaderAscii::nrOfCol(bool checkCols, bool verbose){
       while(getline(csvstream,item,m_fs)){//read a column
         if(verbose)
           std::cout << item << " ";
-        unsigned pos=item.find(m_comment);
+        size_t pos=item.find(m_comment);
         if(pos!=std::string::npos){
           if(pos>0)
             item=item.substr(0,pos-1);
@@ -115,7 +115,7 @@ unsigned int FileReaderAscii::nrOfCol(bool checkCols, bool verbose){
       while(lineStream >> item){
         if(verbose)
           std::cout << item << " ";
-        unsigned pos=item.find(m_comment);
+        size_t pos=item.find(m_comment);
         if(pos!=std::string::npos){
           if(pos>0)
             item=item.substr(0,pos-1);
@@ -165,7 +165,7 @@ unsigned int FileReaderAscii::nrOfRow(bool checkCols, bool verbose){
       while(getline(csvstream,item,m_fs)){//read a column
         if(verbose)
           std::cout << item << " ";
-        unsigned pos=item.find(m_comment);
+        size_t pos=item.find(m_comment);
         if(pos!=std::string::npos){
           if(pos>0){
             if(verbose)
@@ -208,7 +208,7 @@ unsigned int FileReaderAscii::nrOfRow(bool checkCols, bool verbose){
       while(lineStream >> item){
         if(verbose)
           std::cout << item << " ";
-        unsigned pos=item.find(m_comment);
+        size_t pos=item.find(m_comment);
         if(pos!=std::string::npos){
           if(pos>0){
             if(verbose)

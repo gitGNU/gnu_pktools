@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
   Optionpk<double> uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter)");
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)");
-  Optionpk<string> projection_opt("p", "projection", "projection string");
+  Optionpk<string> projection_opt("a_srs", "a_srs", "Override the projection for the output file");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> description_opt("d", "description", "Set image description");
   Optionpk<bool> verbose_opt("v", "verbose", "verbose", false);

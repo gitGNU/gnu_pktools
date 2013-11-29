@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   Optionpk<string> fname_opt("n", "name", "Field names for the columns in the input ascii file");
   Optionpk<string> ftype_opt("ot", "ot", "Field type (Real, Integer, String) for each of the fields as defined by name","Real");
   Optionpk<string> itype_opt("of", "of", "image type string", "ESRI Shapefile");
-  Optionpk<string> projection_opt("p", "projection", "use EPSG:<code> or Wkt string", "EPSG:4326");
+  Optionpk<string> projection_opt("a_srs", "a_srs", "Override the projection for the output file, use epsg:<code> or Wkt string", "epsg:4326");
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<int> verbose_opt("v", "verbose", "verbose (0)", 0);
 

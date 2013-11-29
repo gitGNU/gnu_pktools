@@ -81,7 +81,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
         while(getline(csvstream,item,m_fs)){//read a column
           if(verbose)
             std::cout << item << " ";
-          unsigned pos=item.find(m_comment);
+          size_t pos=item.find(m_comment);
           if(pos!=std::string::npos){
             isComment=true;
             if(pos>0)
@@ -134,7 +134,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<T> &dataVec
           if(verbose)
             std::cout << item << " ";
           // std::istringstream itemStream(item);
-          unsigned pos=item.find(m_comment);
+          size_t pos=item.find(m_comment);
           if(pos!=std::string::npos){
             isComment=true;
             if(pos>0)
@@ -197,7 +197,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
         while(getline(csvstream,item,m_fs)){//read a column
           if(verbose)
             std::cout << item << " ";
-          unsigned pos=item.find(m_comment);
+          size_t pos=item.find(m_comment);
           if(pos!=std::string::npos){
             isComment=true;
             if(pos>0)
@@ -257,7 +257,7 @@ template<class T> unsigned int FileReaderAscii::readData(std::vector<std::vector
           if(verbose)
             std::cout << item << " ";
           // std::istringstream itemStream(item);
-          unsigned pos=item.find(m_comment);
+          size_t pos=item.find(m_comment);
           if(pos!=std::string::npos){
             isComment=true;
             if(pos>0)

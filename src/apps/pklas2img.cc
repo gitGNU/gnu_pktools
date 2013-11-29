@@ -45,7 +45,7 @@ int main(int argc,char **argv) {
   Optionpk<short> dimx_opt("\0", "dimX", "Dimension X of postFilter", 3);
   Optionpk<short> dimy_opt("\0", "dimY", "Dimension Y of postFilter", 3);
   Optionpk<string> output_opt("o", "output", "Output image file", "");
-  Optionpk<string> projection_opt("p", "projection", "projection in EPSG code, e.g., EPSG:3035", "");
+  Optionpk<string> projection_opt("a_srs", "a_srs", "assign the projection for the output file in epsg code, e.g., epsg:3035 for European LAEA projection");
   Optionpk<double> ulx_opt("\0", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<double> uly_opt("\0", "uly", "Upper left y value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<double> lrx_opt("\0", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
@@ -205,7 +205,7 @@ int main(int argc,char **argv) {
   outputWriter.open(output_opt[0],ncol,nrow,nband,theType,oformat_opt[0],option_opt);
   //set projection
   outputWriter.setGeoTransform(minULX,maxULY,dx_opt[0],dy_opt[0],0,0);
-  if(projection_opt[0]!=""){
+  if(projection_opt.size()){
     string projectionString=outputWriter.setProjectionProj4(projection_opt[0]);
     if(verbose_opt[0])
       cout << "projection: " << projectionString << endl;

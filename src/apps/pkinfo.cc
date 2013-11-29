@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  min_opt("min", "min", "Sets minimum for histogram");
   Optionpk<double>  max_opt("max", "max", "Sets maximum for histogram");
   Optionpk<bool>  relative_opt("rel", "rel", "Calculates relative histogram in percentage", false,0);
-  Optionpk<bool>  projection_opt("p", "projection", "Shows projection of the image ", false,0);
+  Optionpk<bool>  projection_opt("a_srs", "a_srs", "Shows projection of the image ", false,0);
   Optionpk<bool>  geo_opt("geo", "geo", "Gets geotransform  ", false,0);
   Optionpk<bool>  interleave_opt("il", "interleave", "Shows interleave ", false,0);
   Optionpk<bool>  filename_opt("f", "filename", "Shows image filename ", false,0);
