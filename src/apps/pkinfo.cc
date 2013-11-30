@@ -327,9 +327,9 @@ int main(int argc, char *argv[])
     }
     if(projection_opt[0]){
       if(imgReader.isGeoRef())
-        std::cout << "--projection " << imgReader.getProjection() << " ";
+        std::cout << " -a_srs " << imgReader.getProjection() << " ";
       else
-        std::cout << " --projection none" << " ";
+        std::cout << " -a_srs none" << " ";
     }
     if(geo_opt[0]&&!read_opt[0]){
       double ulx,uly,deltaX,deltaY,rot1,rot2;
