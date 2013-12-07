@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
-  Optionpk<double> cx_opt("x", "x", "x-coordinate of image centre to crop (in meter)");
-  Optionpk<double> cy_opt("y", "y", "y-coordinate of image centre to crop (in meter)");
+  Optionpk<double> cx_opt("x", "x", "x-coordinate of image center to crop (in meter)");
+  Optionpk<double> cy_opt("y", "y", "y-coordinate of image center to crop (in meter)");
   Optionpk<double> nx_opt("nx", "nx", "image size in x to crop (in meter)");
   Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
   Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
