@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
   Optionpk<string>  output_opt("o", "output", "Output image file");
-  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid", "");
+  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> mask_opt("m","mask","mask values out of polygon in extent file to flag option (tip: for better performance, use gdal_rasterize -i -burn 0 -l extent extent.shp output (with output the result of pkcrop)",false);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
@@ -253,6 +253,9 @@ int main(int argc, char *argv[])
     if(verbose_opt[0])
       cout << "size of " << input_opt[iimg] << ": " << ncol << " cols, "<< nrow << " rows" << endl;
     double uli,ulj,lri,lrj;//image coordinates
+    bool forceEUgrid=false;
+    if(projection_opt.size())
+      forceEUgrid=(!(projection_opt[0].compare("EPSG:3035"))||!(projection_opt[0].compare("EPSG:3035"))||projection_opt[0].find("ETRS-LAEA")!=string::npos);
     if(ulx_opt[0]>=lrx_opt[0]){//default bounding box: no cropping
       uli=0;
       lri=imgReader.nrOfCol()-1;
@@ -263,7 +266,7 @@ int main(int argc, char *argv[])
       imgReader.getBoundingBox(cropulx,cropuly,croplrx,croplry);
       double magicX=1,magicY=1;
       // imgReader.getMagicPixel(magicX,magicY);
-      if(!imgReader.getProjection().compare("ETRS-LAEA")||!projection_opt[0].compare("EPSG:3035")||!projection_opt[0].compare("epsg:3035")){
+      if(forceEUgrid){
 	//force to LAEA grid
 	Egcs egcs;
         egcs.setLevel(egcs.res2level(dx));
@@ -283,7 +286,7 @@ int main(int argc, char *argv[])
       cropuly=uly_opt[0];
       croplrx=lrx_opt[0];
       croplry=lry_opt[0];
-      if(!imgReader.getProjection().compare("ETRS-LAEA")||!projection_opt[0].compare("EPSG:3035")||!projection_opt[0].compare("epsg:3035")){
+      if(forceEUgrid){
 	//force to LAEA grid
 	Egcs egcs;
         egcs.setLevel(egcs.res2level(dx));
@@ -349,7 +352,7 @@ int main(int argc, char *argv[])
       if(description_opt.size())
 	imgWriter.setImageDescription(description_opt[0]);
       imgWriter.setGeoTransform(cropulx,cropuly,dx,dy,0,0);
-      if(projection_opt[0]!=""){
+      if(projection_opt.size()){
 	if(verbose_opt[0])
 	  cout << "projection: " << projection_opt[0] << endl;
 	imgWriter.setProjectionProj4(projection_opt[0]);

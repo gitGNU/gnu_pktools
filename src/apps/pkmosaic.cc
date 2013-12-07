@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created", "");
   Optionpk<string>  output_opt("o", "output", "Output image file", "");
-  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid", "");
+  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     if(colorTable_opt[0]=="")
       if(imgReader.getColorTable())
         theColorTable=(imgReader.getColorTable()->Clone());
-    if(projection_opt[0]=="")
+    if(projection_opt.empty())
       theProjection=imgReader.getProjection();
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
       string theInterleave="INTERLEAVE=";
@@ -327,7 +327,10 @@ int main(int argc, char *argv[])
     minLRY=lry_opt[0];
   }
   
-  if(projection_opt[0].find("ETRS-LAEA")!=string::npos||projection_opt[0].find("EPSG:3035")!=string::npos||projection_opt[0].find("epsg:3035")!=string::npos){
+  bool forceEUgrid=false;
+  if(projection_opt.size())
+    forceEUgrid=(!(projection_opt[0].compare("EPSG:3035"))||!(projection_opt[0].compare("EPSG:3035"))||projection_opt[0].find("ETRS-LAEA")!=string::npos);
+  if(forceEUgrid){
     //force to LAEA grid
     minULX=floor(minULX);
     minULX-=static_cast<int>(minULX)%(static_cast<int>(dx));
@@ -380,7 +383,7 @@ int main(int argc, char *argv[])
   if(description_opt.size())
     imgWriter.setImageDescription(description_opt[0]);
   imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
-  if(projection_opt[0]!=""){
+  if(projection_opt.size()){
     if(verbose_opt[0])
       cout << "projection: " << projection_opt[0] << endl;
     imgWriter.setProjectionProj4(projection_opt[0]);
