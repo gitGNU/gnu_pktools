@@ -536,8 +536,8 @@ int main(int argc, char *argv[])
     double dpa=0;
     double doa=0;
     for(short iclass=0;iclass<cm.nClasses();++iclass){
-      dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
-      dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+      dua=cm.ua(cm.getClass(iclass),&se95_ua);
+      dpa=cm.pa(cm.getClass(iclass),&se95_pa);
       cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
     }
     std::cout << "Kappa: " << cm.kappa() << std::endl;

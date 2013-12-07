@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
   Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
   Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
-  Optionpk<string>  description_opt("\0", "description", "Set image description", "");
+  Optionpk<string>  description_opt("\0", "description", "Set image description");
   Optionpk<string> mrule_opt("m", "mrule", "Mosaic rule for mosaic (overwrite, maxndvi, maxband, minband, validband, mean, maxvote (only for byte images), median, sum", "overwrite");
   Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
   Optionpk<int> validBand_opt("vb", "validBand", "valid band index(es)", 0);
@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
   catch(string error){
     cout << error << endl;
   }
-  if(description_opt[0]!="")
+  if(description_opt.size())
     imgWriter.setImageDescription(description_opt[0]);
   imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
   if(projection_opt[0]!=""){

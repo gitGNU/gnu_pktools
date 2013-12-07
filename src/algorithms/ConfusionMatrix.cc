@@ -153,8 +153,10 @@ void ConfusionMatrix::setResult(const std::string& theRef, const std::string& th
 }
 
 void ConfusionMatrix::incrementResult(const std::string& theRef, const std::string& theClass, double theIncrement){
-  int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
-  int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  // int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
+  // int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  int ir=getClassIndex(theRef);
+  int ic=getClassIndex(theClass);
   assert(ir>=0);
   if(ir>=m_results.size())
     std::cerr << "Error: " << theRef << " not found in class ConfusionMatrix when incrementing for class " << theClass << std::endl;
@@ -165,7 +167,8 @@ void ConfusionMatrix::incrementResult(const std::string& theRef, const std::stri
 }
 
 double ConfusionMatrix::nReference(const std::string& theRef) const{
-  int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
+  // int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theRef));
+  int ir=getClassIndex(theRef);
   return accumulate(m_results[ir].begin(),m_results[ir].end(),0);
 }
 
@@ -177,7 +180,8 @@ double ConfusionMatrix::nReference() const{
 }
 
 double ConfusionMatrix::nClassified(const std::string& theClass) const{
-  int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  // int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  int ic=getClassIndex(theClass);
   double nclassified=0;
   for(int iref=0;iref<m_results.size();++iref){
     assert(ic<m_results[iref].size());
@@ -190,7 +194,8 @@ double ConfusionMatrix::pa(const std::string& theClass, double* se95) const{
   assert(m_results.size());
   assert(m_results.size()==m_classes.size());
   double producer=0;
-  int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  // int ir=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  int ir=getClassIndex(theClass);
   assert(ir>=0);
   assert(ir<m_results.size());
   assert(!theClass.compare(m_classes[ir]));
@@ -217,8 +222,10 @@ double ConfusionMatrix::ua(const std::string& theClass, double* se95) const{
   assert(m_results.size());
   assert(m_results.size()==m_classes.size());
   double user=0;
-  int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  // int ic=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),theClass));
+  int ic=getClassIndex(theClass);
   assert(ic>=0);
+  assert(ic<m_results.size());
   assert(!theClass.compare(m_classes[ic]));
   for(int iref=0;iref<m_results.size();++iref){
     assert(ic<m_results[iref].size());

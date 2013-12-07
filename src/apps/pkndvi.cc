@@ -28,14 +28,14 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   //command line options
-  Optionpk<string> input_opt("i","input","input image file","");
-  Optionpk<string> output_opt("o","output","output image file containing ndvi","");
+  Optionpk<string> input_opt("i","input","input image file");
+  Optionpk<string> output_opt("o","output","output image file containing ndvi");
   Optionpk<short> band_opt("b", "band", "Bands to be used for vegetation index (see rule option)", 0);
   Optionpk<string> rule_opt("r", "rule", "Rule for index. ndvi (b1-b0)/(b1+b0), ndvi2 (b1-b0)/(b2+b3), gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02))), vari (b1-b2)/(b1+b2-b0), osavi, mcari, tcari, diff (b1-b0), scale, ratio.", "ndvi");
   Optionpk<double> invalid_opt("t", "invalid", "Mask value where image is invalid.", 0);
   Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
-  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
-  Optionpk<string> description_opt("d", "description", "Set image description", "");
+  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<string> description_opt("d", "description", "Set image description");
   Optionpk<double> minmax_opt("m", "minmax", "minimum and maximum values for ndvi (limit all values smaller/larger to min/max", 0);
   Optionpk<double> eps_opt("e", "eps", "epsilon, contraint division by zero", 0);
   Optionpk<double> scale_opt("s", "scale", "scale[0] is used for input, scale[1] is used for output: DN=scale[1]*ndvi+offset[1]", 1);
@@ -72,6 +72,9 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  assert(input_opt.size());
+  assert(output_opt.size());
 
   if(scale_opt.size()<2){
     if(input_opt.size()<2)
@@ -148,7 +151,7 @@ int main(int argc, char *argv[])
   }
   outputWriter.open(output_opt[0],inputReader[0].nrOfCol(),inputReader[0].nrOfRow(),1,theType,oformat_opt[0],option_opt);
 
-  if(description_opt[0]!="")
+  if(description_opt.size())
       outputWriter.setImageDescription(description_opt[0]);
   //if input image is georeferenced, copy projection info to output image
   if(inputReader[0].isGeoRef()){
@@ -157,7 +160,7 @@ int main(int argc, char *argv[])
     inputReader[0].getBoundingBox(ulx,uly,lrx,lry);
     outputWriter.copyGeoTransform(inputReader[0]);
   }
-  if(colorTable_opt[0]!=""){
+  if(colorTable_opt.size()){
     if(colorTable_opt[0]!="none")
       outputWriter.setColorTable(colorTable_opt[0]);
   }

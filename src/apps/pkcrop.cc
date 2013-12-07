@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
   Optionpk<string>  output_opt("o", "output", "Output image file");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid", "");
-  Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
+  Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> mask_opt("m","mask","mask values out of polygon in extent file to flag option (tip: for better performance, use gdal_rasterize -i -burn 0 -l extent extent.shp output (with output the result of pkcrop)",false);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
-  Optionpk<string>  description_opt("d", "description", "Set image description", "");
+  Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
   double croplry=lry_opt[0];
   //get bounding box from extentReader if defined
   ImgReaderOgr extentReader;
-  if(extent_opt[0]!=""){
+  if(extent_opt.size()){
     for(int iextent=0;iextent<extent_opt.size();++iextent){
       extentReader.open(extent_opt[iextent]);
       if(!(extentReader.getExtent(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
         cout << errorstring << endl;
         exit(4);
       }
-      if(description_opt[0]!="")
+      if(description_opt.size())
 	imgWriter.setImageDescription(description_opt[0]);
       imgWriter.setGeoTransform(cropulx,cropuly,dx,dy,0,0);
       if(projection_opt[0]!=""){
@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
 	      }
 	      else{
                 bool valid=true;
-                if(mask_opt[0]&&extent_opt[0]!=""){
+                if(mask_opt[0]&&extent_opt.size()){
                   valid=false;
                   OGRPoint thePoint;
                   thePoint.setX(x);
@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
     }
     imgReader.close();
   }
-  if(extent_opt[0]!=""&&mask_opt[0]){
+  if(extent_opt.size()&&mask_opt[0]){
     extentReader.close();
   }
   imgWriter.close();
