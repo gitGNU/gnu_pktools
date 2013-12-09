@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   Optionpk<short> band_opt("b", "band", "Bands to be used for vegetation index (see rule option)", 0);
   Optionpk<string> rule_opt("r", "rule", "Rule for index. ndvi (b1-b0)/(b1+b0), ndvi2 (b1-b0)/(b2+b3), gvmi (b0+0.1)-(b1+0.02))/((b0+0.1)+(b1+0.02))), vari (b1-b2)/(b1+b2-b0), osavi, mcari, tcari, diff (b1-b0), scale, ratio.", "ndvi");
   Optionpk<double> invalid_opt("t", "invalid", "Mask value where image is invalid.", 0);
-  Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
+  Optionpk<int> nodata_opt("nodata", "nodata", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> description_opt("d", "description", "Set image description");
   Optionpk<double> minmax_opt("m", "minmax", "minimum and maximum values for ndvi (limit all values smaller/larger to min/max", 0);
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   Optionpk<double> offset_opt("off", "offset", "offset[0] is used for input, offset[1] is used for output (see also scale option", 0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     band_opt.retrieveOption(argc,argv);
     rule_opt.retrieveOption(argc,argv);
     invalid_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     minmax_opt.retrieveOption(argc,argv);
@@ -150,6 +150,7 @@ int main(int argc, char *argv[])
     option_opt.push_back(theInterleave);
   }
   outputWriter.open(output_opt[0],inputReader[0].nrOfCol(),inputReader[0].nrOfRow(),1,theType,oformat_opt[0],option_opt);
+  outputWriter.GDALSetNoDataValue(nodata_opt[0]);
 
   if(description_opt.size())
       outputWriter.setImageDescription(description_opt[0]);
@@ -202,15 +203,15 @@ int main(int argc, char *argv[])
       cerr << errorstring << endl;
       exit(1);
     }
-    assert(invalid_opt.size()==flag_opt.size());
+    assert(invalid_opt.size()==nodata_opt.size());
     for(icol=0;icol<inputReader[0].nrOfCol();++icol){
       double ndvi=minmax_opt[0];
-      double flagValue=flag_opt[0];
+      double flagValue=nodata_opt[0];
       bool valid=true;
       for(int iflag=0;valid&&iflag<invalid_opt.size();++iflag){
         for(int iband=0;iband<lineInput.size();++iband){
           if(lineInput[iband][icol]==invalid_opt[iflag]){
-            flagValue=flag_opt[iflag];
+            flagValue=nodata_opt[iflag];
             valid=false;
             break;
           }

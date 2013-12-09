@@ -34,15 +34,15 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Main procedure
   ----------------*/
 int main(int argc,char **argv) {
-  Optionpk<std::string> input_opt("i","input","input image file","");
-  Optionpk<std::string> output_opt("o", "output", "Output image file", "");
+  Optionpk<std::string> input_opt("i","input","input image file");
+  Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<double> sza_opt("sza", "sza", "Sun zenith angle.");
   Optionpk<double> saa_opt("saa", "saa", "Sun azimuth angle (N=0 E=90 S=180 W=270).");
   Optionpk<int> flag_opt("f", "flag", "Flag to put in image if pixel shadow", 0);
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
-  Optionpk<std::string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -69,6 +69,8 @@ int main(int argc,char **argv) {
 
   ImgReaderGdal input;
   ImgWriterGdal output;
+  assert(input_opt.size());
+  assert(output_opt.size());
   input.open(input_opt[0]);
   // output.open(output_opt[0],input);
   GDALDataType theType=GDT_Unknown;
@@ -116,7 +118,7 @@ int main(int argc,char **argv) {
   filter2d::Filter2d filter2d;
   if(verbose_opt[0])
     std::cout<< "class values: ";
-  if(colorTable_opt[0]!="")
+  if(colorTable_opt.size())
     output.setColorTable(colorTable_opt[0]);
   filter2d.shadowDsm(input,output,sza_opt[0],saa_opt[0],input.getDeltaX(),flag_opt[0]);
   input.close();

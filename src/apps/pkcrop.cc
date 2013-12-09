@@ -35,10 +35,10 @@ int main(int argc, char *argv[])
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> mask_opt("m","mask","mask values out of polygon in extent file to flag option (tip: for better performance, use gdal_rasterize -i -burn 0 -l extent extent.shp output (with output the result of pkcrop)",false);
-  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box (in geocoordinates if georef is true)", 0.0);
+  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
+  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
+  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
+  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
   Optionpk<double> cx_opt("x", "x", "x-coordinate of image center to crop (in meter)");
@@ -53,9 +53,9 @@ int main(int argc, char *argv[])
   Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset", 0);
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
+  Optionpk<short>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     ny_opt.retrieveOption(argc,argv);
     ns_opt.retrieveOption(argc,argv);
     nl_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     resample_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
+  short nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
   RESAMPLE theResample;
   if(resample_opt[0]=="near"){
     theResample=NEAR;
@@ -344,6 +345,10 @@ int main(int argc, char *argv[])
         imageType=oformat_opt[0];
       try{
         imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,option_opt);
+	if(nodata_opt.size()){
+	  for(int iband=0;iband<ncropband;++iband)
+	    imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
+	}
       }
       catch(string errorstring){
         cout << errorstring << endl;
@@ -359,12 +364,14 @@ int main(int argc, char *argv[])
       }
       else if(imgReader.isGeoRef())
 	imgWriter.setProjection(imgReader.getProjection());
-      if(colorTable_opt.size()){
-        if(colorTable_opt[0]!="none")
-          imgWriter.setColorTable(colorTable_opt[0]);
+      if(imgWriter.getDataType()==GDT_Byte){
+	if(colorTable_opt.size()){
+	  if(colorTable_opt[0]!="none")
+	    imgWriter.setColorTable(colorTable_opt[0]);
+	}
+	else if (imgReader.getColorTable()!=NULL)//copy colorTable from input image
+	  imgWriter.setColorTable(imgReader.getColorTable());
       }
-      else if (imgReader.getColorTable()!=NULL)//copy colorTable from input image
-        imgWriter.setColorTable(imgReader.getColorTable());
     }
     double startCol=uli;
     double endCol=lri;
@@ -420,7 +427,7 @@ int main(int argc, char *argv[])
 	  //else if(readRow>=imgReader.nrOfRow())
 	  //readRow=imgReader.nrOfRow()-1;
 	  for(int ib=0;ib<ncropcol;++ib)
-	    writeBuffer.push_back(flag_opt[0]);
+	    writeBuffer.push_back(nodataValue);
 	}
 	else{
 	  try{
@@ -438,7 +445,7 @@ int main(int argc, char *argv[])
 		//                 readCol=0;
 		//               else if(readCol>=imgReader.nrOfCol())
 		//                 readCol=imgReader.nrOfCol()-1;
-		writeBuffer.push_back(flag_opt[0]);
+		writeBuffer.push_back(nodataValue);
 	      }
 	      else{
                 bool valid=true;
@@ -467,7 +474,7 @@ int main(int argc, char *argv[])
                   }
                 }
                 if(!valid)
-                  writeBuffer.push_back(flag_opt[0]);
+                  writeBuffer.push_back(nodataValue);
                 else{
                   double theScale=1;
                   double theOffset=0;

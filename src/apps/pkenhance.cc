@@ -32,7 +32,7 @@ int main(int argc,char **argv) {
   Optionpk<double> maxRef_opt("maxref", "maxref", "Sets maximum for histogram of reference image");
   Optionpk<double> minInput_opt("mininput", "mininput", "Sets minimum for histogram of input image");
   Optionpk<double> maxInput_opt("maxinput", "maxinput", "Sets maximum for histogram of input image");
-  Optionpk<double> nodata_opt("nodata", "nodata", "Sets no data value(s) for calculations (flags in input image)");
+  Optionpk<double> nodata_opt("nodata", "nodata", "Sets no data value(s) for calculations (nodata values in input image)");
   Optionpk<std::string> method_opt("m", "method", "enhancement method (histmatch)", "histmatch");
   // Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   // Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
@@ -40,7 +40,7 @@ int main(int argc,char **argv) {
   Optionpk<short>  nbin_opt("nbin", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers",0);
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)

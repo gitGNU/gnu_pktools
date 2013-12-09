@@ -36,28 +36,28 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created", "");
-  Optionpk<string>  output_opt("o", "output", "Output image file", "");
+  Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
+  Optionpk<string>  output_opt("o", "output", "Output image file");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
-  Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
+  Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box (in geocoordinates if georef is true)", 0.0);
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)", 0.0);
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)", 0.0);
-  Optionpk<int>  band_opt("b", "band", "band index to crop (-1: crop all bands)", -1);
+  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (-1: crop all bands)", -1);
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
-  Optionpk<short>  flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<short>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in image if out of bounds.", 0);
   Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
   Optionpk<string>  description_opt("\0", "description", "Set image description");
   Optionpk<string> mrule_opt("m", "mrule", "Mosaic rule for mosaic (overwrite, maxndvi, maxband, minband, validband, mean, maxvote (only for byte images), median, sum", "overwrite");
   Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
   Optionpk<int> validBand_opt("vb", "validBand", "valid band index(es)", 0);
-  Optionpk<double> invalid_opt("t", "invalid", "invalid value for valid band", 0);
+  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for valid band", 0);
   Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.", -99999999);
   Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.", 99999999);
   Optionpk<bool> file_opt("file", "file", "write number of observations for each pixels as additional layer in mosaic", false);
@@ -82,13 +82,13 @@ int main(int argc, char *argv[])
     dx_opt.retrieveOption(argc,argv);
     dy_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
+    dstnodata_opt.retrieveOption(argc,argv);
     resample_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     mrule_opt.retrieveOption(argc,argv);
     ruleBand_opt.retrieveOption(argc,argv);
     validBand_opt.retrieveOption(argc,argv);
-    invalid_opt.retrieveOption(argc,argv);
+    srcnodata_opt.retrieveOption(argc,argv);
     minValue_opt.retrieveOption(argc,argv);
     maxValue_opt.retrieveOption(argc,argv);
     file_opt.retrieveOption(argc,argv);
@@ -119,8 +119,8 @@ int main(int argc, char *argv[])
   mruleMap["median"]=mrule::median;
   mruleMap["sum"]=mrule::sum;
 
-  while(invalid_opt.size()<validBand_opt.size())
-    invalid_opt.push_back(invalid_opt[0]);
+  while(srcnodata_opt.size()<validBand_opt.size())
+    srcnodata_opt.push_back(srcnodata_opt[0]);
   while(minValue_opt.size()<validBand_opt.size())
     minValue_opt.push_back(minValue_opt[0]);
   while(maxValue_opt.size()<validBand_opt.size())
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
   double dy=dy_opt[0];
   //get bounding box from extentReader if defined
   ImgReaderOgr extentReader;
-  if(extent_opt[0]!=""){
+  if(extent_opt.size()){
     extentReader.open(extent_opt[0]);
     if(!(extentReader.getExtent(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
        cerr << "Error: could not get extent from " << extent_opt[0] << endl;
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     catch(string errorstring){
       cerr << errorstring << " " << input_opt[ifile] << endl;
     }
-    if(colorTable_opt[0]=="")
+    if(colorTable_opt.empty())
       if(imgReader.getColorTable())
         theColorTable=(imgReader.getColorTable()->Clone());
     if(projection_opt.empty())
@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
           cout << "Using data type from input image: " << GDALGetDataTypeName(theType) << endl;
       }
 
-      if(oformat_opt[0]!="")//default
+      if(oformat_opt.size())//default
         imageType=oformat_opt[0];
       else
         imageType=imgReader.getImageType();
@@ -372,10 +372,13 @@ int main(int argc, char *argv[])
   }
   else
     nwriteBand=(file_opt[0])? bands.size()+1:bands.size();
+  assert(output_opt.size());
   if(verbose_opt[0])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
     imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
+    for(int iband=0;iband<nwriteBand;++iband)
+      imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
   }
   catch(string error){
     cout << error << endl;
@@ -393,14 +396,14 @@ int main(int argc, char *argv[])
       cout << "projection: " << theProjection << endl;
     imgWriter.setProjection(theProjection);
   }
-    
-  if(colorTable_opt[0]!=""){
-    assert(imgWriter.getDataType()==GDT_Byte);
-    imgWriter.setColorTable(colorTable_opt[0]);
+  if(imgWriter.getDataType()==GDT_Byte){
+    if(colorTable_opt.size()){
+      if(colorTable_opt[0]!="none")
+	imgWriter.setColorTable(colorTable_opt[0]);
+    }
+    else if(theColorTable)
+      imgWriter.setColorTable(theColorTable);
   }
-  else if(theColorTable)
-    imgWriter.setColorTable(theColorTable);
-
   //create mosaic image
   if(verbose_opt[0])
      cout << "creating mosaic image" << endl;
@@ -441,7 +444,7 @@ int main(int argc, char *argv[])
       }
       else{
         for(int iband=0;iband<nband;++iband)
-          writeBuffer[iband][icol]=flag_opt[0];
+          writeBuffer[iband][icol]=dstnodata_opt[0];
       }
     }
     for(int ifile=0;ifile<input_opt.size();++ifile){
@@ -521,7 +524,7 @@ int main(int argc, char *argv[])
             upperCol=imgReader.nrOfCol()-1;
           for(int vband=0;vband<validBand_opt.size();++vband){
             val_new=(readCol-0.5-lowerCol)*readBuffer[validBand_opt[vband]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[validBand_opt[vband]][lowerCol-startCol];
-            if(val_new<=minValue_opt[vband]||val_new>=maxValue_opt[vband]||val_new==invalid_opt[vband]){
+            if(val_new<=minValue_opt[vband]||val_new>=maxValue_opt[vband]||val_new==srcnodata_opt[vband]){
               readValid=false;
               break;
             }
@@ -531,7 +534,7 @@ int main(int argc, char *argv[])
           readCol=static_cast<int>(readCol);
           for(int vband=0;vband<validBand_opt.size();++vband){
             val_new=readBuffer[validBand_opt[vband]][readCol-startCol];
-            if(val_new<=minValue_opt[vband]||val_new>=maxValue_opt[vband]||val_new==invalid_opt[vband]){
+            if(val_new<=minValue_opt[vband]||val_new>=maxValue_opt[vband]||val_new==srcnodata_opt[vband]){
               readValid=false;
               break;
             }

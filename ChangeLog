@@ -170,6 +170,10 @@ version 2.4.2
 	cross validation parameter can not be 1
  - pkfs_svm.cc
 	cross validation parameter can not be 1
- - pkstat.cc->pkstatascii.cc
+	- pkstat.cc->pkstatascii.cc
 	renamed to pkstatascii.cc to avoid confusion with raster data (e.g., pkinfo --stat)
 	support of transposed output
+
+version 2.4.3
+	consistently use nodata, srcnodata, dstnodata and msknodata instead of invalid, mvalue, flag options
+

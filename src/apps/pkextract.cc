@@ -39,15 +39,15 @@ namespace rule{
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> image_opt("i", "image", "Input image file", "");
-  Optionpk<string> sample_opt("s", "sample", "Input sample file (shape) or class file (e.g. Corine CLC) if class option is set", "");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file", "");
-  Optionpk<int> invalid_opt("f", "flag", "Mask value where image is invalid. If a single mask is used, more flags can be set. If more masks are used, use one value for each mask.", 1);
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or leave empty to extract all non-flagged pixels from sample file");
-  Optionpk<string> output_opt("o", "output", "Output sample file (image file)", "");
+  Optionpk<string> image_opt("i", "image", "Input image file");
+  Optionpk<string> sample_opt("s", "sample", "Input sample file (shape) or class file (e.g. Corine CLC) if class option is set");
+  Optionpk<string> mask_opt("m", "mask", "Mask image file");
+  Optionpk<int> mask_nodata_opt("mask_nodata", "mask_nodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or leave empty to extract all valid data pixels from sample file");
+  Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
   Optionpk<bool> keepFeatures_opt("k", "keep", "Keep original features in output vector file", false);
-  Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file", "");
+  Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
   Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
   Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
   Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use multiple threshold values (e.g. -t 80 -t 60) if more classes are to be extracted with random selection. Use value 100 to select all pixels for selected class(es)", 100);
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
-    invalid_opt.retrieveOption(argc,argv);
+    mask_nodata_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     test_opt.retrieveOption(argc,argv);
@@ -128,6 +128,8 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>1)
     std::cout << "boundary: " << boundary_opt[0] << std::endl;
   ImgReaderGdal imgReader;
+  assert(image_opt.size());
+  assert(output_opt.size());
   try{
     imgReader.open(image_opt[0]);
   }
@@ -152,7 +154,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     std::cout << fieldname_opt << std::endl;
   vector<ImgReaderGdal> maskReader;
-  if(mask_opt[0]!=""){
+  if(mask_opt.size()){
     maskReader.resize(mask_opt.size());
     for(int imask=0;imask<mask_opt.size();++imask){
       if(verbose_opt[0]>1)
@@ -164,7 +166,7 @@ int main(int argc, char *argv[])
   }
 
   Vector2d<int> maskBuffer;
-  if(mask_opt[0]!=""){
+  if(mask_opt.size()){
     maskBuffer.resize(mask_opt.size());
     for(int imask=0;imask<maskReader.size();++imask)
       maskBuffer[imask].resize(maskReader[imask].nrOfCol());
@@ -226,7 +228,7 @@ int main(int argc, char *argv[])
   double progress=0;
   srandom(time(NULL));
 
-  assert(sample_opt[0]!="");
+  assert(sample_opt.size());
   if((sample_opt[0].find(".tif"))!=std::string::npos){//raster file
     if(class_opt.empty()){
       std::cout << "Warning: no classes selected, if classes must be extracted, set to -1 for all classes using option -c -1" << std::endl;
@@ -347,10 +349,10 @@ int main(int argc, char *argv[])
                   }
                 }
                 int ivalue=0;
-                if(mask_opt.size()==invalid_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(invalid_opt[imask]);
+                if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
+                  ivalue=static_cast<int>(mask_nodata_opt[imask]);
                 else//use same invalid value for each mask
-                  ivalue=static_cast<int>(invalid_opt[0]);
+                  ivalue=static_cast<int>(mask_nodata_opt[0]);
                 if(maskBuffer[imask][colMask]==ivalue){
                   valid=false;
                   break;
@@ -376,8 +378,8 @@ int main(int argc, char *argv[])
                     oldmaskrow[0]=rowMask;
                   }
                 }
-                for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(invalid_opt[ivalue])){
+                for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
+                  if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
                     valid=false;
                     break;
                   }
@@ -596,10 +598,10 @@ int main(int argc, char *argv[])
                   }
                 }
                 int ivalue=0;
-                if(mask_opt.size()==invalid_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(invalid_opt[imask]);
+                if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
+                  ivalue=static_cast<int>(mask_nodata_opt[imask]);
                 else//use same invalid value for each mask
-                  ivalue=static_cast<int>(invalid_opt[0]);
+                  ivalue=static_cast<int>(mask_nodata_opt[0]);
                 if(maskBuffer[imask][colMask]==ivalue){
                   valid=false;
                   break;
@@ -625,8 +627,8 @@ int main(int argc, char *argv[])
                     oldmaskrow[0]=rowMask;
                   }
                 }
-                for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(invalid_opt[ivalue])){
+                for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
+                  if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
                     valid=false;
                     break;
                   }
@@ -842,6 +844,7 @@ int main(int argc, char *argv[])
       unsigned long int nfeature=sampleReader.getFeatureCount();
       ImgWriterOgr boxWriter;
       if(rbox_opt[0]>0||cbox_opt[0]>0){
+	assert(bufferOutput_opt.size());
 	assert(test_opt.empty());//not implemented
         if(verbose_opt[0]>1)
           std::cout << "opening box writer " << bufferOutput_opt[0] << std::endl;
@@ -912,10 +915,10 @@ int main(int argc, char *argv[])
                 }
                 //               char ivalue=0;
                 int ivalue=0;
-                if(mask_opt.size()==invalid_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(invalid_opt[imask]);
+                if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
+                  ivalue=static_cast<int>(mask_nodata_opt[imask]);
                 else//use same invalid value for each mask
-                  ivalue=static_cast<int>(invalid_opt[0]);
+                  ivalue=static_cast<int>(mask_nodata_opt[0]);
                 if(maskBuffer[imask][colMask]==ivalue){
                   valid=false;
                   break;
@@ -945,8 +948,8 @@ int main(int argc, char *argv[])
                     oldmaskrow[0]=rowMask;
                   }
                 }
-                for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(invalid_opt[ivalue])){
+                for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
+                  if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
                     valid=false;
                     break;
                   }
@@ -1264,10 +1267,10 @@ int main(int argc, char *argv[])
                       }
                       //               char ivalue=0;
                       int ivalue=0;
-                      if(mask_opt.size()==invalid_opt.size())//one invalid value for each mask
-                        ivalue=static_cast<int>(invalid_opt[imask]);
+                      if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
+                        ivalue=static_cast<int>(mask_nodata_opt[imask]);
                       else//use same invalid value for each mask
-                        ivalue=static_cast<int>(invalid_opt[0]);
+                        ivalue=static_cast<int>(mask_nodata_opt[0]);
                       if(maskBuffer[imask][colMask]==ivalue){
                         valid=false;
                         break;
@@ -1299,8 +1302,8 @@ int main(int argc, char *argv[])
                           oldmaskrow[0]=rowMask;
                         }
                       }
-                      for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-                        if(maskBuffer[0][colMask]==static_cast<int>(invalid_opt[ivalue])){
+                      for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
+                        if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
                           valid=false;
                           break;
                         }
@@ -1879,10 +1882,10 @@ int main(int argc, char *argv[])
                       }
                       //               char ivalue=0;
                       int ivalue=0;
-                      if(mask_opt.size()==invalid_opt.size())//one invalid value for each mask
-                        ivalue=static_cast<int>(invalid_opt[imask]);
+                      if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
+                        ivalue=static_cast<int>(mask_nodata_opt[imask]);
                       else//use same invalid value for each mask
-                        ivalue=static_cast<int>(invalid_opt[0]);
+                        ivalue=static_cast<int>(mask_nodata_opt[0]);
                       if(maskBuffer[imask][colMask]==ivalue){
                         valid=false;
                         break;
@@ -1914,8 +1917,8 @@ int main(int argc, char *argv[])
                           oldmaskrow[0]=rowMask;
                         }
                       }
-                      for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-                        if(maskBuffer[0][colMask]==static_cast<int>(invalid_opt[ivalue])){
+                      for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
+                        if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
                           valid=false;
                           break;
                         }

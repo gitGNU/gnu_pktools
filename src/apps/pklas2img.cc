@@ -27,10 +27,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/Filter2d.h"
 
 int main(int argc,char **argv) {
-  Optionpk<string> input_opt("i", "input", "Input las file", "");
-  // Optionpk<string> mask_opt("m", "mask", "mask image file", "");
-  // Optionpk<short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use multiple values for a single mask.", 0);
-  Optionpk<short> flag_opt("f", "flag", "Flag value(s) to put in image if not valid. Use as many flags as invalid options", 0);
+  Optionpk<string> input_opt("i", "input", "Input las file");
+  Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
   Optionpk<string> attribute_opt("n", "name", "names of the attribute to select: intensity, return, nreturn, z", "z");
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering", 0.0);
@@ -44,7 +42,7 @@ int main(int argc,char **argv) {
   Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none).", "none");
   Optionpk<short> dimx_opt("\0", "dimX", "Dimension X of postFilter", 3);
   Optionpk<short> dimy_opt("\0", "dimY", "Dimension Y of postFilter", 3);
-  Optionpk<string> output_opt("o", "output", "Output image file", "");
+  Optionpk<string> output_opt("o", "output", "Output image file");
   Optionpk<string> projection_opt("a_srs", "a_srs", "assign the projection for the output file in epsg code, e.g., epsg:3035 for European LAEA projection");
   Optionpk<double> ulx_opt("\0", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<double> uly_opt("\0", "uly", "Upper left y value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
@@ -52,10 +50,10 @@ int main(int argc,char **argv) {
   Optionpk<double> lry_opt("\0", "lry", "Lower right y value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter)", 1.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)", 1.0);
-  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -63,7 +61,7 @@ int main(int argc,char **argv) {
     doProcess=input_opt.retrieveOption(argc,argv);
     // mask_opt.retrieveOption(argc,argv);
     // invalid_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     attribute_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
     maxSlope_opt.retrieveOption(argc,argv);
@@ -196,13 +194,14 @@ int main(int argc,char **argv) {
   int nrow=ceil(maxULY-minLRY)/dy_opt[0];//number of rows in outputGrid
   //todo: multiple bands
   int nband=(composite_opt[0]=="profile")? nbin_opt[0] : 1;
-  if(output_opt[0]==""){
+  if(output_opt.size()){
     cerr << "Error: no output file defined" << endl;
     exit(1);
   }
   if(verbose_opt[0])
     cout << "opening output file " << output_opt[0] << endl;
   outputWriter.open(output_opt[0],ncol,nrow,nband,theType,oformat_opt[0],option_opt);
+  outputWriter.GDALSetNoDataValue(nodata_opt[0]);
   //set projection
   outputWriter.setGeoTransform(minULX,maxULY,dx_opt[0],dy_opt[0],0,0);
   if(projection_opt.size()){
@@ -212,7 +211,7 @@ int main(int argc,char **argv) {
   }
   if(!outputWriter.isGeoRef())
     cout << "Warning: output image " << output_opt[0] << " is not georeferenced!" << endl;
-  if(colorTable_opt[0]!="")
+  if(colorTable_opt.size())
     outputWriter.setColorTable(colorTable_opt[0]);
 
   inputData.clear();
@@ -336,7 +335,7 @@ int main(int argc,char **argv) {
     for(int icol=0;icol<ncol;++icol){
       std::vector<float> profile;
       if(!inputData[irow][icol].size())
-        outputData[irow][icol]=(static_cast<float>((flag_opt[0])));
+        outputData[irow][icol]=(static_cast<float>((nodata_opt[0])));
       else{
         statfactory::StatFactory stat;
         if(composite_opt[0]=="min")
@@ -356,7 +355,7 @@ int main(int argc,char **argv) {
         else if(composite_opt[0]=="profile"){
           if(inputData[irow][icol].size()<2){
             for(int iband=0;iband<nband;++iband)
-              outputProfile[iband][icol]=static_cast<float>(flag_opt[0]);
+              outputProfile[iband][icol]=static_cast<float>(nodata_opt[0]);
             continue;
           }
           float min=0;
