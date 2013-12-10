@@ -28,8 +28,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
 
-namespace mrule{
-  enum MRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, maxvote=6, median=7,sum=8};
+namespace crule{
+  enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8};
 }
 
 using namespace std;
@@ -40,10 +40,10 @@ int main(int argc, char *argv[])
   Optionpk<string>  output_opt("o", "output", "Output image file");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
-  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true)", 0.0);
-  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box (in geocoordinates if georef is true)", 0.0);
+  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
+  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
+  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
+  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)", 0.0);
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)", 0.0);
   Optionpk<int>  band_opt("b", "band", "band index(es) to crop (-1: crop all bands)", -1);
@@ -53,8 +53,8 @@ int main(int argc, char *argv[])
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in image if out of bounds.", 0);
   Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
-  Optionpk<string>  description_opt("\0", "description", "Set image description");
-  Optionpk<string> mrule_opt("m", "mrule", "Mosaic rule for mosaic (overwrite, maxndvi, maxband, minband, validband, mean, maxvote (only for byte images), median, sum", "overwrite");
+  Optionpk<string>  description_opt("d", "description", "Set image description");
+  Optionpk<string> crule_opt("cr", "crule", "Composite rule for mosaic (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
   Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
   Optionpk<int> validBand_opt("vb", "validBand", "valid band index(es)", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for valid band", 0);
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     dstnodata_opt.retrieveOption(argc,argv);
     resample_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
-    mrule_opt.retrieveOption(argc,argv);
+    crule_opt.retrieveOption(argc,argv);
     ruleBand_opt.retrieveOption(argc,argv);
     validBand_opt.retrieveOption(argc,argv);
     srcnodata_opt.retrieveOption(argc,argv);
@@ -105,26 +105,32 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  std::map<std::string, mrule::MRULE_TYPE> mruleMap;
-  // //initialize mruleMap
-  // enum MRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, maxvote=6, median=7,sum=8};
+  std::map<std::string, crule::CRULE_TYPE> cruleMap;
+  // //initialize cruleMap
+  // enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8};
 
-  mruleMap["overwrite"]=mrule::overwrite;
-  mruleMap["maxndvi"]=mrule::maxndvi;
-  mruleMap["maxband"]=mrule::maxband;
-  mruleMap["minband"]=mrule::minband;
-  mruleMap["validband"]=mrule::validband;
-  mruleMap["mean"]=mrule::mean;
-  mruleMap["maxvote"]=mrule::maxvote;
-  mruleMap["median"]=mrule::median;
-  mruleMap["sum"]=mrule::sum;
+  cruleMap["overwrite"]=crule::overwrite;
+  cruleMap["maxndvi"]=crule::maxndvi;
+  cruleMap["maxband"]=crule::maxband;
+  cruleMap["minband"]=crule::minband;
+  cruleMap["validband"]=crule::validband;
+  cruleMap["mean"]=crule::mean;
+  cruleMap["mode"]=crule::mode;
+  cruleMap["median"]=crule::median;
+  cruleMap["sum"]=crule::sum;
 
   while(srcnodata_opt.size()<validBand_opt.size())
     srcnodata_opt.push_back(srcnodata_opt[0]);
+  while(validBand_opt.size()<srcnodata_opt.size())
+    validBand_opt.push_back(validBand_opt[0]);
   while(minValue_opt.size()<validBand_opt.size())
     minValue_opt.push_back(minValue_opt[0]);
+  while(validBand_opt.size()<minValue_opt.size())
+    validBand_opt.push_back(validBand_opt[0]);
   while(maxValue_opt.size()<validBand_opt.size())
     maxValue_opt.push_back(maxValue_opt[0]);
+  while(validBand_opt.size()<maxValue_opt.size())
+    validBand_opt.push_back(validBand_opt[0]);
   RESAMPLE theResample;
   switch(resample_opt[0]){
   case(BILINEAR):
@@ -219,33 +225,33 @@ int main(int argc, char *argv[])
       cout << "Bounding Box (ULX ULY LRX LRY): " << fixed << setprecision(6) << theULX << " " << theULY << " " << theLRX << " " << theLRY << endl;
     if(!init){
       if(verbose_opt[0]){
-        switch(mruleMap[mrule_opt[0]]){
+        switch(cruleMap[crule_opt[0]]){
         default:
-        case(mrule::overwrite):
+        case(crule::overwrite):
           cout << "Mosaic rule: overwrite" << endl;
           break;
-        case(mrule::maxndvi):
+        case(crule::maxndvi):
           cout << "Mosaic rule: max ndvi" << endl;
           break;
-        case(mrule::maxband):
+        case(crule::maxband):
           cout << "Mosaic rule: max band" << endl;
           break;
-        case(mrule::minband):
+        case(crule::minband):
           cout << "Mosaic rule: min band" << endl;
           break;
-        case(mrule::validband):
+        case(crule::validband):
           cout << "Mosaic rule: valid band" << endl;
           break;
-        case(mrule::mean):
+        case(crule::mean):
           cout << "Mosaic rule: mean value" << endl;
           break;
-        case(mrule::maxvote):
+        case(crule::mode):
           cout << "Mosaic rule: max voting (only for byte images)" << endl;
           break;
-        case(mrule::median):
+        case(crule::median):
           cout << "Mosaic rule: median" << endl;
           break;
-        case(mrule::sum):
+        case(crule::sum):
           cout << "Mosaic rule: sum" << endl;
           break;
         }
@@ -367,7 +373,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]){
     std::cout << weight_opt << std::endl;
   }
-  if(mruleMap[mrule_opt[0]]==mrule::maxvote){
+  if(cruleMap[crule_opt[0]]==crule::mode){
     nwriteBand=(file_opt[0])? class_opt.size()+1:class_opt.size();
   }
   else
@@ -412,9 +418,9 @@ int main(int argc, char *argv[])
   Vector2d<short> maxBuffer;//buffer used for maximum voting
   Vector2d<double> readBuffer(nband);
   statfactory::StatFactory stat;
-  if(mruleMap[mrule_opt[0]]==mrule::maxndvi)//ndvi
+  if(cruleMap[crule_opt[0]]==crule::maxndvi)//ndvi
     assert(ruleBand_opt.size()==2);
-  if(mruleMap[mrule_opt[0]]==mrule::maxvote){//max voting
+  if(cruleMap[crule_opt[0]]==crule::mode){//max voting
     maxBuffer.resize(imgWriter.nrOfCol(),256);//use only byte images for max voting
     for(int iclass=0;iclass<class_opt.size();++iclass)
       assert(class_opt[iclass]<maxBuffer.size());
@@ -433,12 +439,12 @@ int main(int argc, char *argv[])
     Vector2d< vector<double> > storeBuffer;
     vector<bool> writeValid(ncol);
 
-    if(mruleMap[mrule_opt[0]]==mrule::mean||mruleMap[mrule_opt[0]]==mrule::median||mruleMap[mrule_opt[0]]==mrule::sum)//mean, median or (weighted) sum value
+    if(cruleMap[crule_opt[0]]==crule::mean||cruleMap[crule_opt[0]]==crule::median||cruleMap[crule_opt[0]]==crule::sum)//mean, median or (weighted) sum value
       storeBuffer.resize(nband,ncol);
     for(int icol=0;icol<imgWriter.nrOfCol();++icol){
       writeValid[icol]=false;
       fileBuffer[icol]=0;
-      if(mruleMap[mrule_opt[0]]==mrule::maxvote){//max voting
+      if(cruleMap[crule_opt[0]]==crule::mode){//max voting
         for(int iclass=0;iclass<256;++iclass)
           maxBuffer[icol][iclass]=0;
       }
@@ -544,8 +550,8 @@ int main(int argc, char *argv[])
 	if(readValid){
           if(writeValid[ib]){
             int iband=0;
-	    switch(mruleMap[mrule_opt[0]]){
-	    case(mrule::maxndvi):{//max ndvi
+	    switch(cruleMap[crule_opt[0]]){
+	    case(crule::maxndvi):{//max ndvi
               double red_current=writeBuffer[ruleBand_opt[0]][ib];
               double nir_current=writeBuffer[ruleBand_opt[1]][ib];
 	      double ndvi_current=0;
@@ -595,9 +601,9 @@ int main(int argc, char *argv[])
               }
 	      break;
             }
-	    case(mrule::maxband):
-            case(mrule::minband):
-            case(mrule::validband)://max,min,valid band
+	    case(crule::maxband):
+            case(crule::minband):
+            case(crule::validband)://max,min,valid band
               val_current=writeBuffer[ruleBand_opt[0]][ib];
               switch(resample_opt[0]){
               case(BILINEAR):
@@ -611,7 +617,7 @@ int main(int argc, char *argv[])
                   upperCol=imgReader.nrOfCol()-1;
                 val_new=(readCol-0.5-lowerCol)*readBuffer[ruleBand_opt[0]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ruleBand_opt[0]][lowerCol-startCol];
                 val_new*=weight_opt[ifile];
-                if((mruleMap[mrule_opt[0]]==mrule::maxband&&val_new>val_current)||(mruleMap[mrule_opt[0]]==mrule::minband&&val_new<val_current)||(mruleMap[mrule_opt[0]]==mrule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
+                if((cruleMap[crule_opt[0]]==crule::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==crule::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==crule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
                     val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
                     val_new*=weight_opt[ifile];
@@ -625,7 +631,7 @@ int main(int argc, char *argv[])
                 readCol=static_cast<int>(readCol);
                 val_new=readBuffer[ruleBand_opt[0]][readCol-startCol];
                 val_new*=weight_opt[ifile];
-                if((mruleMap[mrule_opt[0]]==mrule::maxband&&val_new>val_current)||(mruleMap[mrule_opt[0]]==mrule::minband&&val_new<val_current)||(mruleMap[mrule_opt[0]]==mrule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
+                if((cruleMap[crule_opt[0]]==crule::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==crule::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==crule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
                     val_new=readBuffer[iband][readCol-startCol];
                     val_new*=weight_opt[ifile];
@@ -637,7 +643,7 @@ int main(int argc, char *argv[])
                 break;
               }
 	      break;
-            case(mrule::maxvote)://max voting (only for Byte images)
+            case(crule::mode)://max voting (only for Byte images)
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -663,9 +669,9 @@ int main(int argc, char *argv[])
                 break;
 	      }
               break;
-            case(mrule::mean)://mean value
-	    case(mrule::median)://median value
-	    case(mrule::sum)://sum value
+            case(crule::mean)://mean value
+	    case(crule::median)://median value
+	    case(crule::sum)://sum value
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -696,7 +702,7 @@ int main(int argc, char *argv[])
               }
               ++fileBuffer[ib];
 	      break;
-	    case(mrule::overwrite):
+	    case(crule::overwrite):
 	    default:
               switch(resample_opt[0]){
               case(BILINEAR):
@@ -731,10 +737,10 @@ int main(int argc, char *argv[])
 	  else{
             writeValid[ib]=true;//readValid was true
             int iband=0;
-	    switch(mruleMap[mrule_opt[0]]){
-            case(mrule::mean):
-            case(mrule::median):
-            case(mrule::sum):
+	    switch(cruleMap[crule_opt[0]]){
+            case(crule::mean):
+            case(crule::median):
+            case(crule::sum):
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -762,7 +768,7 @@ int main(int argc, char *argv[])
               }
               ++fileBuffer[ib];
               break;
-            case(mrule::maxvote):
+            case(crule::mode):
               switch(resample_opt[0]){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -824,7 +830,7 @@ int main(int argc, char *argv[])
       }
       imgReader.close();
     }
-    if(mruleMap[mrule_opt[0]]==mrule::maxvote){
+    if(cruleMap[crule_opt[0]]==crule::mode){
       vector<short> classBuffer(imgWriter.nrOfCol());
       if(class_opt.size()>1){
         for(int iclass=0;iclass<class_opt.size();++iclass){
@@ -862,18 +868,18 @@ int main(int argc, char *argv[])
         // assert(writeBuffer[bands[iband]].size()==imgWriter.nrOfCol());
         assert(writeBuffer[iband].size()==imgWriter.nrOfCol());
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
-          switch(mruleMap[mrule_opt[0]]){
-          case(mrule::mean):
+          switch(cruleMap[crule_opt[0]]){
+          case(crule::mean):
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
             break;
-          case(mrule::median):
+          case(crule::median):
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
             break;
-          case(mrule::sum)://sum
+          case(crule::sum)://sum
             assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
