@@ -1,5 +1,5 @@
 \section examples_pkascii2ogr Examples of pkascii2ogr
 \code
-pkascii2ogr -i input.txt -o output.shp -x 2 -y 1 -n id -ot Integer -n label -ot Integer -p epsg:4326
+pkascii2ogr -i input.txt -o output.shp -x 2 -y 1 -n id -ot Integer -n label -ot Integer -a_srs epsg:4326
 \endcode
 create a vector shape file (output.shp) from input ASCII file (input.txt). The coordinates x (longitude) and y (latitude) can be found in input.txt as columns 3 and 2 respectively (columns start counting from 0). The remaining 2 columns in input.txt are used as fields (attributes) of type integer: id (column 0) and label (column 3). The projection is set to lat lon (epsg:4326). 

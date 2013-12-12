@@ -5,7 +5,7 @@ pkextract -i input.tif -s points.shp -o extracted.shp
 extract all bands from input.tif to extracted.shp at pixel locations defined in points.shp.
 
 \code
-pkextract -i input.tif -s points.shp -o extracted.shp -m mask.tif -f 255
+pkextract -i input.tif -s points.shp -o extracted.shp -m mask.tif -msknodata 255
 \endcode
 extract all bands from input.tif to extracted.shp at pixel locations defined in points.shp that have not a value 255 in mask.tif
 

@@ -59,7 +59,7 @@ sudo ldconfig
 
 Prerequisites (required)
 ------------------------
-packages to install before pktool
+packages to install before pktools
    - g++ (via repository)
    - make (via repository)
    - libgdal-dev http://trac.osgeo.org/gdal/wiki/BuildingOnUnix (or via repository)
