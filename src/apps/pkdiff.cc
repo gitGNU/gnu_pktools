@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "Input image file.");
   Optionpk<string> reference_opt("ref", "reference", "Reference image file");
   Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also mask_nodata option. (default is empty)");
+  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also msknodata option. (default is empty)");
   Optionpk<int> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels (0)", 0);

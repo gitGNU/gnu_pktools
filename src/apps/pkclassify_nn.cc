@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
   Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option (default is no mask)"); 
-  Optionpk<short> mask_nodata_opt("mask_nodata", "mask_nodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
+  Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     bagSize_opt.retrieveOption(argc,argv);
     classBag_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
-    mask_nodata_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
@@ -757,17 +757,17 @@ int main(int argc, char *argv[])
         bool masked=false;
         if(!lineMask.empty()){
           short theMask=0;
-          for(short ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
-            if(mask_nodata_opt[ivalue]>=0){//values set in mask_nodata_opt are invalid
-              if(lineMask[icol]==mask_nodata_opt[ivalue]){
+          for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+            if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
+              if(lineMask[icol]==msknodata_opt[ivalue]){
                 theMask=lineMask[icol];
                 masked=true;
                 break;
               }
             }
-            else{//only values set in mask_nodata_opt are valid
-              if(lineMask[icol]!=-mask_nodata_opt[ivalue]){
-                  theMask=(nodata_opt.size()==mask_nodata_opt.size())? nodata_opt[ivalue] : nodata_opt[0];// lineMask[icol];
+            else{//only values set in msknodata_opt are valid
+              if(lineMask[icol]!=-msknodata_opt[ivalue]){
+                  theMask=(nodata_opt.size()==msknodata_opt.size())? nodata_opt[ivalue] : nodata_opt[0];// lineMask[icol];
                 masked=true;
               }
               else{

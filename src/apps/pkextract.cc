@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   Optionpk<string> image_opt("i", "image", "Input image file");
   Optionpk<string> sample_opt("s", "sample", "Input sample file (shape) or class file (e.g. Corine CLC) if class option is set");
   Optionpk<string> mask_opt("m", "mask", "Mask image file");
-  Optionpk<int> mask_nodata_opt("mask_nodata", "mask_nodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
+  Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or leave empty to extract all valid data pixels from sample file");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
-    mask_nodata_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     test_opt.retrieveOption(argc,argv);
@@ -349,10 +349,10 @@ int main(int argc, char *argv[])
                   }
                 }
                 int ivalue=0;
-                if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(mask_nodata_opt[imask]);
+                if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+                  ivalue=static_cast<int>(msknodata_opt[imask]);
                 else//use same invalid value for each mask
-                  ivalue=static_cast<int>(mask_nodata_opt[0]);
+                  ivalue=static_cast<int>(msknodata_opt[0]);
                 if(maskBuffer[imask][colMask]==ivalue){
                   valid=false;
                   break;
@@ -378,8 +378,8 @@ int main(int argc, char *argv[])
                     oldmaskrow[0]=rowMask;
                   }
                 }
-                for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
+                for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+                  if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
                     valid=false;
                     break;
                   }
@@ -598,10 +598,10 @@ int main(int argc, char *argv[])
                   }
                 }
                 int ivalue=0;
-                if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(mask_nodata_opt[imask]);
+                if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+                  ivalue=static_cast<int>(msknodata_opt[imask]);
                 else//use same invalid value for each mask
-                  ivalue=static_cast<int>(mask_nodata_opt[0]);
+                  ivalue=static_cast<int>(msknodata_opt[0]);
                 if(maskBuffer[imask][colMask]==ivalue){
                   valid=false;
                   break;
@@ -627,8 +627,8 @@ int main(int argc, char *argv[])
                     oldmaskrow[0]=rowMask;
                   }
                 }
-                for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
+                for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+                  if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
                     valid=false;
                     break;
                   }
@@ -915,10 +915,10 @@ int main(int argc, char *argv[])
                 }
                 //               char ivalue=0;
                 int ivalue=0;
-                if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(mask_nodata_opt[imask]);
+                if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+                  ivalue=static_cast<int>(msknodata_opt[imask]);
                 else//use same invalid value for each mask
-                  ivalue=static_cast<int>(mask_nodata_opt[0]);
+                  ivalue=static_cast<int>(msknodata_opt[0]);
                 if(maskBuffer[imask][colMask]==ivalue){
                   valid=false;
                   break;
@@ -948,8 +948,8 @@ int main(int argc, char *argv[])
                     oldmaskrow[0]=rowMask;
                   }
                 }
-                for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
+                for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+                  if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
                     valid=false;
                     break;
                   }
@@ -1267,10 +1267,10 @@ int main(int argc, char *argv[])
                       }
                       //               char ivalue=0;
                       int ivalue=0;
-                      if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
-                        ivalue=static_cast<int>(mask_nodata_opt[imask]);
+                      if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+                        ivalue=static_cast<int>(msknodata_opt[imask]);
                       else//use same invalid value for each mask
-                        ivalue=static_cast<int>(mask_nodata_opt[0]);
+                        ivalue=static_cast<int>(msknodata_opt[0]);
                       if(maskBuffer[imask][colMask]==ivalue){
                         valid=false;
                         break;
@@ -1302,8 +1302,8 @@ int main(int argc, char *argv[])
                           oldmaskrow[0]=rowMask;
                         }
                       }
-                      for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
-                        if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
+                      for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+                        if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
                           valid=false;
                           break;
                         }
@@ -1882,10 +1882,10 @@ int main(int argc, char *argv[])
                       }
                       //               char ivalue=0;
                       int ivalue=0;
-                      if(mask_opt.size()==mask_nodata_opt.size())//one invalid value for each mask
-                        ivalue=static_cast<int>(mask_nodata_opt[imask]);
+                      if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+                        ivalue=static_cast<int>(msknodata_opt[imask]);
                       else//use same invalid value for each mask
-                        ivalue=static_cast<int>(mask_nodata_opt[0]);
+                        ivalue=static_cast<int>(msknodata_opt[0]);
                       if(maskBuffer[imask][colMask]==ivalue){
                         valid=false;
                         break;
@@ -1917,8 +1917,8 @@ int main(int argc, char *argv[])
                           oldmaskrow[0]=rowMask;
                         }
                       }
-                      for(int ivalue=0;ivalue<mask_nodata_opt.size();++ivalue){
-                        if(maskBuffer[0][colMask]==static_cast<int>(mask_nodata_opt[ivalue])){
+                      for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+                        if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
                           valid=false;
                           break;
                         }

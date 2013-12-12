@@ -175,5 +175,34 @@ version 2.4.2
 	support of transposed output
 
 version 2.4.3
-	consistently use nodata, srcnodata, dstnodata and msknodata instead of invalid, mvalue, flag options
+ - pkclassify_nn
+	option msknodata and nodata to set nodata value in mask and classified image
+ - pkclassify_svm
+	option msknodata and nodata to set nodata value in mask and classified image
+ - pkcrop
+	option nodata to set nodata value
+ - pkdiff
+	option nodata to set nodata value
+ - pkenhance
+	option nodata to set nodata value
+ - pkgetmask
+	option nodata to set nodata value
+ - pkinfo
+	option nodata to set nodata value
+ - pklas2img
+	option nodata to set nodata value
+ - pkndvi
+	option nodata to set nodata value
+ - pkreclass
+	option nodata to set nodata value
+ - pksetmask
+	option nodata to set nodata value
+ - pkdumpimg
+	option srcnodata and dstnodata to set nodata value in source and destination image
+ - pkmosaic
+	option srcnodata and dstnodata to set nodata value in source and destination image
+ - pkextract
+	option msknodata to set nodata value in mask
+ - pksetmask
+	option msknodata to set nodata value in mask
 

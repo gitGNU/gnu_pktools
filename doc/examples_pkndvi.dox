@@ -1,5 +1,5 @@
-\section examples_pkpolygonize Examples of pkpolygonize
+\section examples_pkndvi Examples of pkndvi
 \code
-pkpolygonize -i input.tif -m input.tif -o ouput.shp
+pkndvi -i input.tif -b 0 -b 1 -r ndvi -o ndvi.tif
 \endcode
-create vector file from raster image (typically a classification image), based on pixel (land cover class) values. 
+create normalized difference vegetation index (NDVI) from input image, where band 0 and 1 contain the reflectances in red and near infrared respectively

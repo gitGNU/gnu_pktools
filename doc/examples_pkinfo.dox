@@ -36,11 +36,11 @@ pkinfo -i image1.tif --mask 0 --mask 255 -ref
 show the refence pixel (centre of gravity) for image1.tif, treating 0 and 255 as NO VALUE
 
 \code
-pkinfo -i image.tif $(pkinfo -i image.tif -c
+pkinfo -i image.tif $(pkinfo -i image.tif -c) -geo -r
 \endcode
 read (dump) pixel value at image centre for band 0
 
 \code
-pkinfo $(for IMAGE in *.tif; do pkinfo -i $IMAGE --cover -x 3528120 -y 4329681;done) -x 3528120 -y 4329681 -geo -r
+pkinfo $(for IMAGE in modis_2010*.tif; do pkinfo -i $IMAGE --cover -x 4215500 -y 2534000;done) -x 4215500 -y 253400
 \endcode
 read (dump) pixel value in band 0 (default) for all images in current directory that cover this geographic location  
