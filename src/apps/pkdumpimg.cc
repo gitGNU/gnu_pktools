@@ -45,8 +45,8 @@ int main(int argc, char *argv[])
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)",0.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)",0.0);
   Optionpk<string> resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
-  Optionpk<short> flag_opt("f", "flag", "Flag value to put in image if out of bounds.", 0);
-  Optionpk<double> nodata_opt("nodata", "nodata", "set no data value(s) for calculations (flags in input image)");
+  Optionpk<short> dstnodata_opt("dstnodata", "dstnodata", "nodata value for ouptut if out of bounds.", 0);
+  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "set no data value(s) for input image");
   Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -64,8 +64,8 @@ int main(int argc, char *argv[])
     dx_opt.retrieveOption(argc,argv);
     dy_opt.retrieveOption(argc,argv);
     resample_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
+    srcnodata_opt.retrieveOption(argc,argv);
+    dstnodata_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -101,8 +101,8 @@ int main(int argc, char *argv[])
   GDALDataType theType;
 
   ImgReaderGdal imgReader(input_opt[0]);
-  for(int inodata=0;inodata<nodata_opt.size();++inodata)
-    imgReader.pushNoDataValue(nodata_opt[inodata]);
+  for(int inodata=0;inodata<srcnodata_opt.size();++inodata)
+    imgReader.pushNoDataValue(srcnodata_opt[inodata]);
 
   ImgWriterGdal virtualWriter;//only for coordinate conversion (no output file defined)
   
@@ -249,15 +249,15 @@ int main(int argc, char *argv[])
           if(readCol<0||readCol>=imgReader.nrOfCol()){
             if(oformat_opt[0]=="matrix"){
               if(output_opt[0].empty())
-                std::cout << flag_opt[0] << " ";
+                std::cout << dstnodata_opt[0] << " ";
               else
-                outputStream << flag_opt[0] << " ";
+                outputStream << dstnodata_opt[0] << " ";
             }
             else{
               if(output_opt[0].empty())
-                std::cout << x << " " << y << " " << flag_opt[0] << endl;
+                std::cout << x << " " << y << " " << dstnodata_opt[0] << endl;
               else
-                outputStream << x << " " << y << " " << flag_opt[0] << endl;
+                outputStream << x << " " << y << " " << dstnodata_opt[0] << endl;
             }
           }
           else{

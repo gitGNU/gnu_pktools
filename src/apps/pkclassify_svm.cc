@@ -77,11 +77,11 @@ int main(int argc, char *argv[])
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation");
   Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option"); 
-  Optionpk<short> maskValue_opt("mv", "mvalue", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
-  Optionpk<unsigned short> flag_opt("f", "flag", "flag to put where image is invalid.", 0);
+  Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
+  Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("prob", "prob", "probability image."); 
   Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
@@ -123,8 +123,8 @@ int main(int argc, char *argv[])
     bagSize_opt.retrieveOption(argc,argv);
     classBag_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
-    maskValue_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
@@ -536,8 +536,8 @@ int main(int argc, char *argv[])
     double dpa=0;
     double doa=0;
     for(short iclass=0;iclass<cm.nClasses();++iclass){
-      dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
-      dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+      dua=cm.ua(cm.getClass(iclass),&se95_ua);
+      dpa=cm.pa(cm.getClass(iclass),&se95_pa);
       cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
     }
     std::cout << "Kappa: " << cm.kappa() << std::endl;
@@ -628,21 +628,25 @@ int main(int argc, char *argv[])
         std::cout << "opening class image for writing output " << output_opt[0] << std::endl;
       if(classBag_opt.size()){
         classImageBag.open(output_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
+	classImageBag.GDALSetNoDataValue(nodata_opt[0]);
         classImageBag.copyGeoTransform(testImage);
         classImageBag.setProjection(testImage.getProjection());
       }
       classImageOut.open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,option_opt);
+      classImageOut.GDALSetNoDataValue(nodata_opt[0]);
       classImageOut.copyGeoTransform(testImage);
       classImageOut.setProjection(testImage.getProjection());
       if(colorTable_opt.size())
         classImageOut.setColorTable(colorTable_opt[0],0);
       if(prob_opt.size()){
         probImage.open(prob_opt[0],ncol,nrow,nclass,GDT_Byte,imageType,option_opt);
+	probImage.GDALSetNoDataValue(nodata_opt[0]);
         probImage.copyGeoTransform(testImage);
         probImage.setProjection(testImage.getProjection());
       }
       if(entropy_opt.size()){
         entropyImage.open(entropy_opt[0],ncol,nrow,1,GDT_Byte,imageType,option_opt);
+	entropyImage.GDALSetNoDataValue(nodata_opt[0]);
         entropyImage.copyGeoTransform(testImage);
         entropyImage.setProjection(testImage.getProjection());
       }
@@ -738,16 +742,16 @@ int main(int argc, char *argv[])
         bool masked=false;
         if(!lineMask.empty()){
           short theMask=0;
-          for(short ivalue=0;ivalue<maskValue_opt.size();++ivalue){
-            if(maskValue_opt[ivalue]>=0){//values set in maskValue_opt are invalid
-              if(lineMask[icol]==maskValue_opt[ivalue]){
+          for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+            if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
+              if(lineMask[icol]==msknodata_opt[ivalue]){
                 theMask=lineMask[icol];
                 masked=true;
                 break;
               }
             }
-            else{//only values set in maskValue_opt are valid
-              if(lineMask[icol]!=-maskValue_opt[ivalue]){
+            else{//only values set in msknodata_opt are valid
+              if(lineMask[icol]!=-msknodata_opt[ivalue]){
                 theMask=lineMask[icol];
                 masked=true;
               }
@@ -775,8 +779,8 @@ int main(int argc, char *argv[])
         if(!valid){
           if(classBag_opt.size())
             for(int ibag=0;ibag<nbag;++ibag)
-              classBag[ibag][icol]=flag_opt[0];
-          classOut[icol]=flag_opt[0];
+              classBag[ibag][icol]=nodata_opt[0];
+          classOut[icol]=nodata_opt[0];
           continue;//next column
         }
         for(short iclass=0;iclass<nclass;++iclass)

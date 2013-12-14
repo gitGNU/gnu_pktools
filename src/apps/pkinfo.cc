@@ -39,20 +39,20 @@ int main(int argc, char *argv[])
   Optionpk<bool>  dy_opt("dy", "dy", "Gets resolution in y (in m)", false,0);
   Optionpk<bool>  minmax_opt("mm", "minmax", "Shows min and max value of the image ", false,0);
   Optionpk<bool>  stat_opt("stat", "stat", "Shows statistics (min,max, mean and stdDev of the image)", false,0);
-  Optionpk<double>  min_opt("min", "min", "Sets minimum for histogram");
-  Optionpk<double>  max_opt("max", "max", "Sets maximum for histogram");
+  Optionpk<double>  min_opt("min", "min", "Sets minimum for histogram (does not calculate min value: use -mm instead)");
+  Optionpk<double>  max_opt("max", "max", "Sets maximum for histogram (does not calculate min value: use -mm instead)");
   Optionpk<bool>  relative_opt("rel", "rel", "Calculates relative histogram in percentage", false,0);
-  Optionpk<bool>  projection_opt("p", "projection", "Shows projection of the image ", false,0);
+  Optionpk<bool>  projection_opt("a_srs", "a_srs", "Shows projection of the image ", false,0);
   Optionpk<bool>  geo_opt("geo", "geo", "Gets geotransform  ", false,0);
   Optionpk<bool>  interleave_opt("il", "interleave", "Shows interleave ", false,0);
   Optionpk<bool>  filename_opt("f", "filename", "Shows image filename ", false,0);
-  Optionpk<bool>  cover_opt("cov", "cover", "Image covers bounding box (or x and y pos) if printed to std out ", false,0);
+  Optionpk<bool>  cover_opt("cov", "cover", "Print filename to stdout if current image covers the provided coordinates via bounding box, (x y) coordinates or extent of vector file", false,0);
   Optionpk<double>  x_opt("x", "xpos", "x pos");
   Optionpk<double>  y_opt("y", "ypos", "y pos");
   Optionpk<bool>  read_opt("r", "read", "Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based)",false,0);
   Optionpk<bool>  refpixel_opt("ref", "ref", "Gets reference pixel (lower left corner of centre of gravity pixel)", false,0);
   Optionpk<bool>  driver_opt("of", "oformat", "Gets driver description ", false,0);
-  Optionpk<std::string>  extent_opt("e", "extent", "Gets boundary from extent from polygons in vector file");
+  Optionpk<std::string>  extent_opt("e", "extent", "Gets boundary from vector file");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box");
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box");
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box");
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   Optionpk<bool>  type_opt("ot", "otype", "Returns data type", false,0);
   Optionpk<bool>  description_opt("d", "description", "Returns image description", false,0);
   Optionpk<bool>  metadata_opt("meta", "meta", "Shows meta data ", false,0);
-  Optionpk<double> nodata_opt("nodata", "nodata", "Sets no data value(s) for calculations (flags in input image)");
+  Optionpk<double> nodata_opt("nodata", "nodata", "Sets no data value(s) for calculations (nodata values in input image)");
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -124,6 +124,27 @@ int main(int argc, char *argv[])
   double maxULX=0;
   double maxLRY=0;
   
+  double theULX, theULY, theLRX, theLRY;
+  //get bounding box from extentReader if defined
+  ImgReaderOgr extentReader;
+  if(extent_opt.size()){
+    extentReader.open(extent_opt[0]);
+    if(!(extentReader.getExtent(theULX,theULY, theLRX, theLRY))){
+      std::cerr << "Error: could not get extent from " << extent_opt[0] << std::endl;
+      exit(1);
+    }
+    ulx_opt.push_back(theULX);
+    uly_opt.push_back(theULY);
+    lrx_opt.push_back(theLRX);
+    lry_opt.push_back(theLRY);
+    if(input_opt.empty()){//report bounding box from extent file instead
+      if(bbox_te_opt[0])
+	std::cout << std::setprecision(12) << "-te " << theULX << " " << theLRY << " " << theLRX << " " << theULY;
+      else
+	std::cout << std::setprecision(12) << "--ulx=" << theULX << " --uly=" << theULY << " --lrx=" << theLRX << " --lry=" << theLRY << " ";
+    }
+  }
+
   ImgReaderGdal imgReader;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader.open(input_opt[ifile]);
@@ -145,14 +166,13 @@ int main(int argc, char *argv[])
       double refX,refY;
       //get centre of reference (centre of gravity) pixel in image
       imgReader.getRefPix(refX,refY,band_opt[0]);
-      std::cout << std::setprecision(12) << "-rx " << refX << " -ry " << refY << std::endl;
+      std::cout << std::setprecision(12) << "-x " << refX << " -y " << refY << std::endl;
       egcs.setLevel(egcs.res2level(imgReader.getDeltaX()));
       // unsigned short theLevel=egcs.getLevel(imgReader.getDeltaX());
       // egcs.setLevel(theLevel);
       //cout << "cell code at level " << egcs.getLevel() << " (resolution is " << egcs.getResolution() << "): " << egcs.geo2cell(refX,refY) << endl;
     }
     if(bbox_opt[0]||bbox_te_opt[0]){
-      double theULX, theULY, theLRX, theLRY;
       imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
       if(bbox_te_opt[0])
         std::cout << std::setprecision(12) << "-te " << theULX << " " << theLRY << " " << theLRX << " " << theULY;
@@ -186,23 +206,18 @@ int main(int argc, char *argv[])
     if(dy_opt[0])
       std::cout << "--dy " << imgReader.getDeltaY() << " ";
     if(cover_opt[0]){
-      //get bounding box from extentReader if defined
-      ImgReaderOgr extentReader;
-      if(extent_opt.size()){
-        extentReader.open(extent_opt[0]);
-        if(!(extentReader.getExtent(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
-          std::cerr << "Error: could not get extent from " << extent_opt[0] << std::endl;
-          exit(1);
-        }
-        // std::cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << std::endl;
+      if(ulx_opt.size()&&uly_opt.size()&&lrx_opt.size()&&lry_opt.size()){
+	if(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))
+	  std::cout << " -i " << input_opt[ifile] << " ";
       }
-      double theULX, theULY, theLRX, theLRY;
-      imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
-      if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0])))
-	std::cout << " -i " << input_opt[ifile] << " ";
-      else if(imgReader.covers(x_opt[0],y_opt[0]))
-	std::cout << " -i " << input_opt[ifile] << " ";
-
+      else if(x_opt.size()&&y_opt.size()){
+	if(imgReader.covers(x_opt[0],y_opt[0]))
+	  std::cout << " -i " << input_opt[ifile] << " ";
+      }
+      else{
+	std::cerr << "Error: failing extent (-e), bounding box or x and y position to define coverage" << std::endl;
+	exit(1);
+      }
     }
     else if(ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size()){
       double ulx,uly,lrx,lry;
@@ -259,37 +274,11 @@ int main(int argc, char *argv[])
 	imgReader.getMinMax(minValue,maxValue,band_opt[0],true);
       std::cout << "--min " << minValue << " --max " << maxValue << " ";
     }
+    if(relative_opt[0])
+      hist_opt[0]=true;
     if(hist_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
       int nbin=nbin_opt[0];
-      // imgReader.getMinMax(minValue,maxValue,band_opt[0]);
-      // if(min_opt.size())
-      //   minValue=min_opt[0];
-      // if(max_opt.size())
-      //   maxValue=max_opt[0];
-      // if(nbin_opt[0]==0)
-      //   nbin=maxValue-minValue+1;
-      // assert(nbin>0);
-      // std::vector<unsigned long int> output(nbin);
-      // unsigned long int nsample=0;
-      // unsigned long int ninvalid=0;
-      // std::vector<double> lineBuffer(imgReader.nrOfCol());
-      // for(int i=0;i<nbin;output[i++]=0);
-      // for(int irow=0;irow<imgReader.nrOfRow();++irow){
-      //   imgReader.readData(lineBuffer,GDT_Float64,irow,band_opt[0]);
-      //   for(int icol=0;icol<imgReader.nrOfCol();++icol){
-      //     if(imgReader.isNoData(lineBuffer[icol]))
-      //       ++ninvalid;
-      //     else if(lineBuffer[icol]>maxValue)
-      //       ++ninvalid;
-      //     else if(lineBuffer[icol]<minValue)
-      //       ++ninvalid;
-      //     else if(lineBuffer[icol]==maxValue)
-      //       ++output[nbin-1];
-      //     else
-      //       ++output[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*nbin)];
-      //   }
-      // }
       std::vector<unsigned long int> output(nbin_opt[0]);
       minValue=0;
       maxValue=0;
@@ -327,9 +316,9 @@ int main(int argc, char *argv[])
     }
     if(projection_opt[0]){
       if(imgReader.isGeoRef())
-        std::cout << "--projection " << imgReader.getProjection() << " ";
+        std::cout << " -a_srs " << imgReader.getProjection() << " ";
       else
-        std::cout << " --projection none" << " ";
+        std::cout << " -a_srs none" << " ";
     }
     if(geo_opt[0]&&!read_opt[0]){
       double ulx,uly,deltaX,deltaY,rot1,rot2;
@@ -419,8 +408,6 @@ int main(int argc, char *argv[])
     else
       std::cout << "no intersect" << std::endl;
   }
-  if(!input_opt.size())
-    std::cerr << "No input file provided (use option -i). Use pkinfo --help for help information" << std::endl;
-  else if(!read_opt[0]&&!hist_opt[0])
+  if(!read_opt[0]&&!hist_opt[0])
     std::cout << std::endl;
 }

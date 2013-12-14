@@ -29,11 +29,11 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string>  input_opt("i", "input", "Input image");
-  Optionpk<string>  mask_opt("m", "mask", "Mask image(s)");
+  Optionpk<string> input_opt("i", "input", "Input image");
+  Optionpk<string> mask_opt("m", "mask", "Mask image(s)");
   Optionpk<string> output_opt("o", "output", "Output mask file");
-  Optionpk<unsigned short> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use one value for each mask, or multiple values for a single mask.", 1);
-  Optionpk<int> flag_opt("f", "flag", "Flag value to put in image if not valid (0)", 0);
+  Optionpk<unsigned short> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image has nodata. Use one value for each mask, or multiple values for a single mask.", 1);
+  Optionpk<int> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<unsigned short>  band_opt("b", "band", "band index to replace (other bands are copied to output)", 0);
   Optionpk<string> type_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
   Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)");
   Optionpk<string> reclass_opt("r", "reclass", "list of recoded class(es) (in combination with class option)");
   Optionpk<string> fieldname_opt("n", "fname", "field name of the shape file to be replaced", "label");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> description_opt("d", "description", "Set image description");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
-    invalid_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
+    masknodata_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     code_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     reclass_opt.retrieveOption(argc,argv);
@@ -198,6 +198,8 @@ int main(int argc, char *argv[])
       option_opt.push_back(theInterleave);
     }
     outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,inputReader.getImageType(),option_opt);
+    for(int iband=0;iband<inputReader.nrOfBand();++iband)
+      outputWriter.GDALSetNoDataValue(nodata_opt[0],iband);
     if(description_opt.size())
       outputWriter.setImageDescription(description_opt[0]);
 
@@ -223,10 +225,10 @@ int main(int argc, char *argv[])
     double ulx,uly,lrx,lry;
     inputReader.getBoundingBox(ulx,uly,lrx,lry);
     outputWriter.copyGeoTransform(inputReader);
-    assert(flag_opt.size()==invalid_opt.size());
+    assert(nodata_opt.size()==masknodata_opt.size());
     if(verbose_opt[0]&&mask_opt.size()){
-      for(int iv=0;iv<invalid_opt.size();++iv)
-        cout << invalid_opt[iv] << "->" << flag_opt[iv] << endl;
+      for(int iv=0;iv<masknodata_opt.size();++iv)
+        cout << masknodata_opt[iv] << "->" << nodata_opt[iv] << endl;
     }
 
     assert(outputWriter.nrOfCol()==inputReader.nrOfCol());
@@ -282,13 +284,13 @@ int main(int argc, char *argv[])
               oldRowMask=rowMask;
             }
             short ivalue=0;
-            if(mask_opt.size()==invalid_opt.size())//one invalid value for each mask
-              ivalue=invalid_opt[imask];
+            if(mask_opt.size()==masknodata_opt.size())//one invalid value for each mask
+              ivalue=masknodata_opt[imask];
             else//use same invalid value for each mask
-              ivalue=invalid_opt[0];
+              ivalue=masknodata_opt[0];
             if(lineMask[imask][colMask]==ivalue){
               for(int iband=0;iband<inputReader.nrOfBand();++iband)
-                lineInput[iband][icol]=flag_opt[imask];
+                lineInput[iband][icol]=nodata_opt[imask];
               masked=true;
               break;
             }
@@ -314,11 +316,11 @@ int main(int argc, char *argv[])
             }
             oldRowMask=rowMask;
           }
-          for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-            assert(invalid_opt.size()==flag_opt.size());
-            if(lineMask[0][colMask]==invalid_opt[ivalue]){
+          for(int ivalue=0;ivalue<masknodata_opt.size();++ivalue){
+            assert(masknodata_opt.size()==nodata_opt.size());
+            if(lineMask[0][colMask]==masknodata_opt[ivalue]){
               for(int iband=0;iband<inputReader.nrOfBand();++iband)
-                lineInput[iband][icol]=flag_opt[ivalue];
+                lineInput[iband][icol]=nodata_opt[ivalue];
               masked=true;
               break;
             }

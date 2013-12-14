@@ -2,47 +2,47 @@
 
 \section single_mask Using a single mask
 
-With a single mask you can provide as many triples (--operator, --invalid, --flag) as you wish. All operators work simultaneously on that mask. Caution: the first operator that tests true will be selected. This is explained in the next example:
+With a single mask you can provide as many triples (--operator, --msknodata, --nodata) as you wish. All operators work simultaneously on that mask. Caution: the first operator that tests true will be selected. This is explained in the next example:
 
 \code
-pksetmask -i input.tif -m mask.tif --operator='>' --invalid 0 --flag 0 --operator='>' --invalid 10 --flag 10 -o output.tif
+pksetmask -i input.tif -m mask.tif --operator='>' --msknodata 0 --nodata 0 --operator='>' --msknodata 10 --nodata 10 -o output.tif
 \endcode
 Warning: second operator will never test true as first will supersede!
 \code
-pksetmask -i input.tif -m mask.tif --operator='>' --invalid 10 --flag 10 --operator='>' --invalid 0 --flag 1 -output.tif
+pksetmask -i input.tif -m mask.tif --operator='>' --msknodata 10 --nodata 10 --operator='>' --msknodata 0 --nodata 1 -output.tif
 \endcode
 OK: values above 10 will be 10, values between 0 and 10 will be 1
 
 \section multiple_masks Using multiple masks
-With multiple masks, you can use one triple (--operator, --invalid, --flag) for each corresponding mask (following the same order of input). If the number of triples is not equal to the number of masks, then only the first triple is used for all masks simultaneously
+With multiple masks, you can use one triple (--operator, --msknodata, --nodata) for each corresponding mask (following the same order of input). If the number of triples is not equal to the number of masks, then only the first triple is used for all masks simultaneously
 \code
-pksetmask -i input.tif -m mask1.tif --operator '>' --invalid 250 --flag 1 -m mask2.tif --operator '>' --invalid 100 --flag 2 -o output.tif
+pksetmask -i input.tif -m mask1.tif --operator '>' --msknodata 250 --nodata 1 -m mask2.tif --operator '>' --msknodata 100 --nodata 2 -o output.tif
 \endcode
 If mask1.tif is above 250, the output will be 1. If mask2 is above 100, the output will be 2. If both operators test true, the first will supersede (output will be 1)
 
 \code
-pksetmask -i input.tif -m mask1.tif -m mask1.tif --operator '>' --invalid 250 --flag 1 -o output.tif
+pksetmask -i input.tif -m mask1.tif -m mask2.tif --operator '>' --msknodata 250 --nodata 1 -o output.tif
 \endcode
 If either mask1.tif or mask2.tif is above 250, the output will be 1
 
 \section more_examples More examples
 
 \code
-pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 0 -f 255
+pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte --msknodata 0 -nodata 255
 \endcode
 copy pixel values from input.tif to output.tif, applying mask.tif, setting all values to 255 where mask is 0.
 
 \code
-pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 1 -f 255 --operator '!'
+pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte --msknodata 1 -nodata 255 --operator '!'
 \endcode
 copy values from input.tif to output.tif, but set all values to 255 if mask is not 1
 
 \code
-pksetmask -i input.tif -m mask1.tif -m mask2.tif -o output.tif -ot Byte -t 0 -f 255
+pksetmask -i input.tif -m mask1.tif -m mask2.tif -o output.tif -ot Byte --msknodata 0 -nodata 255
 \endcode
 Application of two masks. Copy pixel values from input.tif to output.tif, setting all values to 255 where either mask is 0.
 
 \code
-pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte -t 0 -t 1 -f 255 -f 255
+pksetmask -i input.tif -m mask.tif -o output.tif -ot Byte --msknodata 0 --msknodata 1 -nodata 255 -nodata 255
 \endcode
 copy pixel values from input.tif to output.tif, applying single masks, setting all values to 255 where mask is either 0 or 1.

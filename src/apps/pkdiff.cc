@@ -28,28 +28,25 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input image file.");
-  Optionpk<string> reference_opt("r", "reference", "Reference image file");
+  Optionpk<string> reference_opt("ref", "reference", "Reference image file");
   Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also mflag option. (default is empty)");
-  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also msknodata option. (default is empty)");
+  Optionpk<int> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
+  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels (0)", 0);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label (default value is 1)", 1);
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label (default value is 2)", 2);
-  Optionpk<short> flag_opt("f", "flag", "No value flag(s)", 0);
-  Optionpk<int> invalid_opt("t", "invalid", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
-  //  Optionpk<short> mflag_opt("t", "mflag", "Mask value(s) for invalid data (positive value), or for valid data (negative value). Default is 0", 0);
+  Optionpk<short> nodata_opt("nodata", "nodata", "No value flag(s)", 0);
   Optionpk<short> band_opt("b", "band", "Band to extract (0)", 0);
   Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out) (default value is 0)", false);
-  Optionpk<short> lzw_opt("\0", "lzw", "compression (default value is 1)", 1);
   Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is shape file(default is label)", "label");
   Optionpk<string> labelclass_opt("lc", "lclass", "name of the classified label in case output is shape file (default is class)", "class");
-  // Optionpk<short> class_opt("c", "class", "numeric classes used (must cover range in input and reference raster image. Leave empty if range must be read from first input image (default)", 0);
   Optionpk<short> boundary_opt("\0", "boundary", "boundary for selecting the sample (default: 1)", 1);
   Optionpk<bool> disc_opt("\0", "circular", "use circular disc kernel boundary)", false);
   Optionpk<bool> homogeneous_opt("\0", "homogeneous", "only take homogeneous regions into account", false);
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]");
-  Optionpk<string> classname_opt("\0", "class", "list of class names."); 
-  Optionpk<short> classvalue_opt("\0", "reclass", "list of class values (use same order as in classname opt."); 
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<string> classname_opt("c", "class", "list of class names."); 
+  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
   Optionpk<short> verbose_opt("v", "verbose", "verbose (default value is 0)", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -63,11 +60,10 @@ int main(int argc, char *argv[])
     valueE_opt.retrieveOption(argc,argv);
     valueO_opt.retrieveOption(argc,argv);
     valueC_opt.retrieveOption(argc,argv);
-    flag_opt.retrieveOption(argc,argv);
-    invalid_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
+    masknodata_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     confusion_opt.retrieveOption(argc,argv);
-    lzw_opt.retrieveOption(argc,argv);
     labelref_opt.retrieveOption(argc,argv);
     labelclass_opt.retrieveOption(argc,argv);
     // class_opt.retrieveOption(argc,argv);
@@ -92,8 +88,8 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0]){
     cout << "flag(s) set to";
-    for(int iflag=0;iflag<flag_opt.size();++iflag)
-      cout << " " << flag_opt[iflag];
+    for(int iflag=0;iflag<nodata_opt.size();++iflag)
+      cout << " " << nodata_opt[iflag];
     cout << endl;
   }
 
@@ -128,9 +124,9 @@ int main(int argc, char *argv[])
       inputReader.close();
     // }
   
-    for(int iflag=0;iflag<flag_opt.size();++iflag){
+    for(int iflag=0;iflag<nodata_opt.size();++iflag){
       vector<short>::iterator fit;
-      fit=find(inputRange.begin(),inputRange.end(),flag_opt[iflag]);
+      fit=find(inputRange.begin(),inputRange.end(),nodata_opt[iflag]);
       if(fit!=inputRange.end())
         inputRange.erase(fit);
     }
@@ -304,8 +300,8 @@ int main(int argc, char *argv[])
             cout << "reference value: " << referenceValue << endl;
           bool pixelFlagged=false;
           bool maskFlagged=false;
-          for(int iflag=0;iflag<flag_opt.size();++iflag){
-            if(referenceValue==flag_opt[iflag])
+          for(int iflag=0;iflag<nodata_opt.size();++iflag){
+            if(referenceValue==nodata_opt[iflag])
               pixelFlagged=true;
           }
           if(pixelFlagged)
@@ -358,24 +354,24 @@ int main(int argc, char *argv[])
               if(verbose_opt[0])
                 cout << "input value: " << inputValue << endl;
               pixelFlagged=false;
-              for(int iflag=0;iflag<flag_opt.size();++iflag){
-                if(inputValue==flag_opt[iflag]){
+              for(int iflag=0;iflag<nodata_opt.size();++iflag){
+                if(inputValue==nodata_opt[iflag]){
                   pixelFlagged=true;
                   break;
                 }
               }
-              maskFlagged=false;//(invalid_opt[ivalue]>=0)?false:true;
+              maskFlagged=false;//(masknodata_opt[ivalue]>=0)?false:true;
               if(mask_opt.size()){
                 maskReader.readData(maskValue,GDT_Int16,i,j,band_opt[0]);
-                for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-                  if(invalid_opt[ivalue]>=0){//values set in invalid_opt are invalid
-                    if(maskValue==invalid_opt[ivalue]){
+                for(int ivalue=0;ivalue<masknodata_opt.size();++ivalue){
+                  if(masknodata_opt[ivalue]>=0){//values set in masknodata_opt are invalid
+                    if(maskValue==masknodata_opt[ivalue]){
                       maskFlagged=true;
                       break;
                     }
                   }
-                  else{//only values set in invalid_opt are valid
-                    if(maskValue!=-invalid_opt[ivalue])
+                  else{//only values set in masknodata_opt are valid
+                    if(maskValue!=-masknodata_opt[ivalue])
                       maskFlagged=true;
                     else{
                       maskFlagged=false;
@@ -420,7 +416,7 @@ int main(int argc, char *argv[])
                 }
               }
               if(inputValue==referenceValue){//correct
-                if(valueE_opt[0]!=flag_opt[0])
+                if(valueE_opt[0]!=nodata_opt[0])
                   outputValue=valueE_opt[0];
                 else
                   outputValue=inputValue;
@@ -477,7 +473,7 @@ int main(int argc, char *argv[])
                       }
                     }
                     if(inputValue==referenceValue){//correct
-                      if(valueE_opt[0]!=flag_opt[0])
+                      if(valueE_opt[0]!=nodata_opt[0])
                         outputValue=valueE_opt[0];
                       else
                         outputValue=inputValue;
@@ -521,18 +517,17 @@ int main(int argc, char *argv[])
       if(output_opt.size()){
         if(verbose_opt[0])
           cout << "opening output image " << output_opt[0] << endl;
-        string compression=(lzw_opt[0])? "LZW":"NONE";
         if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
           string theInterleave="INTERLEAVE=";
           theInterleave+=inputReader.getInterleave();
           option_opt.push_back(theInterleave);
         }
         imgWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),inputReader.getImageType(),option_opt);
-
+	imgWriter.GDALSetNoDataValue(nodata_opt[0]);
         if(inputReader.isGeoRef()){
           imgWriter.copyGeoTransform(inputReader);
         }
-        if(colorTable_opt[0]!="")
+        if(colorTable_opt.size())
           imgWriter.setColorTable(colorTable_opt[0]);
         else if(inputReader.getColorTable()!=NULL){
           if(verbose_opt[0])
@@ -574,9 +569,9 @@ int main(int argc, char *argv[])
     vector<short> lineReference(referenceReader.nrOfCol());
     if(confusion_opt[0]){
       referenceReader.getRange(referenceRange,band_opt[0]);
-      for(int iflag=0;iflag<flag_opt.size();++iflag){
+      for(int iflag=0;iflag<nodata_opt.size();++iflag){
         vector<short>::iterator fit;
-        fit=find(referenceRange.begin(),referenceRange.end(),flag_opt[iflag]);
+        fit=find(referenceRange.begin(),referenceRange.end(),nodata_opt[iflag]);
         if(fit!=referenceRange.end())
           referenceRange.erase(fit);
       }
@@ -627,17 +622,17 @@ int main(int argc, char *argv[])
           }
         }
         bool flagged=false;
-        for(int iflag=0;iflag<flag_opt.size();++iflag){
-          if((lineInput[icol]==flag_opt[iflag])||(lineReference[ireference]==flag_opt[iflag])){
+        for(int iflag=0;iflag<nodata_opt.size();++iflag){
+          if((lineInput[icol]==nodata_opt[iflag])||(lineReference[ireference]==nodata_opt[iflag])){
             if(output_opt.size())
-              lineOutput[icol]=flag_opt[iflag];
+              lineOutput[icol]=nodata_opt[iflag];
             flagged=true;
             break;
           }
         }
         if(mask_opt.size()){
-          for(int ivalue=0;ivalue<invalid_opt.size();++ivalue){
-            if(lineMask[icol]==invalid_opt[ivalue]){
+          for(int ivalue=0;ivalue<masknodata_opt.size();++ivalue){
+            if(lineMask[icol]==masknodata_opt[ivalue]){
               flagged=true;
               break;
             }
@@ -658,14 +653,14 @@ int main(int argc, char *argv[])
           }
           if(lineInput[icol]==lineReference[ireference]){//correct
             if(output_opt.size()){
-              if(valueE_opt[0]!=flag_opt[0])
+              if(valueE_opt[0]!=nodata_opt[0])
                 lineOutput[icol]=valueE_opt[0];
               else
                 lineOutput[icol]=lineInput[icol];
             }
           }
           else{//error
-            if(output_opt[0]==""&&!confusion_opt[0]){
+            if(output_opt.empty()&&!confusion_opt[0]){
               isDifferent=true;
               break;
             }
@@ -691,7 +686,7 @@ int main(int argc, char *argv[])
         else{
           ++nflagged;
           if(output_opt.size())
-            lineOutput[icol]=flag_opt[0];
+            lineOutput[icol]=nodata_opt[0];
         }
       }
       if(output_opt.size()){

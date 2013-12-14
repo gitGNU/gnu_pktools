@@ -46,12 +46,20 @@ public:
   int nClasses() const {return m_classes.size();};
   std::string getClass(int iclass) const {assert(iclass>=0);assert(iclass<m_classes.size());return m_classes[iclass];};
   int getClassIndex(std::string className) const {
-    int index=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),className));
-    assert(index>=0);
-    if(index<m_results.size())
-      return(index);
-    else
-      return(-1);
+    int index=0;
+    for(index=0;index<m_classes.size();++index){
+      if(m_classes[index].find(className)!=std::string::npos)
+	break;
+    }
+    if(index>=m_classes.size())
+      index=-1;
+    return index;
+    //    int index=distance(m_classes.begin(),find(m_classes.begin(),m_classes.end(),className));
+    //    assert(index>=0);
+    //    if(index<m_results.size())
+    //      return(index);
+    //    else
+    //      return(-1);
   }
   std::vector<std::string> getClassNames() const {return m_classes;};
   ~ConfusionMatrix();

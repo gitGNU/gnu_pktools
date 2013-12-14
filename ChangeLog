@@ -125,12 +125,24 @@ version 2.4.2
 	todo: remove redundancy in AM_LDFLAGS and LDADD
  - PosValue.h
 	remove using namespace std;
+ - StatFactory.h
+	 (interpolateUp): adapt to new version of GSL library, which does not support extrapolation. Currently no real extrapolation, but just solved by repeating first/last values
  - FileReaderAscii
 	corrected error for constructor with fieldseparator argument
+	corrected type for npos (should be size_t)
+ - pkcrop
+	changed projection option to -a_srs conform to gdal utilities
+ - pkmosaic
+	changed projection option to -a_srs conform to gdal utilities
+ - pkascii2img
+	changed projection option to -a_srs conform to gdal utilities
+ - pkascii2ogr
+	changed projection option to -a_srs conform to gdal utilities
  - pkdiff
 	introduced short option -m for mask
  - pkinfo
 	bug fixed with -min and -max in hist (thanks to Giuseppe Amatuli for noticing)
+	changed projection option to -a_srs conform to gdal utilities
  - pkfilter
 	new methods for scrambling and shifting images
 	update help info for support of of even kernel sizes
@@ -140,10 +152,9 @@ version 2.4.2
 	make histogram more similar to pkstat with support of relative option
  - pklas2img
 	correct for wrong include path for FileReaderLas.h (lasclasses instead of fileclasses)
+	changed projection option to -a_srs conform to gdal utilities
  - pkfillnodata
 	default maximum distance changed from 3 to 0 (infinity)
- - still todo
-	change all projection options to a_srs
  - pkclassify_nn.h
 	support reading ogr files with single feature (one band only: "B" or "Band")
  - pkclassify_nn.cc
@@ -159,3 +170,39 @@ version 2.4.2
 	cross validation parameter can not be 1
  - pkfs_svm.cc
 	cross validation parameter can not be 1
+	- pkstat.cc->pkstatascii.cc
+	renamed to pkstatascii.cc to avoid confusion with raster data (e.g., pkinfo --stat)
+	support of transposed output
+
+version 2.4.3
+ - pkclassify_nn
+	option msknodata and nodata to set nodata value in mask and classified image
+ - pkclassify_svm
+	option msknodata and nodata to set nodata value in mask and classified image
+ - pkcrop
+	option nodata to set nodata value
+ - pkdiff
+	option nodata to set nodata value
+ - pkenhance
+	option nodata to set nodata value
+ - pkgetmask
+	option nodata to set nodata value
+ - pkinfo
+	option nodata to set nodata value
+ - pklas2img
+	option nodata to set nodata value
+ - pkndvi
+	option nodata to set nodata value
+ - pkreclass
+	option nodata to set nodata value
+ - pksetmask
+	option nodata to set nodata value
+ - pkdumpimg
+	option srcnodata and dstnodata to set nodata value in source and destination image
+ - pkmosaic
+	option srcnodata and dstnodata to set nodata value in source and destination image
+ - pkextract
+	option msknodata to set nodata value in mask
+ - pksetmask
+	option msknodata to set nodata value in mask
+

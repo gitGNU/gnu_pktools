@@ -671,16 +671,24 @@ template<class T> void StatFactory::interpolateUp(const std::vector<double>& wav
   assert(&(input[0]));
   initSpline(spline,&(wavelengthIn[0]),&(input[0]),nband);
   for(int index=0;index<wavelengthOut.size();++index){
-    if(type=="linear"){
-      if(wavelengthOut[index]<wavelengthIn.back()){
-        output.push_back(*(input.begin()));
-        continue;
-      }
-      else if(wavelengthOut[index]>wavelengthIn.back()){
-        output.push_back(input.back());
-        continue;
-      }
+    if(wavelengthOut[index]<wavelengthIn.back()){
+      output.push_back(*(input.begin()));
+      continue;
     }
+    else if(wavelengthOut[index]>wavelengthIn.back()){
+      output.push_back(input.back());
+      continue;
+    }
+    // if(type=="linear"){
+    //   if(wavelengthOut[index]<wavelengthIn.back()){
+    //     output.push_back(*(input.begin()));
+    //     continue;
+    //   }
+    //   else if(wavelengthOut[index]>wavelengthIn.back()){
+    //     output.push_back(input.back());
+    //     continue;
+    //   }
+    // }
     double dout=evalSpline(spline,wavelengthOut[index],acc);
     output.push_back(dout);
   }

@@ -30,17 +30,17 @@ int main(int argc,char **argv) {
   short green=-1;
   short blue=-1;
 
-  Optionpk<string>  input_opt("i", "input", "Input image file", "");
-  Optionpk<string>  output_opt("o", "output", "Output image file", "");
-  Optionpk<string>  legend_opt("l", "legend", "Create legend as png file", "");
+  Optionpk<string>  input_opt("i", "input", "Input image file");
+  Optionpk<string>  output_opt("o", "output", "Output image file");
+  Optionpk<string>  legend_opt("l", "legend", "Create legend as png file");
   Optionpk<short>  dim_opt("dim", "dim", "number of columns and rows in legend.", 100);
   Optionpk<double>  min_opt("min", "min", "minimum value", 0);
   Optionpk<double>  max_opt("max", "max", "maximum value", 100);
   Optionpk<bool>  grey_opt("g", "grey", "grey scale", false);
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)", "");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
-  Optionpk<string> option_opt("co", "co", "options: NAME=VALUE [-co COMPRESS=LZW] [-co INTERLEAVE=BAND]", "INTERLEAVE=BAND");
-  Optionpk<string>  description_opt("d", "description", "Set image description", "");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -69,7 +69,7 @@ int main(int argc,char **argv) {
 
   GDALColorTable colorTable;
   GDALColorEntry sEntry;
-  if(colorTable_opt[0]==""){
+  if(colorTable_opt.empty()){
     sEntry.c4=255;
     for(int i=min_opt[0];i<=max_opt[0];++i){
       if(grey_opt[0]){
@@ -100,14 +100,14 @@ int main(int argc,char **argv) {
         }
       }
       colorTable.SetColorEntry(i,&sEntry);
-      if(output_opt[0]=="")
+      if(output_opt.empty())
         cout << i << " " << sEntry.c1 << " " << sEntry.c2 << " " << sEntry.c3 << " " << sEntry.c4 << endl;
     }
   }
   ImgWriterGdal legendWriter;
   short ncol=dim_opt[0];
   short nrow;
-  if(legend_opt[0]!=""){
+  if(legend_opt.size()){
     if(dim_opt.size()>1)
       nrow=dim_opt[1];
     else{
@@ -118,13 +118,13 @@ int main(int argc,char **argv) {
     // pngOption.push_back("-co worldfile=no");
     pngOption.push_back("");
     legendWriter.open(legend_opt[0],ncol,nrow,1,GDT_Byte,oformat_opt[0],option_opt);
-    if(colorTable_opt[0]!=""){
+    if(colorTable_opt.size()){
       if(colorTable_opt[0]!="none")
         legendWriter.setColorTable(colorTable_opt[0]);
     }
     else
       legendWriter.setColorTable(&colorTable);
-    if(legend_opt[0]!=""){
+    if(legend_opt.size()){
       for(int irow=0;irow<legendWriter.nrOfRow();++irow){
         vector<char> buffer(legendWriter.nrOfCol());
         for(int icol=0;icol<legendWriter.nrOfCol();++icol)
@@ -139,7 +139,7 @@ int main(int argc,char **argv) {
   // GDALProgressFunc pfnProgress=GDALTermProgress;
   // double progress=0;
   // pfnProgress(progress,pszMessage,pProgressArg);
-  if(input_opt[0]!=""&&output_opt[0]!=""){
+  if(input_opt.size()&&output_opt.size()){
     ImgReaderGdal imgReader(input_opt[0]);
     ImgWriterGdal imgWriter;
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
@@ -151,13 +151,13 @@ int main(int argc,char **argv) {
     imgWriter.open(output_opt[0],imgReader.nrOfCol(),imgReader.nrOfRow(),1,GDT_Byte,oformat_opt[0],option_opt);
 
     imgWriter.copyGeoTransform(imgReader);
-    if(colorTable_opt[0]!=""){
+    if(colorTable_opt.size()){
       if(colorTable_opt[0]!="none")
         imgWriter.setColorTable(colorTable_opt[0]);
     }
     else
       imgWriter.setColorTable(&colorTable);
-    if(description_opt[0]!="")
+    if(description_opt.size())
       imgWriter.setImageDescription(description_opt[0]);
     switch(imgReader.getDataType()){
     case(GDT_Byte):{
@@ -192,7 +192,7 @@ int main(int argc,char **argv) {
     imgReader.close();
     imgWriter.close();
   }
-  if(legend_opt[0]!="")
+  if(legend_opt.size())
     legendWriter.close();
 }
 

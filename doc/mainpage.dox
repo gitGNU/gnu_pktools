@@ -54,11 +54,14 @@ Basic installation (please refer to INSTALL file for more advanced configuration
 ./configure
 make
 sudo make install
+sudo ldconfig
 \endcode
 
 Prerequisites (required)
 ------------------------
-packages to install before pktool
+packages to install before pktools
+   - g++ (via repository)
+   - make (via repository)
    - libgdal-dev http://trac.osgeo.org/gdal/wiki/BuildingOnUnix (or via repository)
    - libgsl0-dev http://www.gnu.org/software/gsl/ (or via repository)
    - libarmadillo-dev (http://arma.sourceforge.net/download.html or via repository)

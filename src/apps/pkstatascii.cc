@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<char> comment_opt("comment","comment","comment character",'#');
   Optionpk<bool> output_opt("o","output","output the selected columns",false);
+  Optionpk<bool> transpose_opt("t","transpose","transpose input ascii vector (use in combination with --output)",false);
   Optionpk<int> col_opt("c", "column", "column nr, starting from 0", 0);
   Optionpk<int> range_opt("r", "range", "rows to start/end reading. Use -r 1 -r 10 to read first 10 rows where first row is header. Use 0 to read all rows with no header.", 0);
   Optionpk<bool> size_opt("size","size","sample size",false);
@@ -39,23 +40,23 @@ int main(int argc, char *argv[])
   Optionpk<std::string> randdist_opt("dist", "dist", "distribution for generating random numbers, see http://www.gn/software/gsl/manual/gsl-ref_toc.html#TOC320 (only uniform and Gaussian supported yet)", "gaussian");
   Optionpk<double> randa_opt("rnda", "rnda", "first parameter for random distribution (standard deviation in case of Gaussian)", 1);
   Optionpk<double> randb_opt("rndb", "rndb", "second parameter for random distribution (standard deviation in case of Gaussian)", 0);
-  Optionpk<bool> mean_opt("m","mean","calculate median",false);
-  Optionpk<bool> median_opt("med","median","calculate median",false);
+  Optionpk<bool> mean_opt("mean","mean","calculate median",false);
+  Optionpk<bool> median_opt("median","median","calculate median",false);
   Optionpk<bool> var_opt("var","var","calculate variance",false);
   Optionpk<bool> skewness_opt("skew","skewness","calculate skewness",false);
   Optionpk<bool> kurtosis_opt("kurt","kurtosis","calculate kurtosis",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
-  Optionpk<bool> sum_opt("s","sum","calculate sum of column",false);
+  Optionpk<bool> sum_opt("sum","sum","calculate sum of column",false);
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
   Optionpk<double> min_opt("min","min","set minimum value",0);
   Optionpk<double> max_opt("max","max","set maximum value",0);
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<bool> histogram2d_opt("hist2d","hist2d","calculate 2-dimensional histogram based on two columns",false);
-  Optionpk<short> nbin_opt("bin","bin","number of bins to calculate histogram",0);
+  Optionpk<short> nbin_opt("nbin","nbin","number of bins to calculate histogram",0);
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
   Optionpk<double> kde_opt("kde","kde","bandwith of kernel density when producing histogram, use 0 for practical estimation based on Silverman's rule of thumb");
   Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
-  Optionpk<bool> rmse_opt("e","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
+  Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
 
@@ -65,6 +66,7 @@ int main(int argc, char *argv[])
     fs_opt.retrieveOption(argc,argv);
     comment_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    transpose_opt.retrieveOption(argc,argv);
     col_opt.retrieveOption(argc,argv);
     range_opt.retrieveOption(argc,argv);
     size_opt.retrieveOption(argc,argv);
@@ -262,13 +264,25 @@ int main(int argc, char *argv[])
   }
   
   if(output_opt[0]){
-    for(int irow=0;irow<dataVector.begin()->size();++irow){
+    if(transpose_opt[0]){
       for(int icol=0;icol<col_opt.size();++icol){
-        cout << dataVector[icol][irow];
-        if(icol<col_opt.size()-1)
-          cout << " ";
+        for(int irow=0;irow<dataVector.begin()->size();++irow){
+          cout << dataVector[icol][irow];
+          if(irow<dataVector.begin()->size()-1)
+            cout << " ";
+        }
+        cout << endl;
       }
-      cout << endl;
+    }
+    else{
+      for(int irow=0;irow<dataVector.begin()->size();++irow){
+        for(int icol=0;icol<col_opt.size();++icol){
+          cout << dataVector[icol][irow];
+          if(icol<col_opt.size()-1)
+            cout << " ";
+        }
+        cout << endl;
+      }
     }
   }
 }

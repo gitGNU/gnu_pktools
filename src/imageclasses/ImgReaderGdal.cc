@@ -463,6 +463,7 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());
   for(int i=0;i<nbin;histvector[i++]=0);
+  double scale=static_cast<double>(nbin-1)/(maxValue-minValue);
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,theBand);
     for(int icol=0;icol<nrOfCol();++icol){
@@ -472,10 +473,17 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
         ++ninvalid;
       else if(lineBuffer[icol]<minValue)
         ++ninvalid;
-      else if(lineBuffer[icol]==maxValue)
-        ++histvector[nbin-1];
-      else
-        ++histvector[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*(nbin-1))];
+      else{//scale to [0:nbin]
+	int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
+	assert(theBin>=0);
+	assert(theBin!=nbin);
+	assert(theBin<nbin);
+	++histvector[theBin];
+      // else if(lineBuffer[icol]==maxValue)
+      //   ++histvector[nbin-1];
+      // else
+      //   ++histvector[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*(nbin-1))];
+      }
     }
   }
   unsigned long int nvalid=nrOfCol()*nrOfRow()-ninvalid;
