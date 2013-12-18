@@ -39,12 +39,12 @@ git clone git://git.savannah.nongnu.org/pktools.git
 
 \section pktools_refer How to refer
 
-You are welcome to refer to pktools as: http://pktools.nongnu.org (Pieter Kempeneers)
+Please refer to pktools as: http://pktools.nongnu.org (Pieter Kempeneers)
 
 contact: kempenep at gmail.com
 
 \section pktools_installation Installation
-Download the latest release from http://download.savannah.gnu.org/releases/pktools/ (e.g., pktools-2.4.tar.gz)
+Download the latest release from http://download.savannah.gnu.org/releases/pktools/ (e.g., pktools-2.4.3.tar.gz)
 \code
 tar xzvf pktools-2.4.tar.gz
 cd pktools-2.4
@@ -68,7 +68,7 @@ packages to install before pktools
 
 Prerequisites (optional)
 ------------------------
-if configured with `--enable-nlopt`: required for \ref pkfs_nn, \ref pkfs_svm, \ref pkopt_svm 
+if configured with `--enable-nlopt`: required for \ref pkopt_svm 
    - nlopt http://ab-initio.mit.edu/wiki/index.php/NLopt#Download_and_installation 
 
 if configured with `--enable-las`: required for \ref pklas2img

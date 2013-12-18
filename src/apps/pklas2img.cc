@@ -194,7 +194,7 @@ int main(int argc,char **argv) {
   int nrow=ceil(maxULY-minLRY)/dy_opt[0];//number of rows in outputGrid
   //todo: multiple bands
   int nband=(composite_opt[0]=="profile")? nbin_opt[0] : 1;
-  if(output_opt.size()){
+  if(!output_opt.size()){
     cerr << "Error: no output file defined" << endl;
     exit(1);
   }
