@@ -175,6 +175,8 @@ version 2.4.2
 	support of transposed output
 
 version 2.4.3
+ - StatFactory.h
+	corrected bug in interpolateUp (in case x_out < x_in)
  - pkclassify_nn
 	option msknodata and nodata to set nodata value in mask and classified image
  - pkclassify_svm
