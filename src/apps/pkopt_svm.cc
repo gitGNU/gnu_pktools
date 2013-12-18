@@ -63,8 +63,8 @@ Optionpk<bool> costfunction_opt("cf", "cf", "use Overall Accuracy instead of kap
 // Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
 Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
 Optionpk<string> classname_opt("c", "class", "list of class names."); 
-Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
+Optionpk<short> verbose_opt("v", "verbose", "use 1 to output intermediate results for plotting",0);
 
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
 

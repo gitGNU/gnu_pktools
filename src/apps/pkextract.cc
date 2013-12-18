@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<string> fieldname_opt("bn", "bname", "Field name of output shape file", "B");
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
-  Optionpk<bool> polygon_opt("l", "line", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
+  Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
   Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
   Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid of the polygon if line is set), centroid, mean (mean value written to centroid of polygon if line is set), proportion, minimum (of polygon), maximum (of polygon), maxvote.", "point");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);

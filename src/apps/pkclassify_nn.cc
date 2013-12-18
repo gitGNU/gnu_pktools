@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
   Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
-  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
+  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
