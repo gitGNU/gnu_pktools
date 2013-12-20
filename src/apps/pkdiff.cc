@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels (0)", 0,1);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label (default value is 1)", 1,1);
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label (default value is 2)", 2,1);
-  Optionpk<short> nodata_opt("nodata", "nodata", "No value flag(s)", 0);
+  Optionpk<short> nodata_opt("nodata", "nodata", "No value flag(s)");
   Optionpk<short> band_opt("b", "band", "Band to extract (0)", 0);
   Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out) (default value is 0)", false);
   Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is shape file(default is label)", "label");
@@ -416,10 +416,11 @@ int main(int argc, char *argv[])
                 }
               }
               if(inputValue==referenceValue){//correct
-                if(valueE_opt[0]!=nodata_opt[0])
-                  outputValue=valueE_opt[0];
-                else
-                  outputValue=inputValue;
+		outputValue=valueE_opt[0];
+		if(nodata_opt.size()){
+		  if(valueE_opt[0]==nodata_opt[0])
+		    outputValue=inputValue;
+		}
               }
               else if(inputValue>referenceValue)//1=forest,2=non-forest
                 outputValue=valueO_opt[0];//omission error
@@ -473,10 +474,11 @@ int main(int argc, char *argv[])
                       }
                     }
                     if(inputValue==referenceValue){//correct
-                      if(valueE_opt[0]!=nodata_opt[0])
-                        outputValue=valueE_opt[0];
-                      else
-                        outputValue=inputValue;
+		      outputValue=valueE_opt[0];
+		      if(nodata_opt.size()){
+			if(valueE_opt[0]==nodata_opt[0])
+			  outputValue=inputValue;
+		      }
                     }
                     else if(inputValue>referenceValue)//1=forest,2=non-forest
                       outputValue=valueO_opt[0];//omission error
@@ -523,7 +525,8 @@ int main(int argc, char *argv[])
           option_opt.push_back(theInterleave);
         }
         imgWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),inputReader.getImageType(),option_opt);
-	imgWriter.GDALSetNoDataValue(nodata_opt[0]);
+	if(nodata_opt.size())
+	  imgWriter.GDALSetNoDataValue(nodata_opt[0]);
         if(inputReader.isGeoRef()){
           imgWriter.copyGeoTransform(inputReader);
         }
@@ -653,10 +656,11 @@ int main(int argc, char *argv[])
           }
           if(lineInput[icol]==lineReference[ireference]){//correct
             if(output_opt.size()){
-              if(valueE_opt[0]!=nodata_opt[0])
-                lineOutput[icol]=valueE_opt[0];
-              else
-                lineOutput[icol]=lineInput[icol];
+	      lineOutput[icol]=valueE_opt[0];
+	      if(nodata_opt.size()){
+		if(valueE_opt[0]==nodata_opt[0])
+		  lineOutput[icol]=lineInput[icol];
+	      }
             }
           }
           else{//error
@@ -665,28 +669,32 @@ int main(int argc, char *argv[])
               break;
             }
             if(output_opt.size()){
-              if(lineInput[icol]<20){//forest
-                if(lineReference[icol]>=20)//gain
-                  lineOutput[icol]=lineInput[icol]*10+1;//GAIN is 111,121,131
-                else//forest type changed: mixed
-                  lineOutput[icol]=130;//MIXED FOREST
-              }
-              else if(lineReference[icol]<20){//loss
-                lineOutput[icol]=20*10+lineReference[icol];//LOSS is 211 212 213
-              }
-              else//no forest
-                lineOutput[icol]=20*10;//NON FOREST is 200
-              // if(lineInput[icol]>lineReference[ireference])//1=forest,2=non-forest
-            //   lineOutput[icol]=valueO_opt[0];//omission error
-            // else
-            //   lineOutput[icol]=valueC_opt[0];//commission error
+              // if(lineInput[icol]<20){//forest
+              //   if(lineReference[icol]>=20)//gain
+              //     lineOutput[icol]=lineInput[icol]*10+1;//GAIN is 111,121,131
+              //   else//forest type changed: mixed
+              //     lineOutput[icol]=130;//MIXED FOREST
+              // }
+              // else if(lineReference[icol]<20){//loss
+              //   lineOutput[icol]=20*10+lineReference[icol];//LOSS is 211 212 213
+              // }
+              // else//no forest
+              //   lineOutput[icol]=20*10;//NON FOREST is 200
+              if(lineInput[icol]>lineReference[ireference])
+		lineOutput[icol]=valueO_opt[0];//omission error
+	      else
+		lineOutput[icol]=valueC_opt[0];//commission error
             }
           }
-        }
+	}
         else{
           ++nflagged;
-          if(output_opt.size())
-            lineOutput[icol]=nodata_opt[0];
+          if(output_opt.size()){
+	    if(nodata_opt.size())
+	      lineOutput[icol]=nodata_opt[0];
+	    else //should never occur?
+	      lineOutput[icol]=0;
+	  }	      
         }
       }
       if(output_opt.size()){

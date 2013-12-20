@@ -1097,7 +1097,18 @@ void filter2d::Filter2d::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& o
   Vector2d<float> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
     input.readDataBlock(theBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
+    std::cout << "filtering band " << iband << std::endl << std::flush;
     dwtForward(theBuffer, wavelet_type, family);
+    output.writeDataBlock(theBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
+  }
+}
+
+void filter2d::Filter2d::dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+  Vector2d<float> theBuffer;
+  for(int iband=0;iband<input.nrOfBand();++iband){
+    input.readDataBlock(theBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
+    std::cout << "filtering band " << iband << std::endl << std::flush;
+    dwtInverse(theBuffer, wavelet_type, family);
     output.writeDataBlock(theBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
   }
 }

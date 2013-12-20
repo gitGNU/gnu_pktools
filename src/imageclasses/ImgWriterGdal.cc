@@ -355,33 +355,54 @@ string ImgWriterGdal::setProjection(void)
 
 bool ImgWriterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
 {
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+
+  ulx=gt[0];
+  uly=gt[3];
+  lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
+  lry=gt[3]+nrOfCol()*gt[4]+nrOfRow()*gt[5];
   if(m_isGeoRef){
-//     ulx=m_ulx-(m_magic_x-1.0)*m_delta_x;
-//     uly=m_uly+(m_magic_y-1.0)*m_delta_y;
-//     lrx=ulx+(nrOfCol()+1.0-m_magic_x)*m_delta_x;
-//     lry=uly-(nrOfRow()+1.0-m_magic_y)*m_delta_y;
-    ulx=m_ulx;
-    uly=m_uly;
-    lrx=ulx+nrOfCol()*m_delta_x;
-    lry=uly-nrOfRow()*m_delta_y;
+    // ulx=m_ulx;
+    // uly=m_uly;
+    // lrx=ulx+nrOfCol()*m_delta_x;
+    // lry=uly-nrOfRow()*m_delta_y;
     return true;
   }
   else{
-    ulx=0;
-    uly=nrOfRow()-1;
-    lrx=nrOfCol()-1;
-    lry=0;
+    // ulx=0;
+    // uly=nrOfRow()-1;
+    // lrx=nrOfCol()-1;
+    // lry=0;
     return false;
   }
 }
 
 bool ImgWriterGdal::getCentrePos(double& x, double& y) const
 {
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+  x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
+  y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
   if(m_isGeoRef){
-//     x=m_ulx+(nrOfCol()/2.0-(m_magic_x-1.0))*m_delta_x;
-//     y=m_uly-(nrOfRow()/2.0+(m_magic_y-1.0))*m_delta_y;
-    x=m_ulx+nrOfCol()/2.0*m_delta_x;
-    y=m_uly-nrOfRow()/2.0*m_delta_y;
+    // x=m_ulx+nrOfCol()/2.0*m_delta_x;
+    // y=m_uly-nrOfRow()/2.0*m_delta_y;
     return true;
   }
   else
@@ -391,18 +412,32 @@ bool ImgWriterGdal::getCentrePos(double& x, double& y) const
 bool ImgWriterGdal::geo2image(double x, double y, double& i, double& j) const
 {
   //double values are returned, caller is responsible for interpolation step
+  //double values are returned, caller is responsible for interpolation step
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+  double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
+  double eps=0.00001;
+  if(denom>eps){
+    i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
+    j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
+  }
   if(m_isGeoRef){
-//     double ulx=m_ulx-(m_magic_x-1.0)*m_delta_x;
-//     double uly=m_uly+(m_magic_y-1.0)*m_delta_y;
-    double ulx=m_ulx;
-    double uly=m_uly;
-    i=(x-ulx)/m_delta_x;
-    j=(uly-y)/m_delta_y;
+    // double ulx=m_ulx;
+    // double uly=m_uly;
+    // i=(x-ulx)/m_delta_x;
+    // j=(uly-y)/m_delta_y;
     return true;
   }
   else{
-    i=x;
-    j=nrOfRow()-y;
+    // i=x;
+    // j=nrOfRow()-y;
     return false;
   }
 }
@@ -410,11 +445,23 @@ bool ImgWriterGdal::geo2image(double x, double y, double& i, double& j) const
 //centre of pixel is always returned (regardless of magic pixel reference)!
 bool ImgWriterGdal::image2geo(double i, double j, double& x, double& y) const
 {
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+
+  x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
+  y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
+
   if(m_isGeoRef){
-//     x=m_ulx+(1.5-m_magic_x+i)*m_delta_x;
-//     y=m_uly-(1.5-m_magic_y+j)*m_delta_y;
-    x=m_ulx+(0.5+i)*m_delta_x;
-    y=m_uly-(0.5+j)*m_delta_y;
+    // x=m_ulx+(0.5+i)*m_delta_x;
+    // y=m_uly-(0.5+j)*m_delta_y;
     return true;
   }
   else

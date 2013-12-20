@@ -95,10 +95,11 @@ public:
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dim);
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dimX, int dimY);
   void dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
   void dwtQuantize(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double quantize, bool verbose=false);
   template<class T> void dwtForward(Vector2d<T>& data, const std::string& wavelet_type, int family);
-  template<class T> void dwtQuantize(Vector2d<T>& data, const std::string& wavelet_type, int family, double quantize);
   template<class T> void dwtInverse(Vector2d<T>& data, const std::string& wavelet_type, int family);
+  template<class T> void dwtQuantize(Vector2d<T>& data, const std::string& wavelet_type, int family, double quantize);
   void majorVoting(const std::string& inputFilename, const std::string& outputFilename,int dim=0,const std::vector<int> &prior=std::vector<int>());
   /* void homogeneousSpatial(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false, int noValue=0); */
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=2, bool disc=false);
@@ -121,8 +122,7 @@ public:
 private:
   static void initMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
     //initialize selMap
-    m_filterMap["mrf"]=filter2d::mrf;
-    m_filterMap["stdev"]=filter2d::stdev;
+    m_filterMap["median"]=filter2d::median;
     m_filterMap["var"]=filter2d::var;
     m_filterMap["min"]=filter2d::min;
     m_filterMap["max"]=filter2d::max;
@@ -148,7 +148,10 @@ private:
     m_filterMap["ismax"]=filter2d::ismax;
     m_filterMap["heterog"]=filter2d::heterog;
     m_filterMap["order"]=filter2d::order;
-    m_filterMap["median"]=filter2d::median;
+    m_filterMap["stdev"]=filter2d::stdev;
+    m_filterMap["mrf"]=filter2d::mrf;
+    m_filterMap["dwtForward"]=filter2d::dwtForward;
+    m_filterMap["dwtInverse"]=filter2d::dwtInverse;
     m_filterMap["dwtQuantize"]=filter2d::dwtQuantize;
     m_filterMap["scramble"]=filter2d::scramble;
     m_filterMap["shift"]=filter2d::shift;
@@ -772,6 +775,12 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 }
 
 template<class T> void Filter2d::dwtForward(Vector2d<T>& theBuffer, const std::string& wavelet_type, int family){
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
   //make sure data size if power of 2
   int nRow=theBuffer.size();
   assert(nRow);
@@ -803,10 +812,67 @@ template<class T> void Filter2d::dwtForward(Vector2d<T>& theBuffer, const std::s
       int index=irow*theBuffer[irow].size()+icol;
       theBuffer[irow][icol]=data[index];
     }
+    progress=(1.0+irow);
+    progress/=theBuffer.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
   }
+  gsl_wavelet_free (w);
+  gsl_wavelet_workspace_free (work);
+}
+
+template<class T> void Filter2d::dwtInverse(Vector2d<T>& theBuffer, const std::string& wavelet_type, int family){
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
+  //make sure data size if power of 2
+  int nRow=theBuffer.size();
+  assert(nRow);
+  int nCol=theBuffer[0].size();
+  assert(nCol);
+  while(theBuffer.size()&(theBuffer.size()-1))
+    theBuffer.push_back(theBuffer.back());
+  for(int irow=0;irow<theBuffer.size();++irow)
+    while(theBuffer[irow].size()&(theBuffer[irow].size()-1))
+      theBuffer[irow].push_back(theBuffer[irow].back());
+  double data[theBuffer.size()*theBuffer[0].size()];
+  for(int irow=0;irow<theBuffer.size();++irow){
+    for(int icol=0;icol<theBuffer[0].size();++icol){
+      int index=irow*theBuffer[0].size()+icol;
+      data[index]=theBuffer[irow][icol];
+    }
+  }
+  int nsize=theBuffer.size()*theBuffer[0].size();
+  gsl_wavelet *w;
+  gsl_wavelet_workspace *work;
+  assert(nsize);
+  w=gsl_wavelet_alloc(filter::Filter::getWaveletType(wavelet_type),family);
+  work=gsl_wavelet_workspace_alloc(nsize);
+  gsl_wavelet2d_nstransform_inverse (w, data, theBuffer.size(), theBuffer.size(),theBuffer[0].size(), work);
+  theBuffer.erase(theBuffer.begin()+nRow,theBuffer.end());
+  for(int irow=0;irow<theBuffer.size();++irow){
+    theBuffer[irow].erase(theBuffer[irow].begin()+nCol,theBuffer[irow].end());
+    for(int icol=0;icol<theBuffer[irow].size();++icol){
+      int index=irow*theBuffer[irow].size()+icol;
+      theBuffer[irow][icol]=data[index];
+    }
+    progress=(1.0+irow);
+    progress/=theBuffer.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+  gsl_wavelet_free (w);
+  gsl_wavelet_workspace_free (work);
 }
 
 template<class T> void Filter2d::dwtQuantize(Vector2d<T>& theBuffer, const std::string& wavelet_type, int family, double quantize){
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
   //make sure data size if power of 2
   int nRow=theBuffer.size();
   assert(nRow);
@@ -856,6 +922,9 @@ template<class T> void Filter2d::dwtQuantize(Vector2d<T>& theBuffer, const std::
       int index=irow*theBuffer[irow].size()+icol;
       theBuffer[irow][icol]=data[index];
     }
+    progress=(1.0+irow);
+    progress/=theBuffer.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
   }
   theBuffer.erase(theBuffer.begin()+nRow,theBuffer.end());
   for(int irow=0;irow<theBuffer.size();++irow)
@@ -863,6 +932,9 @@ template<class T> void Filter2d::dwtQuantize(Vector2d<T>& theBuffer, const std::
   delete[] data;
   delete[] abscoeff;
   delete[] p;
+  gsl_wavelet_free (w);
+  gsl_wavelet_workspace_free (work);
+
 }
 
 }

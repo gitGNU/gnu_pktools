@@ -566,6 +566,9 @@ int main(int argc,char **argv) {
     case(filter2d::dwtForward):
       filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
       break;
+    case(filter2d::dwtInverse):
+      filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+      break;
     case(filter2d::dwtQuantize):
       if(verbose_opt[0])
 	std::cout << "Quantization filtering" << std::endl;

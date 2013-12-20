@@ -221,6 +221,10 @@ int main(int argc, char *argv[])
     }
     double theULX, theULY, theLRX, theLRY;
     imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
+    if(theLRY>theULY){
+      cerr << "Error: " << input_opt[ifile] << " is not georeferenced, only referenced images are supported for pkmosaic " << endl;
+      exit(1);
+    }
     if(verbose_opt[0])
       cout << "Bounding Box (ULX ULY LRX LRY): " << fixed << setprecision(6) << theULX << " " << theULY << " " << theLRX << " " << theLRY << endl;
     if(!init){

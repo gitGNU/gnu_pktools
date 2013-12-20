@@ -277,8 +277,8 @@ int main(int argc, char *argv[])
       }
       imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
       imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
-      ncropcol=ceil((croplrx-cropulx)/dx);
-      ncroprow=ceil((cropuly-croplry)/dy);
+      // ncropcol=ceil((croplrx-cropulx)/dx);
+      // ncroprow=ceil((cropuly-croplry)/dy);
     }
     else{
       double magicX=1,magicY=1;

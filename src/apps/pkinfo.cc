@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
     if(hist_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
       int nbin=nbin_opt[0];
-      std::vector<unsigned long int> output(nbin_opt[0]);
+      std::vector<unsigned long int> output;
       minValue=0;
       maxValue=0;
       //todo: optimize such that getMinMax is only called once...
@@ -293,13 +293,21 @@ int main(int argc, char *argv[])
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){
 	// nsample+=output[bin];
-        if(output[bin]>0){
+        if(nbin>1){
           std::cout << (maxValue-minValue)*bin/(nbin-1)+minValue << " ";
           if(relative_opt[0])
             std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
           else
             std::cout << static_cast<double>(output[bin])  << std::endl;
         }
+	else{
+          std::cout << (maxValue-minValue)*bin/(2-1)+minValue << " ";
+          if(relative_opt[0])
+            std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
+          else
+            std::cout << static_cast<double>(output[bin])  << std::endl;
+        }
+
       }
     }
     else{

@@ -208,3 +208,8 @@ version 2.4.3
  - pksetmask
 	option msknodata to set nodata value in mask
 
+version 2.4.4
+ - pkinfo
+	hist: corrected nan when min=max
+ - pkfilter
+	corrected bug in 2d wavelet transform forward and inverse

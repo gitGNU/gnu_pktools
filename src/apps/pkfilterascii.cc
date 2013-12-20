@@ -24,11 +24,14 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <sys/types.h>
 #include <stdio.h>
-#include <gsl/gsl_sort.h>
 #include "base/Optionpk.h"
 #include "base/Vector2d.h"
 #include "algorithms/Filter.h"
 #include "fileclasses/FileReaderAscii.h"
+
+extern "C" {
+#include <gsl/gsl_sort.h>
+}
 
 /*------------------
   Main procedure
