@@ -53,7 +53,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, mrf=26, dwtForward=27, dwtInverse=28, dwtQuantize=29, scramble=30, shift=31, linearfeature=32};
+  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, majority=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, dwtz=134, dwtzi=135,dwtz_cut=136};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
@@ -96,10 +96,10 @@ public:
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dimX, int dimY);
   void dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
   void dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
-  void dwtQuantize(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double quantize, bool verbose=false);
+  void dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose=false);
   template<class T> void dwtForward(Vector2d<T>& data, const std::string& wavelet_type, int family);
   template<class T> void dwtInverse(Vector2d<T>& data, const std::string& wavelet_type, int family);
-  template<class T> void dwtQuantize(Vector2d<T>& data, const std::string& wavelet_type, int family, double quantize);
+  template<class T> void dwtCut(Vector2d<T>& data, const std::string& wavelet_type, int family, double cut);
   void majorVoting(const std::string& inputFilename, const std::string& outputFilename,int dim=0,const std::vector<int> &prior=std::vector<int>());
   /* void homogeneousSpatial(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false, int noValue=0); */
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=2, bool disc=false);
@@ -150,12 +150,15 @@ private:
     m_filterMap["order"]=filter2d::order;
     m_filterMap["stdev"]=filter2d::stdev;
     m_filterMap["mrf"]=filter2d::mrf;
-    m_filterMap["dwtForward"]=filter2d::dwtForward;
-    m_filterMap["dwtInverse"]=filter2d::dwtInverse;
-    m_filterMap["dwtQuantize"]=filter2d::dwtQuantize;
+    m_filterMap["dwt"]=filter2d::dwt;
+    m_filterMap["dwti"]=filter2d::dwti;
+    m_filterMap["dwt_cut"]=filter2d::dwt_cut;
     m_filterMap["scramble"]=filter2d::scramble;
     m_filterMap["shift"]=filter2d::shift;
     m_filterMap["linearfeature"]=filter2d::linearfeature;
+    m_filterMap["dwtz"]=filter2d::dwtz;
+    m_filterMap["dwtzi"]=filter2d::dwtzi;
+    m_filterMap["dwtz_cut"]=filter2d::dwtz_cut;
   }
 
   Vector2d<double> m_taps;
@@ -781,11 +784,11 @@ template<class T> void Filter2d::dwtForward(Vector2d<T>& theBuffer, const std::s
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
 
-  //make sure data size if power of 2
   int nRow=theBuffer.size();
   assert(nRow);
   int nCol=theBuffer[0].size();
   assert(nCol);
+  //make sure data size if power of 2
   while(theBuffer.size()&(theBuffer.size()-1))
     theBuffer.push_back(theBuffer.back());
   for(int irow=0;irow<theBuffer.size();++irow)
@@ -827,11 +830,11 @@ template<class T> void Filter2d::dwtInverse(Vector2d<T>& theBuffer, const std::s
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
 
-  //make sure data size if power of 2
   int nRow=theBuffer.size();
   assert(nRow);
   int nCol=theBuffer[0].size();
   assert(nCol);
+  //make sure data size if power of 2
   while(theBuffer.size()&(theBuffer.size()-1))
     theBuffer.push_back(theBuffer.back());
   for(int irow=0;irow<theBuffer.size();++irow)
@@ -866,18 +869,18 @@ template<class T> void Filter2d::dwtInverse(Vector2d<T>& theBuffer, const std::s
   gsl_wavelet_workspace_free (work);
 }
 
-template<class T> void Filter2d::dwtQuantize(Vector2d<T>& theBuffer, const std::string& wavelet_type, int family, double quantize){
+template<class T> void Filter2d::dwtCut(Vector2d<T>& theBuffer, const std::string& wavelet_type, int family, double cut){
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
 
-  //make sure data size if power of 2
   int nRow=theBuffer.size();
   assert(nRow);
   int nCol=theBuffer[0].size();
   assert(nCol);
+  //make sure data size if power of 2
   while(theBuffer.size()&(theBuffer.size()-1))
     theBuffer.push_back(theBuffer.back());
   for(int irow=0;irow<theBuffer.size();++irow)
@@ -904,18 +907,12 @@ template<class T> void Filter2d::dwtQuantize(Vector2d<T>& theBuffer, const std::
     for(int icol=0;icol<theBuffer[0].size();++icol){
       int index=irow*theBuffer[0].size()+icol;
       abscoeff[index]=fabs(data[index]);
-      if(quantize<0){//absolute threshold
-        if(abscoeff[index]<-quantize)
-          data[index]=0;
-      }
     }
   }
-  if(quantize>0){//percentual threshold
-    int nc=quantize/100.0*nsize;
-    gsl_sort_index(p,abscoeff,1,nsize);
-    for(int i=0;(i+nc)<nsize;i++)
-      data[p[i]]=0;
-  }
+  int nc=(100-cut)/100.0*nsize;
+  gsl_sort_index(p,abscoeff,1,nsize);
+  for(int i=0;(i+nc)<nsize;i++)
+   data[p[i]]=0;
   gsl_wavelet2d_nstransform_inverse (w, data, theBuffer.size(), theBuffer[0].size(),theBuffer[0].size(), work);
   for(int irow=0;irow<theBuffer.size();++irow){
     for(int icol=0;icol<theBuffer[irow].size();++icol){

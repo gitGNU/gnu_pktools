@@ -23,6 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 extern "C" {
+#include <gsl/gsl_sort.h>
 #include <gsl/gsl_wavelet.h>
 }
 #include "StatFactory.h"
@@ -32,7 +33,7 @@ extern "C" {
 namespace filter
 {
   
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwtForward=26, dwtInverse=27, dwtQuantize=28};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28};
 
 class Filter
 {
@@ -67,16 +68,20 @@ public:
 
   template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, std::vector<T>& output, bool verbose=false);
   template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
+  void dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut);
   void dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family);
   void dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family);
+  void dwtCut(std::vector<double>& data, const std::string& wavelet_type, int family, double cut);
 
 private:
 
   static void initFilterMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
     //initialize Map
-    m_filterMap["dwtForward"]=filter::dwtForward;
-    m_filterMap["dwtInverse"]=filter::dwtInverse;
-    m_filterMap["dwtQuantize"]=filter::dwtQuantize;
+    m_filterMap["dwt"]=filter::dwt;
+    m_filterMap["dwti"]=filter::dwti;
+    m_filterMap["dwt_cut"]=filter::dwt_cut;
     m_filterMap["stdev"]=filter::stdev;
     m_filterMap["var"]=filter::var;
     m_filterMap["min"]=filter::min;

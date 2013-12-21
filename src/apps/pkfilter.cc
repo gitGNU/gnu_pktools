@@ -41,7 +41,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median,var,min,max,sum,mean,minmax,dilate,erode,close,open,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,SobelY edge detection in Y,SobelXY,SobelYX,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf,dwtForward,dwtInverse,dwtQuantize,scramble,shift,linearfeature)", "median");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median,var,min,max,sum,mean,minmax,dilate,erode,close,open,spatially homogeneous (central pixel must be identical to all other pixels within window),SobelX edge detection in X,Sobely edge detection in Y,Sobelxy,Sobelyx,smooth,density,majority voting (only for classes),forest aggregation (mixed),smooth no data (mask) values,threshold local filtering,ismin,ismax,heterogeneous (central pixel must be different than all other pixels within window),order,stdev,mrf,dwtz,dwtzi,dwtz_cut,dwt,dwti,dwt_cut,scramble,shift,linearfeature)", "median");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<int> dimX_opt("dx", "dx", "filter kernel size in x, better use odd value to avoid image shift", 3);
   Optionpk<int> dimY_opt("dy", "dy", "filter kernel size in y, better use odd value to avoid image shift", 3);
@@ -49,7 +49,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
   Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding");
-  Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class), or quantization for dwtQuantize, or sigma for shift", 0);
+  Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class), or threshold to cut for dwt_cut (use 0 to keep all), or sigma for shift", 0);
   Optionpk<short> mask_opt("m", "mask", "mask value(s) ");
   Optionpk<std::string> tap_opt("tap", "tap", "text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps");
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
@@ -57,7 +57,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> srf_opt("srf", "srf", "list of ASCII files containing spectral response functions (two columns: wavelength response)");
   Optionpk<double> wavelengthIn_opt("win", "wavelengthIn", "list of wavelengths in input spectrum (-win band1 -win band2 ...)");
   Optionpk<double> wavelengthOut_opt("wout", "wavelengthOut", "list of wavelengths in output spectrum (-wout band1 -wout band2 ...)");
-  Optionpk<std::string> interpolationType_opt("interp", "interp", "type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html)","akima");
+  Optionpk<std::string> interpolationType_opt("interp", "interp", "type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html)","akima",1);
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
@@ -563,16 +563,23 @@ int main(int argc,char **argv) {
       filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
       break;
     }
-    case(filter2d::dwtForward):
+    case(filter2d::dwtz):
+      filter1d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+      break;
+    case(filter2d::dwtzi):
+      filter1d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+      break;
+    case(filter2d::dwtz_cut):
+      filter1d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
+      break;
+    case(filter2d::dwt):
       filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
       break;
-    case(filter2d::dwtInverse):
+    case(filter2d::dwti):
       filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
       break;
-    case(filter2d::dwtQuantize):
-      if(verbose_opt[0])
-	std::cout << "Quantization filtering" << std::endl;
-      filter2d.dwtQuantize(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
+    case(filter2d::dwt_cut):
+      filter2d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
       break;
     case(filter2d::threshold):
       filter2d.setThresholds(threshold_opt);

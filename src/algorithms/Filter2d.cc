@@ -1113,12 +1113,12 @@ void filter2d::Filter2d::dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& o
   }
 }
 
-void filter2d::Filter2d::dwtQuantize(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double quantize, bool verbose){
+void filter2d::Filter2d::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose){
   Vector2d<float> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
     input.readDataBlock(theBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
     std::cout << "filtering band " << iband << std::endl << std::flush;
-    dwtQuantize(theBuffer, wavelet_type, family, quantize);
+    dwtCut(theBuffer, wavelet_type, family, cut);
     output.writeDataBlock(theBuffer,GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
   }
 }
