@@ -329,9 +329,7 @@ int main(int argc, char *argv[])
         std::cout << " -a_srs none" << " ";
     }
     if(geo_opt[0]&&!read_opt[0]){
-      double ulx,uly,deltaX,deltaY,rot1,rot2;
-      imgReader.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-      std::cout << " --geo " << std::setprecision(12) << ulx << " " << uly << " " << deltaX << " " << deltaY << " " << rot1 << " " << rot2 << " ";
+      std::cout << " --geo " << std::setprecision(12) << imgReader.getGeoTransform();
     }
     if(interleave_opt[0]){
       std::cout << " --interleave " << imgReader.getInterleave() << " ";

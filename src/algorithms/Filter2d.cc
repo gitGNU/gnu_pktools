@@ -26,13 +26,19 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 // #include "imageclasses/ImgUtils.h"
 
 filter2d::Filter2d::Filter2d(void)
-  : m_noValue(0)
 {
 }
 
 filter2d::Filter2d::Filter2d(const Vector2d<double> &taps)
-  : m_taps(taps), m_noValue(0)
+  : m_taps(taps)
 {
+}
+
+int filter2d::Filter2d::pushNoDataValue(double noDataValue)
+{
+  if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
+    m_noDataValues.push_back(noDataValue);
+  return(m_noDataValues.size());
 }
 
 void filter2d::Filter2d::setTaps(const Vector2d<double> &taps)
@@ -85,7 +91,7 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
-    vector<double> outBuffer(input.nrOfCol());
+    std::vector<double> outBuffer(input.nrOfCol());
     int indexI=0;
     int indexJ=0;
     //initialize last half of inBuffer
@@ -93,8 +99,8 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
       try{
         input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
       }
-      catch(string errorstring){
-	cerr << errorstring << "in line " << indexJ << endl;
+      catch(std::string errorstring){
+	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
       ++indexJ;
     }
@@ -110,8 +116,8 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 	  try{
             input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
 	  }
-	  catch(string errorstring){
-	    cerr << errorstring << "in band " << iband << ", line " << y << endl;
+	  catch(std::string errorstring){
+	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
 	  }
 	}
         else{
@@ -127,8 +133,8 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
         double norm=0;
         bool masked=false;
         if(noData){//only filter noData values
-          for(int imask=0;imask<m_mask.size();++imask){
-            if(inBuffer[(dimY-1)/2][x]==m_mask[imask]){
+          for(int imask=0;imask<m_noDataValues.size();++imask){
+            if(inBuffer[(dimY-1)/2][x]==m_noDataValues[imask]){
               masked=true;
               break;
             }
@@ -154,8 +160,8 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 	      indexJ=(dimY-1)/2-abs(j);
             //do not take masked values into account
             masked=false;
-	    for(int imask=0;imask<m_mask.size();++imask){
-	      if(inBuffer[indexJ][indexI]==m_mask[imask]){
+	    for(int imask=0;imask<m_noDataValues.size();++imask){
+	      if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
 		masked=true;
 		break;
 	      }
@@ -175,8 +181,8 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
       try{
         output.writeData(outBuffer,GDT_Float64,y,iband);
       }
-      catch(string errorstring){
-	    cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      catch(std::string errorstring){
+	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
       }
       progress=(1.0+y);
       progress+=(output.nrOfRow()*iband);
@@ -187,7 +193,7 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
 }
 
 
-void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& outputFilename,int dim,const vector<int> &prior)
+void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std::string& outputFilename,int dim,const std::vector<int> &prior)
 {
   const char* pszMessage;
   void* pProgressArg=NULL;
@@ -197,14 +203,14 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
 
   bool usePriors=true;  
   if(prior.empty()){
-    cout << "no prior information" << endl;
+    std::cout << "no prior information" << std::endl;
     usePriors=false;
   }
   else{
-    cout << "using priors ";    
+    std::cout << "using priors ";    
     for(int iclass=0;iclass<prior.size();++iclass)
-      cout << " " << static_cast<short>(prior[iclass]);
-    cout << endl;    
+      std::cout << " " << static_cast<short>(prior[iclass]);
+    std::cout << std::endl;    
   }  
 
   ImgReaderGdal input;
@@ -226,7 +232,7 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
   assert(dimY);
 
   Vector2d<double> inBuffer(dimY,input.nrOfCol());
-  vector<double> outBuffer(input.nrOfCol());
+  std::vector<double> outBuffer(input.nrOfCol());
   int indexI=0;
   int indexJ=0;
   //initialize last half of inBuffer
@@ -234,8 +240,8 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
       try{
         input.readData(inBuffer[indexJ],GDT_Float64,abs(j));
       }
-      catch(string errorstring){
-	cerr << errorstring << "in line " << indexJ << endl;
+      catch(std::string errorstring){
+	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
       ++indexJ;
     }
@@ -251,8 +257,8 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
 	try{
           input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2);
 	}
-	catch(string errorstring){
-	  cerr << errorstring << "in line" << y << endl;
+	catch(std::string errorstring){
+	  std::cerr << errorstring << "in line" << y << std::endl;
 	}
       }
       else{
@@ -265,7 +271,7 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
     }
     for(int x=0;x<input.nrOfCol();++x){
       outBuffer[x]=0;
-      map<int,int> occurrence;
+      std::map<int,int> occurrence;
       int centre=dimX*(dimY-1)/2+(dimX-1)/2;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
@@ -297,8 +303,8 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
 	    ++occurrence[inBuffer[indexJ][indexI]];
 	}
       }
-      map<int,int>::const_iterator maxit=occurrence.begin();
-      for(map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
+      std::map<int,int>::const_iterator maxit=occurrence.begin();
+      for(std::map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
 	if(mit->second>maxit->second)
 	  maxit=mit;
       }
@@ -311,8 +317,8 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
     try{
       output.writeData(outBuffer,GDT_Float64,y);
     }
-    catch(string errorstring){
-      cerr << errorstring << "in line" << y << endl;
+    catch(std::string errorstring){
+      std::cerr << errorstring << "in line" << y << std::endl;
     }
     progress=(1.0+y)/output.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
@@ -321,7 +327,7 @@ void filter2d::Filter2d::majorVoting(const string& inputFilename, const string& 
   output.close();
 }
 
-void filter2d::Filter2d::median(const string& inputFilename, const string& outputFilename,int dim, bool disc)
+void filter2d::Filter2d::median(const std::string& inputFilename, const std::string& outputFilename,int dim, bool disc)
 {
   ImgReaderGdal input;
   ImgWriterGdal output;
@@ -330,7 +336,7 @@ void filter2d::Filter2d::median(const string& inputFilename, const string& outpu
   doit(input,output,"median",dim,disc);
 }
 
-void filter2d::Filter2d::var(const string& inputFilename, const string& outputFilename,int dim, bool disc)
+void filter2d::Filter2d::var(const std::string& inputFilename, const std::string& outputFilename,int dim, bool disc)
 {
   ImgReaderGdal input;
   ImgWriterGdal output;
@@ -358,7 +364,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
   statfactory::StatFactory stat;
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
-    vector<double> outBuffer((input.nrOfCol()+down-1)/down);
+    std::vector<double> outBuffer((input.nrOfCol()+down-1)/down);
     int indexI=0;
     int indexJ=0;
     //initialize last half of inBuffer
@@ -366,8 +372,8 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       try{
         input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
       }
-      catch(string errorstring){
-	cerr << errorstring << "in line " << indexJ << endl;
+      catch(std::string errorstring){
+	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
       ++indexJ;
     }
@@ -382,8 +388,8 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	  try{
             input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
 	  }
-	  catch(string errorstring){
-	    cerr << errorstring << "in band " << iband << ", line " << y << endl;
+	  catch(std::string errorstring){
+	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
 	  }
 	}
         else{
@@ -400,8 +406,8 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         if((x+1+down/2)%down)
           continue;
 	outBuffer[x/down]=0;
-	vector<double> windowBuffer;
-	map<int,int> occurrence;
+	std::vector<double> windowBuffer;
+	std::map<int,int> occurrence;
         int centre=dimX*(dimY-1)/2+(dimX-1)/2;
 	for(int j=-(dimY-1)/2;j<=dimY/2;++j){
 	  for(int i=-(dimX-1)/2;i<=dimX/2;++i){
@@ -421,14 +427,14 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    else
 	      indexJ=(dimY-1)/2+j;
 	    bool masked=false;
-	    for(int imask=0;imask<m_mask.size();++imask){
-	      if(inBuffer[indexJ][indexI]==m_mask[imask]){
+	    for(int imask=0;imask<m_noDataValues.size();++imask){
+	      if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
 		masked=true;
 		break;
 	      }
 	    }
 	    if(!masked){
-              vector<short>::const_iterator vit=m_class.begin();
+              std::vector<short>::const_iterator vit=m_class.begin();
               if(!m_class.size())
                 ++occurrence[inBuffer[indexJ][indexI]];
               else{
@@ -444,50 +450,50 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         switch(getFilterType(method)){
         case(filter2d::median):
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
             outBuffer[x/down]=stat.median(windowBuffer);
           break;
         case(filter2d::var):{
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
             outBuffer[x/down]=stat.var(windowBuffer);
           break;
         }
         case(filter2d::stdev):{
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
             outBuffer[x/down]=sqrt(stat.var(windowBuffer));
           break;
         }
         case(filter2d::mean):{
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
             outBuffer[x/down]=stat.mean(windowBuffer);
           break;
         }
         case(filter2d::min):{
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
            outBuffer[x/down]=stat.min(windowBuffer);
           break;
         }
         case(filter2d::ismin):{
            if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
             outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[centre])? 1:0;
           break;
         }
-        case(filter2d::minmax):{
+        case(filter2d::minmax):{//is the same as homog?
           double min=0;
           double max=0;
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else{
             stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
             if(min!=max)
@@ -499,21 +505,21 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         }
         case(filter2d::max):{
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
             outBuffer[x/down]=stat.max(windowBuffer);
           break;
         }
         case(filter2d::ismax):{
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
             outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[centre])? 1:0;
           break;
         }
         case(filter2d::order):{
           if(windowBuffer.empty())
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else{
             double lbound=0;
             double ubound=dimX*dimY;
@@ -529,38 +535,49 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           break;
         }
         case(filter2d::homog):
-	  if(occurrence.size()==1)//all values in window must be the same
+	  if(occurrence.size()==1)//all values in window are the same
 	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
-	  else//favorize original value in case of ties
-	    outBuffer[x/down]=m_noValue;
+	  else
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           break;
         case(filter2d::heterog):{
-          for(vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
-            if(wit==windowBuffer.begin()+windowBuffer.size()/2)
-              continue;
-            else if(*wit!=inBuffer[(dimY-1)/2][x])
-              outBuffer[x/down]=1;
-            else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
-              outBuffer[x/down]=m_noValue;
-              break;
-            }
-          }
-          break;
+	  if(occurrence.size()==windowBuffer.size())
+	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
+	  else	    
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+	  // if(occurrence.size()==1)//all values in window are the same
+	  //   outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+	  // else
+	  //   outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
+          // break;
+          // for(std::vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
+          //   if(wit==windowBuffer.begin()+windowBuffer.size()/2)
+          //     continue;
+          //   else if(*wit!=inBuffer[(dimY-1)/2][x]){
+          //     outBuffer[x/down]=1;
+	  //     break;
+	  //   }
+          //   else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
+          //     outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          //     break;
+          //   }
+          // }
+          // break;
         }
         case(filter2d::density):{
 	  if(windowBuffer.size()){
-	    vector<short>::const_iterator vit=m_class.begin();
+	    std::vector<short>::const_iterator vit=m_class.begin();
 	    while(vit!=m_class.end())
 	      outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
 	  }
 	  else
-	    outBuffer[x/down]=m_noValue;
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           break;
 	}
         case(filter2d::majority):{
 	  if(occurrence.size()){
-            map<int,int>::const_iterator maxit=occurrence.begin();
-            for(map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
+            std::map<int,int>::const_iterator maxit=occurrence.begin();
+            for(std::map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
               if(mit->second>maxit->second)
                 maxit=mit;
             }
@@ -570,7 +587,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
               outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
 	  }
 	  else
-	    outBuffer[x/down]=m_noValue;
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           break;
         }
         case(filter2d::threshold):{
@@ -583,7 +600,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
             }
           }
           else
-	    outBuffer[x/down]=m_noValue;
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           break;
         }
         case(filter2d::scramble):{//could be done more efficiently window by window with random shuffling entire buffer and assigning entire buffer at once to output image...
@@ -592,7 +609,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
             outBuffer[x/down]=windowBuffer[randomIndex];
           }
           else
-	    outBuffer[x/down]=m_noValue;
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           break;
         }
         case(filter2d::mixed):{
@@ -634,8 +651,8 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       try{
         output.writeData(outBuffer,GDT_Float64,y/down,iband);
       }
-      catch(string errorstring){
-	cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      catch(std::string errorstring){
+	std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
       }
     }
   }
@@ -675,8 +692,8 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
     try{
       input.readData(inBuffer[indexJ],GDT_Int16,abs(j));
     }
-    catch(string errorstring){
-      cerr << errorstring << "in line " << indexJ << endl;
+    catch(std::string errorstring){
+      std::cerr << errorstring << "in line " << indexJ << std::endl;
     }
     ++indexJ;
   }
@@ -691,8 +708,8 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
         try{
           input.readData(inBuffer[inBuffer.size()-1],GDT_Int16,y+dimY/2);
         }
-        catch(string errorstring){
-          cerr << errorstring << "in line " << y << endl;
+        catch(std::string errorstring){
+          std::cerr << errorstring << "in line " << y << std::endl;
         }
       }
       else{
@@ -708,12 +725,12 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
     for(int x=0;x<input.nrOfCol();++x){
       if((x+1+down/2)%down)
         continue;
-      vector<short> potential(m_class.size());
+      std::vector<short> potential(m_class.size());
       for(int iclass=0;iclass<m_class.size();++iclass){
         potential[iclass]=0;
         outBuffer[iclass][x/down]=0;
       }
-      vector<double> windowBuffer;
+      std::vector<double> windowBuffer;
       int centre=dimX*(dimY-1)/2+(dimX-1)/2;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
@@ -734,8 +751,8 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
           else
             indexJ=(dimY-1)/2+j;
           bool masked=false;
-          for(int imask=0;imask<m_mask.size();++imask){
-            if(inBuffer[indexJ][indexI]==m_mask[imask]){
+          for(int imask=0;imask<m_noDataValues.size();++imask){
+            if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
               masked=true;
               break;
             }
@@ -774,14 +791,14 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
       try{
         output.writeData(outBuffer[iclass],GDT_Float64,y/down,iclass);
       }
-      catch(string errorstring){
-        cerr << errorstring << "in class " << iclass << ", line " << y << endl;
+      catch(std::string errorstring){
+        std::cerr << errorstring << "in class " << iclass << ", line " << y << std::endl;
       }
     }
   }
 }
 
-void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output, int offsetX, int offsetY, double randomSigma, RESAMPLE resample, bool verbose)
+void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
 {
   assert(input.nrOfCol()==output.nrOfCol());
   assert(input.nrOfRow()==output.nrOfRow());
@@ -802,12 +819,12 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 }
 
 //todo: re-implement without dependency of CImg and reg libraries
-// void filter2d::Filter2d::dwt_texture(const string& inputFilename, const string& outputFilename,int dim, int scale, int down, int iband, bool verbose)
+// void filter2d::Filter2d::dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down, int iband, bool verbose)
 // {
 //   ImgReaderGdal input;
 //   ImgWriterGdal output;
 //   if(verbose)
-//     cout << "opening file " << inputFilename << endl;
+//     std::cout << "opening file " << inputFilename << std::endl;
 //   input.open(inputFilename);
 //   double magicX=1,magicY=1;
 //   output.open(outputFilename,(input.nrOfCol()+down-1)/down,(input.nrOfRow()+down-1)/down,scale*3,GDT_Float32,input.getImageType());
@@ -816,7 +833,7 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 //     output.copyGeoTransform(input);
 //   }
 //   if(verbose)
-//     cout << "Dimension texture (row x col x band) = " << (input.nrOfCol()+down-1)/down << " x " << (input.nrOfRow()+down-1)/down << " x " << scale*3 << endl;
+//     std::cout << "Dimension texture (row x col x band) = " << (input.nrOfCol()+down-1)/down << " x " << (input.nrOfRow()+down-1)/down << " x " << scale*3 << std::endl;
 //   assert(dim%2);
 //   int dimX=dim;
 //   int dimY=dim;
@@ -828,12 +845,12 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 //   for(int j=-dimY/2;j<(dimY+1)/2;++j){
 //     try{
 //       if(verbose)
-// 	cout << "reading input line " << abs(j) << endl;
+// 	cout << "reading input line " << abs(j) << std::endl;
 //       input.readData(inBuffer[indexJ],GDT_Float32,abs(j),iband);
 //       ++indexJ;
 //     }
-//     catch(string errorstring){
-//       cerr << errorstring << "in band " << iband << ", line " << indexJ << endl;
+//     catch(std::string errorstring){
+//       std::cerr << errorstring << "in band " << iband << ", line " << indexJ << std::endl;
 //     }
 //   }
 //   const char* pszMessage;
@@ -843,7 +860,7 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 //   pfnProgress(progress,pszMessage,pProgressArg);
 //   for(int y=0;y<input.nrOfRow();y+=down){
 //     if(verbose)
-//       cout << "calculating line " << y/down << endl;
+//       std::cout << "calculating line " << y/down << std::endl;
 //     if(y){//inBuffer already initialized for y=0
 //       //erase first line from inBuffer
 //       inBuffer.erase(inBuffer.begin());
@@ -853,11 +870,11 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 // 	inBuffer.push_back(inBuffer.back());
 // 	try{
 // 	  if(verbose)
-// 	    cout << "reading input line " << y+dimY/2 << endl;
+// 	    std::cout << "reading input line " << y+dimY/2 << std::endl;
 //           input.readData(inBuffer[inBuffer.size()-1],GDT_Float32,y+dimY/2,iband);
 // 	}
-// 	catch(string errorstring){
-// 	  cerr << errorstring << "in band " << iband << ", line " << y << endl;
+// 	catch(std::string errorstring){
+// 	  std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
 // 	}
 //       }
 //     }
@@ -894,12 +911,12 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 //     //write outBuffer to file
 //     try{
 //       if(verbose)
-//         cout << "writing line " << y/down << endl;
+//         std::cout << "writing line " << y/down << std::endl;
 //       for(int v=0;v<scale*3;++v)
 //         output.writeData(outBuffer[v],GDT_Float32,y/down,v);
 //     }
-//     catch(string errorstring){
-//       cerr << errorstring << "in band " << iband << ", line " << y << endl;
+//     catch(std::string errorstring){
+//       std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
 //     }
 //     progress=(1.0+y)/output.nrOfRow();
 //     pfnProgress(progress,pszMessage,pProgressArg);
@@ -908,7 +925,7 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 //   output.close();
 // }
 
-void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const vector<double> &angle, bool disc)
+void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc)
 {
   const char* pszMessage;
   void* pProgressArg=NULL;
@@ -922,7 +939,7 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
   statfactory::StatFactory stat;
   for(int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
-    vector<double> outBuffer(input.nrOfCol());
+    std::vector<double> outBuffer(input.nrOfCol());
     int indexI=0;
     int indexJ=0;
     //initialize last half of inBuffer
@@ -931,8 +948,8 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
 	++indexJ;
       }
-      catch(string errorstring){
-	cerr << errorstring << "in line " << indexJ << endl;
+      catch(std::string errorstring){
+	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
     }
     for(int y=0;y<input.nrOfRow();++y){
@@ -946,8 +963,8 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	  try{
             input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
 	  }
-	  catch(string errorstring){
-	    cerr << errorstring << "in band " << iband << ", line " << y << endl;
+	  catch(std::string errorstring){
+	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
 	  }
 	}
         else{
@@ -961,11 +978,11 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
       for(int x=0;x<input.nrOfCol();++x){
         double currentValue=inBuffer[(dimY-1)/2][x];
 	outBuffer[x]=currentValue;
-	vector<double> statBuffer;
+	std::vector<double> statBuffer;
 	bool currentMasked=false;
         int centre=dimX*(dimY-1)/2+(dimX-1)/2;
-	for(int imask=0;imask<m_mask.size();++imask){
-	  if(currentValue==m_mask[imask]){
+	for(int imask=0;imask<m_noDataValues.size();++imask){
+	  if(currentValue==m_noDataValues[imask]){
 	    currentMasked=true;
 	    break;
 	  }
@@ -1027,11 +1044,11 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
               else
                 indexJ=(dimY-1)/2+j;
               //todo: introduce novalue as this: ?
-              // if(inBuffer[indexJ][indexI]==m_noValue)
+              // if(inBuffer[indexJ][indexI]==(m_noDataValues.size())? m_noDataValues[0] : 0)
               //   continue;
               bool masked=false;
-	      for(int imask=0;imask<m_mask.size();++imask){
-		if(inBuffer[indexJ][indexI]==m_mask[imask]){
+	      for(int imask=0;imask<m_noDataValues.size();++imask){
+		if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
 		  masked=true;
 		  break;
 		}
@@ -1060,8 +1077,8 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
               outBuffer[x]=stat.min(statBuffer);
               break;
             default:
-              ostringstream ess;
-              ess << "Error:  morphology method " << method << " not supported, choose " << filter2d::dilate << " (dilate) or " << filter2d::erode << " (erode)" << endl;
+              std::ostringstream ess;
+              ess << "Error:  morphology method " << method << " not supported, choose " << filter2d::dilate << " (dilate) or " << filter2d::erode << " (erode)" << std::endl;
               throw(ess.str());
               break;
             }
@@ -1074,8 +1091,8 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
       try{
         output.writeData(outBuffer,GDT_Float64,y,iband);
       }
-      catch(string errorstring){
-	cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      catch(std::string errorstring){
+	std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
       }
       progress=(1.0+y);
       progress+=(output.nrOfRow()*iband);
@@ -1125,7 +1142,7 @@ void filter2d::Filter2d::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& outpu
 
 void filter2d::Filter2d::linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
   Vector2d<float> inputBuffer;
-  vector< Vector2d<float> > outputBuffer;
+  std::vector< Vector2d<float> > outputBuffer;
   input.readDataBlock(inputBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, band);
   if(maxDistance<=0)
     maxDistance=sqrt(input.nrOfCol()*input.nrOfRow());
@@ -1134,10 +1151,10 @@ void filter2d::Filter2d::linearFeature(const ImgReaderGdal& input, ImgWriterGdal
     output.writeDataBlock(outputBuffer[iband],GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
 }
 
-void filter2d::Filter2d::linearFeature(const Vector2d<float>& input, vector< Vector2d<float> >& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, bool verbose)
+void filter2d::Filter2d::linearFeature(const Vector2d<float>& input, std::vector< Vector2d<float> >& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, bool verbose)
 {
   output.clear();
-  int nband=0;
+  int nband=0;//linear feature
   if(l1)
     ++nband;
   if(a1)

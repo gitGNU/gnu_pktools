@@ -26,6 +26,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/StatFactory.h"
 #include "algorithms/Filter2d.h"
 
+using namespace std;
+
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input las file");
   Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
@@ -203,7 +205,14 @@ int main(int argc,char **argv) {
   outputWriter.open(output_opt[0],ncol,nrow,nband,theType,oformat_opt[0],option_opt);
   outputWriter.GDALSetNoDataValue(nodata_opt[0]);
   //set projection
-  outputWriter.setGeoTransform(minULX,maxULY,dx_opt[0],dy_opt[0],0,0);
+  double gt[6];
+  gt[0]=minULX;
+  gt[1]=dx_opt[0];
+  gt[2]=0;
+  gt[3]=maxULY;
+  gt[4]=0;
+  gt[5]=dy_opt[0];
+  outputWriter.setGeoTransform(gt);
   if(projection_opt.size()){
     string projectionString=outputWriter.setProjectionProj4(projection_opt[0]);
     if(verbose_opt[0])
@@ -411,7 +420,7 @@ int main(int argc,char **argv) {
     int dimx=dimx_opt[0];
     int dimy=dimy_opt[0];
     filter2d::Filter2d morphFilter;
-    morphFilter.setNoValue(0);
+    // morphFilter.setNoValue(0);
     Vector2d<float> currentOutput=outputData;
     int iteration=1;
     while(nchange&&iteration<maxIter_opt[0]){
@@ -436,7 +445,7 @@ int main(int argc,char **argv) {
     int dimx=dimx_opt[0];
     int dimy=dimy_opt[0];
     filter2d::Filter2d theFilter;
-    theFilter.setNoValue(0);
+    // theFilter.setNoValue(0);
     Vector2d<float> currentOutput=outputData;
     double hThreshold=hThreshold_opt[0];
     int iteration=1;
@@ -470,7 +479,7 @@ int main(int argc,char **argv) {
     if(composite_opt[0]!="min")
       std::cout << "Warning: composite option is not set to min!" << std::endl;
     filter2d::Filter2d morphFilter;
-    morphFilter.setNoValue(0);
+    // morphFilter.setNoValue(0);
     Vector2d<float> filterInput=outputData;
     try{
       morphFilter.morphology(outputData,filterInput,"erode",dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);
@@ -485,7 +494,7 @@ int main(int argc,char **argv) {
     if(composite_opt[0]!="max")
       std::cout << "Warning: composite option is not set to max!" << std::endl;
     filter2d::Filter2d morphFilter;
-    morphFilter.setNoValue(0);
+    // morphFilter.setNoValue(0);
     Vector2d<float> filterInput=outputData;
     try{
       morphFilter.morphology(outputData,filterInput,"dilate",dimx_opt[0],dimy_opt[0],disc_opt[0],maxSlope_opt[0]);

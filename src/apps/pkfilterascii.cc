@@ -33,6 +33,8 @@ extern "C" {
 #include <gsl/gsl_sort.h>
 }
 
+using namespace std;
+
 /*------------------
   Main procedure
   ----------------*/

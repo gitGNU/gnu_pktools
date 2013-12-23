@@ -27,8 +27,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "gdal_priv.h"
 #include "base/Vector2d.h"
 
-// using namespace std;
-
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
 //--------------------------------------------------------------------------
@@ -47,16 +45,17 @@ public:
   std::string getProjection(void) const;
   std::string getProjectionRef(void) const;
   std::string getGeoTransform() const;
-  void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const;
+  void getGeoTransform(double* gt) const;
+  /* void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const; */
   std::string getDescription() const;
   std::string getMetadataItem() const;
   std::string getImageDescription() const;
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
   bool getCentrePos(double& x, double& y) const;
-  double getUlx() const {return (m_isGeoRef)? m_ulx : 0;};
-  double getUly() const {return (m_isGeoRef)? m_uly : nrOfRow()-1;};
-  double getLrx() const {return (m_isGeoRef)? m_ulx+nrOfCol()*m_delta_x : nrOfCol()-1;};
-  double getLry() const {return (m_isGeoRef)? m_uly-nrOfRow()*m_delta_y : 0;};
+  double getUlx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(ulx);};
+  double getUly() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(uly);};
+  double getLrx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lrx);};
+  double getLry() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lry);};
   // bool getMagicPixel(double& magicX, double& magicY) const {magicX=m_magic_x;magicY=m_magic_y;};
   int getNoDataValues(std::vector<double>& noDataValues) const;
   bool isNoData(double value) const{return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
@@ -66,8 +65,8 @@ public:
   bool covers(double ulx, double  uly, double lrx, double lry) const;
   bool geo2image(double x, double y, double& i, double& j) const;
   bool image2geo(double i, double j, double& x, double& y) const;
-  double getDeltaX(void) const {return m_delta_x;};
-  double getDeltaY(void) const {return m_delta_y;};
+  double getDeltaX(void) const {double gt[6];getGeoTransform(gt);return gt[1];};
+  double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
   template<typename T> void readData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=0) const;
@@ -103,12 +102,11 @@ protected:
   int m_ncol;
   int m_nrow;
   int m_nband;
-  double m_ulx;
-  double m_uly;
-  double m_delta_x;
-  double m_delta_y;
-  // double m_magic_x;
-  // double m_magic_y;
+  double m_gt[6];
+  /* double m_ulx; */
+  /* double m_uly; */
+  /* double m_delta_x; */
+  /* double m_delta_y; */
   bool m_isGeoRef;
   std::vector<double> m_noDataValues;
 };

@@ -44,7 +44,7 @@ ImgWriterGdal::~ImgWriterGdal(void)
 }
 
 //---------------------------------------------------------------------------
-void ImgWriterGdal::open(const string& filename, const ImgReaderGdal& imgSrc, const vector<string>& options)
+void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
 {
   m_isGeoRef=imgSrc.isGeoRef();
   m_filename=filename;
@@ -59,7 +59,7 @@ void ImgWriterGdal::open(const string& filename, const ImgReaderGdal& imgSrc, co
   setCodec(imgSrc);
 }
 
-// void ImgWriterGdal::open(const string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const string& imageType, const string& interleave, const string& compression, int magicX, int magicY)
+// void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::string& interleave, const std::string& compression, int magicX, int magicY)
 // {
 //   m_isGeoRef=false;
 //   m_filename = filename;
@@ -74,7 +74,7 @@ void ImgWriterGdal::open(const string& filename, const ImgReaderGdal& imgSrc, co
 //   setCodec(imageType);
 // }
 
-void ImgWriterGdal::open(const string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const string& imageType, const vector<string>& options)
+void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 {
   m_isGeoRef=false;
   m_filename = filename;
@@ -95,7 +95,7 @@ void ImgWriterGdal::close(void)
 {
   GDALClose(m_gds);
   char **papszOptions=NULL;
-  for(vector<string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+  for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
   CSLDestroy(papszOptions);
 }
@@ -106,7 +106,7 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   GDALDriver *poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(imgSrc.getDriverDescription().c_str());
   if( poDriver == NULL ){
-    string errorString="FileOpenError";
+    std::string errorString="FileOpenError";
     throw(errorString);
   }
   char **papszMetadata;
@@ -114,21 +114,21 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   //todo: try and catch if CREATE is not supported (as in PNG)
   assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
   char **papszOptions=NULL;
-  for(vector<string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+  for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
   // char **papszOptions=NULL;
-  // ostringstream compressList;
+  // std::ostringstream compressList;
   // compressList << "COMPRESS=" << m_compression;
   // papszOptions = CSLAddString(papszOptions,(compressList.str()).c_str());
-  // ostringstream interleaveList;
+  // std::ostringstream interleaveList;
   // interleaveList << "INTERLEAVE=" << m_interleave;
   // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_type,papszOptions);
   if(imgSrc.isGeoRef()){
     setProjection(imgSrc.getProjection());
-    double ulx,uly,deltaX,deltaY,rot1,rot2;
-    imgSrc.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-    setGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
+    double gt[6];
+    imgSrc.getGeoTransform(gt);
+    setGeoTransform(gt);
   }
   m_gds->SetMetadata(imgSrc.getMetadata() ); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
@@ -141,8 +141,8 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
 
   time_t tim=time(NULL);
   tm *now=localtime(&tim);
-  ostringstream datestream;
-  //date string must be 20 characters long...
+  std::ostringstream datestream;
+  //date std::string must be 20 characters long...
   datestream << now->tm_year+1900;
   if(now->tm_mon+1<10)
     datestream << ":0" << now->tm_mon+1;
@@ -165,9 +165,9 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   else
     datestream << ":" << now->tm_sec;
   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
-//   list<string> lmeta;
+//   list<std::string> lmeta;
 //   imgReader.getMetadata(lmeta);
-//   list<string>::const_iterator lit=lmeta.begin();
+//   list<std::string>::const_iterator lit=lmeta.begin();
 //   while(lit!=lmeta.end()){
 //     cout << *lit << endl;
 //     ++lit;
@@ -178,13 +178,13 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
     setColorTable(imgSrc.getColorTable());
 }
 
-void ImgWriterGdal::setCodec(const string& imageType)
+void ImgWriterGdal::setCodec(const std::string& imageType)
 {
   GDALAllRegister();
   GDALDriver *poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(imageType.c_str());
   if( poDriver == NULL ){
-    ostringstream s;
+    std::ostringstream s;
     s << "FileOpenError (" << imageType << ")";
     throw(s.str());
   }
@@ -193,12 +193,12 @@ void ImgWriterGdal::setCodec(const string& imageType)
   //todo: try and catch if CREATE is not supported (as in PNG)
   assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
   char **papszOptions=NULL;
-  for(vector<string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+  for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
-  // ostringstream compressList;
+  // std::ostringstream compressList;
   // compressList << "COMPRESS=" << m_compression;
   // papszOptions = CSLAddString(papszOptions,(compressList.str()).c_str());
-  // ostringstream interleaveList;
+  // std::ostringstream interleaveList;
   // interleaveList << "INTERLEAVE=" << m_interleave;
   // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_type,papszOptions);
@@ -215,8 +215,8 @@ void ImgWriterGdal::setCodec(const string& imageType)
 
   time_t tim=time(NULL);
   tm *now=localtime(&tim);
-  ostringstream datestream;
-  //date string must be 20 characters long...
+  std::ostringstream datestream;
+  //date std::string must be 20 characters long...
   datestream << now->tm_year+1900;
   if(now->tm_mon+1<10)
     datestream << ":0" << now->tm_mon+1;
@@ -248,10 +248,10 @@ void ImgWriterGdal::setMetadata(char** metadata)
   m_gds->SetMetadata(metadata); 
 }
 
-string ImgWriterGdal::getProjection(void) const 
+std::string ImgWriterGdal::getProjection(void) const 
 {
   assert(m_gds);
-  string theProjection=m_gds->GetProjectionRef();
+  std::string theProjection=m_gds->GetProjectionRef();
   //due to error in Gdal? AUTHORITY fields do not seem to work!
   // size_t startpos,endpos;
   // while((startpos=theProjection.find(",AUTHORITY"))!=string::npos){
@@ -262,33 +262,47 @@ string ImgWriterGdal::getProjection(void) const
 }
 
 //---------------------------------------------------------------------------
-void ImgWriterGdal::setGeoTransform(double ulx, double uly, double deltaX, double deltaY, double rot1, double rot2)
-{
+void ImgWriterGdal::setGeoTransform(double* gt){
   m_isGeoRef=true;
-  m_ulx=ulx;
-  m_uly=uly;
-  m_delta_x=deltaX;
-  m_delta_y=deltaY;
-  double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  adfGeoTransform[0]=ulx;
-  adfGeoTransform[1]=deltaX;
-  adfGeoTransform[2]=rot1;
-  adfGeoTransform[3]=uly;
-  adfGeoTransform[4]=rot2;
-  adfGeoTransform[5]=-deltaY;//convention of GDAL!
+  m_gt[0]=gt[0];
+  m_gt[1]=gt[1];
+  m_gt[2]=gt[2];
+  m_gt[3]=gt[3];
+  m_gt[4]=gt[4];
+  m_gt[5]=gt[5];
   if(m_gds)
-    m_gds->SetGeoTransform(adfGeoTransform);
+    m_gds->SetGeoTransform(m_gt);
 }
+
+// void ImgWriterGdal::setGeoTransform(double ulx, double uly, double deltaX, double deltaY, double rot1, double rot2)
+// {
+//   m_isGeoRef=true;
+//   m_ulx=ulx;
+//   m_uly=uly;
+//   m_delta_x=deltaX;
+//   m_delta_y=deltaY;
+//   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
+//   adfGeoTransform[0]=ulx;
+//   adfGeoTransform[1]=deltaX;
+//   adfGeoTransform[2]=rot1;
+//   adfGeoTransform[3]=uly;
+//   adfGeoTransform[4]=rot2;
+//   adfGeoTransform[5]=-deltaY;//convention of GDAL!
+//   if(m_gds)
+//     m_gds->SetGeoTransform(adfGeoTransform);
+// }
 
 void ImgWriterGdal::copyGeoTransform(const ImgReaderGdal& imgSrc)
 {
   setProjection(imgSrc.getProjection());
-  double ulx,uly,deltaX,deltaY,rot1,rot2;
-  imgSrc.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-  setGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
+  double gt[6];
+  imgSrc.getGeoTransform(gt);
+  setGeoTransform(gt);
+  // imgSrc.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
+  // setGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
 }
 
-string ImgWriterGdal::setProjectionProj4(const string& projection)
+std::string ImgWriterGdal::setProjectionProj4(const std::string& projection)
 {
   if(!m_isGeoRef)
     m_isGeoRef=true;
@@ -311,11 +325,11 @@ string ImgWriterGdal::setProjectionProj4(const string& projection)
     //     OSRExportToWkt( hSRS, &pszResult );  
     // else  
     // {  
-    //     ostringstream s;
+    //     std::ostringstream s;
     //     s << "Error in set projection " << projection;
     //     throw(s.str());
     // }  
-    // string theProjection=pszResult;
+    // std::string theProjection=pszResult;
     // assert(m_gds);
     // m_gds->SetProjection(theProjection.c_str());
     // OSRDestroySpatialReference( hSRS );  
@@ -323,7 +337,7 @@ string ImgWriterGdal::setProjectionProj4(const string& projection)
     // return theProjection;  
 }
 
-void ImgWriterGdal::setProjection(const string& projection)
+void ImgWriterGdal::setProjection(const std::string& projection)
 {
   if(!m_isGeoRef)
     m_isGeoRef=true;
@@ -335,9 +349,9 @@ void ImgWriterGdal::setProjection(const string& projection)
 }
 
 //default projection: ETSR-LAEA
-string ImgWriterGdal::setProjection(void)
+std::string ImgWriterGdal::setProjection(void)
 {
-  string theProjection;
+  std::string theProjection;
   OGRSpatialReference oSRS;
   char *pszSRS_WKT = NULL;
   //// oSRS.importFromEPSG(3035);
@@ -424,7 +438,7 @@ bool ImgWriterGdal::geo2image(double x, double y, double& i, double& j) const
   //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
   double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
   double eps=0.00001;
-  if(denom>eps){
+  if(fabs(denom)>eps){
     i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
     j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
   }
@@ -485,58 +499,58 @@ bool ImgWriterGdal::covers(double ulx, double  uly, double lrx, double lry) cons
   return((ulx < theLRX)&&(lrx > theULX)&&(lry < theULY)&&(uly > theLRY));
 }
 
-string ImgWriterGdal::getGeoTransform() const
+std::string ImgWriterGdal::getGeoTransform() const
 {
-  double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  double ulx;
-  double deltaX;
-  double rot1;
-  double uly;
-  double rot2;
-  double deltaY;
-  if(m_gds){
-    m_gds->GetGeoTransform(adfGeoTransform);
-    ulx=adfGeoTransform[0];
-    deltaX=adfGeoTransform[1];
-    rot1=adfGeoTransform[2];
-    uly=adfGeoTransform[3];
-    rot2=adfGeoTransform[4];
-    deltaY=-adfGeoTransform[5];//convention of GDAL!
-  }
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  if(m_gds)
+    m_gds->GetGeoTransform(gt);
   else{//virtual writer
-    ulx=m_ulx;
-    uly=m_uly;
-    deltaX=m_delta_x;
-    deltaY=m_delta_y;
-    rot1=0;
-    rot2=0;
+    gt[0]=m_gt[0];
+    gt[1]=m_gt[1];
+    gt[2]=m_gt[2];
+    gt[3]=m_gt[3];
+    gt[4]=m_gt[4];
+    gt[5]=m_gt[5];
   }
-  ostringstream s;
-  s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
+  std::ostringstream s;
+  s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << gt[5] << "]";
   return(s.str());
 }
 
-void ImgWriterGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
-{
-  if(m_gds){
-    double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-    m_gds->GetGeoTransform(adfGeoTransform);
-    ulx=adfGeoTransform[0];
-    deltaX=adfGeoTransform[1];
-    rot1=adfGeoTransform[2];
-    uly=adfGeoTransform[3];
-    rot2=adfGeoTransform[4];
-    deltaY=-adfGeoTransform[5];//convention of GDAL!
-  }
+void ImgWriterGdal::getGeoTransform(double* gt) const{
+  if(m_gds)
+    m_gds->GetGeoTransform(gt);
   else{//virtual writer
-    ulx=m_ulx;
-    uly=m_uly;
-    deltaX=m_delta_x;
-    deltaY=m_delta_y;
-    rot1=0;
-    rot2=0;
+    gt[0]=m_gt[0];
+    gt[1]=m_gt[1];
+    gt[2]=m_gt[2];
+    gt[3]=m_gt[3];
+    gt[4]=m_gt[4];
+    gt[5]=m_gt[5];
   }
 }
+
+// void ImgWriterGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
+// {
+//   if(m_gds){
+//     double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
+//     m_gds->GetGeoTransform(adfGeoTransform);
+//     ulx=adfGeoTransform[0];
+//     deltaX=adfGeoTransform[1];
+//     rot1=adfGeoTransform[2];
+//     uly=adfGeoTransform[3];
+//     rot2=adfGeoTransform[4];
+//     deltaY=-adfGeoTransform[5];//convention of GDAL!
+//   }
+//   else{//virtual writer
+//     ulx=m_ulx;
+//     uly=m_uly;
+//     deltaX=m_delta_x;
+//     deltaY=m_delta_y;
+//     rot1=0;
+//     rot2=0;
+//   }
+// }
 
 GDALDataType ImgWriterGdal::getDataType(int band) const
 {
@@ -551,17 +565,17 @@ GDALRasterBand* ImgWriterGdal::getRasterBand(int band)
 }
 
 //filename is ascii file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
-void ImgWriterGdal::setColorTable(const string& filename, int band)
+void ImgWriterGdal::setColorTable(const std::string& filename, int band)
 {
   //todo: fool proof table in file (no checking currently done...)
-  ifstream ftable(filename.c_str(),ios::in);
-  string line;
+  std::ifstream ftable(filename.c_str(),std::ios::in);
+  std::string line;
 //   poCT=new GDALColorTable();
   GDALColorTable colorTable;
   short nline=0;
   while(getline(ftable,line)){
     ++nline;
-    istringstream ist(line);
+    std::istringstream ist(line);
     GDALColorEntry sEntry;
     short id;
     ist >> id >> sEntry.c1 >> sEntry.c2 >> sEntry.c3 >> sEntry.c4;
@@ -583,7 +597,7 @@ bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int ban
   //fetch raster band
   GDALRasterBand  *poBand;
   if(band>=nrOfBand()+1){
-    ostringstream s;
+    std::ostringstream s;
     s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
     throw(s.str());
   }

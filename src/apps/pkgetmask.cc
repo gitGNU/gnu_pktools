@@ -139,9 +139,9 @@ int main(int argc,char **argv) {
     imgWriter.setColorTable(imgReader.getColorTable());
   if(imgReader.isGeoRef()){
     imgWriter.setProjection(imgReader.getProjection());
-    double ulx,uly,lrx,lry;
-    imgReader.getBoundingBox(ulx,uly,lrx,lry);
-    imgWriter.setGeoTransform(ulx,uly,imgReader.getDeltaX(),imgReader.getDeltaY(),0,0);
+    double gt[6];
+    imgReader.getGeoTransform(gt);
+    imgWriter.setGeoTransform(gt);//ulx,uly,imgReader.getDeltaX(),imgReader.getDeltaY(),0,0);
   }
   vector<char> writeBuffer(imgWriter.nrOfCol());
   for(int irow=0;irow<imgReader.nrOfRow();++irow){

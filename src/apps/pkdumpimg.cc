@@ -201,8 +201,9 @@ int main(int argc, char *argv[])
     cout << "selected lower right column in input image: " << lri << endl;
     cout << "selected lower right row in input image: " << lrj << endl;
   }
-
-  imgWriter.setGeoTransform(cropulx,cropuly,dx,dy,0,0);
+  double gt[6];
+  imgReader.getGeoTransform(gt);
+  imgWriter.setGeoTransform(gt);
   // imgWriter.setProjection(imgReader.getProjection());
 
   double readRow=0;

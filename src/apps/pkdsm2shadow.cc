@@ -30,6 +30,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
+using namespace std;
+
 /*------------------
   Main procedure
   ----------------*/
@@ -108,9 +110,9 @@ int main(int argc,char **argv) {
   }
   if(input.isGeoRef()){
     output.setProjection(input.getProjection());
-    double ulx,uly,deltaX,deltaY,rot1,rot2;
-    input.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-    output.setGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
+    double gt[6];
+    input.getGeoTransform(gt);
+    output.setGeoTransform(gt);
   }
   if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());

@@ -80,9 +80,9 @@ public:
   };
 
   void setTaps(const Vector2d<double> &taps);
-  void setNoValue(double noValue=0){m_noValue=noValue;};
+  /* void setNoValue(double noValue=0){m_noValue=noValue;}; */
   void pushClass(short theClass=1){m_class.push_back(theClass);};
-  void pushMask(short theMask=0){m_mask.push_back(theMask);};
+  int pushNoDataValue(double noDataValue=0);//{m_mask.push_back(theMask);};
   void pushThreshold(double theThreshold){m_threshold.push_back(theThreshold);};
   void setThresholds(const std::vector<double>& theThresholds){m_threshold=theThresholds;};
   void setClasses(const std::vector<short>& theClasses){m_class=theClasses;};
@@ -114,9 +114,9 @@ public:
   template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down=1, int iband=0, bool verbose=false);
-  void shift(const ImgReaderGdal& input, ImgWriterGdal& output, int offsetX=0, int offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
-  template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, int offsetX=0, int offsetY=0, double randomSigma=0, RESAMPLE resample=0, bool verbose=false);
-  void linearFeature(const Vector2d<float>& input, vector< Vector2d<float> >& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, bool verbose=false);
+  void shift(const ImgReaderGdal& input, ImgWriterGdal& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
+  template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=0, bool verbose=false);
+  void linearFeature(const Vector2d<float>& input, std::vector< Vector2d<float> >& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, bool verbose=false);
   void linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, int band=0, bool verbose=false);
   
 private:
@@ -162,9 +162,10 @@ private:
   }
 
   Vector2d<double> m_taps;
-  double m_noValue;
+  /* double m_noValue; */
   std::vector<short> m_class;
-  std::vector<short> m_mask;
+  /* std::vector<short> m_mask; */
+  std::vector<double> m_noDataValues;
   std::vector<double> m_threshold;
 };
 
@@ -303,8 +304,8 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           else
             indexJ=(dimY-1)/2+j;
           bool masked=false;
-          for(int imask=0;imask<m_mask.size();++imask){
-            if(inBuffer[indexJ][indexI]==m_mask[imask]){
+          for(int imask=0;imask<m_noDataValues.size();++imask){
+            if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
               masked=true;
               break;
             }
@@ -327,41 +328,41 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       switch(getFilterType(method)){
       case(filter2d::median):
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=stat.median(windowBuffer);
         break;
       case(filter2d::var):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=stat.var(windowBuffer);
         break;
       }
       case(filter2d::stdev):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=sqrt(stat.var(windowBuffer));
         break;
       }
       case(filter2d::mean):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=stat.mean(windowBuffer);
         break;
       }
       case(filter2d::min):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=stat.min(windowBuffer);
         break;
       }
       case(filter2d::ismin):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[centre])? 1:0;
         break;
@@ -370,7 +371,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         double min=0;
         double max=0;
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else{
           stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
           if(min!=max)
@@ -382,21 +383,21 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       }
       case(filter2d::max):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=stat.max(windowBuffer);
         break;
       }
       case(filter2d::ismax):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else
           outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[centre])? 1:0;
         break;
       }
       case(filter2d::order):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         else{
           double lbound=0;
           double ubound=dimX*dimY;
@@ -415,7 +416,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         if(occurrence.size()==1)//all values in window must be the same
           outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
         else//favorize original value in case of ties
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         break;
       case(filter2d::heterog):{
         for(std::vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
@@ -424,7 +425,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           else if(*wit!=inBuffer[(dimY-1)/2][x])
             outBuffer[x/down]=1;
           else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
-            outBuffer[x/down]=m_noValue;
+            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
             break;
           }
         }
@@ -437,7 +438,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
             outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
         }
         else
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         break;
       }
       case(filter2d::majority):{
@@ -453,7 +454,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
             outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
         }
         else
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         break;
       }
       case(filter2d::threshold):{
@@ -466,7 +467,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           }
         }
         else
-          outBuffer[x/down]=m_noValue;
+          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
         break;
       }
       case(filter2d::mixed):{
@@ -516,7 +517,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
 //   }
 // };
 
-template<class T> void Filter2d::shift(const Vector2d<T>& input, Vector2d<T>& output, int offsetX, int offsetY, double randomSigma, RESAMPLE resample, bool verbose){
+template<class T> void Filter2d::shift(const Vector2d<T>& input, Vector2d<T>& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose){
   output.resize(input.nRows(),input.nCols());
   const gsl_rng_type *rangenType;
   gsl_rng *rangen;
@@ -646,8 +647,8 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
       double currentValue=inBuffer[(dimY-1)/2][x];
       std::vector<double> statBuffer;
       bool currentMasked=false;
-      for(int imask=0;imask<m_mask.size();++imask){
-        if(currentValue==m_mask[imask]){
+      for(int imask=0;imask<m_noDataValues.size();++imask){
+        if(currentValue==m_noDataValues[imask]){
           currentMasked=true;
           break;
         }
@@ -674,11 +675,11 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
                 indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
               else
                 indexJ=(dimY-1)/2+j;
-            if(inBuffer[indexJ][indexI]==m_noValue)
+            if(inBuffer[indexJ][indexI]==(m_noDataValues.size())? m_noDataValues[0] : 0)
               continue;
             bool masked=false;
-            for(int imask=0;imask<m_mask.size();++imask){
-              if(inBuffer[indexJ][indexI]==m_mask[imask]){
+            for(int imask=0;imask<m_noDataValues.size();++imask){
+              if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
                 masked=true;
                 break;
               }
@@ -714,19 +715,19 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
             break;
           default:
             std::ostringstream ess;
-            ess << "Error:  morphology method " << method << " not supported, choose " << filter2d::dilate << " (dilate) or " << filter2d::erode << " (erode)" << endl;
+            ess << "Error:  morphology method " << method << " not supported, choose " << filter2d::dilate << " (dilate) or " << filter2d::erode << " (erode)" << std::endl;
             throw(ess.str());
             break;
           }
           if(output[y][x]&&m_class.size())
             output[y][x]=m_class[0];
           // else{
-          //   assert(m_mask.size());
-          //   output[x]=m_mask[0];
+          //   assert(m_noDataValues.size());
+          //   output[x]=m_noDataValues[0];
           // }
         }
         else
-          output[y][x]=m_noValue;
+          output[y][x]=(m_noDataValues.size())? m_noDataValues[0] : 0;
       }
     }
     progress=(1.0+y);

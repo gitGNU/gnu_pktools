@@ -28,6 +28,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/Egcs.h"
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
@@ -356,7 +358,14 @@ int main(int argc, char *argv[])
       }
       if(description_opt.size())
 	imgWriter.setImageDescription(description_opt[0]);
-      imgWriter.setGeoTransform(cropulx,cropuly,dx,dy,0,0);
+      double gt[6];
+      gt[0]=cropulx;
+      gt[1]=dx;
+      gt[2]=0;
+      gt[3]=cropuly;
+      gt[4]=0;
+      gt[5]=dy;
+      imgWriter.setGeoTransform(gt);
       if(projection_opt.size()){
 	if(verbose_opt[0])
 	  cout << "projection: " << projection_opt[0] << endl;
@@ -405,8 +414,12 @@ int main(int argc, char *argv[])
       }
       double theMin=0;
       double theMax=0;
-      if(autoscale_opt.size())
+      if(autoscale_opt.size()){
 	imgReader.getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
+	if(verbose_opt[0])
+	  cout << "minmax: " << theMin << ", " << theMax << endl;
+      }	
+      
       double readRow=0;
       double readCol=0;
       double lowerCol=0;
@@ -417,7 +430,11 @@ int main(int argc, char *argv[])
 	//convert irow to geo
 	imgWriter.image2geo(0,irow,x,y);
 	//lookup corresponding row for irow in this file
+	  //test
+	  // cout << "x: " << x << ", y: " << y << endl;
 	imgReader.geo2image(x,y,readCol,readRow);
+	//test
+	// cout << "readRow: " << readRow << ", readCol: " << readCol << flush << endl;
 	// double lowerCol=0;
 	// double upperCol=0;
 	vector<double> writeBuffer;

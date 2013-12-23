@@ -22,6 +22,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <iostream>
 
+using namespace std;
+
 filter::Filter::Filter(void)
 {
 }

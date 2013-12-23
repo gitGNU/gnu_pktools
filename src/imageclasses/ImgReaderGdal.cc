@@ -59,22 +59,24 @@ void ImgReaderGdal::setCodec()//double magicX, double magicY)
   m_isGeoRef=( static_cast<std::string>(m_gds->GetProjectionRef())  != "" );
   // m_magic_x=magicX;
   // m_magic_y=magicY;
-  if(m_isGeoRef){
-    double adfGeoTransform[6];
-    if( m_gds->GetGeoTransform( adfGeoTransform ) == CE_None )
-    {
-      m_ulx=adfGeoTransform[0];
-      m_uly=adfGeoTransform[3];
-      m_delta_x=adfGeoTransform[1];
-      m_delta_y=-adfGeoTransform[5];
-    }
-  }
-  else{
-    m_ulx=0;
-    m_uly=nrOfRow();
-    m_delta_x=1;
-    m_delta_y=1;
-  }
+  double adfGeoTransform[6];
+  m_gds->GetGeoTransform( adfGeoTransform );
+  // if( m_gds->GetGeoTransform( adfGeoTransform ) == CE_None ){
+  m_gt[0]=adfGeoTransform[0];
+  m_gt[1]=adfGeoTransform[1];
+  m_gt[2]=adfGeoTransform[2];
+  m_gt[3]=adfGeoTransform[3];
+  m_gt[4]=adfGeoTransform[4];
+  m_gt[5]=adfGeoTransform[5];
+  // }
+  // else{
+  //   m_gt[0]=0;
+  //   m_gt[1]=1;
+  //   m_gt[2]=0;
+  //   m_gt[3]=0;
+  //   m_gt[4]=0;
+  //   m_gt[5]=1;
+  // }
 }
 
 std::string ImgReaderGdal::getProjection(void) const 
@@ -120,35 +122,44 @@ std::string ImgReaderGdal::getDriverDescription() const
   return m_gds->GetDriver()->GetDescription();
 }
 
-void ImgReaderGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
-{
-  double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(adfGeoTransform);
-  ulx=adfGeoTransform[0];
-  deltaX=adfGeoTransform[1];
-  rot1=adfGeoTransform[2];
-  uly=adfGeoTransform[3];
-  rot2=adfGeoTransform[4];
-  deltaY=-adfGeoTransform[5];//convention of GDAL!
+void ImgReaderGdal::getGeoTransform(double* gt) const{
+  m_gds->GetGeoTransform(gt);
 }
+
+// void ImgReaderGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
+// {
+//   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
+//   m_gds->GetGeoTransform(adfGeoTransform);
+//   ulx=adfGeoTransform[0];
+//   deltaX=adfGeoTransform[1];
+//   rot1=adfGeoTransform[2];
+//   uly=adfGeoTransform[3];
+//   rot2=adfGeoTransform[4];
+//   deltaY=-adfGeoTransform[5];//convention of GDAL!
+// }
 
 std::string ImgReaderGdal::getGeoTransform() const
 {
-  if(!isGeoRef())
-    return("");
-  else{
-    double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-    m_gds->GetGeoTransform(adfGeoTransform);
-    double ulx=adfGeoTransform[0];
-    double deltaX=adfGeoTransform[1];
-    double rot1=adfGeoTransform[2];
-    double uly=adfGeoTransform[3];
-    double rot2=adfGeoTransform[4];
-    double deltaY=-adfGeoTransform[5];//convention of GDAL!
-    std::ostringstream s;
-    s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
-    return(s.str());
-  }
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+  std::ostringstream s;
+  s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << -gt[5] << "]";
+  return(s.str());
+  // if(!isGeoRef())
+  //   return("");
+  // else{
+  //   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  //   m_gds->GetGeoTransform(adfGeoTransform);
+  //   double ulx=adfGeoTransform[0];
+  //   double deltaX=adfGeoTransform[1];
+  //   double rot1=adfGeoTransform[2];
+  //   double uly=adfGeoTransform[3];
+  //   double rot2=adfGeoTransform[4];
+  //   double deltaY=-adfGeoTransform[5];//convention of GDAL!
+  //   std::ostringstream s;
+  //   s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
+  //   return(s.str());
+  // }
 }
 
 char** ImgReaderGdal::getMetadata()
@@ -286,9 +297,10 @@ bool ImgReaderGdal::geo2image(double x, double y, double& i, double& j) const
   //adfGeotransform[3]: ULY (upper left Y coordinate)
   //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
   //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+
   double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
   double eps=0.00001;
-  if(denom>eps){
+  if(fabs(denom)>eps){
     i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
     j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
   }

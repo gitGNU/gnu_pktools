@@ -395,7 +395,15 @@ int main(int argc, char *argv[])
   }
   if(description_opt.size())
     imgWriter.setImageDescription(description_opt[0]);
-  imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
+  double gt[6];
+  gt[0]=minULX;
+  gt[1]=dx;
+  gt[2]=0;
+  gt[3]=maxULY;
+  gt[4]=0;
+  gt[5]=dy;
+  imgWriter.setGeoTransform(gt);
+  // imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
   if(projection_opt.size()){
     if(verbose_opt[0])
       cout << "projection: " << projection_opt[0] << endl;

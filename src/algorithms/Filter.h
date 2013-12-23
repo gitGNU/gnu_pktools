@@ -480,15 +480,15 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
       output[(i-offset+down-1)/down]=stat.min(statBuffer);
       break;
     default:
-      string errorString="method not supported";
+      std::string errorString="method not supported";
       throw(errorString);
       break;
     }
     if(verbose){
-      cout << "buffer: ";
+      std::cout << "buffer: ";
       for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        cout << statBuffer[ibuf] << " ";
-      cout << "->" << output[(i-offset+down-1)/down] << endl;
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
     }
   }
   //main
@@ -520,15 +520,15 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
       output[(i-offset+down-1)/down]=stat.min(statBuffer);
       break;
     default:
-      string errorString="method not supported";
+      std::string errorString="method not supported";
       throw(errorString);
       break;
     }
     if(verbose){
-      cout << "buffer: ";
+      std::cout << "buffer: ";
       for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        cout << statBuffer[ibuf] << " ";
-      cout << "->" << output[(i-offset+down-1)/down] << endl;
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
     }
     statBuffer.clear();
   }
@@ -579,10 +579,10 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
       break;
     }
     if(verbose){
-      cout << "buffer: ";
+      std::cout << "buffer: ";
       for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        cout << statBuffer[ibuf] << " ";
-      cout << "->" << output[(i-offset+down-1)/down] << endl;
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
     }
   }
 }
