@@ -208,7 +208,9 @@ version 2.4.3
  - pksetmask
 	option msknodata to set nodata value in mask
 
-version 2.4.4
+version 2.5
+ - ImgReaderGdal and ImgWriterGdal
+	re-design of geotransform
  - pkinfo
 	hist: corrected nan when min=max
  - pkfilter
