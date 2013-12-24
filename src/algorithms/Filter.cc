@@ -30,14 +30,22 @@ filter::Filter::Filter(void)
 
 
 filter::Filter::Filter(const vector<double> &taps)
-  : m_taps(taps)
 {
-  assert(m_taps.size()%2);
+  setTaps(taps);
 }
 
-void filter::Filter::setTaps(const vector<double> &taps)
+void filter::Filter::setTaps(const vector<double> &taps, bool normalize)
 {
-  m_taps=taps;
+  m_taps.resize(taps.size());
+  double norm=0;
+  for(int itap=0;itap<taps.size();++itap)
+    norm+=taps[itap];
+  if(norm){
+    for(int itap=0;itap<taps.size();++itap)
+      m_taps[itap]=taps[itap]/norm;
+  }
+  else
+    m_taps=taps;
   assert(m_taps.size()%2);
 }
 
@@ -197,8 +205,9 @@ void filter::Filter::dwtCut(std::vector<double>& data, const std::string& wavele
   gsl_wavelet_workspace_free (work);
 }
 
-void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset)
+void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset, short verbose)
 {
+  bool bverbose=(verbose>1)? true:false;
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
   const char* pszMessage;
@@ -213,7 +222,7 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      morphology(pixelInput,pixelOutput,method,dim,down,offset);
+      morphology(pixelInput,pixelOutput,method,dim,down,offset,bverbose);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
@@ -230,7 +239,16 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
-void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
+void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down, int offset)
+{
+  assert(dim>0);
+  m_taps.resize(dim);
+  for(int itap=0;itap<dim;++itap)
+    m_taps[itap]=1.0/dim;
+  filter(input,output,down,offset);
+}
+
+void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -246,7 +264,7 @@ void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, sho
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      doit(pixelInput,pixelOutput,down,offset);
+      filter(pixelInput,pixelOutput,down,offset);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }

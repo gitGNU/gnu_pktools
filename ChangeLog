@@ -211,7 +211,10 @@ version 2.4.3
 version 2.5
  - ImgReaderGdal and ImgWriterGdal
 	re-design of geotransform
+ - Filter2d.h
+	renamed mask to nodata
  - pkinfo
 	hist: corrected nan when min=max
  - pkfilter
 	corrected bug in 2d wavelet transform forward and inverse
+	renamed mask to nodata

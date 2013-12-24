@@ -174,24 +174,9 @@ int main(int argc,char **argv) {
   }
   
   if(method_opt.size()){
-    switch(filter::Filter::getFilterType(method_opt[0])){
-    case(filter::smooth):
-      assert(dimZ_opt.size());
-      if(tapZ_opt.empty()){
-        tapZ_opt.resize(dimZ_opt[0]);
-        for(int itap=0;itap<dimZ_opt[0];++itap)
-          tapZ_opt[itap]=1.0/dimZ_opt[0];
-      }
-      filter1d.setTaps(tapZ_opt);
-      case(filter::dwt_cut)://deliberate fall through
-      wavelengthOut=wavelengthIn;
-      break;
-    }
+    wavelengthOut=wavelengthIn;
     for(int icol=0;icol<inputCols_opt.size();++icol){
       switch(filter::Filter::getFilterType(method_opt[0])){
-      case(filter::smooth):
-        filter1d.doit(inputData[icol],filteredData[icol]);
-        break;
       case(filter::dwt):
         filter1d.dwtForward(filteredData[icol],wavelet_type_opt[0],family_opt[0]);
         break;
@@ -201,9 +186,22 @@ int main(int argc,char **argv) {
       case(filter::dwt_cut):
 	filter1d.dwtCut(filteredData[icol],wavelet_type_opt[0],family_opt[0],threshold_opt[0]);
         break;
+      case(filter::smooth):
+	if(tapZ_opt.size()){
+	  filter1d.setTaps(tapZ_opt);
+	  filter1d.filter(inputData[icol],filteredData[icol]);
+	}
+	else{
+	  assert(dimZ_opt.size());
+	  filter1d.smooth(inputData[icol],filteredData[icol],dimZ_opt[0]);
+	}
+	break;
       default:
-        if(verbose_opt[0])
-          std::cout << "method to be implemented" << std::endl;
+	assert(tapZ_opt.size());
+        filter1d.filter(inputData[icol],filteredData[icol]);
+        // if(verbose_opt[0])
+        //   std::cout << "method to be implemented" << std::endl;
+	// exit(1);
         break;
       }
     }

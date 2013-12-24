@@ -41,7 +41,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, majority voting (only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, heterogeneous (central pixel must be different than all other pixels within window), order (rank pixels in order), stdev, mrf, dwtz, dwtzi, dwtz_cut, dwt, dwti, dwt_cut, scramble, shift, linearfeature)", "median");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, majority voting (only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, heterogeneous (central pixel must be different than all other pixels within window), order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, scramble, shift, linearfeature)", "median");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, better use odd value to avoid image shift", 3);
   Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, better use odd value to avoid image shift", 3);
@@ -261,8 +261,14 @@ int main(int argc,char **argv) {
     tapfile.close();
   }
   else if(tapz_opt.size()){
+    if(verbose_opt[0]){
+      std::cout << "taps: ";
+      for(int itap=0;itap<tapz_opt.size();++itap)
+	std::cout<< tapz_opt[itap] << " ";
+      std::cout<< std::endl;
+    }
     filter1d.setTaps(tapz_opt);    
-    filter1d.doit(input,output,down_opt[0]);
+    filter1d.filter(input,output,down_opt[0]);
   }
   else if(fwhm_opt.size()){
     if(verbose_opt[0])
@@ -369,7 +375,7 @@ int main(int argc,char **argv) {
       if(dimZ_opt.size()){
         if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
-        filter1d.morphology(input,output,"dilate",dimZ_opt[0]);
+        filter1d.morphology(input,output,"dilate",dimZ_opt[0],1,0,verbose_opt[0]);
       }
       else{
 	filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
@@ -548,7 +554,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=0.0;
       theTaps[2][2]=1.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);
+      filter2d.filter(input,output,true);//absolute and normalize
       break;
     }
     case(filter2d::sobely):{//Sobel edge detection in Y
@@ -567,7 +573,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-2.0;
       theTaps[2][2]=-1.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);
+      filter2d.filter(input,output,true);//absolute and normalize
       break;
     }
     case(filter2d::sobelxy):{//Sobel edge detection in XY
@@ -586,7 +592,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-1.0;
       theTaps[2][2]=0.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);
+      filter2d.filter(input,output,true);//absolute and normalize
       break;
     }
     case(filter2d::sobelyx):{//Sobel edge detection in XY
@@ -605,7 +611,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-1.0;
       theTaps[2][2]=-2.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);
+      filter2d.filter(input,output,true);//absolute and normalize
       break;
     }
     case(filter2d::smooth):{//Smoothing filter
@@ -613,7 +619,14 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      filter2d.smooth(input,output,dimX_opt[0],dimY_opt[0]);
+      if(dimZ_opt.size()){
+        if(verbose_opt[0])
+          std::cout<< "1-D filtering: smooth" << std::endl;
+        filter1d.smooth(input,output,dimZ_opt[0]);
+      }
+      else{
+	filter2d.smooth(input,output,dimX_opt[0],dimY_opt[0]);
+      }
       break;
     }
     case(filter2d::smoothnodata):{//Smoothing filter
@@ -624,47 +637,35 @@ int main(int argc,char **argv) {
       filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
       break;
     }
-    case(filter2d::dwtz):
-      if(down_opt[0]!=1){
-	std::cerr << "Error: down option not supported for this filter" << std::endl;
-	exit(1);
-      }
-      filter1d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
-      break;
-    case(filter2d::dwtzi):
-      if(down_opt[0]!=1){
-	std::cerr << "Error: down option not supported for this filter" << std::endl;
-	exit(1);
-      }
-      filter1d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
-      break;
-    case(filter2d::dwtz_cut):
-      if(down_opt[0]!=1){
-	std::cerr << "Error: down option not supported for this filter" << std::endl;
-	exit(1);
-      }
-      filter1d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
-      break;
     case(filter2d::dwt):
       if(down_opt[0]!=1){
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+      if(dimZ_opt.size())
+	filter1d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+      else
+	filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
       break;
     case(filter2d::dwti):
       if(down_opt[0]!=1){
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+      if(dimZ_opt.size())
+	filter1d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+      else
+	filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
       break;
     case(filter2d::dwt_cut):
       if(down_opt[0]!=1){
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      filter2d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
+      if(dimZ_opt.size())
+	filter1d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
+      else
+	filter2d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
       break;
     case(filter2d::threshold):
       filter2d.setThresholds(threshold_opt);
