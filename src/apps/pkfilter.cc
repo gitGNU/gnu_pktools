@@ -642,8 +642,11 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size())
+      if(dimZ_opt.size()){
+        if(verbose_opt[0])
+          std::cout<< "DWT in spectral domain" << std::endl;
 	filter1d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+      }
       else
 	filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
       break;
@@ -652,8 +655,11 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size())
+      if(dimZ_opt.size()){
+        if(verbose_opt[0])
+          std::cout<< "inverse DWT in spectral domain" << std::endl;
 	filter1d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+      }
       else
 	filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
       break;
@@ -662,8 +668,11 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size())
+      if(dimZ_opt.size()){
+        if(verbose_opt[0])
+          std::cout<< "DWT approximation in spectral domain" << std::endl;
 	filter1d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
+      }
       else
 	filter2d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
       break;
