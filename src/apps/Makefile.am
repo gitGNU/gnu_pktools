@@ -13,7 +13,7 @@ bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg 
 
 if USE_FANN
 bin_PROGRAMS += pkclassify_nn pkfs_nn pkregression_nn
-pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.h pkclassify_nn.cc
+pkclassify_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkclassify_nn.cc
 pkclassify_nn_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 pkclassify_nn_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
 pkfs_nn_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkfs_nn.cc
@@ -31,7 +31,7 @@ pklas2img_LDADD = $(top_srcdir)/src/lasclasses/liblasClasses.la -llas $(AM_LDFLA
 endif
 if USE_NLOPT
 bin_PROGRAMS += pkopt_svm
-pkopt_svm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkclassify_nn.h pkopt_svm.cc
+pkopt_svm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkopt_svm.cc
 pkopt_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt
 endif
 # list of sources for the binaries
@@ -62,8 +62,8 @@ pkmosaic_SOURCES = pkmosaic.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pkdiff_SOURCES = pkdiff.cc
-pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_nn.h pkclassify_svm.cc
-pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkclassify_nn.h pkfs_svm.cc
+pkclassify_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp  pkclassify_svm.cc
+pkfs_svm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkfs_svm.cc
 pkfs_svm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc

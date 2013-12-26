@@ -29,7 +29,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/FeatureSelector.h"
 #include "algorithms/OptFactory.h"
 #include "algorithms/svm.h"
-#include "pkclassify_nn.h"
+#include "imageclasses/ImgReaderOgr.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -39,6 +39,8 @@ namespace svm{
   enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};
   enum KERNEL_TYPE {linear=0,polynomial=1,radial=2,sigmoid=3};
 }
+
+using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
                                     //declare objective function
@@ -349,15 +351,23 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>=1)
     std::cout << "reading training file " << training_opt[0] << std::endl;
   try{
+    ImgReaderOgr trainingReader(training_opt[0]);
     if(band_opt.size()){
-      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
-      if(input_opt.size())
-	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageShape(trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+      if(input_opt.size()){
+	ImgReaderOgr inputReader(input_opt[0]);
+	totalTestSamples=inputReader.readDataImageShape(testMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+	inputReader.close();
+      }
     }
     else{
-      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
-      if(input_opt.size())
-	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageShape(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+      if(input_opt.size()){
+	ImgReaderOgr inputReader(input_opt[0]);
+	totalTestSamples=inputReader.readDataImageShape(testMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+	inputReader.close();
+      }
+      trainingReader.close();
     }
     if(trainingMap.size()<2){
       string errorstring="Error: could not read at least two classes from training input file";

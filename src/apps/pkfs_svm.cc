@@ -25,7 +25,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
 #include "algorithms/svm.h"
-#include "pkclassify_nn.h"
+#include "imageclasses/ImgReaderOgr.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -38,6 +38,7 @@ namespace svm{
 
 enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
 
+using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
@@ -340,15 +341,22 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>=1)
     std::cout << "reading training file " << training_opt[0] << std::endl;
   try{
+    ImgReaderOgr trainingReader(training_opt[0]);
     if(band_opt.size()){
-      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
-      if(input_opt.size())
-	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageShape(trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+      if(input_opt.size()){
+	ImgReaderOgr inputReader(input_opt[0]);
+	totalTestSamples=inputReader.readDataImageShape(testMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+	inputReader.close();
+      }
     }
     else{
-      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
-      if(input_opt.size())
-	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageShape(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+      if(input_opt.size()){
+	ImgReaderOgr inputReader(input_opt[0]);
+	totalTestSamples=inputReader.readDataImageShape(testMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+	inputReader.close();
+      }
     }
     if(trainingMap.size()<2){
       string errorstring="Error: could not read at least two classes from training input file";
@@ -358,6 +366,7 @@ int main(int argc, char *argv[])
       string errorstring="Error: could not read at least two classes from test input file";
       throw(errorstring);
     }
+    trainingReader.close();
   }
   catch(string error){
     cerr << error << std::endl;

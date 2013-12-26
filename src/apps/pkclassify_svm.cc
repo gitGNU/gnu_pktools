@@ -28,7 +28,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/PosValue.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/svm.h"
-#include "pkclassify_nn.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -245,14 +244,16 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         std::cout << "reading imageShape file " << training_opt[0] << std::endl;
       try{
+	ImgReaderOgr trainingReaderBag(training_opt[ibag]);
         if(band_opt.size())
-          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageShape(trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
         else
-          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageShape(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file";
           throw(errorstring);
         }
+	trainingReaderBag.close();
       }
       catch(string error){
         cerr << error << std::endl;

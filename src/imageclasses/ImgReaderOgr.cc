@@ -216,3 +216,147 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
 //     imgWriter.close();
 //   }
 // }
+
+unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+					      std::vector<std::string>& fields,
+					      const std::vector<short>& bands,
+					      const std::string& label,
+					      int verbose)
+{
+  mapPixels.clear();
+  int nsample=0;
+  int totalSamples=0;  
+  int nband=0;
+  if(verbose)
+    std::cout << "reading shape file " << m_filename  << std::endl;
+  try{
+    //only retain bands in fields
+    getFields(fields);
+    std::vector<std::string>::iterator fit=fields.begin();
+    if(verbose>1)
+      std::cout << "reading fields: ";
+    while(fit!=fields.end()){
+      if(verbose)
+        std::cout << *fit << " ";
+      // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
+      if((*fit).substr(0,1)=="B"){
+	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
+	  int theBand=atoi((*fit).substr(1).c_str());
+	  if(bands.size()){
+	    bool validBand=false;
+	    for(int iband=0;iband<bands.size();++iband){
+	      if(theBand==bands[iband])
+		validBand=true;
+	    }
+	    if(validBand)
+	      ++fit;
+	    else
+	      fields.erase(fit);
+	  }
+	  else
+	    ++fit;
+	}
+	else if((*fit)=="B" || (*fit)=="Band")//B is only band
+	  ++fit;
+      }
+      else
+        fields.erase(fit);
+    }
+    if(verbose)
+      std::cout << std::endl;
+    if(verbose){
+      std::cout << "fields:";
+      for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
+        std::cout << " " << *fit;
+      std::cout << std::endl;
+    }
+    if(!nband){
+      if(verbose)
+        std::cout << "reading data" << std::endl;
+      nband=readData(mapPixels,OFTReal,fields,label,0,true,verbose==2);
+
+    }
+    else
+      assert(nband==readData(mapPixels,OFTReal,fields,label,0,true,false));
+  }
+  catch(std::string e){
+    std::ostringstream estr;
+    estr << e << " " << m_filename;
+    throw(estr.str());
+  }
+  nsample=getFeatureCount();
+  totalSamples+=nsample;
+  if(verbose)
+    std::cout << ": " << nsample << " samples read with " << nband << " bands" << std::endl;
+  if(verbose)
+    std::cout << "total number of samples read " << totalSamples << std::endl;
+  return totalSamples;
+}
+
+unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+					      std::vector<std::string>& fields,
+					      double start,
+					      double end,
+					      const std::string& label,
+					      int verbose)
+{
+  mapPixels.clear();
+  int nsample=0;
+  int totalSamples=0;  
+  int nband=0;
+  if(verbose)
+    std::cout << "reading shape file " << m_filename  << std::endl;
+  try{
+    //only retain bands in fields
+    getFields(fields);
+    std::vector<std::string>::iterator fit=fields.begin();
+    if(verbose)
+      std::cout << "reading fields: ";
+    while(fit!=fields.end()){
+      if(verbose)
+        std::cout << *fit << " ";
+      // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
+      if((*fit).substr(0,1)=="B"){
+	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
+	  int iband=atoi((*fit).substr(1).c_str());
+	  if((start||end)&&(iband<start||iband>end))
+	    fields.erase(fit);
+	  else
+	    ++fit;
+	}
+	else if(*fit=="B" || *fit=="Band")
+	  ++fit;
+      }
+      else
+        fields.erase(fit);
+    }
+    if(verbose)
+      std::cout << std::endl;
+    if(verbose){
+      std::cout << "fields:";
+      for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
+        std::cout << " " << *fit;
+      std::cout << std::endl;
+    }
+    if(!nband){
+      if(verbose)
+        std::cout << "reading data" << std::endl;
+      nband=readData(mapPixels,OFTReal,fields,label,0,true,verbose==2);
+
+    }
+    else
+      assert(nband==readData(mapPixels,OFTReal,fields,label,0,true,false));
+  }
+  catch(std::string e){
+    std::ostringstream estr;
+    estr << e << " " << m_filename;
+    throw(estr.str());
+  }
+  nsample=getFeatureCount();
+  totalSamples+=nsample;
+  if(verbose)
+    std::cout << ": " << nsample << " samples read with " << nband << " bands" << std::endl;
+  if(verbose)
+    std::cout << "total number of samples read " << totalSamples << std::endl;
+  return totalSamples;
+}
