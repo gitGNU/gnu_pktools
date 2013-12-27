@@ -30,6 +30,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "floatfann.h"
 #include "myfann_cpp.h"
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   vector<double> priors;
@@ -69,6 +71,7 @@ int main(int argc, char *argv[])
   Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image"); 
   Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
   Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
+  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","ESRI Shapefile");
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
@@ -110,6 +113,7 @@ int main(int argc, char *argv[])
     prob_opt.retrieveOption(argc,argv);
     entropy_opt.retrieveOption(argc,argv);
     active_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
     nactive_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
@@ -145,7 +149,7 @@ int main(int argc, char *argv[])
   ImgWriterOgr activeWriter;
   if(active_opt.size()){
     ImgReaderOgr trainingReader(training_opt[0]);
-    activeWriter.open(active_opt[0]);
+    activeWriter.open(active_opt[0],ogrformat_opt[0]);
     activeWriter.createLayer(active_opt[0],trainingReader.getProjection(),wkbPoint,NULL);
     activeWriter.copyFields(trainingReader);
   }

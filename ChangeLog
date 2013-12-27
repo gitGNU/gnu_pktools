@@ -209,8 +209,13 @@ version 2.4.3
 	option msknodata to set nodata value in mask
 
 version 2.5
+ - ImgReaderOgr
+	support sqlite: read training file with small case band names b0, b1, ...
  - ImgReaderGdal and ImgWriterGdal
 	re-design of geotransform
+ - pkextract
+ - pkeditogr
+	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
  - Filter2d.h
 	renamed mask to nodata
  - pkinfo

@@ -25,10 +25,13 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
-  Optionpk<string> input_opt("i", "input", "Input image");
-  Optionpk<string> output_opt("o", "output", "Output mask file");
+  Optionpk<string> input_opt("i", "input", "Input vector file");
+  Optionpk<string> output_opt("o", "output", "Output vector file");
+  Optionpk<string> ogrformat_opt("f", "f", "Output OGR file format","ESRI Shapefile");
   Optionpk<string> selectField_opt("select", "select", "select field (combined with like opt)");
   Optionpk<string> like_opt("like", "like", "substring(s) to be found in select field. If multiple substrings are provided, feature will be selected if one of them is found (stringent option must be false)");
   Optionpk<bool> stringent_opt("st", "stringent", "string in like option must exactly match to select feature)",false);
@@ -47,6 +50,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
     selectField_opt.retrieveOption(argc,argv);
     like_opt.retrieveOption(argc,argv);
     stringent_opt.retrieveOption(argc,argv);
@@ -66,6 +70,14 @@ int main(int argc, char *argv[])
   if(!doProcess){
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
+  }
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information";
+      exit(0);//help was invoked, stop processing
+  }
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information";
+      exit(0);//help was invoked, stop processing
   }
   if(verbose_opt[0])
     cout << "opening " << input_opt[0] << " for reading " << endl;
@@ -96,7 +108,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "going through features" << endl << flush;
 
-  ImgWriterOgr ogrWriter(output_opt[0]);
+  ImgWriterOgr ogrWriter(output_opt[0],ogrformat_opt[0]);
   OGRLayer* writeLayer=ogrWriter.createLayer(output_opt[0],ogrReader.getProjection(),ogrReader.getGeometryType(),NULL);
   std::vector<OGRFieldDefn*> readFields;
   std::vector<OGRFieldDefn*> writeFields;
@@ -139,7 +151,12 @@ int main(int argc, char *argv[])
     std::cout << std::endl;
     std::cout << addname_opt.size() << " fields created" << std::endl;
   }
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
   OGRFeature *poFeature;
+  unsigned long int nfeature=ogrReader.getFeatureCount();
   while((poFeature = ogrReader.getLayer()->GetNextFeature()) != NULL ){
     if(verbose_opt[0])
       std::cout << "feature " << ifeature << std::endl;
@@ -148,6 +165,7 @@ int main(int argc, char *argv[])
     if(like_opt.empty())
       doSelect=true;
     else{
+      assert(selectField_opt.size());
       int fieldIndex=poFeature->GetFieldIndex(selectField_opt[0].c_str());
       string fieldValue=poFeature->GetFieldAsString(fieldIndex);
       if(stringent_opt[0]){
@@ -247,6 +265,8 @@ int main(int argc, char *argv[])
     }
     OGRFeature::DestroyFeature( poFeature );
     OGRFeature::DestroyFeature( poDstFeature );
+    progress=static_cast<float>(ifeature+1)/nfeature;
+    pfnProgress(progress,pszMessage,pProgressArg);
   }
   if(verbose_opt[0])
     std::cout << "replaced " << ifeature << " features" << std::endl;

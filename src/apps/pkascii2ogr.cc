@@ -23,10 +23,13 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgWriterOgr.h"
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i","input","Input ASCII file");
   Optionpk<string> output_opt("o", "output", "Output file");
+  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
   Optionpk<short> colX_opt("x", "x", "column number of x (0)", 0);
   Optionpk<short> colY_opt("y", "y", "column number of y (1)", 1);
   Optionpk<bool> polygon_opt("l", "line", "create OGRPolygon as geometry instead of points.  Fields are taken from first point and polygon is automatically closed (no need to repeat first point at last line). (false: use OGRPoint)", false);
@@ -41,6 +44,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
     colX_opt.retrieveOption(argc,argv);
     colY_opt.retrieveOption(argc,argv);
     polygon_opt.retrieveOption(argc,argv);
@@ -97,7 +101,7 @@ int main(int argc, char *argv[])
   }
   
   ImgWriterOgr imgWriter;
-  imgWriter.open(output_opt[0]);
+  imgWriter.open(output_opt[0],ogrformat_opt[0]);
   try{
     if(polygon_opt[0])
       imgWriter.ascii2ogr(input_opt[0], "New Layer", fname_opt, ftype, colX_opt[0], colY_opt[0], theProjection, wkbPolygon, fs_opt[0]);

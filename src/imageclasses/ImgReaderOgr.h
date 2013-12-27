@@ -503,7 +503,7 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
 }
 
 //read one field from all features
-template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
+template <typename T> inline int ImgReaderOgr::readData(std::vector<T>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
 {
   if(layer<0)
     layer=m_datasource->GetLayerCount()-1;
@@ -554,6 +554,82 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
       case(OFTInteger):
       case(OFTReal):
         theFeature=poFeature->GetFieldAsDouble(iField);
+      break;
+      default:
+        {
+          std::string errorstring="field type not supported in ImgReaderOgr::ReadData";
+          throw(errorstring);
+        }
+        break;
+      }
+    }
+    data.push_back(theFeature);
+    if(verbose)
+      std::cout << "feature is: " << theFeature << std::endl;
+    ++ifeature;
+  }
+  if(data.size()){
+    return data.size();
+  }
+  else{
+    std::ostringstream ess;
+    ess << "no layer in " << m_filename;
+    throw(ess.str());
+  }
+}
+
+//specialization for string: read one field from all features
+template <> inline int ImgReaderOgr::readData(std::vector<std::string>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
+{
+  if(layer<0)
+    layer=m_datasource->GetLayerCount()-1;
+  assert(m_datasource->GetLayerCount()>layer);
+  OGRLayer  *poLayer;
+  if(verbose)
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
+  poLayer = m_datasource->GetLayer(layer);
+  OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+  int nfield=(theField!="")? poFDefn->GetFieldCount() : 1;
+  if(theField==""){
+    //read first field available 
+    if(verbose)
+      std::cout << "read first field from total of " << nfield << std::endl;
+  }
+
+  //start reading features from the layer
+  OGRFeature *poFeature;
+  if(verbose)
+    std::cout << "reset reading" << std::endl;
+  poLayer->ResetReading();
+  unsigned long int ifeature=0;
+  if(verbose)
+    std::cout << "going through features" << std::endl << std::flush;
+  while( (poFeature = poLayer->GetNextFeature()) != NULL ){
+    std::string theFeature;
+    if(verbose)
+      std::cout << "reading feature " << ifeature << std::endl << std::flush;
+    OGRGeometry *poGeometry;
+    poGeometry = poFeature->GetGeometryRef();
+    if(verbose){
+      if(poGeometry == NULL)
+        std::cerr << "no geometry defined" << std::endl << std::flush;
+      else// if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
+        std::cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl;
+    }
+    // assert(poGeometry != NULL 
+    //        && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
+    OGRPoint *poPoint = (OGRPoint *) poGeometry;
+
+    for(int iField=0;iField<nfield;++iField){
+      OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
+      std::string fieldname=poFieldDefn->GetNameRef();
+      if(fieldname!=theField)
+        continue;
+      switch(fieldType){
+      case(OFTInteger):
+      case(OFTReal):
+      case(OFTString):
+        theFeature=poFeature->GetFieldAsString(iField);
       break;
       default:
         {

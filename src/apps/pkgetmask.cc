@@ -143,6 +143,9 @@ int main(int argc,char **argv) {
     imgReader.getGeoTransform(gt);
     imgWriter.setGeoTransform(gt);//ulx,uly,imgReader.getDeltaX(),imgReader.getDeltaY(),0,0);
   }
+  if(nodata_opt.size())
+      imgWriter.GDALSetNoDataValue(nodata_opt[0]);
+
   vector<char> writeBuffer(imgWriter.nrOfCol());
   for(int irow=0;irow<imgReader.nrOfRow();++irow){
     for(int iband=0;iband<band_opt.size();++iband)

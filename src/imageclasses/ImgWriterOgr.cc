@@ -32,12 +32,12 @@ ImgWriterOgr::~ImgWriterOgr(void)
 {
 }
 
-ImgWriterOgr::ImgWriterOgr(const string& filename)
+ImgWriterOgr::ImgWriterOgr(const std::string& filename, const std::string& imageType)
 {
-  open(filename);
+  open(filename,imageType);
 }
 
-ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr)
+ImgWriterOgr::ImgWriterOgr(const std::string& filename, ImgReaderOgr& imgReaderOgr)
 {
   m_filename=filename;
   setCodec(imgReaderOgr.getDriver());
@@ -45,7 +45,7 @@ ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr)
   copyFields(imgReaderOgr);
 }
 
-ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr, bool copyData)
+ImgWriterOgr::ImgWriterOgr(const std::string& filename, ImgReaderOgr& imgReaderOgr, bool copyData)
 {
   CPLErrorReset();
   m_filename=filename;
@@ -64,7 +64,7 @@ ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr, b
 //       poDstFeature = OGRFeature::CreateFeature(m_datasource->GetLayer(m_datasource->GetLayerCount()-1)->GetLayerDefn());
       if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
 	const char* fmt;
-	string errorString="Unable to translate feature %d from layer %s.\n";
+	std::string errorString="Unable to translate feature %d from layer %s.\n";
 	fmt=errorString.c_str();
         CPLError( CE_Failure, CPLE_AppDefined,
                   fmt,
@@ -82,7 +82,7 @@ ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr, b
       CPLErrorReset();
       if(createFeature( poDstFeature ) != OGRERR_NONE){
 	const char* fmt;
-	string errorString="Unable to translate feature %d from layer %s.\n";
+	std::string errorString="Unable to translate feature %d from layer %s.\n";
 	fmt=errorString.c_str();
         CPLError( CE_Failure, CPLE_AppDefined,
 		  fmt,
@@ -96,7 +96,7 @@ ImgWriterOgr::ImgWriterOgr(const string& filename, ImgReaderOgr& imgReaderOgr, b
 
 //---------------------------------------------------------------------------
 
-void ImgWriterOgr::open(const string& filename, ImgReaderOgr& imageReader)
+void ImgWriterOgr::open(const std::string& filename, ImgReaderOgr& imageReader)
 {
   m_filename=filename;
   setCodec(imageReader.getDriver());
@@ -104,7 +104,7 @@ void ImgWriterOgr::open(const string& filename, ImgReaderOgr& imageReader)
   copyFields(imageReader);
 }
 
-void ImgWriterOgr::open(const string& filename, const string& imageType)
+void ImgWriterOgr::open(const std::string& filename, const std::string& imageType)
 {
   m_filename = filename;
   setCodec(imageType);
@@ -117,20 +117,20 @@ void ImgWriterOgr::close(void)
 }
 
 //---------------------------------------------------------------------------
-void ImgWriterOgr::setCodec(const string& imageType){
+void ImgWriterOgr::setCodec(const std::string& imageType){
   //register the drivers
   OGRRegisterAll();
   //fetch the shape file driver
   OGRSFDriver *poDriver;
   poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(imageType.c_str());
   if( poDriver == NULL ){
-    string errorString="FileOpenError";
+    std::string errorString="FileOpenError";
     throw(errorString);
   }
   //create the data source
   m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
   if(m_datasource==NULL){
-    string errorString="Creation of output file failed";
+    std::string errorString="Creation of output file failed";
     throw(errorString);
   }
 }
@@ -138,26 +138,26 @@ void ImgWriterOgr::setCodec(const string& imageType){
 void ImgWriterOgr::setCodec(OGRSFDriver *poDriver){
   OGRRegisterAll();
   if( poDriver == NULL ){
-    string errorString="FileOpenError";
+    std::string errorString="FileOpenError";
     throw(errorString);
   }
   //create the data source
   m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
   if(m_datasource==NULL){
-    string errorString="Creation of output file failed";
+    std::string errorString="Creation of output file failed";
     throw(errorString);
   }
 }
 
-// OGRLayer* ImgWriterOgr::copyLayer(OGRLayer* poSrcLayer, const string& layername, char** papszOptions)
+// OGRLayer* ImgWriterOgr::copyLayer(OGRLayer* poSrcLayer, const std::string& layername, char** papszOptions)
 // {
 //   return(m_datasource->CopyLayer(poSrcLayer, layername.c_str(),papszOptions));
 // }
 
-OGRLayer* ImgWriterOgr::createLayer(const string& layername, const string& theProjection, const OGRwkbGeometryType& eGType, char** papszOptions)
+OGRLayer* ImgWriterOgr::createLayer(const std::string& layername, const std::string& theProjection, const OGRwkbGeometryType& eGType, char** papszOptions)
 {
   if( !m_datasource->TestCapability( ODsCCreateLayer ) ){
-    string errorString="Test capability to create layer failed";
+    std::string errorString="Test capability to create layer failed";
     throw(errorString);
   }
   //papszOptions = CSLSetNameValue( papszOptions, "DIM", "1" );
@@ -165,7 +165,7 @@ OGRLayer* ImgWriterOgr::createLayer(const string& layername, const string& thePr
   //if no constraints on the types geometry to be written: use wkbUnknown 
   OGRLayer* poLayer;
   if(theProjection!=""){
-    if(theProjection.find("EPSPG:")!=string::npos){
+    if(theProjection.find("EPSPG:")!=std::string::npos){
       int epsg_code=atoi(theProjection.substr(theProjection.find_first_not_of("EPSG:")).c_str());
       OGRSpatialReference oSRS;
       oSRS.importFromEPSG(epsg_code);
@@ -181,14 +181,14 @@ OGRLayer* ImgWriterOgr::createLayer(const string& layername, const string& thePr
   //check if destroy is needed?!
   CSLDestroy( papszOptions );
   if( poLayer == NULL ){
-    string errorstring="Layer creation failed";
+    std::string errorstring="Layer creation failed";
     throw(errorstring);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   return poLayer;
 }
 
-void ImgWriterOgr::createField(const string& fieldname, const OGRFieldType& fieldType, int theLayer)
+void ImgWriterOgr::createField(const std::string& fieldname, const OGRFieldType& fieldType, int theLayer)
 {
   OGRFieldDefn oField( fieldname.c_str(), fieldType );
   if(fieldType==OFTString)
@@ -196,21 +196,21 @@ void ImgWriterOgr::createField(const string& fieldname, const OGRFieldType& fiel
   if(theLayer<0)
     theLayer=m_datasource->GetLayerCount()-1;//get back layer
   if(m_datasource->GetLayer(theLayer)->CreateField( &oField ) != OGRERR_NONE ){
-      ostringstream es;
+      std::ostringstream es;
       es << "Creating field " << fieldname << " failed";
-      string errorString=es.str();
+      std::string errorString=es.str();
       throw(errorString);
   }
 }
 
-int ImgWriterOgr::getFields(vector<string>& fields, int layer) const
+int ImgWriterOgr::getFields(std::vector<std::string>& fields, int layer) const
 {
   if(layer<0)
     layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if((poLayer = m_datasource->GetLayer(layer))==NULL){
-    string errorstring="Could not get layer";
+    std::string errorstring="Could not get layer";
     throw(errorstring);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -223,14 +223,14 @@ int ImgWriterOgr::getFields(vector<string>& fields, int layer) const
   return(fields.size());
 }
 
-int ImgWriterOgr::getFields(vector<OGRFieldDefn*>& fields, int layer) const
+int ImgWriterOgr::getFields(std::vector<OGRFieldDefn*>& fields, int layer) const
 {
   if(layer<0)
     layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if((poLayer = m_datasource->GetLayer(layer))==NULL){
-    string errorstring="Could not get layer";
+    std::string errorstring="Could not get layer";
     throw(errorstring);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -248,65 +248,65 @@ void ImgWriterOgr::copyFields(const ImgReaderOgr& imgReaderOgr, int theLayer){
   if(theLayer<0)
     theLayer=m_datasource->GetLayerCount()-1;//get back layer
   //get fields from imgReaderOgr
-  vector<OGRFieldDefn*> fields;
+  std::vector<OGRFieldDefn*> fields;
   
   imgReaderOgr.getFields(fields);
 //   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   for(int iField=0;iField<fields.size();++iField){
     if(m_datasource->GetLayer(theLayer)->CreateField(fields[iField]) != OGRERR_NONE ){
-      ostringstream es;
+      std::ostringstream es;
       es << "Creating field " << fields[iField]->GetNameRef() << " failed";
-      string errorString=es.str();
+      std::string errorString=es.str();
       throw(errorString);
     }
   }
 }
 
-void ImgWriterOgr::addPoint(double x, double y, const map<string,double>& pointAttributes, string fieldName, const string& theId){
+void ImgWriterOgr::addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, const std::string& theId){
   OGRFeature *poFeature;
   poFeature=createFeature();
   OGRPoint pt;
   poFeature->SetField( fieldName.c_str(), theId.c_str());
-  for(map<string,double>::const_iterator mit=pointAttributes.begin();mit!=pointAttributes.end();++mit){
+  for(std::map<std::string,double>::const_iterator mit=pointAttributes.begin();mit!=pointAttributes.end();++mit){
     poFeature->SetField((mit->first).c_str(), mit->second);
   }
   pt.setX(x);
   pt.setY(y);
   poFeature->SetGeometry( &pt );
   if(createFeature(poFeature)!=OGRERR_NONE){
-    string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature in shapefile";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
 }
 
-void ImgWriterOgr::addPoint(double x, double y, const map<string,double>& pointAttributes, string fieldName, int theId){
+void ImgWriterOgr::addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, int theId){
   OGRFeature *poFeature;
   poFeature = createFeature();
   OGRPoint pt;
   if(pointAttributes.size()+1!=poFeature->GetFieldCount()){
-    ostringstream ess;
-    ess << "Failed to add feature: " << pointAttributes.size() << " !=" << poFeature->GetFieldCount() << endl;
+    std::ostringstream ess;
+    ess << "Failed to add feature: " << pointAttributes.size() << " !=" << poFeature->GetFieldCount() << std::endl;
     throw(ess.str());
   }
   assert(pointAttributes.size()+1==poFeature->GetFieldCount());
   poFeature->SetField( fieldName.c_str(), theId);
   int fid=0;
-  for(map<string,double>::const_iterator mit=pointAttributes.begin();mit!=pointAttributes.end();++mit){
+  for(std::map<std::string,double>::const_iterator mit=pointAttributes.begin();mit!=pointAttributes.end();++mit){
     poFeature->SetField((mit->first).c_str(),mit->second);
   }
   pt.setX(x);
   pt.setY(y);
   poFeature->SetGeometry( &pt );
   if(createFeature(poFeature)!=OGRERR_NONE){
-    string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature in shapefile";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
 }
 
-//add a line string (polygon), caller is responsible to close the line (end point=start point)
-void ImgWriterOgr::addLineString(vector<OGRPoint*>& points, const string& fieldName, int theId){
+//add a line std::string (polygon), caller is responsible to close the line (end point=start point)
+void ImgWriterOgr::addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId){
   OGRFeature *poFeature;
   poFeature = createFeature();
   poFeature->SetStyleString("PEN(c:#FF0000,w:5px)");//see also http://www.gdal.org/ogr/ogr_feature_style.html
@@ -316,18 +316,18 @@ void ImgWriterOgr::addLineString(vector<OGRPoint*>& points, const string& fieldN
   for(int ip=0;ip<points.size();++ip)
     theLineString.setPoint(ip,points[ip]);
   if(poFeature->SetGeometry( &theLineString )!=OGRERR_NONE){
-    string errorString="Failed to set line OGRLineString as feature geometry";
+    std::string errorString="Failed to set line OGRLineString as feature geometry";
     throw(errorString);
   }
   if(createFeature(poFeature)!=OGRERR_NONE){
-    string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature in shapefile";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
 }
 
 //add a ring (polygon), caller is responsible to close the line (end point=start point)?
-void ImgWriterOgr::addRing(vector<OGRPoint*>& points, const string& fieldName, int theId){
+void ImgWriterOgr::addRing(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId){
   OGRFeature *poFeature;
   poFeature = createFeature();
   poFeature->SetStyleString("PEN(c:#FF0000,w:5px)");//see also http://www.gdal.org/ogr/ogr_feature_style.html
@@ -344,19 +344,19 @@ void ImgWriterOgr::addRing(vector<OGRPoint*>& points, const string& fieldName, i
   // SetSpatialFilter(&thePolygon)
   poFeature->SetGeometry( &thePolygon );
   if(createFeature(poFeature)!=OGRERR_NONE){
-    string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature in shapefile";
     throw(errorString);
     OGRFeature::DestroyFeature( poFeature );
   }
   if(poFeature->SetGeometry( &thePolygon )!=OGRERR_NONE){
-    string errorString="Failed to set polygon as feature geometry";
+    std::string errorString="Failed to set polygon as feature geometry";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
 }
 
 //add a line string (polygon), caller is responsible to close the line (end point=start point)
-void ImgWriterOgr::addLineString(vector<OGRPoint*>& points, const string& fieldName, const string& theId){
+void ImgWriterOgr::addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, const std::string& theId){
   OGRFeature *poFeature;
   poFeature = createFeature();
   poFeature->SetField( fieldName.c_str(), theId.c_str());
@@ -365,11 +365,11 @@ void ImgWriterOgr::addLineString(vector<OGRPoint*>& points, const string& fieldN
   for(int ip=0;ip<points.size();++ip)
     theLineString.setPoint(ip,points[ip]);
   if(poFeature->SetGeometry( &theLineString )!=OGRERR_NONE){
-    string errorString="Failed to set line OGRLineString as feature geometry";
+    std::string errorString="Failed to set line OGRLineString as feature geometry";
     throw(errorString);
   }
   if(createFeature(poFeature)!=OGRERR_NONE){
-    string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature in shapefile";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
@@ -390,7 +390,7 @@ int ImgWriterOgr::getFieldCount(int layer) const
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if((poLayer = m_datasource->GetLayer(layer))==NULL){
-    string errorstring="Could not get layer";
+    std::string errorstring="Could not get layer";
     throw(errorstring);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
@@ -402,7 +402,7 @@ int ImgWriterOgr::getFeatureCount() const
   return(getLayer()->GetFeatureCount());
 }
 
-int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, const vector<string>& fieldName, const vector<OGRFieldType>& fieldType, short colX, short colY, const string& theProjection, const OGRwkbGeometryType& eGType, const char fs)
+int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &layername, const std::vector<std::string>& fieldName, const std::vector<OGRFieldType>& fieldType, short colX, short colY, const std::string& theProjection, const OGRwkbGeometryType& eGType, const char fs)
 {
   char     **papszOptions=NULL;
   createLayer(layername, theProjection, eGType, papszOptions);
@@ -416,8 +416,8 @@ int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, con
     createField(fieldName[ifield],fieldType[ifield]);
   //create a local OGRFeature, set attributes and attach geometry before trying to write it to the layer. It is imperative that this feature be instantiated from the OGRFeatureDefn associated with the layer it will be written to.
   //todo: try to open and catch if failure...
-  ifstream fpoints(filename.c_str(),ios::in);
-  string line;
+  std::ifstream fpoints(filename.c_str(),std::ios::in);
+  std::string line;
   OGRPolygon thePolygon;
   OGRLinearRing theRing;
   OGRPoint firstPoint;
@@ -427,15 +427,15 @@ int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, con
 
 
   if(fs>' '&&fs<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
-    string csvRecord;
+    std::string csvRecord;
     while(getline(fpoints,csvRecord)){//read a line
       OGRFeature *pointFeature;
       if(eGType==wkbPoint)
         pointFeature=createFeature();
       OGRPoint thePoint;
       bool skip=false;
-      istringstream csvstream(csvRecord);
-      string value;
+      std::istringstream csvstream(csvRecord);
+      std::string value;
       int colId=0;
       int fieldId=0;
       while(getline(csvstream,value,fs)){//read a column
@@ -471,14 +471,14 @@ int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, con
         ++colId;
       }
       if(colId!=fieldId+2){
-        ostringstream ess;
+        std::ostringstream ess;
         ess << "Error: colId = " << colId << " is different from fieldId+2 = " << fieldId;
         throw(ess.str());
       }
       if(eGType==wkbPoint){
         pointFeature->SetGeometry( &thePoint );
         if(createFeature(pointFeature)!=OGRERR_NONE){
-          string errorString="Failed to create feature in shapefile";
+          std::string errorString="Failed to create feature in shapefile";
           throw(errorString);
           OGRFeature::DestroyFeature( pointFeature );
         }
@@ -498,8 +498,8 @@ int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, con
         pointFeature=createFeature();
       OGRPoint thePoint;
       bool skip=false;
-      istringstream ist(line);
-      string value;
+      std::istringstream ist(line);
+      std::string value;
       int colId=0;
       int fieldId=0;
       while(ist >> value){
@@ -535,14 +535,14 @@ int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, con
         ++colId;
       }
       if(colId!=fieldId+2){
-        ostringstream ess;
+        std::ostringstream ess;
         ess << "Error: colId = " << colId << " is different from fieldId+2 = " << fieldId;
         throw(ess.str());
       }
       if(eGType==wkbPoint){
         pointFeature->SetGeometry( &thePoint );
         if(createFeature(pointFeature)!=OGRERR_NONE){
-          string errorString="Failed to create feature in shapefile";
+          std::string errorString="Failed to create feature in shapefile";
           throw(errorString);
           OGRFeature::DestroyFeature( pointFeature );
         }
@@ -561,7 +561,7 @@ int ImgWriterOgr::ascii2ogr(const string& filename, const string &layername, con
     // SetSpatialFilter(&thePolygon)
     polyFeature->SetGeometry( &thePolygon );
     if(createFeature(polyFeature)!=OGRERR_NONE){
-      string errorString="Failed to create feature in shapefile";
+      std::string errorString="Failed to create feature in shapefile";
       throw(errorString);
       OGRFeature::DestroyFeature( polyFeature );
     }
@@ -576,24 +576,24 @@ int ImgWriterOgr::addData(const ImgReaderGdal& imgReader, int theLayer, bool ver
     theLayer=m_datasource->GetLayerCount()-1;//get back layer
   assert(m_datasource->GetLayerCount()>theLayer);
   if(verbose)
-    cout << "number of layers: " << m_datasource->GetLayerCount() << endl;
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   if(verbose)
-    cout << "get layer " << theLayer << endl;
+    std::cout << "get layer " << theLayer << std::endl;
   poLayer = m_datasource->GetLayer(theLayer);
   //start reading features from the layer
   OGRFeature *poFeature;
   if(verbose)
-    cout << "reset reading" << endl;
+    std::cout << "reset reading" << std::endl;
   poLayer->ResetReading();
   for(int iband=0;iband<imgReader.nrOfBand();++iband){
-    ostringstream fs;
+    std::ostringstream fs;
     fs << "band" << iband;
     createField(fs.str(),OFTReal);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   int nfield=poFDefn->GetFieldCount();
   if(verbose)
-    cout << "new number of fields: " << nfield << endl;
+    std::cout << "new number of fields: " << nfield << std::endl;
   while( (poFeature = poLayer->GetNextFeature()) != NULL ){
     OGRGeometry *poGeometry;
     poGeometry = poFeature->GetGeometryRef();
@@ -606,7 +606,7 @@ int ImgWriterOgr::addData(const ImgReaderGdal& imgReader, int theLayer, bool ver
       double imgData;
       imgReader.readData(imgData,GDT_Float64,x,y,iband);
       //todo: put imgdata in field
-      ostringstream fs;
+      std::ostringstream fs;
       fs << "band" << iband;
       poFeature->SetField(fs.str().c_str(),imgData);
     }

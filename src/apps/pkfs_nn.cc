@@ -22,10 +22,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <algorithm>
 #include "floatfann.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
-#include "imageclasses/ImgWriterOgr.h"
+// #include "imageclasses/ImgReaderGdal.h"
+// #include "imageclasses/ImgWriterGdal.h"
+// #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "algorithms/myfann_cpp.h"
 #include "algorithms/ConfusionMatrix.h"
@@ -34,6 +34,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 

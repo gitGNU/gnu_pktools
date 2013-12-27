@@ -37,6 +37,8 @@ namespace rule{
   enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7};
 }
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "image", "Input image file");
@@ -45,6 +47,7 @@ int main(int argc, char *argv[])
   Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or leave empty to extract all valid data pixels from sample file");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
+  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
   Optionpk<bool> keepFeatures_opt("k", "keep", "Keep original features in output vector file", false);
   Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
@@ -73,6 +76,7 @@ int main(int argc, char *argv[])
     msknodata_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
     test_opt.retrieveOption(argc,argv);
     keepFeatures_opt.retrieveOption(argc,argv);
     bufferOutput_opt.retrieveOption(argc,argv);
@@ -130,15 +134,15 @@ int main(int argc, char *argv[])
   ImgReaderGdal imgReader;
   if(image_opt.empty()){
     std::cerr << "No image file provided (use option -i). Use --help for help information";
-      exit(0);//help was invoked, stop processing
+      exit(0);
   }
   if(output_opt.empty()){
     std::cerr << "No output file provided (use option -o). Use --help for help information";
-      exit(0);//help was invoked, stop processing
+      exit(0);
   }
   if(sample_opt.empty()){
     std::cerr << "No sample file provided (use option -s). Use --help for help information";
-    exit(0);//help was invoked, stop processing
+    exit(0);
   }
   try{
     imgReader.open(image_opt[0]);
@@ -436,7 +440,7 @@ int main(int argc, char *argv[])
         assert(ntotalvalid==writeBuffer.size());
         if(verbose_opt[0]>0)
           std::cout << "creating image sample writer " << output_opt[0] << " with " << writeBuffer.size() << " samples (" << ntotalinvalid << " invalid)" << std::endl;
-        ogrWriter.open(output_opt[0]);
+        ogrWriter.open(output_opt[0],ogrformat_opt[0]);
         char     **papszOptions=NULL;
         ostringstream slayer;
         slayer << "training data";
@@ -684,7 +688,7 @@ int main(int argc, char *argv[])
         assert(ntotalvalid==writeBuffer.size());
         if(verbose_opt[0]>0)
           std::cout << "creating image sample writer " << output_opt[0] << " with " << writeBuffer.size() << " samples (" << ntotalinvalid << " invalid)" << std::endl;
-        ogrWriter.open(output_opt[0]);
+        ogrWriter.open(output_opt[0],ogrformat_opt[0]);
         char     **papszOptions=NULL;
         ostringstream slayer;
         slayer << "training data";
@@ -756,9 +760,9 @@ int main(int argc, char *argv[])
         std::cout << "creating image sample writer " << output_opt[0] << std::endl;
       ImgWriterOgr ogrWriter;
       ImgWriterOgr ogrTestWriter;
-      ogrWriter.open(output_opt[0]);
+      ogrWriter.open(output_opt[0],ogrformat_opt[0]);
       if(test_opt.size())
-	 ogrTestWriter.open(test_opt[0]);
+	ogrTestWriter.open(test_opt[0],ogrformat_opt[0]);
       char     **papszOptions=NULL;
       ostringstream slayer;
       slayer << "training data";
@@ -2394,6 +2398,8 @@ int main(int argc, char *argv[])
       if(test_opt.size())
 	ogrTestWriter.close();
     }
+  progress=1.0;
+  pfnProgress(progress,pszMessage,pProgressArg);
   imgReader.close();
 }
   

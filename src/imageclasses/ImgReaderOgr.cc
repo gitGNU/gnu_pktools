@@ -197,7 +197,7 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
       theOstream << x << " " << y;
     for(fit=vfields.begin();fit!=vfields.end();++fit)
       theOstream << " " << *fit;
-    theOstream << endl;
+    theOstream << std::endl;
     ++ifeature;
   }
   return(theOstream);
@@ -239,7 +239,7 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
       if(verbose)
         std::cout << *fit << " ";
       // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if((*fit).substr(0,1)=="B"){
+      if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
 	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
 	  int theBand=atoi((*fit).substr(1).c_str());
 	  if(bands.size()){
@@ -256,7 +256,7 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
 	  else
 	    ++fit;
 	}
-	else if((*fit)=="B" || (*fit)=="Band")//B is only band
+	else if((*fit)=="B" || (*fit)=="b" || (*fit)=="Band")//B is only band
 	  ++fit;
       }
       else
@@ -316,7 +316,7 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
       if(verbose)
         std::cout << *fit << " ";
       // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if((*fit).substr(0,1)=="B"){
+      if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
 	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
 	  int iband=atoi((*fit).substr(1).c_str());
 	  if((start||end)&&(iband<start||iband>end))
@@ -324,7 +324,7 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
 	  else
 	    ++fit;
 	}
-	else if(*fit=="B" || *fit=="Band")
+	else if(*fit=="B" || *fit=="b"|| *fit=="Band")
 	  ++fit;
       }
       else

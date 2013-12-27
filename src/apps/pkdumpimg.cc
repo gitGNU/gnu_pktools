@@ -23,12 +23,15 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <assert.h>
 #include "Optionpk.h"
+#include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgWriterOgr.h"
+// #include "imageclasses/ImgWriterOgr.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+using namespace std;
 
 int main(int argc, char *argv[])
 {

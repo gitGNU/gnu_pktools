@@ -37,9 +37,10 @@ extern "C" {
 using namespace std;
 
 int main(int argc,char **argv) {
-  Optionpk<string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!", "");
-  Optionpk<string> mask_opt("m", "mask", "All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use input file as mask to remove background polygon! ", "");
-  Optionpk<string> output_opt("o", "output", "Output vector file", "");
+  Optionpk<string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!");
+  Optionpk<string> mask_opt("m", "mask", "All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use input file as mask to remove background polygon! ");
+  Optionpk<string> output_opt("o", "output", "Output vector file");
+  Optionpk<string> ogrformat_opt("f", "f", "Output OGR file format","ESRI Shapefile");
   Optionpk<int> band_opt("b", "band", "the band to be used from input file", 0);
   Optionpk<string> fname_opt("n", "name", "the field name of the output layer", "DN");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
@@ -49,6 +50,7 @@ int main(int argc,char **argv) {
     doProcess=input_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     fname_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
@@ -60,6 +62,14 @@ int main(int argc,char **argv) {
   if(!doProcess){
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
+  }
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information";
+      exit(0);
+  }
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information";
+      exit(0);
   }
 
   GDALAllRegister();
@@ -73,7 +83,7 @@ int main(int argc,char **argv) {
 
   ImgReaderGdal maskReader;
   GDALRasterBand *maskBand=NULL;
-  if(mask_opt[0]!=""){
+  if(mask_opt.size()){
     if(verbose_opt[0])
       cout << "opening mask file " << mask_opt[0] << endl;
     maskReader.open(mask_opt[0]);
@@ -84,7 +94,7 @@ int main(int argc,char **argv) {
   GDALRasterBand  *inputBand;
   inputBand=inputReader.getRasterBand(0);
 
-  ImgWriterOgr ogrWriter(output_opt[0]);
+  ImgWriterOgr ogrWriter(output_opt[0],ogrformat_opt[0]);
   OGRLayer* theLayer=ogrWriter.createLayer(output_opt[0].substr(output_opt[0].rfind('/')+1), inputReader.getProjectionRef());
   if(verbose_opt[0])
     cout << "projection: " << inputReader.getProjection() << endl;
@@ -104,7 +114,7 @@ int main(int argc,char **argv) {
   cout << "number of features: " << OGR_L_GetFeatureCount(hOutLayer,TRUE) << endl;
   
   inputReader.close();
-  if(mask_opt[0]!="")
+  if(mask_opt.size())
     maskReader.close();
   ogrWriter.close();
 }

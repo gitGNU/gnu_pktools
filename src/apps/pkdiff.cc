@@ -25,11 +25,14 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "Optionpk.h"
 #include "algorithms/ConfusionMatrix.h"
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input image file.");
   Optionpk<string> reference_opt("ref", "reference", "Reference image file");
   Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.");
+  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
   Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also msknodata option. (default is empty)");
   Optionpk<int> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
@@ -53,6 +56,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     reference_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
@@ -216,7 +220,7 @@ int main(int argc, char *argv[])
             cout << "creating output vector file " << output_opt[0] << endl;
           assert(output_opt[0].find(".shp")!=string::npos);
           try{
-            ogrWriter.open(output_opt[iref]);
+            ogrWriter.open(output_opt[iref],ogrformat_opt[0]);
           }
           catch(string error){
             cerr << error << endl;
