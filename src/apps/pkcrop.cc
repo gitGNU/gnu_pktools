@@ -103,12 +103,12 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
   if(input_opt.empty()){
-    std::cerr << "No input file provided (use option -i). Use pkinfo --help for help information" << std::endl;
-    exit(0);//help was invoked, stop processing
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
   }
   if(output_opt.empty()){
-    std::cerr << "No output file provided (use option -o). Use pkinfo --help for help information" << std::endl;
-    exit(0);//help was invoked, stop processing
+    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
+    exit(0);
   }
 
   short nodataValue=nodata_opt.size()? nodata_opt[0] : 0;

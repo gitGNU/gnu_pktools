@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
   Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
   Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid of the polygon if line is set), centroid, mean (mean value written to centroid of polygon if line is set), proportion, minimum (of polygon), maximum (of polygon), maxvote.", "point");
+  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), centroid, mean (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote.", "point");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -128,8 +128,18 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>1)
     std::cout << "boundary: " << boundary_opt[0] << std::endl;
   ImgReaderGdal imgReader;
-  assert(image_opt.size());
-  assert(output_opt.size());
+  if(image_opt.empty()){
+    std::cerr << "No image file provided (use option -i). Use --help for help information";
+      exit(0);//help was invoked, stop processing
+  }
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information";
+      exit(0);//help was invoked, stop processing
+  }
+  if(sample_opt.empty()){
+    std::cerr << "No sample file provided (use option -s). Use --help for help information";
+    exit(0);//help was invoked, stop processing
+  }
   try{
     imgReader.open(image_opt[0]);
   }
@@ -228,7 +238,6 @@ int main(int argc, char *argv[])
   double progress=0;
   srandom(time(NULL));
 
-  assert(sample_opt.size());
   if((sample_opt[0].find(".tif"))!=std::string::npos){//raster file
     if(class_opt.empty()){
       std::cout << "Warning: no classes selected, if classes must be extracted, set to -1 for all classes using option -c -1" << std::endl;
