@@ -33,9 +33,10 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output vector file");
   Optionpk<string> ogrformat_opt("f", "f", "Output OGR file format","ESRI Shapefile");
   Optionpk<string> selectField_opt("select", "select", "select field (combined with like opt)");
+  //selectField can also be done via ogr2ogr using the -select option
   Optionpk<string> like_opt("like", "like", "substring(s) to be found in select field. If multiple substrings are provided, feature will be selected if one of them is found (stringent option must be false)");
   Optionpk<bool> stringent_opt("st", "stringent", "string in like option must exactly match to select feature)",false);
-  Optionpk<string> field_opt("f", "field", "output field names (number must exactly match input fields)");
+  // Optionpk<string> field_opt("as_field", "_field", "output field names (number must exactly match input fields)");
   //renaming fields can also be done via ogr2ogr using the -sql option:
   //ogr2ogr outdataset indataset -sql "SELECT src_field1 AS dst_field1, src_field2 AS dst_field2 FROM sourcelayer"
   Optionpk<long int> setfeature_opt("sf", "sf", "id of feature(s) to set (start from 0)");
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
     selectField_opt.retrieveOption(argc,argv);
     like_opt.retrieveOption(argc,argv);
     stringent_opt.retrieveOption(argc,argv);
-    field_opt.retrieveOption(argc,argv);
+    // field_opt.retrieveOption(argc,argv);
     addname_opt.retrieveOption(argc,argv);
     addtype_opt.retrieveOption(argc,argv);
     addvalue_opt.retrieveOption(argc,argv);
@@ -102,8 +103,8 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "reset reading" << endl;
   ogrReader.getLayer()->ResetReading();
-  if(field_opt.size())
-    assert(field_opt.size()==ogrReader.getFieldCount());
+  // if(field_opt.size())
+  //   assert(field_opt.size()==ogrReader.getFieldCount());
   unsigned long int ifeature=0;
   if(verbose_opt[0])
     cout << "going through features" << endl << flush;
@@ -116,16 +117,16 @@ int main(int argc, char *argv[])
   writeFields=readFields;
   try{
     for(int ifield=0;ifield<readFields.size();++ifield){
-      if(field_opt.size()>ifield)
-        writeFields[ifield]->SetName(field_opt[ifield].c_str());
+      // if(field_opt.size()>ifield)
+      //   writeFields[ifield]->SetName(field_opt[ifield].c_str());
       if(verbose_opt[0])
         std::cout << readFields[ifield]->GetNameRef() << " -> " << writeFields[ifield]->GetNameRef() << std::endl;
       if(writeLayer->CreateField(writeFields[ifield]) != OGRERR_NONE ){
         ostringstream es;
-        if(field_opt.size()>ifield)
-          es << "Creating field " << field_opt[ifield] << " failed";
-        else
-          es << "Creating field " << readFields[ifield] << " failed";
+        // if(field_opt.size()>ifield)
+        //   es << "Creating field " << field_opt[ifield] << " failed";
+        // else
+	es << "Creating field " << readFields[ifield] << " failed";
         string errorString=es.str();
         throw(errorString);
       }

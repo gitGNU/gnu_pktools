@@ -97,8 +97,15 @@ int main(int argc, char *argv[])
     cout << endl;
   }
 
-  assert(input_opt.size());
-  assert(reference_opt.size());
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
+  if(reference_opt.empty()){
+    std::cerr << "No reference file provided (use option -ref). Use --help for help information" << std::endl;
+    exit(0);
+  }
+
   if(mask_opt.size())
     while(mask_opt.size()<input_opt.size())
       mask_opt.push_back(mask_opt[0]);
@@ -188,15 +195,25 @@ int main(int argc, char *argv[])
   double progress=0;
   if(!verbose_opt[0])
     pfnProgress(progress,pszMessage,pProgressArg);
-  if(reference_opt[0].find(".shp")!=string::npos){
+
+  bool refIsRaster=false;
+  ImgReaderOgr referenceReaderOgr;
+  try{
+    referenceReaderOgr.open(reference_opt[0]);
+    referenceReaderOgr.close();
+  }
+  catch(string errorString){
+    refIsRaster=true;
+  }
+  // if(reference_opt[0].find(".shp")!=string::npos){
+  if(!refIsRaster){
     for(int iinput=0;iinput<input_opt.size();++iinput){
       if(output_opt.size())
         assert(reference_opt.size()==output_opt.size());
       for(int iref=0;iref<reference_opt.size();++iref){
         if(verbose_opt[0])
           cout << "reference is " << reference_opt[iref] << endl;
-        assert(reference_opt[iref].find(".shp")!=string::npos);
-        ImgReaderOgr referenceReader;
+        // assert(reference_opt[iref].find(".shp")!=string::npos);
         try{
           inputReader.open(input_opt[iinput]);//,imagicX_opt[0],imagicY_opt[0]);
           if(mask_opt.size()){
@@ -204,7 +221,7 @@ int main(int argc, char *argv[])
             assert(inputReader.nrOfCol()==maskReader.nrOfCol());
             assert(inputReader.nrOfRow()==maskReader.nrOfRow());
           }
-          referenceReader.open(reference_opt[iref]);
+          referenceReaderOgr.open(reference_opt[iref]);
         }
         catch(string error){
           cerr << error << endl;
@@ -214,308 +231,324 @@ int main(int argc, char *argv[])
           referenceRange=inputRange;
 
         ImgWriterOgr ogrWriter;
-        OGRLayer *writeLayer;
-        if(output_opt.size()){
-          if(verbose_opt[0])
-            cout << "creating output vector file " << output_opt[0] << endl;
-          assert(output_opt[0].find(".shp")!=string::npos);
-          try{
-            ogrWriter.open(output_opt[iref],ogrformat_opt[0]);
-          }
-          catch(string error){
-            cerr << error << endl;
-            exit(1);
-          }
-          char     **papszOptions=NULL;
-          string layername=output_opt[0].substr(0,output_opt[0].find(".shp"));
-          if(verbose_opt[0])
-            cout << "creating layer: " << layername << endl;
-          if(ogrWriter.createLayer(layername, "EPSG:3035", wkbPoint, papszOptions)==NULL)
-            cout << "Error: create layer failed!" << endl;
-          else if(verbose_opt[0])
-            cout << "created layer" << endl;
-          if(verbose_opt[0])
-            cout << "copy fields from " << reference_opt[iref] << endl;
-          ogrWriter.copyFields(referenceReader);
-          //create extra field for classified label
-          short theDim=boundary_opt[0];
-          for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
-            for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
-              if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
-                continue;
-              ostringstream fs;
-              if(theDim>1)
-                fs << labelclass_opt[0] << "_" << windowJ << "_" << windowI;
-              else
-                fs << labelclass_opt[0];
-              if(verbose_opt[0])
-                cout << "creating field " << fs.str() << endl;
-              ogrWriter.createField(fs.str(),OFTInteger);
-            }
-          }
-          writeLayer=ogrWriter.getDataSource()->GetLayer(0);
-        }
-        OGRLayer  *readLayer;
-        readLayer = referenceReader.getDataSource()->GetLayer(0);
-        readLayer->ResetReading();
-        OGRFeature *readFeature;
-        int isample=0;
-        while( (readFeature = readLayer->GetNextFeature()) != NULL ){
-          if(verbose_opt[0])
-            cout << "sample " << ++isample << endl;
-          //get x and y from readFeature
-          double x,y;
-          OGRGeometry *poGeometry;
-          OGRPolygon readPolygon;
-          OGRPoint centroidPoint;
-          OGRPoint *poPoint;
-          poGeometry = readFeature->GetGeometryRef();
-          // assert( poGeometry != NULL && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint );
-          if(poGeometry==NULL)
-            continue;
-          else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
-            readPolygon = *((OGRPolygon *) poGeometry);
-            readPolygon.Centroid(&centroidPoint);
-            poPoint=&centroidPoint;
-          }
-          else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
-            poPoint = (OGRPoint *) poGeometry;
-          else{
-            std::cerr << "Warning: skipping feature (not of type point or polygon)" << std::endl;
-            continue;
-          }
-          x=poPoint->getX();
-          y=poPoint->getY();
-          short inputValue;
-          vector<short> inputValues;
-          bool isHomogeneous=true;
-          short maskValue;
-          short outputValue;
-          //read referenceValue from feature
-          short referenceValue;
-          string referenceClassName;
-          if(classValueMap.size()){
-            referenceClassName=readFeature->GetFieldAsString(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
-            referenceValue=classValueMap[referenceClassName];
-          }
-          else
-            referenceValue=readFeature->GetFieldAsInteger(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
-          if(verbose_opt[0])
-            cout << "reference value: " << referenceValue << endl;
-          bool pixelFlagged=false;
-          bool maskFlagged=false;
-          for(int iflag=0;iflag<nodata_opt.size();++iflag){
-            if(referenceValue==nodata_opt[iflag])
-              pixelFlagged=true;
-          }
-          if(pixelFlagged)
-            continue;
-          double i_centre,j_centre;
-          //input reader is georeferenced!
-          inputReader.geo2image(x,y,i_centre,j_centre);
-          //       else{
-          //         i_centre=x;
-          //         j_centre=y;
-          //       }
-          //nearest neighbour
-          j_centre=static_cast<int>(j_centre);
-          i_centre=static_cast<int>(i_centre);
-          //check if j_centre is out of bounds
-          if(static_cast<int>(j_centre)<0||static_cast<int>(j_centre)>=inputReader.nrOfRow())
-            continue;
-          //check if i_centre is out of bounds
-          if(static_cast<int>(i_centre)<0||static_cast<int>(i_centre)>=inputReader.nrOfCol())
-            continue;
-          OGRFeature *writeFeature;
-          if(output_opt.size()){
-            writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
-            if(verbose_opt[0])
-              cout << "copying fields from " << reference_opt[0] << endl;
-            if(writeFeature->SetFrom(readFeature)!= OGRERR_NONE)
-              cerr << "writing feature failed" << endl;
-          }
-          bool windowAllFlagged=true;
-          bool windowHasFlag=false;
-          short theDim=boundary_opt[0];
-          for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
-            for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
-              if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
-                continue;
-              int j=j_centre+windowJ;
-              //check if j is out of bounds
-              if(static_cast<int>(j)<0||static_cast<int>(j)>=inputReader.nrOfRow())
-                continue;
-              int i=i_centre+windowI;
-              //check if i is out of bounds
-              if(static_cast<int>(i)<0||static_cast<int>(i)>=inputReader.nrOfCol())
-                continue;
-              if(verbose_opt[0])
-                cout << setprecision(12) << "reading image value at x,y " << x << "," << y << " (" << i << "," << j << "), ";
-              inputReader.readData(inputValue,GDT_Int16,i,j,band_opt[0]);
-              inputValues.push_back(inputValue);
-              if(inputValues.back()!=*(inputValues.begin()))
-                isHomogeneous=false;
-              if(verbose_opt[0])
-                cout << "input value: " << inputValue << endl;
-              pixelFlagged=false;
-              for(int iflag=0;iflag<nodata_opt.size();++iflag){
-                if(inputValue==nodata_opt[iflag]){
-                  pixelFlagged=true;
-                  break;
-                }
-              }
-              maskFlagged=false;//(masknodata_opt[ivalue]>=0)?false:true;
-              if(mask_opt.size()){
-                maskReader.readData(maskValue,GDT_Int16,i,j,band_opt[0]);
-                for(int ivalue=0;ivalue<masknodata_opt.size();++ivalue){
-                  if(masknodata_opt[ivalue]>=0){//values set in masknodata_opt are invalid
-                    if(maskValue==masknodata_opt[ivalue]){
-                      maskFlagged=true;
-                      break;
-                    }
-                  }
-                  else{//only values set in masknodata_opt are valid
-                    if(maskValue!=-masknodata_opt[ivalue])
-                      maskFlagged=true;
-                    else{
-                      maskFlagged=false;
-                      break;
-                    }
-                  }
-                }
-              }
-              pixelFlagged=pixelFlagged||maskFlagged;
-              if(pixelFlagged)
-                windowHasFlag=true;
-              else
-                windowAllFlagged=false;//at least one good pixel in neighborhood
-            }
-          }
-          //at this point we know the values for the entire window
-          if(homogeneous_opt[0]){//only centre pixel
-            int j=j_centre;
-            int i=i_centre;
-            //flag if not all pixels are homogeneous or if at least one pixel flagged
-          
-            if(!windowHasFlag&&isHomogeneous){
-              if(output_opt.size())
-                writeFeature->SetField(labelclass_opt[0].c_str(),static_cast<int>(inputValue));
-              if(confusion_opt[0]){
-                ++ntotalValidation;
-                if(classValueMap.size()){
-                  assert(inputValue<nameVector.size());
-                  string className=nameVector[inputValue];
-                  cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
-                }
-                else{
-                  int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-                  int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
-                  assert(rc<nclass);
-                  assert(ic<nclass);
-                  ++nvalidation[rc];
-                  ++resultClass[rc][ic];
-                  if(verbose_opt[0]>1)
-                    cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
-                  cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
-                }
-              }
-              if(inputValue==referenceValue){//correct
-		outputValue=valueE_opt[0];
-		if(nodata_opt.size()){
-		  if(valueE_opt[0]==nodata_opt[0])
-		    outputValue=inputValue;
+	for(int ilayer=0;ilayer<referenceReaderOgr.getDataSource()->GetLayerCount();++ilayer){
+	  OGRLayer  *readLayer;
+	  readLayer = referenceReaderOgr.getDataSource()->GetLayer(ilayer);
+	  readLayer->ResetReading();
+	  OGRLayer *writeLayer;
+	  if(output_opt.size()){
+	    if(verbose_opt[0])
+	      cout << "creating output vector file " << output_opt[0] << endl;
+	    // assert(output_opt[0].find(".shp")!=string::npos);
+	    try{
+	      ogrWriter.open(output_opt[iref],ogrformat_opt[0]);
+	    }
+	    catch(string error){
+	      cerr << error << endl;
+	      exit(1);
+	    }
+	    char     **papszOptions=NULL;
+	    string layername=type2string<int>(ilayer);//output_opt[0].substr(0,output_opt[0].find(".shp"));
+	    if(verbose_opt[0])
+	      cout << "creating layer: " << layername << endl;
+	    if(ogrWriter.createLayer(layername, referenceReaderOgr.getProjection(ilayer), referenceReaderOgr.getGeometryType(ilayer), papszOptions)==NULL)
+	      cout << "Error: create layer failed!" << endl;
+	    else if(verbose_opt[0])
+	      cout << "created layer" << endl;
+	    if(verbose_opt[0])
+	      cout << "copy fields from " << reference_opt[iref] << endl;
+	    ogrWriter.copyFields(referenceReaderOgr,ilayer);
+	    //create extra field for classified label
+	    short theDim=boundary_opt[0];
+	    for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
+	      for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
+		if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
+		  continue;
+		ostringstream fs;
+		if(theDim>1)
+		  fs << labelclass_opt[0] << "_" << windowJ << "_" << windowI;
+		else
+		  fs << labelclass_opt[0];
+		if(verbose_opt[0])
+		  cout << "creating field " << fs.str() << endl;
+		ogrWriter.createField(fs.str(),OFTInteger,ilayer);
+	      }
+	    }
+	    writeLayer=ogrWriter.getDataSource()->GetLayer(ilayer);
+	  }
+	  OGRFeature *readFeature;
+	  int isample=0;
+	  while( (readFeature = readLayer->GetNextFeature()) != NULL ){
+	    if(verbose_opt[0])
+	      cout << "sample " << ++isample << endl;
+	    //get x and y from readFeature
+	    double x,y;
+	    OGRGeometry *poGeometry;
+	    OGRPoint centroidPoint;
+	    OGRPoint *poPoint;
+	    poGeometry = readFeature->GetGeometryRef();
+	    // assert( poGeometry != NULL && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint );
+	    if(poGeometry==NULL)
+	      continue;
+	    else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon){
+	      OGRMultiPolygon readPolygon = *((OGRMultiPolygon *) poGeometry);
+	      readPolygon = *((OGRMultiPolygon *) poGeometry);
+	      readPolygon.Centroid(&centroidPoint);
+	      poPoint=&centroidPoint;
+	    }
+	    else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+	      OGRPolygon readPolygon=*((OGRPolygon *) poGeometry);
+	      readPolygon.Centroid(&centroidPoint);
+	      poPoint=&centroidPoint;
+	    }
+	    else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint )
+	      poPoint = (OGRPoint *) poGeometry;
+	    else{
+	      std::cerr << "Warning: skipping feature (not of type point or polygon)" << std::endl;
+	      continue;
+	    }
+	    x=poPoint->getX();
+	    y=poPoint->getY();
+	    short inputValue;
+	    vector<short> inputValues;
+	    bool isHomogeneous=true;
+	    short maskValue;
+	    short outputValue;
+	    //read referenceValue from feature
+	    short referenceValue;
+	    string referenceClassName;
+	    if(classValueMap.size()){
+	      referenceClassName=readFeature->GetFieldAsString(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
+	      referenceValue=classValueMap[referenceClassName];
+	    }
+	    else
+	      referenceValue=readFeature->GetFieldAsInteger(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
+	    if(verbose_opt[0])
+	      cout << "reference value: " << referenceValue << endl;
+	    bool pixelFlagged=false;
+	    bool maskFlagged=false;
+	    for(int iflag=0;iflag<nodata_opt.size();++iflag){
+	      if(referenceValue==nodata_opt[iflag])
+		pixelFlagged=true;
+	    }
+	    if(pixelFlagged)
+	      continue;
+	    double i_centre,j_centre;
+	    //input reader is georeferenced!
+	    inputReader.geo2image(x,y,i_centre,j_centre);
+	    //       else{
+	    //         i_centre=x;
+	    //         j_centre=y;
+	    //       }
+	    //nearest neighbour
+	    j_centre=static_cast<int>(j_centre);
+	    i_centre=static_cast<int>(i_centre);
+	    //check if j_centre is out of bounds
+	    if(static_cast<int>(j_centre)<0||static_cast<int>(j_centre)>=inputReader.nrOfRow())
+	      continue;
+	    //check if i_centre is out of bounds
+	    if(static_cast<int>(i_centre)<0||static_cast<int>(i_centre)>=inputReader.nrOfCol())
+	      continue;
+	    OGRFeature *writeFeature;
+	    if(output_opt.size()){
+	      writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	      if(verbose_opt[0])
+		cout << "copying fields from " << reference_opt[0] << endl;
+	      //todo: segmentation fault when more than one layer...?
+	      //test
+	      // assert(readFeature);
+	      // cout << readFeature->GetFieldAsString(readFeature->GetFieldIndex(labelref_opt[0].c_str())) << endl;
+	      // assert(writeFeature);
+	      // cout << "number of fields in writeFeature: " << writeFeature->GetFieldCount() << endl;
+	      //end test	      
+	      if(writeFeature->SetFrom(readFeature)!= OGRERR_NONE)
+		cerr << "writing feature failed" << endl;
+	      if(verbose_opt[0])
+		cout << "feature written" << endl;
+	    }
+	    bool windowAllFlagged=true;
+	    bool windowHasFlag=false;
+	    short theDim=boundary_opt[0];
+	    for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
+	      for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
+		if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
+		  continue;
+		int j=j_centre+windowJ;
+		//check if j is out of bounds
+		if(static_cast<int>(j)<0||static_cast<int>(j)>=inputReader.nrOfRow())
+		  continue;
+		int i=i_centre+windowI;
+		//check if i is out of bounds
+		if(static_cast<int>(i)<0||static_cast<int>(i)>=inputReader.nrOfCol())
+		  continue;
+		if(verbose_opt[0])
+		  cout << setprecision(12) << "reading image value at x,y " << x << "," << y << " (" << i << "," << j << "), ";
+		inputReader.readData(inputValue,GDT_Int16,i,j,band_opt[0]);
+		inputValues.push_back(inputValue);
+		if(inputValues.back()!=*(inputValues.begin()))
+		  isHomogeneous=false;
+		if(verbose_opt[0])
+		  cout << "input value: " << inputValue << endl;
+		pixelFlagged=false;
+		for(int iflag=0;iflag<nodata_opt.size();++iflag){
+		  if(inputValue==nodata_opt[iflag]){
+		    pixelFlagged=true;
+		    break;
+		  }
 		}
-              }
-              else if(inputValue>referenceValue)//1=forest,2=non-forest
-                outputValue=valueO_opt[0];//omission error
-              else
-                outputValue=valueC_opt[0];//commission error
-            }
-          }
-          else{
-            for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
-              for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
-                if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
-                  continue;
-                int j=j_centre+windowJ;
-                //check if j is out of bounds
-                if(static_cast<int>(j)<0||static_cast<int>(j)>=inputReader.nrOfRow())
-                  continue;
-                int i=i_centre+windowI;
-                //check if i is out of bounds
-                if(static_cast<int>(i)<0||static_cast<int>(i)>=inputReader.nrOfCol())
-                  continue;
-                if(!windowAllFlagged){
-                  ostringstream fs;
-                  if(theDim>1)
-                    fs << labelclass_opt[0] << "_" << windowJ << "_" << windowI;
-                  else
-                    fs << labelclass_opt[0];
-                  if(output_opt.size())
-                    writeFeature->SetField(fs.str().c_str(),static_cast<int>(inputValue));
-                  if(!windowJ&&!windowI){//centre pixel
-                    if(confusion_opt[0]){
-                      ++ntotalValidation;
-                      if(classValueMap.size()){
-                        assert(inputValue<nameVector.size());
-                        string className=nameVector[inputValue];
-                        cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
-                      }
-                      else{
-                        int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-                        int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
-                        if(rc>=nclass)
-                          continue;
-                        if(ic>=nclass)
-                          continue;
-                        // assert(rc<nclass);
-                        // assert(ic<nclass);
-                        ++nvalidation[rc];
-                        ++resultClass[rc][ic];
-                        if(verbose_opt[0]>1)
-                          cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
-                        cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
-                      }
-                    }
-                    if(inputValue==referenceValue){//correct
-		      outputValue=valueE_opt[0];
-		      if(nodata_opt.size()){
-			if(valueE_opt[0]==nodata_opt[0])
-			  outputValue=inputValue;
+		maskFlagged=false;//(masknodata_opt[ivalue]>=0)?false:true;
+		if(mask_opt.size()){
+		  maskReader.readData(maskValue,GDT_Int16,i,j,band_opt[0]);
+		  for(int ivalue=0;ivalue<masknodata_opt.size();++ivalue){
+		    if(masknodata_opt[ivalue]>=0){//values set in masknodata_opt are invalid
+		      if(maskValue==masknodata_opt[ivalue]){
+			maskFlagged=true;
+			break;
 		      }
-                    }
-                    else if(inputValue>referenceValue)//1=forest,2=non-forest
-                      outputValue=valueO_opt[0];//omission error
-                    else
-                      outputValue=valueC_opt[0];//commission error
-                  }
-                }
-              }
-            }
-          }
-          if(output_opt.size()){
-            if(!windowAllFlagged){
-              if(verbose_opt[0])
-                cout << "creating feature" << endl;
-              if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-                string errorString="Failed to create feature in shapefile";
-                throw(errorString);
-              }
-            }
-            OGRFeature::DestroyFeature( writeFeature );
-          }
-        }
+		    }
+		    else{//only values set in masknodata_opt are valid
+		      if(maskValue!=-masknodata_opt[ivalue])
+			maskFlagged=true;
+		      else{
+			maskFlagged=false;
+			break;
+		      }
+		    }
+		  }
+		}
+		pixelFlagged=pixelFlagged||maskFlagged;
+		if(pixelFlagged)
+		  windowHasFlag=true;
+		else
+		  windowAllFlagged=false;//at least one good pixel in neighborhood
+	      }
+	    }
+	    //at this point we know the values for the entire window
+	    if(homogeneous_opt[0]){//only centre pixel
+	      int j=j_centre;
+	      int i=i_centre;
+	      //flag if not all pixels are homogeneous or if at least one pixel flagged
+          
+	      if(!windowHasFlag&&isHomogeneous){
+		if(output_opt.size())
+		  writeFeature->SetField(labelclass_opt[0].c_str(),static_cast<int>(inputValue));
+		if(confusion_opt[0]){
+		  ++ntotalValidation;
+		  if(classValueMap.size()){
+		    assert(inputValue<nameVector.size());
+		    string className=nameVector[inputValue];
+		    cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
+		  }
+		  else{
+		    int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
+		    int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+		    assert(rc<nclass);
+		    assert(ic<nclass);
+		    ++nvalidation[rc];
+		    ++resultClass[rc][ic];
+		    if(verbose_opt[0]>1)
+		      cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
+		    cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+		  }
+		}
+		if(inputValue==referenceValue){//correct
+		  outputValue=valueE_opt[0];
+		  if(nodata_opt.size()){
+		    if(valueE_opt[0]==nodata_opt[0])
+		      outputValue=inputValue;
+		  }
+		}
+		else if(inputValue>referenceValue)//1=forest,2=non-forest
+		  outputValue=valueO_opt[0];//omission error
+		else
+		  outputValue=valueC_opt[0];//commission error
+	      }
+	    }
+	    else{
+	      for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
+		for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
+		  if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
+		    continue;
+		  int j=j_centre+windowJ;
+		  //check if j is out of bounds
+		  if(static_cast<int>(j)<0||static_cast<int>(j)>=inputReader.nrOfRow())
+		    continue;
+		  int i=i_centre+windowI;
+		  //check if i is out of bounds
+		  if(static_cast<int>(i)<0||static_cast<int>(i)>=inputReader.nrOfCol())
+		    continue;
+		  if(!windowAllFlagged){
+		    ostringstream fs;
+		    if(theDim>1)
+		      fs << labelclass_opt[0] << "_" << windowJ << "_" << windowI;
+		    else
+		      fs << labelclass_opt[0];
+		    if(output_opt.size())
+		      writeFeature->SetField(fs.str().c_str(),static_cast<int>(inputValue));
+		    if(!windowJ&&!windowI){//centre pixel
+		      if(confusion_opt[0]){
+			++ntotalValidation;
+			if(classValueMap.size()){
+			  assert(inputValue<nameVector.size());
+			  string className=nameVector[inputValue];
+			  cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
+			}
+			else{
+			  int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
+			  int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+			  if(rc>=nclass)
+			    continue;
+			  if(ic>=nclass)
+			    continue;
+			  // assert(rc<nclass);
+			  // assert(ic<nclass);
+			  ++nvalidation[rc];
+			  ++resultClass[rc][ic];
+			  if(verbose_opt[0]>1)
+			    cout << "increment: " << rc << " " << referenceRange[rc] << " " << ic << " " << inputRange[ic] << endl;
+			  cm.incrementResult(cm.getClass(rc),cm.getClass(ic),1);
+			}
+		      }
+		      if(inputValue==referenceValue){//correct
+			outputValue=valueE_opt[0];
+			if(nodata_opt.size()){
+			  if(valueE_opt[0]==nodata_opt[0])
+			    outputValue=inputValue;
+			}
+		      }
+		      else if(inputValue>referenceValue)//1=forest,2=non-forest
+			outputValue=valueO_opt[0];//omission error
+		      else
+			outputValue=valueC_opt[0];//commission error
+		    }
+		  }
+		}
+	      }
+	    }
+	    if(output_opt.size()){
+	      if(!windowAllFlagged){
+		if(verbose_opt[0])
+		  cout << "creating feature" << endl;
+		if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
+		  string errorString="Failed to create feature in shapefile";
+		  throw(errorString);
+		}
+	      }
+	      OGRFeature::DestroyFeature( writeFeature );
+	    }
+	  }
+	}
         if(output_opt.size())
           ogrWriter.close();
-        referenceReader.close();
+        referenceReaderOgr.close();
         inputReader.close();
         if(mask_opt.size())
           maskReader.close();
       }
     }
-  }//reference is shape file
+  }//reference is OGR
   else{
-    ImgWriterGdal imgWriter;
+    ImgWriterGdal gdalWriter;
     try{
       inputReader.open(input_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
       if(mask_opt.size())
@@ -528,18 +561,18 @@ int main(int argc, char *argv[])
           theInterleave+=inputReader.getInterleave();
           option_opt.push_back(theInterleave);
         }
-        imgWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),inputReader.getImageType(),option_opt);
+        gdalWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),inputReader.getImageType(),option_opt);
 	if(nodata_opt.size())
-	  imgWriter.GDALSetNoDataValue(nodata_opt[0]);
+	  gdalWriter.GDALSetNoDataValue(nodata_opt[0]);
         if(inputReader.isGeoRef()){
-          imgWriter.copyGeoTransform(inputReader);
+          gdalWriter.copyGeoTransform(inputReader);
         }
         if(colorTable_opt.size())
-          imgWriter.setColorTable(colorTable_opt[0]);
+          gdalWriter.setColorTable(colorTable_opt[0]);
         else if(inputReader.getColorTable()!=NULL){
           if(verbose_opt[0])
             cout << "set colortable from input image" << endl;
-          imgWriter.setColorTable(inputReader.getColorTable());
+          gdalWriter.setColorTable(inputReader.getColorTable());
         }
       }
       else if(verbose_opt[0])
@@ -560,22 +593,22 @@ int main(int argc, char *argv[])
     int irow=0;
     int icol=0;
     double oldreferencerow=-1;
-    ImgReaderGdal referenceReader;
+    ImgReaderGdal referenceReaderGdal;
     try{
-      referenceReader.open(reference_opt[0]);//,rmagicX_opt[0],rmagicY_opt[0]);
+      referenceReaderGdal.open(reference_opt[0]);//,rmagicX_opt[0],rmagicY_opt[0]);
     }
     catch(string error){
       cerr << error << endl;
       exit(1);
     }
     if(inputReader.isGeoRef()){
-      assert(referenceReader.isGeoRef());
-      if(inputReader.getProjection()!=referenceReader.getProjection())
+      assert(referenceReaderGdal.isGeoRef());
+      if(inputReader.getProjection()!=referenceReaderGdal.getProjection())
         cout << "projection of input image and reference image are different!" << endl;
     }
-    vector<short> lineReference(referenceReader.nrOfCol());
+    vector<short> lineReference(referenceReaderGdal.nrOfCol());
     if(confusion_opt[0]){
-      referenceReader.getRange(referenceRange,band_opt[0]);
+      referenceReaderGdal.getRange(referenceRange,band_opt[0]);
       for(int iflag=0;iflag<nodata_opt.size();++iflag){
         vector<short>::iterator fit;
         fit=find(referenceRange.begin(),referenceRange.end(),nodata_opt[iflag]);
@@ -609,22 +642,22 @@ int main(int argc, char *argv[])
       for(icol=0;icol<inputReader.nrOfCol();++icol){
         //find col in reference
         inputReader.image2geo(icol,irow,x,y);
-        referenceReader.geo2image(x,y,ireference,jreference);
-        if(ireference<0||ireference>=referenceReader.nrOfCol()){
+        referenceReaderGdal.geo2image(x,y,ireference,jreference);
+        if(ireference<0||ireference>=referenceReaderGdal.nrOfCol()){
           cerr << ireference << " out of reference range!" << endl;
           cerr << x << " " << y << " " << icol << " " << irow << endl;
           cerr << x << " " << y << " " << ireference << " " << jreference << endl;
           exit(1);
         }
         if(jreference!=oldreferencerow){
-          if(jreference<0||jreference>=referenceReader.nrOfRow()){
+          if(jreference<0||jreference>=referenceReaderGdal.nrOfRow()){
             cerr << jreference << " out of reference range!" << endl;
             cerr << x << " " << y << " " << icol << " " << irow << endl;
             cerr << x << " " << y << " " << ireference << " " << jreference << endl;
             exit(1);
           }
           else{
-            referenceReader.readData(lineReference,GDT_Int16,static_cast<int>(jreference),band_opt[0]);
+            referenceReaderGdal.readData(lineReference,GDT_Int16,static_cast<int>(jreference),band_opt[0]);
             oldreferencerow=jreference;
           }
         }
@@ -703,11 +736,11 @@ int main(int argc, char *argv[])
       }
       if(output_opt.size()){
         try{
-          imgWriter.writeData(lineOutput,GDT_Int16,irow);
+          gdalWriter.writeData(lineOutput,GDT_Int16,irow);
         }
         catch(string errorstring){
           cerr << "lineOutput.size(): " << lineOutput.size() << endl;
-          cerr << "imgWriter.nrOfCol(): " << imgWriter.nrOfCol() << endl;
+          cerr << "gdalWriter.nrOfCol(): " << gdalWriter.nrOfCol() << endl;
           cerr << errorstring << endl;
           exit(1);
         }
@@ -722,14 +755,14 @@ int main(int argc, char *argv[])
         pfnProgress(progress,pszMessage,pProgressArg);
     }
     if(output_opt.size())
-      imgWriter.close();
+      gdalWriter.close();
     else if(!confusion_opt[0]){
       if(isDifferent)
         cout << input_opt[0] << " and " << reference_opt[0] << " are different" << endl;
       else
         cout << input_opt[0] << " and " << reference_opt[0] << " are identical" << endl;
     }
-    referenceReader.close();
+    referenceReaderGdal.close();
     inputReader.close();
     if(mask_opt.size())
       maskReader.close();

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
-  Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option (default is no mask)"); 
+  Optionpk<string> mask_opt("m", "mask", "mask image (support for single mask only, see also msknodata option)"); 
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
@@ -573,7 +573,17 @@ int main(int argc, char *argv[])
     GDALProgressFunc pfnProgress=GDALTermProgress;
     float progress=0;
   //-------------------------------- open image file ------------------------------------
-  if(input_opt[0].find(".shp")==string::npos){
+  bool refIsRaster=false;
+  ImgReaderOgr imgReaderOgr;
+  try{
+    imgReaderOgr.open(input_opt[0]);
+    imgReaderOgr.close();
+  }
+  catch(string errorString){
+    refIsRaster=true;
+  }
+  if(refIsRaster){
+  // if(input_opt[0].find(".shp")==string::npos){
     ImgReaderGdal testImage;
     try{
       if(verbose_opt[0]>=1)
@@ -957,7 +967,7 @@ int main(int argc, char *argv[])
         assert(output_opt.size()==input_opt.size());
       if(verbose_opt[0])
         cout << "opening img reader " << input_opt[ivalidation] << endl;
-      ImgReaderOgr imgReaderOgr(input_opt[ivalidation]);
+      imgReaderOgr.open(input_opt[ivalidation]);
       ImgWriterOgr imgWriterOgr;
 
       if(output_opt.size()){

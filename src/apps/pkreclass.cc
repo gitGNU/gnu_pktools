@@ -115,10 +115,19 @@ int main(int argc, char *argv[])
     for(mit=codemapString.begin();mit!=codemapString.end();++mit)
       cout << (*mit).first << " " << (*mit).second << endl;
   }
-  if(input_opt[0].find(".shp")!=string::npos){//shape file
+  bool refIsRaster=false;
+  ImgReaderOgr ogrReader;
+  try{
+    ogrReader.open(input_opt[0]);
+  }
+  catch(string errorString){
+    refIsRaster=true;
+  }
+  // if(input_opt[0].find(".shp")!=string::npos){//shape file
+  if(!refIsRaster){
     if(verbose_opt[0])
       cout << "opening " << input_opt[0] << " for reading " << endl;
-    ImgReaderOgr ogrReader(input_opt[0]);
+    // ImgReaderOgr ogrReader(input_opt[0]);
     if(verbose_opt[0])
       cout << "opening " << output_opt[0] << " for writing " << endl;
     ImgWriterOgr ogrWriter(output_opt[0],ogrReader);

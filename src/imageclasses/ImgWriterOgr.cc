@@ -250,7 +250,7 @@ void ImgWriterOgr::copyFields(const ImgReaderOgr& imgReaderOgr, int theLayer){
   //get fields from imgReaderOgr
   std::vector<OGRFieldDefn*> fields;
   
-  imgReaderOgr.getFields(fields);
+  imgReaderOgr.getFields(fields,theLayer);
 //   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   for(int iField=0;iField<fields.size();++iField){
     if(m_datasource->GetLayer(theLayer)->CreateField(fields[iField]) != OGRERR_NONE ){
