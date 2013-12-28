@@ -36,10 +36,13 @@ int main(int argc, char *argv[])
   Optionpk<int> nodata_opt("nodata", "nodata", "Flag value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> description_opt("d", "description", "Set image description");
-  Optionpk<double> minmax_opt("m", "minmax", "minimum and maximum values for ndvi (limit all values smaller/larger to min/max", 0);
+  Optionpk<double> min_opt("min", "min", "minimum value for ndvi after scaling (set all values smaller than min to min)", 0);
+  Optionpk<double> max_opt("max", "max", "maximum value for ndvi after scaling (limit all values to max)");
   Optionpk<double> eps_opt("e", "eps", "epsilon, contraint division by zero", 0);
-  Optionpk<double> scale_opt("s", "scale", "scale[0] is used for input, scale[1] is used for output: DN=scale[1]*ndvi+offset[1]", 1);
-  Optionpk<double> offset_opt("off", "offset", "offset[0] is used for input, offset[1] is used for output (see also scale option", 0);
+  Optionpk<double> src_scale_opt("src_s", "src_scale", "scale used for input, scale[1] is used for output: DN=scale[1]*ndvi+offset[1]", 1);
+  Optionpk<double> dst_scale_opt("dst_s", "src_scale", "scale used for output: DN=dst_s*ndvi+dst_offset", 1);
+  Optionpk<double> src_offset_opt("src_o", "src_offset", "offset used for input", 0);
+  Optionpk<double> dst_offset_opt("dst_o", "dst_offset", "offset is used for output: DN=dst_s*ndvi+dst_offset", 0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -55,10 +58,13 @@ int main(int argc, char *argv[])
     nodata_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
-    minmax_opt.retrieveOption(argc,argv);
+    min_opt.retrieveOption(argc,argv);
+    max_opt.retrieveOption(argc,argv);
     eps_opt.retrieveOption(argc,argv);
-    scale_opt.retrieveOption(argc,argv);
-    offset_opt.retrieveOption(argc,argv);
+    src_scale_opt.retrieveOption(argc,argv);
+    src_offset_opt.retrieveOption(argc,argv);
+    dst_scale_opt.retrieveOption(argc,argv);
+    dst_offset_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
@@ -73,26 +79,15 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  assert(input_opt.size());
-  assert(output_opt.size());
-
-  if(scale_opt.size()<2){
-    if(input_opt.size()<2)
-      scale_opt.push_back(1);
-    else
-      scale_opt.push_back(scale_opt[0]);
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
   }
-  if(verbose_opt[0])
-    std::cout << scale_opt;
-  if(offset_opt.size()<2){
-    if(input_opt.size()<2)
-      offset_opt.push_back(0);
-    else
-      offset_opt.push_back(offset_opt[0]);
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
+    exit(0);
   }
 
-  if(verbose_opt[0])
-    std::cout << offset_opt;
   int reqBand=0;
   if(rule_opt[0]=="scale")
     reqBand=1;
@@ -205,7 +200,7 @@ int main(int argc, char *argv[])
     }
     assert(invalid_opt.size()==nodata_opt.size());
     for(icol=0;icol<inputReader[0].nrOfCol();++icol){
-      double ndvi=minmax_opt[0];
+      double ndvi=min_opt[0];
       double flagValue=nodata_opt[0];
       bool valid=true;
       for(int iflag=0;valid&&iflag<invalid_opt.size();++iflag){
@@ -232,43 +227,43 @@ int main(int argc, char *argv[])
           //Normalized Pigment Chlorophyll index (NPCI Penuelas1994): b0=R_430, b1=R_680
           //Structure Intensive Pigment index (SIPI Penuelas 1995): b0=R_450, b1=R_800
           //Lichtenthaler index 1 (Lic1 Lichtenthaler1996): b0=R_680, b2=R_800
-          denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
-          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+          denom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
+          nom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]+(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
         }
         else if(rule_opt[0]=="ndvi2"){//normalized difference with different wavelengths used in denom and nom
           //Example of indices addressed by ndvi2
           //Structure Intensive Pigment index (SIPI Penuelas 1995): b0=R_450, b1=R_800, b2=R_650, b=R_800
           //Vogelmann index 2 (Vog2 Vogelmann1993): b0=R_747, b1=R_735, b2=R_715, b3=R_726
           //Vogelmann index 3 (Vog3 Vogelmann1993): b0=R_747, b1=R_734, b2=R_715, b3=R_720
-          denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
-          nom=(lineInput[2][icol]-offset_opt[0])/scale_opt[0]+(lineInput[3][icol]-offset_opt[0])/scale_opt[0];
+          denom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
+          nom=(lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0]+(lineInput[3][icol]-src_offset_opt[0])/src_scale_opt[0];
         }
         else if(rule_opt[0]=="gvmi"){
-          denom=((lineInput[0][icol]-offset_opt[0])/scale_opt[0]+0.1)-((lineInput[1][icol]-offset_opt[0])/scale_opt[0]+0.02);
-          nom=((lineInput[0][icol]-offset_opt[0])/scale_opt[0]+0.1)+((lineInput[1][icol]-offset_opt[0])/scale_opt[0]+0.02);
+          denom=((lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0]+0.1)-((lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]+0.02);
+          nom=((lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0]+0.1)+((lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]+0.02);
         }
         else if(rule_opt[0]=="vari"){
-          denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[2][icol]-offset_opt[0])/scale_opt[0];
-          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+          denom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0];
+          nom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]+(lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
         }
         else if(rule_opt[0]=="osavi"){//structural index (Rondeaux1996): //b0=R_670, b1=R_800
-          denom=(1.0+0.16)*(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
-          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]+(lineInput[0][icol]-offset_opt[0])/scale_opt[0]+0.16;
+          denom=(1.0+0.16)*(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
+          nom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]+(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0]+0.16;
         }
         else if(rule_opt[0]=="mcari"){//chlorophyll index (Daughtry2000): b0=R_550, b1=R_670, b2=R_700
-          denom=((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-0.2*((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0]))*(lineInput[2][icol]-offset_opt[0])/scale_opt[0];
-          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
+          denom=((lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]-0.2*((lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0]))*(lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0];
+          nom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0];
         }
         else if(rule_opt[0]=="tcari"){//chlorophyll index (Haboudane2002): b0=R_550, b1=R_670, B2=R_700
-          denom=3*((lineInput[1][icol]-offset_opt[0])/scale_opt[0]*(lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-0.2*((lineInput[2][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0])*(lineInput[2][icol]-offset_opt[0])/scale_opt[0]);
-          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
+          denom=3*((lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]*(lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]-0.2*((lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0])*(lineInput[2][icol]-src_offset_opt[0])/src_scale_opt[0]);
+          nom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0];
         }
         else if(rule_opt[0]=="diff"){
-          denom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0]-(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+          denom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0]-(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
           nom=1.0;
         }
         else if(rule_opt[0]=="scale"){
-          denom=(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
+          denom=(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
           nom=1.0;
         }
         else if(rule_opt[0]=="ratio"){
@@ -285,8 +280,8 @@ int main(int argc, char *argv[])
           //Vogelmann index 1 (Vog1 Vogelmann1993): b0=R_740, b1=R_720
           //Gitelson and Merzlyak 1 (GM1 Gitelson1997): b0=R_750 b1=R_550
           //Gitelson and Merzlyak (GM2 Gitelson1997) b0=R_750 b1=R_700
-          denom=(lineInput[0][icol]-offset_opt[0])/scale_opt[0];
-          nom=(lineInput[1][icol]-offset_opt[0])/scale_opt[0];
+          denom=(lineInput[0][icol]-src_offset_opt[0])/src_scale_opt[0];
+          nom=(lineInput[1][icol]-src_offset_opt[0])/src_scale_opt[0];
         }
         else{
           std::cout << "Error: rule " << rule_opt[0] << " not supported" << std::endl;
@@ -294,23 +289,23 @@ int main(int argc, char *argv[])
         }
         if(nom>eps_opt[0]||nom<-eps_opt[0])
         ndvi=denom/nom;
-        if(ndvi<minmax_opt[0])
-          ndvi=minmax_opt[0];
-        else if(minmax_opt.size()>1){
-          if(ndvi>minmax_opt[1])
-            ndvi=minmax_opt[1];
-        }
         switch(theType){
         case(GDT_Byte):
         case(GDT_Int16):
         case(GDT_UInt16):
         case(GDT_UInt32):
         case(GDT_Int32):
-          lineOutput[icol]=static_cast<int>(0.5+ndvi*scale_opt[1]+offset_opt[1]);
+          lineOutput[icol]=static_cast<int>(0.5+ndvi*dst_scale_opt[0]+dst_offset_opt[0]);
           break;
         default:
-          lineOutput[icol]=ndvi*scale_opt[1]+offset_opt[1];
+          lineOutput[icol]=ndvi*dst_scale_opt[0]+dst_offset_opt[0];
         break;
+        }
+        if(lineOutput[icol]<min_opt[0])
+          lineOutput[icol]=min_opt[0];
+        else if(max_opt.size()){
+          if(lineOutput[icol]>max_opt[0])
+            lineOutput[icol]=max_opt[0];
         }
       }
       else

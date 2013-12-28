@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
         else
           totalSamples=trainingReaderBag.readDataImageShape(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
         if(trainingMap.size()<2){
-          string errorstring="Error: could not read at least two classes from training file";
+          string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);
         }
 	trainingReaderBag.close();

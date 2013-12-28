@@ -143,7 +143,7 @@ std::string ImgReaderGdal::getGeoTransform() const
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   m_gds->GetGeoTransform(gt);
   std::ostringstream s;
-  s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << -gt[5] << "]";
+  s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << gt[5] << "]";
   return(s.str());
   // if(!isGeoRef())
   //   return("");

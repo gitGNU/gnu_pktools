@@ -30,8 +30,10 @@ int main(int argc, char *argv[])
   Optionpk<std::string> input_opt("i", "input", "Input shape file", "");
   Optionpk<std::string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
-  Optionpk<double> min_opt("min","min","set minimum value",0);
-  Optionpk<double> max_opt("max","max","set maximum value",0);
+  Optionpk<bool> min_opt("min","min","calculate minimum value",0);
+  Optionpk<bool> max_opt("max","max","calculate maximum value",0);
+  Optionpk<double> src_min_opt("min","min","set minimum value",0);
+  Optionpk<double> src_max_opt("max","max","set maximum value",0);
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<short> nbin_opt("nbin", "nbin", "number of bins", 0);
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
@@ -48,6 +50,8 @@ int main(int argc, char *argv[])
     minmax_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
+    src_min_opt.retrieveOption(argc,argv);
+    src_max_opt.retrieveOption(argc,argv);
     histogram_opt.retrieveOption(argc,argv);
     nbin_opt.retrieveOption(argc,argv);
     relative_opt.retrieveOption(argc,argv);
@@ -85,8 +89,8 @@ int main(int argc, char *argv[])
     theData.clear();
     inputReader.readData(theData,OFTReal,fieldname_opt[ifield],0,verbose_opt[0]);
     std::vector<double> binData;
-    double minValue=min_opt[0];
-    double maxValue=max_opt[0];
+    double minValue=src_min_opt[0];
+    double maxValue=src_max_opt[0];
     if(histogram_opt[0]){
       if(nbin_opt[0]<1){
         if(maxValue<=minValue)
@@ -116,6 +120,10 @@ int main(int argc, char *argv[])
         std::cout << " -min " << stat.min(theData);
         std::cout << " -max " << stat.max(theData);
       }
+      if(min_opt[0])
+        std::cout << " -min " << stat.min(theData);
+      if(max_opt[0])
+        std::cout << " -max " << stat.max(theData);
       if(median_opt[0])
         std::cout << " -median " << stat.median(theData);
       if(size_opt[0])

@@ -48,8 +48,10 @@ int main(int argc, char *argv[])
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
   Optionpk<bool> sum_opt("sum","sum","calculate sum of column",false);
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
-  Optionpk<double> min_opt("min","min","set minimum value",0);
-  Optionpk<double> max_opt("max","max","set maximum value",0);
+  Optionpk<bool> min_opt("min","min","calculate minimum value",false);
+  Optionpk<bool> max_opt("max","max","calculate maximum value",false);
+  Optionpk<double> src_min_opt("src_min","src_min","start reading source from this minimum value",0);
+  Optionpk<double> src_max_opt("src_max","src_max","stop reading source from this maximum value",0);
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<bool> histogram2d_opt("hist2d","hist2d","calculate 2-dimensional histogram based on two columns",false);
   Optionpk<short> nbin_opt("nbin","nbin","number of bins to calculate histogram",0);
@@ -84,6 +86,8 @@ int main(int argc, char *argv[])
     minmax_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
+    src_min_opt.retrieveOption(argc,argv);
+    src_max_opt.retrieveOption(argc,argv);
     histogram_opt.retrieveOption(argc,argv);
     histogram2d_opt.retrieveOption(argc,argv);
     nbin_opt.retrieveOption(argc,argv);
@@ -125,8 +129,8 @@ int main(int argc, char *argv[])
     asciiReader.setMaxRow(range_opt[1]);
   asciiReader.readData(dataVector,col_opt);
   assert(dataVector.size());
-  double minValue=min_opt[0];
-  double maxValue=max_opt[0];
+  double minValue=src_min_opt[0];
+  double maxValue=src_max_opt[0];
   if(histogram_opt[0]){
     if(nbin_opt[0]<1){
       std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
@@ -135,10 +139,10 @@ int main(int argc, char *argv[])
       nbin_opt[0]=maxValue-minValue+1;
     }
   }
-  double minX=min_opt[0];
-  double minY=(min_opt.size()==2)? min_opt[1] : min_opt[0];
-  double maxX=max_opt[0];
-  double maxY=(max_opt.size()==2)? max_opt[1] : max_opt[0];
+  double minX=src_min_opt[0];
+  double minY=(src_min_opt.size()==2)? src_min_opt[1] : src_min_opt[0];
+  double maxX=src_max_opt[0];
+  double maxY=(src_max_opt.size()==2)? src_max_opt[1] : src_max_opt[0];
   if(histogram2d_opt[0]){
     assert(col_opt.size()==2);
     if(nbin_opt[0]<1){
@@ -181,6 +185,10 @@ int main(int argc, char *argv[])
       cout << "min value column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
       cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
     }
+    if(min_opt[0])
+      cout << "min value column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
+    if(max_opt[0])
+      cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
     if(histogram_opt[0]){
       //todo: support kernel density function and estimate sigma as in practical estimate of the bandwith in http://en.wikipedia.org/wiki/Kernel_density_estimation
       double sigma=0;

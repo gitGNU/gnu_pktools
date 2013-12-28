@@ -71,8 +71,12 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
-  if(input_opt.empty()||output_opt.empty()){
-    std::cout << "input or output files are missing, provide input (-i) and output (-o) files. Use -h or --help for more help information" << std::endl;
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
     exit(0);
   }
     

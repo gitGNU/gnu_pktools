@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
       gt[2]=0;
       gt[3]=cropuly;
       gt[4]=0;
-      gt[5]=dy;
+      gt[5]=-dy;
       imgWriter.setGeoTransform(gt);
       if(projection_opt.size()){
 	if(verbose_opt[0])

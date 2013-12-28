@@ -382,7 +382,10 @@ int main(int argc, char *argv[])
   }
   else
     nwriteBand=(file_opt[0])? bands.size()+1:bands.size();
-  assert(output_opt.size());
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
+    exit(0);
+  }
   if(verbose_opt[0])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
@@ -401,7 +404,7 @@ int main(int argc, char *argv[])
   gt[2]=0;
   gt[3]=maxULY;
   gt[4]=0;
-  gt[5]=dy;
+  gt[5]=-dy;
   imgWriter.setGeoTransform(gt);
   // imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
   if(projection_opt.size()){
