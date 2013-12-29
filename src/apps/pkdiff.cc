@@ -189,12 +189,6 @@ int main(int argc, char *argv[])
   }
   
   bool isDifferent=false;
-  const char* pszMessage;
-  void* pProgressArg=NULL;
-  GDALProgressFunc pfnProgress=GDALTermProgress;
-  double progress=0;
-  if(!verbose_opt[0])
-    pfnProgress(progress,pszMessage,pProgressArg);
 
   bool refIsRaster=false;
   ImgReaderOgr referenceReaderOgr;
@@ -205,14 +199,18 @@ int main(int argc, char *argv[])
   catch(string errorString){
     refIsRaster=true;
   }
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  float progress=0;
   // if(reference_opt[0].find(".shp")!=string::npos){
   if(!refIsRaster){
     for(int iinput=0;iinput<input_opt.size();++iinput){
+      cout << "Processing input " << input_opt[iinput] << endl;
       if(output_opt.size())
         assert(reference_opt.size()==output_opt.size());
       for(int iref=0;iref<reference_opt.size();++iref){
-        if(verbose_opt[0])
-          cout << "reference is " << reference_opt[iref] << endl;
+	cout << "reference " << reference_opt[iref] << endl;
         // assert(reference_opt[iref].find(".shp")!=string::npos);
         try{
           inputReader.open(input_opt[iinput]);//,imagicX_opt[0],imagicY_opt[0]);
@@ -231,7 +229,21 @@ int main(int argc, char *argv[])
           referenceRange=inputRange;
 
         ImgWriterOgr ogrWriter;
-	for(int ilayer=0;ilayer<referenceReaderOgr.getDataSource()->GetLayerCount();++ilayer){
+	if(output_opt.size()){
+	  try{
+	    ogrWriter.open(output_opt[iref],ogrformat_opt[0]);
+	  }
+	  catch(string error){
+	    cerr << error << endl;
+	    exit(1);
+	  }
+	}
+	int nlayer=referenceReaderOgr.getDataSource()->GetLayerCount();
+	for(int ilayer=0;ilayer<nlayer;++ilayer){
+	  progress=0;
+	  cout << "processing layer " << ilayer << endl;
+	  if(!verbose_opt[0])
+	    pfnProgress(progress,pszMessage,pProgressArg);
 	  OGRLayer  *readLayer;
 	  readLayer = referenceReaderOgr.getDataSource()->GetLayer(ilayer);
 	  readLayer->ResetReading();
@@ -240,23 +252,17 @@ int main(int argc, char *argv[])
 	    if(verbose_opt[0])
 	      cout << "creating output vector file " << output_opt[0] << endl;
 	    // assert(output_opt[0].find(".shp")!=string::npos);
-	    try{
-	      ogrWriter.open(output_opt[iref],ogrformat_opt[0]);
-	    }
-	    catch(string error){
-	      cerr << error << endl;
-	      exit(1);
-	    }
 	    char     **papszOptions=NULL;
 	    string layername=type2string<int>(ilayer);//output_opt[0].substr(0,output_opt[0].find(".shp"));
 	    if(verbose_opt[0])
 	      cout << "creating layer: " << layername << endl;
-	    if(ogrWriter.createLayer(layername, referenceReaderOgr.getProjection(ilayer), referenceReaderOgr.getGeometryType(ilayer), papszOptions)==NULL)
-	      cout << "Error: create layer failed!" << endl;
-	    else if(verbose_opt[0])
+	    // if(ogrWriter.createLayer(layername, referenceReaderOgr.getProjection(ilayer), referenceReaderOgr.getGeometryType(ilayer), papszOptions)==NULL)
+	    writeLayer=ogrWriter.createLayer(layername, referenceReaderOgr.getProjection(ilayer), wkbPoint, papszOptions);
+	    assert(writeLayer);
+	    if(verbose_opt[0]){
 	      cout << "created layer" << endl;
-	    if(verbose_opt[0])
 	      cout << "copy fields from " << reference_opt[iref] << endl;
+	    }
 	    ogrWriter.copyFields(referenceReaderOgr,ilayer);
 	    //create extra field for classified label
 	    short theDim=boundary_opt[0];
@@ -274,10 +280,12 @@ int main(int argc, char *argv[])
 		ogrWriter.createField(fs.str(),OFTInteger,ilayer);
 	      }
 	    }
-	    writeLayer=ogrWriter.getDataSource()->GetLayer(ilayer);
 	  }
 	  OGRFeature *readFeature;
+	  OGRFeature *writeFeature;
 	  int isample=0;
+	  unsigned int nfeatureInLayer=readLayer->GetFeatureCount();
+	  unsigned int ifeature=0;
 	  while( (readFeature = readLayer->GetNextFeature()) != NULL ){
 	    if(verbose_opt[0])
 	      cout << "sample " << ++isample << endl;
@@ -349,22 +357,24 @@ int main(int argc, char *argv[])
 	    //check if i_centre is out of bounds
 	    if(static_cast<int>(i_centre)<0||static_cast<int>(i_centre)>=inputReader.nrOfCol())
 	      continue;
-	    OGRFeature *writeFeature;
 	    if(output_opt.size()){
 	      writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	      assert(readFeature);
+	      int nfield=readFeature->GetFieldCount();
+	      writeFeature->SetGeometry(poPoint);
 	      if(verbose_opt[0])
-		cout << "copying fields from " << reference_opt[0] << endl;
-	      //todo: segmentation fault when more than one layer...?
-	      //test
-	      // assert(readFeature);
-	      // cout << readFeature->GetFieldAsString(readFeature->GetFieldIndex(labelref_opt[0].c_str())) << endl;
-	      // assert(writeFeature);
-	      // cout << "number of fields in writeFeature: " << writeFeature->GetFieldCount() << endl;
-	      //end test	      
-	      if(writeFeature->SetFrom(readFeature)!= OGRERR_NONE)
-		cerr << "writing feature failed" << endl;
-	      if(verbose_opt[0])
-		cout << "feature written" << endl;
+	      	cout << "copying fields from " << reference_opt[0] << endl;
+	      assert(readFeature);
+	      assert(writeFeature);
+	      vector<int> panMap(nfield);
+	      vector<int>::iterator panit=panMap.begin();
+	      for(int ifield=0;ifield<nfield;++ifield)
+	      	panMap[ifield]=ifield;
+	      writeFeature->SetFieldsFrom(readFeature,&(panMap[0]));
+	      // if(writeFeature->SetFrom(readFeature)!= OGRERR_NONE)
+	      // 	cerr << "writing feature failed" << endl;
+	      // if(verbose_opt[0])
+	      // 	cout << "feature written" << endl;
 	    }
 	    bool windowAllFlagged=true;
 	    bool windowHasFlag=false;
@@ -536,16 +546,20 @@ int main(int argc, char *argv[])
 	      }
 	      OGRFeature::DestroyFeature( writeFeature );
 	    }
-	  }
-	}
+	    ++ifeature;
+	    progress=static_cast<float>(ifeature+1)/nfeatureInLayer;
+	    pfnProgress(progress,pszMessage,pProgressArg);
+	  }//next feature
+	}//next layer
         if(output_opt.size())
           ogrWriter.close();
         referenceReaderOgr.close();
         inputReader.close();
         if(mask_opt.size())
           maskReader.close();
-      }
-    }
+      }//next reference
+    }//next input
+    pfnProgress(1.0,pszMessage,pProgressArg);
   }//reference is OGR
   else{
     ImgWriterGdal gdalWriter;

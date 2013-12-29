@@ -131,7 +131,7 @@ int ImgReaderOgr::getFields(std::vector<OGRFieldDefn*>& fields, int layer) const
     OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
     fields[iField]=poFDefn->GetFieldDefn(iField);
   }
-  assert(fields.size()==getFieldCount());
+  assert(fields.size()==getFieldCount(layer));
   return(fields.size());
 }
 
