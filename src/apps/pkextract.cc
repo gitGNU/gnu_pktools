@@ -49,7 +49,6 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
   Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
-  Optionpk<bool> keepFeatures_opt("k", "keep", "Keep original features in output vector file", false);
   Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
   Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
   Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
@@ -78,7 +77,6 @@ int main(int argc, char *argv[])
     output_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     test_opt.retrieveOption(argc,argv);
-    keepFeatures_opt.retrieveOption(argc,argv);
     bufferOutput_opt.retrieveOption(argc,argv);
     geo_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
@@ -826,8 +824,6 @@ int main(int argc, char *argv[])
 	  cs << class_opt[iclass];
 	  ogrWriter.createField(cs.str(),fieldType,ilayer);
 	}
-	if(keepFeatures_opt[0])
-	  ogrWriter.createField("origId",OFTInteger,ilayer);//the fieldId of the original feature
 	break;
       }
       case(rule::custom):
@@ -843,11 +839,6 @@ int main(int argc, char *argv[])
       case(rule::mean):
       case(rule::centroid):
       default:{
-	if(keepFeatures_opt[0]){
-	  ogrWriter.createField("origId",OFTInteger,ilayer);//the fieldId of the original feature
-	  if(test_opt.size())
-	    ogrTestWriter.createField("origId",OFTInteger,ilayer);
-	}
 	for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
 	  for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
 	    if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
@@ -892,6 +883,7 @@ int main(int argc, char *argv[])
       progress=0;
       pfnProgress(progress,pszMessage,pProgressArg);
       while( (readFeature = readLayer->GetNextFeature()) != NULL ){
+	bool validFeature=false;
 	bool writeTest=false;//write this feature to test_opt[0] instead of output_opt
 	if(verbose_opt[0]>0)
 	  std::cout << "reading feature " << readFeature->GetFID() << std::endl;
@@ -990,6 +982,8 @@ int main(int argc, char *argv[])
 	    }
 	    if(!valid)
 	      continue;
+	    else
+	      validFeature=true;
 
 	    double value;
 	    double i_centre,j_centre;
@@ -1146,8 +1140,6 @@ int main(int argc, char *argv[])
 		}
 	      }
 	    }
-	    if(keepFeatures_opt[0])
-	      writeFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 	    if(verbose_opt[0]>1)
 	      std::cout << "creating point feature" << std::endl;
 	    if(writeTest){
@@ -1345,6 +1337,8 @@ int main(int argc, char *argv[])
 		  }
 		  if(!valid)
 		    continue;
+		  else
+		    validFeature=true;
 		  //check if within raster image
 		  if(i<0||i>=imgReader.nrOfCol())
 		    continue;
@@ -1448,11 +1442,7 @@ int main(int argc, char *argv[])
 		    }
 		  }
 		  if(!polygon_opt[0]){
-		    // if(keepFeatures_opt[0])
-		    //   writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid){//do not create in case of mean value (only at centroid)
-		      if(keepFeatures_opt[0])
-			writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 		      //write feature
 		      if(verbose_opt[0]>1)
 			std::cout << "creating point feature" << std::endl;
@@ -1755,8 +1745,6 @@ int main(int argc, char *argv[])
 	      }
 	      }
 	      if(polygon_opt[0]){
-		if(keepFeatures_opt[0])
-		  writePolygonFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 		if(verbose_opt[0]>1)
 		  std::cout << "creating polygon feature" << std::endl;
 		if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
@@ -1769,8 +1757,6 @@ int main(int argc, char *argv[])
 		  std::cout << "ntotalvalid(1): " << ntotalvalid << std::endl;
 	      }
 	      else{
-		if(keepFeatures_opt[0])
-		  writeCentroidFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 		if(verbose_opt[0]>1)
 		  std::cout << "creating point feature in centroid" << std::endl;
 		if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
@@ -1960,6 +1946,8 @@ int main(int argc, char *argv[])
 		  }
 		  if(!valid)
 		    continue;
+		  else
+		    validFeature=true;
 		  //check if within raster image
 		  if(i<0||i>=imgReader.nrOfCol())
 		    continue;
@@ -2063,8 +2051,6 @@ int main(int argc, char *argv[])
 		    }
 		  }
 		  if(!polygon_opt[0]){
-		    if(keepFeatures_opt[0])
-		      writePointFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid){//do not create in case of mean value (only at centroid)
 		      //write feature
 		      if(verbose_opt[0]>1)
@@ -2092,6 +2078,9 @@ int main(int argc, char *argv[])
 		}
 	      }
 	    }
+	    //test
+	    if(!validFeature)
+	      continue;
 	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid){
 	      //add ring to polygon
 	      if(polygon_opt[0]){
@@ -2351,8 +2340,6 @@ int main(int argc, char *argv[])
 	      }
 	      }
 	      if(polygon_opt[0]){
-		if(keepFeatures_opt[0])
-		  writePolygonFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 		if(verbose_opt[0]>1)
 		  std::cout << "creating polygon feature" << std::endl;
 		if(writeTest){
@@ -2373,8 +2360,6 @@ int main(int argc, char *argv[])
 		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
 	      }
 	      else{
-		if(keepFeatures_opt[0])
-		  writeCentroidFeature->SetField("origId",static_cast<int>(readFeature->GetFID()));
 		if(verbose_opt[0]>1)
 		  std::cout << "creating point feature in centroid" << std::endl;
 		if(writeTest){
@@ -2384,6 +2369,8 @@ int main(int argc, char *argv[])
 		  }
 		}
 		else{
+		  //test
+		  assert(validFeature);
 		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
 		    std::string errorString="Failed to create point feature in shapefile";
 		    throw(errorString);

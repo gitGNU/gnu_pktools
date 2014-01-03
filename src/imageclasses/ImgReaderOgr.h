@@ -90,8 +90,6 @@ protected:
 //read data from all features in a map, organized by classes
 template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -223,8 +221,6 @@ template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& dat
 //read data from all features in a map, organized by class names
 template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -360,8 +356,6 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
 
 //read x positions
 template <typename T> int ImgReaderOgr::readXY(std::vector<T>& xVector, std::vector<T>& yVector, int layer, bool verbose){
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -408,8 +402,6 @@ template <typename T> int ImgReaderOgr::readXY(std::vector<T>& xVector, std::vec
 //read data from a single feature
 template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, OGRFeature *poFeature, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -505,8 +497,6 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
 //read one field from all features
 template <typename T> inline int ImgReaderOgr::readData(std::vector<T>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -581,8 +571,6 @@ template <typename T> inline int ImgReaderOgr::readData(std::vector<T>& data, co
 //specialization for string: read one field from all features
 template <> inline int ImgReaderOgr::readData(std::vector<std::string>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -657,8 +645,6 @@ template <> inline int ImgReaderOgr::readData(std::vector<std::string>& data, co
 //read data from all features  
 template <typename T> int ImgReaderOgr::readData(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -752,8 +738,6 @@ template <typename T> int ImgReaderOgr::readData(Vector2d<T>& data, const OGRFie
 
 template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer *poLayer;
   poLayer = m_datasource->ExecuteSQL(sqlStatement.c_str(), spatialFilter,NULL );
@@ -864,8 +848,6 @@ template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data
 
 template<typename T> int ImgReaderOgr::readSql(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer *poLayer;
   poLayer = m_datasource->ExecuteSQL(sqlStatement.c_str(), spatialFilter,NULL );

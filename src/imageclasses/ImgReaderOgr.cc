@@ -230,54 +230,58 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   if(verbose)
     std::cout << "reading shape file " << m_filename  << std::endl;
   try{
-    //only retain bands in fields
-    getFields(fields);
-    std::vector<std::string>::iterator fit=fields.begin();
-    if(verbose>1)
-      std::cout << "reading fields: ";
-    while(fit!=fields.end()){
-      if(verbose)
-        std::cout << *fit << " ";
-      // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
-	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
-	  int theBand=atoi((*fit).substr(1).c_str());
-	  if(bands.size()){
-	    bool validBand=false;
-	    for(int iband=0;iband<bands.size();++iband){
-	      if(theBand==bands[iband])
-		validBand=true;
+    for(int ilayer=0;ilayer<m_datasource->GetLayerCount();++ilayer){
+      //only retain bands in fields
+      getFields(fields);
+      std::vector<std::string>::iterator fit=fields.begin();
+      if(verbose>1)
+	std::cout << "reading fields: ";
+      while(fit!=fields.end()){
+	if(verbose)
+	  std::cout << *fit << " ";
+	// size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
+	if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
+	  if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
+	    int theBand=atoi((*fit).substr(1).c_str());
+	    if(bands.size()){
+	      bool validBand=false;
+	      for(int iband=0;iband<bands.size();++iband){
+		if(theBand==bands[iband])
+		  validBand=true;
+	      }
+	      if(validBand)
+		++fit;
+	      else
+		fields.erase(fit);
 	    }
-	    if(validBand)
-	      ++fit;
 	    else
-	      fields.erase(fit);
+	      ++fit;
 	  }
-	  else
+	  else if((*fit)=="B" || (*fit)=="b" || (*fit)=="Band")//B is only band
 	    ++fit;
 	}
-	else if((*fit)=="B" || (*fit)=="b" || (*fit)=="Band")//B is only band
-	  ++fit;
+	else
+	  fields.erase(fit);
       }
-      else
-        fields.erase(fit);
-    }
-    if(verbose)
-      std::cout << std::endl;
-    if(verbose){
-      std::cout << "fields:";
-      for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
-        std::cout << " " << *fit;
-      std::cout << std::endl;
-    }
-    if(!nband){
       if(verbose)
-        std::cout << "reading data" << std::endl;
-      nband=readData(mapPixels,OFTReal,fields,label,0,true,verbose==2);
-
+	std::cout << std::endl;
+      if(verbose){
+	std::cout << "fields:";
+	for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
+	  std::cout << " " << *fit;
+	std::cout << std::endl;
+      }
+      if(!nband){
+	if(verbose)
+	  std::cout << "reading data" << std::endl;
+	for(int ilayer=0;ilayer<m_datasource->GetLayerCount();++ilayer)
+	  nband=readData(mapPixels,OFTReal,fields,label,ilayer,true,verbose==2);
+      }
+      else{
+	for(int ilayer=0;ilayer<m_datasource->GetLayerCount();++ilayer)
+	  assert(nband==readData(mapPixels,OFTReal,fields,label,ilayer,true,false));
+      }
     }
-    else
-      assert(nband==readData(mapPixels,OFTReal,fields,label,0,true,false));
   }
   catch(std::string e){
     std::ostringstream estr;
@@ -314,7 +318,7 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
       std::cout << "reading fields: ";
     while(fit!=fields.end()){
       if(verbose)
-        std::cout << *fit << " ";
+	std::cout << *fit << " ";
       // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
       if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
 	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
@@ -328,24 +332,26 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
 	  ++fit;
       }
       else
-        fields.erase(fit);
+	fields.erase(fit);
     }
     if(verbose)
       std::cout << std::endl;
     if(verbose){
       std::cout << "fields:";
       for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
-        std::cout << " " << *fit;
+	std::cout << " " << *fit;
       std::cout << std::endl;
     }
     if(!nband){
       if(verbose)
-        std::cout << "reading data" << std::endl;
-      nband=readData(mapPixels,OFTReal,fields,label,0,true,verbose==2);
-
+	std::cout << "reading data" << std::endl;
+      for(int ilayer=0;ilayer<m_datasource->GetLayerCount();++ilayer)
+	nband=readData(mapPixels,OFTReal,fields,label,ilayer,true,verbose==2);
     }
-    else
-      assert(nband==readData(mapPixels,OFTReal,fields,label,0,true,false));
+    else{
+      for(int ilayer=0;ilayer<m_datasource->GetLayerCount();++ilayer)
+	assert(nband==readData(mapPixels,OFTReal,fields,label,ilayer,true,false));
+    }
   }
   catch(std::string e){
     std::ostringstream estr;
