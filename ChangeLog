@@ -213,7 +213,15 @@ version 2.5
 	support sqlite: read training file with small case band names b0, b1, ...
  - ImgReaderGdal and ImgWriterGdal
 	re-design of geotransform
+ - ImgReaderGdal
+	support of scaling and offset for reading raster bands
  - pkextract
+	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
+	support multiple layers
+	deprecated cbox and rbox
+ - pkdiff
+	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
+	support multiple layers
  - pkeditogr
 	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
  - Filter2d.h

@@ -241,11 +241,11 @@ int main(int argc, char *argv[])
 	int nlayer=referenceReaderOgr.getDataSource()->GetLayerCount();
 	for(int ilayer=0;ilayer<nlayer;++ilayer){
 	  progress=0;
-	  cout << "processing layer " << ilayer << endl;
-	  if(!verbose_opt[0])
-	    pfnProgress(progress,pszMessage,pProgressArg);
 	  OGRLayer  *readLayer;
 	  readLayer = referenceReaderOgr.getDataSource()->GetLayer(ilayer);
+	  cout << "processing layer " << readLayer->GetName() << endl;
+	  if(!verbose_opt[0])
+	    pfnProgress(progress,pszMessage,pProgressArg);
 	  readLayer->ResetReading();
 	  OGRLayer *writeLayer;
 	  if(output_opt.size()){
@@ -253,11 +253,10 @@ int main(int argc, char *argv[])
 	      cout << "creating output vector file " << output_opt[0] << endl;
 	    // assert(output_opt[0].find(".shp")!=string::npos);
 	    char     **papszOptions=NULL;
-	    string layername=type2string<int>(ilayer);//output_opt[0].substr(0,output_opt[0].find(".shp"));
 	    if(verbose_opt[0])
-	      cout << "creating layer: " << layername << endl;
+	      cout << "creating layer: " << readLayer->GetName() << endl;
 	    // if(ogrWriter.createLayer(layername, referenceReaderOgr.getProjection(ilayer), referenceReaderOgr.getGeometryType(ilayer), papszOptions)==NULL)
-	    writeLayer=ogrWriter.createLayer(layername, referenceReaderOgr.getProjection(ilayer), wkbPoint, papszOptions);
+	    writeLayer=ogrWriter.createLayer(readLayer->GetName(), referenceReaderOgr.getProjection(ilayer), wkbPoint, papszOptions);
 	    assert(writeLayer);
 	    if(verbose_opt[0]){
 	      cout << "created layer" << endl;

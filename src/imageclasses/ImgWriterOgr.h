@@ -46,22 +46,22 @@ public:
   int ascii2ogr(const std::string& filename, const std::string &layername, const std::vector<std::string>& fieldName, const std::vector<OGRFieldType>& fieldType, short colX=1, short colY=2, const std::string& theProjection="", const OGRwkbGeometryType& eGType=wkbPoint, const char fs=' ');
   OGRLayer* createLayer(const std::string& layername="New layer", const std::string& theProjection="", const OGRwkbGeometryType& eGType=wkbUnknown, char** papszOptions=NULL);
   OGRLayer* copyLayer(OGRLayer* poSrcLayer, const std::string& layername, char** papszOptions=NULL);
-  void createField(const std::string& fieldname, const OGRFieldType& fieldType, int theLayer=-1);//default: get back layer
+  void createField(const std::string& fieldname, const OGRFieldType& fieldType, int theLayer=0);//default: get back layer
   OGRLayer* getLayer(int layer=0) const {return m_datasource->GetLayer(layer);};
   std::string getLayerName(int layer=0){return m_datasource->GetLayer(layer)->GetLayerDefn()->GetName();};
   int getFields(std::vector<std::string>& fields, int layer=0) const;
   int getFields(std::vector<OGRFieldDefn*>& fields, int layer=0) const;
-  void copyFields(const ImgReaderOgr& imgReaderOgr, int theLayer=-1);//default: get back layer
-  void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, const std::string& theId);
-  void addRing(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId);
-  void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId);
-  void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, const std::string& theId);
-  void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, int theId);
-  int addData(const ImgReaderGdal& imgReader, int layer=-1, bool verbose=false);
-  OGRFeature* createFeature();
-  OGRErr createFeature(OGRFeature* theFeature);
+  void copyFields(const ImgReaderOgr& imgReaderOgr, int theLayer=0);//default: get back layer
+  void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, const std::string& theId, int layer=0);
+  void addRing(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId, int layer=0);
+  void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId, int layer=0);
+  void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, const std::string& theId, int layer=0);
+  void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, int theId, int layer=0);
+  int addData(const ImgReaderGdal& imgReader, int layer=0, bool verbose=false);
+  OGRFeature* createFeature(int layer=0);
+  OGRErr createFeature(OGRFeature* theFeature, int layer=0);
   int getFieldCount(int layer=0) const;
-  int getFeatureCount() const;
+  int getFeatureCount(int layer=0) const;
   OGRDataSource* getDataSource(void) {return m_datasource;};
   OGRSFDriver* getDriver(void) const {return m_datasource->GetDriver();};
 
@@ -69,7 +69,7 @@ protected:
   void setCodec(const std::string& imageType);
   void setCodec(OGRSFDriver *poDriver);
   
-//   OGRLayer* getLayer(int layer=-1);
+//   OGRLayer* getLayer(int layer=0);
     
   std::string m_filename;
   OGRDataSource *m_datasource;

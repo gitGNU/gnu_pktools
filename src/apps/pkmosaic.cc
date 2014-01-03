@@ -46,12 +46,12 @@ int main(int argc, char *argv[])
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)", 0.0);
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)", 0.0);
-  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (-1: crop all bands)", -1);
+  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<short>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in image if out of bounds.", 0);
+  Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in image if out of bounds.", 0);
   Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<string> crule_opt("cr", "crule", "Composite rule for mosaic (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
           break;
         }
       }
-      if(band_opt[0]>=0){
+      if(band_opt.size()){
 	nband=band_opt.size();
         bands.resize(band_opt.size());
         for(int iband=0;iband<band_opt.size();++iband){
@@ -513,7 +513,7 @@ int main(int argc, char *argv[])
       }
       // for(int iband=0;iband<imgReader.nrOfBand();++iband){
       for(int iband=0;iband<nband;++iband){
-	int readBand=(band_opt[0]<0)?iband:band_opt[iband];
+	int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
         readBuffer[iband].resize(readncol);
 	try{
           imgReader.readData(readBuffer[iband],GDT_Float64,startCol,endCol,readRow,readBand,theResample);

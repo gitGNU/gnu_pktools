@@ -49,15 +49,15 @@ int main(int argc, char *argv[])
   Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
   Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
   Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
-  Optionpk<int>  band_opt("b", "band", "band index to crop (-1: crop all bands)", -1);
+  Optionpk<int>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
   Optionpk<double> autoscale_opt("as", "autoscale", "scale output to min and max, e.g., --autoscale 0 --autoscale 255");
-  Optionpk<double> scale_opt("s", "scale", "output=scale*input+offset", 1);
-  Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset", 0);
+  Optionpk<double> scale_opt("s", "scale", "output=scale*input+offset");
+  Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
+  Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  short nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
+  double nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
   RESAMPLE theResample;
   if(resample_opt[0]=="near"){
     theResample=NEAR;
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
       if(!iimg||imgReader.getDeltaY()<dy)
         dy=imgReader.getDeltaY();
     }
-    if(band_opt[0]>=0)
+    if(band_opt.size())
       ncropband+=band_opt.size();
     else
       ncropband+=imgReader.nrOfBand();
@@ -218,16 +218,20 @@ int main(int argc, char *argv[])
   //determine number of output bands
   int writeBand=0;//write band
 
-  while(scale_opt.size()<band_opt.size())
-    scale_opt.push_back(scale_opt[0]);
-  while(offset_opt.size()<band_opt.size())
-    offset_opt.push_back(offset_opt[0]);
+  if(scale_opt.size()){
+    while(scale_opt.size()<band_opt.size())
+      scale_opt.push_back(scale_opt[0]);
+  }
+  if(offset_opt.size()){
+    while(offset_opt.size()<band_opt.size())
+      offset_opt.push_back(offset_opt[0]);
+  }
   if(autoscale_opt.size()){
     assert(autoscale_opt.size()%2==0);
-    while(autoscale_opt.size()<band_opt.size()*2){
-      autoscale_opt.push_back(autoscale_opt[0]);
-      autoscale_opt.push_back(autoscale_opt[1]);
-    }
+    // while(autoscale_opt.size()<band_opt.size()*2){
+    //   autoscale_opt.push_back(autoscale_opt[0]);
+    //   autoscale_opt.push_back(autoscale_opt[1]);
+    // }
   }
 
   for(int iimg=0;iimg<input_opt.size();++iimg){
@@ -405,9 +409,9 @@ int main(int argc, char *argv[])
 
     int readncol=endCol-startCol+1;
     vector<double> readBuffer(readncol+1);
-    int nband=(band_opt[0]<0)?imgReader.nrOfBand():band_opt.size();
+    int nband=(band_opt.size())?band_opt.size() : imgReader.nrOfBand();
     for(int iband=0;iband<nband;++iband){
-      int readBand=(band_opt[0]<0)?iband:band_opt[iband];
+      int readBand=(band_opt.size()>iband)?band_opt[iband]:iband;
       if(verbose_opt[0]){
 	cout << "extracting band " << readBand << endl;
 	pfnProgress(progress,pszMessage,pProgressArg);
@@ -418,13 +422,31 @@ int main(int argc, char *argv[])
 	imgReader.getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
 	if(verbose_opt[0])
 	  cout << "minmax: " << theMin << ", " << theMax << endl;
+	double theScale=(autoscale_opt[1]-autoscale_opt[0])/(theMax-theMin);
+	double theOffset=autoscale_opt[0]-theScale*theMin;
+	imgReader.setScale(theScale,readBand);
+	imgReader.setOffset(theOffset,readBand);
       }	
-      
+      else{
+	if(scale_opt.size()){
+	  if(scale_opt.size()>iband)
+	    imgReader.setScale(scale_opt[iband],readBand);
+	  else
+	    imgReader.setScale(scale_opt[0],readBand);
+	}
+	if(offset_opt.size()){
+	  if(offset_opt.size()>iband)
+	    imgReader.setOffset(offset_opt[iband],readBand);
+	  else
+	    imgReader.setOffset(offset_opt[0],readBand);
+	}
+      }
+
       double readRow=0;
       double readCol=0;
       double lowerCol=0;
       double upperCol=0;
-      for(int irow=0;irow<ncroprow;++irow){
+      for(int irow=0;irow<imgWriter.nrOfRow();++irow){
 	double x=0;
 	double y=0;
 	//convert irow to geo
@@ -443,16 +465,19 @@ int main(int argc, char *argv[])
 	  //readRow=0;
 	  //else if(readRow>=imgReader.nrOfRow())
 	  //readRow=imgReader.nrOfRow()-1;
-	  for(int ib=0;ib<ncropcol;++ib)
+	  for(int ib=0;ib<imgWriter.nrOfCol();++ib)
 	    writeBuffer.push_back(nodataValue);
 	}
 	else{
+	  if(verbose_opt[0])
+	    cout << "reading row: " << readRow << endl;
 	  try{
             if(endCol<imgReader.nrOfCol()-1)
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol+1,readRow,readBand,theResample);
             else
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,readBand,theResample);
-	    for(int ib=0;ib<ncropcol;++ib){
+	    // for(int ib=0;ib<ncropcol;++ib){
+	    for(int ib=0;ib<imgWriter.nrOfCol();++ib){
 	      assert(imgWriter.image2geo(ib,irow,x,y));
 	      //lookup corresponding row for irow in this file
 	      imgReader.geo2image(x,y,readCol,readRow);
@@ -493,18 +518,16 @@ int main(int argc, char *argv[])
                 if(!valid)
                   writeBuffer.push_back(nodataValue);
                 else{
-                  double theScale=1;
-                  double theOffset=0;
-		  if(autoscale_opt.size()){
-		    theScale=(autoscale_opt[1]-autoscale_opt[0])/(theMax-theMin);
-		    theOffset=autoscale_opt[0]-theScale*theMin;
-		    //scale=(ubound-lbound)/(max-min)
-		    //output=scale*(input-min)+lbound
-		  }
-		  else{
-		    theScale=(scale_opt.size()>1)?scale_opt[iband]:scale_opt[0];
-		    theOffset=(offset_opt.size()>1)?offset_opt[iband]:offset_opt[0];
-		  }
+                  // double theScale=1;
+                  // double theOffset=0;
+		  // if(autoscale_opt.size()){
+		  //   theScale=(autoscale_opt[1]-autoscale_opt[0])/(theMax-theMin);
+		  //   theOffset=autoscale_opt[0]-theScale*theMin;
+		  // }
+		  // else{
+		  //   theScale=(scale_opt.size()>1)?scale_opt[iband]:scale_opt[0];
+		  //   theOffset=(offset_opt.size()>1)?offset_opt[iband]:offset_opt[0];
+		  // }
                   switch(theResample){
                   case(BILINEAR):
                     lowerCol=readCol-0.5;
@@ -515,12 +538,14 @@ int main(int argc, char *argv[])
                       lowerCol=0;
                     if(upperCol>=imgReader.nrOfCol())
                       upperCol=imgReader.nrOfCol()-1;
-                    writeBuffer.push_back((readCol-0.5-lowerCol)*(readBuffer[upperCol-startCol]*theScale+theOffset)+(1-readCol+0.5+lowerCol)*(readBuffer[lowerCol-startCol]*theScale+theOffset));
+                    // writeBuffer.push_back((readCol-0.5-lowerCol)*(readBuffer[upperCol-startCol]*theScale+theOffset)+(1-readCol+0.5+lowerCol)*(readBuffer[lowerCol-startCol]*theScale+theOffset));
+                    writeBuffer.push_back((readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol]);
                     break;
                   default:
                     readCol=static_cast<int>(readCol);
                     readCol-=startCol;//we only start reading from startCol
-                    writeBuffer.push_back(readBuffer[readCol]*theScale+theOffset);
+                    // writeBuffer.push_back(readBuffer[readCol]*theScale+theOffset);
+                    writeBuffer.push_back(readBuffer[readCol]);
                     break;
                   }
                 }
@@ -532,7 +557,8 @@ int main(int argc, char *argv[])
 	    exit(2);
 	  }
 	}
-	assert(writeBuffer.size()==ncropcol);
+	if(writeBuffer.size()!=imgWriter.nrOfCol())
+	  cout << "writeBuffer.size()=" << writeBuffer.size() << ", imgWriter.nrOfCol()=" << imgWriter.nrOfCol() << endl;
 	assert(writeBuffer.size()==imgWriter.nrOfCol());
 	try{
 	  imgWriter.writeData(writeBuffer,GDT_Float64,irow,writeBand);

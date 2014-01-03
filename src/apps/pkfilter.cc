@@ -39,6 +39,7 @@ using namespace std;
 int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input image file");
   Optionpk<std::string> output_opt("o", "output", "Output image file");
+  Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
   Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, majority voting (only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, heterogeneous (central pixel must be different than all other pixels within window), order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, scramble, shift, linearfeature)", "median");
@@ -75,6 +76,7 @@ int main(int argc,char **argv) {
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    tmpdir_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
     // angle_opt.retrieveOption(argc,argv);
     method_opt.retrieveOption(argc,argv);
@@ -401,7 +403,7 @@ int main(int argc,char **argv) {
 	exit(1);
       }
       ostringstream tmps;
-      tmps << "/tmp/dilation_" << getpid() << ".tif";
+      tmps << tmpdir_opt[0] << "/dilation_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
       tmpout.open(tmps.str(),input);
       try{
@@ -437,7 +439,7 @@ int main(int argc,char **argv) {
 	exit(1);
       }
       ostringstream tmps;
-      tmps << "/tmp/erosion_" << getpid() << ".tif";
+      tmps << tmpdir_opt[0] << "/erosion_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
       tmpout.open(tmps.str(),input);
       if(dimZ_opt.size()){
