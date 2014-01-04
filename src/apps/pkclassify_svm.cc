@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
-  Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
+  Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation)", 0.0); 
   Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class"); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<std::string> svm_type_opt("svmt", "svmtype", "type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
@@ -979,144 +979,154 @@ int main(int argc, char *argv[])
 	else
 	  imgWriterOgr.createField("class",OFTString);
       }
-      OGRFeature *poFeature;
-      unsigned int ifeature=0;
-      unsigned int nFeatures=imgReaderOgr.getFeatureCount();
-      while( (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
-        if(verbose_opt[0]>1)
-          std::cout << "feature " << ifeature << std::endl;
-        if( poFeature == NULL )
-          break;
-        OGRFeature *poDstFeature = NULL;
-	if(output_opt.size()){
-	  poDstFeature=imgWriterOgr.createFeature();
-	  if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
-	    CPLError( CE_Failure, CPLE_AppDefined,
-		      "Unable to translate feature %d from layer %s.\n",
-		      poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
-	    OGRFeature::DestroyFeature( poFeature );
-	    OGRFeature::DestroyFeature( poDstFeature );
+      if(verbose_opt[0])
+	cout << "number of layers in input ogr file: " << imgReaderOgr.getLayerCount() << endl;
+      for(int ilayer=0;ilayer<imgReaderOgr.getLayerCount();++ilayer){
+	if(verbose_opt[0])
+	  cout << "processing input layer " << ilayer << endl;
+	unsigned int nFeatures=imgReaderOgr.getFeatureCount(ilayer);
+	unsigned int ifeature=0;
+	progress=0;
+	pfnProgress(progress,pszMessage,pProgressArg);
+	OGRFeature *poFeature;
+	while( (poFeature = imgReaderOgr.getLayer(ilayer)->GetNextFeature()) != NULL ){
+	  if(verbose_opt[0]>1)
+	    std::cout << "feature " << ifeature << std::endl;
+	  if( poFeature == NULL ){
+	      cout << "Warning: could not read feature " << ifeature << " in layer " << imgReaderOgr.getLayerName(ilayer) << endl;
+	      continue;
 	  }
-	}
-        vector<float> validationPixel;
-        vector<float> validationFeature;
+	  OGRFeature *poDstFeature = NULL;
+	  if(output_opt.size()){
+	    poDstFeature=imgWriterOgr.createFeature();
+	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
+	      CPLError( CE_Failure, CPLE_AppDefined,
+			"Unable to translate feature %d from layer %s.\n",
+			poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
+	      OGRFeature::DestroyFeature( poFeature );
+	      OGRFeature::DestroyFeature( poDstFeature );
+	    }
+	  }
+	  vector<float> validationPixel;
+	  vector<float> validationFeature;
         
-        imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature);
-        assert(validationPixel.size()==nband);
-        vector<float> probOut(nclass);//posterior prob for each class
-        for(short iclass=0;iclass<nclass;++iclass)
-          probOut[iclass]=0;
-        for(int ibag=0;ibag<nbag;++ibag){
-          for(int iband=0;iband<nband;++iband){
-            validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
-            if(verbose_opt[0]==2)
-              std::cout << " " << validationFeature.back();
-          }
-          if(verbose_opt[0]==2)
-            std::cout << std::endl;
-          vector<double> result(nclass);
-          struct svm_node *x;
-          x = (struct svm_node *) malloc((validationFeature.size()+1)*sizeof(struct svm_node));
-          for(int i=0;i<validationFeature.size();++i){
-            x[i].index=i+1;
-            x[i].value=validationFeature[i];
-          }
+	  imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature,ilayer);
+	  assert(validationPixel.size()==nband);
+	  vector<float> probOut(nclass);//posterior prob for each class
+	  for(short iclass=0;iclass<nclass;++iclass)
+	    probOut[iclass]=0;
+	  for(int ibag=0;ibag<nbag;++ibag){
+	    for(int iband=0;iband<nband;++iband){
+	      validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
+	      if(verbose_opt[0]==2)
+		std::cout << " " << validationFeature.back();
+	    }
+	    if(verbose_opt[0]==2)
+	      std::cout << std::endl;
+	    vector<double> result(nclass);
+	    struct svm_node *x;
+	    x = (struct svm_node *) malloc((validationFeature.size()+1)*sizeof(struct svm_node));
+	    for(int i=0;i<validationFeature.size();++i){
+	      x[i].index=i+1;
+	      x[i].value=validationFeature[i];
+	    }
 
-          x[validationFeature.size()].index=-1;//to end svm feature vector
-          double predict_label=0;
-          if(!prob_est_opt[0]){
-            predict_label = svm_predict(svm[ibag],x);
-            for(short iclass=0;iclass<nclass;++iclass){
-              if(iclass==static_cast<short>(predict_label))
-                result[iclass]=1;
-              else
-                result[iclass]=0;
-            }
-          }
-          else{
-            assert(svm_check_probability_model(svm[ibag]));
-            predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
-          }
-          if(verbose_opt[0]>1){
-            std::cout << "predict_label: " << predict_label << std::endl;
-            for(int iclass=0;iclass<result.size();++iclass)
-              std::cout << result[iclass] << " ";
-            std::cout << std::endl;
-          }
+	    x[validationFeature.size()].index=-1;//to end svm feature vector
+	    double predict_label=0;
+	    if(!prob_est_opt[0]){
+	      predict_label = svm_predict(svm[ibag],x);
+	      for(short iclass=0;iclass<nclass;++iclass){
+		if(iclass==static_cast<short>(predict_label))
+		  result[iclass]=1;
+		else
+		  result[iclass]=0;
+	      }
+	    }
+	    else{
+	      assert(svm_check_probability_model(svm[ibag]));
+	      predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
+	    }
+	    if(verbose_opt[0]>1){
+	      std::cout << "predict_label: " << predict_label << std::endl;
+	      for(int iclass=0;iclass<result.size();++iclass)
+		std::cout << result[iclass] << " ";
+	      std::cout << std::endl;
+	    }
 
-          //calculate posterior prob of bag 
-          for(short iclass=0;iclass<nclass;++iclass){
-            switch(comb_opt[0]){
-            default:
-            case(0)://sum rule
-              probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
-               break;
-            case(1)://product rule
-              probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
-              break;
-            case(2)://max rule
-              if(priors[iclass]*result[iclass]>probOut[iclass])
-                probOut[iclass]=priors[iclass]*result[iclass];
-              break;
-            }
-          }
-          free(x);
-        }//for ibag
+	    //calculate posterior prob of bag 
+	    for(short iclass=0;iclass<nclass;++iclass){
+	      switch(comb_opt[0]){
+	      default:
+	      case(0)://sum rule
+		probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
+	      break;
+	      case(1)://product rule
+		probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+		break;
+	      case(2)://max rule
+		if(priors[iclass]*result[iclass]>probOut[iclass])
+		  probOut[iclass]=priors[iclass]*result[iclass];
+		break;
+	      }
+	    }
+	    free(x);
+	  }//for ibag
 
-        //search for max class prob
-        float maxBag=0;
-        float normBag=0;
-        string classOut="Unclassified";
-        for(short iclass=0;iclass<nclass;++iclass){
-          if(verbose_opt[0]>1)
-            std::cout << probOut[iclass] << " ";
-          if(probOut[iclass]>maxBag){
-            maxBag=probOut[iclass];
-	    classOut=nameVector[iclass];
-          }
-        }
-        //look for class name
-        if(verbose_opt[0]>1){
-	  if(classValueMap.size())
-	    std::cout << "->" << classValueMap[classOut] << std::endl;
-	  else	    
-	    std::cout << "->" << classOut << std::endl;
-	}
-	if(output_opt.size()){
-	  if(classValueMap.size())
-	    poDstFeature->SetField("class",classValueMap[classOut]);
-	  else	    
-	    poDstFeature->SetField("class",classOut.c_str());
-	  poDstFeature->SetFID( poFeature->GetFID() );
-	}
-	int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
-	if(labelIndex>=0){
-	  string classRef=poFeature->GetFieldAsString(labelIndex);
-	  if(classRef!="0"){
+	  //search for max class prob
+	  float maxBag=0;
+	  float normBag=0;
+	  string classOut="Unclassified";
+	  for(short iclass=0;iclass<nclass;++iclass){
+	    if(verbose_opt[0]>1)
+	      std::cout << probOut[iclass] << " ";
+	    if(probOut[iclass]>maxBag){
+	      maxBag=probOut[iclass];
+	      classOut=nameVector[iclass];
+	    }
+	  }
+	  //look for class name
+	  if(verbose_opt[0]>1){
 	    if(classValueMap.size())
-	      cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
-	    else
-	      cm.incrementResult(classRef,classOut,1);
+	      std::cout << "->" << classValueMap[classOut] << std::endl;
+	    else	    
+	      std::cout << "->" << classOut << std::endl;
 	  }
-	}
-        CPLErrorReset();
-	if(output_opt.size()){
-	  if(imgWriterOgr.createFeature( poDstFeature ) != OGRERR_NONE){
-	    CPLError( CE_Failure, CPLE_AppDefined,
-		      "Unable to translate feature %d from layer %s.\n",
-		      poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
-	    OGRFeature::DestroyFeature( poDstFeature );
-	    OGRFeature::DestroyFeature( poDstFeature );
+	  if(output_opt.size()){
+	    if(classValueMap.size())
+	      poDstFeature->SetField("class",classValueMap[classOut]);
+	    else	    
+	      poDstFeature->SetField("class",classOut.c_str());
+	    poDstFeature->SetFID( poFeature->GetFID() );
 	  }
-	}
-        ++ifeature;
-        if(!verbose_opt[0]){
-          progress=static_cast<float>(ifeature+1.0)/nFeatures;
-          pfnProgress(progress,pszMessage,pProgressArg);
-        }
-        OGRFeature::DestroyFeature( poFeature );
-        OGRFeature::DestroyFeature( poDstFeature );
-      }
+	  int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
+	  if(labelIndex>=0){
+	    string classRef=poFeature->GetFieldAsString(labelIndex);
+	    if(classRef!="0"){
+	      if(classValueMap.size())
+		cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
+	      else
+		cm.incrementResult(classRef,classOut,1);
+	    }
+	  }
+	  CPLErrorReset();
+	  if(output_opt.size()){
+	    if(imgWriterOgr.createFeature( poDstFeature ) != OGRERR_NONE){
+	      CPLError( CE_Failure, CPLE_AppDefined,
+			"Unable to translate feature %d from layer %s.\n",
+			poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
+	      OGRFeature::DestroyFeature( poDstFeature );
+	      OGRFeature::DestroyFeature( poDstFeature );
+	    }
+	  }
+	  ++ifeature;
+	  if(!verbose_opt[0]){
+	    progress=static_cast<float>(ifeature+1.0)/nFeatures;
+	    pfnProgress(progress,pszMessage,pProgressArg);
+	  }
+	  OGRFeature::DestroyFeature( poFeature );
+	  OGRFeature::DestroyFeature( poDstFeature );
+	}//get next feature
+      }//next layer
       imgReaderOgr.close();
       if(output_opt.size())
 	imgWriterOgr.close();
