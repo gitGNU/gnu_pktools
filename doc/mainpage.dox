@@ -57,25 +57,97 @@ sudo make install
 sudo ldconfig
 \endcode
 
-Prerequisites (required)
-------------------------
+\subsection pktools_installation_required Required packages (required)
+
 packages to install before pktools
-   - g++ (via repository)
-   - make (via repository)
-   - libgdal-dev http://trac.osgeo.org/gdal/wiki/BuildingOnUnix (or via repository)
-   - libgsl0-dev http://www.gnu.org/software/gsl/ (or via repository)
-   - libarmadillo-dev (http://arma.sourceforge.net/download.html or via repository)
+   - g++
+   - make
+   - libgdal-dev (see also http://trac.osgeo.org/gdal/wiki/BuildingOnUnix)
+   - libgsl0-dev (see also http://www.gnu.org/software/gsl/)
+   - libarmadillo-dev (see also http://arma.sourceforge.net/download.html)
 
-Prerequisites (optional)
-------------------------
-if configured with `--enable-nlopt`: required for \ref pkopt_svm 
-   - nlopt http://ab-initio.mit.edu/wiki/index.php/NLopt#Download_and_installation 
+   Example on how to install required packages in Debian based system (using apt-get):
+  - sudo apt-get install g++ make libgdal-dev libgsl0-dev libarmadillo-dev
 
-if configured with `--enable-las`: required for \ref pklas2img
-   - cmake (2.8.1+) http://www.cmake.org/ (or via repository)
-   - libboost-dev (1.38.0+) http://www.boost.org/ (or via repository)
-   - liblas http://www.liblas.org/compilation.html#compilation
-     (notice this is not the same package as laslib...)
+\subsection pktools_installation_optional Optional packages
 
-if configured with `--enable-fann`: required for \ref pkclassify_nn, \ref pkfs_nn, \ref pkfs_nn
-   - libfann-dev http://leenissen.dk/fann/wp/download/ (or via repository)
+<b>To enable program \ref pkopt_svm</b>
+
+   Install additional package 
+
+   - libnlopt-dev (see also http://ab-initio.mit.edu/wiki/index.php/NLopt#Download_and_installation )
+
+   Example on how to install required packages in Debian based system (using apt-get):
+
+   \code   
+   sudo apt-get install libnlopt-dev
+   \endcode
+
+   - Install pktools with with extra configuration option --enable-nlopt:
+
+   \code
+   ./configure --enable-nlopt
+   make
+   sudo make install
+   sudo ldconfig
+   \endcode
+
+
+<b>To enable programs \ref pkclassify_nn and \ref pkfs_nn</b>
+
+   Install package 
+
+   - libfann-dev (see also http://leenissen.dk/fann/wp/download/)
+
+   Example on how to install required packages in Debian based system (using apt-get):
+   
+   \code
+   sudo apt-get install libfann-dev
+   \endcode
+
+   Install pktools with extra configuration option --libfann-dev:
+
+   \code
+   ./configure --libfann-dev
+   make
+   sudo make install
+   sudo ldconfig
+   \endcode
+
+<b>To enable program \ref pklas2img</b>
+
+   Install additional packages:
+
+   - libboost-dev (see also http://www.boost.org/)
+   - liblas1 (from Mateusz Loskot, see also http://www.liblas.org/tutorial/cpp.html)
+   - liblas-dev 
+   - python-liblas 
+   - liblas2 
+   - liblas-c2 
+   - liblas-c-dev
+
+   Example on how to install required packages in Debian based system (using apt-get):
+
+    - first add the following two lines to /etc/apt/sources.list (replace <codename> with what you get from lsb_release -c)
+
+    \code
+      deb http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu <codename> main 
+      deb-src http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu <codename> main 
+    \endcode      
+      
+    - then instal extra packages:      
+
+    \code
+      sudo apt-get install libboost-dev liblas-dev liblas-c-dev liblas1 liblas2 liblas-c2  python-liblas
+    \endcode
+   
+   Or install manually as explained in http://www.liblas.org/compilation.html#using-unix-makefiles-on-linux
+
+   - Install pktools with with extra configuration option --enable-las:
+
+   \code
+   ./configure --enable-las
+   make
+   sudo make install
+   sudo ldconfig
+   \endcode
