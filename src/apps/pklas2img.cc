@@ -459,9 +459,9 @@ int main(int argc,char **argv) {
       std::cout << "iteration " << iteration << " with window size " << dimx << " and dh_max: " << hThreshold << std::endl;
       Vector2d<float> newOutput;
       try{
-        theFilter.morphology(outputData,currentOutput,"erode",dimx,dimy,disc_opt[0],maxSlope_opt[0]);
-        theFilter.morphology(currentOutput,outputData,"dilate",dimx,dimy,disc_opt[0],maxSlope_opt[0]);
-        if(postFilter_opt[0]=="bunting"){//todo: implement doit in Filter2d on Vector2d
+        theFilter.morphology(outputData,currentOutput,"erode",dimx,dimy,disc_opt[0],hThreshold);
+        theFilter.morphology(currentOutput,outputData,"dilate",dimx,dimy,disc_opt[0],hThreshold);
+        if(postFilter_opt[0]=="bunting"){
           theFilter.doit(outputData,currentOutput,"median",dimx,dimy,1,disc_opt[0]);
           outputData=currentOutput;
         }

@@ -248,6 +248,10 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
 
+  double noDataValue=0;
+  if(m_noDataValues.size())
+    noDataValue=m_noDataValues[0];
+
   assert(dimX);
   assert(dimY);
 
@@ -325,41 +329,41 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       switch(getFilterType(method)){
       case(filter2d::median):
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=stat.median(windowBuffer);
         break;
       case(filter2d::var):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=stat.var(windowBuffer);
         break;
       }
       case(filter2d::stdev):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=sqrt(stat.var(windowBuffer));
         break;
       }
       case(filter2d::mean):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=stat.mean(windowBuffer);
         break;
       }
       case(filter2d::min):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=stat.min(windowBuffer);
         break;
       }
       case(filter2d::ismin):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[centre])? 1:0;
         break;
@@ -368,7 +372,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         double min=0;
         double max=0;
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else{
           stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
           if(min!=max)
@@ -380,21 +384,21 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       }
       case(filter2d::max):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=stat.max(windowBuffer);
         break;
       }
       case(filter2d::ismax):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else
           outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[centre])? 1:0;
         break;
       }
       case(filter2d::order):{
         if(windowBuffer.empty())
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         else{
           double lbound=0;
           double ubound=dimX*dimY;
@@ -413,7 +417,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         if(occurrence.size()==1)//all values in window must be the same
           outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
         else//favorize original value in case of ties
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         break;
       case(filter2d::heterog):{
         for(std::vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
@@ -422,7 +426,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           else if(*wit!=inBuffer[(dimY-1)/2][x])
             outBuffer[x/down]=1;
           else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+            outBuffer[x/down]=noDataValue;
             break;
           }
         }
@@ -435,7 +439,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
             outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
         }
         else
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         break;
       }
       case(filter2d::majority):{
@@ -451,7 +455,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
             outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
         }
         else
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         break;
       }
       case(filter2d::threshold):{
@@ -464,7 +468,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           }
         }
         else
-          outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          outBuffer[x/down]=noDataValue;
         break;
       }
       case(filter2d::mixed):{
@@ -605,6 +609,10 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
 
+  double noDataValue=0;
+  if(m_noDataValues.size())
+    noDataValue=m_noDataValues[0];
+
   unsigned long int nchange=0;
   assert(dimX);
   assert(dimY);
@@ -672,7 +680,7 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
                 indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
               else
                 indexJ=(dimY-1)/2+j;
-            if(inBuffer[indexJ][indexI]==(m_noDataValues.size())? m_noDataValues[0] : 0)
+            if(inBuffer[indexJ][indexI]==noDataValue)
               continue;
             bool masked=false;
             for(int imask=0;imask<m_noDataValues.size();++imask){
@@ -724,7 +732,7 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
           // }
         }
         else
-          output[y][x]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          output[y][x]=noDataValue;
       }
     }
     progress=(1.0+y);
