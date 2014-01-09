@@ -83,6 +83,8 @@ packages to install before pktools
    sudo apt-get install libnlopt-dev
    \endcode
 
+   Note: currently, the repository seems not to include this package anymore and manual installation is required (see also http://ab-initio.mit.edu/wiki/index.php/NLopt#Download_and_installation)
+
    - Install pktools with with extra configuration option --enable-nlopt:
 
    \code
@@ -108,7 +110,7 @@ packages to install before pktools
    Install pktools with extra configuration option --libfann-dev:
 
    \code
-   ./configure --libfann-dev
+   ./configure --enable-fann
    make
    sudo make install
    sudo ldconfig
@@ -135,7 +137,7 @@ packages to install before pktools
       deb-src http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu <codename> main 
     \endcode      
       
-    - then instal extra packages:      
+    - then install extra packages:      
 
     \code
       sudo apt-get install libboost-dev liblas-dev liblas-c-dev liblas1 liblas2 liblas-c2  python-liblas

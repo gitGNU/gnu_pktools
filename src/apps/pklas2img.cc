@@ -211,7 +211,7 @@ int main(int argc,char **argv) {
   gt[2]=0;
   gt[3]=maxULY;
   gt[4]=0;
-  gt[5]=dy_opt[0];
+  gt[5]=-dy_opt[0];
   outputWriter.setGeoTransform(gt);
   if(projection_opt.size()){
     string projectionString=outputWriter.setProjectionProj4(projection_opt[0]);
@@ -296,10 +296,16 @@ int main(int argc,char **argv) {
       int irow=static_cast<int>(drow);
       // //test
       // irow+=1;
-      if(irow<0||irow>=nrow)
+      if(irow<0||irow>=nrow){
+	//test
+	cout << "Error: thePoint.GetX(),thePoint.GetY(),dcol,drow" << thePoint.GetX() << ", " << thePoint.GetY() << ", " << dcol << ", " << drow << endl;
 	continue;
-      if(icol<0||icol>=ncol)
+      }
+      if(icol<0||icol>=ncol){
+	//test
+	cout << "Error: thePoint.GetX(),thePoint.GetY(),dcol,drow" << thePoint.GetX() << ", " << thePoint.GetY() << ", " << dcol << ", " << drow << endl;
 	continue;
+      }
       assert(irow>=0);
       assert(irow<nrow);
       assert(icol>=0);

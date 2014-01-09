@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
     gt[2]=0;
     gt[3]=uly_opt[0];
     gt[4]=0;
-    gt[5]=dy_opt[0];
+    gt[5]=-dy_opt[0];
     imgWriter.setGeoTransform(gt);
     imgWriter.setProjectionProj4(projection_opt[0]);
   }
