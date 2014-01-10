@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
   //test
   // vector<double> readBuffer(readncol);
   vector<double> readBuffer(readncol+1);
-  assert(imgWriter.isGeoRef());
+  // assert(imgWriter.isGeoRef());
   if(band_opt.empty()){
     for(int iband=0;iband<imgReader.nrOfBand();++iband)
       band_opt.push_back(iband);

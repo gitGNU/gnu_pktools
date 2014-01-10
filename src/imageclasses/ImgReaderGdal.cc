@@ -370,8 +370,8 @@ double ImgReaderGdal::getMin(int& x, int& y, int band) const{
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      if(!isNoData(lineBuffer[icol])){
         if(!init){
           y=irow;
           x=icol;
@@ -399,8 +399,9 @@ double ImgReaderGdal::getMax(int& x, int& y, int band) const{
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      // if(valid){
+      if(!isNoData(lineBuffer[icol])){
         if(!init){
           y=irow;
           x=icol;
@@ -442,8 +443,9 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
   for(int irow=startCol;irow<endRow+1;++irow){
     readData(lineBuffer,GDT_Float64,startCol,endCol,irow,band);
     for(int icol=0;icol<lineBuffer.size();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      // if(valid){
+      if(!isNoData(lineBuffer[icol])){
 	if(!init){
 	  minValue=lineBuffer[icol];
 	  maxValue=lineBuffer[icol];
@@ -482,8 +484,9 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
     for(int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,GDT_Float64,irow,band);
       for(int icol=0;icol<nrOfCol();++icol){
-        bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-        if(valid){
+        // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+        // if(valid){
+	if(!isNoData(lineBuffer[icol])){
           if(!init){
             minValue=lineBuffer[icol];
             maxValue=lineBuffer[icol];
@@ -503,7 +506,7 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
   }
 }
 
-unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, int& nbin, int theBand) const{
+unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, unsigned int& nbin, int theBand) const{
   double minValue=0;
   double maxValue=0;
   getMinMax(minValue,maxValue,theBand);
@@ -517,7 +520,7 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
   if(maxValue>minValue){
     if(nbin==0)
       nbin=maxValue-minValue+1;
-    scale=static_cast<double>(nbin-1)/(maxValue-minValue);
+    scale=static_cast<double>(nbin)/(maxValue-minValue);
   }
   else
     nbin=1;
@@ -541,7 +544,6 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
       else{//scale to [0:nbin]
 	int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
 	assert(theBin>=0);
-	assert(theBin!=nbin);
 	assert(theBin<nbin);
 	++histvector[theBin];
       // else if(lineBuffer[icol]==maxValue)
@@ -606,8 +608,9 @@ void ImgReaderGdal::getRefPix(double& refX, double &refY, int band) const
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      // if(valid){
+      if(!isNoData(lineBuffer[icol])){
         validCol+=icol+1;
         ++nvalidCol;
         validRow+=irow+1;

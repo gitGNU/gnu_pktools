@@ -78,7 +78,7 @@ public:
     /* }; */
   }
   int getNoDataValues(std::vector<double>& noDataValues) const;
-  bool isNoData(double value) const{return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
+  bool isNoData(double value) const{if(m_noDataValues.empty()) return false;else return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
   int pushNoDataValue(double noDataValue);
   CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {getRasterBand(band)->SetNoDataValue(noDataValue);};
   bool covers(double x, double y) const;
@@ -97,7 +97,7 @@ public:
   void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
   void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=false) const;
   double getMin(int& col, int& row, int band=0) const;
-  unsigned long int getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max,int& nbin, int theBand=0) const;
+  unsigned long int getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0) const;
   double getMax(int& col, int& row, int band=0) const;
   void getRefPix(double& refX, double &refY, int band=0) const;
   void getRange(std::vector<short>& range, int Band=0) const;

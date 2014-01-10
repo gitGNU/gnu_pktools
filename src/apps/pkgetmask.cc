@@ -27,8 +27,8 @@ using namespace std;
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input image file");
   Optionpk<short> band_opt("b", "band", "band(s) used for mask", 0);
-  Optionpk<double> min_opt("min", "min", "Values smaller than min threshold(s) are masked as invalid. Use one threshold for each band", 0);
-  Optionpk<double> max_opt("max", "max", "Values greater than max threshold(s) are masked as invalid. Use one threshold for each band", 0);
+  Optionpk<double> min_opt("min", "min", "Values smaller than min threshold(s) are masked as invalid. Use one threshold for each band");
+  Optionpk<double> max_opt("max", "max", "Values greater than max threshold(s) are masked as invalid. Use one threshold for each band");
   Optionpk<string> operator_opt("p", "operator", "Operator: [AND,OR].", "OR");
   Optionpk<unsigned short> data_opt("data", "data", "value(s) for valid pixels: between min and max", 1);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "value(s) for invalid pixels: not between min and max", 0);
@@ -93,23 +93,34 @@ int main(int argc,char **argv) {
   assert(band_opt.size()>=0);
   assert(band_opt.size()<=imgReader.nrOfBand());
 
-  while(band_opt.size()>min_opt.size())
-    min_opt.push_back(min_opt[0]);
-  while(band_opt.size()>max_opt.size())
-    max_opt.push_back(max_opt[0]);
-  while(min_opt.size()>data_opt.size())
-    data_opt.push_back(data_opt[0]);
-  assert(min_opt.size()==max_opt.size());
-  if(verbose_opt[0]){
-    cout << "min,max values: ";
-    for(int imin=0;imin<min_opt.size();++imin){
-      cout << min_opt[imin] << "," << max_opt[imin];
-      if(imin<min_opt.size()-1)
-	cout << " ";
-      else
-	cout << endl;
-    }
+  if(min_opt.size()&&max_opt.size()){
+    if(min_opt.size()!=max_opt.size())
+      cerr << "Error: number of min and max options must correspond if both min and max options are provide" << endl;
+    assert(min_opt.size()==max_opt.size());
   }
+  if(min_opt.size()){
+    while(band_opt.size()>min_opt.size())
+      min_opt.push_back(min_opt[0]);
+    while(min_opt.size()>data_opt.size())
+      data_opt.push_back(data_opt[0]);
+  }
+  if(max_opt.size()){
+    while(band_opt.size()>max_opt.size())
+      max_opt.push_back(max_opt[0]);
+    while(max_opt.size()>data_opt.size())
+      data_opt.push_back(data_opt[0]);
+  }
+  // assert(min_opt.size()==max_opt.size());
+  // if(verbose_opt[0]){
+  //   cout << "min,max values: ";
+  //   for(int imin=0;imin<min_opt.size();++imin){
+  //     cout << min_opt[imin] << "," << max_opt[imin];
+  //     if(imin<min_opt.size()-1)
+  // 	cout << " ";
+  //     else
+  // 	cout << endl;
+  //   }
+  // }
   
   vector< vector<float> > lineBuffer(band_opt.size());
   for(int iband=0;iband<band_opt.size();++iband)
@@ -137,12 +148,12 @@ int main(int argc,char **argv) {
   }
   else if (imgReader.getColorTable()!=NULL)//copy colorTable from input image
     imgWriter.setColorTable(imgReader.getColorTable());
-  if(imgReader.isGeoRef()){
-    imgWriter.setProjection(imgReader.getProjection());
-    double gt[6];
-    imgReader.getGeoTransform(gt);
-    imgWriter.setGeoTransform(gt);//ulx,uly,imgReader.getDeltaX(),imgReader.getDeltaY(),0,0);
-  }
+
+  imgWriter.setProjection(imgReader.getProjection());
+  double gt[6];
+  imgReader.getGeoTransform(gt);
+  imgWriter.setGeoTransform(gt);//ulx,uly,imgReader.getDeltaX(),imgReader.getDeltaY(),0,0);
+  
   if(nodata_opt.size())
       imgWriter.GDALSetNoDataValue(nodata_opt[0]);
 
@@ -153,15 +164,42 @@ int main(int argc,char **argv) {
     for(int icol=0;icol<imgReader.nrOfCol();++icol){
       bool valid=(operator_opt[0]=="OR")?false:true;
       unsigned short validValue=data_opt[0];
-      for(int ivalid=0;ivalid<min_opt.size();++ivalid){
-        bool validBand=false;
-      // for(int iband=0;iband<band_opt.size();++iband){
-        unsigned short theBand=(band_opt.size()==min_opt.size())? ivalid:0;
-        if(lineBuffer[theBand][icol]>=min_opt[ivalid]&&lineBuffer[theBand][icol]<=max_opt[ivalid]){
-          validValue=data_opt[ivalid];
-          validBand=true;
-        }
-        valid=(operator_opt[0]=="OR")?valid||validBand : valid&&validBand;
+      if(min_opt.size()&&max_opt.size()){
+	assert(max_opt.size()==min_opt.size());
+	for(int ivalid=0;ivalid<min_opt.size();++ivalid){
+	  bool validBand=false;
+	  // for(int iband=0;iband<band_opt.size();++iband){
+	  unsigned short theBand=(band_opt.size()==min_opt.size())? ivalid:0;
+	  if(lineBuffer[theBand][icol]>=min_opt[ivalid]&&lineBuffer[theBand][icol]<=max_opt[ivalid]){
+	    validValue=data_opt[ivalid];
+	    validBand=true;
+	  }
+	  valid=(operator_opt[0]=="OR")?valid||validBand : valid&&validBand;
+	}
+      }
+      else if(min_opt.size()){
+	for(int ivalid=0;ivalid<min_opt.size();++ivalid){
+	  bool validBand=false;
+	  // for(int iband=0;iband<band_opt.size();++iband){
+	  unsigned short theBand=(band_opt.size()==min_opt.size())? ivalid:0;
+	  if(lineBuffer[theBand][icol]>=min_opt[ivalid]){
+	    validValue=data_opt[ivalid];
+	    validBand=true;
+	  }
+	  valid=(operator_opt[0]=="OR")?valid||validBand : valid&&validBand;
+	}
+      }
+      else if(max_opt.size()){
+	for(int ivalid=0;ivalid<max_opt.size();++ivalid){
+	  bool validBand=false;
+	  // for(int iband=0;iband<band_opt.size();++iband){
+	  unsigned short theBand=(band_opt.size()==max_opt.size())? ivalid:0;
+	  if(lineBuffer[theBand][icol]<=max_opt[ivalid]){
+	    validValue=data_opt[ivalid];
+	    validBand=true;
+	  }
+	  valid=(operator_opt[0]=="OR")?valid||validBand : valid&&validBand;
+	}
       }
       if(valid)
 	writeBuffer[icol]=validValue;

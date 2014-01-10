@@ -150,12 +150,12 @@ int main(int argc, char *argv[])
   if(description_opt.size())
       outputWriter.setImageDescription(description_opt[0]);
   //if input image is georeferenced, copy projection info to output image
-  if(inputReader[0].isGeoRef()){
-    outputWriter.setProjection(inputReader[0].getProjection());
-    double ulx,uly,lrx,lry;
-    inputReader[0].getBoundingBox(ulx,uly,lrx,lry);
-    outputWriter.copyGeoTransform(inputReader[0]);
-  }
+
+  outputWriter.setProjection(inputReader[0].getProjection());
+  double ulx,uly,lrx,lry;
+  inputReader[0].getBoundingBox(ulx,uly,lrx,lry);
+  outputWriter.copyGeoTransform(inputReader[0]);
+
   if(colorTable_opt.size()){
     if(colorTable_opt[0]!="none")
       outputWriter.setColorTable(colorTable_opt[0]);

@@ -224,6 +224,7 @@ version 2.5
 	support multiple layers
  - pkeditogr
 	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
+	support multiple layers
  - Filter2d.h
 	renamed mask to nodata
  - pkinfo

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box");
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box");
   Optionpk<bool>  hist_opt("hist", "hist", "Calculates histogram. Use --rel for a relative histogram output. ", false,0);
-  Optionpk<short>  nbin_opt("nbin", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers", 0,0);
+  Optionpk<unsigned int>  nbin_opt("nbin", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers");
   Optionpk<bool>  type_opt("ot", "otype", "Returns data type", false,0);
   Optionpk<bool>  description_opt("d", "description", "Returns image description", false,0);
   Optionpk<bool>  metadata_opt("meta", "meta", "Shows meta data ", false,0);
@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
       hist_opt[0]=true;
     if(hist_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
-      int nbin=nbin_opt[0];
+      unsigned int nbin=(nbin_opt.size())? nbin_opt[0]:0;
       std::vector<unsigned long int> output;
       minValue=0;
       maxValue=0;
@@ -304,35 +304,24 @@ int main(int argc, char *argv[])
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){
 	// nsample+=output[bin];
-        if(nbin>1){
-          std::cout << (maxValue-minValue)*bin/(nbin-1)+minValue << " ";
-          if(relative_opt[0])
-            std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
-          else
-            std::cout << static_cast<double>(output[bin])  << std::endl;
-        }
-	else{
-          std::cout << (maxValue-minValue)*bin/(2-1)+minValue << " ";
-          if(relative_opt[0])
-            std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
-          else
-            std::cout << static_cast<double>(output[bin])  << std::endl;
-        }
-
+	std::cout << minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin << " ";
+	if(relative_opt[0])
+	  std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
+	else
+	  std::cout << static_cast<double>(output[bin])  << std::endl;
       }
     }
-    else{
-      int minCol,minRow;
-      if(src_min_opt.size()){
-        assert(band_opt[0]<imgReader.nrOfBand());
-        std::cout << "--min " << imgReader.getMin(minCol, minRow,band_opt[0]);
-      }
-      if(src_max_opt.size()){
-        assert(band_opt[0]<imgReader.nrOfBand());
-        assert(band_opt[0]<imgReader.nrOfBand());
-        std::cout << "--max " << imgReader.getMax(minCol, minRow,band_opt[0]);
-      }
-    }
+    // else{
+    //   int minCol,minRow;
+    //   if(src_min_opt.size()){
+    //     assert(band_opt[0]<imgReader.nrOfBand());
+    //     std::cout << "--min " << imgReader.getMin(minCol, minRow,band_opt[0]);
+    //   }
+    //   if(src_max_opt.size()){
+    //     assert(band_opt[0]<imgReader.nrOfBand());
+    //     std::cout << "--max " << imgReader.getMax(minCol, minRow,band_opt[0]);
+    //   }
+    // }
     if(projection_opt[0]){
       if(imgReader.isGeoRef())
         std::cout << " -a_srs " << imgReader.getProjection() << " ";

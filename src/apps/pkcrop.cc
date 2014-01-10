@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
 	  cout << "projection: " << projection_opt[0] << endl;
 	imgWriter.setProjectionProj4(projection_opt[0]);
       }
-      else if(imgReader.isGeoRef())
+      else
 	imgWriter.setProjection(imgReader.getProjection());
       if(imgWriter.getDataType()==GDT_Byte){
 	if(colorTable_opt.size()){

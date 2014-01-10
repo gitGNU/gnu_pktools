@@ -229,48 +229,48 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   int nband=0;
   if(verbose)
     std::cout << "reading shape file " << m_filename  << std::endl;
-  try{
-    //only retain bands in fields
-    getFields(fields);
-    std::vector<std::string>::iterator fit=fields.begin();
-    if(verbose>1)
-      std::cout << "reading fields: ";
-    while(fit!=fields.end()){
-      if(verbose)
-	std::cout << *fit << " ";
+  for(int ilayer=0;ilayer<getLayerCount();++ilayer){
+    try{
+      //only retain bands in fields
+      getFields(fields,ilayer);
+      std::vector<std::string>::iterator fit=fields.begin();
+      if(verbose>1)
+	std::cout << "reading fields: ";
+      while(fit!=fields.end()){
+	if(verbose)
+	  std::cout << *fit << " ";
       // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
-	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
-	  int theBand=atoi((*fit).substr(1).c_str());
-	  if(bands.size()){
-	    bool validBand=false;
-	    for(int iband=0;iband<bands.size();++iband){
-	      if(theBand==bands[iband])
-		validBand=true;
+	if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
+	  if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
+	    int theBand=atoi((*fit).substr(1).c_str());
+	    if(bands.size()){
+	      bool validBand=false;
+	      for(int iband=0;iband<bands.size();++iband){
+		if(theBand==bands[iband])
+		  validBand=true;
+	      }
+	      if(validBand)
+		++fit;
+	      else
+		fields.erase(fit);
 	    }
-	    if(validBand)
-	      ++fit;
 	    else
-	      fields.erase(fit);
+	      ++fit;
 	  }
-	  else
+	  else if((*fit)=="B" || (*fit)=="b" || (*fit)=="Band")//B is only band
 	    ++fit;
 	}
-	else if((*fit)=="B" || (*fit)=="b" || (*fit)=="Band")//B is only band
-	  ++fit;
+	else
+	  fields.erase(fit);
       }
-      else
-	fields.erase(fit);
-    }
-    if(verbose)
-      std::cout << std::endl;
-    if(verbose){
-      std::cout << "fields:";
+      if(verbose)
+	std::cout << std::endl;
+      if(verbose){
+	std::cout << "fields:";
       for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
 	std::cout << " " << *fit;
       std::cout << std::endl;
-    }
-    for(int ilayer=0;ilayer<m_datasource->GetLayerCount();++ilayer){
+      }
       if(!nband){
 	if(verbose)
 	  std::cout << "reading data" << std::endl;
@@ -284,11 +284,11 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
       if(verbose)
 	std::cout << ": " << nsample << " samples read with " << nband << " bands" << std::endl;
     }
-  }
-  catch(std::string e){
-    std::ostringstream estr;
-    estr << e << " " << m_filename;
-    throw(estr.str());
+    catch(std::string e){
+      std::ostringstream estr;
+      estr << e << " " << m_filename;
+      throw(estr.str());
+    }
   }
   if(verbose)
     std::cout << "total number of samples read " << totalSamples << std::endl;
@@ -308,39 +308,39 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   int nband=0;
   if(verbose)
     std::cout << "reading shape file " << m_filename  << std::endl;
-  try{
-    //only retain bands in fields
-    getFields(fields);
-    std::vector<std::string>::iterator fit=fields.begin();
-    if(verbose)
-      std::cout << "reading fields: ";
-    while(fit!=fields.end()){
+  for(int ilayer=0;ilayer<getLayerCount();++ilayer){
+    try{
+      //only retain bands in fields
+      getFields(fields,ilayer);
+      std::vector<std::string>::iterator fit=fields.begin();
       if(verbose)
-	std::cout << *fit << " ";
-      // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
-      if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
-	if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
-	  int iband=atoi((*fit).substr(1).c_str());
-	  if((start||end)&&(iband<start||iband>end))
-	    fields.erase(fit);
-	  else
+	std::cout << "reading fields: ";
+      while(fit!=fields.end()){
+	if(verbose)
+	  std::cout << *fit << " ";
+	// size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
+	if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
+	  if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
+	    int iband=atoi((*fit).substr(1).c_str());
+	    if((start||end)&&(iband<start||iband>end))
+	      fields.erase(fit);
+	    else
+	      ++fit;
+	  }
+	  else if(*fit=="B" || *fit=="b"|| *fit=="Band")
 	    ++fit;
 	}
-	else if(*fit=="B" || *fit=="b"|| *fit=="Band")
-	  ++fit;
+	else
+	  fields.erase(fit);
       }
-      else
-	fields.erase(fit);
-    }
-    if(verbose)
-      std::cout << std::endl;
-    if(verbose){
-      std::cout << "fields:";
-      for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
-	std::cout << " " << *fit;
-      std::cout << std::endl;
-    }
-    for(int ilayer=0;ilayer<m_datasource->GetLayerCount();++ilayer){
+      if(verbose)
+	std::cout << std::endl;
+      if(verbose){
+	std::cout << "fields:";
+	for(std::vector<std::string>::iterator fit=fields.begin();fit!=fields.end();++fit)
+	  std::cout << " " << *fit;
+	std::cout << std::endl;
+      }
       if(!nband){
 	if(verbose)
 	  std::cout << "reading data" << std::endl;
@@ -354,14 +354,14 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
       if(verbose)
 	std::cout << ": " << nsample << " samples read with " << nband << " bands" << std::endl;
     }
+    catch(std::string e){
+      std::ostringstream estr;
+      estr << e << " " << m_filename;
+      throw(estr.str());
+    }
+    if(verbose)
+      std::cout << ": " << nsample << " samples read with " << nband << " bands" << std::endl;
   }
-  catch(std::string e){
-    std::ostringstream estr;
-    estr << e << " " << m_filename;
-    throw(estr.str());
-  }
-  if(verbose)
-    std::cout << ": " << nsample << " samples read with " << nband << " bands" << std::endl;
   if(verbose)
     std::cout << "total number of samples read " << totalSamples << std::endl;
   return totalSamples;

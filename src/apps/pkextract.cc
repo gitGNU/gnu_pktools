@@ -42,14 +42,14 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "image", "Input image file");
-  Optionpk<string> sample_opt("s", "sample", "Input sample file (shape) or class file (e.g. Corine CLC) if class option is set");
+  Optionpk<string> sample_opt("s", "sample", "Input sample vector file or class file (e.g. Corine CLC) if class option is set");
   Optionpk<string> mask_opt("m", "mask", "Mask image file");
   Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or leave empty to extract all valid data pixels from sample file");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
   Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
-  Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
+  // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
   Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
   Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
   Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample files. If using raster land cover maps as a sample file, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<short> disc_opt("circ", "circular", "circular disc kernel boundary", 0);
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
-  Optionpk<string> fieldname_opt("bn", "bname", "Field name of output shape file", "B");
+  Optionpk<string> fieldname_opt("bn", "bname", "Attribute field name of extracted raster band", "B");
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
   Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
   Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     output_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     test_opt.retrieveOption(argc,argv);
-    bufferOutput_opt.retrieveOption(argc,argv);
+    // bufferOutput_opt.retrieveOption(argc,argv);
     geo_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
@@ -773,8 +773,7 @@ int main(int argc, char *argv[])
       std::cout << "number of layers: " << nlayer << endl;
       
     for(int ilayer=0;ilayer<nlayer;++ilayer){
-      OGRLayer  *readLayer;
-      readLayer = sampleReaderOgr.getDataSource()->GetLayer(ilayer);
+      OGRLayer *readLayer=sampleReaderOgr.getLayer(ilayer);
       cout << "processing layer " << readLayer->GetName() << endl;
       readLayer->ResetReading();
       OGRLayer *writeLayer;

@@ -100,9 +100,6 @@ int main(int argc, char *argv[])
   }
 
   //start reading features from the layer
-  if(verbose_opt[0])
-    cout << "reset reading" << endl;
-  ogrReader.getLayer()->ResetReading();
   // if(field_opt.size())
   //   assert(field_opt.size()==ogrReader.getFieldCount());
   unsigned long int ifeature=0;
@@ -110,105 +107,117 @@ int main(int argc, char *argv[])
     cout << "going through features" << endl << flush;
 
   ImgWriterOgr ogrWriter(output_opt[0],ogrformat_opt[0]);
-  OGRLayer* writeLayer=ogrWriter.createLayer(output_opt[0],ogrReader.getProjection(),ogrReader.getGeometryType(),NULL);
-  std::vector<OGRFieldDefn*> readFields;
-  std::vector<OGRFieldDefn*> writeFields;
-  ogrReader.getFields(readFields);
-  writeFields=readFields;
-  try{
-    for(int ifield=0;ifield<readFields.size();++ifield){
-      // if(field_opt.size()>ifield)
-      //   writeFields[ifield]->SetName(field_opt[ifield].c_str());
-      if(verbose_opt[0])
-        std::cout << readFields[ifield]->GetNameRef() << " -> " << writeFields[ifield]->GetNameRef() << std::endl;
-      if(writeLayer->CreateField(writeFields[ifield]) != OGRERR_NONE ){
-        ostringstream es;
-        // if(field_opt.size()>ifield)
-        //   es << "Creating field " << field_opt[ifield] << " failed";
-        // else
-	es << "Creating field " << readFields[ifield] << " failed";
-        string errorString=es.str();
-        throw(errorString);
-      }
-    }
-  }
-  catch(string errorString){
-    std::cerr << errorString << std::endl;
-    exit(1);
-  }
+
+  //support multiple layers
+  int nlayer=ogrReader.getLayerCount();
   if(verbose_opt[0])
-    std::cout << "add " << addname_opt.size() << " fields" << std::endl;
-  if(addname_opt.size()){
-    assert(addname_opt.size()==addtype_opt.size());
-    while(addvalue_opt.size()<addname_opt.size())
-      addvalue_opt.push_back(addvalue_opt.back());
-  }
-  for(int iname=0;iname<addname_opt.size();++iname){
+    std::cout << "number of layers: " << nlayer << endl;
+      
+  for(int ilayer=0;ilayer<nlayer;++ilayer){
+    OGRLayer *readLayer=ogrReader.getLayer(ilayer);
     if(verbose_opt[0])
-      std::cout << addname_opt[iname] << " " << std::endl;
-    ogrWriter.createField(addname_opt[iname],fieldType[iname]);
-  }
-  if(verbose_opt[0]){
-    std::cout << std::endl;
-    std::cout << addname_opt.size() << " fields created" << std::endl;
-  }
-  const char* pszMessage;
-  void* pProgressArg=NULL;
-  GDALProgressFunc pfnProgress=GDALTermProgress;
-  double progress=0;
-  OGRFeature *poFeature;
-  unsigned long int nfeature=ogrReader.getFeatureCount();
-  while((poFeature = ogrReader.getLayer()->GetNextFeature()) != NULL ){
-    if(verbose_opt[0])
-      std::cout << "feature " << ifeature << std::endl;
-    ++ifeature;
-    bool doSelect;
-    if(like_opt.empty())
-      doSelect=true;
-    else{
-      assert(selectField_opt.size());
-      int fieldIndex=poFeature->GetFieldIndex(selectField_opt[0].c_str());
-      string fieldValue=poFeature->GetFieldAsString(fieldIndex);
-      if(stringent_opt[0]){
-        if(fieldValue==like_opt[0])
-          doSelect=true;
-        else
-          doSelect=false;
-      }
-      else{
-        doSelect=false;
-        for(int ilike=0;ilike<like_opt.size();++ilike){
-          if(fieldValue.find(like_opt[ilike])!=std::string::npos){
-            if(verbose_opt[0])
-              std::cout << "found " << like_opt[ilike] << " in " << fieldValue << std::endl;
-            doSelect=true;
-            break;
-          }
-        }
+      cout << "reset reading" << endl;
+    readLayer->ResetReading();
+
+    OGRLayer *writeLayer=ogrWriter.createLayer(output_opt[0],ogrReader.getProjection(),ogrReader.getGeometryType(ilayer),NULL);
+    std::vector<OGRFieldDefn*> readFields;
+    std::vector<OGRFieldDefn*> writeFields;
+    ogrReader.getFields(readFields,ilayer);
+    writeFields=readFields;
+    try{
+      for(int ifield=0;ifield<readFields.size();++ifield){
+	// if(field_opt.size()>ifield)
+	//   writeFields[ifield]->SetName(field_opt[ifield].c_str());
+	if(verbose_opt[0])
+	  std::cout << readFields[ifield]->GetNameRef() << " -> " << writeFields[ifield]->GetNameRef() << std::endl;
+	if(writeLayer->CreateField(writeFields[ifield]) != OGRERR_NONE ){
+	  ostringstream es;
+	  // if(field_opt.size()>ifield)
+	  //   es << "Creating field " << field_opt[ifield] << " failed";
+	  // else
+	  es << "Creating field " << readFields[ifield] << " failed";
+	  string errorString=es.str();
+	  throw(errorString);
+	}
       }
     }
-    if(!doSelect){
+    catch(string errorString){
+      std::cerr << errorString << std::endl;
+      exit(1);
+    }
+    if(verbose_opt[0])
+      std::cout << "add " << addname_opt.size() << " fields" << std::endl;
+    if(addname_opt.size()){
+      assert(addname_opt.size()==addtype_opt.size());
+      while(addvalue_opt.size()<addname_opt.size())
+	addvalue_opt.push_back(addvalue_opt.back());
+    }
+    for(int iname=0;iname<addname_opt.size();++iname){
       if(verbose_opt[0])
-        std::cout << "string not found in feature " << ifeature << std::endl;
-      continue;
+	std::cout << addname_opt[iname] << " " << std::endl;
+      ogrWriter.createField(addname_opt[iname],fieldType[iname]);
     }
-    OGRFeature *poDstFeature = NULL;
-    poDstFeature=ogrWriter.createFeature();
-    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
-      const char* fmt;
-      string errorString="Unable to translate feature %d from layer %s.\n";
-      fmt=errorString.c_str();
-      CPLError( CE_Failure, CPLE_AppDefined,
-                fmt,
-                poFeature->GetFID(), ogrWriter.getLayerName().c_str() );
-      OGRFeature::DestroyFeature( poFeature );
-      OGRFeature::DestroyFeature( poDstFeature );
+    if(verbose_opt[0]){
+      std::cout << std::endl;
+      std::cout << addname_opt.size() << " fields created" << std::endl;
     }
-    long int fid=poFeature->GetFID();
-    poDstFeature->SetFID( poFeature->GetFID() );
-    for(int ifeature=0;ifeature<setfeature_opt.size();++ifeature){
-      if(fid==setfeature_opt[ifeature]){
-	switch(poDstFeature->GetFieldDefnRef(fid)->GetType()){
+    const char* pszMessage;
+    void* pProgressArg=NULL;
+    GDALProgressFunc pfnProgress=GDALTermProgress;
+    double progress=0;
+    OGRFeature *poFeature;
+    unsigned long int nfeature=ogrReader.getFeatureCount(ilayer);
+    while((poFeature = ogrReader.getLayer(ilayer)->GetNextFeature()) != NULL ){
+      if(verbose_opt[0])
+	std::cout << "feature " << ifeature << std::endl;
+      ++ifeature;
+      bool doSelect;
+      if(like_opt.empty())
+	doSelect=true;
+      else{
+	assert(selectField_opt.size());
+	int fieldIndex=poFeature->GetFieldIndex(selectField_opt[0].c_str());
+	string fieldValue=poFeature->GetFieldAsString(fieldIndex);
+	if(stringent_opt[0]){
+	  if(fieldValue==like_opt[0])
+	    doSelect=true;
+	  else
+	    doSelect=false;
+	}
+	else{
+	  doSelect=false;
+	  for(int ilike=0;ilike<like_opt.size();++ilike){
+	    if(fieldValue.find(like_opt[ilike])!=std::string::npos){
+	      if(verbose_opt[0])
+		std::cout << "found " << like_opt[ilike] << " in " << fieldValue << std::endl;
+	      doSelect=true;
+	      break;
+	    }
+	  }
+	}
+      }
+      if(!doSelect){
+	if(verbose_opt[0])
+	  std::cout << "string not found in feature " << ifeature << std::endl;
+	continue;
+      }
+      OGRFeature *poDstFeature = NULL;
+      poDstFeature=ogrWriter.createFeature(ilayer);
+      if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
+	const char* fmt;
+	string errorString="Unable to translate feature %d from layer %s.\n";
+	fmt=errorString.c_str();
+	CPLError( CE_Failure, CPLE_AppDefined,
+		  fmt,
+		  poFeature->GetFID(), ogrWriter.getLayerName().c_str() );
+	OGRFeature::DestroyFeature( poFeature );
+	OGRFeature::DestroyFeature( poDstFeature );
+      }
+      long int fid=poFeature->GetFID();
+      poDstFeature->SetFID( poFeature->GetFID() );
+      for(int ifeature=0;ifeature<setfeature_opt.size();++ifeature){
+	if(fid==setfeature_opt[ifeature]){
+	  switch(poDstFeature->GetFieldDefnRef(fid)->GetType()){
 	  case(OFTReal):
 	    poDstFeature->SetField(setname_opt[ifeature].c_str(),string2type<float>(setvalue_opt[ifeature]));
 	    break;
@@ -222,52 +231,53 @@ int main(int argc, char *argv[])
 	    std::cerr << "Error: field type not supported" << std::endl;
 	    exit(1);
 	    break;
+	  }
 	}
       }
-    }
 
-    //set default values for new fields
-    if(verbose_opt[0])
-      std::cout << "set default values for new fields in feature " << ifeature << std::endl;
-    for(int iname=0;iname<addname_opt.size();++iname){
-      switch(fieldType[iname]){
-      case(OFTReal):
-        if(verbose_opt[0])
-          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<float>(addvalue_opt[iname]) << std::endl;
-        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<float>(addvalue_opt[iname]));
-        break;
-      case(OFTInteger):
-        if(verbose_opt[0])
-          std::cout << "set field " << addname_opt[iname] << " to default " << string2type<int>(addvalue_opt[iname]) << std::endl;
-        poDstFeature->SetField(addname_opt[iname].c_str(),string2type<int>(addvalue_opt[iname]));
-        break;
-      case(OFTString):
-        if(verbose_opt[0])
-          std::cout << "set field " << addname_opt[iname] << " to default " << addvalue_opt[iname] << std::endl;
-        poDstFeature->SetField(addname_opt[iname].c_str(),addvalue_opt[iname].c_str());
-        break;
-      default:
-	std::cerr << "Error: field type not supported" << std::endl;
-	exit(1);
-        break;
+      //set default values for new fields
+      if(verbose_opt[0])
+	std::cout << "set default values for new fields in feature " << ifeature << std::endl;
+      for(int iname=0;iname<addname_opt.size();++iname){
+	switch(fieldType[iname]){
+	case(OFTReal):
+	  if(verbose_opt[0])
+	    std::cout << "set field " << addname_opt[iname] << " to default " << string2type<float>(addvalue_opt[iname]) << std::endl;
+	  poDstFeature->SetField(addname_opt[iname].c_str(),string2type<float>(addvalue_opt[iname]));
+	  break;
+	case(OFTInteger):
+	  if(verbose_opt[0])
+	    std::cout << "set field " << addname_opt[iname] << " to default " << string2type<int>(addvalue_opt[iname]) << std::endl;
+	  poDstFeature->SetField(addname_opt[iname].c_str(),string2type<int>(addvalue_opt[iname]));
+	  break;
+	case(OFTString):
+	  if(verbose_opt[0])
+	    std::cout << "set field " << addname_opt[iname] << " to default " << addvalue_opt[iname] << std::endl;
+	  poDstFeature->SetField(addname_opt[iname].c_str(),addvalue_opt[iname].c_str());
+	  break;
+	default:
+	  std::cerr << "Error: field type not supported" << std::endl;
+	  exit(1);
+	  break;
+	}
       }
-    }
-    CPLErrorReset();
-    if(verbose_opt[0])
-      std::cout << "create feature" << std::endl;
-    if(ogrWriter.createFeature( poDstFeature ) != OGRERR_NONE){
-      const char* fmt;
-      string errorString="Unable to translate feature %d from layer %s.\n";
-      fmt=errorString.c_str();
-      CPLError( CE_Failure, CPLE_AppDefined,
-                fmt,
-                poFeature->GetFID(), ogrWriter.getLayerName().c_str() );
+      CPLErrorReset();
+      if(verbose_opt[0])
+	std::cout << "create feature" << std::endl;
+      if(ogrWriter.createFeature( poDstFeature,ilayer ) != OGRERR_NONE){
+	const char* fmt;
+	string errorString="Unable to translate feature %d from layer %s.\n";
+	fmt=errorString.c_str();
+	CPLError( CE_Failure, CPLE_AppDefined,
+		  fmt,
+		  poFeature->GetFID(), ogrWriter.getLayerName().c_str() );
+	OGRFeature::DestroyFeature( poDstFeature );
+      }
+      OGRFeature::DestroyFeature( poFeature );
       OGRFeature::DestroyFeature( poDstFeature );
+      progress=static_cast<float>(ifeature+1)/nfeature;
+      pfnProgress(progress,pszMessage,pProgressArg);
     }
-    OGRFeature::DestroyFeature( poFeature );
-    OGRFeature::DestroyFeature( poDstFeature );
-    progress=static_cast<float>(ifeature+1)/nfeature;
-    pfnProgress(progress,pszMessage,pProgressArg);
   }
   if(verbose_opt[0])
     std::cout << "replaced " << ifeature << " features" << std::endl;

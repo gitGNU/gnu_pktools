@@ -104,7 +104,21 @@ public:
     gsl_rng_set(r,theSeed);
     return r;
   }
-
+  bool isNoData(double value) const{
+    if(m_noDataValues.empty()) 
+      return false;
+    else 
+      return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();
+  };
+  unsigned int pushNodDataValue(double noDataValue){
+    if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
+      m_noDataValues.push_back(noDataValue);
+    return m_noDataValues.size();
+  };
+  unsigned int setNoDataValues(std::vector<double> vnodata){
+    m_noDataValues=vnodata;
+    return m_noDataValues.size();
+  };
   static double getRandomValue(const gsl_rng* r, const std::string type, double a=0, double b=0){
     std::map<std::string, DISTRIBUTION_TYPE> m_distMap;
     initDist(m_distMap);
@@ -120,18 +134,25 @@ public:
     }
     return randValue;
   };
-  template<class T> T max(const std::vector<T>& v) const;
   template<class T> T min(const std::vector<T>& v) const;
+  template<class T> T max(const std::vector<T>& v) const;
+  template<class T> T min(const std::vector<T>& v, T minConstraint) const;
+  template<class T> T max(const std::vector<T>& v, T maxConstraint) const;
 //   template<class T> typename std::vector<T>::const_iterator max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
-  template<class T> typename std::vector<T>::const_iterator max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
-  template<class T> typename std::vector<T>::iterator max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
-  template<class T> typename std::vector<T>::const_iterator absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> typename std::vector<T>::const_iterator min(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> typename std::vector<T>::iterator min(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
+  template<class T> typename std::vector<T>::const_iterator min(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T minConstraint) const;
+  template<class T> typename std::vector<T>::iterator min(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, T minConstraint) const;
+  template<class T> typename std::vector<T>::const_iterator max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
+  template<class T> typename std::vector<T>::iterator max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
+  template<class T> typename std::vector<T>::const_iterator max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T maxConstraint) const;
+  template<class T> typename std::vector<T>::iterator max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, T maxConstraint) const;
   template<class T> typename std::vector<T>::const_iterator absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
+  template<class T> typename std::vector<T>::const_iterator absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> void minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const;  
   template<class T> T sum(const std::vector<T>& v) const;
   template<class T> double mean(const std::vector<T>& v) const;
+  template<class T> T eraseNoData(std::vector<T>& v) const;
   template<class T> T median(const std::vector<T>& v) const;
   template<class T> double var(const std::vector<T>& v) const;
   template<class T> double moment(const std::vector<T>& v, int n) const;
@@ -177,74 +198,195 @@ private:
     m_distMap["gaussian"]=gaussian;
     m_distMap["uniform"]=uniform;
   }
-
+  std::vector<double> m_noDataValues;
 };
 
 
-template<class T> typename std::vector<T>::iterator StatFactory::max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const
+template<class T> inline typename std::vector<T>::const_iterator StatFactory::min(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
+{
+  typename std::vector<T>::const_iterator tmpIt=begin;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(!isNoData(*it))
+      if(*tmpIt>*it)
+	tmpIt=it;
+  }
+  return tmpIt;
+}
+
+template<class T> inline typename std::vector<T>::iterator StatFactory::min(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const
 {
   typename std::vector<T>::iterator tmpIt=begin;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(!isNoData(*it))
+      if(*tmpIt>*it)
+	tmpIt=it;
+  }
+  return tmpIt;
+}
+
+template<class T> inline  typename std::vector<T>::const_iterator StatFactory::min(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T minConstraint) const
+{
+  typename std::vector<T>::const_iterator tmpIt=v.end();
+  T minValue=minConstraint;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
+    if((minConstraint<=*it)&&(*it<=minValue)){
+      tmpIt=it;
+      minValue=*it;
+    }
+  }
+  return tmpIt;
+}
+
+template<class T> inline typename std::vector<T>::iterator StatFactory::min(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, T minConstraint) const
+{
+  typename std::vector<T>::iterator tmpIt=v.end();
+  T minValue=minConstraint;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
+    if((minConstraint<=*it)&&(*it<=minValue)){
+      tmpIt=it;
+      minValue=*it;
+    }
+  }
+  return tmpIt;
+}
+
+template<class T> inline typename std::vector<T>::const_iterator StatFactory::max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
+{
+  typename std::vector<T>::const_iterator tmpIt=begin;
   for (typename std::vector<T>::iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
     if(*tmpIt<*it)
       tmpIt=it;
   }
   return tmpIt;
 }
 
-template<class T> T StatFactory::max(const std::vector<T>& v) const
+template<class T> inline typename std::vector<T>::iterator StatFactory::max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const
 {
-  T maxValue=*(v.begin());
-  for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
-    if(maxValue<*it)
-      maxValue=*it;
+  typename std::vector<T>::iterator tmpIt=begin;
+  for (typename std::vector<T>::iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
+    if(*tmpIt<*it)
+      tmpIt=it;
   }
-  return maxValue;
+  return tmpIt;
 }
 
-template<class T> T StatFactory::min(const std::vector<T>& v) const
+template<class T> inline typename std::vector<T>::const_iterator StatFactory::max(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T maxConstraint) const
+{
+  typename std::vector<T>::const_iterator tmpIt=v.end();
+  T maxValue=maxConstraint;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
+    if((maxValue<=*it)&&(*it<=maxConstraint)){
+      tmpIt=it;
+      maxValue=*it;
+    }
+  }
+  return tmpIt;
+}
+
+template<class T> inline typename std::vector<T>::iterator StatFactory::max(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, T maxConstraint) const
+{
+  typename std::vector<T>::iterator tmpIt=v.end();
+  T maxValue=maxConstraint;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
+    if((maxValue<=*it)&&(*it<=maxConstraint)){
+      tmpIt=it;
+      maxValue=*it;
+    }
+  }
+  return tmpIt;
+}
+
+
+
+
+template<class T> inline T StatFactory::min(const std::vector<T>& v) const
 {
   T minValue=*(v.begin());
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
+    if(isNoData(*it))
+      continue;
     if(minValue>*it)
       minValue=*it;
   }
   return minValue;
 }
 
-template<class T> typename std::vector<T>::const_iterator StatFactory::absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
+ template<class T> inline T StatFactory::min(const std::vector<T>& v, T minConstraint) const
+{
+  T minValue=minConstraint;
+  for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
+    if((minConstraint<=*it)&&(*it<=minValue))
+      minValue=*it;
+  }
+  return minValue;
+}
+
+template<class T> inline T StatFactory::max(const std::vector<T>& v) const
+{
+  T maxValue=*(v.begin());
+  for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
+    if(isNoData(*it))
+      continue;
+    if(maxValue<*it)
+      maxValue=*it;
+  }
+  return maxValue;
+}
+
+template<class T> inline T StatFactory::max(const std::vector<T>& v, T maxConstraint) const
+{
+  T maxValue=maxConstraint;
+  for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
+    if(isNoData(*it))
+      continue;
+    if((maxValue<=*it)&&(*it<=maxConstraint))
+      maxValue=*it;
+  }
+  return maxValue;
+}
+
+template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
   typename std::vector<T>::const_iterator tmpIt=begin;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
     if(abs(*tmpIt)<abs(*it))
       tmpIt=it;
   }
   return tmpIt;
 }
 
-template<class T> typename std::vector<T>::const_iterator StatFactory::min(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
+template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
   typename std::vector<T>::const_iterator tmpIt=begin;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
-    if(*tmpIt>*it)
-      tmpIt=it;
-  }
-  return tmpIt;
-}
-
-template<class T> typename std::vector<T>::const_iterator StatFactory::absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
-{
-  typename std::vector<T>::const_iterator tmpIt=begin;
-  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
     if(abs(*tmpIt)>abs(*it))
       tmpIt=it;
   }
 }
 
-template<class T> void StatFactory::minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const
+template<class T> inline void StatFactory::minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const
 {
   theMin=*begin;
   theMax=*begin;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
     if(theMin>*it)
       theMin=*it;
     if(theMax<*it)
@@ -252,24 +394,51 @@ template<class T> void StatFactory::minmax(const std::vector<T>& v, typename std
   }
 }
 
-template<class T> T StatFactory::sum(const std::vector<T>& v) const
+template<class T> inline T StatFactory::sum(const std::vector<T>& v) const
 {
   typename std::vector<T>::const_iterator it;
   T tmpSum=0;
-  for (it = v.begin(); it!= v.end(); ++it)
+  for (it = v.begin(); it!= v.end(); ++it){
+    if(isNoData(*it))
+      continue;
     tmpSum+=*it;
+  }
   return tmpSum;
 }
 
-template<class T> double StatFactory::mean(const std::vector<T>& v) const
+template<class T> inline double StatFactory::mean(const std::vector<T>& v) const
 {
   assert(v.size());
-  return static_cast<double>(sum(v))/v.size();
+  typename std::vector<T>::const_iterator it;
+  T tmpSum=0;
+  unsigned int validSize=0;
+  for (it = v.begin(); it!= v.end(); ++it){
+    if(isNoData(*it))
+      continue;
+    ++validSize;
+    tmpSum+=*it;
+  }
+  if(validSize)
+    return static_cast<double>(tmpSum)/validSize;
+  else
+    return 0;
+}
+
+template<class T> inline T StatFactory::eraseNoData(std::vector<T>& v) const
+{
+  typename std::vector<T>::iterator it;
+  while(it!=v.end()){
+    if(isNoData(*it))
+      v.erase(it);
+    else
+      ++it;
+  }
 }
 
 template<class T> T StatFactory::median(const std::vector<T>& v) const
 {
   std::vector<T> tmpV=v;
+  eraseNoData(tmpV);
   sort(tmpV.begin(),tmpV.end());
   if(tmpV.size()%2)
     return tmpV[tmpV.size()/2];
@@ -280,44 +449,69 @@ template<class T> T StatFactory::median(const std::vector<T>& v) const
 template<class T> double StatFactory::var(const std::vector<T>& v) const
 {
   typename std::vector<T>::const_iterator it;
-  double v1=0;
-  double m1=mean(v);
-  double n=v.size();
-  assert(n>1);
-  for (it = v.begin(); it!= v.end(); ++it)
-    v1+=(*it-m1)*(*it-m1);
-  v1/=(n-1);
-//   if(v1<0){
-//     for (it = v.begin(); it!= v.end(); ++it)
-//       std::cout << *it << " ";
-//     std::cout << std::endl;
-//   }
-  assert(v1>=0);
-  return v1;
+  unsigned int validSize=0;
+  double m1=0;
+  double m2=0;
+  for (it = v.begin(); it!= v.end(); ++it){
+    if(isNoData(*it))
+      continue;
+    m1+=*it;
+    m2+=(*it)*(*it);
+    ++validSize;
+  }
+  if(validSize){
+    m2/=validSize;
+    m1/=validSize;
+    return m2-m1*m1;
+  }
+  else
+    return 0;
+  /* double v1=0; */
+  /* double m1=mean(v); */
+  /* double n=v.size(); */
+  /* assert(n>1); */
+  /* for (it = v.begin(); it!= v.end(); ++it) */
+  /*   v1+=(*it-m1)*(*it-m1); */
+  /* v1/=(n-1); */
+  /* assert(v1>=0); */
+  /* return v1; */
 }
 
 template<class T> double StatFactory::moment(const std::vector<T>& v, int n) const
 {
   assert(v.size());
+  unsigned int validSize=0;
   typename std::vector<T>::const_iterator it;
   double m=0;
 //   double m1=mean(v);
   for(it = v.begin(); it!= v.end(); ++it){
+    if(isNoData(*it))
+      continue;
     m+=pow((*it),n);
+    ++validSize;
   }
-  return m/v.size();
+  if(validSize)
+    return m/validSize;
+  else
+    return 0;
+  /* return m/v.size(); */
 }
 
   //central moment
 template<class T> double StatFactory::cmoment(const std::vector<T>& v, int n) const
 {
   assert(v.size());
+  unsigned int validSize=0;
   typename std::vector<T>::const_iterator it;
   double m=0;
   double m1=mean(v);
   for(it = v.begin(); it!= v.end(); ++it){
+    if(isNoData(*it))
+      continue;
     m+=pow((*it-m1),n);
+    ++validSize;
   }
+  return m/validSize;
   return m/v.size();
 }
 
@@ -336,14 +530,31 @@ template<class T> double StatFactory::kurtosis(const std::vector<T>& v) const
 template<class T> void StatFactory::meanVar(const std::vector<T>& v, double& m1, double& v1) const
 {
   typename std::vector<T>::const_iterator it;
+  unsigned int validSize=0;
+  m1=0;
   v1=0;
-  m1=mean(v);
-  double n=v.size();
-  assert(n>1);
-  for (it = v.begin(); it!= v.end(); ++it)
-    v1+=(*(it)-m1)*(*(it)-m1);
-  v1/=(n-1);
-  assert(v1>=0);
+  double m2=0;
+  for (it = v.begin(); it!= v.end(); ++it){
+    if(isNoData(*it))
+      continue;
+    m1+=*it;
+    m2+=(*it)*(*it);
+    ++validSize;
+  }
+  if(validSize){
+    m2/=validSize;
+    m1/=validSize;
+    v1=m2-m1*m1;
+  }
+  /* typename std::vector<T>::const_iterator it; */
+  /* v1=0; */
+  /* m1=mean(v); */
+  /* double n=v.size(); */
+  /* assert(n>1); */
+  /* for (it = v.begin(); it!= v.end(); ++it) */
+  /*   v1+=(*(it)-m1)*(*(it)-m1); */
+  /* v1/=(n-1); */
+  /* assert(v1>=0); */
 }
 
 template<class T1, class T2> void StatFactory::scale2byte(const std::vector<T1>& input, std::vector<T2>& output, unsigned char lbound,  unsigned char ubound) const
@@ -359,18 +570,24 @@ template<class T1, class T2> void StatFactory::scale2byte(const std::vector<T1>&
 
 template<class T> void  StatFactory::distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<double>& output, int nbin, T &minimum, T &maximum, double sigma, const std::string &filename)
 {
-  if(maximum<=minimum)
-    minmax(input,begin,end,minimum,maximum);
-  // if(!minimum)
-  //   minimum=*(min(input,begin,end));
-  // if(!maximum)
-  //   maximum=*(max(input,begin,end));
+  double minValue=0;
+  double maxValue=0;
+  minmax(input,begin,end,minValue,maxValue);
+  if(minimum<maximum&&minimum>minValue)
+    minValue=minimum;
+  if(minimum<maximum&&maximum<maxValue)
+    maxValue=maximum;
+
+  //todo: check...
+  minimum=minValue;
+  maximum=maxValue;
+
   if(maximum<=minimum){
     std::ostringstream s;
     s<<"Error: could not calculate distribution (min>=max)";
     throw(s.str());
   }
-  assert(nbin>1);
+  assert(nbin);
   assert(input.size());
   if(output.size()!=nbin){
     output.resize(nbin);
@@ -378,6 +595,12 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
   }
   typename std::vector<T>::const_iterator it;
   for(it=begin;it!=end;++it){
+    if(*it<minimum)
+      continue;
+    if(*it>maximum)
+      continue;
+    if(isNoData(*it))
+      continue;
     if(sigma>0){
       // minimum-=2*sigma;
       // maximum+=2*sigma;
@@ -394,7 +617,7 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
       int theBin=0;
       if(*it==maximum)
         theBin=nbin-1;
-      else if(*it>=minimum && *it<maximum)
+      else if(*it>minimum && *it<maximum)
         theBin=static_cast<int>(static_cast<double>((*it)-minimum)/(maximum-minimum)*nbin);
       ++output[theBin];
       // if(*it==maximum)
@@ -411,8 +634,8 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
       s<<"Error opening distribution file , " << filename;
       throw(s.str());
     }
-    for(int bin=0;bin<nbin;++bin)
-      outputfile << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(output[bin])/input.size() << std::endl;
+    for(int ibin=0;ibin<nbin;++ibin)
+      outputfile << minimum+static_cast<double>(maximum-minimum)*(ibin+0.5)/nbin << " " << static_cast<double>(output[ibin])/input.size() << std::endl;
     outputfile.close();
   }
 }

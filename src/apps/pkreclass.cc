@@ -227,14 +227,8 @@ int main(int argc, char *argv[])
     if(inputReader.isGeoRef()){
       for(int imask=0;imask<mask_opt.size();++imask)
         assert(maskReader[imask].isGeoRef());
-      outputWriter.setProjection(inputReader.getProjection());
     }
-    else{
-      for(int imask=0;imask<mask_opt.size();++imask){
-        assert(maskReader[imask].nrOfCol()==inputReader.nrOfCol());
-        assert(maskReader[imask].nrOfRow()==inputReader.nrOfRow());
-      }
-    }
+    outputWriter.setProjection(inputReader.getProjection());
     double ulx,uly,lrx,lry;
     inputReader.getBoundingBox(ulx,uly,lrx,lry);
     outputWriter.copyGeoTransform(inputReader);
@@ -277,14 +271,8 @@ int main(int argc, char *argv[])
         bool masked=false;
         if(mask_opt.size()>1){//multiple masks
           for(int imask=0;imask<mask_opt.size();++imask){
-            if(maskReader[imask].isGeoRef()){
-              inputReader.image2geo(icol,irow,x,y);
-              maskReader[imask].geo2image(x,y,colMask,rowMask);
-            }
-            else{
-              colMask=icol;
-              rowMask=irow;
-            }
+	    inputReader.image2geo(icol,irow,x,y);
+	    maskReader[imask].geo2image(x,y,colMask,rowMask);
             if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
               assert(rowMask>=0&&rowMask<maskReader[imask].nrOfRow());
               try{
@@ -310,14 +298,8 @@ int main(int argc, char *argv[])
           }
         }
         else if(mask_opt.size()){//potentially more invalid values for single mask
-          if(maskReader[0].isGeoRef()){
-            inputReader.image2geo(icol,irow,x,y);
-            maskReader[0].geo2image(x,y,colMask,rowMask);
-          }
-          else{
-            colMask=icol;
-            rowMask=irow;
-          }
+	  inputReader.image2geo(icol,irow,x,y);
+	  maskReader[0].geo2image(x,y,colMask,rowMask);
           if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
             assert(rowMask>=0&&rowMask<maskReader[0].nrOfRow());
             try{

@@ -577,9 +577,7 @@ int main(int argc, char *argv[])
         gdalWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),inputReader.getImageType(),option_opt);
 	if(nodata_opt.size())
 	  gdalWriter.GDALSetNoDataValue(nodata_opt[0]);
-        if(inputReader.isGeoRef()){
-          gdalWriter.copyGeoTransform(inputReader);
-        }
+	gdalWriter.copyGeoTransform(inputReader);
         if(colorTable_opt.size())
           gdalWriter.setColorTable(colorTable_opt[0]);
         else if(inputReader.getColorTable()!=NULL){

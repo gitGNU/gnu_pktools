@@ -117,12 +117,11 @@ int main(int argc,char **argv) {
     cout << errorstring << endl;
     exit(4);
   }
-  if(input.isGeoRef()){
-    output.setProjection(input.getProjection());
-    double gt[6];
-    input.getGeoTransform(gt);
-    output.setGeoTransform(gt);
-  }
+  output.setProjection(input.getProjection());
+  double gt[6];
+  input.getGeoTransform(gt);
+  output.setGeoTransform(gt);
+
   if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());
 
