@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   Optionpk<string> sample_opt("s", "sample", "Input sample vector file or class file (e.g. Corine CLC) if class option is set");
   Optionpk<string> mask_opt("m", "mask", "Mask image file");
   Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Use -1 to process every class in sample image, or leave empty to extract all valid data pixels from sample file");
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
   Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
 
   if(sampleIsRaster){
     if(class_opt.empty()){
-      std::cout << "Warning: no classes selected, if classes must be extracted, set to -1 for all classes using option -c -1" << std::endl;
+      // std::cout << "Warning: no classes selected, if a classes must be extracted, set to -1 for all classes using option -c -1" << std::endl;
       ImgReaderGdal classReader;
       ImgWriterOgr ogrWriter;
       // if(verbose_opt[0]>1){
@@ -494,15 +494,10 @@ int main(int argc, char *argv[])
       }
       classReader.close();
       nsample=writeBuffer.size();
-      if(verbose_opt[0]){
+      if(verbose_opt[0])
         std::cout << "total number of samples written: " << nsample << std::endl;
-        if(nvalid.size()==class_opt.size()){
-          for(int iclass=0;iclass<class_opt.size();++iclass)
-            std::cout << "class " << class_opt[iclass] << " has " << nvalid[iclass] << " samples" << std::endl;
-        }
-      }
     }
-    else{//class_opt[0]!=0
+    else{//class_opt.size()!=0
       assert(class_opt[0]);
       //   if(class_opt[0]){
       assert(threshold_opt.size()==1||threshold_opt.size()==class_opt.size());

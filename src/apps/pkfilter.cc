@@ -40,7 +40,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input image file");
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
-  Optionpk<bool> disc_opt("c", "circular", "circular disc kernel for dilation and erosion", false);
+  Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
   Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, majority voting (only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, heterogeneous (central pixel must be different than all other pixels within window), order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, scramble, shift, linearfeature)", "median");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");

@@ -137,8 +137,13 @@ int main(int argc, char *argv[])
   ImgWriterGdal imgWriter;
   //open input images to extract number of bands and spatial resolution
   int ncropband=0;//total number of bands to write
-  double dx=(dx_opt.size())? dx_opt[0]:0;
-  double dy=(dy_opt.size())? dy_opt[0]:0;
+  double dx=0;
+  double dy=0;
+  if(dx_opt.size())
+    dx=dx_opt[0];
+  if(dy_opt.size())
+    dy=dy_opt[0];
+
   for(int iimg=0;iimg<input_opt.size();++iimg){
     imgReader.open(input_opt[iimg]);
     if(dx_opt.empty()){

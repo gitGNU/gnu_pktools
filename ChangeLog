@@ -239,3 +239,8 @@ version 2.5
 	renamed mask to nodata
  - pkndvi
 	changed minmax option to min and max. Min and max values now apply to scaled values
+ - pklas2img
+	moved post filtering to pkfilterdem
+	changed some option names
+ - pkfilterdem
+	new utility (moved from pklas2ig)

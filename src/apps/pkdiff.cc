@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is shape file(default is label)", "label");
   Optionpk<string> labelclass_opt("lc", "lclass", "name of the classified label in case output is shape file (default is class)", "class");
   Optionpk<short> boundary_opt("bnd", "boundary", "boundary for selecting the sample (default: 1)", 1,1);
-  Optionpk<bool> disc_opt("\0", "circular", "use circular disc kernel boundary)", false,1);
+  Optionpk<bool> disc_opt("circ", "circular", "use circular disc kernel boundary)", false,1);
   Optionpk<bool> homogeneous_opt("hom", "homogeneous", "only take homogeneous regions into account", false,1);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> classname_opt("c", "class", "list of class names."); 

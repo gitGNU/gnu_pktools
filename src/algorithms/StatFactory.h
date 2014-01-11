@@ -104,6 +104,7 @@ public:
     gsl_rng_set(r,theSeed);
     return r;
   }
+  void getNodataValues(std::vector<double>& nodatav) const{nodatav=m_noDataValues;};
   bool isNoData(double value) const{
     if(m_noDataValues.empty()) 
       return false;
@@ -119,7 +120,7 @@ public:
     m_noDataValues=vnodata;
     return m_noDataValues.size();
   };
-  static double getRandomValue(const gsl_rng* r, const std::string type, double a=0, double b=0){
+  double getRandomValue(const gsl_rng* r, const std::string type, double a=0, double b=0) const{
     std::map<std::string, DISTRIBUTION_TYPE> m_distMap;
     initDist(m_distMap);
     double randValue=0;
@@ -161,26 +162,26 @@ public:
   template<class T> double kurtosis(const std::vector<T>& v) const;
   template<class T> void meanVar(const std::vector<T>& v, double& m1, double& v1) const;
   template<class T1, class T2> void  scale2byte(const std::vector<T1>& input, std::vector<T2>& output, unsigned char lbound=0, unsigned char ubound=255) const;
-  template<class T> void distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end,  std::vector<double>& output, int nbin, T &minimum=0.0, T &maximum=0.0, double sigma=0, const std::string &filename="");
-  template<class T> void distribution(const std::vector<T>& input,  std::vector<double>& output, int nbin, double sigma=0, const std::string &filename=""){distribution(input,input.begin(),input.end(),output,nbin,0,0,sigma,filename);};
-  template<class T> void  distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX=0, T& maxX=0, T& minY=0, T& maxY=0, double sigma=0, const std::string& filename="");
-  template<class T> void cumulative (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<int>& output, int nbin, T &minimum, T &maximum);
-  template<class T> void  percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin=10, T &minimum=0.0, T &maximum=0.0, const std::string &filename="");
-  template<class T> void signature(const std::vector<T>& input, double& k, double& alpha, double& beta, double e);
-  void signature(double m1, double m2, double& k, double& alpha, double& beta, double e);
-  template<class T> void normalize(const std::vector<T>& input, std::vector<double>& output);
-  template<class T> void normalize_pct(std::vector<T>& input);
+  template<class T> void distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end,  std::vector<double>& output, int nbin, T &minimum=0.0, T &maximum=0.0, double sigma=0, const std::string &filename="") const;
+  template<class T> void distribution(const std::vector<T>& input,  std::vector<double>& output, int nbin, double sigma=0, const std::string &filename="") const{distribution(input,input.begin(),input.end(),output,nbin,0,0,sigma,filename);};
+  template<class T> void  distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX=0, T& maxX=0, T& minY=0, T& maxY=0, double sigma=0, const std::string& filename="") const;
+  template<class T> void cumulative (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<int>& output, int nbin, T &minimum, T &maximum) const;
+  template<class T> void  percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin=10, T &minimum=0.0, T &maximum=0.0, const std::string &filename="") const;
+  template<class T> void signature(const std::vector<T>& input, double& k, double& alpha, double& beta, double e) const;
+  void signature(double m1, double m2, double& k, double& alpha, double& beta, double e) const;
+  template<class T> void normalize(const std::vector<T>& input, std::vector<double>& output) const;
+  template<class T> void normalize_pct(std::vector<T>& input) const;
   template<class T> double rmse(const std::vector<T>& x, const std::vector<T>& y) const;
   template<class T> double correlation(const std::vector<T>& x, const std::vector<T>& y, int delay=0) const;
   template<class T> double cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const;
   template<class T> double linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
-  template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose=false);
-  template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector< std::vector<T> >& output, bool verbose=false);
+  template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose=false) const;
+  template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector< std::vector<T> >& output, bool verbose=false) const;
   // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, std::vector< std::vector<T> >& output, double start, double end, double step, const gsl_interp_type* type);
   // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthIn, std::vector< std::vector<T> >& output, std::vector<double>& wavelengthOut, double start, double end, double step, const gsl_interp_type* type);
-  template<class T> void interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin);
+  template<class T> void interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin) const;
   template<class T> void interpolateUp(double* input, int dim, std::vector<T>& output, int nbin);
-  template<class T> void interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin);
+  template<class T> void interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin) const;
   template<class T> void interpolateDown(double* input, int dim, std::vector<T>& output, int nbin);
 
 private:
@@ -426,7 +427,7 @@ template<class T> inline double StatFactory::mean(const std::vector<T>& v) const
 
 template<class T> inline T StatFactory::eraseNoData(std::vector<T>& v) const
 {
-  typename std::vector<T>::iterator it;
+  typename std::vector<T>::iterator it=v.begin();
   while(it!=v.end()){
     if(isNoData(*it))
       v.erase(it);
@@ -568,7 +569,7 @@ template<class T1, class T2> void StatFactory::scale2byte(const std::vector<T1>&
     output[i]=scale*(input[i]-(minimum))+lbound;
 }
 
-template<class T> void  StatFactory::distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<double>& output, int nbin, T &minimum, T &maximum, double sigma, const std::string &filename)
+template<class T> void  StatFactory::distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<double>& output, int nbin, T &minimum, T &maximum, double sigma, const std::string &filename) const
 {
   double minValue=0;
   double maxValue=0;
@@ -640,7 +641,7 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
   }
 }
 
-template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX, T& maxX, T& minY, T& maxY, double sigma, const std::string& filename)
+template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX, T& maxX, T& minY, T& maxY, double sigma, const std::string& filename) const
 {
   assert(inputX.size());
   assert(inputX.size()==inputY.size());
@@ -720,7 +721,7 @@ template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX
   }
 }
 
-template<class T> void  StatFactory::percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin, T &minimum, T &maximum, const std::string &filename)
+template<class T> void  StatFactory::percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin, T &minimum, T &maximum, const std::string &filename) const
 {
   if(maximum<=minimum)
     minmax(input,begin,end,minimum,maximum);
@@ -788,14 +789,14 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
 //   }
 // }
 
-template<class T> void StatFactory::signature(const std::vector<T>& input, double&k, double& alpha, double& beta, double e)
+template<class T> void StatFactory::signature(const std::vector<T>& input, double&k, double& alpha, double& beta, double e) const
 {
   double m1=moment(input,1);
   double m2=moment(input,2);
   signature(m1,m2,k,alpha,beta,e);
 }
 
-template<class T> void StatFactory::normalize(const std::vector<T>& input, std::vector<double>& output){
+template<class T> void StatFactory::normalize(const std::vector<T>& input, std::vector<double>& output) const{
   double total=sum(input);
   if(total){
     output.resize(input.size());
@@ -806,7 +807,7 @@ template<class T> void StatFactory::normalize(const std::vector<T>& input, std::
     output=input;
 }
 
-template<class T> void StatFactory::normalize_pct(std::vector<T>& input){
+template<class T> void StatFactory::normalize_pct(std::vector<T>& input) const{
   double total=sum(input);
   if(total){
     typename std::vector<T>::iterator it;
@@ -879,7 +880,7 @@ template<class T> double StatFactory::cross_correlation(const std::vector<T>& x,
 //alternatively: use GNU scientific library:
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
-template<class T> void StatFactory::interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose){
+template<class T> void StatFactory::interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose) const{
   assert(wavelengthIn.size());
   assert(input.size()==wavelengthIn.size());
   assert(wavelengthOut.size());
@@ -950,7 +951,7 @@ template<class T> void StatFactory::interpolateUp(const std::vector<double>& wav
 //   gsl_interp_accel_free(acc);
 // }
 
-template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin)
+template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin) const
 {
   assert(input.size());
   assert(nbin);
@@ -990,7 +991,7 @@ template<class T> void StatFactory::interpolateUp(double* input, int dim, std::v
   }
 }
 
-template<class T> void StatFactory::interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin)
+template<class T> void StatFactory::interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin) const
 {
   assert(input.size());
   assert(nbin);

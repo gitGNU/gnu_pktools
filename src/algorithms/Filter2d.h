@@ -658,7 +658,7 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
           break;
         }
       }
-      output[y][x]=currentValue;//introduced due to hThrehold
+      output[y][x]=currentValue;//introduced due to hThreshold
       if(currentMasked){
         output[y][x]=currentValue;
       }
