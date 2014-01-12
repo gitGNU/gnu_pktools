@@ -24,6 +24,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   Optionpk<std::string> input_opt("i","input","Input image file");

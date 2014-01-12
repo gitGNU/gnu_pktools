@@ -520,7 +520,7 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
   if(maxValue>minValue){
     if(nbin==0)
       nbin=maxValue-minValue+1;
-    scale=static_cast<double>(nbin)/(maxValue-minValue);
+    scale=static_cast<double>(nbin-1)/(maxValue-minValue);
   }
   else
     nbin=1;

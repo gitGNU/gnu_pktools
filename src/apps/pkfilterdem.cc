@@ -35,7 +35,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
-  Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter: etew_min, promorph (progressive morphological filter),open,close,none).");
+  Optionpk<string> postFilter_opt("f", "filter", "post processing filter: etew_min, promorph (progressive morphological filter),open,close).");
   Optionpk<double> dim_opt("dim", "dim", "maximum filter kernel size (optionally you can set both initial and maximum filter kernel size", 17);
   Optionpk<double> maxSlope_opt("st", "st", "slope threshold used for morphological filtering. Use a low values to remove more height objects in flat terrains", 0.0);
   Optionpk<double> hThreshold_opt("ht", "ht", "initial height threshold for progressive morphological filtering. Use low values to remove more height objects. Optionally, a maximum height threshold can be set via a second argument (e.g., -ht 0.2 -ht 2.5 sets an initial threshold at 0.2 m and caps the threshold at 2.5 m).", 0.2);
@@ -44,6 +44,7 @@ int main(int argc,char **argv) {
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<short> nodata_opt("nodata", "nodata", "nodata value(s) for smoothnodata filter");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -60,6 +61,7 @@ int main(int argc,char **argv) {
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -122,6 +124,12 @@ int main(int argc,char **argv) {
   if(colorTable_opt.size())
     outputWriter.setColorTable(colorTable_opt[0]);   
 
+  //set nodata value
+  if(nodata_opt.size()){
+      for(int iband=0;iband<outputWriter.nrOfBand();++iband)
+	outputWriter.GDALSetNoDataValue(nodata_opt[0],iband);
+  }
+
   Vector2d<double> inputData(input.nrOfRow(),input.nrOfCol());
   Vector2d<double> outputData(outputWriter.nrOfRow(),outputWriter.nrOfCol());
   Vector2d<double> tmpData(outputWriter.nrOfRow(),outputWriter.nrOfCol());
@@ -143,18 +151,24 @@ int main(int argc,char **argv) {
     dim_opt.insert(dim_opt.begin(),dim_opt[1]);
     dim_opt.erase(dim_opt.begin()+2);
   }
+
+  filter2d::Filter2d theFilter;
+  if(nodata_opt.size()){
+    for(int inodata=0;inodata<nodata_opt.size();++inodata)
+      theFilter.pushNoDataValue(nodata_opt[inodata]);
+  }
+
   unsigned long int nchange=1;
   if(postFilter_opt[0]=="etew_min"){
     //Elevation Threshold with Expand Window (ETEW) Filter (p.73 from Airborne LIDAR Data Processing and Analysis Tools ALDPAT 1.0)
     //first iteration is performed assuming only minima are selected using options -fir all -comp min
     //increase cells and thresholds until no points from the previous iteration are discarded.
     int dim=dim_opt[0];
-    filter2d::Filter2d morphFilter;
-    // morphFilter.setNoValue(0);
+    // theFilter.setNoValue(0);
     int iteration=1;
     while(nchange>minChange_opt[0]&&dim<=dim_opt[1]){
       double hThreshold=maxSlope_opt[0]*dim;
-      nchange=morphFilter.morphology(inputData,outputData,"erode",dim,dim,disc_opt[0],hThreshold);
+      nchange=theFilter.morphology(inputData,outputData,"erode",dim,dim,disc_opt[0],hThreshold);
       inputData=outputData;
       dim+=2;//change from theory: originally double cellCize
       std::cout << "iteration " << iteration << ": " << nchange << " pixels changed" << std::endl;
@@ -166,7 +180,6 @@ int main(int argc,char **argv) {
     //first iteration is performed assuming only minima are selected using options -fir all -comp min
     //increase cells and thresholds until no points from the previous iteration are discarded.
     int dim=dim_opt[0];
-    filter2d::Filter2d theFilter;
     double hThreshold=hThreshold_opt[0];
     int iteration=1;
     while(nchange>minChange_opt[0]&&dim<=dim_opt[1]){
@@ -193,10 +206,9 @@ int main(int argc,char **argv) {
     }
   }    
   else if(postFilter_opt[0]=="open"){
-    filter2d::Filter2d morphFilter;
     try{
-      morphFilter.morphology(inputData,tmpData,"erode",dim_opt[0],dim_opt[0],disc_opt[0],maxSlope_opt[0]);
-      morphFilter.morphology(tmpData,outputData,"dilate",dim_opt[0],dim_opt[0],disc_opt[0],maxSlope_opt[0]);
+      theFilter.morphology(inputData,tmpData,"erode",dim_opt[0],dim_opt[0],disc_opt[0],hThreshold_opt[0]);
+      theFilter.morphology(tmpData,outputData,"dilate",dim_opt[0],dim_opt[0],disc_opt[0],hThreshold_opt[0]);
       outputData=inputData;
     }
     catch(std::string errorString){
@@ -205,10 +217,9 @@ int main(int argc,char **argv) {
     }
   }
   else if(postFilter_opt[0]=="close"){
-    filter2d::Filter2d morphFilter;
     try{
-      morphFilter.morphology(inputData,tmpData,"dilate",dim_opt[0],dim_opt[0],disc_opt[0],maxSlope_opt[0]);
-      morphFilter.morphology(tmpData,outputData,"erode",dim_opt[0],dim_opt[0],disc_opt[0],maxSlope_opt[0]);
+      theFilter.morphology(inputData,tmpData,"dilate",dim_opt[0],dim_opt[0],disc_opt[0],hThreshold_opt[0]);
+      theFilter.morphology(tmpData,outputData,"erode",dim_opt[0],dim_opt[0],disc_opt[0],hThreshold_opt[0]);
     }
     catch(std::string errorString){
       cout << errorString << endl;

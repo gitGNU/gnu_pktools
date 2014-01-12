@@ -28,7 +28,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> input_opt("i","input","name of the input text file","");
+  Optionpk<string> input_opt("i","input","name of the input text file");
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<char> comment_opt("comment","comment","comment character",'#');
   Optionpk<bool> output_opt("o","output","output the selected columns",false);
@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> size_opt("size","size","sample size",false);
   Optionpk<unsigned int> rand_opt("rnd", "rnd", "generate random numbers", 0);
   Optionpk<std::string> randdist_opt("dist", "dist", "distribution for generating random numbers, see http://www.gn/software/gsl/manual/gsl-ref_toc.html#TOC320 (only uniform and Gaussian supported yet)", "gaussian");
-  Optionpk<double> randa_opt("rnda", "rnda", "first parameter for random distribution (standard deviation in case of Gaussian)", 1);
-  Optionpk<double> randb_opt("rndb", "rndb", "second parameter for random distribution (standard deviation in case of Gaussian)", 0);
+  Optionpk<double> randa_opt("rnda", "rnda", "first parameter for random distribution (mean value in case of Gaussian)", 0);
+  Optionpk<double> randb_opt("rndb", "rndb", "second parameter for random distribution (standard deviation in case of Gaussian)", 1);
   Optionpk<bool> mean_opt("mean","mean","calculate median",false);
   Optionpk<bool> median_opt("median","median","calculate median",false);
   Optionpk<bool> var_opt("var","var","calculate variance",false);
@@ -131,28 +131,38 @@ int main(int argc, char *argv[])
   assert(dataVector.size());
   double minValue=0;
   double maxValue=0;
-
-  unsigned int nbin=(nbin_opt.size())? nbin_opt[0]:0;
+  unsigned int nbin=0;
+  if(nbin_opt.size())
+    nbin=nbin_opt[0];
   if(histogram_opt[0]){
+    stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minValue,maxValue);
+    if(src_min_opt.size())
+      minValue=src_min_opt[0];
+    if(src_max_opt.size())
+      maxValue=src_max_opt[0];
     if(nbin<1){
       std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
-      if(maxValue<=minValue)
-        stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minValue,maxValue);
       nbin=maxValue-minValue+1;
     }
   }
-  double minX=src_min_opt[0];
-  double minY=(src_min_opt.size()==2)? src_min_opt[1] : src_min_opt[0];
-  double maxX=src_max_opt[0];
-  double maxY=(src_max_opt.size()==2)? src_max_opt[1] : src_max_opt[0];
+  double minX=0;
+  double minY=0;
+  double maxX=0;
+  double maxY=0;
   if(histogram2d_opt[0]){
     assert(col_opt.size()==2);
     if(nbin<1){
       std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
-      if(maxValue<=minValue){
-        stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minX,maxX);
-        stat.minmax(dataVector[1],dataVector[1].begin(),dataVector[1].end(),minY,maxY);
-      }
+      stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minX,maxX);
+      stat.minmax(dataVector[1],dataVector[1].begin(),dataVector[1].end(),minY,maxY);
+      if(src_min_opt.size())
+	minX=src_min_opt[0];
+      if(src_min_opt.size()>1)
+	minY=src_min_opt[1];
+      if(src_max_opt.size())
+	maxX=src_max_opt[0];
+      if(src_max_opt.size()>1)
+	maxY=src_max_opt[1];
       minValue=(minX<minY)? minX:minY;
       maxValue=(maxX>maxY)? maxX:maxY;
       if(verbose_opt[0])
@@ -207,7 +217,62 @@ int main(int argc, char *argv[])
         else
           std::cout << "calculating histogram for col " << icol << std::endl;
       }
+      //test
+      // cout << "debug0" << endl;
+      // cout << "dataVector.size(): " << dataVector.size() << endl;
+      // cout << "statVector.size(): " << statVector.size() << endl;
+
+      // double theMinValue=0;
+      // double theMaxValue=0;
+      
+      // stat.minmax(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),theMinValue,theMaxValue);
+      // if(minValue<maxValue&&minValue>theMinValue)
+      // 	theMinValue=minValue;
+      // if(minValue<maxValue&&maxValue<theMaxValue)
+      // 	theMaxValue=maxValue;
+
+      // //todo: check...
+      // minValue=theMinValue;
+      // maxValue=theMaxValue;
+
+      // if(maxValue<=minValue){
+      // 	std::ostringstream s;
+      // 	s<<"Error: could not calculate distribution (min>=max)";
+      // 	throw(s.str());
+      // }
+      // assert(nbin);
+      // assert(dataVector[icol].size());
+      // if(statVector[icol].size()!=nbin){
+      // 	statVector[icol].resize(nbin);
+      // 	for(int i=0;i<nbin;statVector[icol][i++]=0);
+      // }
+      // typename std::vector<double>::const_iterator it;
+      // for(it=dataVector[icol].begin();it!=dataVector[icol].end();++it){
+      // 	if(*it<minValue)
+      // 	  continue;
+      // 	if(*it>maxValue)
+      // 	  continue;
+      // 	if(stat.isNoData(*it))
+      // 	  continue;
+      // 	int theBin=0;
+      // 	if(*it==maxValue)
+      // 	  theBin=nbin-1;
+      // 	else if(*it>minValue && *it<maxValue)
+      // 	  theBin=static_cast<int>(static_cast<double>((nbin-1)*(*it)-minValue)/(maxValue-minValue));
+      // 	assert(theBin<statVector[icol].size());
+      // 	++statVector[icol][theBin];
+      // 	// if(*it==maxValue)
+      // 	//   ++statVector[icol][nbin-1];
+      // 	// else if(*it>=minValue && *it<maxValue)
+      // 	//   ++statVector[icol][static_cast<int>(static_cast<double>((*it)-minValue)/(maxValue-minValue)*nbin)];
+      // }
+
+      // exit(0);
+      //end test
+      
       stat.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),statVector[icol],nbin,minValue,maxValue,sigma);
+      //test
+      cout << "debug1" << endl;
       if(verbose_opt[0])
         std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
     }

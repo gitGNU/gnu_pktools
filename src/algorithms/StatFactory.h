@@ -120,17 +120,17 @@ public:
     m_noDataValues=vnodata;
     return m_noDataValues.size();
   };
-  double getRandomValue(const gsl_rng* r, const std::string type, double a=0, double b=0) const{
+  double getRandomValue(const gsl_rng* r, const std::string type, double a=0, double b=1) const{
     std::map<std::string, DISTRIBUTION_TYPE> m_distMap;
     initDist(m_distMap);
     double randValue=0;
     switch(m_distMap[type]){
     case(uniform):
-      randValue = gsl_rng_uniform(r);
+      randValue = a+gsl_rng_uniform(r);
       break;
     case(gaussian):
     default:
-      randValue = gsl_ran_gaussian(r, a); 
+      randValue = a+gsl_ran_gaussian(r, b); 
     break;
     }
     return randValue;
@@ -619,7 +619,7 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
       if(*it==maximum)
         theBin=nbin-1;
       else if(*it>minimum && *it<maximum)
-        theBin=static_cast<int>(static_cast<double>((*it)-minimum)/(maximum-minimum)*nbin);
+        theBin=static_cast<int>(static_cast<double>((nbin-1)*(*it)-minimum)/(maximum-minimum));
       ++output[theBin];
       // if(*it==maximum)
       //   ++output[nbin-1];

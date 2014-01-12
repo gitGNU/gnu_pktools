@@ -210,6 +210,11 @@ int main(int argc,char **argv) {
   }
   else if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());
+  
+  if(nodata_opt.size()){
+      for(int iband=0;iband<output.nrOfBand();++iband)
+	output.GDALSetNoDataValue(nodata_opt[0],iband);
+  }
 
   filter2d::Filter2d filter2d;
   filter::Filter filter1d;
