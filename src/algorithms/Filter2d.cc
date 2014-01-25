@@ -656,6 +656,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       }
     }
   }
+  pfnProgress(1.0,pszMessage,pProgressArg);
 }
 
 void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){

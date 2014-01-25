@@ -244,3 +244,10 @@ version 2.5
 	changed some option names
  - pkfilterdem
 	new utility (moved from pklas2ig)
+
+version 2.5.1
+ - pkextract
+	support sum rule
+ - pkfilter
+	support of density filter
+	debug down option (forgot to adapt xres and yres)

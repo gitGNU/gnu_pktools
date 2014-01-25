@@ -198,6 +198,8 @@ int main(int argc,char **argv) {
   output.setProjection(input.getProjection());
   double gt[6];
   input.getGeoTransform(gt);
+  gt[1]*=down_opt[0];//dx
+  gt[5]*=down_opt[0];//dy
   output.setGeoTransform(gt);
   
   if(colorTable_opt.size()){
@@ -683,8 +685,11 @@ int main(int argc,char **argv) {
 	filter2d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
       break;
     case(filter2d::threshold):
-      filter2d.setThresholds(threshold_opt);
+      filter2d.setThresholds(threshold_opt);//deliberate fall through
+    case(filter2d::density):
       filter2d.setClasses(class_opt);//deliberate fall through
+      if(verbose_opt[0])
+	std::cout << "classes set" << std::endl;
     default:
       filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
