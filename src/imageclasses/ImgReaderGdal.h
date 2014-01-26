@@ -41,7 +41,7 @@ public:
   int nrOfCol(void) const { return m_ncol;};
   int nrOfRow(void) const { return m_nrow;};
   int nrOfBand(void) const { return m_nband;};
-  bool isGeoRef() const {return m_isGeoRef;};
+  bool isGeoRef() const {double gt[6];getGeoTransform(gt);if(gt[5]<0) return true;else return false;};
   std::string getProjection(void) const;
   std::string getProjectionRef(void) const;
   std::string getGeoTransform() const;
@@ -127,7 +127,7 @@ protected:
   /* double m_uly; */
   /* double m_delta_x; */
   /* double m_delta_y; */
-  bool m_isGeoRef;
+  /* bool m_isGeoRef; */
   std::vector<double> m_noDataValues;
   std::vector<double> m_scale;
   std::vector<double> m_offset;

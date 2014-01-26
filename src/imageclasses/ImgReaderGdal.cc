@@ -23,7 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 
 ImgReaderGdal::ImgReaderGdal(void)
-  : m_gds(NULL), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0)
+  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
 {}
 
 void ImgReaderGdal::open(const std::string& filename)//, double magicX, double magicY)
@@ -56,7 +56,7 @@ void ImgReaderGdal::setCodec()//double magicX, double magicY)
   m_ncol= m_gds->GetRasterXSize();
   m_nrow= m_gds->GetRasterYSize();
   m_nband= m_gds->GetRasterCount();
-  m_isGeoRef=( static_cast<std::string>(m_gds->GetProjectionRef())  != "" );
+  // m_isGeoRef=( static_cast<std::string>(m_gds->GetProjectionRef())  != "" );
   // m_magic_x=magicX;
   // m_magic_y=magicY;
   double adfGeoTransform[6];
@@ -242,7 +242,7 @@ bool ImgReaderGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double
   uly=gt[3];
   lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
   lry=gt[3]+nrOfCol()*gt[4]+nrOfRow()*gt[5];
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // ulx=m_ulx;
     // uly=m_uly;
     // lrx=ulx+nrOfCol()*m_delta_x;
@@ -272,7 +272,7 @@ bool ImgReaderGdal::getCentrePos(double& x, double& y) const
   //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
   x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
   y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // x=m_ulx+(nrOfCol()/2.0)*m_delta_x;
     // y=m_uly-(nrOfRow()/2.0)*m_delta_y;
     return true;
@@ -304,7 +304,7 @@ bool ImgReaderGdal::geo2image(double x, double y, double& i, double& j) const
     i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
     j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
   }
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // double ulx=m_ulx;
     // double uly=m_uly;
     // i=(x-ulx)/m_delta_x;
@@ -334,7 +334,7 @@ bool ImgReaderGdal::image2geo(double i, double j, double& x, double& y) const
 
   x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
   y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // x=m_ulx+(0.5+i)*m_delta_x;
     // y=m_uly-(0.5+j)*m_delta_y;
     return true;

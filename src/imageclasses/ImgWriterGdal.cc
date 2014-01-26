@@ -29,7 +29,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 //---------------------------------------------------------------------------
 ImgWriterGdal::ImgWriterGdal(void)
-  : m_gds(NULL), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0)
+  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
 {}
 
 // ImgWriterGdal::ImgWriterGdal(void)
@@ -46,7 +46,7 @@ ImgWriterGdal::~ImgWriterGdal(void)
 //---------------------------------------------------------------------------
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
 {
-  m_isGeoRef=imgSrc.isGeoRef();
+  // m_isGeoRef=imgSrc.isGeoRef();
   m_filename=filename;
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -76,7 +76,7 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
 
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 {
-  m_isGeoRef=false;
+  // m_isGeoRef=false;
   m_filename = filename;
   m_ncol = ncol;
   m_nrow = nrow;
@@ -124,12 +124,12 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   // interleaveList << "INTERLEAVE=" << m_interleave;
   // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_type,papszOptions);
-  if(imgSrc.isGeoRef()){
+  // if(imgSrc.isGeoRef()){
     setProjection(imgSrc.getProjection());
     double gt[6];
     imgSrc.getGeoTransform(gt);
     setGeoTransform(gt);
-  }
+  // }
   m_gds->SetMetadata(imgSrc.getMetadata() ); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
@@ -263,7 +263,7 @@ std::string ImgWriterGdal::getProjection(void) const
 
 //---------------------------------------------------------------------------
 void ImgWriterGdal::setGeoTransform(double* gt){
-  m_isGeoRef=true;
+  // m_isGeoRef=true;
   m_gt[0]=gt[0];
   m_gt[1]=gt[1];
   m_gt[2]=gt[2];
@@ -304,8 +304,8 @@ void ImgWriterGdal::copyGeoTransform(const ImgReaderGdal& imgSrc)
 
 std::string ImgWriterGdal::setProjectionProj4(const std::string& projection)
 {
-  if(!m_isGeoRef)
-    m_isGeoRef=true;
+  // if(!m_isGeoRef)
+  //   m_isGeoRef=true;
 
   OGRSpatialReference theRef;
   theRef.SetFromUserInput(projection.c_str());
@@ -339,8 +339,8 @@ std::string ImgWriterGdal::setProjectionProj4(const std::string& projection)
 
 void ImgWriterGdal::setProjection(const std::string& projection)
 {
-  if(!m_isGeoRef)
-    m_isGeoRef=true;
+  // if(!m_isGeoRef)
+  //   m_isGeoRef=true;
   OGRSpatialReference oSRS;
   char *pszSRS_WKT = NULL;
   assert(m_gds);
@@ -384,7 +384,7 @@ bool ImgWriterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double
   uly=gt[3];
   lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
   lry=gt[3]+nrOfCol()*gt[4]+nrOfRow()*gt[5];
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // ulx=m_ulx;
     // uly=m_uly;
     // lrx=ulx+nrOfCol()*m_delta_x;
@@ -414,7 +414,7 @@ bool ImgWriterGdal::getCentrePos(double& x, double& y) const
   //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
   x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
   y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // x=m_ulx+nrOfCol()/2.0*m_delta_x;
     // y=m_uly-nrOfRow()/2.0*m_delta_y;
     return true;
@@ -442,7 +442,7 @@ bool ImgWriterGdal::geo2image(double x, double y, double& i, double& j) const
     i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
     j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
   }
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // double ulx=m_ulx;
     // double uly=m_uly;
     // i=(x-ulx)/m_delta_x;
@@ -473,7 +473,7 @@ bool ImgWriterGdal::image2geo(double i, double j, double& x, double& y) const
   x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
   y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
 
-  if(m_isGeoRef){
+  if(isGeoRef()){
     // x=m_ulx+(0.5+i)*m_delta_x;
     // y=m_uly-(0.5+j)*m_delta_y;
     return true;

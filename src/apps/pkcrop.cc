@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  ***********************************************************************/
 #include <assert.h>
+#include <cstdlib>
 #include <string>
 #include <list>
 #include <iostream>
@@ -144,8 +145,11 @@ int main(int argc, char *argv[])
   if(dy_opt.size())
     dy=dy_opt[0];
 
+  bool isGeoRef=false;
   for(int iimg=0;iimg<input_opt.size();++iimg){
     imgReader.open(input_opt[iimg]);
+    if(!isGeoRef)
+      isGeoRef=imgReader.isGeoRef();
     if(dx_opt.empty()){
       if(!iimg||imgReader.getDeltaX()<dx)
         dx=imgReader.getDeltaX();
@@ -200,15 +204,15 @@ int main(int argc, char *argv[])
   }
   else if(cx_opt.size()&&cy_opt.size()&&nx_opt.size()&&ny_opt.size()){
     ulx_opt[0]=cx_opt[0]-nx_opt[0]/2.0;
-    uly_opt[0]=cy_opt[0]+ny_opt[0]/2.0;
+    uly_opt[0]=(isGeoRef) ? cy_opt[0]+ny_opt[0]/2.0 : cy_opt[0]-ny_opt[0]/2.0;
     lrx_opt[0]=cx_opt[0]+nx_opt[0]/2.0;
-    lry_opt[0]=cy_opt[0]-ny_opt[0]/2.0;
+    lry_opt[0]=(isGeoRef) ? cy_opt[0]-ny_opt[0]/2.0 : cy_opt[0]+ny_opt[0]/2.0;
   }
   else if(cx_opt.size()&&cy_opt.size()&&ns_opt.size()&&nl_opt.size()){
     ulx_opt[0]=cx_opt[0]-ns_opt[0]*dx/2.0;
-    uly_opt[0]=cy_opt[0]+nl_opt[0]*dy/2.0;
+    uly_opt[0]=(isGeoRef) ? cy_opt[0]+nl_opt[0]*dy/2.0 : cy_opt[0]-nl_opt[0]*dy/2.0;
     lrx_opt[0]=cx_opt[0]+ns_opt[0]*dx/2.0;
-    lry_opt[0]=cy_opt[0]-nl_opt[0]*dy/2.0;
+    lry_opt[0]=(isGeoRef) ? cy_opt[0]-nl_opt[0]*dy/2.0 : cy_opt[0]+nl_opt[0]*dy/2.0;
   }
   if(ulx_opt[0]<cropulx)
     cropulx=ulx_opt[0];
@@ -288,8 +292,9 @@ int main(int argc, char *argv[])
       }
       imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
       imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
-      // ncropcol=ceil((croplrx-cropulx)/dx);
-      // ncroprow=ceil((cropuly-croplry)/dy);
+      //test
+      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
     }
     else{
       double magicX=1,magicY=1;
@@ -309,8 +314,8 @@ int main(int argc, char *argv[])
       imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
       imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
 
-      ncropcol=ceil((croplrx-cropulx)/dx);
-      ncroprow=ceil((cropuly-croplry)/dy);
+      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
       uli=floor(uli);
       ulj=floor(ulj);
       lri=floor(lri);
@@ -373,7 +378,7 @@ int main(int argc, char *argv[])
       gt[2]=0;
       gt[3]=cropuly;
       gt[4]=0;
-      gt[5]=-dy;
+      gt[5]=(imgReader.isGeoRef())? -dy : dy;
       imgWriter.setGeoTransform(gt);
       if(projection_opt.size()){
 	if(verbose_opt[0])
@@ -483,7 +488,7 @@ int main(int argc, char *argv[])
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,readBand,theResample);
 	    // for(int ib=0;ib<ncropcol;++ib){
 	    for(int ib=0;ib<imgWriter.nrOfCol();++ib){
-	      assert(imgWriter.image2geo(ib,irow,x,y));
+	      imgWriter.image2geo(ib,irow,x,y);
 	      //lookup corresponding row for irow in this file
 	      imgReader.geo2image(x,y,readCol,readRow);
 	      if(readCol<0||readCol>=imgReader.nrOfCol()){

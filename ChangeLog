@@ -246,8 +246,12 @@ version 2.5
 	new utility (moved from pklas2ig)
 
 version 2.5.1
+ - pkinfo
+	-stats instead of -stat to be conform to gdalinfo
  - pkextract
 	support sum rule
  - pkfilter
 	support of density filter
 	debug down option (forgot to adapt xres and yres)
+ - pkcrop
+	correct bounding box when dx_opt and dy_opt are set

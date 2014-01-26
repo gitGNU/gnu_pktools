@@ -60,7 +60,7 @@ public:
   bool covers(double ulx, double  uly, double lrx, double lry) const;
   bool geo2image(double x, double y, double& i, double& j) const;
   bool image2geo(double i, double j, double& x, double& y) const;
-  bool isGeoRef() const {return m_isGeoRef;};
+  bool isGeoRef() const {double gt[6];getGeoTransform(gt);if(gt[5]<0) return true;else return false;};
   // void getMagicPixel(double& x, double& y) const {x=m_magic_x;y=m_magic_y;};
   double getDeltaX(void) const {double gt[6];getGeoTransform(gt);return gt[1];};
   double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
@@ -92,7 +92,7 @@ protected:
   /* double m_uly; */
   /* double m_delta_x; */
   /* double m_delta_y; */
-  bool m_isGeoRef;
+  /* bool m_isGeoRef; */
   // std::string m_interleave;
   // std::string m_compression;
   std::vector<std::string> m_options;
