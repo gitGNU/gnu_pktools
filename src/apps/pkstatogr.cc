@@ -148,10 +148,16 @@ int main(int argc, char *argv[])
       std::cout << std::endl;
       if(histogram_opt[0]){
         for(int ibin=0;ibin<nbin;++ibin){
+	  double binValue=0;
+	  if(nbin==maxValue-minValue+1)
+	    binValue=minValue+ibin;
+	  else
+	    binValue=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
+	  std::cout << binValue << " ";
           if(relative_opt[0])
-            std::cout << minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin << " " << 100.0*static_cast<double>(binData[ibin])/theData.size() << std::endl;
+            std::cout << 100.0*static_cast<double>(binData[ibin])/theData.size() << std::endl;
           else
-            std::cout << minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin << " " << binData[ibin] << std::endl;
+            std::cout << binData[ibin] << std::endl;
         }
       }
     }

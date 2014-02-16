@@ -34,7 +34,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, median=9};
 }
 
 using namespace std;
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
   Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
   Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), centroid, mean (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
+  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
   ruleMap["point"]=rule::point;
   ruleMap["centroid"]=rule::centroid;
   ruleMap["mean"]=rule::mean;
+  ruleMap["median"]=rule::median;
   ruleMap["proportion"]=rule::proportion;
   ruleMap["minimum"]=rule::minimum;
   ruleMap["maximum"]=rule::maximum;
@@ -834,6 +835,7 @@ int main(int argc, char *argv[])
       break;
       case(rule::point):
       case(rule::mean):
+      case(rule::median):
       case(rule::sum):
       case(rule::centroid):
       default:{
@@ -1222,7 +1224,7 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
@@ -1230,7 +1232,10 @@ int main(int argc, char *argv[])
 	    }
 	    //previously here
 	    vector<double> polyValues;
+	    vector< vector<double> > polyValuesVector;
 	    switch(ruleMap[rule_opt[0]]){
+	    case(rule::median):
+	      polyValuesVector.resize(nband);
 	    case(rule::point):
 	    case(rule::mean):
 	    case(rule::sum):
@@ -1350,7 +1355,7 @@ int main(int argc, char *argv[])
 		  OGRFeature *writePointFeature;
 		  if(!polygon_opt[0]){
 		    //create feature
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean, sum or centroid (only create point at centroid)
+		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::median&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean, median, sum or centroid (only create point at centroid)
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -1375,18 +1380,9 @@ int main(int argc, char *argv[])
 		    imgReader.readData(value,GDT_Float64,i,j,theBand);
 		    if(verbose_opt[0]>1)
 		      std::cout << ": " << value << std::endl;
-		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
 		      int iclass=0;
 		      switch(ruleMap[rule_opt[0]]){
-		      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
-		      case(rule::centroid):
-		      default:
-			polyValues[iband]=value;
-		      break;
-		      case(rule::sum):
-		      case(rule::mean)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
-			polyValues[iband]+=value;
-			break;
 		      case(rule::proportion):
 		      case(rule::custom):
 		      case(rule::minimum):
@@ -1400,14 +1396,26 @@ int main(int argc, char *argv[])
 			  }
 			}
 		      break;
+		      case(rule::sum):
+		      case(rule::mean)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
+			polyValues[iband]+=value;
+		      break;
+		      case(rule::median):
+			polyValuesVector[iband].push_back(value);
+		      break;
+		      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
+		      case(rule::centroid):
+		      default:
+			polyValues[iband]=value;
+		      break;
 		      }
 		    }
 		    else{
-		      // ostringstream fs;
-		      // if(imgReader.nrOfBand()==1)
-		      //   fs << fieldname_opt[0];
-		      // else
-		      //   fs << fieldname_opt[0] << theBand;
+		    // ostringstream fs;
+		    // if(imgReader.nrOfBand()==1)
+		    //   fs << fieldname_opt[0];
+		    // else
+		    //   fs << fieldname_opt[0] << theBand;
 		      if(verbose_opt[0]>1)
 			std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
 		      switch( fieldType ){
@@ -1440,9 +1448,9 @@ int main(int argc, char *argv[])
 			break;
 		      }
 		    }
-		  }
+	      }
 		  if(!polygon_opt[0]){
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean value (only at centroid)
+		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::median&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean value (only at centroid)
 		      //write feature
 		      if(verbose_opt[0]>1)
 			std::cout << "creating point feature" << std::endl;
@@ -1469,7 +1477,7 @@ int main(int argc, char *argv[])
 		}
 	      }
 	    }
-	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
 	      //do not create if no points found within polygon
 	      if(!nPointPolygon)
 		continue;
@@ -1487,7 +1495,7 @@ int main(int argc, char *argv[])
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
 	      }
-	      else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean)
+	      else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median)
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
@@ -1574,6 +1582,7 @@ int main(int argc, char *argv[])
 		break;
 	      }
 	      case(rule::mean):
+	      case(rule::median):
 	      case(rule::sum):
 	      case(rule::centroid):{//mean value (written to centroid of polygon if line is not set)
 		if(verbose_opt[0])
@@ -1586,6 +1595,8 @@ int main(int argc, char *argv[])
 		  // ostringstream fs;
 		  if(ruleMap[rule_opt[0]]==rule::mean)
 		    theValue/=nPointPolygon;
+		  else if(ruleMap[rule_opt[0]]==rule::median)
+		    theValue=stat.median(polyValuesVector[index]);
 		  int theBand=(band_opt[0]<0)?index:band_opt[index];
 		  // if(nband==1)
 		  //   fs << fieldname_opt[0];
@@ -1835,15 +1846,17 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
 		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    //previously here
 	    vector<double> polyValues;
+	    vector< vector<double> > polyValuesVector;
 	    switch(ruleMap[rule_opt[0]]){
+	    case(rule::median):
+	      polyValuesVector.resize(nband);
 	    case(rule::point):
 	    case(rule::mean):
 	    case(rule::sum):
@@ -1963,7 +1976,7 @@ int main(int argc, char *argv[])
 		  OGRFeature *writePointFeature;
 		  if(!polygon_opt[0]){
 		    //create feature
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean or sum (only create point at centroid)
+		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::median&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean or sum (only create point at centroid)
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -1988,7 +2001,7 @@ int main(int argc, char *argv[])
 		    imgReader.readData(value,GDT_Float64,i,j,theBand);
 		    if(verbose_opt[0]>1)
 		      std::cout << ": " << value << std::endl;
-		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
 		      int iclass=0;
 		      switch(ruleMap[rule_opt[0]]){
 		      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
@@ -1997,8 +2010,11 @@ int main(int argc, char *argv[])
 			polyValues[iband]=value;
 		      break;
 		      case(rule::sum):
-		      case(rule::mean)://mean or sum polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
+		      case(rule::mean)://mean sum polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
 			polyValues[iband]+=value;
+			break;
+		      case(rule::median):
+			polyValuesVector[iband].push_back(value);
 			break;
 		      case(rule::proportion):
 		      case(rule::custom):
@@ -2055,7 +2071,7 @@ int main(int argc, char *argv[])
 		    }
 		  }
 		  if(!polygon_opt[0]){
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean value (only at centroid)
+		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::median&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean or median value (only at centroid)
 		      //write feature
 		      if(verbose_opt[0]>1)
 			std::cout << "creating point feature" << std::endl;
@@ -2085,7 +2101,7 @@ int main(int argc, char *argv[])
 	    //test
 	    if(!validFeature)
 	      continue;
-	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
 	      //add ring to polygon
 	      if(polygon_opt[0]){
 		writePolygon.addRing(&writeRing);
@@ -2100,7 +2116,7 @@ int main(int argc, char *argv[])
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
 	      }
-	      else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean)
+	      else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::median)
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
@@ -2183,6 +2199,7 @@ int main(int argc, char *argv[])
 		break;
 	      }//case 0 and default
 	      case(rule::mean):
+	      case(rule::median):
 	      case(rule::sum):
 	      case(rule::centroid):{//mean value (written to centroid of polygon if line is not set)
 		if(verbose_opt[0])
@@ -2195,6 +2212,8 @@ int main(int argc, char *argv[])
 		  // ostringstream fs;
 		  if(ruleMap[rule_opt[0]]==rule::mean)
 		    theValue/=nPointPolygon;
+		  else if(ruleMap[rule_opt[0]]==rule::median)
+		    theValue=stat.median(polyValuesVector[index]);
 		  int theBand=(band_opt[0]<0)?index:band_opt[index];
 		  // if(nband==1)
 		  //   fs << fieldname_opt[0];

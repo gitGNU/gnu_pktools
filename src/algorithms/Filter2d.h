@@ -86,7 +86,7 @@ public:
   void pushThreshold(double theThreshold){m_threshold.push_back(theThreshold);};
   void setThresholds(const std::vector<double>& theThresholds){m_threshold=theThresholds;};
   void setClasses(const std::vector<short>& theClasses){m_class=theClasses;};
-  void filter(const ImgReaderGdal& input, ImgWriterGdal& output, bool absolute=false, bool normalize=true, bool noData=false);
+  void filter(const ImgReaderGdal& input, ImgWriterGdal& output, bool absolute=false, bool normalize=false, bool noData=false);
   void smooth(const ImgReaderGdal& input, ImgWriterGdal& output,int dim);
   void smooth(const ImgReaderGdal& input, ImgWriterGdal& output,int dimX, int dimY);
   void smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output,int dim);

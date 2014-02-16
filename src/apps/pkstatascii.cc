@@ -294,8 +294,13 @@ int main(int argc, char *argv[])
   }
   if(histogram_opt[0]){
     for(int irow=0;irow<statVector.begin()->size();++irow){
-
-      std::cout << minValue+static_cast<double>(maxValue-minValue)*(irow+0.5)/nbin << " ";
+      double binValue=0;
+      if(nbin==maxValue-minValue+1)
+	binValue=minValue+irow;
+      else
+	binValue=minValue+static_cast<double>(maxValue-minValue)*(irow+0.5)/nbin;
+      std::cout << binValue << " ";
+      // std::cout << minValue+static_cast<double>(maxValue-minValue)*(irow+0.5)/nbin << " ";
       for(int icol=0;icol<col_opt.size();++icol){
         if(relative_opt[0])
           std::cout << 100.0*static_cast<double>(statVector[icol][irow])/static_cast<double>(dataVector[icol].size());
@@ -332,9 +337,20 @@ int main(int argc, char *argv[])
     for(int binX=0;binX<nbin;++binX){
       std::cout << std::endl;
       for(int binY=0;binY<nbin;++binY){
+	double binValueX=0;
+	if(nbin==maxX-minX+1)
+	  binValueX=minX+binX;
+	else
+	  binValueX=minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin;
+	double binValueY=0;
+	if(nbin==maxY-minY+1)
+	  binValueY=minY+binY;
+	else
+	  binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
         double value=0;
         value=static_cast<double>(histVector[binX][binY])/dataVector[0].size();
-	std::cout << minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin << " " << minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin << " " << value << std::endl;
+	std::cout << binValueX << " " << binValueY << " " << value << std::endl;
+	// std::cout << minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin << " " << minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin << " " << value << std::endl;
       }
     }
   }

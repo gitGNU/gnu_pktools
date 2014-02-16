@@ -27,7 +27,7 @@ extern "C" {
 #include "base/Optionpk.h"
 
 int main(int argc,char **argv) {
-  Optionpk<std::string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!");
+  Optionpk<std::string> input_opt("i", "input", "Input image file");
   Optionpk<int> band_opt("b", "band", "band(s) to process (Default is -1: process all bands)");
   Optionpk<std::string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ");
   Optionpk<std::string> output_opt("o", "output", "Output image file");

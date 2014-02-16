@@ -306,17 +306,15 @@ int main(int argc, char *argv[])
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){
 	double binValue=0;
-	// nsample+=output[bin];
 	if(nbin==maxValue-minValue+1)
 	  binValue=minValue+bin;
 	else
 	  binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
 	std::cout << binValue << " ";
-	// std::cout << minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin << " ";
 	if(relative_opt[0])
 	  std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
 	else
-	  std::cout << static_cast<double>(output[bin])  << std::endl;
+	  std::cout << static_cast<double>(output[bin]) << std::endl;
       }
     }
     // else{
