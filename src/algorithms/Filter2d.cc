@@ -378,6 +378,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       ++indexJ;
     }
     for(int y=0;y<input.nrOfRow();++y){
+    // for(int y=0;y<input.nrOfRow()+down;++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	inBuffer.erase(inBuffer.begin());
@@ -403,6 +404,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       if((y+1+down/2)%down)
         continue;
       for(int x=0;x<input.nrOfCol();++x){
+      // for(int x=0;x<input.nrOfCol()+down;++x){
         if((x+1+down/2)%down)
           continue;
 	outBuffer[x/down]=0;
