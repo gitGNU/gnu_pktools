@@ -562,7 +562,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=0.0;
       theTaps[2][2]=1.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);//absolute and normalize
+      filter2d.filter(input,output,true,true);//absolute and normalize
       break;
     }
     case(filter2d::sobely):{//Sobel edge detection in Y
@@ -581,7 +581,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-2.0;
       theTaps[2][2]=-1.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);//absolute and normalize
+      filter2d.filter(input,output,true,true);//absolute and normalize
       break;
     }
     case(filter2d::sobelxy):{//Sobel edge detection in XY
@@ -600,7 +600,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-1.0;
       theTaps[2][2]=0.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);//absolute and normalize
+      filter2d.filter(input,output,true,true);//absolute and normalize
       break;
     }
     case(filter2d::sobelyx):{//Sobel edge detection in XY
@@ -619,7 +619,7 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-1.0;
       theTaps[2][2]=-2.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true);//absolute and normalize
+      filter2d.filter(input,output,true,true);//absolute and normalize
       break;
     }
     case(filter2d::smooth):{//Smoothing filter

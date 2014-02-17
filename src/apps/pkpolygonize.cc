@@ -37,8 +37,9 @@ extern "C" {
 using namespace std;
 
 int main(int argc,char **argv) {
-  Optionpk<string> input_opt("i", "input", "Input image file (WARNING: will be overwritten with output!");
+  Optionpk<string> input_opt("i", "input", "Input image file");
   Optionpk<string> mask_opt("m", "mask", "All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use input file as mask to remove background polygon! ");
+  Optionpk<double> nodata_opt("nodata", "nodata", "Disgard this nodata value when creating polygons.");
   Optionpk<string> output_opt("o", "output", "Output vector file");
   Optionpk<string> ogrformat_opt("f", "f", "Output OGR file format","ESRI Shapefile");
   Optionpk<int> band_opt("b", "band", "the band to be used from input file", 0);
@@ -49,6 +50,7 @@ int main(int argc,char **argv) {
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
@@ -93,7 +95,8 @@ int main(int argc,char **argv) {
   ImgReaderGdal inputReader(input_opt[0]);
   GDALRasterBand  *inputBand;
   inputBand=inputReader.getRasterBand(0);
-
+  if(nodata_opt.size())
+    inputBand->SetNoDataValue(nodata_opt[0]);
   ImgWriterOgr ogrWriter(output_opt[0],ogrformat_opt[0]);
   OGRLayer* theLayer=ogrWriter.createLayer(output_opt[0].substr(output_opt[0].rfind('/')+1), inputReader.getProjectionRef());
   if(verbose_opt[0])

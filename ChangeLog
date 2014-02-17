@@ -248,10 +248,21 @@ version 2.5
 version 2.5.1
  - pkinfo
 	-stats instead of -stat to be conform to gdalinfo
+	bin values match actual values in case nbin=max-min+1
+ - pkstatascii
+	bin values match actual values in case nbin=max-min+1
+ - pkstatogr
+	bin values match actual values in case nbin=max-min+1
  - pkextract
 	support sum rule
  - pkfilter
 	support of density filter
 	debug down option (forgot to adapt xres and yres)
+	no automatic normalization user provided filter taps
  - pkcrop
 	correct bounding box when dx_opt and dy_opt are set
+version 2.5.2 (todo)
+ - pkcrop -> pkcropnmerge
+	name was confusing as pkcrop supports spatial and spectral subsetting and merging
+ - pkmosaic -> pkcomposit
+	name was confusing as also compositing is supported (unlike gdal_merge.py and gdalwarp)
