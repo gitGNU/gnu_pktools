@@ -74,15 +74,6 @@ int main(int argc,char **argv) {
   GDALProgressFunc pfnProgress=GDALTermProgress;
   pfnProgress(dfComplete,pszMessage,pProgressArg);
   
-  ImgReaderGdal maskReader;
-  GDALRasterBand *maskBand=NULL;
-  if(mask_opt.size()){
-    if(verbose_opt[0])
-      cout << "opening mask file " << mask_opt[0] << endl;
-    maskReader.open(mask_opt[0]);
-    maskBand = maskReader.getRasterBand(0);
-  }
-
   assert(input_opt.size());
   assert(output_opt.size());
   ImgReaderGdal inputReader(input_opt[0]);
@@ -94,6 +85,17 @@ int main(int argc,char **argv) {
   if(verbose_opt[0])
     cout << "opening output file " << output_opt[0] << endl;
   outputWriter.open(output_opt[0],inputReader);
+
+  ImgReaderGdal maskReader;
+  GDALRasterBand *maskBand=NULL;
+  if(mask_opt.size()){
+    if(verbose_opt[0])
+      cout << "opening mask file " << mask_opt[0] << endl;
+    maskReader.open(mask_opt[0]);
+    maskBand = maskReader.getRasterBand(0);
+    outputWriter.GDALSetNoDataValue(0);
+  }
+
   if(colorTable_opt.size()){
     if(colorTable_opt[0]!="none")
       outputWriter.setColorTable(colorTable_opt[0]);
@@ -101,6 +103,7 @@ int main(int argc,char **argv) {
   else if (inputReader.getColorTable()!=NULL)//copy colorTable from input image
     outputWriter.setColorTable(inputReader.getColorTable());
   outputBand = outputWriter.getRasterBand(0);
+
   //sieve filter to remove small raster elements (overwrite input band)
   if(size_opt[0]){
     if(GDALSieveFilter((GDALRasterBandH)inputBand, (GDALRasterBandH)maskBand, (GDALRasterBandH)outputBand, size_opt[0], connect_opt[0],NULL,pfnProgress,pProgressArg)!=CE_None)

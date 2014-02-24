@@ -261,8 +261,10 @@ version 2.5.1
 	no automatic normalization user provided filter taps
  - pkcrop
 	correct bounding box when dx_opt and dy_opt are set
+ - pksieve
+	retain nodata in pksieve when mask is set
 version 2.5.2 (todo)
- - pkcrop -> pkcropnmerge
+ - pkcrop -> pkcropnmerge or pkcropnstack
 	name was confusing as pkcrop supports spatial and spectral subsetting and merging
  - pkmosaic -> pkcomposit
 	name was confusing as also compositing is supported (unlike gdal_merge.py and gdalwarp)

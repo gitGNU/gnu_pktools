@@ -601,8 +601,10 @@ int main(int argc, char *argv[])
     double progress=0;
     if(!verbose_opt[0])
       pfnProgress(progress,pszMessage,pProgressArg);
-    double ncost=log(ccost_opt[1])/log(10)-log(ccost_opt[0])/log(10);
-    double ngamma=log(gamma_opt[1])/log(10)-log(gamma_opt[0])/log(10);
+    // double ncost=log(ccost_opt[1])/log(step_opt[0])-log(ccost_opt[0])/log(step_opt[0]);
+    double ncost=log(ccost_opt[1]/ccost_opt[0])/log(step_opt[0]);
+    // double ngamma=log(gamma_opt[1])/log(step_opt[1])-log(gamma_opt[0])/log(step_opt[1]);
+    double ngamma=log(gamma_opt[1]/gamma_opt[0])/log(step_opt[1]);
     for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=step_opt[0]){
       for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=step_opt[1]){
 	x[0]=ccost;

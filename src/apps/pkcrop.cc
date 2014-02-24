@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
     double uli,ulj,lri,lrj;//image coordinates
     bool forceEUgrid=false;
     if(projection_opt.size())
-      forceEUgrid=(!(projection_opt[0].compare("EPSG:3035"))||!(projection_opt[0].compare("EPSG:3035"))||projection_opt[0].find("ETRS-LAEA")!=string::npos);
+      forceEUgrid=(!(projection_opt[0].compare("EPSG:3035"))||!(projection_opt[0].compare("epsg:3035"))||projection_opt[0].find("ETRS-LAEA")!=string::npos);
     if(ulx_opt[0]>=lrx_opt[0]){//default bounding box: no cropping
       uli=0;
       lri=imgReader.nrOfCol()-1;
