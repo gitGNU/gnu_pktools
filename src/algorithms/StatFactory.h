@@ -619,7 +619,7 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
       if(*it==maximum)
         theBin=nbin-1;
       else if(*it>minimum && *it<maximum)
-        theBin=static_cast<int>(static_cast<double>((nbin-1)*(*it)-minimum)/(maximum-minimum));
+        theBin=static_cast<int>(static_cast<double>((nbin-1)*(*it-minimum)/(maximum-minimum)));
       ++output[theBin];
       // if(*it==maximum)
       //   ++output[nbin-1];
