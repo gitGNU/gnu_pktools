@@ -1148,7 +1148,7 @@ void filter2d::Filter2d::linearFeature(const ImgReaderGdal& input, ImgWriterGdal
   std::vector< Vector2d<float> > outputBuffer;
   input.readDataBlock(inputBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, band);
   if(maxDistance<=0)
-    maxDistance=sqrt(input.nrOfCol()*input.nrOfRow());
+    maxDistance=sqrt(static_cast<float>(input.nrOfCol()*input.nrOfRow()));
   linearFeature(inputBuffer,outputBuffer,angle,angleStep,maxDistance,eps, l1, a1, l2, a2,verbose);
   for(int iband=0;iband<outputBuffer.size();++iband)
     output.writeDataBlock(outputBuffer[iband],GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);

@@ -153,7 +153,7 @@ public:
   template<class T> void minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const;  
   template<class T> T sum(const std::vector<T>& v) const;
   template<class T> double mean(const std::vector<T>& v) const;
-  template<class T> T eraseNoData(std::vector<T>& v) const;
+  template<class T> void eraseNoData(std::vector<T>& v) const;
   template<class T> T median(const std::vector<T>& v) const;
   template<class T> double var(const std::vector<T>& v) const;
   template<class T> double moment(const std::vector<T>& v, int n) const;
@@ -162,16 +162,17 @@ public:
   template<class T> double kurtosis(const std::vector<T>& v) const;
   template<class T> void meanVar(const std::vector<T>& v, double& m1, double& v1) const;
   template<class T1, class T2> void  scale2byte(const std::vector<T1>& input, std::vector<T2>& output, unsigned char lbound=0, unsigned char ubound=255) const;
-  template<class T> void distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end,  std::vector<double>& output, int nbin, T &minimum=0.0, T &maximum=0.0, double sigma=0, const std::string &filename="") const;
+  template<class T> void distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end,  std::vector<double>& output, int nbin, T &minimum, T &maximum, double sigma=0, const std::string &filename="") const;
   template<class T> void distribution(const std::vector<T>& input,  std::vector<double>& output, int nbin, double sigma=0, const std::string &filename="") const{distribution(input,input.begin(),input.end(),output,nbin,0,0,sigma,filename);};
-  template<class T> void  distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX=0, T& maxX=0, T& minY=0, T& maxY=0, double sigma=0, const std::string& filename="") const;
+  template<class T> void  distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX, T& maxX, T& minY, T& maxY, double sigma=0, const std::string& filename="") const;
   template<class T> void cumulative (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<int>& output, int nbin, T &minimum, T &maximum) const;
-  template<class T> void  percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin=10, T &minimum=0.0, T &maximum=0.0, const std::string &filename="") const;
+  template<class T> void  percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin, T &minimum, T &maximum, const std::string &filename="") const;
   template<class T> void signature(const std::vector<T>& input, double& k, double& alpha, double& beta, double e) const;
   void signature(double m1, double m2, double& k, double& alpha, double& beta, double e) const;
   template<class T> void normalize(const std::vector<T>& input, std::vector<double>& output) const;
   template<class T> void normalize_pct(std::vector<T>& input) const;
   template<class T> double rmse(const std::vector<T>& x, const std::vector<T>& y) const;
+  template<class T> double rrmse(const std::vector<T>& x, const std::vector<T>& y) const;
   template<class T> double correlation(const std::vector<T>& x, const std::vector<T>& y, int delay=0) const;
   template<class T> double cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const;
   template<class T> double linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
@@ -425,7 +426,7 @@ template<class T> inline double StatFactory::mean(const std::vector<T>& v) const
     return 0;
 }
 
-template<class T> inline T StatFactory::eraseNoData(std::vector<T>& v) const
+template<class T> inline void StatFactory::eraseNoData(std::vector<T>& v) const
 {
   typename std::vector<T>::iterator it=v.begin();
   while(it!=v.end()){
@@ -822,6 +823,19 @@ template<class T> double StatFactory::rmse(const std::vector<T>& x, const std::v
   double mse=0;
   for(int isample=0;isample<x.size();++isample){
     double e=x[isample]-y[isample];
+    mse+=e*e/x.size();
+  }
+  return sqrt(mse);
+}
+
+template<class T> double StatFactory::rrmse(const std::vector<T>& x, const std::vector<T>& y) const{
+  assert(x.size()==y.size());
+  assert(x.size());
+  double mse=0;
+  for(int isample=0;isample<x.size();++isample){
+    if(x[isample]==0)
+      continue;
+    double e=(x[isample]-y[isample])/x[isample];
     mse+=e*e/x.size();
   }
   return sqrt(mse);

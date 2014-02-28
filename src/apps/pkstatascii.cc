@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
   Optionpk<double> kde_opt("kde","kde","bandwith of kernel density when producing histogram, use 0 for practical estimation based on Silverman's rule of thumb. Leave empty if no kernel density is required");
   Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
+  Optionpk<bool> rrmse_opt("rrmse","rrmse","calculate relative root mean square error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
 
@@ -95,6 +96,7 @@ int main(int argc, char *argv[])
     kde_opt.retrieveOption(argc,argv);
     correlation_opt.retrieveOption(argc,argv);
     rmse_opt.retrieveOption(argc,argv);
+    rrmse_opt.retrieveOption(argc,argv);
     reg_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -231,6 +233,10 @@ int main(int argc, char *argv[])
   if(rmse_opt[0]){
     assert(dataVector.size()==2);
     cout << "root mean square error between columns " << col_opt[0] << " and " << col_opt[1] << ": " << stat.rmse(dataVector[0],dataVector[1]) << endl;
+  }
+  if(rrmse_opt[0]){
+    assert(dataVector.size()==2);
+    cout << "relative root mean square error between columns " << col_opt[0] << " and " << col_opt[1] << ": " << stat.rrmse(dataVector[0],dataVector[1]) << endl;
   }
   if(reg_opt[0]){
     assert(dataVector.size()==2);

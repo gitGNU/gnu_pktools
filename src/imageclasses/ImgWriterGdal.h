@@ -47,7 +47,7 @@ public:
   void setProjection(const std::string& projection);
   std::string setProjectionProj4(const std::string& projection);
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
-  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {getRasterBand(band)->SetNoDataValue(noDataValue);};
+  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
   std::string getProjection(void) const;
   std::string getGeoTransform() const;
   void getGeoTransform(double* gt) const;

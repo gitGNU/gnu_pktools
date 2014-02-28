@@ -63,60 +63,9 @@ template<typename T> inline T string2type(std::string const& s,bool failIfLeftov
   return x;
 }
 
-///specialization for string
-template<> inline std::string string2type(std::string const& s){
-  return s;
-}
-
-///specialization for OGRFieldType
-template<> inline OGRFieldType string2type(std::string const& s){
-  OGRFieldType ftype;
-  int ogr_typecount=11;//hard coded for now!
-  for(int iType = 0; iType < ogr_typecount; ++iType){
-    if( OGRFieldDefn::GetFieldTypeName((OGRFieldType)iType) != NULL
-        && EQUAL(OGRFieldDefn::GetFieldTypeName((OGRFieldType)iType),s.c_str()))
-      ftype=(OGRFieldType) iType;
-  }
-  return ftype;
-}
-
 ///serialization for help or to dump option values to screen in verbose mode
 template<typename T> inline std::string type2string(T const& value){
   std::ostringstream oss;
-  oss << value;
-  return oss.str();
-}
-
-///specialization for bool
-template<> inline std::string type2string(bool const& value){
-  if(value)
-    return("true");
-  else
-    return("false");
-}
-
-///specialization for string
-template<> inline std::string type2string(std::string const& value){
-  // if(value.empty())
-  //   return("<empty string>");
-  // else
-    return(value);
-}
-
-///specialization for float
-template<> inline std::string type2string(float const& value){
-  std::ostringstream oss;
-  // oss.precision(1);
-  // oss.setf(ios::fixed);
-  oss << value;
-  return oss.str();
-}
-
-///specialization for double
-template<> inline std::string type2string(double const& value){
-  std::ostringstream oss;
-  // oss.precision(1);
-  //  oss.setf(ios::fixed);
   oss << value;
   return oss.str();
 }
@@ -188,8 +137,11 @@ public:
                                           \n\
     You should have received a copy of the GNU General Public License\n\
     along with this program.  If not, see <http://www.gnu.org/licenses/>.\n");};
-  std::vector<std::string>::const_iterator findSubstring(const std::string& argument) const;
-private:
+
+  //this function only makes sense for T=std::string (will need a specialization)
+  typename std::vector<T>::const_iterator findSubstring(const T& argument) const {std::string errorString="Error: findSubstring only defined for options of type std::string"; throw(errorString);};
+
+ private:
   bool hasArgument() const {return m_hasArgument;};//all options except bools should have arguments
   bool hasShortOption() const {return m_shortName.compare("\0");};
   bool hasLongOption() const {return m_longName.compare("\0");};
@@ -214,7 +166,7 @@ template<class T1> std::ostream& operator<<(std::ostream& os, const Optionpk<T1>
   return os;
 }
 
-template<class T> Optionpk<T>::Optionpk() 
+template<class T> inline Optionpk<T>::Optionpk() 
 : m_hasDefault(false)
 {
 }
@@ -225,7 +177,7 @@ shortName is option invoked with `-`\n
 longName is option invoked with `--`\n
 helpInfo is the help message that is shown when option -h or --help is invoked\n
 **/
-template<class T> Optionpk<T>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
+template<class T> inline Optionpk<T>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
 : m_hasDefault(false)
 {
   setAll(shortName,longName,helpInfo);
@@ -241,12 +193,12 @@ hide=0 : option is visible for in both short (`-h`) and long (`--help`) help. Ty
 hide=1 : option is only visible in long help (`--help`). Typical use: expert options\n
 hide=2 : option is hidden for user. Typical use: Easter eggs or options only known to author
 **/
-template<class T> Optionpk<T>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide)
+template<class T> inline Optionpk<T>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide)
 {
   setAll(shortName,longName,helpInfo,defaultValue, hide);
 }
 
-template<class T> std::string Optionpk<T>::usage() const
+template<class T> inline std::string Optionpk<T>::usage() const
 {
   std::ostringstream helpss;
   std::string shortOption=m_shortName;
@@ -267,7 +219,7 @@ template<class T> std::string Optionpk<T>::usage() const
   return helpss.str();
 }
 
-template<class T> std::string Optionpk<T>::usageDoxygen() const
+template<class T> inline std::string Optionpk<T>::usageDoxygen() const
 {
   std::ostringstream helpss;
   std::string shortOption=m_shortName;
@@ -292,7 +244,7 @@ template<class T> std::string Optionpk<T>::usageDoxygen() const
   return helpss.str();
 }
 
-template<class T> void Optionpk<T>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
+template<class T> inline void Optionpk<T>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
 {
   m_shortName=shortName;
   m_longName=longName;
@@ -301,7 +253,7 @@ template<class T> void Optionpk<T>::setAll(const std::string& shortName, const s
   m_hide=0;
 }
 
-template<class T> void Optionpk<T>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide)
+template<class T> inline void Optionpk<T>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide)
 {
   m_shortName=shortName;
   m_longName=longName;
@@ -312,47 +264,15 @@ template<class T> void Optionpk<T>::setAll(const std::string& shortName, const s
   m_hide=hide;
 }
 
-///specialization for bool
-template<> void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo);
 
-template<> void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
-{
-  m_shortName=shortName;
-  m_longName=longName;
-  m_hasArgument=false;
-  m_help=helpInfo;
-  m_hide=0;
-}
-
-///specialization for bool
-template<> void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const bool& defaultValue, short hide);
-
-///specialization for bool
-template<> void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const bool& defaultValue, short hide)
-{
-  m_shortName=shortName;
-  m_longName=longName;
-  m_hasArgument=false;
-  m_help=helpInfo;
-  m_defaultValue=defaultValue;
-  m_hasDefault=true;
-  m_hide=hide;
-}
-
-///specialization for bool
-template<> Optionpk<bool>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const bool& defaultValue, short hide)
-{
-  setAll(shortName,longName,helpInfo,defaultValue, hide);
-}
-
-template<class T> Optionpk<T>::~Optionpk() 
+template<class T> inline Optionpk<T>::~Optionpk() 
 {
 }
 
 /**
 make sure to call this function first before using the option in main program (or segmentation fault will occur...)
 **/
-template<class T> bool Optionpk<T>::retrieveOption(int argc, char **argv){ 
+template<class T> inline bool Optionpk<T>::retrieveOption(int argc, char **argv){ 
   bool noHelp=true;//return value, alert main program that hard coded option (help, version, license, doxygen) was invoked
   std::string helpStringShort="-h";//short option for help (hard coded)
   std::string helpStringLong="--help";//long option for help (hard coded)
@@ -418,17 +338,6 @@ template<class T> bool Optionpk<T>::retrieveOption(int argc, char **argv){
   if(!(this->size())&&m_hasDefault)//only set default value if no options were given
     this->push_back(m_defaultValue);
   return(noHelp);
-}
-
-//find a substring in string option (e.g., option is of type -co INTERLEAVE=BAND)
-template<> std::vector<std::string>::const_iterator Optionpk<std::string>::findSubstring(const std::string& argument) const{
-  std::vector<std::string>::const_iterator opit=this->begin();
-  while(opit!=this->end()){
-    if(opit->find(argument)!=std::string::npos)
-      break;
-    ++opit;
-  }
-  return opit;
 }
 
 #endif

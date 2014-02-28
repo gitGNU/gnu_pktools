@@ -32,6 +32,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define RAD2DEG(RAD) (RAD/PI*180)
 #endif
 
+#ifdef WIN32
+#define getpid _getpid
+#endif
+
 #include <assert.h>
 #include <math.h>
 #include <limits>
@@ -800,7 +804,9 @@ template<class T> void Filter2d::dwtForward(Vector2d<T>& theBuffer, const std::s
   for(int irow=0;irow<theBuffer.size();++irow)
     while(theBuffer[irow].size()&(theBuffer[irow].size()-1))
       theBuffer[irow].push_back(theBuffer[irow].back());
-  double data[theBuffer.size()*theBuffer[0].size()];
+  std::vector<double> vdata(theBuffer.size()*theBuffer[0].size());
+  double *data=&(vdata[0]);
+  //double data[theBuffer.size()*theBuffer[0].size()];
   for(int irow=0;irow<theBuffer.size();++irow){
     for(int icol=0;icol<theBuffer[0].size();++icol){
       int index=irow*theBuffer[0].size()+icol;
@@ -846,7 +852,9 @@ template<class T> void Filter2d::dwtInverse(Vector2d<T>& theBuffer, const std::s
   for(int irow=0;irow<theBuffer.size();++irow)
     while(theBuffer[irow].size()&(theBuffer[irow].size()-1))
       theBuffer[irow].push_back(theBuffer[irow].back());
-  double data[theBuffer.size()*theBuffer[0].size()];
+  std::vector<double> vdata(theBuffer.size()*theBuffer[0].size());
+  double *data=&(vdata[0]);
+  //double data[theBuffer.size()*theBuffer[0].size()];
   for(int irow=0;irow<theBuffer.size();++irow){
     for(int icol=0;icol<theBuffer[0].size();++icol){
       int index=irow*theBuffer[0].size()+icol;
