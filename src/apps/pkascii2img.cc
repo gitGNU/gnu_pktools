@@ -19,7 +19,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <string>
 #include <fstream>
-#include "Optionpk.h"
+#include "base/Optionpk.h"
 #include <assert.h>
 #include "imageclasses/ImgWriterGdal.h"
 

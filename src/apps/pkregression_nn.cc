@@ -22,8 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "fileclasses/FileReaderAscii.h"
 #include "floatfann.h"
-#include "myfann_cpp.h"
-
+#include "algorithms/myfann_cpp.h"
 using namespace std;
 
 int main(int argc, char *argv[])

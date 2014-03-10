@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
   Optionpk<double> kde_opt("kde","kde","bandwith of kernel density when producing histogram, use 0 for practical estimation based on Silverman's rule of thumb. Leave empty if no kernel density is required");
   Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
-  Optionpk<bool> rrmse_opt("rrmse","rrmse","calculate relative root mean square error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
 
@@ -96,7 +95,6 @@ int main(int argc, char *argv[])
     kde_opt.retrieveOption(argc,argv);
     correlation_opt.retrieveOption(argc,argv);
     rmse_opt.retrieveOption(argc,argv);
-    rrmse_opt.retrieveOption(argc,argv);
     reg_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -196,14 +194,13 @@ int main(int argc, char *argv[])
     if(median_opt[0])
       cout << "median value column " << col_opt[icol] << ": " << stat.median(dataVector[icol]) << endl;
     if(minmax_opt[0]){
-      cout << "min value column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
-      cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
+      cout << "min value column " << col_opt[icol] << ": " << stat.mymin(dataVector[icol]) << endl;
+      cout << "max value column " << col_opt[icol] << ": " << stat.mymax(dataVector[icol]) << endl;
     }
     if(min_opt[0])
-      cout << "min value column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
+      cout << "min value column " << col_opt[icol] << ": " << stat.mymin(dataVector[icol]) << endl;
     if(max_opt[0])
-      cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
-
+      cout << "max value column " << col_opt[icol] << ": " << stat.mymax(dataVector[icol]) << endl;
     if(histogram_opt[0]){
       //todo: support kernel density function and estimate sigma as in practical estimate of the bandwith in http://en.wikipedia.org/wiki/Kernel_density_estimation
       double sigma=0;
@@ -220,8 +217,62 @@ int main(int argc, char *argv[])
         else
           std::cout << "calculating histogram for col " << icol << std::endl;
       }
+      //test
+      // cout << "debug0" << endl;
+      // cout << "dataVector.size(): " << dataVector.size() << endl;
+      // cout << "statVector.size(): " << statVector.size() << endl;
 
+      // double theMinValue=0;
+      // double theMaxValue=0;
+      
+      // stat.minmax(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),theMinValue,theMaxValue);
+      // if(minValue<maxValue&&minValue>theMinValue)
+      // 	theMinValue=minValue;
+      // if(minValue<maxValue&&maxValue<theMaxValue)
+      // 	theMaxValue=maxValue;
+
+      // //todo: check...
+      // minValue=theMinValue;
+      // maxValue=theMaxValue;
+
+      // if(maxValue<=minValue){
+      // 	std::ostringstream s;
+      // 	s<<"Error: could not calculate distribution (min>=max)";
+      // 	throw(s.str());
+      // }
+      // assert(nbin);
+      // assert(dataVector[icol].size());
+      // if(statVector[icol].size()!=nbin){
+      // 	statVector[icol].resize(nbin);
+      // 	for(int i=0;i<nbin;statVector[icol][i++]=0);
+      // }
+      // typename std::vector<double>::const_iterator it;
+      // for(it=dataVector[icol].begin();it!=dataVector[icol].end();++it){
+      // 	if(*it<minValue)
+      // 	  continue;
+      // 	if(*it>maxValue)
+      // 	  continue;
+      // 	if(stat.isNoData(*it))
+      // 	  continue;
+      // 	int theBin=0;
+      // 	if(*it==maxValue)
+      // 	  theBin=nbin-1;
+      // 	else if(*it>minValue && *it<maxValue)
+      // 	  theBin=static_cast<int>(static_cast<double>((nbin-1)*(*it)-minValue)/(maxValue-minValue));
+      // 	assert(theBin<statVector[icol].size());
+      // 	++statVector[icol][theBin];
+      // 	// if(*it==maxValue)
+      // 	//   ++statVector[icol][nbin-1];
+      // 	// else if(*it>=minValue && *it<maxValue)
+      // 	//   ++statVector[icol][static_cast<int>(static_cast<double>((*it)-minValue)/(maxValue-minValue)*nbin)];
+      // }
+
+      // exit(0);
+      //end test
+      
       stat.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),statVector[icol],nbin,minValue,maxValue,sigma);
+      //test
+      cout << "debug1" << endl;
       if(verbose_opt[0])
         std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
     }
@@ -233,10 +284,6 @@ int main(int argc, char *argv[])
   if(rmse_opt[0]){
     assert(dataVector.size()==2);
     cout << "root mean square error between columns " << col_opt[0] << " and " << col_opt[1] << ": " << stat.rmse(dataVector[0],dataVector[1]) << endl;
-  }
-  if(rrmse_opt[0]){
-    assert(dataVector.size()==2);
-    cout << "relative root mean square error between columns " << col_opt[0] << " and " << col_opt[1] << ": " << stat.rrmse(dataVector[0],dataVector[1]) << endl;
   }
   if(reg_opt[0]){
     assert(dataVector.size()==2);
@@ -253,6 +300,7 @@ int main(int argc, char *argv[])
       else
 	binValue=minValue+static_cast<double>(maxValue-minValue)*(irow+0.5)/nbin;
       std::cout << binValue << " ";
+      // std::cout << minValue+static_cast<double>(maxValue-minValue)*(irow+0.5)/nbin << " ";
       for(int icol=0;icol<col_opt.size();++icol){
         if(relative_opt[0])
           std::cout << 100.0*static_cast<double>(statVector[icol][irow])/static_cast<double>(dataVector[icol].size());

@@ -22,7 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <assert.h>
-#include "Optionpk.h"
+#include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterGdal.h"
 // #include "imageclasses/ImgWriterOgr.h"

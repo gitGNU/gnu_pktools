@@ -17,29 +17,32 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
+#include <stdlib.h>
+#ifdef WIN32
+#define random rand
+#define srandom srand
+#endif
 #include <vector>
 #include <string>
 #include <map>
 #include <algorithm>
-#include "floatfann.h"
-#include "imageclasses/ImgReaderOgr.h"
-// #include "imageclasses/ImgReaderGdal.h"
-// #include "imageclasses/ImgWriterGdal.h"
-// #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
-#include "algorithms/myfann_cpp.h"
+#include "imageclasses/ImgReaderOgr.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
+#include "floatfann.h"
+#include "algorithms/myfann_cpp.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
+
 using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
 
 //global parameters used in cost function getCost
 map<string,short> classValueMap;
@@ -215,6 +218,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
@@ -233,6 +237,7 @@ int main(int argc, char *argv[])
     maxFeatures_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
+	random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -418,7 +423,7 @@ int main(int argc, char *argv[])
   //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
   //balance training data
   if(balance_opt[0]>0){
-    if(random)
+    if(random_opt[0])
       srand(time(NULL));
     totalSamples=0;
     for(int iclass=0;iclass<nclass;++iclass){
