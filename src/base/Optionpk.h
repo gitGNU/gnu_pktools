@@ -112,7 +112,6 @@ public:
   void setHelp(const std::string& helpInfo){m_help=helpInfo;};
   bool retrieveOption(int argc, char ** argv);
   template<class T1> friend std::ostream& operator<<(std::ostream & os, const Optionpk<T1>& theOption);
-
   void setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo);
   void setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide);
   void setDefault(const T& defaultValue);
@@ -264,7 +263,6 @@ template<class T> inline void Optionpk<T>::setAll(const std::string& shortName, 
   m_hide=hide;
 }
 
-
 template<class T> inline Optionpk<T>::~Optionpk() 
 {
 }
@@ -338,6 +336,106 @@ template<class T> inline bool Optionpk<T>::retrieveOption(int argc, char **argv)
   if(!(this->size())&&m_hasDefault)//only set default value if no options were given
     this->push_back(m_defaultValue);
   return(noHelp);
+}
+
+//todo: to be put in .cc file
+/////////////////// Specializations /////////////////
+
+///specialization for string
+template<> inline std::string string2type(std::string const& s){
+  return s;
+}
+
+///specialization for OGRFieldType
+template<> inline OGRFieldType string2type(std::string const& s){
+  OGRFieldType ftype;
+  int ogr_typecount=11;//hard coded for now!
+  for(int iType = 0; iType < ogr_typecount; ++iType){
+    if( OGRFieldDefn::GetFieldTypeName((OGRFieldType)iType) != NULL
+        && EQUAL(OGRFieldDefn::GetFieldTypeName((OGRFieldType)iType),s.c_str()))
+      ftype=(OGRFieldType) iType;
+  }
+  return ftype;
+}
+
+///specialization for bool
+template<> inline std::string type2string(bool const& value){
+  if(value)
+    return("true");
+  else
+    return("false");
+}
+
+///specialization for string
+template<> inline std::string type2string(std::string const& value){
+  // if(value.empty())
+  //   return("<empty string>");
+  // else
+    return(value);
+}
+
+///specialization for float
+template<> inline std::string type2string(float const& value){
+  std::ostringstream oss;
+  // oss.precision(1);
+  // oss.setf(ios::fixed);
+  oss << value;
+  return oss.str();
+}
+
+///specialization for double
+template<> inline std::string type2string(double const& value){
+  std::ostringstream oss;
+  // oss.precision(1);
+  //  oss.setf(ios::fixed);
+  oss << value;
+  return oss.str();
+}
+
+///specialization for bool
+template<> inline void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
+{
+  m_shortName=shortName;
+  m_longName=longName;
+  m_hasArgument=false;
+  m_help=helpInfo;
+  m_hide=0;
+}
+
+///specialization for bool
+template<> inline void Optionpk<bool>::setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const bool& defaultValue, short hide)
+{
+  m_shortName=shortName;
+  m_longName=longName;
+  m_hasArgument=false;
+  m_help=helpInfo;
+  m_defaultValue=defaultValue;
+  m_hasDefault=true;
+  m_hide=hide;
+}
+
+///specialization for bool
+template<> inline Optionpk<bool>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo)
+{
+  setAll(shortName,longName,helpInfo);
+}
+
+///specialization for bool
+template<> inline Optionpk<bool>::Optionpk(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const bool& defaultValue, short hide)
+{
+  setAll(shortName,longName,helpInfo,defaultValue, hide);
+}
+
+//specialization (only makes sense for T=std::string), generic function throws exception
+//find a substring in string option (e.g., option is of type -co INTERLEAVE=BAND)
+template<> inline std::vector<std::string>::const_iterator Optionpk<std::string>::findSubstring(const std::string& argument) const{
+  std::vector<std::string>::const_iterator opit=this->begin();
+  while(opit!=this->end()){
+    if(opit->find(argument)!=std::string::npos)
+      break;
+    ++opit;
+  }
+  return opit;
 }
 
 #endif

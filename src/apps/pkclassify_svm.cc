@@ -847,7 +847,7 @@ int main(int argc, char *argv[])
               probOut[iclass][icol]+=result[iclass]*priors[iclass];//add probabilities for each bag
                break;
             case(1)://product rule
-              probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+              probOut[iclass][icol]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
               break;
             case(2)://max rule
               if(priors[iclass]*result[iclass]>probOut[iclass][icol])
@@ -887,7 +887,7 @@ int main(int argc, char *argv[])
         for(short iclass=0;iclass<nclass;++iclass){
           float prv=probOut[iclass][icol];
           prv/=normBag;
-          entropy[icol]-=prv*log(prv)/log(2);
+          entropy[icol]-=prv*log(prv)/log(2.0);
           prv*=100.0;
             
           probOut[iclass][icol]=static_cast<short>(prv+0.5);
@@ -895,7 +895,7 @@ int main(int argc, char *argv[])
           // assert(classValueMap[nameVector[iclass]]>=0);
           // probOut[classValueMap[nameVector[iclass]]][icol]=static_cast<short>(prv+0.5);
         }
-        entropy[icol]/=log(nclass)/log(2);
+        entropy[icol]/=log(static_cast<double>(nclass))/log(2.0);
         entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
 	if(active_opt.size()){
 	  if(entropy[icol]>activePoints.back().value){
@@ -1061,7 +1061,7 @@ int main(int argc, char *argv[])
 		probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
 	      break;
 	      case(1)://product rule
-		probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+		probOut[iclass]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
 		break;
 	      case(2)://max rule
 		if(priors[iclass]*result[iclass]>probOut[iclass])

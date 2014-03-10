@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
-  srandom(time(NULL));
+  srand(time(NULL));
 
   bool sampleIsRaster=false;
   ImgReaderOgr sampleReaderOgr;
@@ -423,7 +423,7 @@ int main(int argc, char *argv[])
               }
               float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
               if(theThreshold>0){//percentual value
-                double p=static_cast<double>(random())/(RAND_MAX);
+                double p=static_cast<double>(rand())/(RAND_MAX);
                 p*=100.0;
                 if(p>theThreshold)
 		  continue;//do not select for now, go to next column
@@ -667,7 +667,7 @@ int main(int argc, char *argv[])
               }
               float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
               if(theThreshold>0){//percentual value
-                double p=static_cast<double>(random())/(RAND_MAX);
+                double p=static_cast<double>(rand())/(RAND_MAX);
                 p*=100.0;
                 if(p>theThreshold)
                   continue;//do not select for now, go to next column
@@ -887,24 +887,6 @@ int main(int argc, char *argv[])
 	bool writeTest=false;//write this feature to test_opt[0] instead of output_opt
 	if(verbose_opt[0]>0)
 	  std::cout << "reading feature " << readFeature->GetFID() << std::endl;
-	if(threshold_opt[0]>0){//percentual value
-	  double p=static_cast<double>(random())/(RAND_MAX);
-	  p*=100.0;
-	  if(p>threshold_opt[0]){
-	    if(test_opt.size())
-	      writeTest=true;
-	    else
-	      continue;//do not select for now, go to next feature
-	  }
-	}
-	else{//absolute value
-	  if(ntotalvalid>-threshold_opt[0]){
-	    if(test_opt.size())
-	      writeTest=true;
-	    else
-	      continue;//do not select any more pixels, go to next column feature
-	  }
-	}
 	if(verbose_opt[0]>0)
 	  std::cout << "processing feature " << readFeature->GetFID() << std::endl;
 	//get x and y from readFeature
@@ -914,6 +896,25 @@ int main(int argc, char *argv[])
 	assert(poGeometry!=NULL);
 	try{
 	  if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint ){
+	    if(threshold_opt[0]>0){//percentual value
+	      double p=static_cast<double>(rand())/(RAND_MAX);
+	      p*=100.0;
+	      if(p>threshold_opt[0]){
+		if(test_opt.size())
+		  writeTest=true;
+		else
+		  continue;//do not select for now, go to next feature
+	      }
+	    }
+	    else{//absolute value
+	      if(ntotalvalid>-threshold_opt[0]){
+		if(test_opt.size())
+		  writeTest=true;
+		else
+		  continue;//do not select any more pixels, go to next column feature
+	      }
+	    }
+
 	    assert(class_opt.size()<=1);//class_opt not implemented for point yet
 	    OGRPoint *poPoint = (OGRPoint *) poGeometry;
 	    x=poPoint->getX();
@@ -1161,7 +1162,27 @@ int main(int argc, char *argv[])
 	      std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
 	  }//if wkbPoint
 	  else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
-            
+	    //select percentage of polygons (if point, select percentage of points within polygons)
+	    if(ruleMap[rule_opt[0]]!=rule::point){
+	      if(threshold_opt[0]>0){//percentual value
+		double p=static_cast<double>(rand())/(RAND_MAX);
+		p*=100.0;
+		if(p>threshold_opt[0]){
+		  if(test_opt.size())
+		    writeTest=true;
+		  else
+		    continue;//do not select for now, go to next feature
+		}
+	      }
+	      else{//absolute value
+		if(ntotalvalid>-threshold_opt[0]){
+		  if(test_opt.size())
+		    writeTest=true;
+		  else
+		    continue;//do not select any more pixels, go to next column feature
+		}
+	      }
+	    }
 	    OGRPolygon readPolygon = *((OGRPolygon *) poGeometry);
 	    OGRPolygon writePolygon;
 	    OGRLinearRing writeRing;
@@ -1348,6 +1369,29 @@ int main(int argc, char *argv[])
 		    continue;
 		  if(j<0||j>=imgReader.nrOfRow())
 		    continue;
+
+		  //select percentage of points within polygon
+		  if(ruleMap[rule_opt[0]]==rule::point){
+		    if(threshold_opt[0]>0){//percentual value
+		      double p=static_cast<double>(rand())/(RAND_MAX);
+		      p*=100.0;
+		      if(p>threshold_opt[0]){
+			if(test_opt.size())
+			  writeTest=true;
+			else
+			  continue;//do not select for now, go to next feature
+		      }
+		    }
+		    else{//absolute value
+		      if(ntotalvalid>-threshold_opt[0]){
+			if(test_opt.size())
+			  writeTest=true;
+			else
+			  continue;//do not select any more pixels, go to next column feature
+		      }
+		    }
+		  }
+
 		  writeRing.addPoint(&thePoint);
 		  if(verbose_opt[0]>1)
 		    std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
@@ -1448,7 +1492,7 @@ int main(int argc, char *argv[])
 			break;
 		      }
 		    }
-	      }
+		  }
 		  if(!polygon_opt[0]){
 		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::median&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean value (only at centroid)
 		      //write feature
@@ -1784,6 +1828,27 @@ int main(int argc, char *argv[])
 	    }
 	  }
 	  else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon){//todo: try to use virtual OGRGeometry instead of OGRMultiPolygon and OGRPolygon
+	    //select percentage of polygons (if point, select percentage of points within polygons)
+	    if(ruleMap[rule_opt[0]]!=rule::point){
+	      if(threshold_opt[0]>0){//percentual value
+		double p=static_cast<double>(rand())/(RAND_MAX);
+		p*=100.0;
+		if(p>threshold_opt[0]){
+		  if(test_opt.size())
+		    writeTest=true;
+		  else
+		    continue;//do not select for now, go to next feature
+		}
+	      }
+	      else{//absolute value
+		if(ntotalvalid>-threshold_opt[0]){
+		  if(test_opt.size())
+		    writeTest=true;
+		  else
+		    continue;//do not select any more pixels, go to next column feature
+		}
+	      }
+	    }
 	    OGRMultiPolygon readPolygon = *((OGRMultiPolygon *) poGeometry);
 	    OGRPolygon writePolygon;
 	    OGRLinearRing writeRing;
@@ -1969,6 +2034,29 @@ int main(int argc, char *argv[])
 		    continue;
 		  if(j<0||j>=imgReader.nrOfRow())
 		    continue;
+
+		  //select percentage of points within polygon
+		  if(ruleMap[rule_opt[0]]==rule::point){
+		    if(threshold_opt[0]>0){//percentual value
+		      double p=static_cast<double>(rand())/(RAND_MAX);
+		      p*=100.0;
+		      if(p>threshold_opt[0]){
+			if(test_opt.size())
+			  writeTest=true;
+			else
+			  continue;//do not select for now, go to next feature
+		      }
+		    }
+		    else{//absolute value
+		      if(ntotalvalid>-threshold_opt[0]){
+			if(test_opt.size())
+			  writeTest=true;
+			else
+			  continue;//do not select any more pixels, go to next column feature
+		      }
+		    }
+		  }
+
 		  writeRing.addPoint(&thePoint);
 		  if(verbose_opt[0]>1)
 		    std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
