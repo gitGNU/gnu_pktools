@@ -139,13 +139,13 @@ public:
 
   template<class T> T mymin(const typename std::vector<T>& v) const;
   template<class T> T mymax(const typename std::vector<T>& v) const;
-  template<class T> T mymin(const typename std::vector<T>& v, typename T minConstraint) const;
-  template<class T> T mymax(const typename std::vector<T>& v, typename T maxConstraint) const;
+  template<class T> T mymin(const typename std::vector<T>& v, T minConstraint) const;
+  template<class T> T mymax(const typename std::vector<T>& v, T maxConstraint) const;
 //   template<class T> typename std::vector<T>::const_iterator mymax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> typename std::vector<T>::const_iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> typename std::vector<T>::iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
-  template<class T> typename std::vector<T>::const_iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, typename T minConstraint) const;
-  template<class T> typename std::vector<T>::iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, typename T minConstraint) const;
+  template<class T> typename std::vector<T>::const_iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T minConstraint) const;
+  template<class T> typename std::vector<T>::iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, T minConstraint) const;
   template<class T> typename std::vector<T>::const_iterator mymax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> typename std::vector<T>::iterator mymax(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
   template<class T> typename std::vector<T>::const_iterator mymax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T maxConstraint) const;
@@ -315,7 +315,7 @@ template<class T> inline typename std::vector<T>::iterator StatFactory::mymax(co
 
 
 
-template<class T> inline typename T StatFactory::mymin(const std::vector<T>& v) const
+template<class T> inline T StatFactory::mymin(const std::vector<T>& v) const
 {
   T minValue=*(v.begin());
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
@@ -327,7 +327,7 @@ template<class T> inline typename T StatFactory::mymin(const std::vector<T>& v) 
   return minValue;
 }
 
- template<class T> inline typename T StatFactory::mymin(const std::vector<T>& v, T minConstraint) const
+ template<class T> inline T StatFactory::mymin(const std::vector<T>& v, T minConstraint) const
 {
   T minValue=minConstraint;
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){

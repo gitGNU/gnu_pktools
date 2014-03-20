@@ -352,9 +352,9 @@ int main(int argc,char **argv) {
       else{
         statfactory::StatFactory stat;
         if(composite_opt[0]=="min")
-          outputData[irow][icol]=stat.min(inputData[irow][icol]);
+          outputData[irow][icol]=stat.mymin(inputData[irow][icol]);
         else if(composite_opt[0]=="max")
-          outputData[irow][icol]=stat.max(inputData[irow][icol]);
+          outputData[irow][icol]=stat.mymax(inputData[irow][icol]);
         else if(composite_opt[0]=="median")
           outputData[irow][icol]=stat.median(inputData[irow][icol]);
         else if(composite_opt[0]=="mean")
