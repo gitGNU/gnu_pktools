@@ -378,7 +378,6 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       ++indexJ;
     }
     for(int y=0;y<input.nrOfRow();++y){
-    // for(int y=0;y<input.nrOfRow()+down;++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	inBuffer.erase(inBuffer.begin());
@@ -404,7 +403,6 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
       if((y+1+down/2)%down)
         continue;
       for(int x=0;x<input.nrOfCol();++x){
-      // for(int x=0;x<input.nrOfCol()+down;++x){
         if((x+1+down/2)%down)
           continue;
 	outBuffer[x/down]=0;
@@ -481,14 +479,14 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           if(windowBuffer.empty())
             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
-           outBuffer[x/down]=stat.min(windowBuffer);
+           outBuffer[x/down]=stat.mymin(windowBuffer);
           break;
         }
         case(filter2d::ismin):{
            if(windowBuffer.empty())
             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
-            outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[centre])? 1:0;
+            outBuffer[x/down]=(stat.mymin(windowBuffer)==windowBuffer[centre])? 1:0;
           break;
         }
         case(filter2d::minmax):{//is the same as homog?
@@ -509,14 +507,14 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           if(windowBuffer.empty())
             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
-            outBuffer[x/down]=stat.max(windowBuffer);
+            outBuffer[x/down]=stat.mymax(windowBuffer);
           break;
         }
         case(filter2d::ismax):{
           if(windowBuffer.empty())
             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           else
-            outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[centre])? 1:0;
+            outBuffer[x/down]=(stat.mymax(windowBuffer)==windowBuffer[centre])? 1:0;
           break;
         }
         case(filter2d::order):{
@@ -525,8 +523,8 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           else{
             double lbound=0;
             double ubound=dimX*dimY;
-            double theMin=stat.min(windowBuffer);
-            double theMax=stat.max(windowBuffer);
+            double theMin=stat.mymin(windowBuffer);
+            double theMax=stat.mymax(windowBuffer);
             double scale=(ubound-lbound)/(theMax-theMin);
             outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[centre]-theMin)+lbound);
           }
@@ -1074,10 +1072,10 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
 	  if(statBuffer.size()){
             switch(getFilterType(method)){
             case(filter2d::dilate):
-              outBuffer[x]=stat.max(statBuffer);
+              outBuffer[x]=stat.mymax(statBuffer);
               break;
             case(filter2d::erode):
-              outBuffer[x]=stat.min(statBuffer);
+              outBuffer[x]=stat.mymin(statBuffer);
               break;
             default:
               std::ostringstream ess;
@@ -1148,7 +1146,7 @@ void filter2d::Filter2d::linearFeature(const ImgReaderGdal& input, ImgWriterGdal
   std::vector< Vector2d<float> > outputBuffer;
   input.readDataBlock(inputBuffer, GDT_Float32, 0, input.nrOfCol()-1, 0, input.nrOfRow()-1, band);
   if(maxDistance<=0)
-    maxDistance=sqrt(input.nrOfCol()*input.nrOfRow());
+    maxDistance=sqrt(static_cast<float>(input.nrOfCol()*input.nrOfRow()));
   linearFeature(inputBuffer,outputBuffer,angle,angleStep,maxDistance,eps, l1, a1, l2, a2,verbose);
   for(int iband=0;iband<outputBuffer.size();++iband)
     output.writeDataBlock(outputBuffer[iband],GDT_Float32,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
@@ -1170,7 +1168,7 @@ void filter2d::Filter2d::linearFeature(const Vector2d<float>& input, std::vector
   for(int iband=0;iband<output.size();++iband)
     output[iband].resize(input.nRows(),input.nCols());
   if(maxDistance<=0)
-    maxDistance=sqrt(input.nRows()*input.nCols());
+    maxDistance=sqrt(static_cast<float>(input.nRows()*input.nCols()));
   int indexI=0;
   int indexJ=0;
   const char* pszMessage;

@@ -66,7 +66,7 @@ public:
 //   template<class T> std::ostream& operator<<(std::ostream& os, const Vector2d<T>& v);
   template<class T1> friend std::ostream& operator<<(std::ostream & os, const Vector2d<T1>& v);
   Vector2d<T> sum(const Vector2d<T>& v1, const Vector2d<T>& v2) const;
-  T max(int& x, int& y, double maxValue) const;
+  T mymax(int& x, int& y, double maxValue) const;
 
   T sum() const;
 };
@@ -285,7 +285,7 @@ template<class T> T Vector2d<T>::sum() const{
   return theSum;
 }
 
-template<class T> T Vector2d<T>::max(int& x, int& y, double maxValue) const{
+template<class T> T Vector2d<T>::mymax(int& x, int& y, double maxValue) const{
   //todo: what if this->operator[](0)[0] >=maxValue?
   // double theMax=(this->operator[](0))[0];
   double theMax=0;

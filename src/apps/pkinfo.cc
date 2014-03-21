@@ -43,8 +43,8 @@ int main(int argc, char *argv[])
   Optionpk<bool>  min_opt("min", "min", "Shows min value of the image ", false,0);
   Optionpk<bool>  max_opt("max", "max", "Shows max value of the image ", false,0);
   Optionpk<bool>  stat_opt("stats", "stats", "Shows statistics (min,max, mean and stdDev of the image)", false,0);
-  Optionpk<double>  src_min_opt("src_min", "src_min", "Sets minimum for histogram (does not calculate min value: use -min or -mm instead)");
-  Optionpk<double>  src_max_opt("src_max", "src_max", "Sets maximum for histogram (does not calculate min value: use -max or -mm instead)");
+  Optionpk<double>  src_min_opt("src_min", "src_min", "Sets minimum for histogram (does not calculate min value: use -mm instead)");
+  Optionpk<double>  src_max_opt("src_max", "src_max", "Sets maximum for histogram (does not calculate min value: use -mm instead)");
   Optionpk<bool>  relative_opt("rel", "rel", "Calculates relative histogram in percentage", false,0);
   Optionpk<bool>  projection_opt("a_srs", "a_srs", "Shows projection of the image ", false,0);
   Optionpk<bool>  geo_opt("geo", "geo", "Gets geotransform  ", false,0);

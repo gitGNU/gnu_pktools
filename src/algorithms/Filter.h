@@ -486,10 +486,10 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
     }
     switch(getFilterType(method)){
     case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.max(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
       break;
     case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.min(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
       break;
     default:
       std::string errorString="method not supported";
@@ -526,10 +526,10 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
     }
     switch(getFilterType(method)){
     case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.max(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
       break;
     case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.min(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
       break;
     default:
       std::string errorString="method not supported";
@@ -580,10 +580,10 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
     }
     switch(getFilterType(method)){
     case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.max(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
       break;
     case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.min(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
       break;
     default:
       std::string errorString="method not supported";

@@ -32,6 +32,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define RAD2DEG(RAD) (RAD/PI*180)
 #endif
 
+#ifdef WIN32
+#include <process.h>
+#define getpid _getpid
+#endif
+
 #include <assert.h>
 #include <math.h>
 #include <limits>
@@ -115,7 +120,7 @@ public:
   void shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down=1, int iband=0, bool verbose=false);
   void shift(const ImgReaderGdal& input, ImgWriterGdal& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
-  template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=0, bool verbose=false);
+  template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=NEAR, bool verbose=false);
   void linearFeature(const Vector2d<float>& input, std::vector< Vector2d<float> >& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, bool verbose=false);
   void linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, int band=0, bool verbose=false);
   
@@ -358,14 +363,14 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         if(windowBuffer.empty())
           outBuffer[x/down]=noDataValue;
         else
-          outBuffer[x/down]=stat.min(windowBuffer);
+          outBuffer[x/down]=stat.mymin(windowBuffer);
         break;
       }
       case(filter2d::ismin):{
         if(windowBuffer.empty())
           outBuffer[x/down]=noDataValue;
         else
-          outBuffer[x/down]=(stat.min(windowBuffer)==windowBuffer[centre])? 1:0;
+          outBuffer[x/down]=(stat.mymin(windowBuffer)==windowBuffer[centre])? 1:0;
         break;
       }
       case(filter2d::minmax):{
@@ -386,14 +391,14 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         if(windowBuffer.empty())
           outBuffer[x/down]=noDataValue;
         else
-          outBuffer[x/down]=stat.max(windowBuffer);
+          outBuffer[x/down]=stat.mymax(windowBuffer);
         break;
       }
       case(filter2d::ismax):{
         if(windowBuffer.empty())
           outBuffer[x/down]=noDataValue;
         else
-          outBuffer[x/down]=(stat.max(windowBuffer)==windowBuffer[centre])? 1:0;
+          outBuffer[x/down]=(stat.mymax(windowBuffer)==windowBuffer[centre])? 1:0;
         break;
       }
       case(filter2d::order):{
@@ -402,8 +407,8 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         else{
           double lbound=0;
           double ubound=dimX*dimY;
-          double theMin=stat.min(windowBuffer);
-          double theMax=stat.max(windowBuffer);
+          double theMin=stat.mymin(windowBuffer);
+          double theMax=stat.mymax(windowBuffer);
           double scale=(ubound-lbound)/(theMax-theMin);
           outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[centre]-theMin)+lbound);
         }
@@ -707,14 +712,14 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
         if(statBuffer.size()){
           switch(getFilterType(method)){
           case(filter2d::dilate):
-            if(output[y][x]<stat.max(statBuffer)-hThreshold){
-              output[y][x]=stat.max(statBuffer);
+            if(output[y][x]<stat.mymax(statBuffer)-hThreshold){
+              output[y][x]=stat.mymax(statBuffer);
               ++nchange;
             }
             break;
           case(filter2d::erode):
-            if(output[y][x]>stat.min(statBuffer)+hThreshold){
-              output[y][x]=stat.min(statBuffer);
+            if(output[y][x]>stat.mymin(statBuffer)+hThreshold){
+              output[y][x]=stat.mymin(statBuffer);
               ++nchange;
             }
             break;
@@ -800,7 +805,8 @@ template<class T> void Filter2d::dwtForward(Vector2d<T>& theBuffer, const std::s
   for(int irow=0;irow<theBuffer.size();++irow)
     while(theBuffer[irow].size()&(theBuffer[irow].size()-1))
       theBuffer[irow].push_back(theBuffer[irow].back());
-  double data[theBuffer.size()*theBuffer[0].size()];
+  std::vector<double> vdata(theBuffer.size()*theBuffer[0].size());
+  double* data=&(vdata[0]);
   for(int irow=0;irow<theBuffer.size();++irow){
     for(int icol=0;icol<theBuffer[0].size();++icol){
       int index=irow*theBuffer[0].size()+icol;
@@ -846,7 +852,9 @@ template<class T> void Filter2d::dwtInverse(Vector2d<T>& theBuffer, const std::s
   for(int irow=0;irow<theBuffer.size();++irow)
     while(theBuffer[irow].size()&(theBuffer[irow].size()-1))
       theBuffer[irow].push_back(theBuffer[irow].back());
-  double data[theBuffer.size()*theBuffer[0].size()];
+  std::vector<double> vdata(theBuffer.size()*theBuffer[0].size());
+  double* data=&(vdata[0]);
+  //double data[theBuffer.size()*theBuffer[0].size()];
   for(int irow=0;irow<theBuffer.size();++irow){
     for(int icol=0;icol<theBuffer[0].size();++icol){
       int index=irow*theBuffer[0].size()+icol;

@@ -17,6 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
+#include <stdlib.h>
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
@@ -99,6 +101,7 @@ int main(int argc, char *argv[])
     training_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -311,7 +314,7 @@ int main(int argc, char *argv[])
       if(balance_opt[0]>0){
         while(balance_opt.size()<nclass)
           balance_opt.push_back(balance_opt.back());
-        if(random)
+        if(random_opt[0])
           srand(time(NULL));
         totalSamples=0;
         for(short iclass=0;iclass<nclass;++iclass){
@@ -438,7 +441,7 @@ int main(int argc, char *argv[])
       int nctraining=0;
       if(verbose_opt[0]>=1)
         std::cout << "calculating features for class " << iclass << std::endl;
-      if(random)
+      if(random_opt[0])
         srand(time(NULL));
       nctraining=(bagSize_opt[iclass]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[iclass] : trainingPixels[iclass].size();//bagSize_opt[iclass] given in % of training size
       if(nctraining<=0)
@@ -847,7 +850,7 @@ int main(int argc, char *argv[])
               probOut[iclass][icol]+=result[iclass]*priors[iclass];//add probabilities for each bag
                break;
             case(1)://product rule
-              probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+              probOut[iclass][icol]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
               break;
             case(2)://max rule
               if(priors[iclass]*result[iclass]>probOut[iclass][icol])
@@ -887,7 +890,7 @@ int main(int argc, char *argv[])
         for(short iclass=0;iclass<nclass;++iclass){
           float prv=probOut[iclass][icol];
           prv/=normBag;
-          entropy[icol]-=prv*log(prv)/log(2);
+          entropy[icol]-=prv*log(prv)/log(2.0);
           prv*=100.0;
             
           probOut[iclass][icol]=static_cast<short>(prv+0.5);
@@ -895,7 +898,7 @@ int main(int argc, char *argv[])
           // assert(classValueMap[nameVector[iclass]]>=0);
           // probOut[classValueMap[nameVector[iclass]]][icol]=static_cast<short>(prv+0.5);
         }
-        entropy[icol]/=log(nclass)/log(2);
+        entropy[icol]/=log(static_cast<double>(nclass))/log(2.0);
         entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
 	if(active_opt.size()){
 	  if(entropy[icol]>activePoints.back().value){
@@ -1061,7 +1064,7 @@ int main(int argc, char *argv[])
 		probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
 	      break;
 	      case(1)://product rule
-		probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+		probOut[iclass]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
 		break;
 	      case(2)://max rule
 		if(priors[iclass]*result[iclass]>probOut[iclass])

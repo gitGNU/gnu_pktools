@@ -42,7 +42,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input ASCII file");
   Optionpk<std::string> output_opt("o", "output", "Output ASCII file");
   Optionpk<int> inputCols_opt("ic", "inputCols", "input columns (e.g., for three dimensional input data in first three columns use: -ic 0 -ic 1 -ic 2"); 
-  Optionpk<std::string> method_opt("f", "filter", "filter function");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (to be implemented: dwt, dwti,dwt_cut)");
   Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
   Optionpk<double> threshold_opt("cut", "cut", "threshold to cut dwt coefficients. Use 0 to keep all.", 0);
@@ -107,9 +107,7 @@ int main(int argc,char **argv) {
     assert(wavelengthIn_opt.size());
     if(verbose_opt[0])
       std::cout << "spectral filtering to " << fwhm_opt.size() << " bands with provided fwhm " << std::endl;
-    while(fwhm_opt.size()<wavelengthOut_opt.size())//extend fwhm to all
-      fwhm_opt.push_back(fwhm_opt[0]);
-    // assert(wavelengthOut_opt.size()==fwhm_opt.size());
+    assert(wavelengthOut_opt.size()==fwhm_opt.size());
     std::vector<double> fwhmData(wavelengthOut_opt.size());
     for(int icol=0;icol<inputCols_opt.size();++icol)
       filter1d.applyFwhm<double>(wavelengthIn,inputData[icol], wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], filteredData[icol],verbose_opt[0]);
@@ -171,12 +169,8 @@ int main(int argc,char **argv) {
   else{//no filtering
     if(verbose_opt[0])
       std::cout << "no filtering selected" << std::endl;
-    wavelengthOut=wavelengthIn;
-    for(int icol=0;icol<inputCols_opt.size();++icol){
+    for(int icol=0;icol<inputCols_opt.size();++icol)
       filteredData[icol]=inputData[icol];
-      if(verbose_opt[0])
-	std::cout << "size filtered data for col " << icol << ": " << filteredData[icol].size() << std::endl;
-    }
   }
   
   if(method_opt.size()){
@@ -240,13 +234,25 @@ int main(int argc,char **argv) {
   }
   else{
     // int nband=wavelengthOut.size()? wavelengthOut.size() : filteredData[0].size();
-    int nband=wavelengthOut.size();
+    int nband=0;
     if(method_opt.size()){
-      if(filter::Filter::getFilterType(method_opt[0])==filter::dwt_cut)
+      switch(filter::Filter::getFilterType(method_opt[0])){
+      case(filter::dwt):
+        nband=filteredData[0].size();
+        break;
+      case(filter::dwti):
+        nband=filteredData[0].size();
+        break;
+      case(filter::dwt_cut):
+        nband=filteredData[0].size();
+        break;
+      default:
         nband=wavelengthOut.size();
-      else
-	nband=filteredData[0].size();
+        break;
+      }
     }
+    else
+      nband=wavelengthOut.size();
     if(verbose_opt[0]){
       std::cout << "number of bands: " << nband << std::endl;
       std::cout << "wavelengthOut.size(): " << wavelengthOut.size() << std::endl;

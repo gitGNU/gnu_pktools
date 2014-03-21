@@ -17,29 +17,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
+#include <stdlib.h>
 #include <vector>
 #include <string>
 #include <map>
 #include <algorithm>
-#include "floatfann.h"
-#include "imageclasses/ImgReaderOgr.h"
-// #include "imageclasses/ImgReaderGdal.h"
-// #include "imageclasses/ImgWriterGdal.h"
-// #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
-#include "algorithms/myfann_cpp.h"
+#include "imageclasses/ImgReaderOgr.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
+#include "floatfann.h"
+#include "algorithms/myfann_cpp.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
+
 using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
 
 //global parameters used in cost function getCost
 map<string,short> classValueMap;
@@ -159,11 +158,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   else{//not working yet. please repair...
     assert(cv_opt[0]>0);
     bool initWeights=true;
-    //test
-    cout << "tempFeatures.size(): " << tmpFeatures.size() << endl;
-    cout << "ntraining: " << ntraining << endl;
-    cout << "initWeights: " << initWeights << endl;
-    cout << "maxit_opt.size(): " << maxit_opt.size() << endl;
     net.train_on_data(tmpFeatures,ntraining,initWeights, maxit_opt[0],
                       iterations_between_reports, desired_error);
     vector<Vector2d<float> > testFeatures(nclass);
@@ -175,8 +169,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
           testFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][nctraining[iclass]+isample][ifeature];
         }
-	//test
-	cout << "isample:" << isample<< endl;
         result=net.run(testFeatures[iclass][isample]);
         string refClassName=nameVector[iclass];
         float maxP=-1;
@@ -187,19 +179,13 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
             maxClass=ic;
           }
         }
-	//test
-	cout << "maxClass:" << maxClass << "(" << nameVector.size() << ")" << endl;
         string className=nameVector[maxClass];
-	//test
-	cout << "className:" << nameVector[maxClass] << endl;
         if(classValueMap.size())
           cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
         else
           cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1.0);
       }
     }
-    //test
-    cout << "debug12" << endl;
   }
   assert(cm.nReference());
   return(cm.kappa());
@@ -215,6 +201,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
@@ -233,6 +220,7 @@ int main(int argc, char *argv[])
     maxFeatures_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -418,7 +406,7 @@ int main(int argc, char *argv[])
   //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
   //balance training data
   if(balance_opt[0]>0){
-    if(random)
+    if(random_opt[0])
       srand(time(NULL));
     totalSamples=0;
     for(int iclass=0;iclass<nclass;++iclass){

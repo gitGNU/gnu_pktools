@@ -894,7 +894,7 @@ int main(int argc, char *argv[])
       else{
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
           vector<short>::iterator maxit=maxBuffer[icol].begin();
-          maxit=stat.max(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
+          maxit=stat.mymax(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
           writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
           fileBuffer[icol]=*(maxit);
         }

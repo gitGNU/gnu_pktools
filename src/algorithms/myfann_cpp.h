@@ -89,7 +89,7 @@
 #include <string>
 #include <vector>
 #include <cassert>
-#include "Vector2d.h"
+#include "base/Vector2d.h"
 
 /* Namespace: FANN
     The FANN namespace groups the C++ wrapper definitions */

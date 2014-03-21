@@ -235,6 +235,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
   // Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
@@ -255,6 +256,7 @@ int main(int argc, char *argv[])
     label_opt.retrieveOption(argc,argv);
     // reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
+	random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -453,7 +455,7 @@ int main(int argc, char *argv[])
   //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
   //balance training data
   if(balance_opt[0]>0){
-    if(random)
+    if(random_opt[0])
       srand(time(NULL));
     totalSamples=0;
     for(int iclass=0;iclass<nclass;++iclass){
@@ -601,10 +603,8 @@ int main(int argc, char *argv[])
     double progress=0;
     if(!verbose_opt[0])
       pfnProgress(progress,pszMessage,pProgressArg);
-    // double ncost=log(ccost_opt[1])/log(step_opt[0])-log(ccost_opt[0])/log(step_opt[0]);
-    double ncost=log(ccost_opt[1]/ccost_opt[0])/log(step_opt[0]);
-    // double ngamma=log(gamma_opt[1])/log(step_opt[1])-log(gamma_opt[0])/log(step_opt[1]);
-    double ngamma=log(gamma_opt[1]/gamma_opt[0])/log(step_opt[1]);
+    double ncost=log(ccost_opt[1])/log(10.0)-log(ccost_opt[0])/log(10.0);
+    double ngamma=log(gamma_opt[1])/log(10.0)-log(gamma_opt[0])/log(10.0);
     for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=step_opt[0]){
       for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=step_opt[1]){
 	x[0]=ccost;
