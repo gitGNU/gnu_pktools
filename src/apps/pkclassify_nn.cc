@@ -18,10 +18,6 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <stdlib.h>
-#ifdef WIN32
-#define random rand
-#define srandom srand
-#endif
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -46,6 +42,7 @@ int main(int argc, char *argv[])
   Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
@@ -88,6 +85,7 @@ int main(int argc, char *argv[])
     training_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -266,7 +264,7 @@ int main(int argc, char *argv[])
       if(balance_opt[0]>0){
         while(balance_opt.size()<nclass)
           balance_opt.push_back(balance_opt.back());
-        if(random)
+        if(random_opt[0])
           srand(time(NULL));
         totalSamples=0;
         for(int iclass=0;iclass<nclass;++iclass){
@@ -392,7 +390,7 @@ int main(int argc, char *argv[])
       int nctraining=0;
       if(verbose_opt[0]>=1)
         cout << "calculating features for class " << iclass << endl;
-      if(random)
+      if(random_opt[0])
         srand(time(NULL));
       nctraining=(bagSize_opt[iclass]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[iclass] : trainingPixels[iclass].size();//bagSize_opt[iclass] given in % of training size
       if(nctraining<=0)

@@ -20,10 +20,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
-#ifdef WIN32
-#define random rand
-#define srandom srand
-#endif
 #include <sstream>
 #include <string>
 #include <algorithm>
@@ -246,7 +242,7 @@ int main(int argc, char *argv[])
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
-  srandom(time(NULL));
+  srand(time(NULL));
 
   bool sampleIsRaster=false;
   ImgReaderOgr sampleReaderOgr;
@@ -427,7 +423,7 @@ int main(int argc, char *argv[])
               }
               float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
               if(theThreshold>0){//percentual value
-                double p=static_cast<double>(random())/(RAND_MAX);
+                double p=static_cast<double>(rand())/(RAND_MAX);
                 p*=100.0;
                 if(p>theThreshold)
 		  continue;//do not select for now, go to next column
@@ -671,7 +667,7 @@ int main(int argc, char *argv[])
               }
               float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
               if(theThreshold>0){//percentual value
-                double p=static_cast<double>(random())/(RAND_MAX);
+                double p=static_cast<double>(rand())/(RAND_MAX);
                 p*=100.0;
                 if(p>theThreshold)
                   continue;//do not select for now, go to next column
@@ -891,7 +887,7 @@ int main(int argc, char *argv[])
 	if(verbose_opt[0]>0)
 	  std::cout << "reading feature " << readFeature->GetFID() << std::endl;
 	if(threshold_opt[0]>0){//percentual value
-	  double p=static_cast<double>(random())/(RAND_MAX);
+	  double p=static_cast<double>(rand())/(RAND_MAX);
 	  p*=100.0;
 	  if(p>threshold_opt[0]){
 	    if(test_opt.size())
