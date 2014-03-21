@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-//#include "MyComboBox.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDir>
@@ -81,7 +80,8 @@ void MainWindow::on_pushButton_Run_clicked()
 
         ui->commandLineEdit->insertPlainText(program);
 
-        QProcess *myProcess = new QProcess(parent);
+//        QProcess *myProcess = new QProcess(parent);
+        QProcess *myProcess = new QProcess(this);
         myProcess->start(program);
         myProcess->waitForFinished(-1);
         QString p_stdout = myProcess->readAll();
@@ -108,9 +108,10 @@ void MainWindow::on_pushButton_clearCommandLine_clicked()
 void MainWindow::on_menu_input_triggered()
 {
     QObject *parent;
-    QProcess *myProcess = new QProcess(parent);
+//    QProcess *myProcess = new QProcess(parent);
+    QProcess *myProcess = new QProcess(this);
     QString program;
-    m_inputFilename = QFileDialog::getOpenFileName(this, "Input image","/tmp");
+    m_inputFilename = QFileDialog::getOpenFileName(this, "Input image");
     if ( m_inputFilename.isNull() == false ){
         //fill in combobox with number of bands
         program="pkinfo -nb -i ";
@@ -127,6 +128,7 @@ void MainWindow::on_menu_input_triggered()
             list.append(qsband);
         }
         ui->band->addItems(list);
+        myProcess->close();
     }
     delete myProcess;
 }

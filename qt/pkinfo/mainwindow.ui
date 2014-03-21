@@ -99,7 +99,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="datasetinfo">
      <attribute name="title">
@@ -689,7 +689,7 @@
      <x>0</x>
      <y>0</y>
      <width>664</width>
-     <height>27</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
