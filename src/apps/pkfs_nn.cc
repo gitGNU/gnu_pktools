@@ -18,10 +18,6 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <stdlib.h>
-#ifdef WIN32
-#define random rand
-#define srandom srand
-#endif
 #include <vector>
 #include <string>
 #include <map>
@@ -162,11 +158,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   else{//not working yet. please repair...
     assert(cv_opt[0]>0);
     bool initWeights=true;
-    //test
-    cout << "tempFeatures.size(): " << tmpFeatures.size() << endl;
-    cout << "ntraining: " << ntraining << endl;
-    cout << "initWeights: " << initWeights << endl;
-    cout << "maxit_opt.size(): " << maxit_opt.size() << endl;
     net.train_on_data(tmpFeatures,ntraining,initWeights, maxit_opt[0],
                       iterations_between_reports, desired_error);
     vector<Vector2d<float> > testFeatures(nclass);
@@ -178,8 +169,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
           testFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][nctraining[iclass]+isample][ifeature];
         }
-	//test
-	cout << "isample:" << isample<< endl;
         result=net.run(testFeatures[iclass][isample]);
         string refClassName=nameVector[iclass];
         float maxP=-1;
@@ -190,19 +179,13 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
             maxClass=ic;
           }
         }
-	//test
-	cout << "maxClass:" << maxClass << "(" << nameVector.size() << ")" << endl;
         string className=nameVector[maxClass];
-	//test
-	cout << "className:" << nameVector[maxClass] << endl;
         if(classValueMap.size())
           cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
         else
           cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1.0);
       }
     }
-    //test
-    cout << "debug12" << endl;
   }
   assert(cm.nReference());
   return(cm.kappa());
@@ -237,7 +220,7 @@ int main(int argc, char *argv[])
     maxFeatures_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
-	random_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);

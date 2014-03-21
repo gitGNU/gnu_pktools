@@ -18,10 +18,6 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <stdlib.h>
-#ifdef WIN32
-#define random rand
-#define srandom srand
-#endif
 #include <vector>
 #include <string>
 #include <map>
@@ -246,7 +242,7 @@ int main(int argc, char *argv[])
     maxFeatures_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
-	random_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
