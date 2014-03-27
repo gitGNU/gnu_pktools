@@ -1,4 +1,4 @@
-AC_INIT([pktools], [2.5.1], [kempenep@gmail.com])
+AC_INIT([pktools], [2.5.2], [kempenep@gmail.com])
 #AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_INIT_AUTOMAKE([-Wall -Wno-extra-portability foreign])
 AC_CONFIG_MACRO_DIR([m4])
@@ -91,6 +91,12 @@ AC_TYPE_SIZE_T
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBS])
+
+# Define these substitions here to keep all version information in one place.
+# For information on how to properly maintain the library version information,
+# refer to the libtool manual, section "Updating library version information":
+# http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+AC_SUBST([PKTOOLS_SO_VERSION], [1:0:0])
 
 # files to generate via autotools (.am or .in source files)
 AC_CONFIG_HEADERS([config.h])
