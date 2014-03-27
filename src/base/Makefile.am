@@ -19,7 +19,7 @@ AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
 lib_LTLIBRARIES = libbase.la
 
 # where to install the headers on the system
-libbase_ladir = $(includedir)/base
+libbase_ladir = $(includedir)/pktools/base
 
 # the list of header files that belong to the library (to be installed later)
 libbase_la_HEADERS = $(top_srcdir)/config.h Vector2d.h IndexValue.h Optionpk.h PosValue.h
