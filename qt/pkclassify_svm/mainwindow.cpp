@@ -10,6 +10,19 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    QStringList svmlist;
+    svmlist << "C_SVC" << "nu_SVC" << "one_class" << "epsilon_SVR" << "nu_SVR";
+    ui->svmtype->addItems(svmlist);
+    QStringList kernellist;
+    kernellist << "radial" << "linear" << "polynomial" << "sigmoid";
+    ui->kerneltype->addItems(kernellist);
+    ui->coef0->setText("0");
+    ui->ccost->setText("1");
+    ui->gamma->setText("0");
+    ui->nu->setText("0.5");
+    //test
+    m_training="d:\\osgeo\\course\\openstreetmap\\training2.sqlite";
+    ui->training->setText(m_training);
 }
 
 MainWindow::~MainWindow()
@@ -63,6 +76,7 @@ void MainWindow::on_toolButton_training_clicked()
 
 void MainWindow::on_training_returnPressed()
 {
+    m_training=ui->training->text();
     QStringList labels;
     labels << "forest" << "non-forest";
     setClassTable(labels);
@@ -83,7 +97,7 @@ void MainWindow::setClassTable(const QStringList &labels)
 void MainWindow::on_pushButton_run_clicked()
 {
     try{
-        QString program = "pkclassify_svm";
+        QString program = "pksvm";
         if(m_training.isEmpty())
             MainWindow::on_actionTraining_triggered();
 
@@ -91,8 +105,6 @@ void MainWindow::on_pushButton_run_clicked()
             QString qsError="No training vector file selected";
             throw(qsError);
         }
-        program+=" --training ";
-        program+=m_training;
 
 //        QList<QCheckBox*> qcheckBoxList = this->findChildren<QCheckBox *>();
 
@@ -131,13 +143,15 @@ void MainWindow::on_pushButton_run_clicked()
 
         ui->commandLineEdit->insert(program);
 
-////        QProcess *myProcess = new QProcess(parent);
-//        QProcess *myProcess = new QProcess(this);
-//        myProcess->start(program);
-//        myProcess->waitForFinished(-1);
-//        QString p_stdout = myProcess->readAll();
-////        ui->outputEdit->appendPlainText(p_stdout);
-//        delete myProcess;
+//        QProcess *myProcess = new QProcess(parent);
+        QProcess *myProcess = new QProcess(this);
+
+        myProcess->start(program);
+        myProcess->waitForFinished(-1);
+        QString p_stdout = myProcess->readAll();
+        ui->consoleEdit->clear();
+        ui->consoleEdit->insertPlainText(p_stdout);
+        delete myProcess;
     }
     catch(QString qsError){
         QMessageBox msgBox;
