@@ -1,4 +1,4 @@
-AC_INIT([pktools], [2.5.1], [kempenep@gmail.com])
+AC_INIT([pktools], [2.5.2], [kempenep@gmail.com])
 #AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_INIT_AUTOMAKE([-Wall -Wno-extra-portability foreign])
 AC_CONFIG_MACRO_DIR([m4])
@@ -8,11 +8,11 @@ GDAL_FOUND="no"
 if test ! -z "$GDAL_CFLAGS" -a ! -z "$GDAL_LDFLAGS"; then
 GDAL_FOUND="yes"
 fi
-AC_MSG_WARN([$GDAL_VERSION])
-AC_MSG_WARN([$GDAL_CFLAGS])
-AC_MSG_WARN([$GDAL_LDFLAGS])
-AC_MSG_WARN([$GDAL_DEP_LDFLAGS])
-AC_MSG_WARN([$GDAL_OGR_ENABLED])
+dnl AC_MSG_WARN([$GDAL_VERSION])
+dnl AC_MSG_WARN([$GDAL_CFLAGS])
+dnl AC_MSG_WARN([$GDAL_LDFLAGS])
+dnl AC_MSG_WARN([$GDAL_DEP_LDFLAGS])
+dnl AC_MSG_WARN([$GDAL_OGR_ENABLED])
 
 # check for C++ compiler and the library compiler
 AC_PROG_CXX
@@ -32,10 +32,10 @@ AS_HELP_STRING([--enable-fann], [Enable feature fann]))
 AS_IF([test "x$enable_fann" = "xyes"], [
 PKG_CHECK_MODULES(FANN, fann >= 2.1.0, [HAVE_FANN=1], [HAVE_FANN=0])
 AM_CONDITIONAL([USE_FANN], [test "$HAVE_FANN" -eq 1])
-AC_MSG_WARN("USE_FANN=true")
+dnl AC_MSG_WARN("USE_FANN=true")
 ], [
 AM_CONDITIONAL(USE_FANN, false)
-AC_MSG_WARN("USE_FANN=false")
+dnl AC_MSG_WARN("USE_FANN=false")
 ])
 
 dnl AC_ARG_ENABLE([svm],
@@ -51,12 +51,12 @@ AS_HELP_STRING([--enable-las], [Enable feature las]))
 
 AS_IF([test "x$enable_las" = "xyes"], [
 AM_CONDITIONAL(USE_LAS, true)
-AC_MSG_WARN("USE_LAS=true")
+dnl AC_MSG_WARN("USE_LAS=true")
 LASCLASSES_OPT="src/lasclasses"
 AC_SUBST([LASCLASSES_OPT])
 ], [
 AM_CONDITIONAL(USE_LAS, false)
-AC_MSG_WARN("USE_LAS=false")
+dnl AC_MSG_WARN("USE_LAS=false")
 ])
 
 AC_ARG_ENABLE([nlopt],
@@ -65,10 +65,10 @@ AS_HELP_STRING([--enable-nlopt], [Enable feature nlopt]))
 AS_IF([test "x$enable_nlopt" = "xyes"], [
 PKG_CHECK_MODULES(NLOPT, nlopt >= 2.1.0, [HAVE_NLOPT=1], [HAVE_NLOPT=0])
 AM_CONDITIONAL([USE_NLOPT], [test "$HAVE_NLOPT" -eq 1])
-AC_MSG_WARN("USE_NLOPT=true")
+dnl AC_MSG_WARN("USE_NLOPT=true")
 ], [
 AM_CONDITIONAL(USE_NLOPT, false)
-AC_MSG_WARN("USE_NLOPT=false")
+dnl AC_MSG_WARN("USE_NLOPT=false")
 ])
 
 
@@ -92,8 +92,16 @@ AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LDFLAGS])
 AC_SUBST([LIBS])
 
+# Define these substitions here to keep all version information in one place.
+# For information on how to properly maintain the library version information,
+# refer to the libtool manual, section "Updating library version information":
+# http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+AC_SUBST([PKTOOLS_SO_VERSION], [1:0:0])
+
 # files to generate via autotools (.am or .in source files)
 AC_CONFIG_HEADERS([config.h])
+#frankie says: "You should not distribute the config.h file, but the config.h.in file only".
+#AC_CONFIG_HEADERS([config.h])
 
 AM_COND_IF([USE_LAS],
 	[AC_CONFIG_FILES([
@@ -105,6 +113,7 @@ AC_CONFIG_FILES([
 	src/imageclasses/Makefile
 	src/fileclasses/Makefile
 	src/apps/Makefile
+	pktools.pc:pktools.pc.in
 	])
 # generate the final Makefile etc.
 AC_OUTPUT
