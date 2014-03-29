@@ -217,10 +217,11 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
 //   }
 // }
 
-unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
 					      std::vector<std::string>& fields,
 					      const std::vector<short>& bands,
 					      const std::string& label,
+					      const std::string& layername,
 					      int verbose)
 {
   mapPixels.clear();
@@ -230,6 +231,10 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   if(verbose)
     std::cout << "reading shape file " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
+    std::string currentLayername=getLayer(ilayer)->GetName();
+    if(!layername.empty())
+      if(currentLayername!=layername)
+	continue;
     try{
       //only retain bands in fields
       getFields(fields,ilayer);
@@ -295,11 +300,12 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   return totalSamples;
 }
 
-unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
 					      std::vector<std::string>& fields,
 					      double start,
 					      double end,
 					      const std::string& label,
+					      const std::string& layername,
 					      int verbose)
 {
   mapPixels.clear();
@@ -309,6 +315,10 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   if(verbose)
     std::cout << "reading shape file " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
+    std::string currentLayername=getLayer(ilayer)->GetName();
+    if(!layername.empty())
+      if(currentLayername!=layername)
+	continue;
     try{
       //only retain bands in fields
       getFields(fields,ilayer);
