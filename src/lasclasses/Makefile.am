@@ -9,7 +9,12 @@ AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
 lib_LTLIBRARIES = liblasClasses.la
 
 # where to install the headers on the system
-liblasClasses_ladir = $(includedir)/lasclasses
+liblasClasses_ladir = $(includedir)/pktools/lasclasses
+
+## Instruct libtool to include ABI version information in the generated shared
+## library file (.so).  The library ABI version is defined in configure.ac, so
+## that all version information is kept in one place.
+liblasClasses_la_LDFLAGS = -version-info $(PKTOOLS_SO_VERSION) $(AM_LDFLAGS)
 
 # the list of header files that belong to the library (to be installed later)
 liblasClasses_la_HEADERS = FileReaderLas.h

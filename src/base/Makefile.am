@@ -19,10 +19,15 @@ AM_CXXFLAGS = -I$(top_srcdir)/src $(GDAL_CFLAGS) @AM_CXXFLAGS@
 lib_LTLIBRARIES = libbase.la
 
 # where to install the headers on the system
-libbase_ladir = $(includedir)/base
+libbase_ladir = $(includedir)/pktools/base
+
+## Instruct libtool to include ABI version information in the generated shared
+## library file (.so).  The library ABI version is defined in configure.ac, so
+## that all version information is kept in one place.
+libbase_la_LDFLAGS = -version-info $(PKTOOLS_SO_VERSION) $(AM_LDFLAGS)
 
 # the list of header files that belong to the library (to be installed later)
-libbase_la_HEADERS = $(top_srcdir)/config.h Vector2d.h IndexValue.h Optionpk.h PosValue.h
+libbase_la_HEADERS = Vector2d.h IndexValue.h Optionpk.h PosValue.h
 
 # the sources to add to the library and to add to the source distribution
 ###############################################################################

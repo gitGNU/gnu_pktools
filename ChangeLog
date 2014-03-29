@@ -263,8 +263,25 @@ version 2.5.1
 	correct bounding box when dx_opt and dy_opt are set
  - pksieve
 	retain nodata in pksieve when mask is set
-version 2.5.2 (todo)
- - pkcrop -> pkcropnmerge or pkcropnstack
-	name was confusing as pkcrop supports spatial and spectral subsetting and merging
+version 2.5.2
+ - programs ported to windows and GUI with Qt
+	removed underscore for QProcess in Windows
+ - pkclassify_svm -> pksvm
+	removed underscore for QProcess in Windows
+ - pkclassify_nn -> pkann
+	removed underscore for QProcess in Windows
+ - pkregression_nn -> pkregann
+	removed underscore for QProcess in Windows
+ - pkfs_svm -> pkfssvm
+	removed underscore for QProcess in Windows
+ - pkfs_nn -> pkfsann
+	removed underscore for QProcess in Windows
+ - pkopt_svm -> pkoptsvm
+	removed underscore for QProcess in Windows
  - pkmosaic -> pkcomposit
 	name was confusing as also compositing is supported (unlike gdal_merge.py and gdalwarp)
+ - version control for libraries
+	thanks to suggestion of Francesco Paolo Lovergine
+ - subdirectory pktools for include headers
+	thanks to suggestion of Francesco Paolo Lovergine
+ -
