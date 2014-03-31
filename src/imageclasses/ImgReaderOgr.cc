@@ -218,11 +218,11 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
 // }
 
 unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
-					      std::vector<std::string>& fields,
-					      const std::vector<short>& bands,
-					      const std::string& label,
-					      const std::string& layername,
-					      int verbose)
+					    std::vector<std::string>& fields,
+					    const std::vector<short>& bands,
+					    const std::string& label,
+					    const std::vector<std::string>& layers,
+					    int verbose)
 {
   mapPixels.clear();
   int nsample=0;
@@ -232,8 +232,8 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
     std::cout << "reading shape file " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
     std::string currentLayername=getLayer(ilayer)->GetName();
-    if(!layername.empty())
-      if(currentLayername!=layername)
+    if(layers.size())
+      if(find(layers.begin(),layers.end(),currentLayername)==layers.end())
 	continue;
     try{
       //only retain bands in fields
@@ -301,12 +301,12 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
 }
 
 unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
-					      std::vector<std::string>& fields,
-					      double start,
-					      double end,
-					      const std::string& label,
-					      const std::string& layername,
-					      int verbose)
+					    std::vector<std::string>& fields,
+					    double start,
+					    double end,
+					    const std::string& label,
+					    const std::vector<std::string>& layers,
+					    int verbose)
 {
   mapPixels.clear();
   int nsample=0;
@@ -316,8 +316,8 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
     std::cout << "reading shape file " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
     std::string currentLayername=getLayer(ilayer)->GetName();
-    if(!layername.empty())
-      if(currentLayername!=layername)
+    if(layers.size())
+      if(find(layers.begin(),layers.end(),currentLayername)==layers.end())
 	continue;
     try{
       //only retain bands in fields

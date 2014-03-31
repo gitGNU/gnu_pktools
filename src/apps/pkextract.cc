@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "image", "Input image file");
   Optionpk<string> sample_opt("s", "sample", "Input sample vector file or class file (e.g. Corine CLC) if class option is set");
+  Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
   Optionpk<string> mask_opt("m", "mask", "Mask image file");
   Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file");
@@ -72,6 +73,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
+    layer_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     msknodata_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
@@ -773,7 +775,11 @@ int main(int argc, char *argv[])
       
     for(int ilayer=0;ilayer<nlayer;++ilayer){
       OGRLayer *readLayer=sampleReaderOgr.getLayer(ilayer);
-      cout << "processing layer " << readLayer->GetName() << endl;
+      string currentLayername=readLayer->GetName();
+      if(layer_opt.size())
+	if(find(layer_opt.begin(),layer_opt.end(),currentLayername)==layer_opt.end())
+	  continue;
+      cout << "processing layer " << currentLayername << endl;
       readLayer->ResetReading();
       OGRLayer *writeLayer;
       OGRLayer *writeTestLayer;
@@ -798,9 +804,11 @@ int main(int argc, char *argv[])
 	}
       }
       if(verbose_opt[0])
-	std::cout << "copy fields" << std::flush << std::endl;
+	std::cout << "copy fields from layer " << ilayer << std::flush << std::endl;
       ogrWriter.copyFields(sampleReaderOgr,ilayer);
 
+      //hiero test: todo does not work
+      cout << "debug0" << endl;
       if(test_opt.size()){
 	if(verbose_opt[0])
 	  std::cout << "copy fields test writer" << std::flush << std::endl;

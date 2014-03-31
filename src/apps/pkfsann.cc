@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
   //--------------------------- command line options ------------------------------------
   Optionpk<string> input_opt("i", "input", "input test set (leave empty to perform a cross validation based on training only)"); 
   Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
-  Optionpk<string> tlayer_opt("tln", "tln", "training layer name","");
+  Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
@@ -310,18 +310,18 @@ int main(int argc, char *argv[])
   try{
     ImgReaderOgr trainingReader(training_opt[0]);
     if(band_opt.size()){
-      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt[0],verbose_opt[0]);
+	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }
     else{
-      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt[0],verbose_opt[0]);
+	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }

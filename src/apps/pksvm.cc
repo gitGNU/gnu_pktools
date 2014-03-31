@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
   //--------------------------- command line options ------------------------------------
   Optionpk<string> input_opt("i", "input", "input image"); 
   Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)");
-  Optionpk<string> tlayer_opt("tln", "tln", "training layer name","");
+  Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
@@ -255,9 +255,9 @@ int main(int argc, char *argv[])
       try{
 	ImgReaderOgr trainingReaderBag(training_opt[ibag]);
         if(band_opt.size())
-          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
         else
-          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],tlayer_opt[0],label_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);

@@ -49,19 +49,19 @@ public:
   template <typename T> int readData(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   template <typename T> int readData(std::map<std::string,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   unsigned int readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
-				  std::vector<std::string>& fields,
-				  const std::vector<short>& bands,
-				  const std::string& label,
-				  const std::string& layername=std::string(),
-				  int verbose=false);
+				std::vector<std::string>& fields,
+				const std::vector<short>& bands,
+				const std::string& label,
+				const std::vector<std::string>& layers,
+				int verbose=false);
 
   unsigned int readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
-				  std::vector<std::string>& fields,
-				  double start,
-				  double end,
-				  const std::string& label,
-				  const std::string& layername=std::string(),
-				  int verbose=false);
+				std::vector<std::string>& fields,
+				double start,
+				double end,
+				const std::string& label,
+				const std::vector<std::string>& layers,
+				int verbose=false);
 
   void shape2ascii(std::ostream& theOstream, const std::string& pointname, int layer=0, bool verbose=false);
   unsigned long int getFeatureCount(int layer=0) const;
