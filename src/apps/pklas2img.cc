@@ -36,10 +36,10 @@ int main(int argc,char **argv) {
   Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering", 0.0);
   Optionpk<double> hThreshold_opt("ht", "maxHeight", "initial and maximum height threshold for progressive morphological filtering (e.g., -ht 0.2 -ht 2.5)", 0.2);
   Optionpk<short> maxIter_opt("maxit", "maxit", "Maximum number of iterations in post filter", 5);
-  Optionpk<short> nbin_opt("nbin", "nbin", "Number of percentile bins for calculating profile (=number of output bands)", 10.0);
+  Optionpk<short> nbin_opt("nbin", "nbin", "Number of percentile bins for calculating percentile height value profile (=number of output bands)", 10.0);
   Optionpk<unsigned short> returns_opt("ret", "ret", "number(s) of returns to include");
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
-  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile, number (point density)). Last: overwrite cells with latest point", "last");
+  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), number (point density)). Last: overwrite cells with latest point", "last");
   Optionpk<string> filter_opt("fir", "filter", "filter las points (last,single,multiple,all).", "all");
   // Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none).", "none");
   // Optionpk<short> dimx_opt("dimx", "dimx", "Dimension X of postFilter", 3);
@@ -230,10 +230,11 @@ int main(int argc,char **argv) {
     for(int icol=0;icol<ncol;++icol)
       outputData[irow][icol]=0;
 
-
-  std::cout << "Reading " << input_opt.size() << " las files" << std::endl;
+  cout << "Reading " << input_opt.size() << " las files" << endl;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int iinput=0;iinput<input_opt.size();++iinput){
+    if(verbose_opt[0])
+      cout << "opening input LAS file " << input_opt[iinput] << endl;
     FileReaderLas lasReader;
     try{
       lasReader.open(input_opt[iinput]);

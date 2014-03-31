@@ -39,13 +39,14 @@ int main(int argc, char *argv[])
   
   //--------------------------- command line options ------------------------------------
   Optionpk<string> input_opt("i", "input", "input image"); 
-  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
-  Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
+  Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
+  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
-  Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
-  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
+  Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
+  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
@@ -83,6 +84,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     training_opt.retrieveOption(argc,argv);
+    tlayer_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
@@ -137,7 +139,7 @@ int main(int argc, char *argv[])
     if(mask_opt.size())
       cout << "mask filename: " << mask_opt[0] << endl;
     if(training_opt.size()){
-      cout << "training shape file: " << endl;
+      cout << "training vector file: " << endl;
       for(int ifile=0;ifile<training_opt.size();++ifile)
         cout << training_opt[ifile] << endl;
     }
@@ -207,13 +209,13 @@ int main(int argc, char *argv[])
       trainingMap.clear();
       trainingPixels.clear();
       if(verbose_opt[0]>=1)
-        cout << "reading imageShape file " << training_opt[0] << endl;
+        cout << "reading imageVector file " << training_opt[0] << endl;
       try{
 	ImgReaderOgr trainingReaderBag(training_opt[ibag]);
         if(band_opt.size())
-          totalSamples=trainingReaderBag.readDataImageShape(trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
         else
-          totalSamples=trainingReaderBag.readDataImageShape(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);
@@ -962,9 +964,9 @@ int main(int argc, char *argv[])
       classImageBag.close();
     classImageOut.close();
   }
-  else{//classify shape file
+  else{//classify vector file
     cm.clearResults();
-    //notice that fields have already been set by readDataImageShape (taking into account appropriate bands)
+    //notice that fields have already been set by readDataImageOgr (taking into account appropriate bands)
     for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
       if(output_opt.size())
         assert(output_opt.size()==input_opt.size());

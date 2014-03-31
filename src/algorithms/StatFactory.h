@@ -754,8 +754,10 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
       inputBin.push_back(*vit);
       ++vit;
     }
-    if(inputBin.size())
-      output[ibin]=median(inputBin);
+    if(inputBin.size()){
+      /* output[ibin]=median(inputBin); */
+      output[ibin]=mymax(inputBin);
+    }
   }
   if(!filename.empty()){
     std::ofstream outputfile;
