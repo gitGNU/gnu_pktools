@@ -1,0 +1,16 @@
+\section examples_pksvm Examples of pksvm
+\code
+pksvm -i input.tif -t training.shp -o output.tif -cv 2 -ct colourtable.txt -cc 1000 -g 0.1
+\endcode
+
+Classify input image input.tif with a support vector machine. A training sample that is provided as a vector (shp) file. It contains all features (same dimensionality as input.tif) in its fields (please check \ref pkextract "pkextract" on how to obtain such a file from a "clean" vector file containing locations only). A two-fold cross validation (cv) is performed (output on screen). The parameters cost and gamma of the support vector machine are set to 1000 and 0.1 respectively. A colourtable (a five column text file: image value, RED, GREEN, BLUE, ALPHA) has also been provided.
+
+\code
+pksvm -i input.tif -t training.shp -o output.tif -bs 33 -bag 3
+\endcode
+Classification using bootstrap aggregation. The training sample is randomly split in three subsamples (33% of the original sample each).
+
+\code
+pksvm -i input.tif -t training.shp -o output.tif -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 1 -p 0.2 -p 1 -p 1 -p 1
+\endcode
+Classification using prior probabilities for each class. The priors are automatically normalized. The order in which the options -p are provide should respect the alphanumeric order of the class names (class 10 comes before 2...)
