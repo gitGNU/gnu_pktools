@@ -769,17 +769,19 @@ int main(int argc, char *argv[])
     }
       
     //support multiple layers
-    int nlayer=sampleReaderOgr.getDataSource()->GetLayerCount();
+    int nlayerRead=sampleReaderOgr.getDataSource()->GetLayerCount();
+    int ilayerWrite=0;
     if(verbose_opt[0])
-      std::cout << "number of layers: " << nlayer << endl;
+      std::cout << "number of layers: " << nlayerRead << endl;
       
-    for(int ilayer=0;ilayer<nlayer;++ilayer){
+    for(int ilayer=0;ilayer<nlayerRead;++ilayer){
       OGRLayer *readLayer=sampleReaderOgr.getLayer(ilayer);
       string currentLayername=readLayer->GetName();
       if(layer_opt.size())
 	if(find(layer_opt.begin(),layer_opt.end(),currentLayername)==layer_opt.end())
 	  continue;
       cout << "processing layer " << currentLayername << endl;
+      
       readLayer->ResetReading();
       OGRLayer *writeLayer;
       OGRLayer *writeTestLayer;
@@ -805,21 +807,19 @@ int main(int argc, char *argv[])
       }
       if(verbose_opt[0])
 	std::cout << "copy fields from layer " << ilayer << std::flush << std::endl;
-      ogrWriter.copyFields(sampleReaderOgr,ilayer);
+      ogrWriter.copyFields(sampleReaderOgr,ilayer,ilayerWrite);
 
-      //hiero test: todo does not work
-      cout << "debug0" << endl;
       if(test_opt.size()){
 	if(verbose_opt[0])
 	  std::cout << "copy fields test writer" << std::flush << std::endl;
-	ogrTestWriter.copyFields(sampleReaderOgr,ilayer);
+	ogrTestWriter.copyFields(sampleReaderOgr,ilayer,ilayerWrite);
       }
-      vector<std::string> fieldnames;
-      if(verbose_opt[0])
-	std::cout << "get fields" << std::flush << std::endl;
-      sampleReaderOgr.getFields(fieldnames);
-      assert(fieldnames.size()==ogrWriter.getFieldCount(ilayer));
-      map<std::string,double> pointAttributes;
+      // vector<std::string> fieldnames;
+      // if(verbose_opt[0])
+      // 	std::cout << "get fields" << std::flush << std::endl;
+      // sampleReaderOgr.getFields(fieldnames);
+      // assert(fieldnames.size()==ogrWriter.getFieldCount(ilayerWrite));
+      // map<std::string,double> pointAttributes;
 
       switch(ruleMap[rule_opt[0]]){
 	// switch(rule_opt[0]){
@@ -828,7 +828,7 @@ int main(int argc, char *argv[])
 	for(int iclass=0;iclass<class_opt.size();++iclass){
 	  ostringstream cs;
 	  cs << class_opt[iclass];
-	  ogrWriter.createField(cs.str(),fieldType,ilayer);
+	  ogrWriter.createField(cs.str(),fieldType,ilayerWrite);
 	}
 	break;
       }
@@ -837,9 +837,9 @@ int main(int argc, char *argv[])
       case(rule::maximum):
       case(rule::maxvote):
 	assert(class_opt.size());
-      ogrWriter.createField(label_opt[0],fieldType,ilayer);
+      ogrWriter.createField(label_opt[0],fieldType,ilayerWrite);
       if(test_opt.size())
-	ogrTestWriter.createField(label_opt[0],fieldType,ilayer);
+	ogrTestWriter.createField(label_opt[0],fieldType,ilayerWrite);
       break;
       case(rule::point):
       case(rule::mean):
@@ -860,9 +860,9 @@ int main(int argc, char *argv[])
 	      if(verbose_opt[0]>1)
 		std::cout << "creating field " << fs.str() << std::endl;
 
-	      ogrWriter.createField(fs.str(),fieldType,ilayer);
+	      ogrWriter.createField(fs.str(),fieldType,ilayerWrite);
 	      if(test_opt.size())
-		ogrTestWriter.createField(fs.str(),fieldType,ilayer);
+		ogrTestWriter.createField(fs.str(),fieldType,ilayerWrite);
 	    }
 	  }
 	}
@@ -884,7 +884,7 @@ int main(int argc, char *argv[])
       //   std::string fieldname="fid";//number of the point
       //   if(verbose_opt[0]>1)
       //     std::cout << "creating field " << fieldname << std::endl;
-      //   //       ogrWriter.createField(fieldname,OFTInteger,ilayer);
+      //   //       ogrWriter.createField(fieldname,OFTInteger,ilayerWrite);
       //   boxWriter.createField(fieldname,OFTInteger,ilayer);
       // }
       progress=0;
@@ -2418,6 +2418,7 @@ int main(int argc, char *argv[])
       //   boxWriter.close();
       progress=1.0;
       pfnProgress(progress,pszMessage,pProgressArg);
+      ++ilayerWrite;
     }
     ogrWriter.close();
     if(test_opt.size())
