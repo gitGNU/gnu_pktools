@@ -1,5 +1,5 @@
 /**********************************************************************
-mainwindow.cc
+main.cpp: GUI for pktools
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -17,18 +17,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-
 #include "mainwindow.h"
-#include "ui_mainwindow.h"
+#include <QApplication>
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+int main(int argc, char *argv[])
 {
-    ui->setupUi(this);
-}
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
 
-MainWindow::~MainWindow()
-{
-    delete ui;
+    return a.exec();
 }

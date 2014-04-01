@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>pksvm_gui</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QTabWidget" name="tabWidget">
@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -133,6 +133,55 @@
       </property>
       <property name="text">
        <string>class name-value pairs</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_20">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>150</y>
+        <width>91</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>prepare table for</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="nclass">
+      <property name="geometry">
+       <rect>
+        <x>94</x>
+        <y>155</y>
+        <width>31</width>
+        <height>20</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QToolButton" name="toolButton_createTable">
+      <property name="geometry">
+       <rect>
+        <x>130</x>
+        <y>156</y>
+        <width>25</width>
+        <height>19</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>-&gt;</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_21">
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>130</y>
+        <width>51</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string># classes</string>
       </property>
      </widget>
     </widget>
@@ -358,7 +407,7 @@
        <string>Kernel degree</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit">
+     <widget class="QLineEdit" name="kd">
       <property name="geometry">
        <rect>
         <x>270</x>

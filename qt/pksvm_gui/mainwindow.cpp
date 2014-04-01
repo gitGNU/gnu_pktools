@@ -1,3 +1,22 @@
+/**********************************************************************
+mainwindow.cpp: GUI for pktools
+Copyright (C) 2008-2014 Pieter Kempeneers
+
+This file is part of pktools
+
+pktools is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+pktools is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with pktools.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************/
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QFileDialog>
@@ -16,18 +35,32 @@ MainWindow::MainWindow(QWidget *parent) :
     QStringList kernellist;
     kernellist << "radial" << "linear" << "polynomial" << "sigmoid";
     ui->kerneltype->addItems(kernellist);
-    ui->coef0->setText("0");
-    ui->ccost->setText("1");
-    ui->gamma->setText("0");
-    ui->nu->setText("0.5");
-    //test
-    m_training="d:\\osgeo\\course\\openstreetmap\\training2.sqlite";
-    ui->training->setText(m_training);
+    setDefaults();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::setDefaults()
+{
+    //tab training
+    //m_training="d:\\osgeo\\course\\openstreetmap\\training2.sqlite";
+//    ui->training->setText(m_training);
+    ui->label->setText("label");
+    ui->cv->setText("0");
+    //tab input/output
+    ui->msknodata->setText("0");
+    ui->nodata->setText("0");
+    //tab classifier
+    ui->coef0->setText("0");
+    ui->nu->setText("0.5");
+    ui->kd->setText("3");
+    ui->label->setText("label");
+    ui->cv->setText("0");
+    ui->gamma->setText("0");
+    ui->ccost->setText("1");
 }
 
 void MainWindow::on_actionTraining_triggered()
@@ -52,6 +85,7 @@ void MainWindow::on_actionOutput_triggered()
 void MainWindow::on_actionInput_triggered()
 {
     m_input = QFileDialog::getOpenFileName(this, "Input");
+    ui->input->setText(m_input);
 }
 
 void MainWindow::on_toolButton_input_clicked()
@@ -76,20 +110,22 @@ void MainWindow::on_toolButton_training_clicked()
 
 void MainWindow::on_training_returnPressed()
 {
-    m_training=ui->training->text();
-    QStringList labels;
-    labels << "forest" << "non-forest";
-    setClassTable(labels);
+    //eventually read classes from vector file to fill in table...
 }
 
 void MainWindow::setClassTable(const QStringList &labels)
 {
-    QStandardItemModel *model = new QStandardItemModel(labels.size(),2,this); //2 Rows and 3 Columns
+    QStandardItemModel *model = new QStandardItemModel(labels.size(),3,this); //nlabel rows and 3 columns
     model->setHorizontalHeaderItem(0, new QStandardItem(QString("label name")));
-    model->setHorizontalHeaderItem(1, new QStandardItem(QString("class  number")));
+    model->setHorizontalHeaderItem(1, new QStandardItem(QString("class nr")));
+    model->setHorizontalHeaderItem(2, new QStandardItem(QString("prior prob")));
     for(int ilabel=0;ilabel<labels.size();++ilabel){
-        QStandardItem *firstRow = new QStandardItem(QString(labels[ilabel]));
-        model->setItem(ilabel,0,firstRow);
+        QStandardItem *firstCol = new QStandardItem(QString(labels[ilabel]));
+        model->setItem(ilabel,0,firstCol);
+        QStandardItem *secondCol = new QStandardItem(QString::number(ilabel+1));
+        model->setItem(ilabel,1,secondCol);
+        QStandardItem *thirdCol = new QStandardItem(QString::number(1.0/labels.size()));
+        model->setItem(ilabel,2,thirdCol);
     }
     ui->tableView_labels->setModel(model);
 }
@@ -125,7 +161,7 @@ void MainWindow::on_pushButton_run_clicked()
             qsOption+=(*qcbit)->objectName();
             program+=qsOption;
             program+=" ";
-            program+=QString::number((*qcbit)->currentIndex());
+            program+=(*qcbit)->currentText();
         }
 
         QList<QLineEdit*> qlineEditList = this->findChildren<QLineEdit *>();
@@ -145,7 +181,6 @@ void MainWindow::on_pushButton_run_clicked()
 
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
-
         myProcess->start(program);
         myProcess->waitForFinished(-1);
         QString p_stdout = myProcess->readAll();
@@ -160,7 +195,19 @@ void MainWindow::on_pushButton_run_clicked()
     }
 }
 
-void MainWindow::on_lineEdit_2_returnPressed()
+void MainWindow::on_toolButton_createTable_clicked()
 {
-    //run
+    int nclass=ui->nclass->text().toInt();
+    QStringList labels;
+    for(int iclass=1;iclass<=nclass;++iclass){
+        QString lstring="label";
+        lstring+=QString::number(iclass);
+        labels << lstring;
+    }
+    setClassTable(labels);
+}
+
+void MainWindow::on_pushButton_restore_clicked()
+{
+    setDefaults();
 }
