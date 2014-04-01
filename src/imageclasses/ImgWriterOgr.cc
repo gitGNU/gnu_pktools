@@ -45,7 +45,7 @@ ImgWriterOgr::ImgWriterOgr(const std::string& filename, ImgReaderOgr& imgReaderO
   for(int ilayer=0;ilayer<nlayer;++ilayer){
     std::string layername = imgReaderOgr.getLayer(ilayer)->GetName();
     createLayer(layername,imgReaderOgr.getProjection(),imgReaderOgr.getGeometryType(),NULL);
-    copyFields(imgReaderOgr,ilayer);
+    copyFields(imgReaderOgr,ilayer,ilayer);
   }
 }
 
@@ -58,7 +58,7 @@ ImgWriterOgr::ImgWriterOgr(const std::string& filename, ImgReaderOgr& imgReaderO
   for(int ilayer=0;ilayer<nlayer;++ilayer){
     std::string layername = imgReaderOgr.getLayer(ilayer)->GetName();
     createLayer(layername,imgReaderOgr.getProjection(),imgReaderOgr.getGeometryType(),NULL);
-    copyFields(imgReaderOgr,ilayer);
+    copyFields(imgReaderOgr,ilayer,ilayer);
     if(copyData){
       OGRFeature *poFeature;
       while(true){// (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
@@ -112,7 +112,7 @@ void ImgWriterOgr::open(const std::string& filename, ImgReaderOgr& imgReaderOgr)
   for(int ilayer=0;ilayer<nlayer;++ilayer){
     std::string layername = imgReaderOgr.getLayer(ilayer)->GetName();
     createLayer(layername,imgReaderOgr.getProjection(),imgReaderOgr.getGeometryType(),NULL);
-    copyFields(imgReaderOgr,ilayer);
+    copyFields(imgReaderOgr,ilayer,ilayer);
   }
 }
 
@@ -262,16 +262,15 @@ int ImgWriterOgr::getFields(std::vector<OGRFieldDefn*>& fields, int layer) const
   return(fields.size());
 }
 
-void ImgWriterOgr::copyFields(const ImgReaderOgr& imgReaderOgr, int theLayer){
-  if(theLayer<0)
-    theLayer=m_datasource->GetLayerCount()-1;//get back layer
+void ImgWriterOgr::copyFields(const ImgReaderOgr& imgReaderOgr, int srcLayer, int targetLayer){
+  if(targetLayer<0)
+    targetLayer=m_datasource->GetLayerCount()-1;//get back layer
   //get fields from imgReaderOgr
   std::vector<OGRFieldDefn*> fields;
   
-  imgReaderOgr.getFields(fields,theLayer);
-//   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+  imgReaderOgr.getFields(fields,srcLayer);
   for(int iField=0;iField<fields.size();++iField){
-    if(m_datasource->GetLayer(theLayer)->CreateField(fields[iField]) != OGRERR_NONE ){
+    if(m_datasource->GetLayer(targetLayer)->CreateField(fields[iField]) != OGRERR_NONE ){
       std::ostringstream es;
       es << "Creating field " << fields[iField]->GetNameRef() << " failed";
       std::string errorString=es.str();
@@ -602,7 +601,7 @@ int ImgWriterOgr::addData(const ImgReaderGdal& imgReader, int theLayer, bool ver
   for(int iband=0;iband<imgReader.nrOfBand();++iband){
     std::ostringstream fs;
     fs << "band" << iband;
-    createField(fs.str(),OFTReal);
+    createField(fs.str(),OFTReal,theLayer);
   }
   OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   int nfield=poFDefn->GetFieldCount();

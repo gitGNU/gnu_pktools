@@ -977,18 +977,20 @@ int main(int argc, char *argv[])
 	if(verbose_opt[0])
 	  std::cout << "opening img writer and copying fields from img reader" << output_opt[ivalidation] << std::endl;
 	imgWriterOgr.open(output_opt[ivalidation],imgReaderOgr);
-	if(verbose_opt[0])
-	  std::cout << "creating field class" << std::endl;
-	if(classValueMap.size())
-	  imgWriterOgr.createField("class",OFTInteger);
-	else
-	  imgWriterOgr.createField("class",OFTString);
       }
       if(verbose_opt[0])
 	cout << "number of layers in input ogr file: " << imgReaderOgr.getLayerCount() << endl;
       for(int ilayer=0;ilayer<imgReaderOgr.getLayerCount();++ilayer){
 	if(verbose_opt[0])
 	  cout << "processing input layer " << ilayer << endl;
+	if(output_opt.size()){
+	  if(verbose_opt[0])
+	    std::cout << "creating field class" << std::endl;
+	  if(classValueMap.size())
+	    imgWriterOgr.createField("class",OFTInteger,ilayer);
+	  else
+	    imgWriterOgr.createField("class",OFTString,ilayer);
+	}
 	unsigned int nFeatures=imgReaderOgr.getFeatureCount(ilayer);
 	unsigned int ifeature=0;
 	progress=0;
@@ -1003,11 +1005,11 @@ int main(int argc, char *argv[])
 	  }
 	  OGRFeature *poDstFeature = NULL;
 	  if(output_opt.size()){
-	    poDstFeature=imgWriterOgr.createFeature();
+	    poDstFeature=imgWriterOgr.createFeature(ilayer);
 	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
 	      CPLError( CE_Failure, CPLE_AppDefined,
 			"Unable to translate feature %d from layer %s.\n",
-			poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
+			poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
 	      OGRFeature::DestroyFeature( poFeature );
 	      OGRFeature::DestroyFeature( poDstFeature );
 	    }
@@ -1115,10 +1117,10 @@ int main(int argc, char *argv[])
 	  }
 	  CPLErrorReset();
 	  if(output_opt.size()){
-	    if(imgWriterOgr.createFeature( poDstFeature ) != OGRERR_NONE){
+	    if(imgWriterOgr.createFeature(poDstFeature,ilayer) != OGRERR_NONE){
 	      CPLError( CE_Failure, CPLE_AppDefined,
 			"Unable to translate feature %d from layer %s.\n",
-			poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
+			poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
 	      OGRFeature::DestroyFeature( poDstFeature );
 	      OGRFeature::DestroyFeature( poDstFeature );
 	    }

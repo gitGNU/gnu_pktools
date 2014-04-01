@@ -51,7 +51,7 @@ public:
   std::string getLayerName(int layer=0){return m_datasource->GetLayer(layer)->GetLayerDefn()->GetName();};
   int getFields(std::vector<std::string>& fields, int layer=0) const;
   int getFields(std::vector<OGRFieldDefn*>& fields, int layer=0) const;
-  void copyFields(const ImgReaderOgr& imgReaderOgr, int theLayer=0);//default: get back layer
+  void copyFields(const ImgReaderOgr& imgReaderOgr, int srcLayer=0, int targetLayer=0);//default: get back layer
   void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, const std::string& theId, int layer=0);
   void addRing(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId, int layer=0);
   void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId, int layer=0);
