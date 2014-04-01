@@ -6,25 +6,31 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>423</width>
-    <height>458</height>
+    <width>510</width>
+    <height>495</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>pksvm</string>
   </property>
   <widget class="QWidget" name="centralWidget">
+   <property name="minimumSize">
+    <size>
+     <width>423</width>
+     <height>392</height>
+    </size>
+   </property>
    <widget class="QTabWidget" name="tabWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>30</y>
-      <width>391</width>
-      <height>341</height>
+      <width>481</width>
+      <height>351</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="tab_2">
      <attribute name="title">
@@ -35,8 +41,8 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>71</width>
-        <height>16</height>
+        <width>67</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -49,7 +55,7 @@
      <widget class="QLineEdit" name="input">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>130</x>
         <y>10</y>
         <width>113</width>
         <height>20</height>
@@ -59,7 +65,7 @@
      <widget class="QToolButton" name="toolButton_input">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>280</x>
         <y>10</y>
         <width>25</width>
         <height>19</height>
@@ -74,8 +80,8 @@
        <rect>
         <x>10</x>
         <y>40</y>
-        <width>61</width>
-        <height>16</height>
+        <width>78</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -88,7 +94,7 @@
      <widget class="QLineEdit" name="mask">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>130</x>
         <y>40</y>
         <width>113</width>
         <height>20</height>
@@ -98,7 +104,7 @@
      <widget class="QToolButton" name="toolButton_mask">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>280</x>
         <y>40</y>
         <width>25</width>
         <height>19</height>
@@ -111,10 +117,10 @@
      <widget class="QLabel" name="label_14">
       <property name="geometry">
        <rect>
-        <x>230</x>
+        <x>310</x>
         <y>40</y>
-        <width>61</width>
-        <height>16</height>
+        <width>73</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="text">
@@ -124,7 +130,7 @@
      <widget class="QLineEdit" name="msknodata">
       <property name="geometry">
        <rect>
-        <x>290</x>
+        <x>390</x>
         <y>40</y>
         <width>41</width>
         <height>20</height>
@@ -136,8 +142,8 @@
        <rect>
         <x>10</x>
         <y>100</y>
-        <width>71</width>
-        <height>16</height>
+        <width>81</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -150,7 +156,7 @@
      <widget class="QLineEdit" name="output">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>130</x>
         <y>100</y>
         <width>113</width>
         <height>20</height>
@@ -160,7 +166,7 @@
      <widget class="QToolButton" name="toolButton_output">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>280</x>
         <y>100</y>
         <width>25</width>
         <height>19</height>
@@ -173,7 +179,7 @@
      <widget class="QLineEdit" name="sample">
       <property name="geometry">
        <rect>
-        <x>80</x>
+        <x>130</x>
         <y>70</y>
         <width>113</width>
         <height>20</height>
@@ -183,7 +189,7 @@
      <widget class="QToolButton" name="toolButton_sample">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>280</x>
         <y>70</y>
         <width>25</width>
         <height>19</height>
@@ -198,8 +204,8 @@
        <rect>
         <x>10</x>
         <y>70</y>
-        <width>71</width>
-        <height>16</height>
+        <width>92</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -212,10 +218,10 @@
      <widget class="QLabel" name="label_16">
       <property name="geometry">
        <rect>
-        <x>230</x>
+        <x>310</x>
         <y>100</y>
-        <width>41</width>
-        <height>16</height>
+        <width>45</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="text">
@@ -225,20 +231,20 @@
      <widget class="QComboBox" name="f">
       <property name="geometry">
        <rect>
-        <x>270</x>
+        <x>360</x>
         <y>100</y>
-        <width>69</width>
-        <height>22</height>
+        <width>83</width>
+        <height>29</height>
        </rect>
       </property>
      </widget>
      <widget class="QCheckBox" name="polygon">
       <property name="geometry">
        <rect>
-        <x>230</x>
-        <y>130</y>
-        <width>71</width>
-        <height>17</height>
+        <x>280</x>
+        <y>140</y>
+        <width>91</width>
+        <height>26</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -282,7 +288,7 @@
      <widget class="QTableView" name="tableView_labels">
       <property name="geometry">
        <rect>
-        <x>160</x>
+        <x>220</x>
         <y>130</y>
         <width>221</width>
         <height>181</height>
@@ -292,10 +298,10 @@
      <widget class="QLabel" name="label_17">
       <property name="geometry">
        <rect>
-        <x>190</x>
+        <x>230</x>
         <y>110</y>
-        <width>161</width>
-        <height>20</height>
+        <width>204</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="text">
@@ -307,8 +313,8 @@
        <rect>
         <x>10</x>
         <y>150</y>
-        <width>91</width>
-        <height>31</height>
+        <width>114</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="text">
@@ -318,7 +324,7 @@
      <widget class="QLineEdit" name="nclass">
       <property name="geometry">
        <rect>
-        <x>94</x>
+        <x>134</x>
         <y>155</y>
         <width>31</width>
         <height>20</height>
@@ -328,8 +334,8 @@
      <widget class="QToolButton" name="toolButton_createTable">
       <property name="geometry">
        <rect>
-        <x>130</x>
-        <y>156</y>
+        <x>190</x>
+        <y>150</y>
         <width>25</width>
         <height>19</height>
        </rect>
@@ -341,10 +347,10 @@
      <widget class="QLabel" name="label_21">
       <property name="geometry">
        <rect>
-        <x>90</x>
+        <x>130</x>
         <y>130</y>
-        <width>51</width>
-        <height>31</height>
+        <width>64</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="text">
@@ -356,7 +362,7 @@
        <rect>
         <x>20</x>
         <y>200</y>
-        <width>131</width>
+        <width>172</width>
         <height>61</height>
        </rect>
       </property>
@@ -369,10 +375,10 @@
      <widget class="QComboBox" name="rule">
       <property name="geometry">
        <rect>
-        <x>90</x>
+        <x>120</x>
         <y>10</y>
-        <width>69</width>
-        <height>22</height>
+        <width>83</width>
+        <height>29</height>
        </rect>
       </property>
      </widget>
@@ -381,8 +387,8 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>81</width>
-        <height>16</height>
+        <width>97</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -402,8 +408,8 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>81</width>
-        <height>16</height>
+        <width>93</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="text">
@@ -424,9 +430,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>120</y>
-        <width>81</width>
-        <height>16</height>
+        <y>110</y>
+        <width>103</width>
+        <height>21</height>
        </rect>
       </property>
       <property name="text">
@@ -449,9 +455,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>380</y>
-      <width>75</width>
-      <height>21</height>
+      <y>390</y>
+      <width>85</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -463,8 +469,8 @@
      <rect>
       <x>320</x>
       <y>10</y>
-      <width>91</width>
-      <height>21</height>
+      <width>132</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -477,8 +483,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>423</width>
-     <height>21</height>
+     <width>510</width>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
