@@ -1,0 +1,26 @@
+\section examples_pkcomposit Examples of pkcomposit
+\code
+pkcomposit -i input1.tif -i input2.tif -o output.tif
+\endcode
+create composit from two input images. If images overlap, keep only last image (default rule)
+
+\code
+pkcomposit -i input1.tif -i input2.tif -srcnodata 255 -bndnodata 1 -dstnodata 0 -o output.tif 
+\endcode
+create composit from two input images. Values of 255 in band 1 (starting from 0) are masked as invalid. Typically used when second band of input image is a cloud mask
+
+\code
+pkcomposit -i input1.tif -i input2.tif -cr maxndvi -rb 0 -rb 1 -srcnodata 255 -bndnodata 0 -dstnodata 0 -o output.tif
+\endcode
+create maximum NDVI (normalized difference vegetation index) composit. Values of 255 in band 0 are masked as invalid and flagged as 0 if no other valid coverage. Typically used for (e.g., MODIS) images where red and near infrared spectral bands are stored in bands 0 and 1 respectively. In this particular case, a value of 255 in the first input band indicates a nodata value (e.g., cloud mask is coded within the data values).
+
+\code
+pkcomposit -i input1.tif -i input2.tif -i input3.tif -o output.tif -cr mean -w 0.75 -w 1.5 -w 0.75
+\endcode
+create composite image using weighted mean: output=(3/4*input1+6/4*input2+3/4*input2)/3.0
+
+\code
+pkcomposit -i large.tif $(for IMAGE in *.tif;do pkinfo -i $IMAGE --cover $(pkinfo -i coverage.tif -bb);done) -cr median -min 0 -o output.tif
+\endcode
+create median composit of all GTiff images found in current directory that cover (at least part of) the image coverage.tif. Values smaller or equal to 0 are set as nodata 0 (default value for -dstnodata)
+

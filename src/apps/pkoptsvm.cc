@@ -231,14 +231,15 @@ int main(int argc, char *argv[])
   map<short,int> reclassMap;
   vector<int> vreclass;
   Optionpk<string> input_opt("i", "input", "input image"); 
-  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
-  Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
+  Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
+  Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
   // Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
-  Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
-  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
+  Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
+  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
@@ -253,6 +254,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     training_opt.retrieveOption(argc,argv);
+    tlayer_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     // reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
@@ -301,7 +303,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>=1){
     if(input_opt.size())
       std::cout << "input filename: " << input_opt[0] << std::endl;
-    std::cout << "training shape file: " << std::endl;
+    std::cout << "training vector file: " << std::endl;
     for(int ifile=0;ifile<training_opt.size();++ifile)
       std::cout << training_opt[ifile] << std::endl;
     std::cout << "verbose: " << verbose_opt[0] << std::endl;
@@ -355,18 +357,18 @@ int main(int argc, char *argv[])
   try{
     ImgReaderOgr trainingReader(training_opt[0]);
     if(band_opt.size()){
-      totalSamples=trainingReader.readDataImageShape(trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=inputReader.readDataImageShape(testMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+	totalTestSamples=inputReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }
     else{
-      totalSamples=trainingReader.readDataImageShape(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=inputReader.readDataImageShape(testMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+	totalTestSamples=inputReader.readDataImageOgr(testMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
       trainingReader.close();

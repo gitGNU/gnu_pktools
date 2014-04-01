@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: pktools
+Description: API library for pktools
+Requires: gdal gsl
+Version: 2.5.2
+Libs: -L${libdir} -lpktools
+Cflags: -I${includedir}/pktools

@@ -217,11 +217,12 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
 //   }
 // }
 
-unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
-					      std::vector<std::string>& fields,
-					      const std::vector<short>& bands,
-					      const std::string& label,
-					      int verbose)
+unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+					    std::vector<std::string>& fields,
+					    const std::vector<short>& bands,
+					    const std::string& label,
+					    const std::vector<std::string>& layers,
+					    int verbose)
 {
   mapPixels.clear();
   int nsample=0;
@@ -230,6 +231,10 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   if(verbose)
     std::cout << "reading shape file " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
+    std::string currentLayername=getLayer(ilayer)->GetName();
+    if(layers.size())
+      if(find(layers.begin(),layers.end(),currentLayername)==layers.end())
+	continue;
     try{
       //only retain bands in fields
       getFields(fields,ilayer);
@@ -295,12 +300,13 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   return totalSamples;
 }
 
-unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
-					      std::vector<std::string>& fields,
-					      double start,
-					      double end,
-					      const std::string& label,
-					      int verbose)
+unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+					    std::vector<std::string>& fields,
+					    double start,
+					    double end,
+					    const std::string& label,
+					    const std::vector<std::string>& layers,
+					    int verbose)
 {
   mapPixels.clear();
   int nsample=0;
@@ -309,6 +315,10 @@ unsigned int ImgReaderOgr::readDataImageShape(std::map<std::string,Vector2d<floa
   if(verbose)
     std::cout << "reading shape file " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
+    std::string currentLayername=getLayer(ilayer)->GetName();
+    if(layers.size())
+      if(find(layers.begin(),layers.end(),currentLayername)==layers.end())
+	continue;
     try{
       //only retain bands in fields
       getFields(fields,ilayer);

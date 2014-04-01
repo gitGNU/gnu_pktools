@@ -278,7 +278,7 @@ version 2.5.2
 	removed underscore for QProcess in Windows
  - pkopt_svm -> pkoptsvm
 	removed underscore for QProcess in Windows
- - pkmosaic -> pkcomposit
+ - pkmosaic -> pkcomposite
 	name was confusing as also compositing is supported (unlike gdal_merge.py and gdalwarp)
  - version control for libraries
 	thanks to suggestion of Francesco Paolo Lovergine
