@@ -404,22 +404,29 @@ int main(int argc, char *argv[])
       }
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
       bool doSort=true;
-      while(mapit!=trainingMap.end()){
-	nameVector.push_back(mapit->first);
-	if(classValueMap.size()){
-	  //check if name in training is covered by classname_opt (values can not be 0)
-	  if(classValueMap[mapit->first]>0){
-	    if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0)
-	      cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]),doSort);
+      try{
+	while(mapit!=trainingMap.end()){
+	  nameVector.push_back(mapit->first);
+	  if(classValueMap.size()){
+	    //check if name in training is covered by classname_opt (values can not be 0)
+	    if(classValueMap[mapit->first]>0){
+	      if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0){
+		cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]),doSort);
+	      }
+	    }
+	    else{
+	      std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
+	      exit(1);
+	    }
 	  }
-	  else{
-	    std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
-	    exit(1);
-	  }
+	  else
+	    cm.pushBackClassName(mapit->first,doSort);
+	  ++mapit;
 	}
-	else
-	  cm.pushBackClassName(mapit->first,doSort);
-	++mapit;
+      }
+      catch(BadConversion conversionString){
+	std::cerr << "Error: did you provide class pairs names (-c) and integer values (-r) for each class in training vector?" << std::endl;
+	exit(1);
       }
       if(classname_opt.empty()){
         std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;

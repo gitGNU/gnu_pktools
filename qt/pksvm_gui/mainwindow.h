@@ -64,10 +64,10 @@ private:
     void setDefaults();
 
     Ui::MainWindow *ui;
-    QString m_input;
-    QString m_training;
-    QString m_mask;
-    QString m_output;
+//    QString m_input;
+//    QString m_training;
+//    QString m_mask;
+//    QString m_output;
 };
 
 #endif // MAINWINDOW_H

@@ -65,27 +65,27 @@ void MainWindow::setDefaults()
 
 void MainWindow::on_actionTraining_triggered()
 {
-    m_training = QFileDialog::getOpenFileName(this, "Training");
-    ui->training->setText(m_training);
+    QString qstraining = QFileDialog::getOpenFileName(this, "Training");
+    ui->training->setText(qstraining);
     this->on_training_returnPressed();
 }
 
 void MainWindow::on_actionMask_triggered()
 {
-    m_mask = QFileDialog::getOpenFileName(this, "Mask");
-    ui->mask->setText(m_mask);
+    QString qsmask = QFileDialog::getOpenFileName(this, "Mask");
+    ui->mask->setText(qsmask);
 }
 
 void MainWindow::on_actionOutput_triggered()
 {
-    m_output = QFileDialog::getOpenFileName(this, "Output");
-    ui->output->setText(m_output);
+    QString qsoutput = QFileDialog::getOpenFileName(this, "Output");
+    ui->output->setText(qsoutput);
 }
 
 void MainWindow::on_actionInput_triggered()
 {
-    m_input = QFileDialog::getOpenFileName(this, "Input");
-    ui->input->setText(m_input);
+    QString qsinput = QFileDialog::getOpenFileName(this, "Input");
+    ui->input->setText(qsinput);
 }
 
 void MainWindow::on_toolButton_input_clicked()
@@ -133,11 +133,12 @@ void MainWindow::setClassTable(const QStringList &labels)
 void MainWindow::on_pushButton_run_clicked()
 {
     try{
+        ui->commandLineEdit->clear();
+        ui->consoleEdit->clear();
         QString program = "pksvm";
-        if(m_training.isEmpty())
+        if(ui->training->text().isEmpty())
             MainWindow::on_actionTraining_triggered();
-
-        if(m_training.isEmpty()){
+        if(ui->training->text().isEmpty()){
             QString qsError="No training vector file selected";
             throw(qsError);
         }
@@ -153,6 +154,16 @@ void MainWindow::on_pushButton_run_clicked()
 //            }
 //        }
 
+        for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
+            QString qsOption;
+            qsOption+=" --class ";
+            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,0)).toString();
+            qsOption+=" --reclass ";
+            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,1)).toString();
+            qsOption+=" --prior ";
+            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,2)).toString();
+            program+=qsOption;
+        }
         QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
         for(QList<QComboBox*>::ConstIterator qcbit=qcomboBoxList.begin();qcbit!=qcomboBoxList.end();++qcbit){
@@ -177,14 +188,13 @@ void MainWindow::on_pushButton_run_clicked()
             }
         }
 
-        ui->commandLineEdit->insert(program);
+        ui->commandLineEdit->setText(program);
 
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
         myProcess->start(program);
         myProcess->waitForFinished(-1);
         QString p_stdout = myProcess->readAll();
-        ui->consoleEdit->clear();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;
     }
