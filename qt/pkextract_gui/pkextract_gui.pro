@@ -15,8 +15,7 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp
 
-HEADERS  += mainwindow.h \
-    ../../src/imageclasses/ImgReaderOgr.h
+HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui
 

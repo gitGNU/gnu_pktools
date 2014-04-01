@@ -18,7 +18,7 @@ public:
 private slots:
     void on_actionInput_triggered();
 
-    void on_actionTraining_triggered();
+    void on_actionSample_triggered();
 
     void on_actionMask_triggered();
 
@@ -30,17 +30,14 @@ private slots:
 
     void on_toolButton_output_clicked();
 
-    void on_toolButton_training_clicked();
-
-    void on_training_returnPressed();
+    void on_toolButton_sample_clicked();
 
     void on_pushButton_run_clicked();
-
-    void on_lineEdit_2_returnPressed();
 
     void on_toolButton_createTable_clicked();
 
     void on_pushButton_restore_clicked();
+
 
 private:
     void setClassTable(const QStringList &labels);
@@ -48,7 +45,7 @@ private:
 
     Ui::MainWindow *ui;
     QString m_input;
-    QString m_training;
+    QString m_sample;
     QString m_mask;
     QString m_output;
 };

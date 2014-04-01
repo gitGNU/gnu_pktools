@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab_2">
      <attribute name="title">
@@ -279,7 +279,7 @@
        <string>attribute (prefix) name for raster info</string>
       </property>
      </widget>
-     <widget class="QTableView" name="tableView_classes">
+     <widget class="QTableView" name="tableView_labels">
       <property name="geometry">
        <rect>
         <x>160</x>
@@ -487,7 +487,7 @@
     </property>
     <addaction name="actionInput"/>
     <addaction name="actionMask"/>
-    <addaction name="actionTraining"/>
+    <addaction name="actionSample"/>
     <addaction name="actionOutput"/>
    </widget>
    <addaction name="menuFile"/>
@@ -506,7 +506,7 @@
     <string>Input</string>
    </property>
   </action>
-  <action name="actionTraining">
+  <action name="actionSample">
    <property name="text">
     <string>Sample</string>
    </property>
