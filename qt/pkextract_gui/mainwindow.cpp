@@ -98,6 +98,9 @@ void MainWindow::setClassTable(const QStringList &labels)
 void MainWindow::on_pushButton_run_clicked()
 {
     try{
+        ui->input->clear();
+        ui->consoleEdit->clear();
+
         QString program = "pkextract";
         if(m_sample.isEmpty())
             MainWindow::on_actionSample_triggered();
@@ -147,7 +150,6 @@ void MainWindow::on_pushButton_run_clicked()
         myProcess->start(program);
         myProcess->waitForFinished(-1);
         QString p_stdout = myProcess->readAll();
-        ui->consoleEdit->clear();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;
     }
