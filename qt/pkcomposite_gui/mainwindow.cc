@@ -42,10 +42,10 @@ MainWindow::MainWindow(QWidget *parent) :
     compressedlist << "NONE" << "LZW" << "PACKBITS" <<"DEFLATE";
     ui->compressed->addItems(compressedlist);
     QStringList otypelist;
-    otypelist << "Byte" << "Int16" << "UInt16" << "UInt32" << "Int32" << "Float32" << "Float64" << "CInt16" << "CInt32" << "CFloat32" << "CFloat64";
+    otypelist << "" << "Byte" << "Int16" << "UInt16" << "UInt32" << "Int32" << "Float32" << "Float64" << "CInt16" << "CInt32" << "CFloat32" << "CFloat64";
     ui->otype->addItems(otypelist);
     QStringList oformatlist;
-    oformatlist << "GTiff" << "HFA" << "ENVI";
+    oformatlist << "" << "GTiff" << "HFA" << "ENVI";
     ui->oformat->addItems(oformatlist);
     setDefaults();
 }
@@ -155,10 +155,12 @@ void MainWindow::on_toolButton_Run_clicked()
 
         program+=" --resample "+ui->resample->currentText();
         program+=" --crule "+ui->crule->currentText();
-        program+=" --otype "+ui->otype->currentText();
-        program+=" --oformat "+ui->oformat->currentText();
+        if(!ui->otype->currentText().isEmpty())
+            program+=" --otype "+ui->otype->currentText();
+        if(!ui->oformat->currentText().isEmpty())
+            program+=" --oformat "+ui->oformat->currentText();
         program+=" -co COMPRESS="+ui->compressed->currentText();
-        program+=" -co INTERLEAVED="+ui->interleaved->currentText();
+        program+=" -co INTERLEAVE="+ui->interleaved->currentText();
         if(ui->tiled->isChecked())
             program+=" -co TILED=YES";
 
@@ -191,7 +193,7 @@ void MainWindow::on_toolButton_Run_clicked()
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
 
-//        myProcess->start(program);
+        myProcess->start(program);
         myProcess->waitForFinished(-1);
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
