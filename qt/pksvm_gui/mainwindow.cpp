@@ -207,6 +207,16 @@ void MainWindow::on_pushButton_run_clicked()
 
 void MainWindow::on_toolButton_createTable_clicked()
 {
+
+}
+
+void MainWindow::on_pushButton_restore_clicked()
+{
+    setDefaults();
+}
+
+void MainWindow::on_commandLinkButtonPrepareTable_clicked()
+{
     int nclass=ui->nclass->text().toInt();
     QStringList labels;
     for(int iclass=1;iclass<=nclass;++iclass){
@@ -215,9 +225,4 @@ void MainWindow::on_toolButton_createTable_clicked()
         labels << lstring;
     }
     setClassTable(labels);
-}
-
-void MainWindow::on_pushButton_restore_clicked()
-{
-    setDefaults();
 }
