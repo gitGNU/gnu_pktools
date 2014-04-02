@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
         double val_current=0;
         double val_new=0;
         bool readValid=true;
-        switch(resample_opt[0]){
+        switch(theResample){
         case(BILINEAR):
           lowerCol=readCol-0.5;
           lowerCol=static_cast<int>(lowerCol);
@@ -608,7 +608,7 @@ int main(int argc, char *argv[])
 	      double ndvi_new=0;
               double red_new=0;
               double nir_new=0;
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
             case(crule::minband):
             case(crule::validband)://max,min,valid band
               val_current=writeBuffer[ruleBand_opt[0]][ib];
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -692,7 +692,7 @@ int main(int argc, char *argv[])
               }
 	      break;
             case(crule::mode)://max voting (only for Byte images)
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -720,7 +720,7 @@ int main(int argc, char *argv[])
             case(crule::mean)://mean value
 	    case(crule::median)://median value
 	    case(crule::sum)://sum value
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -752,7 +752,7 @@ int main(int argc, char *argv[])
 	      break;
 	    case(crule::overwrite):
 	    default:
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -789,7 +789,7 @@ int main(int argc, char *argv[])
             case(crule::mean):
             case(crule::median):
             case(crule::sum):
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -817,7 +817,7 @@ int main(int argc, char *argv[])
               ++fileBuffer[ib];
               break;
             case(crule::mode):
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -844,7 +844,7 @@ int main(int argc, char *argv[])
               }
               break;
             default:
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
