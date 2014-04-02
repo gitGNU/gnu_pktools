@@ -28,9 +28,12 @@ MainWindow::~MainWindow()
 void MainWindow::setDefaults()
 {
     //tab input/output
+    ui->input->clear();
+    ui->mask->clear();
     ui->msknodata->setText("0");
     ui->polygon->setChecked(false);
     ui->f->setCurrentIndex(0);
+    ui->output->clear();
     //tab extract
     ui->bname->setText("B");
     ui->rule->setCurrentIndex(0);
@@ -39,26 +42,26 @@ void MainWindow::setDefaults()
 
 void MainWindow::on_actionInput_triggered()
 {
-    m_input = QFileDialog::getOpenFileName(this, "Input");
-    ui->input->setText(m_input);
+    QString qsinput = QFileDialog::getOpenFileName(this, "Input");
+    ui->input->setText(qsinput);
 }
 
 void MainWindow::on_actionSample_triggered()
 {
-    m_sample = QFileDialog::getOpenFileName(this, "Sample");
-    ui->sample->setText(m_sample);
+    QString qssample = QFileDialog::getOpenFileName(this, "Sample");
+    ui->sample->setText(qssample);
 }
 
 void MainWindow::on_actionMask_triggered()
 {
-    m_mask = QFileDialog::getOpenFileName(this, "Mask");
-    ui->mask->setText(m_mask);
+    QString qsmask = QFileDialog::getOpenFileName(this, "Mask");
+    ui->mask->setText(qsmask);
 }
 
 void MainWindow::on_actionOutput_triggered()
 {
-    m_output = QFileDialog::getOpenFileName(this, "Output");
-    ui->output->setText(m_output);
+    QString qsoutput = QFileDialog::getSaveFileName(this,"Output image","","*.*");
+    ui->output->setText(qsoutput);
 }
 
 void MainWindow::on_toolButton_input_clicked()
@@ -98,23 +101,28 @@ void MainWindow::setClassTable(const QStringList &labels)
 void MainWindow::on_pushButton_run_clicked()
 {
     try{
-        ui->input->clear();
+        ui->commandLineEdit->clear();
         ui->consoleEdit->clear();
 
         QString program = "pkextract";
-        if(m_sample.isEmpty())
+        if(ui->sample->text().isEmpty())
             MainWindow::on_actionSample_triggered();
-
-        if(m_sample.isEmpty()){
-            QString qsError="No sample file selected";
+        if(ui->sample->text().isEmpty()){
+            QString qsError="No sample image file selected";
             throw(qsError);
         }
 
-        if(m_input.isEmpty())
+        if(ui->input->text().isEmpty())
             MainWindow::on_actionInput_triggered();
+        if(ui->input->text().isEmpty()){
+            QString qsError="No input image file selected";
+            throw(qsError);
+        }
 
-        if(m_input.isEmpty()){
-            QString qsError="No input file selected";
+        if(ui->output->text().isEmpty())
+            MainWindow::on_actionOutput_triggered();
+        if(ui->output->text().isEmpty()){
+            QString qsError="No output image file selected";
             throw(qsError);
         }
 

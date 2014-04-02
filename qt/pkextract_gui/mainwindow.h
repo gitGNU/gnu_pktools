@@ -44,10 +44,6 @@ private:
     void setDefaults();
 
     Ui::MainWindow *ui;
-    QString m_input;
-    QString m_sample;
-    QString m_mask;
-    QString m_output;
 };
 
 #endif // MAINWINDOW_H

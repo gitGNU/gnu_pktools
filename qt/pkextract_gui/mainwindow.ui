@@ -265,15 +265,11 @@
            </layout>
           </item>
          </layout>
-         <zorder>tableView_labels</zorder>
-         <zorder>tableView_labels</zorder>
-         <zorder>gridLayoutWidget_3</zorder>
-         <zorder>label_22</zorder>
          <zorder></zorder>
         </widget>
         <widget class="QWidget" name="tab_4">
          <attribute name="title">
-          <string>Command line</string>
+          <string>Console</string>
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout_6">
           <item>

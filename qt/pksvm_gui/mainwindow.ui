@@ -378,7 +378,7 @@
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
-        <string>Command line</string>
+        <string>Console</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>

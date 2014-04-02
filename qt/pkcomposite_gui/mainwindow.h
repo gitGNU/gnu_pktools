@@ -48,6 +48,8 @@ private slots:
 
     void on_toolButton_output_clicked();
 
+    void on_toolButton_Run_clicked();
+
 private:
     Ui::MainWindow *ui;
     void setDefaults();

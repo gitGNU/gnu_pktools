@@ -78,7 +78,7 @@ void MainWindow::on_actionMask_triggered()
 
 void MainWindow::on_actionOutput_triggered()
 {
-    QString qsoutput = QFileDialog::getOpenFileName(this, "Output");
+    QString qsoutput = QFileDialog::getSaveFileName(this,"Output image","","*.*");
     ui->output->setText(qsoutput);
 }
 
