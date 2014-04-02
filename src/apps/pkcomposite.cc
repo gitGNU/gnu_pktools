@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
+  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<string> crule_opt("cr", "crule", "Composite rule for mosaic (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
   Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
@@ -136,17 +136,19 @@ int main(int argc, char *argv[])
       bndnodata_opt.push_back(bndnodata_opt[0]);
   }
   RESAMPLE theResample;
-  switch(resample_opt[0]){
-  case(BILINEAR):
-    theResample=BILINEAR;
-    if(verbose_opt[0])
-      cout << "resampling: bilinear interpolation" << endl;
-    break;
-  default:
+  if(resample_opt[0]=="near"){
     theResample=NEAR;
     if(verbose_opt[0])
       cout << "resampling: nearest neighbour" << endl;
-    break;
+  }
+  else if(resample_opt[0]=="bilinear"){
+    theResample=BILINEAR;
+    if(verbose_opt[0])
+      cout << "resampling: bilinear interpolation" << endl;
+  }
+  else{
+    std::cout << "Error: resampling method " << resample_opt[0] << " not supported" << std::endl;
+    exit(1);
   }
   
   int nband=0;
