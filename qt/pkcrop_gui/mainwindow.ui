@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>798</width>
-    <height>859</height>
+    <width>821</width>
+    <height>701</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -27,22 +27,8 @@
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="1">
-           <widget class="QToolButton" name="toolButton_input">
-            <property name="text">
-             <string>...</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Input images</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QListWidget" name="listWidget_input"/>
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="uly"/>
           </item>
           <item row="1" column="3">
            <spacer name="horizontalSpacer_3">
@@ -59,6 +45,26 @@
           </item>
           <item row="3" column="2">
            <widget class="QLineEdit" name="lry"/>
+          </item>
+          <item row="2" column="3">
+           <widget class="QLineEdit" name="lrx"/>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Input images</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="ulx"/>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Extent via vector:</string>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_2">
@@ -80,18 +86,62 @@
             </property>
            </spacer>
           </item>
-          <item row="1" column="2">
-           <widget class="QLineEdit" name="uly"/>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string>Select bands</string>
+            </property>
+           </widget>
           </item>
-          <item row="2" column="3">
-           <widget class="QLineEdit" name="lrx"/>
+          <item row="0" column="1">
+           <widget class="QListWidget" name="listWidget_input"/>
           </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="ulx"/>
+          <item row="0" column="2">
+           <widget class="QToolButton" name="toolButton_input">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QTableView" name="tableView"/>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="extent"/>
+          </item>
+          <item row="4" column="2">
+           <widget class="QToolButton" name="toolButton_extent">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
-        <item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Scaling</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="1" column="9">
+         <spacer name="horizontalSpacer_9">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="resample"/>
+        </item>
+        <item row="2" column="4">
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -104,14 +154,10 @@
           </property>
          </spacer>
         </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>Composit</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_4">
-        <item row="2" column="0">
+        <item row="1" column="4">
+         <widget class="QLineEdit" name="dy"/>
+        </item>
+        <item row="4" column="0">
          <spacer name="verticalSpacer_3">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -124,87 +170,15 @@
           </property>
          </spacer>
         </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="resample"/>
-        </item>
         <item row="1" column="0">
-         <widget class="QLabel" name="label_18">
+         <widget class="QLabel" name="label_9">
           <property name="text">
-           <string>Composit rule</string>
+           <string>Output resolution</string>
           </property>
          </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_17">
-          <property name="text">
-           <string>Resample method</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QComboBox" name="crule"/>
         </item>
         <item row="1" column="3">
-         <widget class="QLabel" name="label_19">
-          <property name="text">
-           <string>Band used for composit rule</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="4">
-         <widget class="QLineEdit" name="rband"/>
-        </item>
-        <item row="3" column="0" colspan="4">
-         <widget class="QGroupBox" name="groupBox">
-          <property name="title">
-           <string>nodata values in input</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_3">
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_21">
-             <property name="text">
-              <string>nodata value</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1" colspan="2">
-            <widget class="QLineEdit" name="srcnodata"/>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_23">
-             <property name="text">
-              <string>max value</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_22">
-             <property name="text">
-              <string>min value</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1" colspan="2">
-            <widget class="QLineEdit" name="min"/>
-           </item>
-           <item row="3" column="1">
-            <widget class="QLineEdit" name="max"/>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_20">
-             <property name="text">
-              <string>band</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="bndnodata"/>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="1" column="5">
-         <spacer name="horizontalSpacer_4">
+         <spacer name="horizontalSpacer_8">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -216,8 +190,117 @@
           </property>
          </spacer>
         </item>
+        <item row="3" column="0" colspan="8">
+         <widget class="QGroupBox" name="groupBox">
+          <property name="title">
+           <string>Scale data</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_3">
+           <item row="1" column="0">
+            <widget class="QRadioButton" name="autoscale">
+             <property name="text">
+              <string>autoscale</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">buttonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="2" column="4">
+            <widget class="QLineEdit" name="offset"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QRadioButton" name="manual">
+             <property name="text">
+              <string>manual</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">buttonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QLabel" name="label_21">
+             <property name="text">
+              <string>offset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="label_20">
+             <property name="text">
+              <string>scale</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QRadioButton" name="noscale">
+             <property name="text">
+              <string>no scaling</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">buttonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLineEdit" name="scale"/>
+           </item>
+           <item row="2" column="5">
+            <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </widget>
+        </item>
         <item row="1" column="2">
+         <widget class="QLabel" name="label_15">
+          <property name="text">
+           <string>dx</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="dx"/>
+        </item>
+        <item row="1" column="5">
+         <widget class="QLabel" name="label_18">
+          <property name="text">
+           <string>dy</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_17">
+          <property name="text">
+           <string>Resample method</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="6">
          <spacer name="horizontalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="3">
+         <spacer name="horizontalSpacer_10">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -238,102 +321,11 @@
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="7" column="3">
-           <spacer name="horizontalSpacer_6">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="otype"/>
           </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_7">
-            <property name="text">
-             <string>Output image format</string>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="0">
-           <widget class="QLabel" name="label_14">
-            <property name="text">
-             <string>Output nodata value</string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="1">
-           <widget class="QLineEdit" name="file"/>
-          </item>
-          <item row="6" column="2">
-           <widget class="QLabel" name="label_10">
-            <property name="text">
-             <string>dx</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QComboBox" name="oformat"/>
-          </item>
-          <item row="7" column="1">
-           <widget class="QComboBox" name="interleaved"/>
-          </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="label_9">
-            <property name="text">
-             <string>Output resolution</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QLineEdit" name="dx"/>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_8">
-            <property name="text">
-             <string>Color table (ASCII)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="4">
-           <widget class="QLabel" name="label_13">
-            <property name="text">
-             <string>compressed</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="2">
-           <widget class="QToolButton" name="toolButton_ct">
-            <property name="text">
-             <string>...</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="5">
+          <item row="6" column="5">
            <widget class="QComboBox" name="compressed"/>
-          </item>
-          <item row="7" column="0">
-           <widget class="QLabel" name="label_12">
-            <property name="text">
-             <string>Interleaved</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QLineEdit" name="ct"/>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="output"/>
-          </item>
-          <item row="1" column="2">
-           <widget class="QToolButton" name="toolButton_output">
-            <property name="text">
-             <string>...</string>
-            </property>
-           </widget>
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_6">
@@ -342,19 +334,6 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="a_srs"/>
-          </item>
-          <item row="9" column="0">
-           <widget class="QLabel" name="label_15">
-            <property name="text">
-             <string>Ouput info on selected pixels</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="4">
-           <widget class="QLineEdit" name="dy"/>
-          </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_5">
             <property name="text">
@@ -362,28 +341,8 @@
             </property>
            </widget>
           </item>
-          <item row="7" column="2">
-           <widget class="QCheckBox" name="tiled">
-            <property name="text">
-             <string>Tiled</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QComboBox" name="otype"/>
-          </item>
-          <item row="6" column="5">
-           <widget class="QLabel" name="label_11">
-            <property name="text">
-             <string>dy</string>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="1">
-           <widget class="QLineEdit" name="dstnodata"/>
-          </item>
-          <item row="9" column="2">
-           <widget class="QToolButton" name="toolButton_file">
+          <item row="1" column="2">
+           <widget class="QToolButton" name="toolButton_output">
             <property name="text">
              <string>...</string>
             </property>
@@ -395,6 +354,86 @@
              <string>Output image</string>
             </property>
            </widget>
+          </item>
+          <item row="5" column="2">
+           <widget class="QToolButton" name="toolButton_ct">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="output"/>
+          </item>
+          <item row="6" column="2">
+           <widget class="QCheckBox" name="tiled">
+            <property name="text">
+             <string>Tiled</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="4">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>compressed</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="a_srs"/>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>Output image format</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="label_14">
+            <property name="text">
+             <string>Output nodata value</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QLineEdit" name="nodata"/>
+          </item>
+          <item row="4" column="1">
+           <widget class="QComboBox" name="oformat"/>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLineEdit" name="ct"/>
+          </item>
+          <item row="6" column="0">
+           <widget class="QLabel" name="label_12">
+            <property name="text">
+             <string>Interleaved</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QComboBox" name="interleaved"/>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Color table (ASCII)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="3">
+           <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
@@ -441,7 +480,20 @@
       <property name="sizeHint" stdset="0">
        <size>
         <width>20</width>
-        <height>40</height>
+        <height>551</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>40</width>
+        <height>20</height>
        </size>
       </property>
      </spacer>
@@ -456,7 +508,7 @@
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer">
+       <spacer name="horizontalSpacer_7">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -484,7 +536,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>798</width>
+     <width>821</width>
      <height>27</height>
     </rect>
    </property>
@@ -492,9 +544,9 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionInput_image"/>
-    <addaction name="actionOutput_image"/>
-    <addaction name="actionSelection_Info_file"/>
+    <addaction name="actionInput"/>
+    <addaction name="actionExtent"/>
+    <addaction name="actionOutput"/>
     <addaction name="actionQuit"/>
    </widget>
    <addaction name="menuFile"/>
@@ -508,17 +560,25 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionInput_image">
+  <action name="actionInput">
    <property name="text">
-    <string>Input image(s)</string>
+    <string>Input(s)</string>
    </property>
    <property name="shortcut">
     <string>Alt+I</string>
    </property>
   </action>
-  <action name="actionOutput_image">
+  <action name="actionExtent">
    <property name="text">
-    <string>Output image</string>
+    <string>Extent</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+E</string>
+   </property>
+  </action>
+  <action name="actionOutput">
+   <property name="text">
+    <string>Output</string>
    </property>
    <property name="shortcut">
     <string>Alt+O</string>
@@ -532,31 +592,25 @@
     <string>Alt+Q</string>
    </property>
   </action>
-  <action name="actionSelection_Info_file">
-   <property name="text">
-    <string>Selection Info file</string>
-   </property>
-   <property name="shortcut">
-    <string>Alt+F</string>
-   </property>
-  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
   <tabstop>tabWidget</tabstop>
   <tabstop>toolButton_input</tabstop>
-  <tabstop>listWidget_input</tabstop>
   <tabstop>uly</tabstop>
   <tabstop>ulx</tabstop>
   <tabstop>lrx</tabstop>
   <tabstop>lry</tabstop>
+  <tabstop>extent</tabstop>
+  <tabstop>toolButton_extent</tabstop>
+  <tabstop>tableView</tabstop>
   <tabstop>resample</tabstop>
-  <tabstop>crule</tabstop>
-  <tabstop>rband</tabstop>
-  <tabstop>bndnodata</tabstop>
-  <tabstop>srcnodata</tabstop>
-  <tabstop>min</tabstop>
-  <tabstop>max</tabstop>
+  <tabstop>dx</tabstop>
+  <tabstop>dy</tabstop>
+  <tabstop>noscale</tabstop>
+  <tabstop>autoscale</tabstop>
+  <tabstop>scale</tabstop>
+  <tabstop>offset</tabstop>
   <tabstop>output</tabstop>
   <tabstop>toolButton_output</tabstop>
   <tabstop>a_srs</tabstop>
@@ -564,19 +618,20 @@
   <tabstop>oformat</tabstop>
   <tabstop>ct</tabstop>
   <tabstop>toolButton_ct</tabstop>
-  <tabstop>dx</tabstop>
-  <tabstop>dy</tabstop>
   <tabstop>interleaved</tabstop>
   <tabstop>tiled</tabstop>
   <tabstop>compressed</tabstop>
-  <tabstop>dstnodata</tabstop>
-  <tabstop>file</tabstop>
-  <tabstop>toolButton_file</tabstop>
+  <tabstop>nodata</tabstop>
   <tabstop>toolButton_Run</tabstop>
   <tabstop>toolButton_defaults</tabstop>
-  <tabstop>commandLineEdit</tabstop>
+  <tabstop>manual</tabstop>
   <tabstop>consoleEdit</tabstop>
+  <tabstop>commandLineEdit</tabstop>
+  <tabstop>listWidget_input</tabstop>
  </tabstops>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="buttonGroup"/>
+ </buttongroups>
 </ui>

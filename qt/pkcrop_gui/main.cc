@@ -1,5 +1,5 @@
 /**********************************************************************
-mainwindow.h
+main.cc: GUI for pktools
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -18,47 +18,14 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#include "mainwindow.h"
+#include <QApplication>
 
-#include <QMainWindow>
-
-namespace Ui {
-class MainWindow;
-}
-
-class MainWindow : public QMainWindow
+int main(int argc, char *argv[])
 {
-    Q_OBJECT
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
     
-public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
-    
-private slots:
-    void on_toolButton_input_clicked();
-
-    void on_toolButton_defaults_clicked();
-
-    void on_actionInput_image_triggered();
-
-    void on_actionOutput_image_triggered();
-
-    void on_actionQuit_triggered();
-
-    void on_toolButton_output_clicked();
-
-    void on_toolButton_Run_clicked();
-
-    void on_actionSelection_Info_file_triggered();
-
-    void on_toolButton_file_clicked();
-
-    void on_toolButton_ct_clicked();
-
-private:
-    Ui::MainWindow *ui;
-    void setDefaults();
-};
-
-#endif // MAINWINDOW_H
+    return a.exec();
+}

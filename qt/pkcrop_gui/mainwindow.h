@@ -1,5 +1,5 @@
 /**********************************************************************
-mainwindow.h
+mainwindow.h: GUI for pktools
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -36,29 +36,32 @@ public:
     ~MainWindow();
     
 private slots:
+    void on_actionInput_triggered();
+
     void on_toolButton_input_clicked();
 
-    void on_toolButton_defaults_clicked();
-
-    void on_actionInput_image_triggered();
-
-    void on_actionOutput_image_triggered();
-
-    void on_actionQuit_triggered();
+    void on_toolButton_extent_clicked();
 
     void on_toolButton_output_clicked();
 
+    void on_toolButton_ct_clicked();
+
     void on_toolButton_Run_clicked();
 
-    void on_actionSelection_Info_file_triggered();
+    void on_toolButton_defaults_clicked();
 
-    void on_toolButton_file_clicked();
+    void on_actionQuit_triggered();
 
-    void on_toolButton_ct_clicked();
+    void on_actionOutput_triggered();
+
+    void on_autoscale_clicked();
+
+    void on_actionExtent_triggered();
 
 private:
     Ui::MainWindow *ui;
     void setDefaults();
+    bool m_as;
 };
 
 #endif // MAINWINDOW_H

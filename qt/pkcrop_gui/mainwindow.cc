@@ -1,5 +1,5 @@
 /**********************************************************************
-mainwindow.cpp: GUI for pktools
+mainwindow.cc: GUI for pktools
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -32,9 +32,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QStringList resamplelist;
     resamplelist << "near" << "bilinear";
     ui->resample->addItems(resamplelist);
-    QStringList crulelist;
-    crulelist << "overwrite" << "maxndvi" << "maxband" <<"minband" << "mean" << "mode" << "median" << "sum";
-    ui->crule->addItems(crulelist);
     QStringList interleavedlist;
     interleavedlist << "BAND" << "LINE" << "PIXEL" <<"BSQ";
     ui->interleaved->addItems(interleavedlist);
@@ -63,14 +60,11 @@ void MainWindow::setDefaults()
     ui->uly->clear();
     ui->lrx->clear();
     ui->lry->clear();
-    //composit
+    ui->extent->clear();
+    //scaling
     ui->resample->setCurrentIndex(0);
-    ui->crule->setCurrentIndex(0);
-    ui->rband->setText("0");
-    ui->bndnodata->setText("0");
-    ui->srcnodata->setText("0");
-    ui->min->clear();
-    ui->max->clear();
+    ui->scale->clear();
+    ui->offset->clear();
     //output
     ui->output->clear();
     ui->a_srs->clear();
@@ -82,29 +76,23 @@ void MainWindow::setDefaults()
     ui->interleaved->setCurrentIndex(0);
     ui->tiled->setChecked(false);
     ui->compressed->setCurrentIndex(0);
-    ui->dstnodata->clear();
-    ui->file->clear();
+    ui->nodata->clear();
 }
 
 void MainWindow::on_toolButton_input_clicked()
 {
-    on_actionInput_image_triggered();
+    on_actionInput_triggered();
+}
+
+
+void MainWindow::on_toolButton_extent_clicked()
+{
+    on_actionExtent_triggered();
 }
 
 void MainWindow::on_toolButton_output_clicked()
 {
-    on_actionOutput_image_triggered();
-}
-
-void MainWindow::on_toolButton_file_clicked()
-{
-    on_actionSelection_Info_file_triggered();
-}
-
-void MainWindow::on_toolButton_ct_clicked()
-{
-    QString qsctfilename=QFileDialog::getSaveFileName(this,"Color table ASCII","","*.*");
-    ui->ct->setText(qsctfilename);
+    on_actionOutput_triggered();
 }
 
 void MainWindow::on_toolButton_defaults_clicked()
@@ -112,7 +100,13 @@ void MainWindow::on_toolButton_defaults_clicked()
     setDefaults();
 }
 
-void MainWindow::on_actionInput_image_triggered()
+void MainWindow::on_toolButton_ct_clicked()
+{
+    QString qsct = QFileDialog::getOpenFileName(this, "Color table ASCII");
+    ui->ct->setText(qsct);
+}
+
+void MainWindow::on_actionInput_triggered()
 {
     QFileDialog dialog(this);
     dialog.setDirectory(QDir::homePath());
@@ -123,23 +117,22 @@ void MainWindow::on_actionInput_image_triggered()
     ui->listWidget_input->addItems(fileNames);
 }
 
-void MainWindow::on_actionOutput_image_triggered()
+void MainWindow::on_actionExtent_triggered()
+{
+    QString qsextent = QFileDialog::getOpenFileName(this, "extent");
+    ui->extent->setText(qsextent);
+}
+
+void MainWindow::on_actionOutput_triggered()
 {
     QString outputfilename=QFileDialog::getSaveFileName(this,"Output image","","*.*");
     ui->output->setText(outputfilename);
-}
-
-void MainWindow::on_actionSelection_Info_file_triggered()
-{
-    QString infofilename=QFileDialog::getSaveFileName(this,"Selection info image","","*.*");
-    ui->file->setText(infofilename);
 }
 
 void MainWindow::on_actionQuit_triggered()
 {
     close();
 }
-
 
 void MainWindow::on_toolButton_Run_clicked()
 {
@@ -150,7 +143,7 @@ void MainWindow::on_toolButton_Run_clicked()
         QString program = "pkcomposite";
 
         if(ui->listWidget_input->count()<1)
-            MainWindow::on_actionInput_image_triggered();
+            MainWindow::on_actionInput_triggered();
         if(ui->listWidget_input->count()<1){
             QString qsError="No input image file selected";
             throw(qsError);
@@ -163,14 +156,13 @@ void MainWindow::on_toolButton_Run_clicked()
         }
 
         if(ui->output->text().isEmpty())
-            MainWindow::on_actionOutput_image_triggered();
+            MainWindow::on_actionOutput_triggered();
         if(ui->output->text().isEmpty()){
             QString qsError="No output image file selected";
             throw(qsError);
         }
 
         program+=" --resample "+ui->resample->currentText();
-        program+=" --crule "+ui->crule->currentText();
         if(!ui->otype->currentText().isEmpty())
             program+=" --otype "+ui->otype->currentText();
         if(!ui->oformat->currentText().isEmpty())
@@ -180,6 +172,9 @@ void MainWindow::on_toolButton_Run_clicked()
         if(ui->tiled->isChecked())
             program+=" -co TILED=YES";
 
+        //todo: radiobuttons on scaling
+        if(m_as)
+            program+=" -as";
 //        QList<QCheckBox*> qcheckBoxList = this->findChildren<QCheckBox *>();
 
 //        for(QList<QCheckBox*>::ConstIterator qcbit=qcheckBoxList.begin();qcbit!=qcheckBoxList.end();++qcbit){
@@ -220,4 +215,9 @@ void MainWindow::on_toolButton_Run_clicked()
         msgBox.setText(qsError);
         msgBox.exec();
     }
+}
+
+void MainWindow::on_autoscale_clicked()
+{
+    m_as=true;
 }
