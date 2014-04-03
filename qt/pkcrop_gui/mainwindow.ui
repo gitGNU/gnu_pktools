@@ -27,6 +27,13 @@
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <layout class="QGridLayout" name="gridLayout_2">
+          <item row="4" column="2">
+           <widget class="QToolButton" name="toolButton_extent">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="2">
            <widget class="QLineEdit" name="uly"/>
           </item>
@@ -86,7 +93,7 @@
             </property>
            </spacer>
           </item>
-          <item row="5" column="0">
+          <item row="6" column="0">
            <widget class="QLabel" name="label_16">
             <property name="text">
              <string>Select bands</string>
@@ -96,6 +103,9 @@
           <item row="0" column="1">
            <widget class="QListWidget" name="listWidget_input"/>
           </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="extent"/>
+          </item>
           <item row="0" column="2">
            <widget class="QToolButton" name="toolButton_input">
             <property name="text">
@@ -103,18 +113,8 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
-           <widget class="QTableView" name="tableView"/>
-          </item>
-          <item row="4" column="1">
-           <widget class="QLineEdit" name="extent"/>
-          </item>
-          <item row="4" column="2">
-           <widget class="QToolButton" name="toolButton_extent">
-            <property name="text">
-             <string>...</string>
-            </property>
-           </widget>
+          <item row="6" column="1">
+           <widget class="QListWidget" name="listWidget_band"/>
           </item>
          </layout>
         </item>
@@ -480,7 +480,7 @@
       <property name="sizeHint" stdset="0">
        <size>
         <width>20</width>
-        <height>551</height>
+        <height>112</height>
        </size>
       </property>
      </spacer>
@@ -603,7 +603,6 @@
   <tabstop>lry</tabstop>
   <tabstop>extent</tabstop>
   <tabstop>toolButton_extent</tabstop>
-  <tabstop>tableView</tabstop>
   <tabstop>resample</tabstop>
   <tabstop>dx</tabstop>
   <tabstop>dy</tabstop>

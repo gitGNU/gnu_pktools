@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QStringList oformatlist;
     oformatlist << "" << "GTiff" << "HFA" << "ENVI";
     ui->oformat->addItems(oformatlist);
+
     setDefaults();
 }
 
@@ -115,6 +116,24 @@ void MainWindow::on_actionInput_triggered()
     if (dialog.exec())
         fileNames = dialog.selectedFiles();
     ui->listWidget_input->addItems(fileNames);
+    //fill in band list
+    QProcess *myProcess = new QProcess(this);
+    QString program="pkinfo -nb -i ";
+    //todo: loop over all filenames and get the minimum number of bands?
+    program+=fileNames[0];
+    myProcess->start(program);
+    myProcess->waitForFinished(-1);
+    QString p_stdout=myProcess->readAll();
+    int nband=p_stdout.section(' ',1).toInt();
+    QStringList bandlist;
+    for(int iband=0;iband<nband;++iband){
+        QString qsband="band";
+        qsband+=QString::number(iband);
+        bandlist << qsband;
+    }
+    ui->listWidget_band->addItems(bandlist);
+    ui->listWidget_band->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    ui->listWidget_band->selectAll();
 }
 
 void MainWindow::on_actionExtent_triggered()
