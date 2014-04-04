@@ -174,6 +174,12 @@ void MainWindow::on_toolButton_Run_clicked()
             program+=" --input "+item->text();
         }
 
+        for(int i = 0; i < ui->listWidget_band->count(); ++i)
+        {
+            QListWidgetItem* item = ui->listWidget_band->item(i);
+            program+=" --band "+item->text();
+        }
+
         if(ui->output->text().isEmpty())
             MainWindow::on_actionOutput_triggered();
         if(ui->output->text().isEmpty()){
