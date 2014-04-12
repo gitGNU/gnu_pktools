@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
 	      cout << "created layer" << endl;
 	      cout << "copy fields from " << reference_opt[iref] << endl;
 	    }
-	    ogrWriter.copyFields(referenceReaderOgr,ilayer);
+	    ogrWriter.copyFields(referenceReaderOgr,ilayer,ilayer);
 	    //create extra field for classified label
 	    short theDim=boundary_opt[0];
 	    for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
