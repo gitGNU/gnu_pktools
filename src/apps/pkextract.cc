@@ -42,7 +42,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> image_opt("i", "image", "Input image file");
+  Optionpk<string> image_opt("i", "input", "Input image file");
   Optionpk<string> sample_opt("s", "sample", "Input sample vector file or class file (e.g. Corine CLC) if class option is set");
   Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
   Optionpk<string> mask_opt("m", "mask", "Mask image file");

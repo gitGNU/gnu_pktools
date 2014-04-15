@@ -126,16 +126,18 @@ void MainWindow::on_pushButton_run_clicked()
             throw(qsError);
         }
 
-        QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
+        program+=" --f "+ui->f->currentText();
+        program+=" --rule "+ui->rule->currentText();
+//        QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
-        for(QList<QComboBox*>::ConstIterator qcbit=qcomboBoxList.begin();qcbit!=qcomboBoxList.end();++qcbit){
-            QString qsOption;
-            qsOption+=" --";
-            qsOption+=(*qcbit)->objectName();
-            program+=qsOption;
-            program+=" ";
-            program+=QString::number((*qcbit)->currentIndex());
-        }
+//        for(QList<QComboBox*>::ConstIterator qcbit=qcomboBoxList.begin();qcbit!=qcomboBoxList.end();++qcbit){
+//            QString qsOption;
+//            qsOption+=" --";
+//            qsOption+=(*qcbit)->objectName();
+//            program+=qsOption;
+//            program+=" ";
+//            program+=QString::number((*qcbit)->currentIndex());
+//        }
 
         QList<QLineEdit*> qlineEditList = this->findChildren<QLineEdit *>();
 

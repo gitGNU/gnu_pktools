@@ -53,6 +53,7 @@ void MainWindow::setDefaults()
     //tab input/output
     ui->msknodata->setText("0");
     ui->nodata->setText("0");
+    ui->ct->clear();
     //tab classifier
     ui->coef0->setText("0");
     ui->nu->setText("0.5");
@@ -88,6 +89,13 @@ void MainWindow::on_actionInput_triggered()
     ui->input->setText(qsinput);
 }
 
+
+void MainWindow::on_actionColor_table_triggered()
+{
+    QString qsct = QFileDialog::getOpenFileName(this, "Color table");
+    ui->ct->setText(qsct);
+}
+
 void MainWindow::on_toolButton_input_clicked()
 {
     on_actionInput_triggered();
@@ -108,6 +116,11 @@ void MainWindow::on_toolButton_training_clicked()
     on_actionTraining_triggered();
 }
 
+void MainWindow::on_toolButton_ct_clicked()
+{
+    on_actionColor_table_triggered();
+}
+
 void MainWindow::on_training_returnPressed()
 {
     //eventually read classes from vector file to fill in table...
@@ -115,10 +128,11 @@ void MainWindow::on_training_returnPressed()
 
 void MainWindow::setClassTable(const QStringList &labels)
 {
-    QStandardItemModel *model = new QStandardItemModel(labels.size(),3,this); //nlabel rows and 3 columns
+    QStandardItemModel *model = new QStandardItemModel(labels.size(),4,this); //nlabel rows and 4 columns
     model->setHorizontalHeaderItem(0, new QStandardItem(QString("label name")));
     model->setHorizontalHeaderItem(1, new QStandardItem(QString("class nr")));
     model->setHorizontalHeaderItem(2, new QStandardItem(QString("prior prob")));
+    model->setHorizontalHeaderItem(3, new QStandardItem(QString("balance (optional)")));
     for(int ilabel=0;ilabel<labels.size();++ilabel){
         QStandardItem *firstCol = new QStandardItem(QString(labels[ilabel]));
         model->setItem(ilabel,0,firstCol);
@@ -154,6 +168,7 @@ void MainWindow::on_pushButton_run_clicked()
 //            }
 //        }
 
+        QStringList qslBalance;
         for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
             QString qsOption;
             qsOption+=" --class ";
@@ -163,7 +178,21 @@ void MainWindow::on_pushButton_run_clicked()
             qsOption+=" --prior ";
             qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,2)).toString();
             program+=qsOption;
+            QString qsbalance=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,3)).toString();
+            if(!qsbalance.isEmpty())
+                qslBalance << qsbalance;
         }
+        for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
+            QString qsOption;
+            qsOption+=" --balance ";
+            if(qslBalance.size()==ui->tableView_labels->model()->rowCount())
+                qsOption+=qslBalance[irow];
+            else
+                qsOption+=qslBalance[0];
+            program+=qsOption;
+        }
+
+
         QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
         for(QList<QComboBox*>::ConstIterator qcbit=qcomboBoxList.begin();qcbit!=qcomboBoxList.end();++qcbit){
