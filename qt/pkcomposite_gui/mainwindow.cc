@@ -63,6 +63,7 @@ void MainWindow::setDefaults()
     ui->uly->clear();
     ui->lrx->clear();
     ui->lry->clear();
+    ui->extent->clear();
     //composit
     ui->resample->setCurrentIndex(0);
     ui->crule->setCurrentIndex(0);
@@ -220,4 +221,15 @@ void MainWindow::on_toolButton_Run_clicked()
         msgBox.setText(qsError);
         msgBox.exec();
     }
+}
+
+void MainWindow::on_toolButton_extent_clicked()
+{
+    on_actionExtent_triggered();
+}
+
+void MainWindow::on_actionExtent_triggered()
+{
+    QString qsextent = QFileDialog::getOpenFileName(this, "extent");
+    ui->extent->setText(qsextent);
 }

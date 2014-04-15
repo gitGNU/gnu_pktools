@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -27,23 +27,6 @@
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="1">
-           <widget class="QToolButton" name="toolButton_input">
-            <property name="text">
-             <string>...</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Input images</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QListWidget" name="listWidget_input"/>
-          </item>
           <item row="1" column="3">
            <spacer name="horizontalSpacer_3">
             <property name="orientation">
@@ -57,8 +40,28 @@
             </property>
            </spacer>
           </item>
+          <item row="0" column="2">
+           <widget class="QListWidget" name="listWidget_input"/>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Input images</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QToolButton" name="toolButton_input">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
           <item row="3" column="2">
            <widget class="QLineEdit" name="lry"/>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLineEdit" name="uly"/>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_2">
@@ -80,29 +83,30 @@
             </property>
            </spacer>
           </item>
-          <item row="1" column="2">
-           <widget class="QLineEdit" name="uly"/>
-          </item>
           <item row="2" column="3">
            <widget class="QLineEdit" name="lrx"/>
           </item>
           <item row="2" column="1">
            <widget class="QLineEdit" name="ulx"/>
           </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Geographical extent</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="extent"/>
+          </item>
+          <item row="4" column="2">
+           <widget class="QToolButton" name="toolButton_extent">
+            <property name="text">
+             <string>...</string>
+            </property>
+           </widget>
+          </item>
          </layout>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
@@ -493,6 +497,7 @@
      <string>File</string>
     </property>
     <addaction name="actionInput_image"/>
+    <addaction name="actionExtent"/>
     <addaction name="actionOutput_image"/>
     <addaction name="actionSelection_Info_file"/>
     <addaction name="actionQuit"/>
@@ -538,6 +543,14 @@
    </property>
    <property name="shortcut">
     <string>Alt+F</string>
+   </property>
+  </action>
+  <action name="actionExtent">
+   <property name="text">
+    <string>Extent</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+E</string>
    </property>
   </action>
  </widget>
