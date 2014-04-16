@@ -26,7 +26,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="tab_2">
          <attribute name="title">
@@ -37,6 +37,9 @@
            <layout class="QGridLayout" name="gridLayout">
             <item row="1" column="3">
              <widget class="QLabel" name="label_14">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixels in input image where mask image has msknodata will not be classified, but obtain a constant value (=nodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>msknodata</string>
               </property>
@@ -80,6 +83,9 @@
             </item>
             <item row="3" column="3">
              <widget class="QLabel" name="label_16">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OGR supported vector format&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>format</string>
               </property>
@@ -88,7 +94,7 @@
             <item row="3" column="0">
              <widget class="QLabel" name="label_15">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Classified map (raster or vector according to input image).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Output will contain sample features with input band information included&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>Output data</string>
@@ -111,7 +117,7 @@
             <item row="2" column="0">
              <widget class="QLabel" name="label_23">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixels in input image where mask image has msknodata will not be classified, but obtain a constant value (=nodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OGR vector file with features to be extracted from input data. Output will contain features with input band information included&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>Sample image</string>
@@ -187,6 +193,9 @@
             </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_20">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Prepare a table if you want to extract a subset of the points in the provided sample vector file. Use a percentual threshold value for each of the labels in the sample. To prepare the table, first enter the number of classes and then press the button '-&amp;gt;'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>prepare table </string>
               </property>
@@ -198,7 +207,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_4">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;name of the attribute in your training vector file that corresponds to the class labels &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Rule how to extract the features from the input data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>extraction rule</string>
@@ -217,6 +226,9 @@
             </item>
             <item row="4" column="2">
              <widget class="QToolButton" name="toolButton_createTable">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Prepare a table if you want to extract a subset of the points in the provided sample vector file. Use a percentual threshold value for each of the labels in the sample. To prepare the table, first enter the number of classes and then press the button '-&amp;gt;'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>-&gt;</string>
               </property>
@@ -225,7 +237,7 @@
             <item row="1" column="0">
              <widget class="QLabel" name="label_2">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;name of the attribute in your training vector file that corresponds to the class labels &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. B0, B1, B2, etc.)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>attribute (prefix) name for raster info</string>
@@ -385,6 +397,29 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>input</tabstop>
+  <tabstop>toolButton_input</tabstop>
+  <tabstop>mask</tabstop>
+  <tabstop>toolButton_mask</tabstop>
+  <tabstop>msknodata</tabstop>
+  <tabstop>sample</tabstop>
+  <tabstop>toolButton_sample</tabstop>
+  <tabstop>output</tabstop>
+  <tabstop>toolButton_output</tabstop>
+  <tabstop>f</tabstop>
+  <tabstop>polygon</tabstop>
+  <tabstop>rule</tabstop>
+  <tabstop>bname</tabstop>
+  <tabstop>nclass</tabstop>
+  <tabstop>toolButton_createTable</tabstop>
+  <tabstop>commandLineEdit</tabstop>
+  <tabstop>consoleEdit</tabstop>
+  <tabstop>pushButton_run</tabstop>
+  <tabstop>pushButton_restore</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>tableView_labels</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -578,16 +578,16 @@ int main(int argc, char *argv[])
     GDALProgressFunc pfnProgress=GDALTermProgress;
     float progress=0;
   //-------------------------------- open image file ------------------------------------
-  bool refIsRaster=false;
+  bool inputIsRaster=false;
   ImgReaderOgr imgReaderOgr;
   try{
     imgReaderOgr.open(input_opt[0]);
     imgReaderOgr.close();
   }
   catch(string errorString){
-    refIsRaster=true;
+    inputIsRaster=true;
   }
-  if(refIsRaster){
+  if(inputIsRaster){
   // if(input_opt[0].find(".shp")==string::npos){
     ImgReaderGdal testImage;
     try{

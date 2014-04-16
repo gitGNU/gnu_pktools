@@ -59,9 +59,14 @@ private slots:
 
     void on_actionExtent_triggered();
 
+    void on_manual_clicked();
+
+    void on_noscale_clicked();
+
 private:
     Ui::MainWindow *ui;
     void setDefaults();
+    bool m_manual;
     bool m_as;
 };
 

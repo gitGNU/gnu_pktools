@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -45,6 +45,9 @@
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input raster images&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Input images</string>
             </property>
@@ -65,6 +68,9 @@
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_2">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Provide geographical extent to crop in coordinate reference system of input data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Geographical extent</string>
             </property>
@@ -91,8 +97,11 @@
           </item>
           <item row="4" column="0">
            <widget class="QLabel" name="label_4">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use an external OGR vector file to define the geographical extent to crop. Coordinate reference systems of input and vector must be identical&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
-             <string>Geographical extent</string>
+             <string>Extent via vector:</string>
             </property>
            </widget>
           </item>
@@ -133,6 +142,9 @@
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_18">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Composite rule for mosaic. Default is overwrite&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Composit rule</string>
           </property>
@@ -166,6 +178,9 @@
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="1" column="0">
             <widget class="QLabel" name="label_21">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;invalid value for input image&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>nodata value</string>
              </property>
@@ -176,6 +191,9 @@
            </item>
            <item row="3" column="0">
             <widget class="QLabel" name="label_23">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;flag values larger or equal to this value as invalid&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>max value</string>
              </property>
@@ -183,6 +201,9 @@
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="label_22">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;flag values smaller or equal to this value as invalid&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>min value</string>
              </property>
@@ -196,6 +217,9 @@
            </item>
            <item row="0" column="0">
             <widget class="QLabel" name="label_20">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Band in input image to check if pixel is valid (used for srcnodata, min and max options)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>band</string>
              </property>
@@ -264,6 +288,9 @@
           </item>
           <item row="8" column="0">
            <widget class="QLabel" name="label_14">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Nodata value to put in image if out of bounds or if no valid pixel value is found in input images&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Output nodata value</string>
             </property>
@@ -287,6 +314,9 @@
           </item>
           <item row="6" column="0">
            <widget class="QLabel" name="label_9">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Output resolution in x and y distance measure (e.g., meter). Leave empty to read from input data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Output resolution</string>
             </property>
@@ -297,6 +327,9 @@
           </item>
           <item row="5" column="0">
            <widget class="QLabel" name="label_8">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Color table must be provided as ASCII text file with five (space delimited) columns:&lt;/p&gt;&lt;p&gt;value red green blue alpha&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Color table (ASCII)</string>
             </property>
@@ -351,6 +384,9 @@
           </item>
           <item row="9" column="0">
            <widget class="QLabel" name="label_15">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Create extra raster file containing information on the selected input file for each pixel&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Ouput info on selected pixels</string>
             </property>
@@ -361,6 +397,9 @@
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_5">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Assign projection (e.g., epsg:3035). Notice this will not re-project the image. Use gdalwarp instead.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Assign projection (EPSG:code)</string>
             </property>
@@ -556,13 +595,13 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
   <tabstop>toolButton_input</tabstop>
-  <tabstop>listWidget_input</tabstop>
   <tabstop>uly</tabstop>
   <tabstop>ulx</tabstop>
   <tabstop>lrx</tabstop>
   <tabstop>lry</tabstop>
+  <tabstop>extent</tabstop>
+  <tabstop>toolButton_extent</tabstop>
   <tabstop>resample</tabstop>
   <tabstop>crule</tabstop>
   <tabstop>rband</tabstop>
@@ -589,6 +628,8 @@
   <tabstop>toolButton_defaults</tabstop>
   <tabstop>commandLineEdit</tabstop>
   <tabstop>consoleEdit</tabstop>
+  <tabstop>listWidget_input</tabstop>
+  <tabstop>tabWidget</tabstop>
  </tabstops>
  <resources/>
  <connections/>

@@ -156,6 +156,14 @@ void MainWindow::on_pushButton_run_clicked()
             QString qsError="No training vector file selected";
             throw(qsError);
         }
+        if(!ui->input->text().isEmpty()){
+            if(ui->output->text().isEmpty())
+                MainWindow::on_actionOutput_triggered();
+            if(ui->output->text().isEmpty()){
+                QString qsError="No training vector file selected";
+                throw(qsError);
+            }
+        }
 
 //        QList<QCheckBox*> qcheckBoxList = this->findChildren<QCheckBox *>();
 
@@ -222,7 +230,14 @@ void MainWindow::on_pushButton_run_clicked()
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
         myProcess->start(program);
+        myProcess->setProcessChannelMode(QProcess::MergedChannels);
         myProcess->waitForFinished(-1);
+        QMessageBox msgBox;
+        QString p_stderr = myProcess->readAllStandardError();
+        if(!p_stderr.isEmpty()){
+            msgBox.setText(p_stderr);
+            msgBox.exec();
+        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;

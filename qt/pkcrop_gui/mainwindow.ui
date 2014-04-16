@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -58,8 +58,11 @@
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input image(s)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
-             <string>Input images</string>
+             <string>Input image(s)</string>
             </property>
            </widget>
           </item>
@@ -68,6 +71,9 @@
           </item>
           <item row="4" column="0">
            <widget class="QLabel" name="label_4">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use an external OGR vector file to define the geographical extent to crop. Coordinate reference systems of input and vector must be identical&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Extent via vector:</string>
             </property>
@@ -75,6 +81,9 @@
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_2">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Provide geographical extent to crop in coordinate reference system of input data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Geographical extent</string>
             </property>
@@ -95,6 +104,9 @@
           </item>
           <item row="6" column="0">
            <widget class="QLabel" name="label_16">
+            <property name="whatsThis">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;First select input image. Then select bands by clicking in the table (use Ctrl and Shift to select multiple bands)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Select bands</string>
             </property>
@@ -172,6 +184,9 @@
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_9">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Output resolution in x and y distance measure (e.g., meter). Leave empty to read from input data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Output resolution</string>
           </property>
@@ -198,6 +213,9 @@
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="1" column="0">
             <widget class="QRadioButton" name="autoscale">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Auto scale input data from to (e.g., use from=0 and to=255 for Byte type image)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>autoscale</string>
              </property>
@@ -211,6 +229,9 @@
            </item>
            <item row="2" column="0">
             <widget class="QRadioButton" name="manual">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Manually scale data using scale and offset: output=scale*input+offset&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>manual</string>
              </property>
@@ -235,6 +256,9 @@
            </item>
            <item row="0" column="0">
             <widget class="QRadioButton" name="noscale">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Do not scale the data&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>no scaling</string>
              </property>
@@ -248,6 +272,39 @@
            </item>
            <item row="2" column="5">
             <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>from</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLineEdit" name="as_from"/>
+           </item>
+           <item row="1" column="3">
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>to</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="4">
+            <widget class="QLineEdit" name="as_to"/>
+           </item>
+           <item row="1" column="5">
+            <spacer name="horizontalSpacer_11">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
@@ -336,6 +393,9 @@
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_5">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Assign projection (e.g., epsg:3035). Notice this will not re-project the image. Use gdalwarp instead.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Assign projection (EPSG:code)</string>
             </property>
@@ -350,6 +410,9 @@
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_3">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Output raster image&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Output image</string>
             </property>
@@ -391,6 +454,9 @@
           </item>
           <item row="7" column="0">
            <widget class="QLabel" name="label_14">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Nodata value to put in image if out of bounds&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Output nodata value</string>
             </property>
@@ -417,6 +483,9 @@
           </item>
           <item row="5" column="0">
            <widget class="QLabel" name="label_8">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Color table must be provided as ASCII text file with five (space delimited) columns:&lt;/p&gt;&lt;p&gt;value red green blue alpha&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Color table (ASCII)</string>
             </property>
@@ -595,7 +664,6 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
   <tabstop>toolButton_input</tabstop>
   <tabstop>uly</tabstop>
   <tabstop>ulx</tabstop>
@@ -603,6 +671,7 @@
   <tabstop>lry</tabstop>
   <tabstop>extent</tabstop>
   <tabstop>toolButton_extent</tabstop>
+  <tabstop>listWidget_band</tabstop>
   <tabstop>resample</tabstop>
   <tabstop>dx</tabstop>
   <tabstop>dy</tabstop>
@@ -627,6 +696,7 @@
   <tabstop>consoleEdit</tabstop>
   <tabstop>commandLineEdit</tabstop>
   <tabstop>listWidget_input</tabstop>
+  <tabstop>tabWidget</tabstop>
  </tabstops>
  <resources/>
  <connections/>

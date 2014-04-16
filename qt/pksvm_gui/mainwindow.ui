@@ -29,6 +29,9 @@
          <layout class="QGridLayout" name="gridLayout">
           <item row="2" column="0">
            <widget class="QLabel" name="label_2">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Attribute name of the class label in the training vector file (default is label)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>attribute name for class label</string>
             </property>
@@ -43,6 +46,9 @@
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_4">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OGR supported vector file. Features must contain labels and band information. You can use pkextract to prepare training vector files&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Training vectorfile</string>
             </property>
@@ -69,6 +75,9 @@
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_20">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Provide number of classes in training file here to prepare class name-value pairs (push button prepare table). This is mandatory if labels in training vector are provided as text (instead of Integer values). The table also provide priors and balance classes in training sample.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>number of classes to prepare table</string>
             </property>
@@ -92,6 +101,9 @@
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_21">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Name of the training layer (optional). If not provided, all layers will be read per default.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Training layername (optional)</string>
             </property>
@@ -171,6 +183,9 @@
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_13">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Dimensions of mask image must correspond to input image. Pixels in mask with values=masknodata are not classified and get nodata value.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Mask image</string>
             </property>
@@ -185,6 +200,9 @@
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_15">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Output image (classified map). Can be OGR vector or GDAL raster, depending on input data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Output data</string>
             </property>
@@ -224,6 +242,9 @@
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_3">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input image. Both OGR vectors and GDAL rasters are supported. Number of bands must match those in training sample.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Input data</string>
             </property>
@@ -231,6 +252,9 @@
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_22">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Color table must be provided as ASCII text file with five (space delimited) columns:&lt;/p&gt;&lt;p&gt;value red green blue alpha&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>color table</string>
             </property>
@@ -278,6 +302,9 @@
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_5">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Leave empty to skip cross validation. Enter 2 for a two-fold cross validation&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>n-fold cross validation</string>
             </property>
@@ -285,6 +312,9 @@
           </item>
           <item row="2" column="3">
            <widget class="QLabel" name="label_10">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;the parameter C of C_SVC, epsilon_SVR, and nu_SVR (default is 1)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>CCost</string>
             </property>
@@ -292,6 +322,9 @@
           </item>
           <item row="0" column="3">
            <widget class="QLabel" name="label_11">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Coef0 in the kernel function (default is 0)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Coef 0</string>
             </property>
@@ -299,6 +332,9 @@
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_6">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type of the support vector machine&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>SVM type</string>
             </property>
@@ -312,6 +348,9 @@
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_7">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;type of kernel function (default is radial)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Kernel type</string>
             </property>
@@ -322,6 +361,9 @@
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_9">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;gamma in kernel function (default is 0)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Gamma</string>
             </property>
@@ -335,6 +377,9 @@
           </item>
           <item row="0" column="6">
            <widget class="QLabel" name="label_12">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;the parameter nu of nu_SVC, one_class SVM, and nu_SVR (default is 0.5)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>nu</string>
             </property>
@@ -358,6 +403,9 @@
           </item>
           <item row="1" column="3">
            <widget class="QLabel" name="label_8">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;degree in kernel function (default is 3)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Kernel degree</string>
             </property>
@@ -426,6 +474,9 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="pushButton_run">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Classify with current settings (check Console for output)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Run</string>
         </property>
@@ -446,6 +497,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="pushButton_restore">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;reset all parameters to default&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Restore defaults</string>
         </property>
@@ -527,6 +581,38 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>training</tabstop>
+  <tabstop>toolButton_training</tabstop>
+  <tabstop>tln</tabstop>
+  <tabstop>label</tabstop>
+  <tabstop>nclass</tabstop>
+  <tabstop>input</tabstop>
+  <tabstop>toolButton_input</tabstop>
+  <tabstop>mask</tabstop>
+  <tabstop>toolButton_mask</tabstop>
+  <tabstop>msknodata</tabstop>
+  <tabstop>output</tabstop>
+  <tabstop>toolButton_output</tabstop>
+  <tabstop>nodata</tabstop>
+  <tabstop>ct</tabstop>
+  <tabstop>toolButton_ct</tabstop>
+  <tabstop>svmtype</tabstop>
+  <tabstop>coef0</tabstop>
+  <tabstop>nu</tabstop>
+  <tabstop>kerneltype</tabstop>
+  <tabstop>kd</tabstop>
+  <tabstop>gamma</tabstop>
+  <tabstop>ccost</tabstop>
+  <tabstop>cv</tabstop>
+  <tabstop>commandLineEdit</tabstop>
+  <tabstop>consoleEdit</tabstop>
+  <tabstop>tableView_labels</tabstop>
+  <tabstop>commandLinkButtonPrepareTable</tabstop>
+  <tabstop>pushButton_run</tabstop>
+  <tabstop>pushButton_restore</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

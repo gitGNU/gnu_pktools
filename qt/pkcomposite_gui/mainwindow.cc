@@ -209,9 +209,15 @@ void MainWindow::on_toolButton_Run_clicked()
 
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
-
         myProcess->start(program);
+        myProcess->setProcessChannelMode(QProcess::MergedChannels);
         myProcess->waitForFinished(-1);
+        QString p_stderr = myProcess->readAllStandardError();
+        if(!p_stderr.isEmpty()){
+            QMessageBox msgBox;
+            msgBox.setText(p_stderr);
+            msgBox.exec();
+        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;

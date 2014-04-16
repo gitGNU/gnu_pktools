@@ -437,11 +437,11 @@ int main(int argc, char *argv[])
         }
       }
 
-      if(priors_opt.size()==nameVector.size()){
-	std::cerr << "Warning: please check if priors are provided in correct order!!!" << std::endl;
-	for(int iclass=0;iclass<nameVector.size();++iclass)
-	  std::cerr << nameVector[iclass] << " " << priors_opt[iclass] << std::endl;
-      }
+      // if(priors_opt.size()==nameVector.size()){
+      // 	std::cerr << "Warning: please check if priors are provided in correct order!!!" << std::endl;
+      // 	for(int iclass=0;iclass<nameVector.size();++iclass)
+      // 	  std::cerr << nameVector[iclass] << " " << priors_opt[iclass] << std::endl;
+      // }
     }//if(!ibag)
 
     //Calculate features of training set
@@ -573,16 +573,16 @@ int main(int argc, char *argv[])
   if(!verbose_opt[0])
     pfnProgress(progress,pszMessage,pProgressArg);
   //-------------------------------- open image file ------------------------------------
-  bool refIsRaster=false;
+  bool inputIsRaster=false;
   ImgReaderOgr imgReaderOgr;
   try{
     imgReaderOgr.open(input_opt[0]);
     imgReaderOgr.close();
   }
   catch(string errorString){
-    refIsRaster=true;
+    inputIsRaster=true;
   }
-  if(refIsRaster){
+  if(inputIsRaster){
     ImgReaderGdal testImage;
     try{
       if(verbose_opt[0]>=1)
