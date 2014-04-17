@@ -1,6 +1,6 @@
 /**********************************************************************
 pkgetmask.cc: program to create mask image based on values in input raster image
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

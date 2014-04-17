@@ -1,6 +1,6 @@
 /**********************************************************************
-pkmosaic.cc: program to create mosaic geo-referenced images
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkcomposite.cc: program to mosaic and composite geo-referenced images
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

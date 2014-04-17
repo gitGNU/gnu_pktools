@@ -55,6 +55,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::setDefaults()
 {
+    m_as=false;
+    m_manual=false;
     //input
     ui->listWidget_input->clear();
     ui->ulx->clear();
@@ -64,6 +66,8 @@ void MainWindow::setDefaults()
     ui->extent->clear();
     //scaling
     ui->resample->setCurrentIndex(0);
+    ui->as_from->clear();
+    ui->as_to->clear();
     ui->scale->clear();
     ui->offset->clear();
     //output
@@ -198,8 +202,18 @@ void MainWindow::on_toolButton_Run_clicked()
             program+=" -co TILED=YES";
 
         //todo: radiobuttons on scaling
-        if(m_as)
-            program+=" -as";
+        if(m_as){
+            program+=" --autoscale ";
+            program+=ui->as_from->text();
+            program+=" --autoscale ";
+            program+=ui->as_to->text();
+        }
+        else if(m_manual){
+            program+=" --scale ";
+            program+=ui->scale->text();
+            program+=" ---offset ";
+            program+=ui->offset->text();
+        }
 //        QList<QCheckBox*> qcheckBoxList = this->findChildren<QCheckBox *>();
 
 //        for(QList<QCheckBox*>::ConstIterator qcbit=qcheckBoxList.begin();qcbit!=qcheckBoxList.end();++qcbit){
@@ -228,9 +242,15 @@ void MainWindow::on_toolButton_Run_clicked()
 
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
-
         myProcess->start(program);
+        myProcess->setProcessChannelMode(QProcess::MergedChannels);
         myProcess->waitForFinished(-1);
+        QString p_stderr = myProcess->readAllStandardError();
+        if(!p_stderr.isEmpty()){
+            QMessageBox msgBox;
+            msgBox.setText(p_stderr);
+            msgBox.exec();
+        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;
@@ -245,4 +265,17 @@ void MainWindow::on_toolButton_Run_clicked()
 void MainWindow::on_autoscale_clicked()
 {
     m_as=true;
+    m_manual=false;
+}
+
+void MainWindow::on_manual_clicked()
+{
+    m_as=false;
+    m_manual=true;
+}
+
+void MainWindow::on_noscale_clicked()
+{
+    m_as=false;
+    m_manual=false;
 }

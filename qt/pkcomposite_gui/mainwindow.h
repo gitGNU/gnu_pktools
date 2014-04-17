@@ -56,6 +56,10 @@ private slots:
 
     void on_toolButton_ct_clicked();
 
+    void on_toolButton_extent_clicked();
+
+    void on_actionExtent_triggered();
+
 private:
     Ui::MainWindow *ui;
     void setDefaults();

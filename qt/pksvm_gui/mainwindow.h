@@ -61,6 +61,10 @@ private slots:
 
     void on_commandLinkButtonPrepareTable_clicked();
 
+    void on_actionColor_table_triggered();
+
+    void on_toolButton_ct_clicked();
+
 private:
     void setClassTable(const QStringList &labels);
     void setDefaults();

@@ -63,6 +63,7 @@ void MainWindow::setDefaults()
     ui->uly->clear();
     ui->lrx->clear();
     ui->lry->clear();
+    ui->extent->clear();
     //composit
     ui->resample->setCurrentIndex(0);
     ui->crule->setCurrentIndex(0);
@@ -208,9 +209,15 @@ void MainWindow::on_toolButton_Run_clicked()
 
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
-
         myProcess->start(program);
+        myProcess->setProcessChannelMode(QProcess::MergedChannels);
         myProcess->waitForFinished(-1);
+        QString p_stderr = myProcess->readAllStandardError();
+        if(!p_stderr.isEmpty()){
+            QMessageBox msgBox;
+            msgBox.setText(p_stderr);
+            msgBox.exec();
+        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;
@@ -220,4 +227,15 @@ void MainWindow::on_toolButton_Run_clicked()
         msgBox.setText(qsError);
         msgBox.exec();
     }
+}
+
+void MainWindow::on_toolButton_extent_clicked()
+{
+    on_actionExtent_triggered();
+}
+
+void MainWindow::on_actionExtent_triggered()
+{
+    QString qsextent = QFileDialog::getOpenFileName(this, "extent");
+    ui->extent->setText(qsextent);
 }

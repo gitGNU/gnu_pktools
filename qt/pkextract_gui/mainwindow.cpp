@@ -126,16 +126,18 @@ void MainWindow::on_pushButton_run_clicked()
             throw(qsError);
         }
 
-        QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
+        program+=" --f "+ui->f->currentText();
+        program+=" --rule "+ui->rule->currentText();
+//        QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
-        for(QList<QComboBox*>::ConstIterator qcbit=qcomboBoxList.begin();qcbit!=qcomboBoxList.end();++qcbit){
-            QString qsOption;
-            qsOption+=" --";
-            qsOption+=(*qcbit)->objectName();
-            program+=qsOption;
-            program+=" ";
-            program+=QString::number((*qcbit)->currentIndex());
-        }
+//        for(QList<QComboBox*>::ConstIterator qcbit=qcomboBoxList.begin();qcbit!=qcomboBoxList.end();++qcbit){
+//            QString qsOption;
+//            qsOption+=" --";
+//            qsOption+=(*qcbit)->objectName();
+//            program+=qsOption;
+//            program+=" ";
+//            program+=QString::number((*qcbit)->currentIndex());
+//        }
 
         QList<QLineEdit*> qlineEditList = this->findChildren<QLineEdit *>();
 
@@ -154,9 +156,15 @@ void MainWindow::on_pushButton_run_clicked()
 
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
-
         myProcess->start(program);
+        myProcess->setProcessChannelMode(QProcess::MergedChannels);
         myProcess->waitForFinished(-1);
+        QString p_stderr = myProcess->readAllStandardError();
+        if(!p_stderr.isEmpty()){
+            QMessageBox msgBox;
+            msgBox.setText(p_stderr);
+            msgBox.exec();
+        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;

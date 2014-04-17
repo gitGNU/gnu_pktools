@@ -1,6 +1,6 @@
 /**********************************************************************
-pkopt_svm.cc: program to optimize parameters for SVM classification
-Copyright (C) 2008-2013 Pieter Kempeneers
+pkoptsvm.cc: program to optimize parameters for SVM classification
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

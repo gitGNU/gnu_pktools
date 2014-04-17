@@ -1,6 +1,6 @@
 /**********************************************************************
 pkextract.cc: extract pixel values from raster image from a (vector or raster) sample
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -42,7 +42,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> image_opt("i", "image", "Input image file");
+  Optionpk<string> image_opt("i", "input", "Input image file");
   Optionpk<string> sample_opt("s", "sample", "Input sample vector file or class file (e.g. Corine CLC) if class option is set");
   Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
   Optionpk<string> mask_opt("m", "mask", "Mask image file");

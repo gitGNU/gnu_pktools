@@ -1,6 +1,6 @@
 /**********************************************************************
 pkdsm2shadow.cc: program to calculate sun shadow based on digital surface model and sun angles
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

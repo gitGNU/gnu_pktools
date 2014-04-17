@@ -1,6 +1,6 @@
 /**********************************************************************
-pkfs_nn.cc: feature selection for nn classifier
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkfsann.cc: feature selection for nn classifier
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
