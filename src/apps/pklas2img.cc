@@ -140,7 +140,7 @@ int main(int argc,char **argv) {
   unsigned long int nPoints=0;
   unsigned long int ipoint=0;
   for(int iinput=0;iinput<input_opt.size();++iinput){
-    assert(input_opt[iinput].find(".las")!=string::npos);
+    // assert(input_opt[iinput].find(".las")!=string::npos);
     FileReaderLas lasReader;
     try{
       lasReader.open(input_opt[iinput]);
@@ -148,6 +148,9 @@ int main(int argc,char **argv) {
     catch(string errorString){
       cout << errorString << endl;
       exit(1);
+    }
+    catch(...){
+      exit(2);
     }
     nPoints=lasReader.getPointCount();
     totalPoints+=nPoints;
@@ -230,11 +233,9 @@ int main(int argc,char **argv) {
     for(int icol=0;icol<ncol;++icol)
       outputData[irow][icol]=0;
 
-  cout << "Reading " << input_opt.size() << " las files" << endl;
+  cout << "Reading " << input_opt.size() << " point cloud files" << endl;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int iinput=0;iinput<input_opt.size();++iinput){
-    if(verbose_opt[0])
-      cout << "opening input LAS file " << input_opt[iinput] << endl;
     FileReaderLas lasReader;
     try{
       lasReader.open(input_opt[iinput]);
@@ -242,6 +243,12 @@ int main(int argc,char **argv) {
     catch(string errorString){
       cout << errorString << endl;
       exit(1);
+    }
+    if(verbose_opt[0]){
+      if(lasReader.isCompressed())
+	cout << "Reading compressed point cloud " << input_opt[iinput]<< endl;
+      else
+	cout << "Reading uncompressed point cloud " << input_opt[iinput] << endl;
     }
     //set bounding filter
     // lasReader.addBoundsFilter(minULX,maxULY,maxLRX,minLRY);

@@ -285,4 +285,5 @@ version 2.5.2
 	thanks to suggestion of Francesco Paolo Lovergine
  - subdirectory pktools for include headers
 	thanks to suggestion of Francesco Paolo Lovergine
- -
+ - pklas2img
+	support for compressed point cloud (LAZ) files
