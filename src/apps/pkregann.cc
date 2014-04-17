@@ -1,6 +1,6 @@
 /**********************************************************************
-pkregression_nn.cc: regression with artificial neural network (multi-layer perceptron)
-Copyright (C) 2008-2013 Pieter Kempeneers
+pkregann.cc: regression with artificial neural network (multi-layer perceptron)
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

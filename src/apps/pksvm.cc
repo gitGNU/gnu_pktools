@@ -1,6 +1,6 @@
 /**********************************************************************
-pkclassify_svm.cc: classify raster image using Support Vector Machine
-Copyright (C) 2008-2012 Pieter Kempeneers
+pksvm.cc: classify raster image using Support Vector Machine
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

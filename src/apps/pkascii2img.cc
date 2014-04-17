@@ -1,6 +1,6 @@
 /**********************************************************************
 pkascii2img.cc: program to create raster image based on ascii file
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

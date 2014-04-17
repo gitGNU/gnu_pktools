@@ -1,6 +1,6 @@
 /**********************************************************************
 pksensormodel.h: program to calculate geometric position based on row (sensor), col (sensor), roll, pitch, yaw and lens coordinates
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

@@ -1,6 +1,6 @@
 /**********************************************************************
-pkfs_svm.cc: feature selection for svm classifier
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkfssvm.cc: feature selection for svm classifier
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

@@ -1,6 +1,6 @@
 /**********************************************************************
-pkclassify_nn.cc: classify raster image using Artificial Neural Network
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkann.cc: classify raster image using Artificial Neural Network
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

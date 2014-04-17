@@ -1,6 +1,6 @@
 /**********************************************************************
 pkextract.cc: extract pixel values from raster image from a (vector or raster) sample
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
