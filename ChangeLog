@@ -264,6 +264,7 @@ version 2.5.1
  - pksieve
 	retain nodata in pksieve when mask is set
 version 2.5.2
+ - configure script: GDAL>=1.10.0 is required for pkdiff
  - programs ported to windows and GUI with Qt
 	removed underscore for QProcess in Windows
  - pkclassify_svm -> pksvm
