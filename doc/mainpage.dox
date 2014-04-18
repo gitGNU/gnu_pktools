@@ -9,15 +9,12 @@
 
 \section pktools_introduction Introduction
 
-pktools is a collection of programs written in C++ to perform operations, mostly on raster images.
-It heavily relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR. The programs are similar to the gdal tools (gdalinfo, gdal_translate, gdal_merge,...) and some of the functionalities provided in pktools already exist in the gdal tools. The reason for implementing pktools is a combination of personal preference and additional functionality.
+pktools is a collection of programs written in C++ to perform operations image data with a focus on remote sensing applications. It heavily relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR.
 
 All utilities in pktools use command line options and have a built in help
 
 - use the `-h` option to get help
 - pktools ALWAYS use -i for input and -o for output (unlike GDAL utilities that commonly use last argument as output and second but last argument as input)
-
-Currently the tools only work in a Linux environment
 
 Check the code statistics on http://www.ohloh.net/p/pktools
 
@@ -49,15 +46,15 @@ Download the latest release from http://download.savannah.gnu.org/releases/pktoo
 Optionally: check the release md5sum to ensure originality.
 
 \code 
-md5sum pktools-2.5.1.tar.gz
+md5sum pktools-2.5.2.tar.gz
 \endcode
 
 The result should be identical to the content of the corresponding md5 file
 
 Then unpack the release
 \code
-tar xzvf pktools-2.4.tar.gz
-cd pktools-2.4
+tar xzvf pktools-2.5.2.tar.gz
+cd pktools-2.5.2
 \endcode
 
 Basic installation (please refer to INSTALL file for more advanced configuration)
