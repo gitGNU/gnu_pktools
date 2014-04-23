@@ -131,8 +131,7 @@ void MainWindow::on_actionInput_triggered()
     int nband=p_stdout.section(' ',1).toInt();
     QStringList bandlist;
     for(int iband=0;iband<nband;++iband){
-        QString qsband="band";
-        qsband+=QString::number(iband);
+        QString qsband=QString::number(iband);
         bandlist << qsband;
     }
     ui->listWidget_band->addItems(bandlist);

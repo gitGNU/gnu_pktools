@@ -8,7 +8,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = pkexgtract_gui
+TARGET = pkextract_gui
 TEMPLATE = app
 
 
