@@ -23,6 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <QFileDialog>
 #include <QProcess>
 #include <QMessageBox>
+#include <QShortcut>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -48,11 +49,26 @@ MainWindow::MainWindow(QWidget *parent) :
     oformatlist << "" << "GTiff" << "HFA" << "ENVI";
     ui->oformat->addItems(oformatlist);
     setDefaults();
+
+    ui->listWidget_input->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    //pressing DEL activates the slots only when list widget has focus
+    QShortcut* shortcutDel = new QShortcut(QKeySequence(Qt::Key_Delete), ui->listWidget_input);
+    connect(shortcutDel, SIGNAL(activated()), this, SLOT(deleteItemInput()));
+    //pressing Backspace activates the slots only when list widget has focus
+    QShortcut* shortcutBackspace = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->listWidget_input);
+    connect(shortcutBackspace, SIGNAL(activated()), this, SLOT(deleteItemInput()));
+
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::deleteItemInput()
+{
+    qDeleteAll(ui->listWidget_input->selectedItems());
+//    delete ui->listWidget_input->currentItem();
 }
 
 void MainWindow::setDefaults()

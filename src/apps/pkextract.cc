@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
   Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
   Optionpk<string> mask_opt("m", "mask", "Mask image file");
   Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file");
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file. Make sure to set classes if rule is set to maxvote or proportion");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
   Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");

@@ -22,6 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QListWidget>
 
 namespace Ui {
 class MainWindow;
@@ -59,6 +60,8 @@ private slots:
     void on_toolButton_extent_clicked();
 
     void on_actionExtent_triggered();
+
+    void deleteItemInput();
 
 private:
     Ui::MainWindow *ui;

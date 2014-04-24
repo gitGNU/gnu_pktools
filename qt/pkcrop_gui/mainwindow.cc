@@ -46,6 +46,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->oformat->addItems(oformatlist);
 
     setDefaults();
+
+    ui->listWidget_input->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+    //pressing DEL activates the slots only when list widget has focus
+    QShortcut* shortcutDel = new QShortcut(QKeySequence(Qt::Key_Delete), ui->listWidget_band);
+    connect(shortcutDel, SIGNAL(activated()), this, SLOT(deleteItem()));
+    //pressing Backspace activates the slots only when list widget has focus
+    QShortcut* shortcutBackspace = new QShortcut(QKeySequence(Qt::Key_Backspace), ui->listWidget_band);
+    connect(shortcutBackspace, SIGNAL(activated()), this, SLOT(deleteItem()));
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +91,11 @@ void MainWindow::setDefaults()
     ui->tiled->setChecked(false);
     ui->compressed->setCurrentIndex(0);
     ui->nodata->clear();
+}
+
+void MainWindow::deleteItem()
+{
+    qDeleteAll(ui->listWidget_band->selectedItems());
 }
 
 void MainWindow::on_toolButton_input_clicked()
@@ -121,6 +135,7 @@ void MainWindow::on_actionInput_triggered()
         fileNames = dialog.selectedFiles();
     ui->listWidget_input->addItems(fileNames);
     //fill in band list
+    ui->listWidget_band->clear();
     QProcess *myProcess = new QProcess(this);
     QString program="pkinfo -nb -i ";
     //todo: loop over all filenames and get the minimum number of bands?
@@ -277,4 +292,9 @@ void MainWindow::on_noscale_clicked()
 {
     m_as=false;
     m_manual=false;
+}
+
+void MainWindow::on_toolButton_clicked()
+{
+    ui->listWidget_input->clear();
 }

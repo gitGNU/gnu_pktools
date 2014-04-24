@@ -23,6 +23,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <QMainWindow>
 #include <QModelIndex>
+#include <QShortcut>
+#include <QListWidget>
 
 namespace Ui {
 class MainWindow;
@@ -62,6 +64,10 @@ private slots:
     void on_manual_clicked();
 
     void on_noscale_clicked();
+
+    void deleteItem();
+
+    void on_toolButton_clicked();
 
 private:
     Ui::MainWindow *ui;
