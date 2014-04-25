@@ -35,7 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, pointOnSurface=9};
 }
 
 using namespace std;
@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
   Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
   Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
   Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample files. If using raster land cover maps as a sample file, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
+  Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
   Optionpk<double> min_opt("min", "min", "minimum number of samples to select (0)", 0);
   Optionpk<short> boundary_opt("bo", "boundary", "boundary for selecting the sample", 1);
   // Optionpk<short> rbox_opt("rb", "rbox", "rectangular boundary box (total width in m) to draw around the selected pixel. Can not combined with class option. Use multiple rbox options for multiple boundary boxes. Use value 0 for no box)", 0);
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
   Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
   Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), centroid, mean (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
+  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), pointOnSurface, centroid, mean (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -84,6 +85,7 @@ int main(int argc, char *argv[])
     geo_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
+    polythreshold_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     boundary_opt.retrieveOption(argc,argv);
     // rbox_opt.retrieveOption(argc,argv);
@@ -110,6 +112,7 @@ int main(int argc, char *argv[])
   std::map<std::string, rule::RULE_TYPE> ruleMap;
   //initialize ruleMap
   ruleMap["point"]=rule::point;
+  ruleMap["pointOnSurface"]=rule::pointOnSurface;
   ruleMap["centroid"]=rule::centroid;
   ruleMap["mean"]=rule::mean;
   ruleMap["proportion"]=rule::proportion;
@@ -250,9 +253,6 @@ int main(int argc, char *argv[])
   ImgReaderOgr sampleReaderOgr;
   try{
     sampleReaderOgr.open(sample_opt[0]);
-    //test
-    // int nlayer=sampleReaderOgr.getDataSource()->GetLayerCount();
-    // cout << "nlayer: " << nlayer << endl;
   }
   catch(string errorString){
     sampleIsRaster=true;
@@ -844,6 +844,7 @@ int main(int argc, char *argv[])
       case(rule::point):
       case(rule::mean):
       case(rule::sum):
+      case(rule::pointOnSurface):
       case(rule::centroid):
       default:{
 	for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
@@ -1180,11 +1181,14 @@ int main(int argc, char *argv[])
 
 	    if(verbose_opt[0]>1)
 	      std::cout << "get centroid point from polygon" << std::endl;
-	    readPolygon.Centroid(&writeCentroidPoint);
+	    if(ruleMap[rule_opt[0]]==rule::pointOnSurface)
+	      readPolygon.PointOnSurface(&writeCentroidPoint);
+	    else
+	      readPolygon.Centroid(&writeCentroidPoint);
 
 	    double ulx,uly,lrx,lry;
 	    double uli,ulj,lri,lrj;
-	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
+	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)||(ruleMap[rule_opt[0]]==rule::pointOnSurface)){
 	      ulx=writeCentroidPoint.getX();
 	      uly=writeCentroidPoint.getY();
 	      lrx=ulx;
@@ -1231,18 +1235,18 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum||ruleMap[rule_opt[0]]==rule::pointOnSurface){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
 		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    //previously here
 	    vector<double> polyValues;
 	    switch(ruleMap[rule_opt[0]]){
 	    case(rule::point):
 	    case(rule::mean):
 	    case(rule::sum):
+	    case(rule::pointOnSurface):
 	    case(rule::centroid):
 	    default:
 	      polyValues.resize(nband);
@@ -1356,10 +1360,15 @@ int main(int argc, char *argv[])
 		  if(verbose_opt[0]>1)
 		    std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
 		  ++nPointPolygon;
+		  //test
+		  if(polythreshold_opt.size())
+		    if(nPointPolygon>polythreshold_opt[0])
+		      continue;
+		      // throw(nPointPolygon);
 		  OGRFeature *writePointFeature;
 		  if(!polygon_opt[0]){
 		    //create feature
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean, sum or centroid (only create point at centroid)
+		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum&&ruleMap[rule_opt[0]]!=rule::pointOnSurface){//do not create in case of mean, sum, pointOnSurface or centroid (only create point at centroid)
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -1384,10 +1393,11 @@ int main(int argc, char *argv[])
 		    imgReader.readData(value,GDT_Float64,i,j,theBand);
 		    if(verbose_opt[0]>1)
 		      std::cout << ": " << value << std::endl;
-		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum||ruleMap[rule_opt[0]]==rule::pointOnSurface){
 		      int iclass=0;
 		      switch(ruleMap[rule_opt[0]]){
 		      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
+		      case(rule::pointOnSurface):
 		      case(rule::centroid):
 		      default:
 			polyValues[iband]=value;
@@ -1451,7 +1461,7 @@ int main(int argc, char *argv[])
 		    }
 		  }
 		  if(!polygon_opt[0]){
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean value (only at centroid)
+		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum&&ruleMap[rule_opt[0]]!=rule::pointOnSurface){//do not create in case of mean value (only at centroid)
 		      //write feature
 		      if(verbose_opt[0]>1)
 			std::cout << "creating point feature" << std::endl;
@@ -1478,7 +1488,7 @@ int main(int argc, char *argv[])
 		}
 	      }
 	    }
-	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum||ruleMap[rule_opt[0]]==rule::pointOnSurface){
 	      //do not create if no points found within polygon
 	      if(!nPointPolygon)
 		continue;
@@ -1584,11 +1594,12 @@ int main(int argc, char *argv[])
 	      }
 	      case(rule::mean):
 	      case(rule::sum):
-	      case(rule::centroid):{//mean value (written to centroid of polygon if line is not set)
+	      case(rule::pointOnSurface):
+	      case(rule::centroid):{//mean value (written to centroid of polygon if polygon_opt is not set)
 		if(verbose_opt[0])
 		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		//test
-		if(ruleMap[rule_opt[0]]==rule::centroid)
+		if(ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::pointOnSurface)
 		  assert(nPointPolygon<=1);
 		for(int index=0;index<polyValues.size();++index){
 		  double theValue=polyValues[index];
@@ -1793,6 +1804,7 @@ int main(int argc, char *argv[])
 
 	    if(verbose_opt[0]>1)
 	      std::cout << "get centroid point from polygon" << std::endl;
+	    assert(ruleMap[rule_opt[0]]!=rule::pointOnSurface);
 	    readPolygon.Centroid(&writeCentroidPoint);
 
 	    double ulx,uly,lrx,lry;
@@ -1850,7 +1862,6 @@ int main(int argc, char *argv[])
 	      else
 		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    //previously here
 	    vector<double> polyValues;
 	    switch(ruleMap[rule_opt[0]]){
 	    case(rule::point):
@@ -1969,6 +1980,12 @@ int main(int argc, char *argv[])
 		  if(verbose_opt[0]>1)
 		    std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
 		  ++nPointPolygon;
+		  //test
+		  if(polythreshold_opt.size())
+		    if(nPointPolygon>polythreshold_opt[0])
+		      continue;
+		      // throw(nPointPolygon);
+
 		  OGRFeature *writePointFeature;
 		  if(!polygon_opt[0]){
 		    //create feature
@@ -2411,6 +2428,11 @@ int main(int argc, char *argv[])
 	}
 	catch(std::string e){
 	  std::cout << e << std::endl;
+	  continue;
+	}
+	catch(int npoint){
+	  if(verbose_opt[0])
+	    std::cout << "number of points read in polygon: " << npoint << std::endl;
 	  continue;
 	}
       }//end of getNextFeature
