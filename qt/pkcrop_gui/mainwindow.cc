@@ -73,6 +73,7 @@ void MainWindow::setDefaults()
     ui->lrx->clear();
     ui->lry->clear();
     ui->extent->clear();
+    ui->listWidget_band->clear();
     //scaling
     ui->resample->setCurrentIndex(0);
     ui->as_from->clear();

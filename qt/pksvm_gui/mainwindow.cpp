@@ -51,7 +51,9 @@ void MainWindow::setDefaults()
     ui->label->setText("label");
     ui->cv->setText("0");
     //tab input/output
+    ui->input->clear();
     ui->msknodata->setText("0");
+    ui->output->clear();
     ui->nodata->setText("0");
     ui->ct->clear();
     //tab classifier
