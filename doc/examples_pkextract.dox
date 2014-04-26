@@ -2,36 +2,36 @@
 \code
 pkextract -i input.tif -s points.shp -o extracted.shp
 \endcode
-extract all bands from input.tif to extracted.shp at pixel locations defined in points.shp.
+extract the points read in points.shp from input.tif. Create a new point vector file  extracted.shp, where each point will contain an attribute for the individual input bands in input.tif.
 
 \code
-pkextract -i input.tif -s points.shp -o extracted.shp -m mask.tif -msknodata 255
+pkextract -i input.tif -s points.shp -m mask.tif -msknodata 255 -o extracted.shp 
 \endcode
 extract all bands from input.tif to extracted.shp at pixel locations defined in points.shp that have not a value 255 in mask.tif
 
 \code
-pkextract -i input.tif -s locations.shp -o training.shp -c -1
+pkextract -i input.tif -s polygons.shp -o training.shp -r point
 \endcode
-extract all classes (classes must have value different from 0) in input image input.tif to extracted.shp at pixel locations defined in points.shp
+extract all pixels from input.tif covered by the polygons in locations.shp. Each polygon can thus result in multiple point features with attributes for each input band. Write the extracted points to a point vector file training.shp.
 
 \code
-pkextract -i input.tif -s polygons.shp -o extracted.shp -l -b 0
+pkextract -i input.tif -b 0 -s polygons.shp -r centroid -o extracted.shp -polygon  
 \endcode
-extract band 0 from input.tif to polygon vector file extracted.shp at centroids of polygons in polygons.shp.
+extract the first band from input.tif at the centroids of the polygons in vector filepolygons.shp. Assign the extracted point value to a new attribute of the polygon and write to the vector file extracted.shp.
 
 \code
-pkextract -i input.tif -s polygons.shp -o extracted.shp -l -r 1 -b 1
+pkextract -i input.tif -b 1 -s polygons.shp -r mean -o extracted.shp -polygon  
 \endcode
-extract band 1 from input.tif to polygon vector file extracted.shp as means of polygons in polygons.shp.
+extract the mean values for the second band in input.tif covered by each polygon in polygons.shp. The mean values are written to a copy of the polygons in output vector file extracted.shp
 
 \code
 pkextract -i input.tif -s sample.tif -o extracted.shp -t 10 -c 1 -c 2 -c 3
 \endcode
-extract all bands for a random sample of 10 percent of the pixels in sample.tif where sample.tif equals 1,2 or 3 (class values) to extracted.shp.
+Typical use where pixels are extracted based on a land cover map (sample.tif). Extract all bands for a random sample of 10 percent of the pixels in the land cover map sample.tif where the land cover classes are either 1,2 or 3 (class values). Write output to the point vector file extracted.shp.
 
 \code
 pkextract -i input.tif -s sample.tif -o extracted.shp -t -5000 -c 1
 \endcode
-extract all bands for the first 5000 pixels (if available) where sample.tif equals 1 to extracted.shp.
+extract all bands for the first 5000 pixels encountered in sample.tif where pixels have a value equal to 1. Write output to point vector file extracted.shp.
 
 

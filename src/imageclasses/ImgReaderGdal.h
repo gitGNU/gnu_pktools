@@ -27,8 +27,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "gdal_priv.h"
 #include "base/Vector2d.h"
 
-// using namespace std;
-
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
 //--------------------------------------------------------------------------
@@ -43,42 +41,63 @@ public:
   int nrOfCol(void) const { return m_ncol;};
   int nrOfRow(void) const { return m_nrow;};
   int nrOfBand(void) const { return m_nband;};
-  bool isGeoRef() const {return m_isGeoRef;};
+  bool isGeoRef() const {double gt[6];getGeoTransform(gt);if(gt[5]<0) return true;else return false;};
   std::string getProjection(void) const;
   std::string getProjectionRef(void) const;
   std::string getGeoTransform() const;
-  void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const;
+  void getGeoTransform(double* gt) const;
+  /* void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const; */
   std::string getDescription() const;
   std::string getMetadataItem() const;
   std::string getImageDescription() const;
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
   bool getCentrePos(double& x, double& y) const;
-  double getUlx() const {return (m_isGeoRef)? m_ulx : 0;};
-  double getUly() const {return (m_isGeoRef)? m_uly : nrOfRow()-1;};
-  double getLrx() const {return (m_isGeoRef)? m_ulx+nrOfCol()*m_delta_x : nrOfCol()-1;};
-  double getLry() const {return (m_isGeoRef)? m_uly-nrOfRow()*m_delta_y : 0;};
+  double getUlx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(ulx);};
+  double getUly() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(uly);};
+  double getLrx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lrx);};
+  double getLry() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lry);};
   // bool getMagicPixel(double& magicX, double& magicY) const {magicX=m_magic_x;magicY=m_magic_y;};
+  void setScale(double theScale, int band=0){
+    /* if(getRasterBand(band)->SetScale(theScale)==CE_Failure){ */
+    if(m_scale.size()!=nrOfBand()){//initialize
+      m_scale.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+	m_scale[iband]=1.0;
+    }
+    m_scale[band]=theScale;
+    /* }; */
+  }
+  void setOffset(double theOffset, int band=0){
+    /* if(getRasterBand(band)->SetOffset(theOffset)==CE_Failure){ */
+    if(m_offset.size()!=nrOfBand()){
+      m_offset.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+	m_offset[iband]=0.0;
+    }
+      m_offset[band]=theOffset;
+    /* }; */
+  }
   int getNoDataValues(std::vector<double>& noDataValues) const;
-  bool isNoData(double value) const{return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
+  bool isNoData(double value) const{if(m_noDataValues.empty()) return false;else return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
   int pushNoDataValue(double noDataValue);
-  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {getRasterBand(band)->SetNoDataValue(noDataValue);};
+  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
   bool covers(double x, double y) const;
   bool covers(double ulx, double  uly, double lrx, double lry) const;
   bool geo2image(double x, double y, double& i, double& j) const;
   bool image2geo(double i, double j, double& x, double& y) const;
-  double getDeltaX(void) const {return m_delta_x;};
-  double getDeltaY(void) const {return m_delta_y;};
+  double getDeltaX(void) const {double gt[6];getGeoTransform(gt);return gt[1];};
+  double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
   template<typename T> void readData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
-  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=0) const;
+  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR) const;
   template<typename T> void readDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   template<typename T> void readDataBlock(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
-  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=0) const;
+  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=NEAR) const;
   void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
   void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=false) const;
   double getMin(int& col, int& row, int band=0) const;
-  unsigned long int getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max,int& nbin, int theBand=0) const;
+  unsigned long int getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0) const;
   double getMax(int& col, int& row, int band=0) const;
   void getRefPix(double& refX, double &refY, int band=0) const;
   void getRange(std::vector<short>& range, int Band=0) const;
@@ -103,14 +122,15 @@ protected:
   int m_ncol;
   int m_nrow;
   int m_nband;
-  double m_ulx;
-  double m_uly;
-  double m_delta_x;
-  double m_delta_y;
-  // double m_magic_x;
-  // double m_magic_y;
-  bool m_isGeoRef;
+  double m_gt[6];
+  /* double m_ulx; */
+  /* double m_uly; */
+  /* double m_delta_x; */
+  /* double m_delta_y; */
+  /* bool m_isGeoRef; */
   std::vector<double> m_noDataValues;
+  std::vector<double> m_scale;
+  std::vector<double> m_offset;
 };
 
 //     adfGeoTransform[0] /* top left x */
@@ -131,6 +151,10 @@ template<typename T> void ImgReaderGdal::readData(T& value, const GDALDataType& 
   assert(row<nrOfRow());
   assert(row>=0);
   poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,dataType,0,0);
+  if(m_scale.size()>band)
+    value=static_cast<double>(value)*m_scale[band];
+  if(m_offset.size()>band)
+    value=static_cast<double>(value)+m_offset[band];
 }
 
 template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType, int minCol, int maxCol, int row, int band) const
@@ -148,6 +172,16 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
   if(buffer.size()!=maxCol-minCol+1)
     buffer.resize(maxCol-minCol+1);
   poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
+  if(m_scale.size()>band||m_offset.size()>band){
+    double theScale=1;
+    double theOffset=0;
+    if(m_scale.size()>band)
+      theScale=m_scale[band];
+    if(m_offset.size()>band)
+      theOffset=m_offset[band];
+    for(int index=0;index<buffer.size();++index)
+      buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
+  }
 }
 
 template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band, RESAMPLE resample) const
@@ -190,6 +224,12 @@ template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer, cons
   
 template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
 {
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band)
+    theScale=m_scale[band];
+  if(m_offset.size()>band)
+    theOffset=m_offset[band];
   //fetch raster band
   GDALRasterBand  *poBand;
   assert(band<nrOfBand()+1);
@@ -205,6 +245,10 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, c
   if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
     buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
   poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);
+  if(m_scale.size()>band||m_offset.size()>band){
+    for(int index=0;index<buffer.size();++index)
+      buffer[index]=theScale*buffer[index]+theOffset;
+  }
 }
 
 // template<typename T> void ImgReaderGdal::readDataBlock(vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const

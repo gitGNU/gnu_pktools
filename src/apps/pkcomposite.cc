@@ -1,6 +1,6 @@
 /**********************************************************************
-pkmosaic.cc: program to create mosaic geo-referenced images
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkcomposite.cc: program to mosaic and composite geo-referenced images
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -38,28 +38,28 @@ int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
   Optionpk<string>  output_opt("o", "output", "Output image file");
-  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
+  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
-  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)", 0.0);
-  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)", 0.0);
-  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (-1: crop all bands)", -1);
+  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
+  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
+  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<short>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in image if out of bounds.", 0);
-  Optionpk<unsigned short>  resample_opt("r", "resample", "Resampling method (0: nearest neighbour, 1: bi-linear interpolation).", 0);
+  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<string> crule_opt("cr", "crule", "Composite rule for mosaic (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
   Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
-  Optionpk<int> validBand_opt("vb", "validBand", "valid band index(es)", 0);
-  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for valid band", 0);
-  Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.", -99999999);
-  Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.", 99999999);
+  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for input image", 0);
+  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Bands in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
+  Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output image if not valid or out of bounds.", 0);
+  Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
+  Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
   Optionpk<bool> file_opt("file", "file", "write number of observations for each pixels as additional layer in mosaic", false);
   Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the mosaic, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image).", 0);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     description_opt.retrieveOption(argc,argv);
     crule_opt.retrieveOption(argc,argv);
     ruleBand_opt.retrieveOption(argc,argv);
-    validBand_opt.retrieveOption(argc,argv);
+    bndnodata_opt.retrieveOption(argc,argv);
     srcnodata_opt.retrieveOption(argc,argv);
     minValue_opt.retrieveOption(argc,argv);
     maxValue_opt.retrieveOption(argc,argv);
@@ -119,30 +119,36 @@ int main(int argc, char *argv[])
   cruleMap["median"]=crule::median;
   cruleMap["sum"]=crule::sum;
 
-  while(srcnodata_opt.size()<validBand_opt.size())
+  while(srcnodata_opt.size()<bndnodata_opt.size())
     srcnodata_opt.push_back(srcnodata_opt[0]);
-  while(validBand_opt.size()<srcnodata_opt.size())
-    validBand_opt.push_back(validBand_opt[0]);
-  while(minValue_opt.size()<validBand_opt.size())
-    minValue_opt.push_back(minValue_opt[0]);
-  while(validBand_opt.size()<minValue_opt.size())
-    validBand_opt.push_back(validBand_opt[0]);
-  while(maxValue_opt.size()<validBand_opt.size())
-    maxValue_opt.push_back(maxValue_opt[0]);
-  while(validBand_opt.size()<maxValue_opt.size())
-    validBand_opt.push_back(validBand_opt[0]);
+  while(bndnodata_opt.size()<srcnodata_opt.size())
+    bndnodata_opt.push_back(bndnodata_opt[0]);
+  if(minValue_opt.size()){
+    while(minValue_opt.size()<bndnodata_opt.size())
+      minValue_opt.push_back(minValue_opt[0]);
+    while(bndnodata_opt.size()<minValue_opt.size())
+      bndnodata_opt.push_back(bndnodata_opt[0]);
+  }
+  if(maxValue_opt.size()){
+    while(maxValue_opt.size()<bndnodata_opt.size())
+      maxValue_opt.push_back(maxValue_opt[0]);
+    while(bndnodata_opt.size()<maxValue_opt.size())
+      bndnodata_opt.push_back(bndnodata_opt[0]);
+  }
   RESAMPLE theResample;
-  switch(resample_opt[0]){
-  case(BILINEAR):
-    theResample=BILINEAR;
-    if(verbose_opt[0])
-      cout << "resampling: bilinear interpolation" << endl;
-    break;
-  default:
+  if(resample_opt[0]=="near"){
     theResample=NEAR;
     if(verbose_opt[0])
       cout << "resampling: nearest neighbour" << endl;
-    break;
+  }
+  else if(resample_opt[0]=="bilinear"){
+    theResample=BILINEAR;
+    if(verbose_opt[0])
+      cout << "resampling: bilinear interpolation" << endl;
+  }
+  else{
+    std::cout << "Error: resampling method " << resample_opt[0] << " not supported" << std::endl;
+    exit(1);
   }
   
   int nband=0;
@@ -176,8 +182,8 @@ int main(int argc, char *argv[])
       cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
   }
 
-  double dx=dx_opt[0];
-  double dy=dy_opt[0];
+  double dx=0;
+  double dy=0;
   //get bounding box from extentReader if defined
   ImgReaderOgr extentReader;
   if(extent_opt.size()){
@@ -221,6 +227,10 @@ int main(int argc, char *argv[])
     }
     double theULX, theULY, theLRX, theLRY;
     imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
+    if(theLRY>theULY){
+      cerr << "Error: " << input_opt[ifile] << " is not georeferenced, only referenced images are supported for pkmosaic " << endl;
+      exit(1);
+    }
     if(verbose_opt[0])
       cout << "Bounding Box (ULX ULY LRX LRY): " << fixed << setprecision(6) << theULX << " " << theULY << " " << theLRX << " " << theLRY << endl;
     if(!init){
@@ -256,7 +266,7 @@ int main(int argc, char *argv[])
           break;
         }
       }
-      if(band_opt[0]>=0){
+      if(band_opt.size()){
 	nband=band_opt.size();
         bands.resize(band_opt.size());
         for(int iband=0;iband<band_opt.size();++iband){
@@ -270,13 +280,8 @@ int main(int argc, char *argv[])
         for(int iband=0;iband<nband;++iband)
           bands[iband]=iband;
       }
-      assert(validBand_opt.size()==minValue_opt.size());
-      assert(validBand_opt.size()==maxValue_opt.size());
-      for(int iband=0;iband<validBand_opt.size();++iband){
-        assert(validBand_opt[iband]>=0&&validBand_opt[iband]<nband);
-        if(verbose_opt[0]){
-          cout << "band " << validBand_opt[iband] << " is valid in ] " << minValue_opt[iband] << " , " << maxValue_opt[iband] << " [" << endl;
-        }
+      for(int iband=0;iband<bndnodata_opt.size();++iband){
+        assert(bndnodata_opt[iband]>=0&&bndnodata_opt[iband]<nband);
       }
       //if output type not set, get type from input image
       if(theType==GDT_Unknown){
@@ -300,10 +305,14 @@ int main(int argc, char *argv[])
       maxULY=theULY;
       minULX=theULX;
       minLRY=theLRY;
-      if(!dx||!dy){
+      if(dx_opt.size())
+	dx=dx_opt[0];
+      else
         dx=imgReader.getDeltaX();
+      if(dy_opt.size())
+	dy=dy_opt[0];
+      else
         dy=imgReader.getDeltaY();
-      }
       // imgReader.getMagicPixel(magic_x,magic_y);
       init=true;
     }
@@ -378,7 +387,10 @@ int main(int argc, char *argv[])
   }
   else
     nwriteBand=(file_opt[0])? bands.size()+1:bands.size();
-  assert(output_opt.size());
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
+    exit(0);
+  }
   if(verbose_opt[0])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
@@ -391,7 +403,15 @@ int main(int argc, char *argv[])
   }
   if(description_opt.size())
     imgWriter.setImageDescription(description_opt[0]);
-  imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
+  double gt[6];
+  gt[0]=minULX;
+  gt[1]=dx;
+  gt[2]=0;
+  gt[3]=maxULY;
+  gt[4]=0;
+  gt[5]=-dy;
+  imgWriter.setGeoTransform(gt);
+  // imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
   if(projection_opt.size()){
     if(verbose_opt[0])
       cout << "projection: " << projection_opt[0] << endl;
@@ -498,7 +518,7 @@ int main(int argc, char *argv[])
       }
       // for(int iband=0;iband<imgReader.nrOfBand();++iband){
       for(int iband=0;iband<nband;++iband){
-	int readBand=(band_opt[0]<0)?iband:band_opt[iband];
+	int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
         readBuffer[iband].resize(readncol);
 	try{
           imgReader.readData(readBuffer[iband],GDT_Float64,startCol,endCol,readRow,readBand,theResample);
@@ -518,7 +538,7 @@ int main(int argc, char *argv[])
         double val_current=0;
         double val_new=0;
         bool readValid=true;
-        switch(resample_opt[0]){
+        switch(theResample){
         case(BILINEAR):
           lowerCol=readCol-0.5;
           lowerCol=static_cast<int>(lowerCol);
@@ -528,25 +548,53 @@ int main(int argc, char *argv[])
             lowerCol=0;
           if(upperCol>=imgReader.nrOfCol())
             upperCol=imgReader.nrOfCol()-1;
-          for(int vband=0;vband<validBand_opt.size();++vband){
-            val_new=(readCol-0.5-lowerCol)*readBuffer[validBand_opt[vband]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[validBand_opt[vband]][lowerCol-startCol];
-            if(val_new<=minValue_opt[vband]||val_new>=maxValue_opt[vband]||val_new==srcnodata_opt[vband]){
-              readValid=false;
-              break;
-            }
-          }
+          for(int vband=0;vband<bndnodata_opt.size();++vband){
+            val_new=(readCol-0.5-lowerCol)*readBuffer[bndnodata_opt[vband]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[bndnodata_opt[vband]][lowerCol-startCol];
+	    if(minValue_opt.size()>vband){
+	      if(val_new<=minValue_opt[vband]){
+		readValid=false;
+		break;
+	      }
+	    }
+	    if(maxValue_opt.size()>vband){
+	      if(val_new>=maxValue_opt[vband]){
+		readValid=false;
+		break;
+	      }
+	    }
+	    if(srcnodata_opt.size()>vband){
+	      if(val_new==srcnodata_opt[vband]){
+		readValid=false;
+		break;
+	      }
+	    }
+	  }
           break;
         default:
           readCol=static_cast<int>(readCol);
-          for(int vband=0;vband<validBand_opt.size();++vband){
-            val_new=readBuffer[validBand_opt[vband]][readCol-startCol];
-            if(val_new<=minValue_opt[vband]||val_new>=maxValue_opt[vband]||val_new==srcnodata_opt[vband]){
-              readValid=false;
-              break;
-            }
-          }
+          for(int vband=0;vband<bndnodata_opt.size();++vband){
+            val_new=readBuffer[bndnodata_opt[vband]][readCol-startCol];
+	    if(minValue_opt.size()>vband){
+	      if(val_new<=minValue_opt[vband]){
+		readValid=false;
+		break;
+	      }
+	    }
+	    if(maxValue_opt.size()>vband){
+	      if(val_new>=maxValue_opt[vband]){
+		readValid=false;
+		break;
+	      }
+	    }
+	    if(srcnodata_opt.size()>vband){
+	      if(val_new==srcnodata_opt[vband]){
+		readValid=false;
+		break;
+	      }
+	    }
+	  }
           break;
-        }
+	}
 	if(readValid){
           if(writeValid[ib]){
             int iband=0;
@@ -560,7 +608,7 @@ int main(int argc, char *argv[])
 	      double ndvi_new=0;
               double red_new=0;
               double nir_new=0;
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -605,7 +653,7 @@ int main(int argc, char *argv[])
             case(crule::minband):
             case(crule::validband)://max,min,valid band
               val_current=writeBuffer[ruleBand_opt[0]][ib];
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -644,7 +692,7 @@ int main(int argc, char *argv[])
               }
 	      break;
             case(crule::mode)://max voting (only for Byte images)
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -672,7 +720,7 @@ int main(int argc, char *argv[])
             case(crule::mean)://mean value
 	    case(crule::median)://median value
 	    case(crule::sum)://sum value
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -704,7 +752,7 @@ int main(int argc, char *argv[])
 	      break;
 	    case(crule::overwrite):
 	    default:
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -741,7 +789,7 @@ int main(int argc, char *argv[])
             case(crule::mean):
             case(crule::median):
             case(crule::sum):
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -769,7 +817,7 @@ int main(int argc, char *argv[])
               ++fileBuffer[ib];
               break;
             case(crule::mode):
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -796,7 +844,7 @@ int main(int argc, char *argv[])
               }
               break;
             default:
-              switch(resample_opt[0]){
+              switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
@@ -848,7 +896,7 @@ int main(int argc, char *argv[])
       else{
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
           vector<short>::iterator maxit=maxBuffer[icol].begin();
-          maxit=stat.max(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
+          maxit=stat.mymax(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
           writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
           fileBuffer[icol]=*(maxit);
         }

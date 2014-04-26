@@ -23,6 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 extern "C" {
+#include <gsl/gsl_sort.h>
 #include <gsl/gsl_wavelet.h>
 }
 #include "StatFactory.h"
@@ -32,7 +33,7 @@ extern "C" {
 namespace filter
 {
   
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwtForward=26, dwtInverse=27, dwtQuantize=28};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28};
 
 class Filter
 {
@@ -53,30 +54,37 @@ public:
     initFilterMap(m_filterMap);
     return m_filterMap[filterType];
   };
-  void setTaps(const std::vector<double> &taps);
+  void setTaps(const std::vector<double> &taps, bool normalize=true);
   void pushClass(short theClass=1){m_class.push_back(theClass);};
   void pushMask(short theMask=0){m_mask.push_back(theMask);};
-  template<class T> void doit(const std::vector<T>& input, std::vector<T>& output, int down=1, int offset=0);
-  template<class T> void doit(T* input, int inputSize, std::vector<T>& output, int down=1, int offset=0);
-  template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down=1, int offset=0, bool verbose=0);
-  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0);
-  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
+  template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, int down=1, int offset=0);
+  template<class T> void smooth(const std::vector<T>& input, std::vector<T>& output, short dim, int down=1, int offset=0);
+  template<class T> void filter(T* input, int inputSize, std::vector<T>& output, int down=1, int offset=0);
+  template<class T> void smooth(T* input, int inputSize, std::vector<T>& output, short dim, int down=1, int offset=0);
+  template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down=1, int offset=0, bool verbose=false);
+  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0, short verbose=0);
+  void filter(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
+  void smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down=1, int offset=0);
   double getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta=1.0, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, std::vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool transposeInput=false, bool verbose=false);
 
   template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, std::vector<T>& output, bool verbose=false);
   template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
+  void dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut);
   void dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family);
   void dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family);
+  void dwtCut(std::vector<double>& data, const std::string& wavelet_type, int family, double cut);
 
 private:
 
   static void initFilterMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
     //initialize Map
-    m_filterMap["dwtForward"]=filter::dwtForward;
-    m_filterMap["dwtInverse"]=filter::dwtInverse;
-    m_filterMap["dwtQuantize"]=filter::dwtQuantize;
+    m_filterMap["dwt"]=filter::dwt;
+    m_filterMap["dwti"]=filter::dwti;
+    m_filterMap["dwt_cut"]=filter::dwt_cut;
     m_filterMap["stdev"]=filter::stdev;
     m_filterMap["var"]=filter::var;
     m_filterMap["min"]=filter::min;
@@ -392,7 +400,16 @@ template<class T> void Filter::applyFwhm(const std::vector<double> &wavelengthIn
   }
 }
 
-template<class T> void Filter::doit(const std::vector<T>& input, std::vector<T>& output, int down, int offset)
+  template<class T> void Filter::smooth(const std::vector<T>& input, std::vector<T>& output, short dim, int down, int offset)
+{
+  assert(dim>0);
+  m_taps.resize(dim);
+  for(int itap=0;itap<dim;++itap)
+    m_taps[itap]=1.0/dim;
+  filter(input,output,down,offset);
+ }
+
+template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T>& output, int down, int offset)
 {
   output.resize((input.size()-offset+down-1)/down);
   int i=0;
@@ -469,21 +486,21 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
     }
     switch(getFilterType(method)){
     case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.max(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
       break;
     case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.min(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
       break;
     default:
-      string errorString="method not supported";
+      std::string errorString="method not supported";
       throw(errorString);
       break;
     }
     if(verbose){
-      cout << "buffer: ";
+      std::cout << "buffer: ";
       for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        cout << statBuffer[ibuf] << " ";
-      cout << "->" << output[(i-offset+down-1)/down] << endl;
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
     }
   }
   //main
@@ -509,21 +526,21 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
     }
     switch(getFilterType(method)){
     case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.max(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
       break;
     case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.min(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
       break;
     default:
-      string errorString="method not supported";
+      std::string errorString="method not supported";
       throw(errorString);
       break;
     }
     if(verbose){
-      cout << "buffer: ";
+      std::cout << "buffer: ";
       for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        cout << statBuffer[ibuf] << " ";
-      cout << "->" << output[(i-offset+down-1)/down] << endl;
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
     }
     statBuffer.clear();
   }
@@ -563,10 +580,10 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
     }
     switch(getFilterType(method)){
     case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.max(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
       break;
     case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.min(statBuffer);
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
       break;
     default:
       std::string errorString="method not supported";
@@ -574,15 +591,24 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
       break;
     }
     if(verbose){
-      cout << "buffer: ";
+      std::cout << "buffer: ";
       for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        cout << statBuffer[ibuf] << " ";
-      cout << "->" << output[(i-offset+down-1)/down] << endl;
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
     }
   }
 }
 
-template<class T> void Filter::doit(T* input, int inputSize, std::vector<T>& output, int down, int offset)
+ template<class T> void Filter::smooth(T* input, int inputSize, std::vector<T>& output, short dim, int down, int offset)
+{
+  assert(dim>0);
+  m_taps.resize(dim);
+  for(int itap=0;itap<dim;++itap)
+    m_taps[itap]=1.0/dim;
+  filter(input,output,down,offset);
+ }
+
+template<class T> void Filter::filter(T* input, int inputSize, std::vector<T>& output, int down, int offset)
 {
   output.resize((inputSize-offset+down-1)/down);
   int i=0;

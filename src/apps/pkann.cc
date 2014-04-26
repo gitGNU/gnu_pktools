@@ -1,6 +1,6 @@
 /**********************************************************************
-pkclassify_nn.cc: classify raster image using Artificial Neural Network
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkann.cc: classify raster image using Artificial Neural Network
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-#include "pkclassify_nn.h"
+#include <stdlib.h>
 #include <vector>
 #include <map>
 #include <algorithm>
@@ -29,7 +29,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/PosValue.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "floatfann.h"
-#include "myfann_cpp.h"
+#include "algorithms/myfann_cpp.h"
+
+using namespace std;
 
 int main(int argc, char *argv[])
 {
@@ -37,12 +39,14 @@ int main(int argc, char *argv[])
   
   //--------------------------- command line options ------------------------------------
   Optionpk<string> input_opt("i", "input", "input image"); 
-  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
-  Optionpk<string> label_opt("label", "label", "identifier for class label in training shape file.","label"); 
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
+  Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
+  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
-  Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
-  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
+  Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
+  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
@@ -59,7 +63,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
-  Optionpk<string> mask_opt("m", "mask", "mask image (see also mvalue option (default is no mask)"); 
+  Optionpk<string> mask_opt("m", "mask", "mask image (support for single mask only, see also msknodata option)"); 
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
@@ -70,17 +74,20 @@ int main(int argc, char *argv[])
   Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image"); 
   Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
   Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
+  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","ESRI Shapefile");
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
-  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
+  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     training_opt.retrieveOption(argc,argv);
+    tlayer_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -111,6 +118,7 @@ int main(int argc, char *argv[])
     prob_opt.retrieveOption(argc,argv);
     entropy_opt.retrieveOption(argc,argv);
     active_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
     nactive_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
@@ -131,7 +139,7 @@ int main(int argc, char *argv[])
     if(mask_opt.size())
       cout << "mask filename: " << mask_opt[0] << endl;
     if(training_opt.size()){
-      cout << "training shape file: " << endl;
+      cout << "training vector file: " << endl;
       for(int ifile=0;ifile<training_opt.size();++ifile)
         cout << training_opt[ifile] << endl;
     }
@@ -146,7 +154,7 @@ int main(int argc, char *argv[])
   ImgWriterOgr activeWriter;
   if(active_opt.size()){
     ImgReaderOgr trainingReader(training_opt[0]);
-    activeWriter.open(active_opt[0]);
+    activeWriter.open(active_opt[0],ogrformat_opt[0]);
     activeWriter.createLayer(active_opt[0],trainingReader.getProjection(),wkbPoint,NULL);
     activeWriter.copyFields(trainingReader);
   }
@@ -201,16 +209,18 @@ int main(int argc, char *argv[])
       trainingMap.clear();
       trainingPixels.clear();
       if(verbose_opt[0]>=1)
-        cout << "reading imageShape file " << training_opt[0] << endl;
+        cout << "reading imageVector file " << training_opt[0] << endl;
       try{
+	ImgReaderOgr trainingReaderBag(training_opt[ibag]);
         if(band_opt.size())
-          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
         else
-          totalSamples=readDataImageShape(training_opt[ibag],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
         if(trainingMap.size()<2){
-          string errorstring="Error: could not read at least two classes from training file";
+          string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);
         }
+	trainingReaderBag.close();
       }
       catch(string error){
         cerr << error << std::endl;
@@ -256,7 +266,7 @@ int main(int argc, char *argv[])
       if(balance_opt[0]>0){
         while(balance_opt.size()<nclass)
           balance_opt.push_back(balance_opt.back());
-        if(random)
+        if(random_opt[0])
           srand(time(NULL));
         totalSamples=0;
         for(int iclass=0;iclass<nclass;++iclass){
@@ -382,7 +392,7 @@ int main(int argc, char *argv[])
       int nctraining=0;
       if(verbose_opt[0]>=1)
         cout << "calculating features for class " << iclass << endl;
-      if(random)
+      if(random_opt[0])
         srand(time(NULL));
       nctraining=(bagSize_opt[iclass]<100)? trainingPixels[iclass].size()/100.0*bagSize_opt[iclass] : trainingPixels[iclass].size();//bagSize_opt[iclass] given in % of training size
       if(nctraining<=0)
@@ -568,7 +578,17 @@ int main(int argc, char *argv[])
     GDALProgressFunc pfnProgress=GDALTermProgress;
     float progress=0;
   //-------------------------------- open image file ------------------------------------
-  if(input_opt[0].find(".shp")==string::npos){
+  bool inputIsRaster=false;
+  ImgReaderOgr imgReaderOgr;
+  try{
+    imgReaderOgr.open(input_opt[0]);
+    imgReaderOgr.close();
+  }
+  catch(string errorString){
+    inputIsRaster=true;
+  }
+  if(inputIsRaster){
+  // if(input_opt[0].find(".shp")==string::npos){
     ImgReaderGdal testImage;
     try{
       if(verbose_opt[0]>=1)
@@ -835,7 +855,7 @@ int main(int argc, char *argv[])
               probOut[iclass][icol]+=result[iclass]*priors[iclass];//add probabilities for each bag
               break;
             case(1)://product rule
-              probOut[iclass][icol]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+              probOut[iclass][icol]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
               break;
             case(2)://max rule
               if(priors[iclass]*result[iclass]>probOut[iclass][icol])
@@ -874,7 +894,7 @@ int main(int argc, char *argv[])
         for(short iclass=0;iclass<nclass;++iclass){
           float prv=probOut[iclass][icol];
           prv/=normBag;
-          entropy[icol]-=prv*log(prv)/log(2);
+          entropy[icol]-=prv*log(prv)/log(2.0);
           prv*=100.0;
             
           probOut[iclass][icol]=static_cast<short>(prv+0.5);
@@ -882,7 +902,7 @@ int main(int argc, char *argv[])
           // assert(classValueMap[nameVector[iclass]]>=0);
           // probOut[classValueMap[nameVector[iclass]]][icol]=static_cast<short>(prv+0.5);
         }
-        entropy[icol]/=log(nclass)/log(2);
+        entropy[icol]/=log(static_cast<double>(nclass))/log(2.0);
         entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
 	if(active_opt.size()){
 	  if(entropy[icol]>activePoints.back().value){
@@ -944,143 +964,155 @@ int main(int argc, char *argv[])
       classImageBag.close();
     classImageOut.close();
   }
-  else{//classify shape file
+  else{//classify vector file
     cm.clearResults();
-    //notice that fields have already been set by readDataImageShape (taking into account appropriate bands)
+    //notice that fields have already been set by readDataImageOgr (taking into account appropriate bands)
     for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
       if(output_opt.size())
         assert(output_opt.size()==input_opt.size());
       if(verbose_opt[0])
         cout << "opening img reader " << input_opt[ivalidation] << endl;
-      ImgReaderOgr imgReaderOgr(input_opt[ivalidation]);
+      imgReaderOgr.open(input_opt[ivalidation]);
       ImgWriterOgr imgWriterOgr;
 
       if(output_opt.size()){
 	if(verbose_opt[0])
 	  std::cout << "opening img writer and copying fields from img reader" << output_opt[ivalidation] << std::endl;
 	imgWriterOgr.open(output_opt[ivalidation],imgReaderOgr);
+      }
+      if(verbose_opt[0])
+	cout << "number of layers in input ogr file: " << imgReaderOgr.getLayerCount() << endl;
+      for(int ilayer=0;ilayer<imgReaderOgr.getLayerCount();++ilayer){
 	if(verbose_opt[0])
-	  std::cout << "creating field class" << std::endl;
-	if(classValueMap.size())
-	  imgWriterOgr.createField("class",OFTInteger);
-	else
-	  imgWriterOgr.createField("class",OFTString);
-      }
-      OGRFeature *poFeature;
-      unsigned int ifeature=0;
-      unsigned int nFeatures=imgReaderOgr.getFeatureCount();
-      while( (poFeature = imgReaderOgr.getLayer()->GetNextFeature()) != NULL ){
-        if(verbose_opt[0]>1)
-          cout << "feature " << ifeature << endl;
-        if( poFeature == NULL )
-          break;
-        OGRFeature *poDstFeature = NULL;
+	  cout << "processing input layer " << ilayer << endl;
 	if(output_opt.size()){
-          poDstFeature=imgWriterOgr.createFeature();
-          if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
-            CPLError( CE_Failure, CPLE_AppDefined,
-                      "Unable to translate feature %d from layer %s.\n",
-                      poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
-            OGRFeature::DestroyFeature( poFeature );
-            OGRFeature::DestroyFeature( poDstFeature );
-          }
-        }
-        vector<float> validationPixel;
-        vector<float> validationFeature;
-        
-        imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature);
-        assert(validationPixel.size()==nband);
-        vector<float> probOut(nclass);//posterior prob for each class
-        for(int iclass=0;iclass<nclass;++iclass)
-          probOut[iclass]=0;
-        for(int ibag=0;ibag<nbag;++ibag){
-          for(int iband=0;iband<nband;++iband){
-            validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
-            if(verbose_opt[0]==2)
-              std:: cout << " " << validationFeature.back();
-          }
-          if(verbose_opt[0]==2)
-            std::cout << std:: endl;
-          vector<float> result(nclass);
-          result=net[ibag].run(validationFeature);
-
-          if(verbose_opt[0]>1){
-            for(int iclass=0;iclass<result.size();++iclass)
-              std::cout << result[iclass] << " ";
-            std::cout << std::endl;
-          }
-          //calculate posterior prob of bag 
-          for(int iclass=0;iclass<nclass;++iclass){
-	    result[iclass]=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
-            switch(comb_opt[0]){
-            default:
-            case(0)://sum rule
-              probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
-              break;
-            case(1)://product rule
-              probOut[iclass]*=pow(priors[iclass],static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
-              break;
-            case(2)://max rule
-              if(priors[iclass]*result[iclass]>probOut[iclass])
-                probOut[iclass]=priors[iclass]*result[iclass];
-              break;
-            }
-          }
-        }//for ibag
-        //search for max class prob
-        float maxBag=0;
-        float normBag=0;
-        string classOut="Unclassified";
-        for(int iclass=0;iclass<nclass;++iclass){
-          if(verbose_opt[0]>1)
-            std::cout << probOut[iclass] << " ";
-          if(probOut[iclass]>maxBag){
-            maxBag=probOut[iclass];
-	    classOut=nameVector[iclass];
-          }
-        }
-        //look for class name
-        if(verbose_opt[0]>1){
+	  if(verbose_opt[0])
+	    std::cout << "creating field class" << std::endl;
 	  if(classValueMap.size())
-	    std::cout << "->" << classValueMap[classOut] << std::endl;
-	  else	    
-	    std::cout << "->" << classOut << std::endl;
+	    imgWriterOgr.createField("class",OFTInteger,ilayer);
+	  else
+	    imgWriterOgr.createField("class",OFTString,ilayer);
 	}
-	if(output_opt.size()){
-	  if(classValueMap.size())
-	    poDstFeature->SetField("class",classValueMap[classOut]);
-	  else	    
-	    poDstFeature->SetField("class",classOut.c_str());
-	  poDstFeature->SetFID( poFeature->GetFID() );
-	}
-	int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
-	if(labelIndex>=0){
-	  string classRef=poFeature->GetFieldAsString(labelIndex);
-	  if(classRef!="0"){
-	    if(classValueMap.size())
-	      cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
-	    else
-	      cm.incrementResult(classRef,classOut,1);
+	unsigned int nFeatures=imgReaderOgr.getFeatureCount(ilayer);
+	unsigned int ifeature=0;
+	progress=0;
+	pfnProgress(progress,pszMessage,pProgressArg);
+	OGRFeature *poFeature;
+	while( (poFeature = imgReaderOgr.getLayer(ilayer)->GetNextFeature()) != NULL ){
+	  if(verbose_opt[0]>1)
+	    cout << "feature " << ifeature << endl;
+	  if( poFeature == NULL ){
+	    cout << "Warning: could not read feature " << ifeature << " in layer " << imgReaderOgr.getLayerName(ilayer) << endl;
+	    continue;
 	  }
-	}
-        CPLErrorReset();
-	if(output_opt.size()){
-          if(imgWriterOgr.createFeature( poDstFeature ) != OGRERR_NONE){
-            CPLError( CE_Failure, CPLE_AppDefined,
-                      "Unable to translate feature %d from layer %s.\n",
-                      poFeature->GetFID(), imgWriterOgr.getLayerName().c_str() );
-            OGRFeature::DestroyFeature( poDstFeature );
-            OGRFeature::DestroyFeature( poDstFeature );
-          }
-        }
-        ++ifeature;
-        if(!verbose_opt[0]){
-          progress=static_cast<float>(ifeature+1.0)/nFeatures;
-          pfnProgress(progress,pszMessage,pProgressArg);
-        }
-        OGRFeature::DestroyFeature( poFeature );
-        OGRFeature::DestroyFeature( poDstFeature );
-      }
+	  OGRFeature *poDstFeature = NULL;
+	  if(output_opt.size()){
+	    poDstFeature=imgWriterOgr.createFeature(ilayer);
+	    if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
+	      CPLError( CE_Failure, CPLE_AppDefined,
+			"Unable to translate feature %d from layer %s.\n",
+			poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
+	      OGRFeature::DestroyFeature( poFeature );
+	      OGRFeature::DestroyFeature( poDstFeature );
+	    }
+	  }
+	  vector<float> validationPixel;
+	  vector<float> validationFeature;
+        
+	  imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature,ilayer);
+	  assert(validationPixel.size()==nband);
+	  vector<float> probOut(nclass);//posterior prob for each class
+	  for(int iclass=0;iclass<nclass;++iclass)
+	    probOut[iclass]=0;
+	  for(int ibag=0;ibag<nbag;++ibag){
+	    for(int iband=0;iband<nband;++iband){
+	      validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
+	      if(verbose_opt[0]==2)
+		std:: cout << " " << validationFeature.back();
+	    }
+	    if(verbose_opt[0]==2)
+	      std::cout << std:: endl;
+	    vector<float> result(nclass);
+	    result=net[ibag].run(validationFeature);
+
+	    if(verbose_opt[0]>1){
+	      for(int iclass=0;iclass<result.size();++iclass)
+		std::cout << result[iclass] << " ";
+	      std::cout << std::endl;
+	    }
+	    //calculate posterior prob of bag 
+	    for(int iclass=0;iclass<nclass;++iclass){
+	      result[iclass]=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
+	      switch(comb_opt[0]){
+	      default:
+	      case(0)://sum rule
+		probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
+              break;
+	      case(1)://product rule
+		probOut[iclass]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+		break;
+	      case(2)://max rule
+		if(priors[iclass]*result[iclass]>probOut[iclass])
+		  probOut[iclass]=priors[iclass]*result[iclass];
+		break;
+	      }
+	    }
+	  }//for ibag
+	  //search for max class prob
+	  float maxBag=0;
+	  float normBag=0;
+	  string classOut="Unclassified";
+	  for(int iclass=0;iclass<nclass;++iclass){
+	    if(verbose_opt[0]>1)
+	      std::cout << probOut[iclass] << " ";
+	    if(probOut[iclass]>maxBag){
+	      maxBag=probOut[iclass];
+	      classOut=nameVector[iclass];
+	    }
+	  }
+	  //look for class name
+	  if(verbose_opt[0]>1){
+	    if(classValueMap.size())
+	      std::cout << "->" << classValueMap[classOut] << std::endl;
+	    else	    
+	      std::cout << "->" << classOut << std::endl;
+	  }
+	  if(output_opt.size()){
+	    if(classValueMap.size())
+	      poDstFeature->SetField("class",classValueMap[classOut]);
+	    else	    
+	      poDstFeature->SetField("class",classOut.c_str());
+	    poDstFeature->SetFID( poFeature->GetFID() );
+	  }
+	  int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
+	  if(labelIndex>=0){
+	    string classRef=poFeature->GetFieldAsString(labelIndex);
+	    if(classRef!="0"){
+	      if(classValueMap.size())
+		cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
+	      else
+		cm.incrementResult(classRef,classOut,1);
+	    }
+	  }
+	  CPLErrorReset();
+	  if(output_opt.size()){
+	    if(imgWriterOgr.createFeature(poDstFeature,ilayer) != OGRERR_NONE){
+	      CPLError( CE_Failure, CPLE_AppDefined,
+			"Unable to translate feature %d from layer %s.\n",
+			poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
+	      OGRFeature::DestroyFeature( poDstFeature );
+	      OGRFeature::DestroyFeature( poDstFeature );
+	    }
+	  }
+	  ++ifeature;
+	  if(!verbose_opt[0]){
+	    progress=static_cast<float>(ifeature+1.0)/nFeatures;
+	    pfnProgress(progress,pszMessage,pProgressArg);
+	  }
+	  OGRFeature::DestroyFeature( poFeature );
+	  OGRFeature::DestroyFeature( poDstFeature );
+	}//get next feature
+      }//next layer
       imgReaderOgr.close();
       if(output_opt.size())
       imgWriterOgr.close();

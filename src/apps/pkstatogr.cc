@@ -30,11 +30,15 @@ int main(int argc, char *argv[])
   Optionpk<std::string> input_opt("i", "input", "Input shape file", "");
   Optionpk<std::string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
-  Optionpk<double> min_opt("min","min","set minimum value",0);
-  Optionpk<double> max_opt("max","max","set maximum value",0);
+  Optionpk<bool> min_opt("min","min","calculate minimum value",0);
+  Optionpk<bool> max_opt("max","max","calculate maximum value",0);
+  Optionpk<double> src_min_opt("src_min","src_min","set minimum value for histogram");
+  Optionpk<double> src_max_opt("src_max","src_max","set maximum value for histogram");
+  Optionpk<double> nodata_opt("nodata","nodata","set nodata value(s)");
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
-  Optionpk<short> nbin_opt("nbin", "nbin", "number of bins", 0);
+  Optionpk<unsigned int> nbin_opt("nbin", "nbin", "number of bins");
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
+  Optionpk<double> kde_opt("kde","kde","bandwith of kernel density when producing histogram, use 0 for practical estimation based on Silverman's rule of thumb. Leave empty if no kernel density is required");
   Optionpk<bool> mean_opt("mean","mean","calculate mean value",false);
   Optionpk<bool> median_opt("median","median","calculate median value",false);
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
@@ -48,9 +52,13 @@ int main(int argc, char *argv[])
     minmax_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
+    src_min_opt.retrieveOption(argc,argv);
+    src_max_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     histogram_opt.retrieveOption(argc,argv);
     nbin_opt.retrieveOption(argc,argv);
     relative_opt.retrieveOption(argc,argv);
+    kde_opt.retrieveOption(argc,argv);
     mean_opt.retrieveOption(argc,argv);
     median_opt.retrieveOption(argc,argv);
     stdev_opt.retrieveOption(argc,argv);
@@ -79,23 +87,34 @@ int main(int argc, char *argv[])
   statfactory::StatFactory stat;
   //todo: implement ALL
 
+  stat.setNoDataValues(nodata_opt);
   for(int ifield=0;ifield<fieldname_opt.size();++ifield){
     if(verbose_opt[0])
       std::cout << "field: " << ifield << std::endl;
     theData.clear();
     inputReader.readData(theData,OFTReal,fieldname_opt[ifield],0,verbose_opt[0]);
     std::vector<double> binData;
-    double minValue=min_opt[0];
-    double maxValue=max_opt[0];
+    double minValue=0;
+    double maxValue=0;
+    stat.minmax(theData,theData.begin(),theData.end(),minValue,maxValue);
+    if(src_min_opt.size())
+      minValue=src_min_opt[0];
+    if(src_max_opt.size())
+      maxValue=src_max_opt[0];
+    unsigned int nbin=(nbin_opt.size())? nbin_opt[0]:0;
+
     if(histogram_opt[0]){
-      if(nbin_opt[0]<1){
-        if(maxValue<=minValue)
-          stat.minmax(theData,theData.begin(),theData.end(),minValue,maxValue);
-        nbin_opt[0]=maxValue-minValue+1;
+      double sigma=0;
+      if(kde_opt.size()){
+        if(kde_opt[0]>0)
+          sigma=kde_opt[0];
+        else
+          sigma=1.06*sqrt(stat.var(theData))*pow(theData.size(),-0.2);
       }
-      assert(nbin_opt[0]);
+      if(nbin<1)
+        nbin=(maxValue-minValue+1);
       try{
-        stat.distribution(theData,theData.begin(),theData.end(),binData,nbin_opt[0],minValue,maxValue);
+        stat.distribution(theData,theData.begin(),theData.end(),binData,nbin,minValue,maxValue,sigma);
       }
       catch(std::string theError){
         std::cerr << "Warning: all identical values in data" << std::endl;
@@ -112,9 +131,15 @@ int main(int argc, char *argv[])
         std::cout << " --mean " << theMean;
       if(stdev_opt[0])
         std::cout << " --stdev " << sqrt(theVar);
-      if(minmax_opt[0]){
-        std::cout << " -min " << stat.min(theData);
-        std::cout << " -max " << stat.max(theData);
+      if(minmax_opt[0]||min_opt[0]||max_opt[0]){
+	if(minmax_opt[0])
+	  std::cout << " --min " << minValue << " --max " << maxValue << " ";
+	else{
+	  if(min_opt[0])
+	    std::cout << " --min " << minValue << " ";
+	  if(max_opt[0])
+	    std::cout << " --max " << maxValue << " ";
+	}
       }
       if(median_opt[0])
         std::cout << " -median " << stat.median(theData);
@@ -122,11 +147,17 @@ int main(int argc, char *argv[])
         std::cout << " -size " << theData.size();
       std::cout << std::endl;
       if(histogram_opt[0]){
-        for(int bin=0;bin<nbin_opt[0];++bin){
+        for(int ibin=0;ibin<nbin;++ibin){
+	  double binValue=0;
+	  if(nbin==maxValue-minValue+1)
+	    binValue=minValue+ibin;
+	  else
+	    binValue=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
+	  std::cout << binValue << " ";
           if(relative_opt[0])
-            std::cout << (maxValue-minValue)*bin/(nbin_opt[0]-1)+minValue << " " << 100.0*static_cast<double>(binData[bin])/theData.size() << std::endl;
+            std::cout << 100.0*static_cast<double>(binData[ibin])/theData.size() << std::endl;
           else
-            std::cout << (maxValue-minValue)*bin/(nbin_opt[0]-1)+minValue << " " << binData[bin] << std::endl;
+            std::cout << binData[ibin] << std::endl;
         }
       }
     }

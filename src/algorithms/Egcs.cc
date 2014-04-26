@@ -57,14 +57,14 @@ Egcs::~Egcs(){
 }
 
 unsigned short Egcs::res2level(double resolution) const{
-  double base=pow(10,log(resolution*4)/log(10));
+  double base=pow(10,log(resolution*4.0)/log(10.0));
   double diff=base/(2*resolution);
-  return 0.5+(log(base)/log(10)*3+1-diff);
+  return 0.5+(log(base)/log(10.0)*3+1-diff);
 }
 
 double Egcs::getResolution() const{
   unsigned short exponent=(m_level+1)/3;
-  double base=pow(10,exponent);
+  double base=pow(10.0,exponent);
   if((m_level)%3==2)
     return(base/4);
   else if((m_level)%3==0)

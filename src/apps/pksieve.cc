@@ -1,6 +1,6 @@
 /**********************************************************************
 pksieve.cc: program to sieve filter raster image
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -22,7 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "gdal.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgWriterOgr.h"
+// #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "ogrsf_frmts.h"
 extern "C" {
@@ -40,7 +40,6 @@ int main(int argc,char **argv) {
   Optionpk<int> connect_opt("c", "connect", "the connectedness: 4 directions or 8 directions", 8);
   Optionpk<int> size_opt("s", "size", "raster polygons with sizes smaller than this will be merged into their largest neighbour. No sieve is performed if size = 0", 0);
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
@@ -54,7 +53,6 @@ int main(int argc,char **argv) {
     connect_opt.retrieveOption(argc,argv);
     size_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
-    oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);

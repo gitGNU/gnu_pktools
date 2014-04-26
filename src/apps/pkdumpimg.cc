@@ -1,6 +1,6 @@
 /**********************************************************************
 pkdumpimg.cc: program to dump image content to ascii or std out
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -22,13 +22,16 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <assert.h>
-#include "Optionpk.h"
+#include "base/Optionpk.h"
+#include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgWriterOgr.h"
+// #include "imageclasses/ImgWriterOgr.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+using namespace std;
 
 int main(int argc, char *argv[])
 {
@@ -201,8 +204,9 @@ int main(int argc, char *argv[])
     cout << "selected lower right column in input image: " << lri << endl;
     cout << "selected lower right row in input image: " << lrj << endl;
   }
-
-  imgWriter.setGeoTransform(cropulx,cropuly,dx,dy,0,0);
+  double gt[6];
+  imgReader.getGeoTransform(gt);
+  imgWriter.setGeoTransform(gt);
   // imgWriter.setProjection(imgReader.getProjection());
 
   double readRow=0;
@@ -213,7 +217,7 @@ int main(int argc, char *argv[])
   //test
   // vector<double> readBuffer(readncol);
   vector<double> readBuffer(readncol+1);
-  assert(imgWriter.isGeoRef());
+  // assert(imgWriter.isGeoRef());
   if(band_opt.empty()){
     for(int iband=0;iband<imgReader.nrOfBand();++iband)
       band_opt.push_back(iband);

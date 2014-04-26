@@ -1,6 +1,6 @@
 /**********************************************************************
 pkdumpogr.cc: dump ogr file to text file or standard output
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     vector<double> yvector;
     if(inputReader.getGeometryType()==wkbPoint)
       inputReader.readXY(xvector,yvector);
-    Vector2d<double> theData(attribute_opt.size());
+    Vector2d<std::string> theData(attribute_opt.size());
     for(int ifield=0;ifield<attribute_opt.size();++ifield){
       if(verbose_opt[0])
         cout << "field: " << ifield << endl;

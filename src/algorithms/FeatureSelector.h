@@ -26,8 +26,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
-#include "IndexValue.h"
-#include "Vector2d.h"
+#include "base/IndexValue.h"
+#include "base/Vector2d.h"
 #include "gsl/gsl_combination.h"
 
 class FeatureSelector

@@ -1,6 +1,6 @@
 /**********************************************************************
 pkcreatect.cc: program to create and import colour table to GTiff image
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 

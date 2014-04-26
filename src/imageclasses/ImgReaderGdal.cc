@@ -23,7 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 
 ImgReaderGdal::ImgReaderGdal(void)
-  : m_gds(NULL), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0)
+  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
 {}
 
 void ImgReaderGdal::open(const std::string& filename)//, double magicX, double magicY)
@@ -56,25 +56,27 @@ void ImgReaderGdal::setCodec()//double magicX, double magicY)
   m_ncol= m_gds->GetRasterXSize();
   m_nrow= m_gds->GetRasterYSize();
   m_nband= m_gds->GetRasterCount();
-  m_isGeoRef=( static_cast<std::string>(m_gds->GetProjectionRef())  != "" );
+  // m_isGeoRef=( static_cast<std::string>(m_gds->GetProjectionRef())  != "" );
   // m_magic_x=magicX;
   // m_magic_y=magicY;
-  if(m_isGeoRef){
-    double adfGeoTransform[6];
-    if( m_gds->GetGeoTransform( adfGeoTransform ) == CE_None )
-    {
-      m_ulx=adfGeoTransform[0];
-      m_uly=adfGeoTransform[3];
-      m_delta_x=adfGeoTransform[1];
-      m_delta_y=-adfGeoTransform[5];
-    }
-  }
-  else{
-    m_ulx=0;
-    m_uly=nrOfRow();
-    m_delta_x=1;
-    m_delta_y=1;
-  }
+  double adfGeoTransform[6];
+  m_gds->GetGeoTransform( adfGeoTransform );
+  // if( m_gds->GetGeoTransform( adfGeoTransform ) == CE_None ){
+  m_gt[0]=adfGeoTransform[0];
+  m_gt[1]=adfGeoTransform[1];
+  m_gt[2]=adfGeoTransform[2];
+  m_gt[3]=adfGeoTransform[3];
+  m_gt[4]=adfGeoTransform[4];
+  m_gt[5]=adfGeoTransform[5];
+  // }
+  // else{
+  //   m_gt[0]=0;
+  //   m_gt[1]=1;
+  //   m_gt[2]=0;
+  //   m_gt[3]=0;
+  //   m_gt[4]=0;
+  //   m_gt[5]=1;
+  // }
 }
 
 std::string ImgReaderGdal::getProjection(void) const 
@@ -120,35 +122,44 @@ std::string ImgReaderGdal::getDriverDescription() const
   return m_gds->GetDriver()->GetDescription();
 }
 
-void ImgReaderGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
-{
-  double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(adfGeoTransform);
-  ulx=adfGeoTransform[0];
-  deltaX=adfGeoTransform[1];
-  rot1=adfGeoTransform[2];
-  uly=adfGeoTransform[3];
-  rot2=adfGeoTransform[4];
-  deltaY=-adfGeoTransform[5];//convention of GDAL!
+void ImgReaderGdal::getGeoTransform(double* gt) const{
+  m_gds->GetGeoTransform(gt);
 }
+
+// void ImgReaderGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
+// {
+//   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
+//   m_gds->GetGeoTransform(adfGeoTransform);
+//   ulx=adfGeoTransform[0];
+//   deltaX=adfGeoTransform[1];
+//   rot1=adfGeoTransform[2];
+//   uly=adfGeoTransform[3];
+//   rot2=adfGeoTransform[4];
+//   deltaY=-adfGeoTransform[5];//convention of GDAL!
+// }
 
 std::string ImgReaderGdal::getGeoTransform() const
 {
-  if(!isGeoRef())
-    return("");
-  else{
-    double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-    m_gds->GetGeoTransform(adfGeoTransform);
-    double ulx=adfGeoTransform[0];
-    double deltaX=adfGeoTransform[1];
-    double rot1=adfGeoTransform[2];
-    double uly=adfGeoTransform[3];
-    double rot2=adfGeoTransform[4];
-    double deltaY=-adfGeoTransform[5];//convention of GDAL!
-    std::ostringstream s;
-    s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
-    return(s.str());
-  }
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+  std::ostringstream s;
+  s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << gt[5] << "]";
+  return(s.str());
+  // if(!isGeoRef())
+  //   return("");
+  // else{
+  //   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  //   m_gds->GetGeoTransform(adfGeoTransform);
+  //   double ulx=adfGeoTransform[0];
+  //   double deltaX=adfGeoTransform[1];
+  //   double rot1=adfGeoTransform[2];
+  //   double uly=adfGeoTransform[3];
+  //   double rot2=adfGeoTransform[4];
+  //   double deltaY=-adfGeoTransform[5];//convention of GDAL!
+  //   std::ostringstream s;
+  //   s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
+  //   return(s.str());
+  // }
 }
 
 char** ImgReaderGdal::getMetadata()
@@ -217,36 +228,58 @@ std::string ImgReaderGdal::getCompression() const
 
 bool ImgReaderGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
 {
-  if(m_isGeoRef){
-    //    ulx=m_ulx-(m_magic_x-1.0)*m_delta_x;
-    //    uly=m_uly+(m_magic_y-1.0)*m_delta_y;
-    ulx=m_ulx;
-    uly=m_uly;
-    lrx=ulx+nrOfCol()*m_delta_x;
-    lry=uly-nrOfRow()*m_delta_y;
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+  ulx=gt[0];
+  uly=gt[3];
+  lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
+  lry=gt[3]+nrOfCol()*gt[4]+nrOfRow()*gt[5];
+  if(isGeoRef()){
+    // ulx=m_ulx;
+    // uly=m_uly;
+    // lrx=ulx+nrOfCol()*m_delta_x;
+    // lry=uly-nrOfRow()*m_delta_y;
     return true;
   }
   else{
-    ulx=0;
-    uly=nrOfRow()-1;
-    lrx=nrOfCol()-1;
-    lry=0;
+    // ulx=0;
+    // uly=nrOfRow()-1;
+    // lrx=nrOfCol()-1;
+    // lry=0;
     return false;
   }
 }
 
 bool ImgReaderGdal::getCentrePos(double& x, double& y) const
 {
-  if(m_isGeoRef){
-//     x=m_ulx+(nrOfCol()/2.0-(m_magic_x-1.0))*m_delta_x;
-//     y=m_uly-(nrOfRow()/2.0-(m_magic_y-1.0))*m_delta_y;
-    x=m_ulx+(nrOfCol()/2.0)*m_delta_x;
-    y=m_uly-(nrOfRow()/2.0)*m_delta_y;
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+  x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
+  y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
+  if(isGeoRef()){
+    // x=m_ulx+(nrOfCol()/2.0)*m_delta_x;
+    // y=m_uly-(nrOfRow()/2.0)*m_delta_y;
     return true;
   }
   else{
-    x=nrOfCol()/2.0;
-    y=nrOfRow()/2.0;
+    // x=nrOfCol()/2.0;
+    // y=nrOfRow()/2.0;
     return false;
   }
 }
@@ -255,18 +288,32 @@ bool ImgReaderGdal::getCentrePos(double& x, double& y) const
 bool ImgReaderGdal::geo2image(double x, double y, double& i, double& j) const
 {
   //double values are returned, caller is responsible for interpolation step
-  if(m_isGeoRef){
-//     double ulx=m_ulx-(m_magic_x-1.0)*m_delta_x;
-//     double uly=m_uly+(m_magic_y-1.0)*m_delta_y;
-    double ulx=m_ulx;
-    double uly=m_uly;
-    i=(x-ulx)/m_delta_x;
-    j=(uly-y)/m_delta_y;
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+
+  double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
+  double eps=0.00001;
+  if(fabs(denom)>eps){
+    i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
+    j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
+  }
+  if(isGeoRef()){
+    // double ulx=m_ulx;
+    // double uly=m_uly;
+    // i=(x-ulx)/m_delta_x;
+    // j=(uly-y)/m_delta_y;
     return true;
   }
   else{
-    i=x;
-    j=nrOfRow()-y;
+    // i=x;
+    // j=nrOfRow()-y;
     return false;
   }
 }
@@ -274,16 +321,27 @@ bool ImgReaderGdal::geo2image(double x, double y, double& i, double& j) const
 //x and y represent centre of pixel, return true if image is georeferenced
 bool ImgReaderGdal::image2geo(double i, double j, double& x, double& y) const
 {
-  if(m_isGeoRef){
-//     x=m_ulx+(1.5-m_magic_x+i)*m_delta_x;
-//     y=m_uly-(1.5-m_magic_y+j)*m_delta_y;
-    x=m_ulx+(0.5+i)*m_delta_x;
-    y=m_uly-(0.5+j)*m_delta_y;
+  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+  m_gds->GetGeoTransform(gt);
+
+  //assuming
+  //adfGeotransform[0]: ULX (upper left X coordinate)
+  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+  //adfGeotransform[3]: ULY (upper left Y coordinate)
+  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+
+  x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
+  y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
+  if(isGeoRef()){
+    // x=m_ulx+(0.5+i)*m_delta_x;
+    // y=m_uly-(0.5+j)*m_delta_y;
     return true;
   }
   else{
-    x=0.5+i;
-    y=nrOfRow()-(0.5+j);
+    // x=0.5+i;
+    // y=nrOfRow()-(0.5+j);
     return false;
   }
 }
@@ -312,8 +370,8 @@ double ImgReaderGdal::getMin(int& x, int& y, int band) const{
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      if(!isNoData(lineBuffer[icol])){
         if(!init){
           y=irow;
           x=icol;
@@ -341,8 +399,9 @@ double ImgReaderGdal::getMax(int& x, int& y, int band) const{
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      // if(valid){
+      if(!isNoData(lineBuffer[icol])){
         if(!init){
           y=irow;
           x=icol;
@@ -384,8 +443,9 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
   for(int irow=startCol;irow<endRow+1;++irow){
     readData(lineBuffer,GDT_Float64,startCol,endCol,irow,band);
     for(int icol=0;icol<lineBuffer.size();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      // if(valid){
+      if(!isNoData(lineBuffer[icol])){
 	if(!init){
 	  minValue=lineBuffer[icol];
 	  maxValue=lineBuffer[icol];
@@ -424,8 +484,9 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
     for(int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,GDT_Float64,irow,band);
       for(int icol=0;icol<nrOfCol();++icol){
-        bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-        if(valid){
+        // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+        // if(valid){
+	if(!isNoData(lineBuffer[icol])){
           if(!init){
             minValue=lineBuffer[icol];
             maxValue=lineBuffer[icol];
@@ -445,7 +506,7 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
   }
 }
 
-unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, int& nbin, int theBand) const{
+unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, unsigned int& nbin, int theBand) const{
   double minValue=0;
   double maxValue=0;
   getMinMax(minValue,maxValue,theBand);
@@ -455,15 +516,20 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
     maxValue=max;
   min=minValue;
   max=maxValue;
-  if(nbin==0)
-    nbin=maxValue-minValue+1;
+  double scale=0;
+  if(maxValue>minValue){
+    if(nbin==0)
+      nbin=maxValue-minValue+1;
+    scale=static_cast<double>(nbin-1)/(maxValue-minValue);
+  }
+  else
+    nbin=1;
   assert(nbin>0);
   histvector.resize(nbin);
   unsigned long int nsample=0;
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());
   for(int i=0;i<nbin;histvector[i++]=0);
-  double scale=static_cast<double>(nbin-1)/(maxValue-minValue);
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,theBand);
     for(int icol=0;icol<nrOfCol();++icol){
@@ -473,10 +539,11 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
         ++ninvalid;
       else if(lineBuffer[icol]<minValue)
         ++ninvalid;
+      else if(nbin==1)
+	++histvector[0];
       else{//scale to [0:nbin]
 	int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
 	assert(theBin>=0);
-	assert(theBin!=nbin);
 	assert(theBin<nbin);
 	++histvector[theBin];
       // else if(lineBuffer[icol]==maxValue)
@@ -541,8 +608,9 @@ void ImgReaderGdal::getRefPix(double& refX, double &refY, int band) const
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
-      bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      if(valid){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      // if(valid){
+      if(!isNoData(lineBuffer[icol])){
         validCol+=icol+1;
         ++nvalidCol;
         validRow+=irow+1;

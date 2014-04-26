@@ -32,7 +32,7 @@ public:
   ~Egcs();
   unsigned short cell2level(const std::string& cellCode) const;
   std::string geo2cell(double x, double y) const;
-  double getSize() const {return getBaseSize()*pow(2,(m_level-19)%3);};
+  double getSize() const {return getBaseSize()*pow(2.0,(m_level-19)%3);};
   void setLevel(unsigned short level){m_level=level;};
   unsigned short getLevel() const{return m_level;};
   unsigned short res2level(double resolution) const;
@@ -41,7 +41,7 @@ public:
   void cell2bb(const std::string& cellCode, int &ulx, int &uly, int &lrx, int &lry) const;
   void cell2mid(const std::string& cellCode, double& midX, double& midY) const;
 private:
-  int getBaseSize() const {return pow(10,(m_level+1)/3);};
+  int getBaseSize() const {return pow(10.0,(m_level+1)/3);};
   unsigned short m_level;
 // level square scheme         example
 // 19    1000km xy             32

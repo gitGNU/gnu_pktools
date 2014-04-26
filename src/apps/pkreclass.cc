@@ -1,6 +1,6 @@
 /**********************************************************************
 pkreclass.cc: program to replace pixel values in raster image
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -71,8 +71,12 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
-  if(input_opt.empty()||output_opt.empty()){
-    std::cout << "input or output files are missing, provide input (-i) and output (-o) files. Use -h or --help for more help information" << std::endl;
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
     exit(0);
   }
     
@@ -111,10 +115,19 @@ int main(int argc, char *argv[])
     for(mit=codemapString.begin();mit!=codemapString.end();++mit)
       cout << (*mit).first << " " << (*mit).second << endl;
   }
-  if(input_opt[0].find(".shp")!=string::npos){//shape file
+  bool refIsRaster=false;
+  ImgReaderOgr ogrReader;
+  try{
+    ogrReader.open(input_opt[0]);
+  }
+  catch(string errorString){
+    refIsRaster=true;
+  }
+  // if(input_opt[0].find(".shp")!=string::npos){//shape file
+  if(!refIsRaster){
     if(verbose_opt[0])
       cout << "opening " << input_opt[0] << " for reading " << endl;
-    ImgReaderOgr ogrReader(input_opt[0]);
+    // ImgReaderOgr ogrReader(input_opt[0]);
     if(verbose_opt[0])
       cout << "opening " << output_opt[0] << " for writing " << endl;
     ImgWriterOgr ogrWriter(output_opt[0],ogrReader);
@@ -214,14 +227,8 @@ int main(int argc, char *argv[])
     if(inputReader.isGeoRef()){
       for(int imask=0;imask<mask_opt.size();++imask)
         assert(maskReader[imask].isGeoRef());
-      outputWriter.setProjection(inputReader.getProjection());
     }
-    else{
-      for(int imask=0;imask<mask_opt.size();++imask){
-        assert(maskReader[imask].nrOfCol()==inputReader.nrOfCol());
-        assert(maskReader[imask].nrOfRow()==inputReader.nrOfRow());
-      }
-    }
+    outputWriter.setProjection(inputReader.getProjection());
     double ulx,uly,lrx,lry;
     inputReader.getBoundingBox(ulx,uly,lrx,lry);
     outputWriter.copyGeoTransform(inputReader);
@@ -264,14 +271,8 @@ int main(int argc, char *argv[])
         bool masked=false;
         if(mask_opt.size()>1){//multiple masks
           for(int imask=0;imask<mask_opt.size();++imask){
-            if(maskReader[imask].isGeoRef()){
-              inputReader.image2geo(icol,irow,x,y);
-              maskReader[imask].geo2image(x,y,colMask,rowMask);
-            }
-            else{
-              colMask=icol;
-              rowMask=irow;
-            }
+	    inputReader.image2geo(icol,irow,x,y);
+	    maskReader[imask].geo2image(x,y,colMask,rowMask);
             if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
               assert(rowMask>=0&&rowMask<maskReader[imask].nrOfRow());
               try{
@@ -297,14 +298,8 @@ int main(int argc, char *argv[])
           }
         }
         else if(mask_opt.size()){//potentially more invalid values for single mask
-          if(maskReader[0].isGeoRef()){
-            inputReader.image2geo(icol,irow,x,y);
-            maskReader[0].geo2image(x,y,colMask,rowMask);
-          }
-          else{
-            colMask=icol;
-            rowMask=irow;
-          }
+	  inputReader.image2geo(icol,irow,x,y);
+	  maskReader[0].geo2image(x,y,colMask,rowMask);
           if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
             assert(rowMask>=0&&rowMask<maskReader[0].nrOfRow());
             try{

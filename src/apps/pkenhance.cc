@@ -1,6 +1,6 @@
 /**********************************************************************
 pkenhance.cc: program to enhance raster images: histogram matching
-Copyright (C) 2008-2013 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -23,6 +23,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
+
+using namespace std;
 
 int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input image file");
@@ -134,8 +136,8 @@ int main(int argc,char **argv) {
     pfnProgress(progress,pszMessage,pProgressArg);
     for(int iband=0;iband<nband;++iband){
       //calculate histograms
-      int nbinRef=nbin_opt[0];
-      int nbinInput=nbin_opt[0];
+      unsigned int nbinRef=nbin_opt[0];
+      unsigned int nbinInput=nbin_opt[0];
       std::vector<unsigned long int> histRef(nbinRef);
       std::vector<unsigned long int> histInput(nbinInput);
       double minValueRef=0;
@@ -153,10 +155,10 @@ int main(int argc,char **argv) {
       unsigned long int nsampleRef=referenceImg.getHistogram(histRef,minValueRef,maxValueRef,nbinRef,iband);
       unsigned long int nsampleInput=inputImg.getHistogram(histInput,minValueInput,maxValueInput,nbinInput,iband);
       //create cumulative historgrams
-      for(int bin=0;bin<nbinRef;++bin){
+      for(unsigned int bin=0;bin<nbinRef;++bin){
         histRef[bin]+=100.0*static_cast<double>(histRef[bin])/static_cast<double>(nsampleRef);
       }
-      for(int bin=0;bin<nbinInput;++bin)
+      for(unsigned int bin=0;bin<nbinInput;++bin)
         histInput[bin]+=100.0*static_cast<double>(histInput[bin])/static_cast<double>(nsampleInput);
       //match histograms
       vector<double> lineBuffer(inputImg.nrOfCol());

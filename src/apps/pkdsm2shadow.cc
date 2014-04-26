@@ -1,6 +1,6 @@
 /**********************************************************************
 pkdsm2shadow.cc: program to calculate sun shadow based on digital surface model and sun angles
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -30,6 +30,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
+using namespace std;
+
 /*------------------
   Main procedure
   ----------------*/
@@ -39,6 +41,8 @@ int main(int argc,char **argv) {
   Optionpk<double> sza_opt("sza", "sza", "Sun zenith angle.");
   Optionpk<double> saa_opt("saa", "saa", "Sun azimuth angle (N=0 E=90 S=180 W=270).");
   Optionpk<int> flag_opt("f", "flag", "Flag to put in image if pixel shadow", 0);
+  Optionpk<double> scale_opt("s", "scale", "scale used for input dsm: height=scale*input+offset");
+  Optionpk<double> offset_opt("off", "offset", "offset used for input dsm: height=scale*input+offset");
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
@@ -52,6 +56,8 @@ int main(int argc,char **argv) {
     sza_opt.retrieveOption(argc,argv);
     saa_opt.retrieveOption(argc,argv);
     flag_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -72,6 +78,11 @@ int main(int argc,char **argv) {
   assert(input_opt.size());
   assert(output_opt.size());
   input.open(input_opt[0]);
+  if(scale_opt.size())
+    input.setScale(scale_opt[0]);
+  if(offset_opt.size())
+    input.setOffset(offset_opt[0]);
+  
   // output.open(output_opt[0],input);
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
@@ -106,12 +117,11 @@ int main(int argc,char **argv) {
     cout << errorstring << endl;
     exit(4);
   }
-  if(input.isGeoRef()){
-    output.setProjection(input.getProjection());
-    double ulx,uly,deltaX,deltaY,rot1,rot2;
-    input.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-    output.setGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-  }
+  output.setProjection(input.getProjection());
+  double gt[6];
+  input.getGeoTransform(gt);
+  output.setGeoTransform(gt);
+
   if(input.getColorTable()!=NULL)
     output.setColorTable(input.getColorTable());
 

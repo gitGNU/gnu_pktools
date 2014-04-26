@@ -1,6 +1,6 @@
 /**********************************************************************
-pkstat.cc: program to calculate basic statistics from raster image
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkstatascii.cc: program to calculate basic statistics from raster image
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -28,7 +28,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> input_opt("i","input","name of the input text file","");
+  Optionpk<string> input_opt("i","input","name of the input text file");
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<char> comment_opt("comment","comment","comment character",'#');
   Optionpk<bool> output_opt("o","output","output the selected columns",false);
@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> size_opt("size","size","sample size",false);
   Optionpk<unsigned int> rand_opt("rnd", "rnd", "generate random numbers", 0);
   Optionpk<std::string> randdist_opt("dist", "dist", "distribution for generating random numbers, see http://www.gn/software/gsl/manual/gsl-ref_toc.html#TOC320 (only uniform and Gaussian supported yet)", "gaussian");
-  Optionpk<double> randa_opt("rnda", "rnda", "first parameter for random distribution (standard deviation in case of Gaussian)", 1);
-  Optionpk<double> randb_opt("rndb", "rndb", "second parameter for random distribution (standard deviation in case of Gaussian)", 0);
+  Optionpk<double> randa_opt("rnda", "rnda", "first parameter for random distribution (mean value in case of Gaussian)", 0);
+  Optionpk<double> randb_opt("rndb", "rndb", "second parameter for random distribution (standard deviation in case of Gaussian)", 1);
   Optionpk<bool> mean_opt("mean","mean","calculate median",false);
   Optionpk<bool> median_opt("median","median","calculate median",false);
   Optionpk<bool> var_opt("var","var","calculate variance",false);
@@ -48,13 +48,15 @@ int main(int argc, char *argv[])
   Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
   Optionpk<bool> sum_opt("sum","sum","calculate sum of column",false);
   Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
-  Optionpk<double> min_opt("min","min","set minimum value",0);
-  Optionpk<double> max_opt("max","max","set maximum value",0);
+  Optionpk<bool> min_opt("min","min","calculate minimum value",false);
+  Optionpk<bool> max_opt("max","max","calculate maximum value",false);
+  Optionpk<double> src_min_opt("src_min","src_min","start reading source from this minimum value");
+  Optionpk<double> src_max_opt("src_max","src_max","stop reading source from this maximum value");
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<bool> histogram2d_opt("hist2d","hist2d","calculate 2-dimensional histogram based on two columns",false);
-  Optionpk<short> nbin_opt("nbin","nbin","number of bins to calculate histogram",0);
+  Optionpk<short> nbin_opt("nbin","nbin","number of bins to calculate histogram");
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
-  Optionpk<double> kde_opt("kde","kde","bandwith of kernel density when producing histogram, use 0 for practical estimation based on Silverman's rule of thumb");
+  Optionpk<double> kde_opt("kde","kde","bandwith of kernel density when producing histogram, use 0 for practical estimation based on Silverman's rule of thumb. Leave empty if no kernel density is required");
   Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
@@ -84,6 +86,8 @@ int main(int argc, char *argv[])
     minmax_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
+    src_min_opt.retrieveOption(argc,argv);
+    src_max_opt.retrieveOption(argc,argv);
     histogram_opt.retrieveOption(argc,argv);
     histogram2d_opt.retrieveOption(argc,argv);
     nbin_opt.retrieveOption(argc,argv);
@@ -125,33 +129,45 @@ int main(int argc, char *argv[])
     asciiReader.setMaxRow(range_opt[1]);
   asciiReader.readData(dataVector,col_opt);
   assert(dataVector.size());
-  double minValue=min_opt[0];
-  double maxValue=max_opt[0];
+  double minValue=0;
+  double maxValue=0;
+  unsigned int nbin=0;
+  if(nbin_opt.size())
+    nbin=nbin_opt[0];
   if(histogram_opt[0]){
-    if(nbin_opt[0]<1){
+    stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minValue,maxValue);
+    if(src_min_opt.size())
+      minValue=src_min_opt[0];
+    if(src_max_opt.size())
+      maxValue=src_max_opt[0];
+    if(nbin<1){
       std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
-      if(maxValue<=minValue)
-        stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minValue,maxValue);
-      nbin_opt[0]=maxValue-minValue+1;
+      nbin=maxValue-minValue+1;
     }
   }
-  double minX=min_opt[0];
-  double minY=(min_opt.size()==2)? min_opt[1] : min_opt[0];
-  double maxX=max_opt[0];
-  double maxY=(max_opt.size()==2)? max_opt[1] : max_opt[0];
+  double minX=0;
+  double minY=0;
+  double maxX=0;
+  double maxY=0;
   if(histogram2d_opt[0]){
     assert(col_opt.size()==2);
-    if(nbin_opt[0]<1){
+    if(nbin<1){
       std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
-      if(maxValue<=minValue){
-        stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minX,maxX);
-        stat.minmax(dataVector[1],dataVector[1].begin(),dataVector[1].end(),minY,maxY);
-      }
+      stat.minmax(dataVector[0],dataVector[0].begin(),dataVector[0].end(),minX,maxX);
+      stat.minmax(dataVector[1],dataVector[1].begin(),dataVector[1].end(),minY,maxY);
+      if(src_min_opt.size())
+	minX=src_min_opt[0];
+      if(src_min_opt.size()>1)
+	minY=src_min_opt[1];
+      if(src_max_opt.size())
+	maxX=src_max_opt[0];
+      if(src_max_opt.size()>1)
+	maxY=src_max_opt[1];
       minValue=(minX<minY)? minX:minY;
       maxValue=(maxX>maxY)? maxX:maxY;
       if(verbose_opt[0])
         std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
-      nbin_opt[0]=maxValue-minValue+1;
+      nbin=maxValue-minValue+1;
     }
   }
   for(int icol=0;icol<col_opt.size();++icol){
@@ -178,9 +194,13 @@ int main(int argc, char *argv[])
     if(median_opt[0])
       cout << "median value column " << col_opt[icol] << ": " << stat.median(dataVector[icol]) << endl;
     if(minmax_opt[0]){
-      cout << "min value column " << col_opt[icol] << ": " << stat.min(dataVector[icol]) << endl;
-      cout << "max value column " << col_opt[icol] << ": " << stat.max(dataVector[icol]) << endl;
+      cout << "min value column " << col_opt[icol] << ": " << stat.mymin(dataVector[icol]) << endl;
+      cout << "max value column " << col_opt[icol] << ": " << stat.mymax(dataVector[icol]) << endl;
     }
+    if(min_opt[0])
+      cout << "min value column " << col_opt[icol] << ": " << stat.mymin(dataVector[icol]) << endl;
+    if(max_opt[0])
+      cout << "max value column " << col_opt[icol] << ": " << stat.mymax(dataVector[icol]) << endl;
     if(histogram_opt[0]){
       //todo: support kernel density function and estimate sigma as in practical estimate of the bandwith in http://en.wikipedia.org/wiki/Kernel_density_estimation
       double sigma=0;
@@ -190,14 +210,69 @@ int main(int argc, char *argv[])
         else
           sigma=1.06*sqrt(stat.var(dataVector[icol]))*pow(dataVector[icol].size(),-0.2);
       }
-      assert(nbin_opt[0]);
+      assert(nbin);
       if(verbose_opt[0]){
         if(sigma>0)
           std::cout << "calculating kernel density estimate with sigma " << sigma << " for col " << icol << std::endl;
         else
           std::cout << "calculating histogram for col " << icol << std::endl;
       }
-      stat.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),statVector[icol],nbin_opt[0],minValue,maxValue,sigma);
+      //test
+      // cout << "debug0" << endl;
+      // cout << "dataVector.size(): " << dataVector.size() << endl;
+      // cout << "statVector.size(): " << statVector.size() << endl;
+
+      // double theMinValue=0;
+      // double theMaxValue=0;
+      
+      // stat.minmax(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),theMinValue,theMaxValue);
+      // if(minValue<maxValue&&minValue>theMinValue)
+      // 	theMinValue=minValue;
+      // if(minValue<maxValue&&maxValue<theMaxValue)
+      // 	theMaxValue=maxValue;
+
+      // //todo: check...
+      // minValue=theMinValue;
+      // maxValue=theMaxValue;
+
+      // if(maxValue<=minValue){
+      // 	std::ostringstream s;
+      // 	s<<"Error: could not calculate distribution (min>=max)";
+      // 	throw(s.str());
+      // }
+      // assert(nbin);
+      // assert(dataVector[icol].size());
+      // if(statVector[icol].size()!=nbin){
+      // 	statVector[icol].resize(nbin);
+      // 	for(int i=0;i<nbin;statVector[icol][i++]=0);
+      // }
+      // typename std::vector<double>::const_iterator it;
+      // for(it=dataVector[icol].begin();it!=dataVector[icol].end();++it){
+      // 	if(*it<minValue)
+      // 	  continue;
+      // 	if(*it>maxValue)
+      // 	  continue;
+      // 	if(stat.isNoData(*it))
+      // 	  continue;
+      // 	int theBin=0;
+      // 	if(*it==maxValue)
+      // 	  theBin=nbin-1;
+      // 	else if(*it>minValue && *it<maxValue)
+      // 	  theBin=static_cast<int>(static_cast<double>((nbin-1)*(*it)-minValue)/(maxValue-minValue));
+      // 	assert(theBin<statVector[icol].size());
+      // 	++statVector[icol][theBin];
+      // 	// if(*it==maxValue)
+      // 	//   ++statVector[icol][nbin-1];
+      // 	// else if(*it>=minValue && *it<maxValue)
+      // 	//   ++statVector[icol][static_cast<int>(static_cast<double>((*it)-minValue)/(maxValue-minValue)*nbin)];
+      // }
+
+      // exit(0);
+      //end test
+      
+      stat.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),statVector[icol],nbin,minValue,maxValue,sigma);
+      //test
+      cout << "debug1" << endl;
       if(verbose_opt[0])
         std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
     }
@@ -219,7 +294,13 @@ int main(int argc, char *argv[])
   }
   if(histogram_opt[0]){
     for(int irow=0;irow<statVector.begin()->size();++irow){
-      std::cout << (maxValue-minValue)*irow/(nbin_opt[0]-1)+minValue << " ";
+      double binValue=0;
+      if(nbin==maxValue-minValue+1)
+	binValue=minValue+irow;
+      else
+	binValue=minValue+static_cast<double>(maxValue-minValue)*(irow+0.5)/nbin;
+      std::cout << binValue << " ";
+      // std::cout << minValue+static_cast<double>(maxValue-minValue)*(irow+0.5)/nbin << " ";
       for(int icol=0;icol<col_opt.size();++icol){
         if(relative_opt[0])
           std::cout << 100.0*static_cast<double>(statVector[icol][irow])/static_cast<double>(dataVector[icol].size());
@@ -232,7 +313,7 @@ int main(int argc, char *argv[])
     }
   }
   if(histogram2d_opt[0]){
-    assert(nbin_opt[0]);
+    assert(nbin);
     assert(dataVector.size()==2);
     assert(dataVector[0].size()==dataVector[1].size());
     double sigma=0;
@@ -243,22 +324,33 @@ int main(int argc, char *argv[])
       else
         sigma=1.06*sqrt(sqrt(stat.var(dataVector[0]))*sqrt(stat.var(dataVector[0])))*pow(dataVector[0].size(),-0.2);
     }
-    assert(nbin_opt[0]);
+    assert(nbin);
     if(verbose_opt[0]){
       if(sigma>0)
         std::cout << "calculating 2d kernel density estimate with sigma " << sigma << " for cols " << col_opt[0] << " and " << col_opt[1] << std::endl;
       else
         std::cout << "calculating 2d histogram for cols " << col_opt[0] << " and " << col_opt[1] << std::endl;
-      std::cout << "nbin: " << nbin_opt[0] << std::endl;
+      std::cout << "nbin: " << nbin << std::endl;
     }
     std::vector< std::vector<double> > histVector;
-    stat.distribution2d(dataVector[0],dataVector[1],histVector,nbin_opt[0],minX,maxX,minY,maxY,sigma);
-    for(int binX=0;binX<nbin_opt[0];++binX){
+    stat.distribution2d(dataVector[0],dataVector[1],histVector,nbin,minX,maxX,minY,maxY,sigma);
+    for(int binX=0;binX<nbin;++binX){
       std::cout << std::endl;
-      for(int binY=0;binY<nbin_opt[0];++binY){
+      for(int binY=0;binY<nbin;++binY){
+	double binValueX=0;
+	if(nbin==maxX-minX+1)
+	  binValueX=minX+binX;
+	else
+	  binValueX=minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin;
+	double binValueY=0;
+	if(nbin==maxY-minY+1)
+	  binValueY=minY+binY;
+	else
+	  binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
         double value=0;
         value=static_cast<double>(histVector[binX][binY])/dataVector[0].size();
-        std::cout << (maxX-minX)*binX/(nbin_opt[0]-1)+minX << " " << (maxY-minY)*binY/(nbin_opt[0]-1)+minY << " " << value << std::endl;
+	std::cout << binValueX << " " << binValueY << " " << value << std::endl;
+	// std::cout << minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin << " " << minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin << " " << value << std::endl;
       }
     }
   }

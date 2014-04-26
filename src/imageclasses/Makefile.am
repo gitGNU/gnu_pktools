@@ -10,7 +10,12 @@ AM_CXXFLAGS = -I$(top_srcdir)/src $(GSL_CFLAGS) $(GDAL_CFLAGS) @AM_CXXFLAGS@
 lib_LTLIBRARIES = libimageClasses.la
 
 # where to install the headers on the system
-libimageClasses_ladir = $(includedir)/imageclasses
+libimageClasses_ladir = $(includedir)/pktools/imageclasses
+
+## Instruct libtool to include ABI version information in the generated shared
+## library file (.so).  The library ABI version is defined in configure.ac, so
+## that all version information is kept in one place.
+libimageClasses_la_LDFLAGS = -version-info $(PKTOOLS_SO_VERSION) $(AM_LDFLAGS)
 
 # the list of header files that belong to the library (to be installed later)
 libimageClasses_la_HEADERS = ImgReaderGdal.h  ImgReaderOgr.h  ImgWriterGdal.h  ImgWriterOgr.h

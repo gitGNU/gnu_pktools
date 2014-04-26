@@ -48,6 +48,21 @@ public:
   template <typename T> int readData(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   template <typename T> int readData(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   template <typename T> int readData(std::map<std::string,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
+  unsigned int readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+				std::vector<std::string>& fields,
+				const std::vector<short>& bands,
+				const std::string& label,
+				const std::vector<std::string>& layers,
+				int verbose=false);
+
+  unsigned int readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
+				std::vector<std::string>& fields,
+				double start,
+				double end,
+				const std::string& label,
+				const std::vector<std::string>& layers,
+				int verbose=false);
+
   void shape2ascii(std::ostream& theOstream, const std::string& pointname, int layer=0, bool verbose=false);
   unsigned long int getFeatureCount(int layer=0) const;
   int getFieldCount(int layer=0) const;
@@ -60,6 +75,7 @@ public:
   int getFields(std::vector<OGRFieldDefn*>& fields, int layer=0) const;
   OGRDataSource* getDataSource(void) {return m_datasource;};
   OGRSFDriver* getDriver(void) const {return m_datasource->GetDriver();};
+  int getLayerCount(void) const {return m_datasource->GetLayerCount();};
 //   OGRLayer *executeSql(const std::string& output,const std::string& sqlStatement, OGRGeometry* spatialFilter=NULL);
   template<typename T> int readSql(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& sqlStatement, OGRGeometry* spatialFilter=NULL, int layer=0, bool pos=false, bool verbose=false);
   template<typename T> int readSql(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer=0, bool pos=false, bool verbose=false);
@@ -77,8 +93,6 @@ protected:
 //read data from all features in a map, organized by classes
 template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -210,8 +224,6 @@ template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& dat
 //read data from all features in a map, organized by class names
 template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -347,8 +359,6 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
 
 //read x positions
 template <typename T> int ImgReaderOgr::readXY(std::vector<T>& xVector, std::vector<T>& yVector, int layer, bool verbose){
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -395,8 +405,6 @@ template <typename T> int ImgReaderOgr::readXY(std::vector<T>& xVector, std::vec
 //read data from a single feature
 template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, OGRFeature *poFeature, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -490,10 +498,8 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
 }
 
 //read one field from all features
-template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
+template <typename T> inline int ImgReaderOgr::readData(std::vector<T>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -565,11 +571,83 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
   }
 }
 
+//specialization for string: read one field from all features
+template <> inline int ImgReaderOgr::readData(std::vector<std::string>& data, const OGRFieldType& fieldType, const std::string& theField, int layer, bool verbose)
+{
+  assert(m_datasource->GetLayerCount()>layer);
+  OGRLayer  *poLayer;
+  if(verbose)
+    std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
+  poLayer = m_datasource->GetLayer(layer);
+  OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
+  int nfield=(theField!="")? poFDefn->GetFieldCount() : 1;
+  if(theField==""){
+    //read first field available 
+    if(verbose)
+      std::cout << "read first field from total of " << nfield << std::endl;
+  }
+
+  //start reading features from the layer
+  OGRFeature *poFeature;
+  if(verbose)
+    std::cout << "reset reading" << std::endl;
+  poLayer->ResetReading();
+  unsigned long int ifeature=0;
+  if(verbose)
+    std::cout << "going through features" << std::endl << std::flush;
+  while( (poFeature = poLayer->GetNextFeature()) != NULL ){
+    std::string theFeature;
+    if(verbose)
+      std::cout << "reading feature " << ifeature << std::endl << std::flush;
+    OGRGeometry *poGeometry;
+    poGeometry = poFeature->GetGeometryRef();
+    if(verbose){
+      if(poGeometry == NULL)
+        std::cerr << "no geometry defined" << std::endl << std::flush;
+      else// if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
+        std::cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl;
+    }
+    // assert(poGeometry != NULL 
+    //        && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
+    OGRPoint *poPoint = (OGRPoint *) poGeometry;
+
+    for(int iField=0;iField<nfield;++iField){
+      OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
+      std::string fieldname=poFieldDefn->GetNameRef();
+      if(fieldname!=theField)
+        continue;
+      switch(fieldType){
+      case(OFTInteger):
+      case(OFTReal):
+      case(OFTString):
+        theFeature=poFeature->GetFieldAsString(iField);
+      break;
+      default:
+        {
+          std::string errorstring="field type not supported in ImgReaderOgr::ReadData";
+          throw(errorstring);
+        }
+        break;
+      }
+    }
+    data.push_back(theFeature);
+    if(verbose)
+      std::cout << "feature is: " << theFeature << std::endl;
+    ++ifeature;
+  }
+  if(data.size()){
+    return data.size();
+  }
+  else{
+    std::ostringstream ess;
+    ess << "no layer in " << m_filename;
+    throw(ess.str());
+  }
+}
+
 //read data from all features  
 template <typename T> int ImgReaderOgr::readData(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
   if(verbose)
@@ -663,8 +741,6 @@ template <typename T> int ImgReaderOgr::readData(Vector2d<T>& data, const OGRFie
 
 template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer *poLayer;
   poLayer = m_datasource->ExecuteSQL(sqlStatement.c_str(), spatialFilter,NULL );
@@ -775,8 +851,6 @@ template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data
 
 template<typename T> int ImgReaderOgr::readSql(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer, bool pos, bool verbose)
 {
-  if(layer<0)
-    layer=m_datasource->GetLayerCount()-1;
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer *poLayer;
   poLayer = m_datasource->ExecuteSQL(sqlStatement.c_str(), spatialFilter,NULL );

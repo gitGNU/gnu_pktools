@@ -22,24 +22,163 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <iostream>
 
+using namespace std;
+
 filter::Filter::Filter(void)
 {
 }
 
 
 filter::Filter::Filter(const vector<double> &taps)
-  : m_taps(taps)
 {
+  setTaps(taps);
+}
+
+void filter::Filter::setTaps(const vector<double> &taps, bool normalize)
+{
+  m_taps.resize(taps.size());
+  double norm=0;
+  for(int itap=0;itap<taps.size();++itap)
+    norm+=taps[itap];
+  if(norm){
+    for(int itap=0;itap<taps.size();++itap)
+      m_taps[itap]=taps[itap]/norm;
+  }
+  else
+    m_taps=taps;
   assert(m_taps.size()%2);
 }
 
-void filter::Filter::setTaps(const vector<double> &taps)
-{
-  m_taps=taps;
-  assert(m_taps.size()%2);
+void filter::Filter::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      dwtForward(pixelInput,wavelet_type,family);
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        lineOutput[iband][x]=pixelInput[iband];
+    }
+    for(int iband=0;iband<input.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
+void filter::Filter::dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      dwtInverse(pixelInput,wavelet_type,family);
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        lineOutput[iband][x]=pixelInput[iband];
+    }
+    for(int iband=0;iband<input.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
+void filter::Filter::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut){
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      dwtCut(pixelInput,wavelet_type,family,cut);
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        lineOutput[iband][x]=pixelInput[iband];
+    }
+    for(int iband=0;iband<input.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
 }
 
 void filter::Filter::dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family){
+  int origsize=data.size();
+  //make sure data size if power of 2
+  while(data.size()&(data.size()-1))
+    data.push_back(data.back());
+      
+  int nsize=data.size();
+  gsl_wavelet *w;
+  gsl_wavelet_workspace *work;
+  assert(nsize);
+  w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
+  work=gsl_wavelet_workspace_alloc(nsize);
+  gsl_wavelet_transform_forward(w,&(data[0]),1,nsize,work);
+  data.erase(data.begin()+origsize,data.end());
+  gsl_wavelet_free (w);
+  gsl_wavelet_workspace_free (work);
+}
+
+void filter::Filter::dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family){
+  int origsize=data.size();
+  //make sure data size if power of 2
+  while(data.size()&(data.size()-1))
+    data.push_back(data.back());
+  int nsize=data.size();
+  gsl_wavelet *w;
+  gsl_wavelet_workspace *work;
+  assert(nsize);
+  w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
+  work=gsl_wavelet_workspace_alloc(nsize);
+  gsl_wavelet_transform_inverse(w,&(data[0]),1,nsize,work);
+  data.erase(data.begin()+origsize,data.end());
+  gsl_wavelet_free (w);
+  gsl_wavelet_workspace_free (work);
+}
+
+void filter::Filter::dwtCut(std::vector<double>& data, const std::string& wavelet_type, int family, double cut){
+  int origsize=data.size();
   //make sure data size if power of 2
   while(data.size()&(data.size()-1))
     data.push_back(data.back());
@@ -50,23 +189,25 @@ void filter::Filter::dwtForward(std::vector<double>& data, const std::string& wa
   w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
   work=gsl_wavelet_workspace_alloc(nsize);
   gsl_wavelet_transform_forward(w,&(data[0]),1,nsize,work);
-}
-
-void filter::Filter::dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family){
-  //make sure data size if power of 2
-  while(data.size()&(data.size()-1))
-    data.push_back(data.back());
-  int nsize=data.size();
-  assert(nsize);
-  gsl_wavelet *w;
-  gsl_wavelet_workspace *work;
-  w=gsl_wavelet_alloc(getWaveletType(wavelet_type),family);
-  work=gsl_wavelet_workspace_alloc(nsize);
+  std::vector<double> abscoeff(data.size());
+  size_t* p=new size_t[data.size()];
+  for(int index=0;index<data.size();++index){
+    abscoeff[index]=fabs(data[index]);
+  }
+  int nc=(100-cut)/100.0*nsize;
+  gsl_sort_index(p,&(abscoeff[0]),1,nsize);
+  for(int i=0;(i+nc)<nsize;i++)
+    data[p[i]]=0;
   gsl_wavelet_transform_inverse(w,&(data[0]),1,nsize,work);
+  data.erase(data.begin()+origsize,data.end());
+  delete[] p;
+  gsl_wavelet_free (w);
+  gsl_wavelet_workspace_free (work);
 }
 
-void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset)
+void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset, short verbose)
 {
+  bool bverbose=(verbose>1)? true:false;
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
   const char* pszMessage;
@@ -81,7 +222,7 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      morphology(pixelInput,pixelOutput,method,dim,down,offset);
+      morphology(pixelInput,pixelOutput,method,dim,down,offset,bverbose);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
@@ -98,7 +239,16 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
-void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
+void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down, int offset)
+{
+  assert(dim>0);
+  m_taps.resize(dim);
+  for(int itap=0;itap<dim;++itap)
+    m_taps[itap]=1.0/dim;
+  filter(input,output,down,offset);
+}
+
+void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -114,7 +264,7 @@ void filter::Filter::doit(const ImgReaderGdal& input, ImgWriterGdal& output, sho
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      doit(pixelInput,pixelOutput,down,offset);
+      filter(pixelInput,pixelOutput,down,offset);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }

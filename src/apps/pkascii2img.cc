@@ -1,6 +1,6 @@
 /**********************************************************************
 pkascii2img.cc: program to create raster image based on ascii file
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -19,10 +19,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <string>
 #include <fstream>
-#include "Optionpk.h"
+#include "base/Optionpk.h"
 #include <assert.h>
 #include "imageclasses/ImgWriterGdal.h"
 
+using namespace std;
 
 int main(int argc, char *argv[])
 {
@@ -138,7 +139,14 @@ int main(int argc, char *argv[])
     assert(dy_opt.size());
     if(verbose_opt[0])
       cout << output_opt[0] << " is georeferenced." << endl;
-    imgWriter.setGeoTransform(ulx_opt[0],uly_opt[0],dx_opt[0],dy_opt[0],0,0);
+    double gt[6];
+    gt[0]=ulx_opt[0];
+    gt[1]=dx_opt[0];
+    gt[2]=0;
+    gt[3]=uly_opt[0];
+    gt[4]=0;
+    gt[5]=-dy_opt[0];
+    imgWriter.setGeoTransform(gt);
     imgWriter.setProjectionProj4(projection_opt[0]);
   }
   else{

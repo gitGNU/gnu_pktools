@@ -1,6 +1,6 @@
 /**********************************************************************
-pkfs_nn.cc: feature selection for nn classifier
-Copyright (C) 2008-2012 Pieter Kempeneers
+pkfsann.cc: feature selection for nn classifier
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -17,28 +17,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
+#include <stdlib.h>
 #include <vector>
 #include <string>
 #include <map>
 #include <algorithm>
-#include "floatfann.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgReaderOgr.h"
-#include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
-#include "algorithms/myfann_cpp.h"
+#include "imageclasses/ImgReaderOgr.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
-#include "pkclassify_nn.h"
+#include "floatfann.h"
+#include "algorithms/myfann_cpp.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
+
+using namespace std;
+
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
 
 //global parameters used in cost function getCost
 map<string,short> classValueMap;
@@ -158,11 +158,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   else{//not working yet. please repair...
     assert(cv_opt[0]>0);
     bool initWeights=true;
-    //test
-    cout << "tempFeatures.size(): " << tmpFeatures.size() << endl;
-    cout << "ntraining: " << ntraining << endl;
-    cout << "initWeights: " << initWeights << endl;
-    cout << "maxit_opt.size(): " << maxit_opt.size() << endl;
     net.train_on_data(tmpFeatures,ntraining,initWeights, maxit_opt[0],
                       iterations_between_reports, desired_error);
     vector<Vector2d<float> > testFeatures(nclass);
@@ -174,8 +169,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
           testFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][nctraining[iclass]+isample][ifeature];
         }
-	//test
-	cout << "isample:" << isample<< endl;
         result=net.run(testFeatures[iclass][isample]);
         string refClassName=nameVector[iclass];
         float maxP=-1;
@@ -186,19 +179,13 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
             maxClass=ic;
           }
         }
-	//test
-	cout << "maxClass:" << maxClass << "(" << nameVector.size() << ")" << endl;
         string className=nameVector[maxClass];
-	//test
-	cout << "className:" << nameVector[maxClass] << endl;
         if(classValueMap.size())
           cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
         else
           cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1.0);
       }
     }
-    //test
-    cout << "debug12" << endl;
   }
   assert(cm.nReference());
   return(cm.kappa());
@@ -210,13 +197,15 @@ int main(int argc, char *argv[])
   
   //--------------------------- command line options ------------------------------------
   Optionpk<string> input_opt("i", "input", "input test set (leave empty to perform a cross validation based on training only)"); 
-  Optionpk<string> training_opt("t", "training", "training shape file. A single shape file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
-  Optionpk<string> label_opt("\0", "label", "identifier for class label in training shape file.","label"); 
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
+  Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
+  Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
-  Optionpk<double> start_opt("s", "start", "start band sequence number (set to 0)",0); 
-  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 for all bands)", 0); 
+  Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
+  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
@@ -230,8 +219,10 @@ int main(int argc, char *argv[])
     doProcess=input_opt.retrieveOption(argc,argv);
     training_opt.retrieveOption(argc,argv);
     maxFeatures_opt.retrieveOption(argc,argv);
+    tlayer_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -272,7 +263,7 @@ int main(int argc, char *argv[])
   if(input_opt.size())
     cv_opt[0]=0;
   if(verbose_opt[0]>=1)
-    std::cout << "training shape file: " << training_opt[0] << std::endl;
+    std::cout << "training vector file: " << training_opt[0] << std::endl;
 
   unsigned int totalSamples=0;
   unsigned int totalTestSamples=0;
@@ -315,17 +306,24 @@ int main(int argc, char *argv[])
   map<string,Vector2d<float> > trainingMap;
   map<string,Vector2d<float> > testMap;
   if(verbose_opt[0]>=1)
-    std::cout << "reading imageShape file " << training_opt[0] << std::endl;
+    std::cout << "reading imageVector file " << training_opt[0] << std::endl;
   try{
+    ImgReaderOgr trainingReader(training_opt[0]);
     if(band_opt.size()){
-      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,band_opt,label_opt[0],verbose_opt[0]);
-      if(input_opt.size())
-	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,band_opt,label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
+      if(input_opt.size()){
+	ImgReaderOgr inputReader(input_opt[0]);
+	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
+	inputReader.close();
+      }
     }
     else{
-      totalSamples=readDataImageShape(training_opt[0],trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
-      if(input_opt.size())
-	totalTestSamples=readDataImageShape(input_opt[0],testMap,fields,start_opt[0],end_opt[0],label_opt[0],verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+      if(input_opt.size()){
+	ImgReaderOgr inputReader(input_opt[0]);
+	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+	inputReader.close();
+      }
     }
     if(trainingMap.size()<2){
       string errorstring="Error: could not read at least two classes from training file";
@@ -335,6 +333,7 @@ int main(int argc, char *argv[])
       string errorstring="Error: could not read at least two classes from test input file";
       throw(errorstring);
     }
+    trainingReader.close();
   }
   catch(string error){
     cerr << error << std::endl;
@@ -409,7 +408,7 @@ int main(int argc, char *argv[])
   //do not remove outliers here: could easily be obtained through ogr2ogr -where 'B2<110' output.shp input.shp
   //balance training data
   if(balance_opt[0]>0){
-    if(random)
+    if(random_opt[0])
       srand(time(NULL));
     totalSamples=0;
     for(int iclass=0;iclass<nclass;++iclass){

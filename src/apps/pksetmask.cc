@@ -1,6 +1,6 @@
 /**********************************************************************
 pksetmask.cc: program to apply mask image (set invalid values) to raster image
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -130,12 +130,6 @@ int main(int argc, char *argv[])
     for(int imask=0;imask<mask_opt.size();++imask)
       assert(maskReader[imask].isGeoRef());
   }
-  else{
-    for(int imask=0;imask<mask_opt.size();++imask){
-      assert(maskReader[imask].nrOfCol()==inputReader.nrOfCol());
-      assert(maskReader[imask].nrOfRow()==inputReader.nrOfRow());
-    }
-  }
   assert(nodata_opt.size()==msknodata_opt.size());
   assert(operator_opt.size()==msknodata_opt.size()||operator_opt.size()==1);
   if(verbose_opt[0]){
@@ -185,16 +179,10 @@ int main(int argc, char *argv[])
     for(icol=0;icol<inputReader.nrOfCol();++icol){
       if(mask_opt.size()>1){//multiple masks
         for(int imask=0;imask<mask_opt.size();++imask){
-          if(maskReader[imask].isGeoRef()){
-            inputReader.image2geo(icol,irow,x,y);
-            maskReader[imask].geo2image(x,y,colMask,rowMask);
-            colMask=static_cast<int>(colMask);
-            rowMask=static_cast<int>(rowMask);
-          }
-          else{
-            colMask=icol;
-            rowMask=irow;
-          }
+	  inputReader.image2geo(icol,irow,x,y);
+	  maskReader[imask].geo2image(x,y,colMask,rowMask);
+	  colMask=static_cast<int>(colMask);
+	  rowMask=static_cast<int>(rowMask);
           bool masked=false;
           if(rowMask>=0&&rowMask<maskReader[imask].nrOfRow()&&colMask>=0&&colMask<maskReader[imask].nrOfCol()){
 	    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask[imask])){
@@ -252,16 +240,10 @@ int main(int argc, char *argv[])
         }
       }
       else{//potentially more invalid values for single mask
-        if(maskReader[0].isGeoRef()){
-          inputReader.image2geo(icol,irow,x,y);
-          maskReader[0].geo2image(x,y,colMask,rowMask);
-          colMask=static_cast<int>(colMask);
-          rowMask=static_cast<int>(rowMask);
-        }
-        else{
-          colMask=icol;
-          rowMask=irow;
-        }
+	inputReader.image2geo(icol,irow,x,y);
+	maskReader[0].geo2image(x,y,colMask,rowMask);
+	colMask=static_cast<int>(colMask);
+	rowMask=static_cast<int>(rowMask);
         bool masked=false;
         if(rowMask>=0&&rowMask<maskReader[0].nrOfRow()&&colMask>=0&&colMask<maskReader[0].nrOfCol()){
           if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask[0])){

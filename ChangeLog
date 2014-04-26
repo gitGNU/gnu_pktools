@@ -175,6 +175,8 @@ version 2.4.2
 	support of transposed output
 
 version 2.4.3
+ - StatFactory.h
+	corrected bug in interpolateUp (in case x_out < x_in)
  - pkclassify_nn
 	option msknodata and nodata to set nodata value in mask and classified image
  - pkclassify_svm
@@ -206,3 +208,83 @@ version 2.4.3
  - pksetmask
 	option msknodata to set nodata value in mask
 
+version 2.5
+ - ImgReaderOgr
+	support sqlite: read training file with small case band names b0, b1, ...
+ - ImgReaderGdal and ImgWriterGdal
+	re-design of geotransform
+ - ImgReaderGdal
+	support of scaling and offset for reading raster bands
+ - pkextract
+	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
+	support multiple layers
+	deprecated cbox and rbox
+ - pkdiff
+	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
+	support multiple layers
+ - pkeditogr
+	support other ogr file formats than ESRI Shape (e.g, using option -f SQLite)
+	support multiple layers
+ - Filter2d.h
+	renamed mask to nodata
+ - pkinfo
+	hist: corrected nan when min=max
+	min and max changed to src_min and src_max (limit source values for histogram)
+	support for options -min and -max in addition to minmax (-mm): show min and max independently
+ - pkstatascii
+	min and max changed to src_min and src_max (limit source values for histogram)
+	support for options -min and -max in addition to minmax (-mm): show min and max independently
+ - pkfilter
+	corrected bug in 2d wavelet transform forward and inverse
+	renamed mask to nodata
+ - pkndvi
+	changed minmax option to min and max. Min and max values now apply to scaled values
+ - pklas2img
+	moved post filtering to pkfilterdem
+	changed some option names
+ - pkfilterdem
+	new utility (moved from pklas2ig)
+
+version 2.5.1
+ - pkinfo
+	-stats instead of -stat to be conform to gdalinfo
+	bin values match actual values in case nbin=max-min+1
+ - pkstatascii
+	bin values match actual values in case nbin=max-min+1
+ - pkstatogr
+	bin values match actual values in case nbin=max-min+1
+ - pkextract
+	support sum rule
+ - pkfilter
+	support of density filter
+	debug down option (forgot to adapt xres and yres)
+	no automatic normalization user provided filter taps
+ - pkcrop
+	correct bounding box when dx_opt and dy_opt are set
+ - pksieve
+	retain nodata in pksieve when mask is set
+version 2.5.2
+ - configure script: GDAL>=1.10.0 is required for pkdiff
+ - programs ported to windows and GUI with Qt
+	removed underscore for QProcess in Windows
+ - pkclassify_svm -> pksvm
+	removed underscore for QProcess in Windows
+ - pkclassify_nn -> pkann
+	removed underscore for QProcess in Windows
+ - pkregression_nn -> pkregann
+	removed underscore for QProcess in Windows
+ - pkfs_svm -> pkfssvm
+	removed underscore for QProcess in Windows
+ - pkfs_nn -> pkfsann
+	removed underscore for QProcess in Windows
+ - pkopt_svm -> pkoptsvm
+	removed underscore for QProcess in Windows
+ - pkmosaic -> pkcomposite
+	name was confusing as also compositing is supported (unlike gdal_merge.py and gdalwarp)
+	resample option similar to pkcrop
+ - version control for libraries
+	thanks to suggestion of Francesco Paolo Lovergine
+ - subdirectory pktools for include headers
+	thanks to suggestion of Francesco Paolo Lovergine
+ - pklas2img
+	support for compressed point cloud (LAZ) files

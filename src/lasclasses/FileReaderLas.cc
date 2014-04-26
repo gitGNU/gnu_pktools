@@ -83,9 +83,11 @@ void FileReaderLas::close(void)
 void FileReaderLas::setCodec(const std::string& filename){
   m_ifstream = new(std::ifstream);
   m_ifstream->open(m_filename.c_str(),std::ios::in|std::ios::binary);
-  m_reader = new liblas::Reader(*m_ifstream);
+  liblas::ReaderFactory f;
+  liblas::Reader reader = f.CreateWithStream(*m_ifstream);
+  m_reader=new liblas::Reader(reader);
+  // m_reader = new liblas::Reader(*m_ifstream);
   //Note: It is possible to use the basic liblas::Reader constructor that takes in a std::istream, but it will not be able to account for the fact that the file might be compressed. Using the ReaderFactory will take care of all of this for you.
-  // liblas::ReaderFactory rfactory;
   // m_reader=&rfactory.CreateWithStream(ifs);
 }
 

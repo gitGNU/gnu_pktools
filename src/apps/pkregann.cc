@@ -1,6 +1,6 @@
 /**********************************************************************
-pkregression_nn.cc: regression with artificial neural network (multi-layer perceptron)
-Copyright (C) 2008-2013 Pieter Kempeneers
+pkregann.cc: regression with artificial neural network (multi-layer perceptron)
+Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -22,8 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "fileclasses/FileReaderAscii.h"
 #include "floatfann.h"
-#include "myfann_cpp.h"
-
+#include "algorithms/myfann_cpp.h"
 using namespace std;
 
 int main(int argc, char *argv[])
