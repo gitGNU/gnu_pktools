@@ -35,8 +35,8 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
-  Optionpk<string> postFilter_opt("f", "filter", "post processing filter: etew_min, promorph (progressive morphological filter),open,close).");
-  Optionpk<double> dim_opt("dim", "dim", "maximum filter kernel size (optionally you can set both initial and maximum filter kernel size", 17);
+  Optionpk<string> postFilter_opt("f", "filter", "post processing filter: vito, etew_min, promorph (progressive morphological filter),open,close).");
+  Optionpk<double> dim_opt("dim", "dim", "maximum filter kernel size (optionally you can set both initial and maximum filter kernel size", 3);
   Optionpk<double> maxSlope_opt("st", "st", "slope threshold used for morphological filtering. Use a low values to remove more height objects in flat terrains", 0.0);
   Optionpk<double> hThreshold_opt("ht", "ht", "initial height threshold for progressive morphological filtering. Use low values to remove more height objects. Optionally, a maximum height threshold can be set via a second argument (e.g., -ht 0.2 -ht 2.5 sets an initial threshold at 0.2 m and caps the threshold at 2.5 m).", 0.2);
   Optionpk<short> minChange_opt("minchange", "minchange", "Stop iterations when no more pixels are changed than this threshold.", 0);
@@ -159,7 +159,36 @@ int main(int argc,char **argv) {
   }
 
   unsigned long int nchange=1;
-  if(postFilter_opt[0]=="etew_min"){
+  if(postFilter_opt[0]=="vito"){
+    //todo: fill empty pixels
+    hThreshold_opt.resize(3);
+    hThreshold_opt[0]=0.7;
+    hThreshold_opt[1]=0.3;
+    hThreshold_opt[2]=0.1;
+    vector<int> nlimit(3);
+    nlimit[0]=2;
+    nlimit[1]=3;
+    nlimit[2]=4;
+    //init finalMask
+    for(int irow=0;irow<tmpData.nRows();++irow)
+      for(int icol=0;icol<tmpData.nCols();++icol)
+	tmpData[irow][icol]=1;
+    for(int iheight=0;iheight=hThreshold_opt.size();++iheight){
+      //todo: init tmpMask to 1
+      //todo:replace with binary mask (or short) -> adapt template with T1,T2 in Filter2d
+      Vector2d<double> tmpMask(input.nrOfRow(),input.nrOfCol());
+      for(int irow=0;irow<tmpMask.nRows();++irow)
+	for(int icol=0;icol<tmpMask.nCols();++icol)
+	  tmpMask[irow][icol]=1;//1=surface, 0=terrain
+      theFilter.dsm2dtm_nwse(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      theFilter.dsm2dtm_nesw(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      theFilter.dsm2dtm_senw(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      theFilter.dsm2dtm_swne(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      //todo: set tmpMask to finalMask
+    }
+    //todo: fill empty pixels
+  }    
+  else if(postFilter_opt[0]=="etew_min"){
     //Elevation Threshold with Expand Window (ETEW) Filter (p.73 from Airborne LIDAR Data Processing and Analysis Tools ALDPAT 1.0)
     //first iteration is performed assuming only minima are selected using options -fir all -comp min
     //increase cells and thresholds until no points from the previous iteration are discarded.
@@ -175,7 +204,7 @@ int main(int argc,char **argv) {
       ++iteration;
     }
   }    
-  else if(postFilter_opt[0]=="promorph"){//todo: instead of number of iterations, define a max dim size
+  else if(postFilter_opt[0]=="promorph"){
     //Progressive morphological filter tgrs2003_zhang vol41 pp 872-882
     //first iteration is performed assuming only minima are selected using options -fir all -comp min
     //increase cells and thresholds until no points from the previous iteration are discarded.
