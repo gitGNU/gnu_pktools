@@ -825,12 +825,14 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked>=nlimit){
+      if(nmasked<nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
+      }
+      else{
 	//reset pixel height in tmpDSM
-	inBuffer[indexJ][indexI]=stat.mymin(neighbors);
+	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
       }
     }
     progress=(1.0+y);
@@ -914,12 +916,14 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked>=nlimit){
+      if(nmasked<nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
+      }
+      else{
 	//reset pixel height in tmpDSM
-	inBuffer[indexJ][indexI]=stat.mymin(neighbors);
+	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
       }
     }
     progress=(1.0+y);
@@ -1003,12 +1007,14 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked>=nlimit){
+      if(nmasked<nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
+      }
+      else{
 	//reset pixel height in tmpDSM
-	inBuffer[indexJ][indexI]=stat.mymin(neighbors);
+	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
       }
     }
     progress=(1.0+y);
@@ -1092,12 +1098,14 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked>=nlimit){
+      if(nmasked<nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
+      }
+      else{
 	//reset pixel height in tmpDSM
-	inBuffer[indexJ][indexI]=stat.mymin(neighbors);
+	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
       }
     }
     progress=(1.0+y);

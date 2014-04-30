@@ -161,32 +161,127 @@ int main(int argc,char **argv) {
   unsigned long int nchange=1;
   if(postFilter_opt[0]=="vito"){
     //todo: fill empty pixels
-    hThreshold_opt.resize(3);
-    hThreshold_opt[0]=0.7;
-    hThreshold_opt[1]=0.3;
-    hThreshold_opt[2]=0.1;
+    // hThreshold_opt.resize(3);
+    // hThreshold_opt[0]=0.7;
+    // hThreshold_opt[1]=0.3;
+    // hThreshold_opt[2]=0.1;
     vector<int> nlimit(3);
     nlimit[0]=2;
     nlimit[1]=3;
     nlimit[2]=4;
+    nlimit[2]=2;
     //init finalMask
     for(int irow=0;irow<tmpData.nRows();++irow)
       for(int icol=0;icol<tmpData.nCols();++icol)
 	tmpData[irow][icol]=1;
-    for(int iheight=0;iheight=hThreshold_opt.size();++iheight){
-      //todo: init tmpMask to 1
+    for(int iheight=0;iheight<hThreshold_opt.size();++iheight){
+      if(verbose_opt[0])
+	cout << "height: " << hThreshold_opt[iheight] << endl;
       //todo:replace with binary mask (or short) -> adapt template with T1,T2 in Filter2d
       Vector2d<double> tmpMask(input.nrOfRow(),input.nrOfCol());
       for(int irow=0;irow<tmpMask.nRows();++irow)
 	for(int icol=0;icol<tmpMask.nCols();++icol)
 	  tmpMask[irow][icol]=1;//1=surface, 0=terrain
+      if(verbose_opt[0])
+	cout << "filtering NWSE" << endl;
       theFilter.dsm2dtm_nwse(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+
+      // //from here
+
+      // Vector2d<double> tmpDSM(inputData);
+      // double noDataValue=0;
+
+      // unsigned long int nchange=0;
+      // int dimX=dim_opt[0];
+      // int dimY=dim_opt[0];
+      // assert(dimX);
+      // assert(dimY);
+      // statfactory::StatFactory stat;
+      // Vector2d<double> inBuffer(dimY,inputData.nCols());
+      // // if(tmpMask.size()!=inputData.nRows())
+      // // 	tmpMask.resize(inputData.nRows());
+      // int indexI=0;
+      // int indexJ=0;
+      // //initialize last half of inBuffer
+      // for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+      // 	for(int i=0;i<inputData.nCols();++i)
+      // 	  inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
+      // 	++indexJ;
+      // }
+      // for(int y=0;y<tmpDSM.nRows();++y){
+      // 	if(y){//inBuffer already initialized for y=0
+      // 	  //erase first line from inBuffer
+      // 	  inBuffer.erase(inBuffer.begin());
+      // 	  //read extra line and push back to inBuffer if not out of bounds
+      // 	  if(y+dimY/2<tmpDSM.nRows()){
+      // 	    //allocate buffer
+      // 	    inBuffer.push_back(inBuffer.back());
+      // 	    for(int i=0;i<tmpDSM.nCols();++i)
+      // 	      inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
+      // 	  }
+      // 	  else{
+      // 	    int over=y+dimY/2-tmpDSM.nRows();
+      // 	    int index=(inBuffer.size()-1)-over;
+      // 	    assert(index>=0);
+      // 	    assert(index<inBuffer.size());
+      // 	    inBuffer.push_back(inBuffer[index]);
+      // 	  }
+      // 	}
+      // 	for(int x=0;x<tmpDSM.nCols();++x){
+      // 	  double centerValue=inBuffer[(dimY-1)/2][x];
+      // 	  short nmasked=0;
+      // 	  std::vector<double> neighbors;
+      // 	  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+      // 	    for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+      // 	      indexI=x+i;
+      // 	      //check if out of bounds
+      // 	      if(indexI<0)
+      // 		indexI=-indexI;
+      // 	      else if(indexI>=tmpDSM.nCols())
+      // 		indexI=tmpDSM.nCols()-i;
+      // 	      if(y+j<0)
+      // 		indexJ=-j;
+      // 	      else if(y+j>=tmpDSM.nRows())
+      // 		indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+      // 	      else
+      // 		indexJ=(dimY-1)/2+j;
+      // 	      double difference=(centerValue-inBuffer[indexJ][indexI]);
+      // 	      if(i||j)//skip centerValue
+      // 		neighbors.push_back(inBuffer[indexJ][indexI]);
+      // 	      if(difference>hThreshold_opt[iheight])
+      // 		++nmasked;
+      // 	    }
+      // 	  }
+      // 	  if(nmasked<nlimit[iheight]){
+      // 	    ++nchange;
+      // 	    //reset pixel in tmpMask
+      // 	    tmpMask[y][x]=0;
+      // 	  }
+      // 	  else{
+      // 	    //reset pixel height in tmpDSM
+      // 	    inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
+      // 	  }
+      // 	}
+      // }
+      //to here
+
+      tmpData.setMask(tmpMask,0,0);
+      if(verbose_opt[0])
+      	cout << "filtering NESW" << endl;
       theFilter.dsm2dtm_nesw(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      tmpData.setMask(tmpMask,0,0);
+      if(verbose_opt[0])
+      	cout << "filtering SENW" << endl;
       theFilter.dsm2dtm_senw(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      tmpData.setMask(tmpMask,0,0);
+      if(verbose_opt[0])
+      	cout << "filtering SWNE" << endl;
       theFilter.dsm2dtm_swne(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
-      //todo: set tmpMask to finalMask
+      // set tmpMask to finalMask
+      tmpData.setMask(tmpMask,0,0);
     }
-    //todo: fill empty pixels
+    outputData=tmpData;
+    //outputData.setMask(tmpData,1,0);
   }    
   else if(postFilter_opt[0]=="etew_min"){
     //Elevation Threshold with Expand Window (ETEW) Filter (p.73 from Airborne LIDAR Data Processing and Analysis Tools ALDPAT 1.0)
