@@ -258,7 +258,7 @@ bool ImgReaderGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double
   }
 }
 
-bool ImgReaderGdal::getCentrePos(double& x, double& y) const
+bool ImgReaderGdal::getCenterPos(double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   m_gds->GetGeoTransform(gt);
@@ -318,7 +318,7 @@ bool ImgReaderGdal::geo2image(double x, double y, double& i, double& j) const
   }
 }
 
-//x and y represent centre of pixel, return true if image is georeferenced
+//x and y represent center of pixel, return true if image is georeferenced
 bool ImgReaderGdal::image2geo(double i, double j, double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
@@ -619,15 +619,15 @@ void ImgReaderGdal::getRefPix(double& refX, double &refY, int band) const
     }
   }
   if(isGeoRef()){
-    //reference coordinate is lower left corner of pixel in centre of gravity
+    //reference coordinate is lower left corner of pixel in center of gravity
     //we need geo coordinates for exactly this location: validCol(Row)/nvalidCol(Row)-0.5
     double cgravi=validCol/nvalidCol-0.5;
     double cgravj=validRow/nvalidRow-0.5;
     double refpixeli=floor(cgravi);
     double refpixelj=ceil(cgravj-1);
-    //but image2geo provides location at centre of pixel (shifted half pixel right down)
+    //but image2geo provides location at center of pixel (shifted half pixel right down)
     image2geo(refpixeli,refpixelj,refX,refY);
-    //refX and refY now refer to centre of gravity pixel
+    //refX and refY now refer to center of gravity pixel
     refX-=0.5*getDeltaX();//shift to left corner
     refY-=0.5*getDeltaY();//shift to lower left corner
   }

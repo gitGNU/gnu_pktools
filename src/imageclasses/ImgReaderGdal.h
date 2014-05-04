@@ -51,7 +51,7 @@ public:
   std::string getMetadataItem() const;
   std::string getImageDescription() const;
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
-  bool getCentrePos(double& x, double& y) const;
+  bool getCenterPos(double& x, double& y) const;
   double getUlx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(ulx);};
   double getUly() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(uly);};
   double getLrx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lrx);};

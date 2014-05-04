@@ -267,6 +267,8 @@ version 2.5.2
  - configure script: GDAL>=1.10.0 is required for pkdiff
  - programs ported to windows and GUI with Qt
 	removed underscore for QProcess in Windows
+ - pkinfo
+	distinct long options
  - pkclassify_svm -> pksvm
 	removed underscore for QProcess in Windows
  - pkclassify_nn -> pkann
