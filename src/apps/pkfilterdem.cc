@@ -161,11 +161,12 @@ int main(int argc,char **argv) {
   unsigned long int nchange=1;
   if(postFilter_opt[0]=="vito"){
     //todo: fill empty pixels
-    // hThreshold_opt.resize(3);
+    // hThreshold_opt.resize(4);
     // hThreshold_opt[0]=0.7;
     // hThreshold_opt[1]=0.3;
     // hThreshold_opt[2]=0.1;
-    vector<int> nlimit(3);
+    // hThreshold_opt[2]=-0.2;
+    vector<int> nlimit(4);
     nlimit[0]=2;
     nlimit[1]=3;
     nlimit[2]=4;
@@ -184,40 +185,39 @@ int main(int argc,char **argv) {
 	  tmpMask[irow][icol]=1;//1=surface, 0=terrain
       if(verbose_opt[0])
 	cout << "filtering NWSE" << endl;
-      theFilter.dsm2dtm_nwse(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
-
-      // //from here
-
+      //from here
       // Vector2d<double> tmpDSM(inputData);
-      // double noDataValue=0;
-
-      // unsigned long int nchange=0;
       // int dimX=dim_opt[0];
       // int dimY=dim_opt[0];
       // assert(dimX);
       // assert(dimY);
       // statfactory::StatFactory stat;
       // Vector2d<double> inBuffer(dimY,inputData.nCols());
-      // // if(tmpMask.size()!=inputData.nRows())
-      // // 	tmpMask.resize(inputData.nRows());
+      // if(tmpData.size()!=inputData.nRows())
+      // 	tmpData.resize(inputData.nRows());
       // int indexI=0;
-      // int indexJ=0;
+      // int indexJ=inputData.nRows()-1;
+      // // int indexJ=0;
       // //initialize last half of inBuffer
       // for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       // 	for(int i=0;i<inputData.nCols();++i)
       // 	  inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
-      // 	++indexJ;
+      // 	--indexJ;
+      // 	// ++indexJ;
       // }
-      // for(int y=0;y<tmpDSM.nRows();++y){
+      // for(int y=tmpDSM.nRows()-1;y>=0;--y){
       // 	if(y){//inBuffer already initialized for y=0
       // 	  //erase first line from inBuffer
-      // 	  inBuffer.erase(inBuffer.begin());
+      // 	  inBuffer.erase(inBuffer.end()-1);
+      // 	  // inBuffer.erase(inBuffer.begin());
       // 	  //read extra line and push back to inBuffer if not out of bounds
       // 	  if(y+dimY/2<tmpDSM.nRows()){
       // 	    //allocate buffer
-      // 	    inBuffer.push_back(inBuffer.back());
-      // 	    for(int i=0;i<tmpDSM.nCols();++i)
-      // 	      inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
+      // 	    // inBuffer.push_back(inBuffer.back());
+      // 	    inBuffer.insert(inBuffer.begin(),*(inBuffer.begin()));
+      // 	    for(int i=0;i<tmpDSM.nCols();++i) 
+      // 	      inBuffer[0][i]=tmpDSM[y-dimY/2][i];
+      // 	      // inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
       // 	  }
       // 	  else{
       // 	    int over=y+dimY/2-tmpDSM.nRows();
@@ -227,8 +227,10 @@ int main(int argc,char **argv) {
       // 	    inBuffer.push_back(inBuffer[index]);
       // 	  }
       // 	}
-      // 	for(int x=0;x<tmpDSM.nCols();++x){
+      // 	for(int x=tmpDSM.nCols()-1;x>=0;--x){
       // 	  double centerValue=inBuffer[(dimY-1)/2][x];
+      // 	  //test
+      // 	  cout << "pixel ("  << x << "," << y << "): " << centerValue << endl;
       // 	  short nmasked=0;
       // 	  std::vector<double> neighbors;
       // 	  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
@@ -246,41 +248,49 @@ int main(int argc,char **argv) {
       // 	      else
       // 		indexJ=(dimY-1)/2+j;
       // 	      double difference=(centerValue-inBuffer[indexJ][indexI]);
+      // 	      //test
+      // 	      cout << "centerValue-inBuffer[" << indexJ << "][" << indexI << "]=" << centerValue << " - " << inBuffer[indexJ][indexI] << " = " << difference << endl;
       // 	      if(i||j)//skip centerValue
       // 		neighbors.push_back(inBuffer[indexJ][indexI]);
       // 	      if(difference>hThreshold_opt[iheight])
       // 		++nmasked;
       // 	    }
       // 	  }
-      // 	  if(nmasked<nlimit[iheight]){
+      // 	  //test
+      // 	  cout << "pixel " << x << ", " << y << ": nmasked is " << nmasked << endl;
+      // 	  if(nmasked<=nlimit[iheight]){
       // 	    ++nchange;
-      // 	    //reset pixel in tmpMask
-      // 	    tmpMask[y][x]=0;
+      // 	    //reset pixel in outputMask
+      // 	    tmpData[y][x]=0;
+      // 	    //test
+      // 	    cout << "pixel " << x << ", " << y << " is ground" << endl;
       // 	  }
       // 	  else{
       // 	    //reset pixel height in tmpDSM
-      // 	    inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
+      // 	    sort(neighbors.begin(),neighbors.end());
+      // 	    assert(neighbors.size()>1);
+      // 	    inBuffer[(dimY-1)/2][x]=neighbors[1];
+      // 	    //test
+      // 	    cout << "pixel " << x << ", " << y << " is surface, reset DSM to " << neighbors[1] << endl;
+      // 	    /* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
       // 	  }
       // 	}
       // }
       //to here
 
-      tmpData.setMask(tmpMask,0,0);
+      theFilter.dsm2dtm_nwse(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
       if(verbose_opt[0])
       	cout << "filtering NESW" << endl;
-      theFilter.dsm2dtm_nesw(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
-      tmpData.setMask(tmpMask,0,0);
+      theFilter.dsm2dtm_nesw(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
       if(verbose_opt[0])
       	cout << "filtering SENW" << endl;
-      theFilter.dsm2dtm_senw(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
-      tmpData.setMask(tmpMask,0,0);
+      theFilter.dsm2dtm_senw(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
       if(verbose_opt[0])
       	cout << "filtering SWNE" << endl;
-      theFilter.dsm2dtm_swne(inputData,tmpMask,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
-      // set tmpMask to finalMask
-      tmpData.setMask(tmpMask,0,0);
+      theFilter.dsm2dtm_swne(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
     }
     outputData=tmpData;
+    //todo: interpolate
     //outputData.setMask(tmpData,1,0);
   }    
   else if(postFilter_opt[0]=="etew_min"){

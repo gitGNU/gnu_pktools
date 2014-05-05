@@ -825,14 +825,17 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked<nlimit){
+      if(nmasked<=nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
       }
       else{
 	//reset pixel height in tmpDSM
-	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
       }
     }
     progress=(1.0+y);
@@ -916,14 +919,17 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked<nlimit){
+      if(nmasked<=nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
       }
       else{
 	//reset pixel height in tmpDSM
-	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
       }
     }
     progress=(1.0+y);
@@ -956,30 +962,26 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
   if(outputMask.size()!=inputDSM.nRows())
     outputMask.resize(inputDSM.nRows());
   int indexI=0;
-  int indexJ=0;
-  //initialize last half of inBuffer
-  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+  int indexJ=inputDSM.nRows()-1;
+  //initialize first half of inBuffer
+  for(int j=inputDSM.nRows()-dimY/2;j<inputDSM.nRows();--j){
     for(int i=0;i<inputDSM.nCols();++i)
       inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
     ++indexJ;
   }
   for(int y=tmpDSM.nRows()-1;y>=0;--y){
-    if(y){//inBuffer already initialized for y=0
-      //erase first line from inBuffer
-      inBuffer.erase(inBuffer.begin());
-      //read extra line and push back to inBuffer if not out of bounds
-      if(y+dimY/2<tmpDSM.nRows()){
+    if(y<tmpDSM.nRows()-1){//inBuffer already initialized for y=tmpDSM.nRows()-1
+      //erase last line from inBuffer
+      inBuffer.erase(inBuffer.end()-1);
+      //read extra line and insert to inBuffer if not out of bounds
+      if(y-dimY/2>0){
         //allocate buffer
-        inBuffer.push_back(inBuffer.back());
+        inBuffer.insert(inBuffer.begin(),inBuffer.back());
         for(int i=0;i<tmpDSM.nCols();++i)
-          inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
+          inBuffer[0][i]=tmpDSM[y-dimY/2][i];
       }
       else{
-        int over=y+dimY/2-tmpDSM.nRows();
-        int index=(inBuffer.size()-1)-over;
-        assert(index>=0);
-        assert(index<inBuffer.size());
-        inBuffer.push_back(inBuffer[index]);
+        inBuffer.insert(inBuffer.begin(),inBuffer[abs(y-dimY/2)]);
       }
     }
     for(int x=tmpDSM.nCols()-1;x>=0;--x){
@@ -1007,14 +1009,17 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked<nlimit){
+      if(nmasked<=nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
       }
       else{
 	//reset pixel height in tmpDSM
-	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
       }
     }
     progress=(1.0+y);
@@ -1048,29 +1053,25 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
     outputMask.resize(inputDSM.nRows());
   int indexI=0;
   int indexJ=0;
-  //initialize last half of inBuffer
-  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+  //initialize first half of inBuffer
+  for(int j=inputDSM.nRows()-dimY/2;j<inputDSM.nRows();--j){
     for(int i=0;i<inputDSM.nCols();++i)
       inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
     ++indexJ;
   }
   for(int y=tmpDSM.nRows()-1;y>=0;--y){
-    if(y){//inBuffer already initialized for y=0
-      //erase first line from inBuffer
-      inBuffer.erase(inBuffer.begin());
-      //read extra line and push back to inBuffer if not out of bounds
-      if(y+dimY/2<tmpDSM.nRows()){
+    if(y<tmpDSM.nRows()-1){//inBuffer already initialized for y=0
+      //erase last line from inBuffer
+      inBuffer.erase(inBuffer.end()-1);
+      //read extra line and insert to inBuffer if not out of bounds
+      if(y-dimY/2>0){
         //allocate buffer
-        inBuffer.push_back(inBuffer.back());
+        inBuffer.insert(inBuffer.begin(),inBuffer.back());
         for(int i=0;i<tmpDSM.nCols();++i)
-          inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
+          inBuffer[0][i]=tmpDSM[y-dimY/2][i];
       }
       else{
-        int over=y+dimY/2-tmpDSM.nRows();
-        int index=(inBuffer.size()-1)-over;
-        assert(index>=0);
-        assert(index<inBuffer.size());
-        inBuffer.push_back(inBuffer[index]);
+        inBuffer.insert(inBuffer.begin(),inBuffer[abs(y-dimY/2)]);
       }
     }
     for(int x=0;x<tmpDSM.nCols();++x){
@@ -1098,14 +1099,17 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
 	    ++nmasked;
 	}
       }
-      if(nmasked<nlimit){
+      if(nmasked<=nlimit){
 	++nchange;
 	//reset pixel in outputMask
 	outputMask[y][x]=0;
       }
       else{
 	//reset pixel height in tmpDSM
-	inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors);
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
       }
     }
     progress=(1.0+y);
