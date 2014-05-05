@@ -66,9 +66,9 @@ int main(int argc, char *argv[])
   Optionpk<std::string> svm_type_opt("svmt", "svmtype", "type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
   Optionpk<std::string> kernel_type_opt("kt", "kerneltype", "type of kernel function (linear,polynomial,radial,sigmoid) ","radial");
   Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
-  Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
+  Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",1.0);
   Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
-  Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C_SVC, epsilon_SVR, and nu_SVR",1);
+  Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C_SVC, epsilon_SVR, and nu_SVR",1000);
   Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu_SVC, one_class SVM, and nu_SVR",0.5);
   Optionpk<float> epsilon_loss_opt("eloss", "eloss", "the epsilon in loss function of epsilon_SVR",0.1);
   Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);

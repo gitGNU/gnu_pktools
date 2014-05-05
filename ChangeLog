@@ -290,3 +290,8 @@ version 2.5.2
 	thanks to suggestion of Francesco Paolo Lovergine
  - pklas2img
 	support for compressed point cloud (LAZ) files
+ - pkextract
+	support for median rule and pointOnSurface
+	redesign to optimize vector polygon processing
+A
+	

@@ -62,8 +62,8 @@ void MainWindow::setDefaults()
     ui->kd->setText("3");
     ui->label->setText("label");
     ui->cv->setText("0");
-    ui->gamma->setText("0");
-    ui->ccost->setText("1");
+    ui->gamma->setText("1");
+    ui->ccost->setText("1000");
 }
 
 void MainWindow::on_actionTraining_triggered()

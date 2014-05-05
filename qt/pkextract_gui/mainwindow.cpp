@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     QStringList rulelist;
-    rulelist << "point" << "centroid" << "mean" << "proportion" << "minimum" << "minimum" << "maximum" << "maximum voting" << "sum";
+    rulelist << "point" << "pointOnSurface" << "centroid" << "mean" << "median" << "proportion" << "minimum" << "maximum" << "maximum voting" << "sum";
     ui->rule->addItems(rulelist);
     QStringList formatlist;
     formatlist << "ESRI Shapefile" << "SQLite";
