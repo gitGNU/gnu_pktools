@@ -36,21 +36,21 @@ int main(int argc, char *argv[])
   Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also msknodata option. (default is empty)");
   Optionpk<int> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels (0)", 0,1);
-  Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label (default value is 1)", 1,1);
-  Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label (default value is 2)", 2,1);
+  Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,1);
+  Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,1);
+  Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
   Optionpk<short> nodata_opt("nodata", "nodata", "No value flag(s)");
-  Optionpk<short> band_opt("b", "band", "Band to extract (0)", 0);
-  Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out) (default value is 0)", false);
-  Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is shape file(default is label)", "label");
-  Optionpk<string> labelclass_opt("lc", "lclass", "name of the classified label in case output is shape file (default is class)", "class");
-  Optionpk<short> boundary_opt("bnd", "boundary", "boundary for selecting the sample (default: 1)", 1,1);
+  Optionpk<short> band_opt("b", "band", "Input band", 0);
+  Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out)", false);
+  Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is shape file", "label");
+  Optionpk<string> labelclass_opt("lc", "lclass", "name of the classified label in case output is shape file", "class");
+  Optionpk<short> boundary_opt("bnd", "boundary", "boundary for selecting the sample", 1,1);
   Optionpk<bool> disc_opt("circ", "circular", "use circular disc kernel boundary)", false,1);
   Optionpk<bool> homogeneous_opt("hom", "homogeneous", "only take homogeneous regions into account", false,1);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (default value is 0)", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
