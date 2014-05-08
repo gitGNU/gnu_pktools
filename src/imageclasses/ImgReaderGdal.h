@@ -186,6 +186,7 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
 
 template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band, RESAMPLE resample) const
 {
+  //todo: make upper and lower row depend on isGeo...
   std::vector<T> readBuffer_upper;
   std::vector<T> readBuffer_lower;
   if(buffer.size()!=maxCol-minCol+1)

@@ -35,7 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, pointOnSurface=9, median=10};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, median=9};
 }
 
 using namespace std;
@@ -44,60 +44,58 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "input", "Input image file");
   Optionpk<string> sample_opt("s", "sample", "Input sample vector file or class file (e.g. Corine CLC) if class option is set");
-  Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file");
-  Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file. Make sure to set classes if rule is set to maxvote or proportion");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
-  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
-  Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
-  // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
-  Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
-  Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file. Make sure to set classes if rule is set to maxvote or proportion");
   Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample files. If using raster land cover maps as a sample file, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
-  Optionpk<double> min_opt("min", "min", "minimum number of samples to select (0)", 0);
+  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
+  Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
+  Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
+  Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
+  Optionpk<int> band_opt("b", "band", "band index(es) to crop. Use -1 to use all bands)", -1);
+  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
+  Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
+  Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
+  Optionpk<string> mask_opt("m", "mask", "Mask image file");
+  Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
+  // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
+  Optionpk<string> fieldname_opt("bn", "bname", "Attribute field name of extracted raster band", "B");
+  Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
+  Optionpk<short> geo_opt("g", "geo", "use geo coordinates (set to 0 to use image coordinates)", 1);
+  Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
   Optionpk<short> boundary_opt("bo", "boundary", "boundary for selecting the sample", 1);
   // Optionpk<short> rbox_opt("rb", "rbox", "rectangular boundary box (total width in m) to draw around the selected pixel. Can not combined with class option. Use multiple rbox options for multiple boundary boxes. Use value 0 for no box)", 0);
   // Optionpk<short> cbox_opt("cbox", "cbox", "circular boundary (diameter in m) to draw around the selected pixel. Can not combined with class option. Use multiple cbox options for multiple boundary boxes. Use value 0 for no box)", 0);
   Optionpk<short> disc_opt("circ", "circular", "circular disc kernel boundary", 0);
-  Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
-  Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
-  Optionpk<string> fieldname_opt("bn", "bname", "Attribute field name of extracted raster band", "B");
-  Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
-  Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
-  Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), pointOnSurface, centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
-    layer_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
-    msknodata_opt.retrieveOption(argc,argv);
-    class_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
-    ogrformat_opt.retrieveOption(argc,argv);
-    test_opt.retrieveOption(argc,argv);
-    // bufferOutput_opt.retrieveOption(argc,argv);
-    geo_opt.retrieveOption(argc,argv);
-    down_opt.retrieveOption(argc,argv);
+    class_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
     polythreshold_opt.retrieveOption(argc,argv);
-    min_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
+    ftype_opt.retrieveOption(argc,argv);
+    ltype_opt.retrieveOption(argc,argv);
+    polygon_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    rule_opt.retrieveOption(argc,argv);
+    layer_opt.retrieveOption(argc,argv);
+    test_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
+    // bufferOutput_opt.retrieveOption(argc,argv);
+    fieldname_opt.retrieveOption(argc,argv);
+    label_opt.retrieveOption(argc,argv);
+    geo_opt.retrieveOption(argc,argv);
+    down_opt.retrieveOption(argc,argv);
     boundary_opt.retrieveOption(argc,argv);
     // rbox_opt.retrieveOption(argc,argv);
     // cbox_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
-    ftype_opt.retrieveOption(argc,argv);
-    ltype_opt.retrieveOption(argc,argv);
-    fieldname_opt.retrieveOption(argc,argv);
-    label_opt.retrieveOption(argc,argv);
-    polygon_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
-    rule_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -112,7 +110,6 @@ int main(int argc, char *argv[])
   std::map<std::string, rule::RULE_TYPE> ruleMap;
   //initialize ruleMap
   ruleMap["point"]=rule::point;
-  ruleMap["pointOnSurface"]=rule::pointOnSurface;
   ruleMap["centroid"]=rule::centroid;
   ruleMap["mean"]=rule::mean;
   ruleMap["median"]=rule::median;
@@ -1157,15 +1154,15 @@ int main(int argc, char *argv[])
 	    readPolygon.closeRings();
 
 	    if(verbose_opt[0]>1)
-	      std::cout << "get centroid point from polygon" << std::endl;
-	    if(ruleMap[rule_opt[0]]==rule::pointOnSurface)
-	      readPolygon.PointOnSurface(&writeCentroidPoint);
-	    else
+	      std::cout << "get point on polygon" << std::endl;
+	    if(ruleMap[rule_opt[0]]==rule::centroid)
 	      readPolygon.Centroid(&writeCentroidPoint);
+	    else
+	      readPolygon.PointOnSurface(&writeCentroidPoint);
 
 	    double ulx,uly,lrx,lry;
 	    double uli,ulj,lri,lrj;
-	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)||(ruleMap[rule_opt[0]]==rule::pointOnSurface)){
+	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
 	      ulx=writeCentroidPoint.getX();
 	      uly=writeCentroidPoint.getY();
 	      lrx=ulx;
@@ -1234,6 +1231,15 @@ int main(int argc, char *argv[])
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
 	      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	      //test
+	      assert(uli>=0);
+	      assert(uli<imgReader.nrOfCol());	      
+	      assert(lri>=0);
+	      assert(lri<imgReader.nrOfCol());	      
+	      assert(ulj>=0);
+	      assert(ulj<imgReader.nrOfRow());	      
+	      assert(lrj>=0);
+	      assert(lrj<imgReader.nrOfRow());	      
 	      imgReader.readDataBlock(readValues[iband],GDT_Float64,uli,lri,ulj,lrj,theBand);
 	    }
 	    //todo: readDataBlock for maskReader...
@@ -1324,7 +1330,7 @@ int main(int argc, char *argv[])
 		OGRFeature *writePointFeature;
 		if(!polygon_opt[0]){
 		  //create feature
-		  if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, median, sum, pointOnSurface or centroid (only create point at centroid)
+		  if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, median, sum or centroid (only create point at centroid)
 		    if(writeTest)
 		      writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		    else
@@ -1523,7 +1529,7 @@ int main(int argc, char *argv[])
 		      theValue=stat.mymax(polyValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::minimum)
 		      theValue=stat.mymin(polyValues[index]);
-		    else{//rule::pointOnSurface or rule::centroid
+		    else{//rule::centroid
 		      if(verbose_opt[0])
 			std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		      assert(nPointPolygon<=1);
@@ -1688,11 +1694,7 @@ int main(int argc, char *argv[])
 
 	    if(verbose_opt[0]>1)
 	      std::cout << "get centroid point from polygon" << std::endl;
-	    if(ruleMap[rule_opt[0]]==rule::pointOnSurface){
-	      string errorString="Error: pointOnSurface is not supported for multi polygons";
-	      throw(errorString);
-	    }
-		
+
 	    readPolygon.Centroid(&writeCentroidPoint);
 
 	    double ulx,uly,lrx,lry;
@@ -1765,6 +1767,15 @@ int main(int argc, char *argv[])
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
 	      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	      //test
+	      assert(uli>=0);
+	      assert(uli<imgReader.nrOfCol());	      
+	      assert(lri>=0);
+	      assert(lri<imgReader.nrOfCol());	      
+	      assert(ulj>=0);
+	      assert(ulj<imgReader.nrOfRow());	      
+	      assert(lrj>=0);
+	      assert(lrj<imgReader.nrOfRow());	      
 	      imgReader.readDataBlock(readValues[iband],GDT_Float64,uli,lri,ulj,lrj,theBand);
 	    }
 	    //todo: readDataBlock for maskReader...
@@ -2055,7 +2066,7 @@ int main(int argc, char *argv[])
 		      theValue=stat.mymax(polyValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::minimum)
 		      theValue=stat.mymin(polyValues[index]);
-		    else{//rule::pointOnSurface or rule::centroid
+		    else{//rule::centroid
 		      if(verbose_opt[0])
 			std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		      assert(nPointPolygon<=1);
