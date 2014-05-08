@@ -227,7 +227,9 @@ void MainWindow::on_toolButton_Run_clicked()
         QProcess *myProcess = new QProcess(this);
         myProcess->start(program);
         myProcess->setProcessChannelMode(QProcess::MergedChannels);
+        this->setCursor(Qt::WaitCursor);
         myProcess->waitForFinished(-1);
+        this->setCursor(Qt::ArrowCursor);
         QString p_stderr = myProcess->readAllStandardError();
         if(!p_stderr.isEmpty()){
             QMessageBox msgBox;

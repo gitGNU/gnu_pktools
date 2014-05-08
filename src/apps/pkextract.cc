@@ -1688,7 +1688,11 @@ int main(int argc, char *argv[])
 
 	    if(verbose_opt[0]>1)
 	      std::cout << "get centroid point from polygon" << std::endl;
-	    assert(ruleMap[rule_opt[0]]!=rule::pointOnSurface);//not supported for multipolygons
+	    if(ruleMap[rule_opt[0]]==rule::pointOnSurface){
+	      string errorString="Error: pointOnSurface is not supported for multi polygons";
+	      throw(errorString);
+	    }
+		
 	    readPolygon.Centroid(&writeCentroidPoint);
 
 	    double ulx,uly,lrx,lry;
