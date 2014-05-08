@@ -1717,16 +1717,16 @@ int main(int argc, char *argv[])
 	      lry=psEnvelope->MinY;
 	      delete psEnvelope;
 	    }
-	    if(geo_opt[0]){
+	    // if(geo_opt[0]){
 	      imgReader.geo2image(ulx,uly,uli,ulj);
 	      imgReader.geo2image(lrx,lry,lri,lrj);
-	    }
-	    else{
-	      uli=ulx;
-	      ulj=uly;
-	      lri=lrx;
-	      lrj=lry;
-	    }
+	    // }
+	    // else{
+	    //   uli=ulx;
+	    //   ulj=uly;
+	    //   lri=lrx;
+	    //   lrj=lry;
+	    // }
 	    //nearest neighbour
 	    ulj=static_cast<int>(ulj);
 	    uli=static_cast<int>(uli);
