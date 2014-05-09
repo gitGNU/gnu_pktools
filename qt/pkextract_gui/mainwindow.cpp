@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
     rulelist << "point" << "pointOnSurface" << "centroid" << "mean" << "median" << "proportion" << "minimum" << "maximum" << "maximum voting" << "sum";
     ui->rule->addItems(rulelist);
     QStringList formatlist;
-    formatlist << "ESRI Shapefile" << "SQLite";
+    formatlist << "SQLite" << "ESRI Shapefile";
     ui->f->addItems(formatlist);
 
     setDefaults();
@@ -36,9 +36,12 @@ void MainWindow::setDefaults()
     ui->f->setCurrentIndex(0);
     ui->output->clear();
     //tab extract
-    ui->bname->setText("B");
+    ui->bname->setText("b");
     ui->rule->setCurrentIndex(0);
-
+    ui->nclass->clear();
+    QStringList labels;
+    setClassTable(labels);
+    ui->threshold->clear();
 }
 
 void MainWindow::on_actionInput_triggered()
