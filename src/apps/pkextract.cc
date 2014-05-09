@@ -1201,10 +1201,18 @@ int main(int argc, char *argv[])
 
 	    if(uli<0)
 	      uli=0;
+	    if(lri<0)
+	      lri=0;
+	    if(uli>=imgReader.nrOfCol())
+	      uli=imgReader.nrOfCol()-1;
 	    if(lri>=imgReader.nrOfCol())
 	      lri=imgReader.nrOfCol()-1;
 	    if(ulj<0)
 	      ulj=0;
+	    if(lrj<0)
+	      lrj=0;
+	    if(ulj>=imgReader.nrOfRow())
+	      ulj=imgReader.nrOfRow()-1;
 	    if(lrj>=imgReader.nrOfRow())
 	      lrj=imgReader.nrOfRow()-1;
 	    // if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||lrj>=imgReader.nrOfRow())
@@ -1746,10 +1754,18 @@ int main(int argc, char *argv[])
 
 	    if(uli<0)
 	      uli=0;
+	    if(lri<0)
+	      lri=0;
+	    if(uli>=imgReader.nrOfCol())
+	      uli=imgReader.nrOfCol()-1;
 	    if(lri>=imgReader.nrOfCol())
 	      lri=imgReader.nrOfCol()-1;
 	    if(ulj<0)
 	      ulj=0;
+	    if(lrj<0)
+	      lrj=0;
+	    if(ulj>=imgReader.nrOfRow())
+	      ulj=imgReader.nrOfRow()-1;
 	    if(lrj>=imgReader.nrOfRow())
 	      lrj=imgReader.nrOfRow()-1;
 	    // if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||lrj>=imgReader.nrOfRow())
