@@ -1199,8 +1199,16 @@ int main(int argc, char *argv[])
 	    if(verbose_opt[0]>1)
 	      std::cout << "bounding box for polygon feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
 
-	    if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||ulj>=imgReader.nrOfRow())
-	      continue;
+	    if(uli<0)
+	      uli=0;
+	    if(lri>=imgReader.nrOfCol())
+	      lri=imgReader.nrOfCol()-1;
+	    if(ulj<0)
+	      ulj=0;
+	    if(lrj>=imgReader.nrOfRow())
+	      lrj=imgReader.nrOfRow()-1;
+	    // if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||lrj>=imgReader.nrOfRow())
+	    //   continue;
 
 	    int nPointPolygon=0;
 
@@ -1736,8 +1744,16 @@ int main(int argc, char *argv[])
 	    if(verbose_opt[0]>1)
 	      std::cout << "bounding box for feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
 
-	    if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||ulj>=imgReader.nrOfRow())
-	      continue;
+	    if(uli<0)
+	      uli=0;
+	    if(lri>=imgReader.nrOfCol())
+	      lri=imgReader.nrOfCol()-1;
+	    if(ulj<0)
+	      ulj=0;
+	    if(lrj>=imgReader.nrOfRow())
+	      lrj=imgReader.nrOfRow()-1;
+	    // if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||lrj>=imgReader.nrOfRow())
+	    //   continue;
 
 	    int nPointPolygon=0;
 	    if(polygon_opt[0]){
