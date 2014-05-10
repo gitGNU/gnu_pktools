@@ -20,13 +20,9 @@ private slots:
 
     void on_actionSample_triggered();
 
-    void on_actionMask_triggered();
-
     void on_actionOutput_triggered();
 
     void on_toolButton_input_clicked();
-
-    void on_toolButton_mask_clicked();
 
     void on_toolButton_output_clicked();
 

@@ -30,8 +30,8 @@ void MainWindow::setDefaults()
     //tab input/output
     ui->input->clear();
     ui->sample->clear();
-    ui->mask->clear();
-    ui->msknodata->setText("0");
+    ui->bndnodata->clear();
+    ui->srcnodata->clear();
     ui->polygon->setChecked(false);
     ui->f->setCurrentIndex(0);
     ui->output->clear();
@@ -56,12 +56,6 @@ void MainWindow::on_actionSample_triggered()
     ui->sample->setText(qssample);
 }
 
-void MainWindow::on_actionMask_triggered()
-{
-    QString qsmask = QFileDialog::getOpenFileName(this, "Mask");
-    ui->mask->setText(qsmask);
-}
-
 void MainWindow::on_actionOutput_triggered()
 {
     QString qsoutput = QFileDialog::getSaveFileName(this,"Output image","","*.*");
@@ -76,11 +70,6 @@ void MainWindow::on_toolButton_input_clicked()
 void MainWindow::on_toolButton_sample_clicked()
 {
     on_actionSample_triggered();
-}
-
-void MainWindow::on_toolButton_mask_clicked()
-{
-    on_actionMask_triggered();
 }
 
 void MainWindow::on_toolButton_output_clicked()

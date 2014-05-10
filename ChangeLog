@@ -293,5 +293,5 @@ version 2.5.2
  - pkextract
 	support for median rule and pointOnSurface
 	redesign to optimize vector polygon processing
-A
-	
+	removed option for masking, introduced srcnodata and bndnodata
+	(more testing is needed)

@@ -7,5 +7,5 @@ Name: pktools
 Description: API library for pktools
 Requires: gdal gsl
 Version: 2.5.2
-Libs: -L${libdir} -lpktools
+Libs: -L${libdir} -lbase -lalgorithms -limageClasses -lfileClasses -llasClasses
 Cflags: -I${includedir}/pktools

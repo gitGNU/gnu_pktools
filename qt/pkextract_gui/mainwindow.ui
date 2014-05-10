@@ -38,30 +38,23 @@
             <item row="1" column="3">
              <widget class="QLabel" name="label_14">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixels in input image where mask image has msknodata will not be classified, but obtain a constant value (=nodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;invalid value(s) for input image&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
-               <string>msknodata</string>
+               <string>srcnodata</string>
               </property>
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QLineEdit" name="mask"/>
+             <widget class="QLineEdit" name="bndnodata"/>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_13">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixels in input image where mask image has msknodata will not be classified, but obtain a constant value (=nodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Band(s) in input image to check if pixel is valid (used for srcnodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
-               <string>Mask image</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QToolButton" name="toolButton_mask">
-              <property name="text">
-               <string>...</string>
+               <string>bndnodata</string>
               </property>
              </widget>
             </item>
@@ -104,7 +97,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_3">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input image (raster or vector) containing band information&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Raster input dataset containing band information&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>Input data</string>
@@ -117,7 +110,7 @@
             <item row="2" column="0">
              <widget class="QLabel" name="label_23">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OGR vector file with features to be extracted from input data. Output will contain features with input band information included&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OGR vector file with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>Sample image</string>
@@ -125,7 +118,7 @@
              </widget>
             </item>
             <item row="1" column="4">
-             <widget class="QLineEdit" name="msknodata"/>
+             <widget class="QLineEdit" name="srcnodata"/>
             </item>
             <item row="3" column="2">
              <widget class="QToolButton" name="toolButton_output">
@@ -413,9 +406,8 @@
  <tabstops>
   <tabstop>input</tabstop>
   <tabstop>toolButton_input</tabstop>
-  <tabstop>mask</tabstop>
-  <tabstop>toolButton_mask</tabstop>
-  <tabstop>msknodata</tabstop>
+  <tabstop>bndnodata</tabstop>
+  <tabstop>srcnodata</tabstop>
   <tabstop>sample</tabstop>
   <tabstop>toolButton_sample</tabstop>
   <tabstop>output</tabstop>
