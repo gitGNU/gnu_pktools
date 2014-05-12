@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (1: sum rule, 2: max rule).",1);
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
-  Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class"); 
+  Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class","",2); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned int> nneuron_opt("n", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
   Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
@@ -72,9 +72,9 @@ int main(int argc, char *argv[])
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image"); 
-  Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
-  Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
-  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","ESRI Shapefile");
+  Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output","",2); 
+  Optionpk<string> active_opt("active", "active", "ogr output for active training sample.","",2); 
+  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","SQLite");
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
@@ -132,6 +132,13 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  if(entropy_opt[0]=="")
+    entropy_opt.clear();
+  if(active_opt[0]=="")
+    active_opt.clear();
+  if(priorimg_opt[0]=="")
+    priorimg_opt.clear();
 
   if(verbose_opt[0]>=1){
     if(input_opt.size())
@@ -372,7 +379,7 @@ int main(int argc, char *argv[])
 	++mapit;
       }
       if(classname_opt.empty()){
-        std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
+        //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
         for(int iclass=0;iclass<nclass;++iclass){
           if(verbose_opt[0])
             std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;

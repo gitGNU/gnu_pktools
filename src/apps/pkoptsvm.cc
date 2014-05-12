@@ -230,8 +230,8 @@ int main(int argc, char *argv[])
 {
   map<short,int> reclassMap;
   vector<int> vreclass;
-  Optionpk<string> input_opt("i", "input", "input image"); 
-  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option)."); 
+  Optionpk<string> input_opt("i", "input", "input test vectro file"); 
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
   // Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
@@ -248,12 +248,13 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
   Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
-  Optionpk<double> step_opt("step","step","multiplicative step for GRID search (-step cost -step gamma)",2);
+  Optionpk<double> stepcc_opt("stepcc","stepcc","multiplicative step for ccost in GRID search",2);
+  Optionpk<double> stepg_opt("stepg","stepg","multiplicative step for gamma in GRID search",2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
-    doProcess=input_opt.retrieveOption(argc,argv);
-    training_opt.retrieveOption(argc,argv);
+    doProcess=training_opt.retrieveOption(argc,argv);
+    input_opt.retrieveOption(argc,argv);
     tlayer_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     // reclass_opt.retrieveOption(argc,argv);
@@ -281,7 +282,8 @@ int main(int argc, char *argv[])
     costfunction_opt.retrieveOption(argc,argv);
     maxit_opt.retrieveOption(argc,argv);
     tolerance_opt.retrieveOption(argc,argv);
-    step_opt.retrieveOption(argc,argv);
+    stepcc_opt.retrieveOption(argc,argv);
+    stepg_opt.retrieveOption(argc,argv);
     algorithm_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
@@ -594,8 +596,8 @@ int main(int argc, char *argv[])
 
   std::vector<double> x(2);
   if(algorithm_opt[0]=="GRID"){
-    if(step_opt.size()<2)//[0] for cost, [1] for gamma
-      step_opt.push_back(step_opt.back());
+    // if(step_opt.size()<2)//[0] for cost, [1] for gamma
+    //   step_opt.push_back(step_opt.back());
     double minError=1000;
     double minCost=0;
     double minGamma=0;
@@ -607,8 +609,8 @@ int main(int argc, char *argv[])
       pfnProgress(progress,pszMessage,pProgressArg);
     double ncost=log(ccost_opt[1])/log(10.0)-log(ccost_opt[0])/log(10.0);
     double ngamma=log(gamma_opt[1])/log(10.0)-log(gamma_opt[0])/log(10.0);
-    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=step_opt[0]){
-      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=step_opt[1]){
+    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=stepcc_opt[0]){
+      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=stepg_opt[0]){
 	x[0]=ccost;
 	x[1]=gamma;
 	std::vector<double> theGrad;

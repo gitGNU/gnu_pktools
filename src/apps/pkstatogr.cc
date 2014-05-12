@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<unsigned int> nbin_opt("nbin", "nbin", "number of bins");
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
-  Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb.",false);
+  Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
