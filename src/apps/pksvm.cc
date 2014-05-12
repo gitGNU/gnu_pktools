@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
-  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
+  Optionpk<bool> random_opt("random", "random", "randomize training data for balancing and bagging", true, 2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
@@ -98,52 +98,52 @@ int main(int argc, char *argv[])
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
-    doProcess=input_opt.retrieveOption(argc,argv);
-    training_opt.retrieveOption(argc,argv);
+    doProcess=training_opt.retrieveOption(argc,argv);
     tlayer_opt.retrieveOption(argc,argv);
+    input_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    cv_opt.retrieveOption(argc,argv);
+    classname_opt.retrieveOption(argc,argv);
+    classvalue_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
-    balance_opt.retrieveOption(argc,argv);
-    random_opt.retrieveOption(argc,argv);
-    minSize_opt.retrieveOption(argc,argv);
+    priors_opt.retrieveOption(argc,argv);
+    gamma_opt.retrieveOption(argc,argv);
+    ccost_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
+    balance_opt.retrieveOption(argc,argv);
+    minSize_opt.retrieveOption(argc,argv);
+    bag_opt.retrieveOption(argc,argv);
+    bagSize_opt.retrieveOption(argc,argv);
+    comb_opt.retrieveOption(argc,argv);
+    classBag_opt.retrieveOption(argc,argv);
+    prob_opt.retrieveOption(argc,argv);
+    priorimg_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
-    priors_opt.retrieveOption(argc,argv);
-    priorimg_opt.retrieveOption(argc,argv);
     svm_type_opt.retrieveOption(argc,argv);
     kernel_type_opt.retrieveOption(argc,argv);
     kernel_degree_opt.retrieveOption(argc,argv);
-    gamma_opt.retrieveOption(argc,argv);
     coef0_opt.retrieveOption(argc,argv);
-    ccost_opt.retrieveOption(argc,argv);
     nu_opt.retrieveOption(argc,argv);
     epsilon_loss_opt.retrieveOption(argc,argv);
     cache_opt.retrieveOption(argc,argv);
     epsilon_tol_opt.retrieveOption(argc,argv);
     shrinking_opt.retrieveOption(argc,argv);
     prob_est_opt.retrieveOption(argc,argv);
-    cv_opt.retrieveOption(argc,argv);
-    comb_opt.retrieveOption(argc,argv);
-    bag_opt.retrieveOption(argc,argv);
-    bagSize_opt.retrieveOption(argc,argv);
-    classBag_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
-    msknodata_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
-    oformat_opt.retrieveOption(argc,argv);
-    colorTable_opt.retrieveOption(argc,argv);
-    option_opt.retrieveOption(argc,argv);
-    prob_opt.retrieveOption(argc,argv);
     entropy_opt.retrieveOption(argc,argv);
     active_opt.retrieveOption(argc,argv);
-    ogrformat_opt.retrieveOption(argc,argv);
     nactive_opt.retrieveOption(argc,argv);
-    classname_opt.retrieveOption(argc,argv);
-    classvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -653,7 +653,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         std::cout << "opening class image for writing output " << output_opt[0] << std::endl;
       if(classBag_opt.size()){
-        classImageBag.open(output_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
+        classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
 	classImageBag.GDALSetNoDataValue(nodata_opt[0]);
         classImageBag.copyGeoTransform(testImage);
         classImageBag.setProjection(testImage.getProjection());

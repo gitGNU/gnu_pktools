@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
-  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
+  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true,2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include bands)", 0); 
@@ -659,7 +659,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         cout << "opening class image for writing output " << output_opt[0] << endl;
       if(classBag_opt.size()){
-        classImageBag.open(output_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
+        classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
 	classImageBag.GDALSetNoDataValue(nodata_opt[0]);
         classImageBag.copyGeoTransform(testImage);
         classImageBag.setProjection(testImage.getProjection());

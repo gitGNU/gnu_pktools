@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
   Optionpk<unsigned int> nbin_opt("nbin", "nbin", "number of bins");
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
-  Optionpk<double> kde_opt("kde","kde","bandwith of kernel density when producing histogram, use 0 for practical estimation based on Silverman's rule of thumb. Leave empty if no kernel density is required");
+  Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb.",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -125,10 +125,10 @@ int main(int argc, char *argv[])
 
       if(histogram_opt[0]){
 	double sigma=0;
-	if(kde_opt.size()){
-	  if(kde_opt[0]>0)
-	    sigma=kde_opt[0];
-	  else
+	if(kde_opt[0]){
+	  // if(kde_opt[0]>0)
+	  //   sigma=kde_opt[0];
+	  // else
 	    sigma=1.06*sqrt(stat.var(theData))*pow(theData.size(),-0.2);
 	}
 	if(nbin<1)
