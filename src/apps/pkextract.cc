@@ -124,10 +124,12 @@ int main(int argc, char *argv[])
   ruleMap["maxvote"]=rule::maxvote;
   ruleMap["sum"]=rule::sum;
 
-  while(srcnodata_opt.size()<bndnodata_opt.size())
-    srcnodata_opt.push_back(srcnodata_opt[0]);
-  while(bndnodata_opt.size()<srcnodata_opt.size())
-    bndnodata_opt.push_back(bndnodata_opt[0]);
+  if(srcnodata_opt.size()){
+    while(srcnodata_opt.size()<bndnodata_opt.size())
+      srcnodata_opt.push_back(srcnodata_opt[0]);
+    while(bndnodata_opt.size()<srcnodata_opt.size())
+      bndnodata_opt.push_back(bndnodata_opt[0]);
+  }
 
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;

@@ -101,7 +101,7 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
     ntest+=nctest[iclass];
   }
   if(ntest)
-    assert(!cv_opt[0]);
+    cv_opt[0]=0;
   if(!cv_opt[0])
     assert(ntest);
     // ntraining+=(*tf)[iclass].size();
@@ -248,8 +248,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
   Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
-  Optionpk<double> stepcc_opt("stepcc","stepcc","multiplicative step for ccost in GRID search",2);
-  Optionpk<double> stepg_opt("stepg","stepg","multiplicative step for gamma in GRID search",2);
+  Optionpk<double> step_opt("step","step","multiplicative step for ccost and gamma in GRID search",2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -259,7 +258,7 @@ int main(int argc, char *argv[])
     label_opt.retrieveOption(argc,argv);
     // reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
-	random_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -282,8 +281,7 @@ int main(int argc, char *argv[])
     costfunction_opt.retrieveOption(argc,argv);
     maxit_opt.retrieveOption(argc,argv);
     tolerance_opt.retrieveOption(argc,argv);
-    stepcc_opt.retrieveOption(argc,argv);
-    stepg_opt.retrieveOption(argc,argv);
+    step_opt.retrieveOption(argc,argv);
     algorithm_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
@@ -596,8 +594,8 @@ int main(int argc, char *argv[])
 
   std::vector<double> x(2);
   if(algorithm_opt[0]=="GRID"){
-    // if(step_opt.size()<2)//[0] for cost, [1] for gamma
-    //   step_opt.push_back(step_opt.back());
+    if(step_opt.size()<2)//[0] for cost, [1] for gamma
+      step_opt.push_back(step_opt.back());
     double minError=1000;
     double minCost=0;
     double minGamma=0;
@@ -607,10 +605,10 @@ int main(int argc, char *argv[])
     double progress=0;
     if(!verbose_opt[0])
       pfnProgress(progress,pszMessage,pProgressArg);
-    double ncost=log(ccost_opt[1])/log(10.0)-log(ccost_opt[0])/log(10.0);
-    double ngamma=log(gamma_opt[1])/log(10.0)-log(gamma_opt[0])/log(10.0);
-    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=stepcc_opt[0]){
-      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=stepg_opt[0]){
+    double ncost=log(ccost_opt[1])/log(step_opt[0])-log(ccost_opt[0])/log(step_opt[0]);
+    double ngamma=log(gamma_opt[1])/log(step_opt[1])-log(gamma_opt[0])/log(step_opt[1]);
+    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=step_opt[0]){
+      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=step_opt[1]){
 	x[0]=ccost;
 	x[1]=gamma;
 	std::vector<double> theGrad;
