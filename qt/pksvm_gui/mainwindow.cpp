@@ -48,8 +48,14 @@ void MainWindow::setDefaults()
     //tab training
     //m_training="d:\\osgeo\\course\\openstreetmap\\training2.sqlite";
 //    ui->training->setText(m_training);
-    ui->label->setText("label");
     ui->cv->setText("0");
+    ui->training->clear();
+    ui->tln->clear();
+    ui->label->setText("label");
+    QStringList labels;
+    setClassTable(labels);
+    ui->nclass->clear();
+
     //tab input/output
     ui->input->clear();
     ui->msknodata->setText("0");
@@ -188,20 +194,23 @@ void MainWindow::on_pushButton_run_clicked()
             qsOption+=" --prior ";
             qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,2)).toString();
             program+=qsOption;
-            QString qsbalance=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,3)).toString();
-            if(!qsbalance.isEmpty())
-                qslBalance << qsbalance;
+            if(ui->tableView_labels->model()->columnCount()>3){
+                QString qsbalance=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,3)).toString();
+                if(!qsbalance.isEmpty())
+                    qslBalance << qsbalance;
+            }
         }
-        for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
-            QString qsOption;
-            qsOption+=" --balance ";
-            if(qslBalance.size()==ui->tableView_labels->model()->rowCount())
-                qsOption+=qslBalance[irow];
-            else
-                qsOption+=qslBalance[0];
-            program+=qsOption;
+        if(qslBalance.size()){
+            for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
+                QString qsOption;
+                qsOption+=" --balance ";
+                if(qslBalance.size()==ui->tableView_labels->model()->rowCount())
+                    qsOption+=qslBalance[irow];
+                else
+                    qsOption+=qslBalance[0];
+                program+=qsOption;
+            }
         }
-
 
         QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
@@ -251,11 +260,6 @@ void MainWindow::on_pushButton_run_clicked()
         msgBox.setText(qsError);
         msgBox.exec();
     }
-}
-
-void MainWindow::on_toolButton_createTable_clicked()
-{
-
 }
 
 void MainWindow::on_pushButton_restore_clicked()

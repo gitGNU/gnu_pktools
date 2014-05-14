@@ -1181,13 +1181,13 @@ int main(int argc, char *argv[])
 	      std::cout << "creating point feature" << std::endl;
 	    if(writeTest){
 	      if(writeTestLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-		std::string errorString="Failed to create feature in shapefile";
+		std::string errorString="Failed to create feature in ogr vector file";
 		throw(errorString);
 	      }
 	    }
 	    else{
 	      if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-		std::string errorString="Failed to create feature in shapefile";
+		std::string errorString="Failed to create feature in ogr vector file";
 		throw(errorString);
 	      }
 	    }
@@ -1484,13 +1484,13 @@ int main(int argc, char *argv[])
 		      std::cout << "creating point feature" << std::endl;
 		    if(writeTest){
 		      if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			std::string errorString="Failed to create feature in test shapefile";
+			std::string errorString="Failed to create feature in test ogr vector file";
 			throw(errorString);
 		      }
 		    }
 		    else{
 		      if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			std::string errorString="Failed to create feature in shapefile";
+			std::string errorString="Failed to create feature in ogr vector file";
 			throw(errorString);
 		      }
 		    }
@@ -1716,7 +1716,10 @@ int main(int argc, char *argv[])
 		  maxClass=class_opt[maxIndex];
 		  if(verbose_opt[0]>0)
 		    std::cout << "maxClass: " << maxClass << std::endl;
-		  writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
+		  if(polygon_opt[0])
+		    writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
+		  else
+		    writeCentroidFeature->SetField(label_opt[0].c_str(),maxClass);
 		}
 	      }
 	      if(polygon_opt[0]){
@@ -1724,13 +1727,13 @@ int main(int argc, char *argv[])
 		  std::cout << "creating polygon feature" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in shapefile";
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
 		else{
 		  if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in shapefile";
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
@@ -1744,7 +1747,7 @@ int main(int argc, char *argv[])
 		  std::cout << "creating point feature in centroid" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in shapefile";
+		    std::string errorString="Failed to create point feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
@@ -1752,7 +1755,7 @@ int main(int argc, char *argv[])
 		  //test
 		  assert(validFeature);
 		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in shapefile";
+		    std::string errorString="Failed to create point feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
@@ -2047,13 +2050,13 @@ int main(int argc, char *argv[])
 			std::cout << "creating point feature" << std::endl;
 		      if(writeTest){
 			if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in shapefile";
+			  std::string errorString="Failed to create feature in ogr vector file";
 			  throw(errorString);
 			}
 		      }
 		      else{
 			if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in shapefile";
+			  std::string errorString="Failed to create feature in ogr vector file";
 			  throw(errorString);
 			}
 		      }
@@ -2280,7 +2283,10 @@ int main(int argc, char *argv[])
 		  maxClass=class_opt[maxIndex];
 		  if(verbose_opt[0]>0)
 		    std::cout << "maxClass: " << maxClass << std::endl;
-		  writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
+		  if(polygon_opt[0])
+		    writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
+		  else
+		    writeCentroidFeature->SetField(label_opt[0].c_str(),maxClass);
 		}
 	      }
 
@@ -2289,13 +2295,13 @@ int main(int argc, char *argv[])
 		  std::cout << "creating polygon feature" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in shapefile";
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
 		else{
 		  if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in shapefile";
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
@@ -2309,7 +2315,7 @@ int main(int argc, char *argv[])
 		  std::cout << "creating point feature in centroid" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in shapefile";
+		    std::string errorString="Failed to create point feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
@@ -2317,7 +2323,7 @@ int main(int argc, char *argv[])
 		  //test
 		  assert(validFeature);
 		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in shapefile";
+		    std::string errorString="Failed to create point feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}

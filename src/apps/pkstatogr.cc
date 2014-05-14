@@ -106,7 +106,8 @@ int main(int argc, char *argv[])
 	continue;
     if(verbose_opt[0])
       cout << "processing layer " << currentLayername << endl;
-    cout << " --lname " << currentLayername;
+    if(layer_opt.size())
+      cout << " --lname " << currentLayername;
       
     for(int ifield=0;ifield<fieldname_opt.size();++ifield){
       if(verbose_opt[0])
