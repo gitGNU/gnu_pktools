@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input image file.");
   Optionpk<string> reference_opt("ref", "reference", "Reference image file");
+  Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
   Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.");
   Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","SQLite");
   Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also msknodata option. (default is empty)");
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,2);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,2);
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
-  Optionpk<short> nodata_opt("nodata", "nodata", "No value flag(s)");
+  Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
   Optionpk<short> band_opt("b", "band", "Input band", 0);
   Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out)", false);
   Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is OGR vector file", "label");
@@ -56,6 +57,7 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     reference_opt.retrieveOption(argc,argv);
+    layer_opt.retrieveOption(argc,argv);
     confusion_opt.retrieveOption(argc,argv);
     labelref_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
@@ -241,8 +243,12 @@ int main(int argc, char *argv[])
 	int nlayer=referenceReaderOgr.getDataSource()->GetLayerCount();
 	for(int ilayer=0;ilayer<nlayer;++ilayer){
 	  progress=0;
-	  OGRLayer  *readLayer;
-	  readLayer = referenceReaderOgr.getDataSource()->GetLayer(ilayer);
+	  OGRLayer *readLayer=referenceReaderOgr.getLayer(ilayer);
+	  //	  readLayer = referenceReaderOgr.getDataSource()->GetLayer(ilayer);
+	  string currentLayername=readLayer->GetName();
+	  if(layer_opt.size())
+	    if(find(layer_opt.begin(),layer_opt.end(),currentLayername)==layer_opt.end())
+	      continue;
 	  cout << "processing layer " << readLayer->GetName() << endl;
 	  if(!verbose_opt[0])
 	    pfnProgress(progress,pszMessage,pProgressArg);
