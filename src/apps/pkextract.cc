@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
                 int theBand=(band_opt[0]<0)?iband:band_opt[iband];
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
-		if(bndnodata_opt.size()){
+		if(srcnodata_opt.size()){
 		  vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
 		  if(bndit!=bndnodata_opt.end()){
 		    vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
@@ -620,7 +620,7 @@ int main(int argc, char *argv[])
                 int theBand=(band_opt[0]<0)?iband:band_opt[iband];
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
-		if(bndnodata_opt.size()){
+		if(srcnodata_opt.size()){
 		  vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
 		  if(bndit!=bndnodata_opt.end()){
 		    if(imgBuffer[iband][static_cast<int>(iimg)]==srcnodata_opt[theBand])
@@ -1128,7 +1128,7 @@ int main(int argc, char *argv[])
 		  int theBand=(band_opt[0]<0)?iband:band_opt[iband];
 		  imgReader.readData(value,GDT_Float64,i,j,theBand);
 
-		  if(bndnodata_opt.size()){
+		  if(srcnodata_opt.size()){
 		    Optionpk<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
 		    if(bndit!=bndnodata_opt.end()){
 		      if(value==srcnodata_opt[theBand])
@@ -1292,6 +1292,7 @@ int main(int argc, char *argv[])
 	    vector<double> polyClassValues;
 	    
 	    if(class_opt.size()){
+
 	      polyClassValues.resize(class_opt.size());
 	      //initialize
 	      for(int iclass=0;iclass<class_opt.size();++iclass)
@@ -1334,11 +1335,13 @@ int main(int argc, char *argv[])
 
 		bool valid=true;
 
-		for(int vband=0;vband<bndnodata_opt.size();++vband){
-		  double value=((readValues[bndnodata_opt[vband]])[j-ulj])[i-uli];
-		  if(value==srcnodata_opt[vband]){
-		    valid=false;
-		    break;
+		if(srcnodata_opt.size()){
+		  for(int vband=0;vband<bndnodata_opt.size();++vband){
+		    double value=((readValues[bndnodata_opt[vband]])[j-ulj])[i-uli];
+		    if(value==srcnodata_opt[vband]){
+		      valid=false;
+		      break;
+		    }
 		  }
 		}
 
@@ -1818,7 +1821,7 @@ int main(int argc, char *argv[])
 	    lri=static_cast<int>(lri);
 	    //iterate through all pixels
 	    if(verbose_opt[0]>1)
-	      std::cout << "bounding box for feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
+	      std::cout << "bounding box for multipologon feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
 
 	    if(uli<0)
 	      uli=0;
@@ -1899,14 +1902,15 @@ int main(int argc, char *argv[])
 
 		bool valid=true;
 
-		for(int vband=0;vband<bndnodata_opt.size();++vband){
-		  double value=((readValues[bndnodata_opt[vband]])[j-ulj])[i-uli];
-		  if(value==srcnodata_opt[vband]){
-		    valid=false;
-		    break;
+		if(srcnodata_opt.size()){
+		  for(int vband=0;vband<bndnodata_opt.size();++vband){
+		    double value=((readValues[bndnodata_opt[vband]])[j-ulj])[i-uli];
+		    if(value==srcnodata_opt[vband]){
+		      valid=false;
+		      break;
+		    }
 		  }
 		}
-
 		// for(int imask=0;imask<mask_opt.size();++imask){
 		//     double colMask,rowMask;//image coordinates in mask image
 		//     if(mask_opt.size()>1){//multiple masks

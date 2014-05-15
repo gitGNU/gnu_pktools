@@ -30,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     QStringList formatlist;
-    formatlist << "ESRI Shapefile" << "SQLite";
+    formatlist << "SQLite" << "ESRI Shapefile";
     ui->f->addItems(formatlist);
     setDefaults();
 }
@@ -42,12 +42,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::setDefaults()
 {
-    ui->label->setText("label");
     //tab input/output
     ui->input->clear();
+    ui->reference->clear();
     ui->msknodata->setText("0");
     ui->output->clear();
-    ui->label->setText("label");
+    ui->confusion->setChecked(false);
 }
 
 void MainWindow::on_actionReference_triggered()
@@ -114,27 +114,27 @@ void MainWindow::on_pushButton_run_clicked()
         ui->commandLineEdit->clear();
         ui->consoleEdit->clear();
         QString program = "pkdiff";
-        if(ui->reference->text().isEmpty())
-            MainWindow::on_actionReference_triggered();
-        if(ui->reference->text().isEmpty()){
-            QString qsError="No reference vector file selected";
-            throw(qsError);
-        }
-        if(!ui->input->text().isEmpty()){
-            if(ui->output->text().isEmpty())
-                MainWindow::on_actionOutput_triggered();
-            if(ui->output->text().isEmpty()){
-                QString qsError="No training vector file selected";
+        if(ui->input->text().isEmpty()){
+            MainWindow::on_actionInput_triggered();
+            if(ui->input->text().isEmpty()){
+                QString qsError="No input raster dataset selected";
                 throw(qsError);
             }
         }
-
+        if(ui->reference->text().isEmpty()){
+            MainWindow::on_actionReference_triggered();
+            if(ui->reference->text().isEmpty()){
+                QString qsError="No reference vector file selected";
+                throw(qsError);
+            }
+        }
         for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
             QString qsOption;
             qsOption+=" --class ";
             qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,0)).toString();
             qsOption+=" --reclass ";
             qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,1)).toString();
+            program+=qsOption;
          }
 
         QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
@@ -161,6 +161,9 @@ void MainWindow::on_pushButton_run_clicked()
             }
         }
 
+        if(ui->confusion->isChecked())
+            program+=" --confusion";
+
         ui->commandLineEdit->setText(program);
 
 //        QProcess *myProcess = new QProcess(parent);
@@ -185,11 +188,6 @@ void MainWindow::on_pushButton_run_clicked()
         msgBox.setText(qsError);
         msgBox.exec();
     }
-}
-
-void MainWindow::on_toolButton_createTable_clicked()
-{
-
 }
 
 void MainWindow::on_pushButton_restore_clicked()

@@ -262,7 +262,7 @@ void MainWindow::on_toolButton_Run_clicked()
         myProcess->start(program);
         myProcess->setProcessChannelMode(QProcess::MergedChannels);
         myProcess->waitForFinished(-1);
-        QString p_stderr = myProcess->readAllStandardError();
+        QString p_stderr = myProcess->readyReadStandardError();
         if(!p_stderr.isEmpty()){
             QMessageBox msgBox;
             msgBox.setText(p_stderr);

@@ -26,7 +26,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_2">
          <attribute name="title">
@@ -158,19 +158,6 @@
             <item row="1" column="1">
              <widget class="QLineEdit" name="bname"/>
             </item>
-            <item row="2" column="1">
-             <spacer name="verticalSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_20">
               <property name="toolTip">
@@ -256,6 +243,16 @@
                </size>
               </property>
              </spacer>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>attribute for class output</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="cname"/>
             </item>
            </layout>
           </item>
@@ -416,15 +413,16 @@
   <tabstop>polygon</tabstop>
   <tabstop>rule</tabstop>
   <tabstop>bname</tabstop>
+  <tabstop>cname</tabstop>
   <tabstop>nclass</tabstop>
   <tabstop>toolButton_createTable</tabstop>
   <tabstop>threshold</tabstop>
-  <tabstop>consoleEdit</tabstop>
   <tabstop>pushButton_run</tabstop>
   <tabstop>pushButton_restore</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>tableView_labels</tabstop>
   <tabstop>commandLineEdit</tabstop>
+  <tabstop>consoleEdit</tabstop>
  </tabstops>
  <resources/>
  <connections/>

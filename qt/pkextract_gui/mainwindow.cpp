@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     QStringList rulelist;
-    rulelist << "point" << "pointOnSurface" << "centroid" << "mean" << "median" << "proportion" << "minimum" << "maximum" << "maximum voting" << "sum";
+    rulelist << "point" << "pointOnSurface" << "centroid" << "mean" << "median" << "proportion" << "minimum" << "maximum" << "maxvote" << "sum";
     ui->rule->addItems(rulelist);
     QStringList formatlist;
     formatlist << "SQLite" << "ESRI Shapefile";
@@ -37,6 +37,7 @@ void MainWindow::setDefaults()
     ui->output->clear();
     //tab extract
     ui->bname->setText("b");
+    ui->cname->setText("label");
     ui->rule->setCurrentIndex(0);
     ui->nclass->clear();
     QStringList labels;
@@ -120,6 +121,10 @@ void MainWindow::on_pushButton_run_clicked()
         }
 
         program+=" --f "+ui->f->currentText();
+
+        if(ui->polygon->isChecked())
+            program+=" --polygon";
+
         program+=" --rule "+ui->rule->currentText();
 //        QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
@@ -145,6 +150,16 @@ void MainWindow::on_pushButton_run_clicked()
             }
         }
 
+        //class table
+        for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
+            QString qsOption;
+            qsOption+=" --class ";
+            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,0)).toString();
+            qsOption+=" --threshold ";
+            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,1)).toString();
+            program+=qsOption;
+        }
+
         ui->commandLineEdit->insert(program);
 
 //        QProcess *myProcess = new QProcess(parent);
@@ -154,12 +169,12 @@ void MainWindow::on_pushButton_run_clicked()
         this->setCursor(Qt::WaitCursor);
         myProcess->waitForFinished(-1);
         this->setCursor(Qt::ArrowCursor);
-        QString p_stderr = myProcess->readAllStandardError();
-        if(!p_stderr.isEmpty()){
-            QMessageBox msgBox;
-            msgBox.setText(p_stderr);
-            msgBox.exec();
-        }
+//        QString p_stderr = myProcess->readyReadStandardError();
+//        if(!p_stderr.isEmpty()){
+//            QMessageBox msgBox;
+//            msgBox.setText(p_stderr);
+//            msgBox.exec();
+//        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;

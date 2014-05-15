@@ -53,8 +53,6 @@ private slots:
 
     void on_pushButton_run_clicked();
 
-    void on_toolButton_createTable_clicked();
-
     void on_pushButton_restore_clicked();
 
     void on_commandLinkButtonPrepareTable_clicked();
