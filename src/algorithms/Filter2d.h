@@ -58,7 +58,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, majority=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133};
+  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, majority=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   

@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
-  Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. B0, B1, B2, etc.)", "B");
+  Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
   Optionpk<short> geo_opt("g", "geo", "use geo coordinates (set to 0 to use image coordinates)", 1);
   Optionpk<short> down_opt("down", "down", "down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);

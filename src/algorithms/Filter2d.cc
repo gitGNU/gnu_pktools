@@ -574,6 +574,13 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           break;
 	}
+        case(filter2d::countid):{
+	  if(windowBuffer.size())
+	    outBuffer[x/down]+=occurrence.size();
+	  else
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          break;
+	}
         case(filter2d::majority):{
 	  if(occurrence.size()){
             std::map<int,int>::const_iterator maxit=occurrence.begin();

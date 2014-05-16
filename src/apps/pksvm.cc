@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "input image"); 
   Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)");
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
-  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
+  Optionpk<string> label_opt("label", "label", "attribute name for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "randomize training data for balancing and bagging", true, 2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);

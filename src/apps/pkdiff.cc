@@ -43,8 +43,8 @@ int main(int argc, char *argv[])
   Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
   Optionpk<short> band_opt("b", "band", "Input band", 0);
   Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out)", false);
-  Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is OGR vector file", "label");
-  Optionpk<string> labelclass_opt("lc", "lclass", "name of the classified label in case output is OGR vector file", "class");
+  Optionpk<string> labelref_opt("lr", "lref", "attribute name of the reference label in case reference is OGR vector file", "label");
+  Optionpk<string> labelclass_opt("lc", "lclass", "attribute name of the classified label in case output is OGR vector file", "class");
   Optionpk<short> boundary_opt("bnd", "boundary", "boundary for selecting the sample", 1,1);
   Optionpk<bool> disc_opt("circ", "circular", "use circular disc kernel boundary)", false,1);
   Optionpk<bool> homogeneous_opt("hom", "homogeneous", "only take homogeneous regions into account", false,1);
@@ -69,11 +69,11 @@ int main(int argc, char *argv[])
     ogrformat_opt.retrieveOption(argc,argv);
     labelclass_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
-    option_opt.retrieveOption(argc,argv);
     valueE_opt.retrieveOption(argc,argv);
     valueO_opt.retrieveOption(argc,argv);
     valueC_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
     // class_opt.retrieveOption(argc,argv);
     boundary_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
@@ -208,7 +208,8 @@ int main(int argc, char *argv[])
   // if(reference_opt[0].find(".shp")!=string::npos){
   if(!refIsRaster){
     for(int iinput=0;iinput<input_opt.size();++iinput){
-      cout << "Processing input " << input_opt[iinput] << endl;
+      if(verbose_opt[0])
+	cout << "Processing input " << input_opt[iinput] << endl;
       if(output_opt.size())
         assert(reference_opt.size()==output_opt.size());
       for(int iref=0;iref<reference_opt.size();++iref){
@@ -249,9 +250,11 @@ int main(int argc, char *argv[])
 	  if(layer_opt.size())
 	    if(find(layer_opt.begin(),layer_opt.end(),currentLayername)==layer_opt.end())
 	      continue;
-	  cout << "processing layer " << readLayer->GetName() << endl;
 	  if(!verbose_opt[0])
 	    pfnProgress(progress,pszMessage,pProgressArg);
+	  else
+	    cout << "processing layer " << readLayer->GetName() << endl;
+
 	  readLayer->ResetReading();
 	  OGRLayer *writeLayer;
 	  if(output_opt.size()){
