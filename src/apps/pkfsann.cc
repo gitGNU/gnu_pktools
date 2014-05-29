@@ -41,6 +41,7 @@ using namespace std;
 
 
 //global parameters used in cost function getCost
+ConfusionMatrix cm;
 map<string,short> classValueMap;
 vector<std::string> nameVector;
 vector<unsigned int> nctraining;
@@ -120,14 +121,14 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   vector<unsigned short> referenceVector;
   vector<unsigned short> outputVector;
   float rmse=0;
-  ConfusionMatrix cm;
-  //set names in confusion matrix using nameVector
-  for(int iname=0;iname<nameVector.size();++iname){
-    if(classValueMap.empty())
-      cm.pushBackClassName(nameVector[iname]);
-    else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
-      cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
-  }
+  // ConfusionMatrix cm;
+  // //set names in confusion matrix using nameVector
+  // for(int iname=0;iname<nameVector.size();++iname){
+  //   if(classValueMap.empty())
+  //     cm.pushBackClassName(nameVector[iname]);
+  //   else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
+  //     cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
+  // }
   vector<Vector2d<float> > tmpFeatures(nclass);
   for(int iclass=0;iclass<nclass;++iclass){
     tmpFeatures[iclass].resize(trainingFeatures[iclass].size(),nFeatures);
@@ -272,11 +273,6 @@ int main(int argc, char *argv[])
   int nband=0;
   int startBand=2;//first two bands represent X and Y pos
 
-  vector<double> offset;
-  vector<double> scale;
-  vector< Vector2d<float> > trainingPixels;//[class][sample][band]
-  vector< Vector2d<float> > testPixels;//[class][sample][band]
-
   // if(priors_opt.size()>1){//priors from argument list
   //   priors.resize(priors_opt.size());
   //   double normPrior=0;
@@ -300,11 +296,16 @@ int main(int argc, char *argv[])
       classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
   }
   //----------------------------------- Training -------------------------------
-  vector<string> fields;
-  //organize training data
-  trainingPixels.clear();
+  vector<double> offset;
+  vector<double> scale;
+  vector< Vector2d<float> > trainingPixels;//[class][sample][band]
+  vector< Vector2d<float> > testPixels;//[class][sample][band]
   map<string,Vector2d<float> > trainingMap;
   map<string,Vector2d<float> > testMap;
+  vector<string> fields;
+
+  //organize training data
+  trainingPixels.clear();
   if(verbose_opt[0]>=1)
     std::cout << "reading imageVector file " << training_opt[0] << std::endl;
   try{
@@ -339,6 +340,12 @@ int main(int argc, char *argv[])
     cerr << error << std::endl;
     exit(1);
   }
+  catch(std::exception& e){
+    std::cerr << "Error: ";
+    std::cerr << e.what() << std::endl;
+    std::cerr << CPLGetLastErrorMsg() << std::endl; 
+    exit(1);
+  }
   catch(...){
     cerr << "error catched" << std::endl;
     exit(1);
@@ -354,23 +361,22 @@ int main(int argc, char *argv[])
     std::cout << "training pixels: " << std::endl;
   map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
   while(mapit!=trainingMap.end()){
-    if(classValueMap.size()){
-      //check if name in training is covered by classname_opt (values can not be 0)
-      if(classValueMap[mapit->first]>0){
-	if(verbose_opt[0])
-	  std::cout << mapit->first << " -> " << classValueMap[mapit->first] << std::endl;
-      }
-      else{
-	std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
-	exit(1);
-      }
-    }    
+    // if(classValueMap.size()){
+    //   //check if name in training is covered by classname_opt (values can not be 0)
+    //   if(classValueMap[mapit->first]>0){
+    // 	if(verbose_opt[0])
+    // 	  std::cout << mapit->first << " -> " << classValueMap[mapit->first] << std::endl;
+    //   }
+    //   else{
+    // 	std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
+    // 	exit(1);
+    //   }
+    // }    
     //delete small classes
     if((mapit->second).size()<minSize_opt[0]){
       trainingMap.erase(mapit);
       continue;
     }
-    nameVector.push_back(mapit->first);
     trainingPixels.push_back(mapit->second);
     if(verbose_opt[0]>1)
       std::cout << mapit->first << ": " << (mapit->second).size() << " samples" << std::endl;
@@ -383,16 +389,6 @@ int main(int argc, char *argv[])
 
   mapit=testMap.begin();
   while(mapit!=testMap.end()){
-    if(classValueMap.size()){
-      //check if name in test is covered by classname_opt (values can not be 0)
-      if(classValueMap[mapit->first]>0){
-	;//ok, no need to print to std::cout 
-      }
-      else{
-	std::cerr << "Error: names in classname option are not complete, please check names in test vector and make sure classvalue is > 0" << std::endl;
-	exit(1);
-      }
-    }    
     //no need to delete small classes for test sample
     testPixels.push_back(mapit->second);
     if(verbose_opt[0]>1)
@@ -478,6 +474,42 @@ int main(int argc, char *argv[])
     // for(int iclass=0;iclass<nclass;++iclass)
     //   std::cout << " " << priors[iclass];
     // std::cout << std::endl;
+  }
+
+  //new
+  mapit=trainingMap.begin();
+  bool doSort=true;
+  try{
+    while(mapit!=trainingMap.end()){
+      nameVector.push_back(mapit->first);
+      if(classValueMap.size()){
+	//check if name in training is covered by classname_opt (values can not be 0)
+	if(classValueMap[mapit->first]>0){
+	  if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0){
+	    cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]),doSort);
+	  }
+	}
+	else{
+	  std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
+	  exit(1);
+	}
+      }
+      else
+	cm.pushBackClassName(mapit->first,doSort);
+      ++mapit;
+    }
+  }
+  catch(BadConversion conversionString){
+    std::cerr << "Error: did you provide class pairs names (-c) and integer values (-r) for each class in training vector?" << std::endl;
+    exit(1);
+  }
+  if(classname_opt.empty()){
+    //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
+    for(int iclass=0;iclass<nclass;++iclass){
+      if(verbose_opt[0])
+	std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
+      classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
+    }
   }
 
   //Calculate features of trainig set

@@ -407,7 +407,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           continue;
 	outBuffer[x/down]=0;
 	std::vector<double> windowBuffer;
-	std::map<int,int> occurrence;
+	std::map<long int,int> occurrence;
         int centre=dimX*(dimY-1)/2+(dimX-1)/2;
 	for(int j=-(dimY-1)/2;j<=dimY/2;++j){
 	  for(int i=-(dimX-1)/2;i<=dimX/2;++i){
@@ -576,15 +576,15 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	}
         case(filter2d::countid):{
 	  if(windowBuffer.size())
-	    outBuffer[x/down]+=occurrence.size();
+	    outBuffer[x/down]=occurrence.size();
 	  else
 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
           break;
 	}
         case(filter2d::majority):{
 	  if(occurrence.size()){
-            std::map<int,int>::const_iterator maxit=occurrence.begin();
-            for(std::map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
+            std::map<long int,int>::const_iterator maxit=occurrence.begin();
+            for(std::map<long int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
               if(mit->second>maxit->second)
                 maxit=mit;
             }

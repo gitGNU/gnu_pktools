@@ -267,6 +267,8 @@ version 2.5.2
  - configure script: GDAL>=1.10.0 is required for pkdiff
  - programs ported to windows and GUI with Qt
 	removed underscore for QProcess in Windows
+ - algorithms
+	ConfusionMatrix.h: must find exact match in getClassIndex
  - pkinfo
 	distinct long options
  - pkclassify_svm -> pksvm

@@ -165,6 +165,7 @@ private:
     m_filterMap["scramble"]=filter2d::scramble;
     m_filterMap["shift"]=filter2d::shift;
     m_filterMap["linearfeature"]=filter2d::linearfeature;
+    m_filterMap["countid"]=filter2d::countid;
   }
 
   Vector2d<double> m_taps;

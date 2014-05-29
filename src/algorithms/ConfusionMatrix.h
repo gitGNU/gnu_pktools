@@ -48,7 +48,7 @@ public:
   int getClassIndex(std::string className) const {
     int index=0;
     for(index=0;index<m_classes.size();++index){
-      if(m_classes[index].find(className)!=std::string::npos)
+      if(m_classes[index]==className)
 	break;
     }
     if(index>=m_classes.size())

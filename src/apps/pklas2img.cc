@@ -146,10 +146,11 @@ int main(int argc,char **argv) {
       lasReader.open(input_opt[iinput]);
     }
     catch(string errorString){
-      cout << errorString << endl;
+      cerr << errorString << endl;
       exit(1);
     }
     catch(...){
+      cerr << "Error opening input " << input_opt[iinput] << endl;
       exit(2);
     }
     nPoints=lasReader.getPointCount();
