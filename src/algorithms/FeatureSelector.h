@@ -38,7 +38,7 @@ class FeatureSelector
   template<class T> double forwardUnivariate(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose=0);
   template<class T> double forward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose=0);
   template<class T> double backward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int minFeatures, short verbose=0);
-  template<class T> double floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose=0);
+  template<class T> double floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, double epsilon=0.001, short verbose=0);
   template<class T> double bruteForce(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose=0);
   
   private:
@@ -148,8 +148,7 @@ template<class T> double FeatureSelector::backward(std::vector< Vector2d<T> >& v
 }
 
 //floating search
-template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose){
-  double epsilon=0.001;
+template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, double epsilon, short verbose){
   std::vector<T> cost;
   int maxLevels=v[0][0].size();
   if(maxFeatures<1)

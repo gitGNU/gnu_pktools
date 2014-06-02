@@ -565,19 +565,19 @@ int main(int argc, char *argv[])
   list<int> subset;//set of selected features (levels) for each class combination
   FeatureSelector selector;
   try{
-    if(maxFeatures==nFeatures){
+    if(maxFeatures>=nFeatures){
       subset.clear();
       for(int ifeature=0;ifeature<nFeatures;++ifeature)
         subset.push_back(ifeature);
       cost=getCost(trainingFeatures);
     }
     else{
-      while(fabs(cost-previousCost)>epsilon_cost_opt[0]){
+      while(fabs(cost-previousCost)>=epsilon_cost_opt[0]){
         previousCost=cost;
         switch(selMap[selector_opt[0]]){
         case(SFFS):
           subset.clear();//needed to clear in case of floating and brute force search
-          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,epsilon_cost_opt[0],verbose_opt[0]);
           break;
         case(SFS):
           cost=selector.forward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
@@ -594,7 +594,7 @@ int main(int argc, char *argv[])
           exit(1);
           break;
         }
-        if(verbose_opt[0]){
+        if(verbose_opt[0]>1){
           std::cout << "cost: " << cost << std::endl;
           std::cout << "previousCost: " << previousCost << std::endl;
           std::cout << std::setprecision(12) << "cost-previousCost: " << cost - previousCost << " ( " << epsilon_cost_opt[0] << ")" << std::endl;

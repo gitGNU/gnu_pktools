@@ -341,6 +341,7 @@ int main(int argc, char *argv[])
 	      referenceValue=readFeature->GetFieldAsInteger(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
 	    if(verbose_opt[0])
 	      cout << "reference value: " << referenceValue << endl;
+	    
 	    bool pixelFlagged=false;
 	    bool maskFlagged=false;
 	    for(int iflag=0;iflag<nodata_opt.size();++iflag){
@@ -365,6 +366,7 @@ int main(int argc, char *argv[])
 	    //check if i_centre is out of bounds
 	    if(static_cast<int>(i_centre)<0||static_cast<int>(i_centre)>=inputReader.nrOfCol())
 	      continue;
+
 	    if(output_opt.size()){
 	      writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	      assert(readFeature);
@@ -442,6 +444,7 @@ int main(int argc, char *argv[])
 	      }
 	    }
 	    //at this point we know the values for the entire window
+
 	    if(homogeneous_opt[0]){//only centre pixel
 	      int j=j_centre;
 	      int i=i_centre;
