@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
-  Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
+  Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint. Only valid if sample features are polygons.", false);
   Optionpk<int> band_opt("b", "band", "band index(es) to extract. Use -1 to use all bands)", -1);
   Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value(s) for input image");
