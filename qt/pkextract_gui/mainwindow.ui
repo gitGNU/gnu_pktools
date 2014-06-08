@@ -38,30 +38,23 @@
             <item row="1" column="3">
              <widget class="QLabel" name="label_14">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixels in input image where mask image has msknodata will not be classified, but obtain a constant value (=nodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;invalid value(s) for input image&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
-               <string>msknodata</string>
+               <string>srcnodata</string>
               </property>
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QLineEdit" name="mask"/>
+             <widget class="QLineEdit" name="bndnodata"/>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="label_13">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pixels in input image where mask image has msknodata will not be classified, but obtain a constant value (=nodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Band(s) in input image to check if pixel is valid (used for srcnodata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
-               <string>Mask image</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="2">
-             <widget class="QToolButton" name="toolButton_mask">
-              <property name="text">
-               <string>...</string>
+               <string>bndnodata</string>
               </property>
              </widget>
             </item>
@@ -104,7 +97,7 @@
             <item row="0" column="0">
              <widget class="QLabel" name="label_3">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Input image (raster or vector) containing band information&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Raster input dataset containing band information&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>Input data</string>
@@ -117,7 +110,7 @@
             <item row="2" column="0">
              <widget class="QLabel" name="label_23">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OGR vector file with features to be extracted from input data. Output will contain features with input band information included&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;OGR vector file with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>Sample image</string>
@@ -125,7 +118,7 @@
              </widget>
             </item>
             <item row="1" column="4">
-             <widget class="QLineEdit" name="msknodata"/>
+             <widget class="QLineEdit" name="srcnodata"/>
             </item>
             <item row="3" column="2">
              <widget class="QToolButton" name="toolButton_output">
@@ -165,36 +158,10 @@
             <item row="1" column="1">
              <widget class="QLineEdit" name="bname"/>
             </item>
-            <item row="5" column="1">
-             <spacer name="verticalSpacer_2">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item row="2" column="1">
-             <spacer name="verticalSpacer">
-              <property name="orientation">
-               <enum>Qt::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_20">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Prepare a table if you want to extract a subset of the points in the provided sample vector file. Use a percentual threshold value for each of the labels in the sample. To prepare the table, first enter the number of classes and then press the button '-&amp;gt;'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Prepare a table with class names. To prepare the table, first enter the number of classes and then press the button '-&amp;gt;'. &lt;/p&gt;&lt;p&gt;Prepare a class table only in two cases:&lt;/p&gt;&lt;p&gt;1) The sample is a raster file and you want to select a subset of classes, with each a defined threshold (in percentage). A threshold of 50 means you want half of the pixels to be selected.&lt;/p&gt;&lt;p&gt;2) The sample is a vector file and the extraction rule is either 'proportion' or 'maxvote'.  For 'proportion', define only the clas(ses) for which you want to calculate the proportion (e.g. proportion with respect to remaining classes). For 'maxvote', define all the (e.g. land cover) classes in the input raster map&lt;/p&gt;&lt;p&gt;In all other cases, do NOT prepare a class table&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>prepare table </string>
@@ -224,10 +191,17 @@
               </property>
              </widget>
             </item>
+            <item row="3" column="1">
+             <widget class="QLabel" name="label_21">
+              <property name="text">
+               <string># classes</string>
+              </property>
+             </widget>
+            </item>
             <item row="4" column="2">
              <widget class="QToolButton" name="toolButton_createTable">
               <property name="toolTip">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Prepare a table if you want to extract a subset of the points in the provided sample vector file. Use a percentual threshold value for each of the labels in the sample. To prepare the table, first enter the number of classes and then press the button '-&amp;gt;'.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Prepare a table with class names. To prepare the table, first enter the number of classes and then press the button '-&amp;gt;'. &lt;/p&gt;&lt;p&gt;Prepare a class table only in two cases:&lt;/p&gt;&lt;p&gt;1) The sample is a raster file and you want to select a subset of classes, with each a defined threshold (in percentage). A threshold of 50 means you want half of the pixels to be selected.&lt;/p&gt;&lt;p&gt;2) The sample is a vector file and the extraction rule is either 'proportion' or 'maxvote'. For 'proportion', define only the clas(ses) for which you want to calculate the proportion (e.g. proportion with respect to remaining classes). For 'maxvote', define all the (e.g. land cover) classes in the input raster map&lt;/p&gt;&lt;p&gt;In all other cases, do NOT prepare a class table&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
               </property>
               <property name="text">
                <string>-&gt;</string>
@@ -244,12 +218,41 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
-             <widget class="QLabel" name="label_21">
+            <item row="5" column="0">
+             <widget class="QLabel" name="label">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Threshold value for selection process. Select this percentage of the raster pixels (if sample is a raster dataset) or this percentage of the features in the vector file (if sample is a vector file). In case the sample is a land cover raster dataset, you can also define a threshold for each land cover class individually by preparing the table on the right.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
-               <string># classes</string>
+               <string>Single threshold</string>
               </property>
              </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="threshold"/>
+            </item>
+            <item row="6" column="0">
+             <spacer name="verticalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>attribute for class output</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="cname"/>
             </item>
            </layout>
           </item>
@@ -400,9 +403,8 @@
  <tabstops>
   <tabstop>input</tabstop>
   <tabstop>toolButton_input</tabstop>
-  <tabstop>mask</tabstop>
-  <tabstop>toolButton_mask</tabstop>
-  <tabstop>msknodata</tabstop>
+  <tabstop>bndnodata</tabstop>
+  <tabstop>srcnodata</tabstop>
   <tabstop>sample</tabstop>
   <tabstop>toolButton_sample</tabstop>
   <tabstop>output</tabstop>
@@ -411,14 +413,16 @@
   <tabstop>polygon</tabstop>
   <tabstop>rule</tabstop>
   <tabstop>bname</tabstop>
+  <tabstop>cname</tabstop>
   <tabstop>nclass</tabstop>
   <tabstop>toolButton_createTable</tabstop>
-  <tabstop>commandLineEdit</tabstop>
-  <tabstop>consoleEdit</tabstop>
+  <tabstop>threshold</tabstop>
   <tabstop>pushButton_run</tabstop>
   <tabstop>pushButton_restore</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>tableView_labels</tabstop>
+  <tabstop>commandLineEdit</tabstop>
+  <tabstop>consoleEdit</tabstop>
  </tabstops>
  <resources/>
  <connections/>

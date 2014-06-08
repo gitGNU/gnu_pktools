@@ -29,12 +29,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    QStringList svmlist;
-    svmlist << "C_SVC" << "nu_SVC" << "one_class" << "epsilon_SVR" << "nu_SVR";
-    ui->svmtype->addItems(svmlist);
-    QStringList kernellist;
-    kernellist << "radial" << "linear" << "polynomial" << "sigmoid";
-    ui->kerneltype->addItems(kernellist);
+    QStringList formatlist;
+    formatlist << "SQLite" << "ESRI Shapefile";
+    ui->f->addItems(formatlist);
     setDefaults();
 }
 
@@ -45,38 +42,18 @@ MainWindow::~MainWindow()
 
 void MainWindow::setDefaults()
 {
-    //tab training
-    //m_training="d:\\osgeo\\course\\openstreetmap\\training2.sqlite";
-//    ui->training->setText(m_training);
-    ui->cv->setText("0");
-    ui->training->clear();
-    ui->tln->clear();
-    ui->label->setText("label");
-    QStringList labels;
-    setClassTable(labels);
-    ui->nclass->clear();
-
     //tab input/output
     ui->input->clear();
+    ui->reference->clear();
     ui->msknodata->setText("0");
     ui->output->clear();
-    ui->nodata->setText("0");
-    ui->ct->clear();
-    //tab classifier
-    ui->coef0->setText("0");
-    ui->nu->setText("0.5");
-    ui->kd->setText("3");
-    ui->label->setText("label");
-    ui->cv->setText("0");
-    ui->gamma->setText("1");
-    ui->ccost->setText("1000");
+    ui->confusion->setChecked(false);
 }
 
-void MainWindow::on_actionTraining_triggered()
+void MainWindow::on_actionReference_triggered()
 {
-    QString qstraining = QFileDialog::getOpenFileName(this, "Training");
-    ui->training->setText(qstraining);
-    this->on_training_returnPressed();
+    QString qsreference= QFileDialog::getOpenFileName(this, "Reference");
+    ui->reference->setText(qsreference);
 }
 
 void MainWindow::on_actionMask_triggered()
@@ -97,13 +74,6 @@ void MainWindow::on_actionInput_triggered()
     ui->input->setText(qsinput);
 }
 
-
-void MainWindow::on_actionColor_table_triggered()
-{
-    QString qsct = QFileDialog::getOpenFileName(this, "Color table");
-    ui->ct->setText(qsct);
-}
-
 void MainWindow::on_toolButton_input_clicked()
 {
     on_actionInput_triggered();
@@ -119,35 +89,21 @@ void MainWindow::on_toolButton_output_clicked()
     on_actionOutput_triggered();
 }
 
-void MainWindow::on_toolButton_training_clicked()
+void MainWindow::on_toolButton_reference_clicked()
 {
-    on_actionTraining_triggered();
-}
-
-void MainWindow::on_toolButton_ct_clicked()
-{
-    on_actionColor_table_triggered();
-}
-
-void MainWindow::on_training_returnPressed()
-{
-    //eventually read classes from vector file to fill in table...
+    on_actionReference_triggered();
 }
 
 void MainWindow::setClassTable(const QStringList &labels)
 {
-    QStandardItemModel *model = new QStandardItemModel(labels.size(),4,this); //nlabel rows and 4 columns
+    QStandardItemModel *model = new QStandardItemModel(labels.size(),2,this); //nlabel rows and 2 columns
     model->setHorizontalHeaderItem(0, new QStandardItem(QString("label name")));
     model->setHorizontalHeaderItem(1, new QStandardItem(QString("class nr")));
-    model->setHorizontalHeaderItem(2, new QStandardItem(QString("prior prob")));
-    model->setHorizontalHeaderItem(3, new QStandardItem(QString("balance (optional)")));
     for(int ilabel=0;ilabel<labels.size();++ilabel){
         QStandardItem *firstCol = new QStandardItem(QString(labels[ilabel]));
         model->setItem(ilabel,0,firstCol);
         QStandardItem *secondCol = new QStandardItem(QString::number(ilabel+1));
         model->setItem(ilabel,1,secondCol);
-        QStandardItem *thirdCol = new QStandardItem(QString::number(1.0/labels.size()));
-        model->setItem(ilabel,2,thirdCol);
     }
     ui->tableView_labels->setModel(model);
 }
@@ -157,60 +113,29 @@ void MainWindow::on_pushButton_run_clicked()
     try{
         ui->commandLineEdit->clear();
         ui->consoleEdit->clear();
-        QString program = "pksvm";
-        if(ui->training->text().isEmpty())
-            MainWindow::on_actionTraining_triggered();
-        if(ui->training->text().isEmpty()){
-            QString qsError="No training vector file selected";
-            throw(qsError);
-        }
-        if(!ui->input->text().isEmpty()){
-            if(ui->output->text().isEmpty())
-                MainWindow::on_actionOutput_triggered();
-            if(ui->output->text().isEmpty()){
-                QString qsError="No training vector file selected";
+        QString program = "pkdiff";
+        if(ui->input->text().isEmpty()){
+            MainWindow::on_actionInput_triggered();
+            if(ui->input->text().isEmpty()){
+                QString qsError="No input raster dataset selected";
                 throw(qsError);
             }
         }
-
-//        QList<QCheckBox*> qcheckBoxList = this->findChildren<QCheckBox *>();
-
-//        for(QList<QCheckBox*>::ConstIterator qcbit=qcheckBoxList.begin();qcbit!=qcheckBoxList.end();++qcbit){
-//            if((*qcbit)->isChecked()){
-//                QString qsOption;
-//                qsOption+=" --";
-//                qsOption+=(*qcbit)->objectName();
-//                program+=qsOption;
-//            }
-//        }
-
-        QStringList qslBalance;
+        if(ui->reference->text().isEmpty()){
+            MainWindow::on_actionReference_triggered();
+            if(ui->reference->text().isEmpty()){
+                QString qsError="No reference vector file selected";
+                throw(qsError);
+            }
+        }
         for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
             QString qsOption;
             qsOption+=" --class ";
             qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,0)).toString();
             qsOption+=" --reclass ";
             qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,1)).toString();
-            qsOption+=" --prior ";
-            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,2)).toString();
             program+=qsOption;
-            if(ui->tableView_labels->model()->columnCount()>3){
-                QString qsbalance=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,3)).toString();
-                if(!qsbalance.isEmpty())
-                    qslBalance << qsbalance;
-            }
-        }
-        if(qslBalance.size()){
-            for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
-                QString qsOption;
-                qsOption+=" --balance ";
-                if(qslBalance.size()==ui->tableView_labels->model()->rowCount())
-                    qsOption+=qslBalance[irow];
-                else
-                    qsOption+=qslBalance[0];
-                program+=qsOption;
-            }
-        }
+         }
 
         QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
@@ -235,6 +160,9 @@ void MainWindow::on_pushButton_run_clicked()
                 program+=qsOption;
             }
         }
+
+        if(ui->confusion->isChecked())
+            program+=" --confusion";
 
         ui->commandLineEdit->setText(program);
 

@@ -51,7 +51,7 @@ public:
   std::string getMetadataItem() const;
   std::string getImageDescription() const;
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
-  bool getCentrePos(double& x, double& y) const;
+  bool getCenterPos(double& x, double& y) const;
   double getUlx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(ulx);};
   double getUly() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(uly);};
   double getLrx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lrx);};
@@ -186,6 +186,7 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
 
 template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band, RESAMPLE resample) const
 {
+  //todo: make upper and lower row depend on isGeo...
   std::vector<T> readBuffer_upper;
   std::vector<T> readBuffer_lower;
   if(buffer.size()!=maxCol-minCol+1)

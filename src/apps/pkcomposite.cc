@@ -38,62 +38,62 @@ int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
   Optionpk<string>  output_opt("o", "output", "Output image file");
-  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
+  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
+  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
+  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
-  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
-  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
-  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
-  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
-  Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<string> crule_opt("cr", "crule", "Composite rule for mosaic (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
-  Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
+  Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for input image", 0);
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Bands in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
-  Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output image if not valid or out of bounds.", 0);
   Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
   Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
+  Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output image if not valid or out of bounds.", 0);
+  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
+  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<bool> file_opt("file", "file", "write number of observations for each pixels as additional layer in mosaic", false);
   Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the mosaic, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image).", 0);
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
-    projection_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    dx_opt.retrieveOption(argc,argv);
+    dy_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);
     ulx_opt.retrieveOption(argc,argv);
     uly_opt.retrieveOption(argc,argv);
     lrx_opt.retrieveOption(argc,argv);
     lry_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
-    otype_opt.retrieveOption(argc,argv);
-    oformat_opt.retrieveOption(argc,argv);
-    colorTable_opt.retrieveOption(argc,argv);
-    dx_opt.retrieveOption(argc,argv);
-    dy_opt.retrieveOption(argc,argv);
-    option_opt.retrieveOption(argc,argv);
-    dstnodata_opt.retrieveOption(argc,argv);
-    resample_opt.retrieveOption(argc,argv);
-    description_opt.retrieveOption(argc,argv);
     crule_opt.retrieveOption(argc,argv);
     ruleBand_opt.retrieveOption(argc,argv);
-    bndnodata_opt.retrieveOption(argc,argv);
     srcnodata_opt.retrieveOption(argc,argv);
+    bndnodata_opt.retrieveOption(argc,argv);
     minValue_opt.retrieveOption(argc,argv);
     maxValue_opt.retrieveOption(argc,argv);
+    dstnodata_opt.retrieveOption(argc,argv);
+    resample_opt.retrieveOption(argc,argv);
+    otype_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    projection_opt.retrieveOption(argc,argv);
     file_opt.retrieveOption(argc,argv);
     weight_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
+    description_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
   if(resample_opt[0]=="near"){
     theResample=NEAR;
     if(verbose_opt[0])
-      cout << "resampling: nearest neighbour" << endl;
+      cout << "resampling: nearest neighbor" << endl;
   }
   else if(resample_opt[0]=="bilinear"){
     theResample=BILINEAR;

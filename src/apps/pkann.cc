@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
-  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
+  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true,2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include bands)", 0); 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (1: sum rule, 2: max rule).",1);
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
-  Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class"); 
+  Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class","",2); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned int> nneuron_opt("n", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
   Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
@@ -63,18 +63,18 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
-  Optionpk<string> mask_opt("m", "mask", "mask image (support for single mask only, see also msknodata option)"); 
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<string> colorTable_opt("ct", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
+  Optionpk<string> colorTable_opt("ct", "ct", "colour table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image"); 
-  Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
-  Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
-  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","ESRI Shapefile");
+  Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output","",2); 
+  Optionpk<string> active_opt("active", "active", "ogr output for active training sample.","",2); 
+  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","SQLite");
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
@@ -132,6 +132,13 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  if(entropy_opt[0]=="")
+    entropy_opt.clear();
+  if(active_opt[0]=="")
+    active_opt.clear();
+  if(priorimg_opt[0]=="")
+    priorimg_opt.clear();
 
   if(verbose_opt[0]>=1){
     if(input_opt.size())
@@ -372,7 +379,7 @@ int main(int argc, char *argv[])
 	++mapit;
       }
       if(classname_opt.empty()){
-        std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
+        //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
         for(int iclass=0;iclass<nclass;++iclass){
           if(verbose_opt[0])
             std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
@@ -659,7 +666,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         cout << "opening class image for writing output " << output_opt[0] << endl;
       if(classBag_opt.size()){
-        classImageBag.open(output_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
+        classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
 	classImageBag.GDALSetNoDataValue(nodata_opt[0]);
         classImageBag.copyGeoTransform(testImage);
         classImageBag.setProjection(testImage.getProjection());

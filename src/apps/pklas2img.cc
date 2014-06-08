@@ -40,7 +40,7 @@ int main(int argc,char **argv) {
   Optionpk<unsigned short> returns_opt("ret", "ret", "number(s) of returns to include");
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
   Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), number (point density)). Last: overwrite cells with latest point", "last");
-  Optionpk<string> filter_opt("fir", "filter", "filter las points (last,single,multiple,all).", "all");
+  Optionpk<string> filter_opt("fir", "filter", "filter las points (first,last,single,multiple,all).", "all");
   // Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none).", "none");
   // Optionpk<short> dimx_opt("dimx", "dimx", "Dimension X of postFilter", 3);
   // Optionpk<short> dimy_opt("dimy", "dimy", "Dimension Y of postFilter", 3);
@@ -99,7 +99,7 @@ int main(int argc,char **argv) {
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
-
+  //todo: is this needed?
   GDALAllRegister();
 
   double dfComplete=0.0;
@@ -146,10 +146,11 @@ int main(int argc,char **argv) {
       lasReader.open(input_opt[iinput]);
     }
     catch(string errorString){
-      cout << errorString << endl;
+      cerr << errorString << endl;
       exit(1);
     }
     catch(...){
+      cerr << "Error opening input " << input_opt[iinput] << endl;
       exit(2);
     }
     nPoints=lasReader.getPointCount();
@@ -294,10 +295,10 @@ int main(int argc,char **argv) {
         continue;
       if((filter_opt[0]=="multiple")&&(thePoint.GetNumberOfReturns()<2))
         continue;
-      if(filter_opt[0]=="last"){
-        if(thePoint.GetReturnNumber()!=thePoint.GetNumberOfReturns())
-          continue;
-      }
+      if((filter_opt[0]=="last")&&(thePoint.GetReturnNumber()!=thePoint.GetNumberOfReturns()))
+	continue;
+      if((filter_opt[0]=="first")&&(thePoint.GetReturnNumber()!=1))
+	continue;
       double dcol,drow;
       outputWriter.geo2image(thePoint.GetX(),thePoint.GetY(),dcol,drow);
       int icol=static_cast<int>(dcol);

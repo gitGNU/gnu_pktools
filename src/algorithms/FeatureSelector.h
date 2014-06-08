@@ -26,6 +26,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include "ConfusionMatrix.h"
 #include "base/IndexValue.h"
 #include "base/Vector2d.h"
 #include "gsl/gsl_combination.h"
@@ -38,7 +39,7 @@ class FeatureSelector
   template<class T> double forwardUnivariate(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose=0);
   template<class T> double forward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose=0);
   template<class T> double backward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int minFeatures, short verbose=0);
-  template<class T> double floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose=0);
+  template<class T> double floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, double epsilon=0.001, short verbose=0);
   template<class T> double bruteForce(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose=0);
   
   private:
@@ -148,8 +149,7 @@ template<class T> double FeatureSelector::backward(std::vector< Vector2d<T> >& v
 }
 
 //floating search
-template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose){
-  double epsilon=0.001;
+template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, double epsilon, short verbose){
   std::vector<T> cost;
   int maxLevels=v[0][0].size();
   if(maxFeatures<1)
@@ -157,11 +157,12 @@ template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v
   int k=subset.size();
   if(k>=maxFeatures)
     return -1;
-  cost.push_back(-1);//init 0 features as cost -1
+  while(cost.size()<subset.size())
+    cost.push_back(1);//init original features as cost 1
   cost.push_back(addFeature(v,*getCost,subset,verbose));
   ++k;
   if(verbose>1)
-    std::cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << std::endl;
+    std::cout << "added " << subset.back() << ", " << subset.size() << "/" << maxFeatures << " features selected with cost: " << cost.back() << std::endl;
   else if(verbose){
     for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
       std::cout << *lit << " ";
@@ -171,7 +172,7 @@ template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v
     cost.push_back(addFeature(v,*getCost,subset,verbose));
     ++k;
     if(verbose>1)
-    std::cout << "added " << subset.back() << ", " << cost.size()-1 << "/" << maxFeatures << " features selected with cost: " << cost.back() << std::endl;
+    std::cout << "added " << subset.back() << ", " << subset.size() << "/" << maxFeatures << " features selected with cost: " << cost.back() << std::endl;
     else if(verbose){
       for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
         std::cout << *lit << " ";
@@ -186,7 +187,7 @@ template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v
 	cost[k]=cost_r;
 	cost.pop_back();
 	if(verbose>1)
-	  std::cout << "removed " << x_r << ", " << cost.size()-1 << "/" << maxFeatures << " features remain with cost: " << cost_r << std::endl;
+	  std::cout << "removed " << x_r << ", " << subset.size() << "/" << maxFeatures << " features remain with cost: " << cost_r << std::endl;
         else if(verbose){
           for(std::list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
             std::cout << *lit << " ";

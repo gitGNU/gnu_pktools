@@ -44,6 +44,7 @@ using namespace std;
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
 //global parameters used in cost function getCost
+ConfusionMatrix cm;
 map<string,short> classValueMap;
 vector<std::string> nameVector;
 vector<unsigned int> nctraining;
@@ -51,9 +52,9 @@ vector<unsigned int> nctest;
 Optionpk<std::string> svm_type_opt("svmt", "svmtype", "type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
 Optionpk<std::string> kernel_type_opt("kt", "kerneltype", "type of kernel function (linear,polynomial,radial,sigmoid) ","radial");
 Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
-Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
+Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",1.0);
 Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
-Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C-SVC, epsilon-SVR, and nu-SVR",1);
+Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C-SVC, epsilon-SVR, and nu-SVR",1000);
 Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu-SVC, one-class SVM, and nu-SVR",0.5);
 Optionpk<float> epsilon_loss_opt("eloss", "eloss", "the epsilon in loss function of epsilon-SVR",0.1);
 Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);
@@ -148,14 +149,6 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   if(verbose_opt[0]>2)
     std::cout << "SVM is now trained" << std::endl;
 
-  ConfusionMatrix cm;
-  //set names in confusion matrix using nameVector
-  for(int iname=0;iname<nameVector.size();++iname){
-    if(classValueMap.empty())
-      cm.pushBackClassName(nameVector[iname]);
-    else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
-      cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
-  }
   if(cv_opt[0]>1){
     double *target = Malloc(double,prob.l);
     svm_cross_validation(&prob,&param,cv_opt[0],target);
@@ -172,6 +165,7 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   }
   else{
     struct svm_node *x_test;
+    vector<double> result(nclass);
     x_test = Malloc(struct svm_node,(nFeatures+1));
     for(int iclass=0;iclass<nclass;++iclass){
       for(int isample=0;isample<nctest[iclass];++isample){
@@ -181,8 +175,9 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
 	}
 	x_test[nFeatures].index=-1;
 	double predict_label=0;
-	//todo: make distinction between svm_predict and svm_predict_probability?
-	predict_label = svm_predict(svm,x_test);
+	assert(svm_check_probability_model(svm));
+	predict_label = svm_predict_probability(svm,x_test,&(result[0]));
+	// predict_label = svm_predict(svm,x_test);
 	string refClassName=nameVector[iclass];
 	string className=nameVector[static_cast<short>(predict_label)];
 	if(classValueMap.size())
@@ -212,6 +207,7 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
   free(prob.x);
   free(x_space);
   svm_free_and_destroy_model(&(svm));
+
   return(cm.kappa());
 }
 
@@ -307,11 +303,6 @@ int main(int argc, char *argv[])
   int nband=0;
   int startBand=2;//first two bands represent X and Y pos
 
-  vector<double> offset;
-  vector<double> scale;
-  vector< Vector2d<float> > trainingPixels;//[class][sample][band]
-  vector< Vector2d<float> > testPixels;//[class][sample][band]
-
   // if(priors_opt.size()>1){//priors from argument list
   //   priors.resize(priors_opt.size());
   //   double normPrior=0;
@@ -336,13 +327,18 @@ int main(int argc, char *argv[])
   }
 
   //----------------------------------- Training -------------------------------
-  struct svm_problem prob;
+  vector<double> offset;
+  vector<double> scale;
+  vector< Vector2d<float> > trainingPixels;//[class][sample][band]
+  vector< Vector2d<float> > testPixels;//[class][sample][band]
+  map<string,Vector2d<float> > trainingMap;
+  map<string,Vector2d<float> > testMap;
   vector<string> fields;
+
+  struct svm_problem prob;
   //organize training data
   trainingPixels.clear();
   testPixels.clear();
-  map<string,Vector2d<float> > trainingMap;
-  map<string,Vector2d<float> > testMap;
   if(verbose_opt[0]>=1)
     std::cout << "reading training file " << training_opt[0] << std::endl;
   try{
@@ -377,6 +373,12 @@ int main(int argc, char *argv[])
     cerr << error << std::endl;
     exit(1);
   }
+  catch(std::exception& e){
+    std::cerr << "Error: ";
+    std::cerr << e.what() << std::endl;
+    std::cerr << CPLGetLastErrorMsg() << std::endl; 
+    exit(1);
+  }
   catch(...){
     cerr << "error catched" << std::endl;
     exit(1);
@@ -391,17 +393,6 @@ int main(int argc, char *argv[])
     std::cout << "training pixels: " << std::endl;
   map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
   while(mapit!=trainingMap.end()){
-    if(classValueMap.size()){
-      //check if name in training is covered by classname_opt (values can not be 0)
-      if(classValueMap[mapit->first]>0){
-	if(verbose_opt[0])
-	  std::cout << mapit->first << " -> " << classValueMap[mapit->first] << std::endl;
-      }
-      else{
-	std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
-	exit(1);
-      }
-    }    
     //delete small classes
     if((mapit->second).size()<minSize_opt[0]){
       trainingMap.erase(mapit);
@@ -423,11 +414,11 @@ int main(int argc, char *argv[])
     if(classValueMap.size()){
       //check if name in test is covered by classname_opt (values can not be 0)
       if(classValueMap[mapit->first]>0){
-	;//ok, no need to print to std::cout 
+    	;//ok, no need to print to std::cout 
       }
       else{
-	std::cerr << "Error: names in classname option are not complete, please check names in test vector and make sure classvalue is > 0" << std::endl;
-	exit(1);
+    	std::cerr << "Error: names in classname option are not complete, please check names in test vector and make sure classvalue is > 0" << std::endl;
+    	exit(1);
       }
     }    
     //no need to delete small classes for test sample
@@ -518,6 +509,50 @@ int main(int argc, char *argv[])
     // std::cout << std::endl;
   }
 
+  //set names in confusion matrix using nameVector
+  for(int iname=0;iname<nameVector.size();++iname){
+    if(classValueMap.empty())
+      cm.pushBackClassName(nameVector[iname]);
+    else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
+      cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
+  }
+
+  // // map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
+  // mapit=trainingMap.begin();
+  // bool doSort=true;
+  // try{
+  //   while(mapit!=trainingMap.end()){
+  //     nameVector.push_back(mapit->first);
+  //     if(classValueMap.size()){
+  // 	//check if name in training is covered by classname_opt (values can not be 0)
+  // 	if(classValueMap[mapit->first]>0){
+  // 	  if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0){
+  // 	    cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]),doSort);
+  // 	  }
+  // 	}
+  // 	else{
+  // 	  std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
+  // 	  exit(1);
+  // 	}
+  //     }
+  //     else
+  // 	cm.pushBackClassName(mapit->first,doSort);
+  //     ++mapit;
+  //   }
+  // }
+  // catch(BadConversion conversionString){
+  //   std::cerr << "Error: did you provide class pairs names (-c) and integer values (-r) for each class in training vector?" << std::endl;
+  //   exit(1);
+  // }
+  // if(classname_opt.empty()){
+  //   //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
+  //   for(int iclass=0;iclass<nclass;++iclass){
+  //     if(verbose_opt[0])
+  // 	std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
+  //     classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
+  //   }
+  // }
+
   //Calculate features of training (and test) set
   nctraining.resize(nclass);
   nctest.resize(nclass);
@@ -571,19 +606,19 @@ int main(int argc, char *argv[])
   list<int> subset;//set of selected features (levels) for each class combination
   FeatureSelector selector;
   try{
-    if(maxFeatures==nFeatures){
+    if(maxFeatures>=nFeatures){
       subset.clear();
       for(int ifeature=0;ifeature<nFeatures;++ifeature)
         subset.push_back(ifeature);
       cost=getCost(trainingFeatures);
     }
     else{
-      while(fabs(cost-previousCost)>epsilon_cost_opt[0]){
+      while(fabs(cost-previousCost)>=epsilon_cost_opt[0]){
         previousCost=cost;
         switch(selMap[selector_opt[0]]){
         case(SFFS):
           subset.clear();//needed to clear in case of floating and brute force search
-          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,epsilon_cost_opt[0],verbose_opt[0]);
           break;
         case(SFS):
           cost=selector.forward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
@@ -600,7 +635,7 @@ int main(int argc, char *argv[])
           exit(1);
           break;
         }
-        if(verbose_opt[0]){
+        if(verbose_opt[0]>1){
           std::cout << "cost: " << cost << std::endl;
           std::cout << "previousCost: " << previousCost << std::endl;
           std::cout << std::setprecision(12) << "cost-previousCost: " << cost - previousCost << " ( " << epsilon_cost_opt[0] << ")" << std::endl;

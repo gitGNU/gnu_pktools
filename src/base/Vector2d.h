@@ -49,6 +49,7 @@ public:
   void selectCol(int col, T* output) const;
   std::vector<T> selectCol(int col);
   void selectCols(const std::list<int> &cols, Vector2d<T> &output) const;
+  void setMask(const Vector2d<T> &mask, T msknodata, T nodata=0);
   void transpose(Vector2d<T> &output) const{
     output.resize(nCols(),nRows());
     for(int irow=0;irow<nRows();++irow){
@@ -62,6 +63,7 @@ public:
   void scale(const std::vector<double> &scaleVector, const std::vector<double> &offsetVector, Vector2d<T>& scaledOutput);
   void scale(const T lbound, const T ubound, std::vector<double> &scaleVector, std::vector<double> &offsetVector, Vector2d<T>& scaledOutput);
   Vector2d<T> operator=(const Vector2d<T>& v1);
+  Vector2d<T> operator+=(const Vector2d<T>& v1);
 //   std::ostream& operator<<(std::ostream& os, const Vector2d<T>& v);
 //   template<class T> std::ostream& operator<<(std::ostream& os, const Vector2d<T>& v);
   template<class T1> friend std::ostream& operator<<(std::ostream & os, const Vector2d<T1>& v);
@@ -97,6 +99,15 @@ template<class T> Vector2d<T> Vector2d<T>::operator=(const Vector2d<T>& v1){
       this->at(irow)=v1[irow];
     return *this;
   }
+}
+
+template<class T> Vector2d<T> Vector2d<T>::operator+=(const Vector2d<T>& v1){
+  assert(v1.nRows()==nRows());
+  assert(v1.nCols()==nCols());
+  for(int irow=0;irow<nRows();++irow)
+    for(int icol=0;icol<nCols();++icol)
+      (*this)[irow][icol]+=v1[irow][icol];
+  return *this;
 }
 
 template<class T> Vector2d<T>::Vector2d(int nrow) 
@@ -190,6 +201,16 @@ template<class T> void Vector2d<T>::selectCols(const std::list<int> &cols)
     for(int icol=((*this)[irow]).size()-1;icol>=0;--icol)
       if(find(cols.begin(),cols.end(),icol)==cols.end())
 	(*this)[irow].erase(((*this)[irow]).begin()+icol);
+}
+
+template<class T> void Vector2d<T>::setMask(const Vector2d<T> &mask, T msknodata, T nodata)
+{
+  assert(mask.nRows()==nRows());
+  assert(mask.nCols()==nCols());
+  for(int irow=0;irow<this->size();++irow)
+    for(int icol=0;icol<((*this)[irow]).size()-1;++icol)
+      if(mask[irow][icol]==msknodata)
+	(*this)[irow][icol]=nodata;
 }
 
 template<class T1> std::ostream& operator<<(std::ostream& os, const Vector2d<T1>& v)

@@ -101,7 +101,7 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
     ntest+=nctest[iclass];
   }
   if(ntest)
-    assert(!cv_opt[0]);
+    cv_opt[0]=0;
   if(!cv_opt[0])
     assert(ntest);
     // ntraining+=(*tf)[iclass].size();
@@ -230,8 +230,8 @@ int main(int argc, char *argv[])
 {
   map<short,int> reclassMap;
   vector<int> vreclass;
-  Optionpk<string> input_opt("i", "input", "input image"); 
-  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option)."); 
+  Optionpk<string> input_opt("i", "input", "input test vectro file"); 
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
   // Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
@@ -248,17 +248,17 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
   Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
-  Optionpk<double> step_opt("step","step","multiplicative step for GRID search (-step cost -step gamma)",2);
+  Optionpk<double> step_opt("step","step","multiplicative step for ccost and gamma in GRID search",2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
-    doProcess=input_opt.retrieveOption(argc,argv);
-    training_opt.retrieveOption(argc,argv);
+    doProcess=training_opt.retrieveOption(argc,argv);
+    input_opt.retrieveOption(argc,argv);
     tlayer_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     // reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
-	random_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
@@ -605,8 +605,8 @@ int main(int argc, char *argv[])
     double progress=0;
     if(!verbose_opt[0])
       pfnProgress(progress,pszMessage,pProgressArg);
-    double ncost=log(ccost_opt[1])/log(10.0)-log(ccost_opt[0])/log(10.0);
-    double ngamma=log(gamma_opt[1])/log(10.0)-log(gamma_opt[0])/log(10.0);
+    double ncost=log(ccost_opt[1])/log(step_opt[0])-log(ccost_opt[0])/log(step_opt[0]);
+    double ngamma=log(gamma_opt[1])/log(step_opt[1])-log(gamma_opt[0])/log(step_opt[1]);
     for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=step_opt[0]){
       for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=step_opt[1]){
 	x[0]=ccost;

@@ -49,11 +49,11 @@ int main(int argc, char *argv[])
   
   //--------------------------- command line options ------------------------------------
   Optionpk<string> input_opt("i", "input", "input image"); 
-  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)");
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)");
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
-  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
+  Optionpk<string> label_opt("label", "label", "attribute name for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
-  Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true);
+  Optionpk<bool> random_opt("random", "random", "randomize training data for balancing and bagging", true, 2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
@@ -61,14 +61,14 @@ int main(int argc, char *argv[])
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation)", 0.0); 
-  Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class"); 
+  Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class","",2); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<std::string> svm_type_opt("svmt", "svmtype", "type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
   Optionpk<std::string> kernel_type_opt("kt", "kerneltype", "type of kernel function (linear,polynomial,radial,sigmoid) ","radial");
   Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "degree in kernel function",3);
-  Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",0);
+  Optionpk<float> gamma_opt("g", "gamma", "gamma in kernel function",1.0);
   Optionpk<float> coef0_opt("c0", "coef0", "coef0 in kernel function",0);
-  Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C_SVC, epsilon_SVR, and nu_SVR",1);
+  Optionpk<float> ccost_opt("cc", "ccost", "the parameter C of C_SVC, epsilon_SVR, and nu_SVR",1000);
   Optionpk<float> nu_opt("nu", "nu", "the parameter nu of nu_SVC, one_class SVM, and nu_SVR",0.5);
   Optionpk<float> epsilon_loss_opt("eloss", "eloss", "the epsilon in loss function of epsilon_SVR",0.1);
   Optionpk<int> cache_opt("cache", "cache", "cache memory size in MB",100);
@@ -80,17 +80,17 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation");
-  Optionpk<string> mask_opt("m", "mask", "mask image (support for single mask only, see also msknodata option)"); 
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<string> colorTable_opt("ct", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
+  Optionpk<string> colorTable_opt("ct", "ct", "color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("prob", "prob", "probability image."); 
-  Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output"); 
-  Optionpk<string> active_opt("active", "active", "ogr output for active training sample."); 
-  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","ESRI Shapefile");
+  Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output","",2); 
+  Optionpk<string> active_opt("active", "active", "ogr output for active training sample.","",2); 
+  Optionpk<string> ogrformat_opt("f", "f", "Output ogr format for active training sample","SQLite");
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
@@ -98,52 +98,52 @@ int main(int argc, char *argv[])
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
-    doProcess=input_opt.retrieveOption(argc,argv);
-    training_opt.retrieveOption(argc,argv);
+    doProcess=training_opt.retrieveOption(argc,argv);
     tlayer_opt.retrieveOption(argc,argv);
+    input_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    cv_opt.retrieveOption(argc,argv);
+    classname_opt.retrieveOption(argc,argv);
+    classvalue_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
-    balance_opt.retrieveOption(argc,argv);
-    random_opt.retrieveOption(argc,argv);
-    minSize_opt.retrieveOption(argc,argv);
+    priors_opt.retrieveOption(argc,argv);
+    gamma_opt.retrieveOption(argc,argv);
+    ccost_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
     start_opt.retrieveOption(argc,argv);
     end_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
+    balance_opt.retrieveOption(argc,argv);
+    minSize_opt.retrieveOption(argc,argv);
+    bag_opt.retrieveOption(argc,argv);
+    bagSize_opt.retrieveOption(argc,argv);
+    comb_opt.retrieveOption(argc,argv);
+    classBag_opt.retrieveOption(argc,argv);
+    prob_opt.retrieveOption(argc,argv);
+    priorimg_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
-    priors_opt.retrieveOption(argc,argv);
-    priorimg_opt.retrieveOption(argc,argv);
     svm_type_opt.retrieveOption(argc,argv);
     kernel_type_opt.retrieveOption(argc,argv);
     kernel_degree_opt.retrieveOption(argc,argv);
-    gamma_opt.retrieveOption(argc,argv);
     coef0_opt.retrieveOption(argc,argv);
-    ccost_opt.retrieveOption(argc,argv);
     nu_opt.retrieveOption(argc,argv);
     epsilon_loss_opt.retrieveOption(argc,argv);
     cache_opt.retrieveOption(argc,argv);
     epsilon_tol_opt.retrieveOption(argc,argv);
     shrinking_opt.retrieveOption(argc,argv);
     prob_est_opt.retrieveOption(argc,argv);
-    cv_opt.retrieveOption(argc,argv);
-    comb_opt.retrieveOption(argc,argv);
-    bag_opt.retrieveOption(argc,argv);
-    bagSize_opt.retrieveOption(argc,argv);
-    classBag_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
-    msknodata_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
-    oformat_opt.retrieveOption(argc,argv);
-    colorTable_opt.retrieveOption(argc,argv);
-    option_opt.retrieveOption(argc,argv);
-    prob_opt.retrieveOption(argc,argv);
     entropy_opt.retrieveOption(argc,argv);
     active_opt.retrieveOption(argc,argv);
-    ogrformat_opt.retrieveOption(argc,argv);
     nactive_opt.retrieveOption(argc,argv);
-    classname_opt.retrieveOption(argc,argv);
-    classvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -153,6 +153,14 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  if(entropy_opt[0]=="")
+    entropy_opt.clear();
+  if(active_opt[0]=="")
+    active_opt.clear();
+  if(priorimg_opt[0]=="")
+    priorimg_opt.clear();
+
 
   std::map<std::string, svm::SVM_TYPE> svmMap;
 
@@ -429,7 +437,7 @@ int main(int argc, char *argv[])
 	exit(1);
       }
       if(classname_opt.empty()){
-        std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
+        //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
         for(int iclass=0;iclass<nclass;++iclass){
           if(verbose_opt[0])
             std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
@@ -653,7 +661,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         std::cout << "opening class image for writing output " << output_opt[0] << std::endl;
       if(classBag_opt.size()){
-        classImageBag.open(output_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
+        classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
 	classImageBag.GDALSetNoDataValue(nodata_opt[0]);
         classImageBag.copyGeoTransform(testImage);
         classImageBag.setProjection(testImage.getProjection());

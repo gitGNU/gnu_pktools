@@ -58,7 +58,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, majority=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133};
+  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, majority=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
@@ -116,6 +116,10 @@ public:
   void var(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false);
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc=false);
   template<class T> unsigned long int morphology(const Vector2d<T>& input, Vector2d<T>& output, const std::string& method, int dimX, int dimY, bool disc=false, double hThreshold=0);
+  template<class T> unsigned long int dsm2dtm_nwse(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
+  template<class T> unsigned long int dsm2dtm_nesw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
+  template<class T> unsigned long int dsm2dtm_senw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
+  template<class T> unsigned long int dsm2dtm_swne(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down=1, int iband=0, bool verbose=false);
@@ -161,6 +165,7 @@ private:
     m_filterMap["scramble"]=filter2d::scramble;
     m_filterMap["shift"]=filter2d::shift;
     m_filterMap["linearfeature"]=filter2d::linearfeature;
+    m_filterMap["countid"]=filter2d::countid;
   }
 
   Vector2d<double> m_taps;
@@ -742,6 +747,374 @@ template<class T> unsigned long int Filter2d::morphology(const Vector2d<T>& inpu
     }
     progress=(1.0+y);
     progress/=output.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+  return nchange;
+}
+
+ template<class T> unsigned long int Filter2d::dsm2dtm_nwse(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim)
+{
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
+  Vector2d<T> tmpDSM(inputDSM);
+  double noDataValue=0;
+  if(m_noDataValues.size())
+    noDataValue=m_noDataValues[0];
+
+  unsigned long int nchange=0;
+  int dimX=dim;
+  int dimY=dim;
+  assert(dimX);
+  assert(dimY);
+  statfactory::StatFactory stat;
+  Vector2d<T> inBuffer(dimY,inputDSM.nCols());
+  if(outputMask.size()!=inputDSM.nRows())
+    outputMask.resize(inputDSM.nRows());
+  int indexI=0;
+  int indexJ=0;
+  //initialize last half of inBuffer
+  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+    for(int i=0;i<inputDSM.nCols();++i)
+      inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
+    ++indexJ;
+  }
+  for(int y=0;y<tmpDSM.nRows();++y){
+    if(y){//inBuffer already initialized for y=0
+      //erase first line from inBuffer
+      inBuffer.erase(inBuffer.begin());
+      //read extra line and push back to inBuffer if not out of bounds
+      if(y+dimY/2<tmpDSM.nRows()){
+        //allocate buffer
+        inBuffer.push_back(inBuffer.back());
+        for(int i=0;i<tmpDSM.nCols();++i)
+          inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
+      }
+      else{
+        int over=y+dimY/2-tmpDSM.nRows();
+        int index=(inBuffer.size()-1)-over;
+        assert(index>=0);
+        assert(index<inBuffer.size());
+        inBuffer.push_back(inBuffer[index]);
+      }
+    }
+    for(int x=0;x<tmpDSM.nCols();++x){
+      double centerValue=inBuffer[(dimY-1)/2][x];
+      short nmasked=0;
+      std::vector<T> neighbors;
+      for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+	for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+	  indexI=x+i;
+	  //check if out of bounds
+	  if(indexI<0)
+	    indexI=-indexI;
+	  else if(indexI>=tmpDSM.nCols())
+	    indexI=tmpDSM.nCols()-i;
+	  if(y+j<0)
+	    indexJ=-j;
+	  else if(y+j>=tmpDSM.nRows())
+	    indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+	  else
+	    indexJ=(dimY-1)/2+j;
+	  double difference=(centerValue-inBuffer[indexJ][indexI]);
+	  if(i||j)//skip centerValue
+	    neighbors.push_back(inBuffer[indexJ][indexI]);
+	  if(difference>hThreshold)
+	    ++nmasked;
+	}
+      }
+      if(nmasked<=nlimit){
+	++nchange;
+	//reset pixel in outputMask
+	outputMask[y][x]=0;
+      }
+      else{
+	//reset pixel height in tmpDSM
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
+      }
+    }
+    progress=(1.0+y);
+    progress/=outputMask.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+  return nchange;
+}
+
+ template<class T> unsigned long int Filter2d::dsm2dtm_nesw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim)
+{
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
+  Vector2d<T> tmpDSM(inputDSM);
+  double noDataValue=0;
+  if(m_noDataValues.size())
+    noDataValue=m_noDataValues[0];
+
+  unsigned long int nchange=0;
+  int dimX=dim;
+  int dimY=dim;
+  assert(dimX);
+  assert(dimY);
+  statfactory::StatFactory stat;
+  Vector2d<T> inBuffer(dimY,inputDSM.nCols());
+  if(outputMask.size()!=inputDSM.nRows())
+    outputMask.resize(inputDSM.nRows());
+  int indexI=0;
+  int indexJ=0;
+  //initialize last half of inBuffer
+  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+    for(int i=0;i<inputDSM.nCols();++i)
+      inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
+    ++indexJ;
+  }
+  for(int y=0;y<tmpDSM.nRows();++y){
+    if(y){//inBuffer already initialized for y=0
+      //erase first line from inBuffer
+      inBuffer.erase(inBuffer.begin());
+      //read extra line and push back to inBuffer if not out of bounds
+      if(y+dimY/2<tmpDSM.nRows()){
+        //allocate buffer
+        inBuffer.push_back(inBuffer.back());
+        for(int i=0;i<tmpDSM.nCols();++i)
+          inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
+      }
+      else{
+        int over=y+dimY/2-tmpDSM.nRows();
+        int index=(inBuffer.size()-1)-over;
+        assert(index>=0);
+        assert(index<inBuffer.size());
+        inBuffer.push_back(inBuffer[index]);
+      }
+    }
+    for(int x=tmpDSM.nCols()-1;x>=0;--x){
+      double centerValue=inBuffer[(dimY-1)/2][x];
+      short nmasked=0;
+      std::vector<T> neighbors;
+      for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+	for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+	  indexI=x+i;
+	  //check if out of bounds
+	  if(indexI<0)
+	    indexI=-indexI;
+	  else if(indexI>=tmpDSM.nCols())
+	    indexI=tmpDSM.nCols()-i;
+	  if(y+j<0)
+	    indexJ=-j;
+	  else if(y+j>=tmpDSM.nRows())
+	    indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+	  else
+	    indexJ=(dimY-1)/2+j;
+	  double difference=(centerValue-inBuffer[indexJ][indexI]);
+	  if(i||j)//skip centerValue
+	    neighbors.push_back(inBuffer[indexJ][indexI]);
+	  if(difference>hThreshold)
+	    ++nmasked;
+	}
+      }
+      if(nmasked<=nlimit){
+	++nchange;
+	//reset pixel in outputMask
+	outputMask[y][x]=0;
+      }
+      else{
+	//reset pixel height in tmpDSM
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
+      }
+    }
+    progress=(1.0+y);
+    progress/=outputMask.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+  return nchange;
+}
+
+ template<class T> unsigned long int Filter2d::dsm2dtm_senw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim)
+{
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
+  Vector2d<T> tmpDSM(inputDSM);
+  double noDataValue=0;
+  if(m_noDataValues.size())
+    noDataValue=m_noDataValues[0];
+
+  unsigned long int nchange=0;
+  int dimX=dim;
+  int dimY=dim;
+  assert(dimX);
+  assert(dimY);
+  statfactory::StatFactory stat;
+  Vector2d<T> inBuffer(dimY,inputDSM.nCols());
+  if(outputMask.size()!=inputDSM.nRows())
+    outputMask.resize(inputDSM.nRows());
+  int indexI=0;
+  int indexJ=inputDSM.nRows()-1;
+  //initialize first half of inBuffer
+  for(int j=inputDSM.nRows()-dimY/2;j<inputDSM.nRows();--j){
+    for(int i=0;i<inputDSM.nCols();++i)
+      inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
+    ++indexJ;
+  }
+  for(int y=tmpDSM.nRows()-1;y>=0;--y){
+    if(y<tmpDSM.nRows()-1){//inBuffer already initialized for y=tmpDSM.nRows()-1
+      //erase last line from inBuffer
+      inBuffer.erase(inBuffer.end()-1);
+      //read extra line and insert to inBuffer if not out of bounds
+      if(y-dimY/2>0){
+        //allocate buffer
+        inBuffer.insert(inBuffer.begin(),inBuffer.back());
+        for(int i=0;i<tmpDSM.nCols();++i)
+          inBuffer[0][i]=tmpDSM[y-dimY/2][i];
+      }
+      else{
+        inBuffer.insert(inBuffer.begin(),inBuffer[abs(y-dimY/2)]);
+      }
+    }
+    for(int x=tmpDSM.nCols()-1;x>=0;--x){
+      double centerValue=inBuffer[(dimY-1)/2][x];
+      short nmasked=0;
+      std::vector<T> neighbors;
+      for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+	for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+	  indexI=x+i;
+	  //check if out of bounds
+	  if(indexI<0)
+	    indexI=-indexI;
+	  else if(indexI>=tmpDSM.nCols())
+	    indexI=tmpDSM.nCols()-i;
+	  if(y+j<0)
+	    indexJ=-j;
+	  else if(y+j>=tmpDSM.nRows())
+	    indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+	  else
+	    indexJ=(dimY-1)/2+j;
+	  double difference=(centerValue-inBuffer[indexJ][indexI]);
+	  if(i||j)//skip centerValue
+	    neighbors.push_back(inBuffer[indexJ][indexI]);
+	  if(difference>hThreshold)
+	    ++nmasked;
+	}
+      }
+      if(nmasked<=nlimit){
+	++nchange;
+	//reset pixel in outputMask
+	outputMask[y][x]=0;
+      }
+      else{
+	//reset pixel height in tmpDSM
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
+      }
+    }
+    progress=(1.0+y);
+    progress/=outputMask.nRows();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+  return nchange;
+}
+
+ template<class T> unsigned long int Filter2d::dsm2dtm_swne(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim)
+{
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+
+  Vector2d<T> tmpDSM(inputDSM);
+  double noDataValue=0;
+  if(m_noDataValues.size())
+    noDataValue=m_noDataValues[0];
+
+  unsigned long int nchange=0;
+  int dimX=dim;
+  int dimY=dim;
+  assert(dimX);
+  assert(dimY);
+  statfactory::StatFactory stat;
+  Vector2d<T> inBuffer(dimY,inputDSM.nCols());
+  if(outputMask.size()!=inputDSM.nRows())
+    outputMask.resize(inputDSM.nRows());
+  int indexI=0;
+  int indexJ=0;
+  //initialize first half of inBuffer
+  for(int j=inputDSM.nRows()-dimY/2;j<inputDSM.nRows();--j){
+    for(int i=0;i<inputDSM.nCols();++i)
+      inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
+    ++indexJ;
+  }
+  for(int y=tmpDSM.nRows()-1;y>=0;--y){
+    if(y<tmpDSM.nRows()-1){//inBuffer already initialized for y=0
+      //erase last line from inBuffer
+      inBuffer.erase(inBuffer.end()-1);
+      //read extra line and insert to inBuffer if not out of bounds
+      if(y-dimY/2>0){
+        //allocate buffer
+        inBuffer.insert(inBuffer.begin(),inBuffer.back());
+        for(int i=0;i<tmpDSM.nCols();++i)
+          inBuffer[0][i]=tmpDSM[y-dimY/2][i];
+      }
+      else{
+        inBuffer.insert(inBuffer.begin(),inBuffer[abs(y-dimY/2)]);
+      }
+    }
+    for(int x=0;x<tmpDSM.nCols();++x){
+      double centerValue=inBuffer[(dimY-1)/2][x];
+      short nmasked=0;
+      std::vector<T> neighbors;
+      for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+	for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+	  indexI=x+i;
+	  //check if out of bounds
+	  if(indexI<0)
+	    indexI=-indexI;
+	  else if(indexI>=tmpDSM.nCols())
+	    indexI=tmpDSM.nCols()-i;
+	  if(y+j<0)
+	    indexJ=-j;
+	  else if(y+j>=tmpDSM.nRows())
+	    indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+	  else
+	    indexJ=(dimY-1)/2+j;
+	  double difference=(centerValue-inBuffer[indexJ][indexI]);
+	  if(i||j)//skip centerValue
+	    neighbors.push_back(inBuffer[indexJ][indexI]);
+	  if(difference>hThreshold)
+	    ++nmasked;
+	}
+      }
+      if(nmasked<=nlimit){
+	++nchange;
+	//reset pixel in outputMask
+	outputMask[y][x]=0;
+      }
+      else{
+	//reset pixel height in tmpDSM
+	sort(neighbors.begin(),neighbors.end());
+	assert(neighbors.size()>1);
+	inBuffer[(dimY-1)/2][x]=neighbors[1];
+	/* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
+      }
+    }
+    progress=(1.0+y);
+    progress/=outputMask.nRows();
     pfnProgress(progress,pszMessage,pProgressArg);
   }
   return nchange;

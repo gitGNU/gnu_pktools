@@ -267,6 +267,10 @@ version 2.5.2
  - configure script: GDAL>=1.10.0 is required for pkdiff
  - programs ported to windows and GUI with Qt
 	removed underscore for QProcess in Windows
+ - algorithms
+	ConfusionMatrix.h: must find exact match in getClassIndex
+ - pkinfo
+	distinct long options
  - pkclassify_svm -> pksvm
 	removed underscore for QProcess in Windows
  - pkclassify_nn -> pkann
@@ -282,9 +286,18 @@ version 2.5.2
  - pkmosaic -> pkcomposite
 	name was confusing as also compositing is supported (unlike gdal_merge.py and gdalwarp)
 	resample option similar to pkcrop
+	option cb|cband (composite band) instead of rb|rband (ruleband)
  - version control for libraries
 	thanks to suggestion of Francesco Paolo Lovergine
  - subdirectory pktools for include headers
 	thanks to suggestion of Francesco Paolo Lovergine
  - pklas2img
 	support for compressed point cloud (LAZ) files
+ - pkextract
+	support for median rule and pointOnSurface
+	redesign to optimize vector polygon processing
+	removed option for masking, introduced srcnodata and bndnodata
+	(more testing is needed)
+Next versions: 
+ - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
+

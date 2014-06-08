@@ -35,8 +35,8 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
-  Optionpk<string> postFilter_opt("f", "filter", "post processing filter: etew_min, promorph (progressive morphological filter),open,close).");
-  Optionpk<double> dim_opt("dim", "dim", "maximum filter kernel size (optionally you can set both initial and maximum filter kernel size", 17);
+  Optionpk<string> postFilter_opt("f", "filter", "post processing filter: vito, etew_min, promorph (progressive morphological filter),open,close).");
+  Optionpk<double> dim_opt("dim", "dim", "maximum filter kernel size (optionally you can set both initial and maximum filter kernel size", 3);
   Optionpk<double> maxSlope_opt("st", "st", "slope threshold used for morphological filtering. Use a low values to remove more height objects in flat terrains", 0.0);
   Optionpk<double> hThreshold_opt("ht", "ht", "initial height threshold for progressive morphological filtering. Use low values to remove more height objects. Optionally, a maximum height threshold can be set via a second argument (e.g., -ht 0.2 -ht 2.5 sets an initial threshold at 0.2 m and caps the threshold at 2.5 m).", 0.2);
   Optionpk<short> minChange_opt("minchange", "minchange", "Stop iterations when no more pixels are changed than this threshold.", 0);
@@ -159,7 +159,141 @@ int main(int argc,char **argv) {
   }
 
   unsigned long int nchange=1;
-  if(postFilter_opt[0]=="etew_min"){
+  if(postFilter_opt[0]=="vito"){
+    //todo: fill empty pixels
+    // hThreshold_opt.resize(4);
+    // hThreshold_opt[0]=0.7;
+    // hThreshold_opt[1]=0.3;
+    // hThreshold_opt[2]=0.1;
+    // hThreshold_opt[2]=-0.2;
+    vector<int> nlimit(4);
+    nlimit[0]=2;
+    nlimit[1]=3;
+    nlimit[2]=4;
+    nlimit[2]=2;
+    //init finalMask
+    for(int irow=0;irow<tmpData.nRows();++irow)
+      for(int icol=0;icol<tmpData.nCols();++icol)
+	tmpData[irow][icol]=1;
+    for(int iheight=0;iheight<hThreshold_opt.size();++iheight){
+      if(verbose_opt[0])
+	cout << "height: " << hThreshold_opt[iheight] << endl;
+      //todo:replace with binary mask (or short) -> adapt template with T1,T2 in Filter2d
+      Vector2d<double> tmpMask(input.nrOfRow(),input.nrOfCol());
+      for(int irow=0;irow<tmpMask.nRows();++irow)
+	for(int icol=0;icol<tmpMask.nCols();++icol)
+	  tmpMask[irow][icol]=1;//1=surface, 0=terrain
+      if(verbose_opt[0])
+	cout << "filtering NWSE" << endl;
+      //from here
+      // Vector2d<double> tmpDSM(inputData);
+      // int dimX=dim_opt[0];
+      // int dimY=dim_opt[0];
+      // assert(dimX);
+      // assert(dimY);
+      // statfactory::StatFactory stat;
+      // Vector2d<double> inBuffer(dimY,inputData.nCols());
+      // if(tmpData.size()!=inputData.nRows())
+      // 	tmpData.resize(inputData.nRows());
+      // int indexI=0;
+      // int indexJ=inputData.nRows()-1;
+      // // int indexJ=0;
+      // //initialize last half of inBuffer
+      // for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+      // 	for(int i=0;i<inputData.nCols();++i)
+      // 	  inBuffer[indexJ][i]=tmpDSM[abs(j)][i];
+      // 	--indexJ;
+      // 	// ++indexJ;
+      // }
+      // for(int y=tmpDSM.nRows()-1;y>=0;--y){
+      // 	if(y){//inBuffer already initialized for y=0
+      // 	  //erase first line from inBuffer
+      // 	  inBuffer.erase(inBuffer.end()-1);
+      // 	  // inBuffer.erase(inBuffer.begin());
+      // 	  //read extra line and push back to inBuffer if not out of bounds
+      // 	  if(y+dimY/2<tmpDSM.nRows()){
+      // 	    //allocate buffer
+      // 	    // inBuffer.push_back(inBuffer.back());
+      // 	    inBuffer.insert(inBuffer.begin(),*(inBuffer.begin()));
+      // 	    for(int i=0;i<tmpDSM.nCols();++i) 
+      // 	      inBuffer[0][i]=tmpDSM[y-dimY/2][i];
+      // 	      // inBuffer[inBuffer.size()-1][i]=tmpDSM[y+dimY/2][i];
+      // 	  }
+      // 	  else{
+      // 	    int over=y+dimY/2-tmpDSM.nRows();
+      // 	    int index=(inBuffer.size()-1)-over;
+      // 	    assert(index>=0);
+      // 	    assert(index<inBuffer.size());
+      // 	    inBuffer.push_back(inBuffer[index]);
+      // 	  }
+      // 	}
+      // 	for(int x=tmpDSM.nCols()-1;x>=0;--x){
+      // 	  double centerValue=inBuffer[(dimY-1)/2][x];
+      // 	  //test
+      // 	  cout << "pixel ("  << x << "," << y << "): " << centerValue << endl;
+      // 	  short nmasked=0;
+      // 	  std::vector<double> neighbors;
+      // 	  for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+      // 	    for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+      // 	      indexI=x+i;
+      // 	      //check if out of bounds
+      // 	      if(indexI<0)
+      // 		indexI=-indexI;
+      // 	      else if(indexI>=tmpDSM.nCols())
+      // 		indexI=tmpDSM.nCols()-i;
+      // 	      if(y+j<0)
+      // 		indexJ=-j;
+      // 	      else if(y+j>=tmpDSM.nRows())
+      // 		indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+      // 	      else
+      // 		indexJ=(dimY-1)/2+j;
+      // 	      double difference=(centerValue-inBuffer[indexJ][indexI]);
+      // 	      //test
+      // 	      cout << "centerValue-inBuffer[" << indexJ << "][" << indexI << "]=" << centerValue << " - " << inBuffer[indexJ][indexI] << " = " << difference << endl;
+      // 	      if(i||j)//skip centerValue
+      // 		neighbors.push_back(inBuffer[indexJ][indexI]);
+      // 	      if(difference>hThreshold_opt[iheight])
+      // 		++nmasked;
+      // 	    }
+      // 	  }
+      // 	  //test
+      // 	  cout << "pixel " << x << ", " << y << ": nmasked is " << nmasked << endl;
+      // 	  if(nmasked<=nlimit[iheight]){
+      // 	    ++nchange;
+      // 	    //reset pixel in outputMask
+      // 	    tmpData[y][x]=0;
+      // 	    //test
+      // 	    cout << "pixel " << x << ", " << y << " is ground" << endl;
+      // 	  }
+      // 	  else{
+      // 	    //reset pixel height in tmpDSM
+      // 	    sort(neighbors.begin(),neighbors.end());
+      // 	    assert(neighbors.size()>1);
+      // 	    inBuffer[(dimY-1)/2][x]=neighbors[1];
+      // 	    //test
+      // 	    cout << "pixel " << x << ", " << y << " is surface, reset DSM to " << neighbors[1] << endl;
+      // 	    /* inBuffer[(dimY-1)/2][x]=stat.mymin(neighbors); */
+      // 	  }
+      // 	}
+      // }
+      //to here
+
+      theFilter.dsm2dtm_nwse(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      if(verbose_opt[0])
+      	cout << "filtering NESW" << endl;
+      theFilter.dsm2dtm_nesw(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      if(verbose_opt[0])
+      	cout << "filtering SENW" << endl;
+      theFilter.dsm2dtm_senw(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+      if(verbose_opt[0])
+      	cout << "filtering SWNE" << endl;
+      theFilter.dsm2dtm_swne(inputData,tmpData,hThreshold_opt[iheight],nlimit[iheight],dim_opt[0]);
+    }
+    outputData=tmpData;
+    //todo: interpolate
+    //outputData.setMask(tmpData,1,0);
+  }    
+  else if(postFilter_opt[0]=="etew_min"){
     //Elevation Threshold with Expand Window (ETEW) Filter (p.73 from Airborne LIDAR Data Processing and Analysis Tools ALDPAT 1.0)
     //first iteration is performed assuming only minima are selected using options -fir all -comp min
     //increase cells and thresholds until no points from the previous iteration are discarded.
@@ -175,7 +309,7 @@ int main(int argc,char **argv) {
       ++iteration;
     }
   }    
-  else if(postFilter_opt[0]=="promorph"){//todo: instead of number of iterations, define a max dim size
+  else if(postFilter_opt[0]=="promorph"){
     //Progressive morphological filter tgrs2003_zhang vol41 pp 872-882
     //first iteration is performed assuming only minima are selected using options -fir all -comp min
     //increase cells and thresholds until no points from the previous iteration are discarded.

@@ -11,10 +11,10 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     QStringList rulelist;
-    rulelist << "point" << "centroid" << "mean" << "proportion" << "minimum" << "minimum" << "maximum" << "maximum voting" << "sum";
+    rulelist << "point" << "pointOnSurface" << "centroid" << "mean" << "median" << "proportion" << "minimum" << "maximum" << "maxvote" << "sum";
     ui->rule->addItems(rulelist);
     QStringList formatlist;
-    formatlist << "ESRI Shapefile" << "SQLite";
+    formatlist << "SQLite" << "ESRI Shapefile";
     ui->f->addItems(formatlist);
 
     setDefaults();
@@ -29,15 +29,20 @@ void MainWindow::setDefaults()
 {
     //tab input/output
     ui->input->clear();
-    ui->mask->clear();
-    ui->msknodata->setText("0");
+    ui->sample->clear();
+    ui->bndnodata->clear();
+    ui->srcnodata->clear();
     ui->polygon->setChecked(false);
     ui->f->setCurrentIndex(0);
     ui->output->clear();
     //tab extract
-    ui->bname->setText("B");
+    ui->bname->setText("b");
+    ui->cname->setText("label");
     ui->rule->setCurrentIndex(0);
-
+    ui->nclass->clear();
+    QStringList labels;
+    setClassTable(labels);
+    ui->threshold->clear();
 }
 
 void MainWindow::on_actionInput_triggered()
@@ -50,12 +55,6 @@ void MainWindow::on_actionSample_triggered()
 {
     QString qssample = QFileDialog::getOpenFileName(this, "Sample");
     ui->sample->setText(qssample);
-}
-
-void MainWindow::on_actionMask_triggered()
-{
-    QString qsmask = QFileDialog::getOpenFileName(this, "Mask");
-    ui->mask->setText(qsmask);
 }
 
 void MainWindow::on_actionOutput_triggered()
@@ -72,11 +71,6 @@ void MainWindow::on_toolButton_input_clicked()
 void MainWindow::on_toolButton_sample_clicked()
 {
     on_actionSample_triggered();
-}
-
-void MainWindow::on_toolButton_mask_clicked()
-{
-    on_actionMask_triggered();
 }
 
 void MainWindow::on_toolButton_output_clicked()
@@ -127,6 +121,10 @@ void MainWindow::on_pushButton_run_clicked()
         }
 
         program+=" --f "+ui->f->currentText();
+
+        if(ui->polygon->isChecked())
+            program+=" --polygon";
+
         program+=" --rule "+ui->rule->currentText();
 //        QList<QComboBox*> qcomboBoxList = this->findChildren<QComboBox *>();
 
@@ -152,19 +150,31 @@ void MainWindow::on_pushButton_run_clicked()
             }
         }
 
+        //class table
+        for(int irow=0;irow<ui->tableView_labels->model()->rowCount();++irow){
+            QString qsOption;
+            qsOption+=" --class ";
+            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,0)).toString();
+            qsOption+=" --threshold ";
+            qsOption+=ui->tableView_labels->model()->data(ui->tableView_labels->model()->index(irow,1)).toString();
+            program+=qsOption;
+        }
+
         ui->commandLineEdit->insert(program);
 
 //        QProcess *myProcess = new QProcess(parent);
         QProcess *myProcess = new QProcess(this);
         myProcess->start(program);
         myProcess->setProcessChannelMode(QProcess::MergedChannels);
+        this->setCursor(Qt::WaitCursor);
         myProcess->waitForFinished(-1);
-        QString p_stderr = myProcess->readAllStandardError();
-        if(!p_stderr.isEmpty()){
-            QMessageBox msgBox;
-            msgBox.setText(p_stderr);
-            msgBox.exec();
-        }
+        this->setCursor(Qt::ArrowCursor);
+//        QString p_stderr = myProcess->readyReadStandardError();
+//        if(!p_stderr.isEmpty()){
+//            QMessageBox msgBox;
+//            msgBox.setText(p_stderr);
+//            msgBox.exec();
+//        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;

@@ -31,21 +31,21 @@ int main(int argc, char *argv[])
   Optionpk<std::string> input_opt("i","input","Input image file");
   Optionpk<bool>  bbox_opt("bb", "bbox", "Shows bounding box ", false,0);
   Optionpk<bool>  bbox_te_opt("te", "te", "Shows bounding box in GDAL format: xmin ymin xmax ymax ", false,0);
-  Optionpk<bool>  centre_opt("c", "centre", "Image centre in projected X,Y coordinates ", false,0);
-  Optionpk<bool>  colorTable_opt("ct", "colourtable", "Shows colour table ", false,0);
-  Optionpk<bool>  samples_opt("ns", "ns", "Number of samples in image ", false,0);
-  Optionpk<bool>  lines_opt("nl", "nl", "Number of lines in image ", false,0);
+  Optionpk<bool>  center_opt("c", "center", "Image center in projected X,Y coordinates ", false,0);
+  Optionpk<bool>  colorTable_opt("ct", "colortable", "Shows colour table ", false,0);
+  Optionpk<bool>  samples_opt("ns", "nsample", "Number of samples in image ", false,0);
+  Optionpk<bool>  lines_opt("nl", "nline", "Number of lines in image ", false,0);
   Optionpk<bool>  nband_opt("nb", "nband", "Show number of bands in image", false,0);
   Optionpk<short>  band_opt("b", "band", "Band specific information", 0,0);
   Optionpk<bool>  dx_opt("dx", "dx", "Gets resolution in x (in m)", false,0);
   Optionpk<bool>  dy_opt("dy", "dy", "Gets resolution in y (in m)", false,0);
   Optionpk<bool>  minmax_opt("mm", "minmax", "Shows min and max value of the image ", false,0);
-  Optionpk<bool>  min_opt("min", "min", "Shows min value of the image ", false,0);
-  Optionpk<bool>  max_opt("max", "max", "Shows max value of the image ", false,0);
-  Optionpk<bool>  stat_opt("stats", "stats", "Shows statistics (min,max, mean and stdDev of the image)", false,0);
+  Optionpk<bool>  min_opt("min", "minimum", "Shows min value of the image ", false,0);
+  Optionpk<bool>  max_opt("max", "maximum", "Shows max value of the image ", false,0);
+  Optionpk<bool>  stat_opt("stats", "statistics", "Shows statistics (min,max, mean and stdDev of the image)", false,0);
   Optionpk<double>  src_min_opt("src_min", "src_min", "Sets minimum for histogram (does not calculate min value: use -mm instead)");
   Optionpk<double>  src_max_opt("src_max", "src_max", "Sets maximum for histogram (does not calculate min value: use -mm instead)");
-  Optionpk<bool>  relative_opt("rel", "rel", "Calculates relative histogram in percentage", false,0);
+  Optionpk<bool>  relative_opt("rel", "relative", "Calculates relative histogram in percentage", false,0);
   Optionpk<bool>  projection_opt("a_srs", "a_srs", "Shows projection of the image ", false,0);
   Optionpk<bool>  geo_opt("geo", "geo", "Gets geotransform  ", false,0);
   Optionpk<bool>  interleave_opt("il", "interleave", "Shows interleave ", false,0);
@@ -54,14 +54,14 @@ int main(int argc, char *argv[])
   Optionpk<double>  x_opt("x", "xpos", "x pos");
   Optionpk<double>  y_opt("y", "ypos", "y pos");
   Optionpk<bool>  read_opt("r", "read", "Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based)",false,0);
-  Optionpk<bool>  refpixel_opt("ref", "ref", "Gets reference pixel (lower left corner of centre of gravity pixel)", false,0);
+  Optionpk<bool>  refpixel_opt("ref", "reference", "Gets reference pixel (lower left corner of center of gravity pixel)", false,0);
   Optionpk<bool>  driver_opt("of", "oformat", "Gets driver description ", false,0);
   Optionpk<std::string>  extent_opt("e", "extent", "Gets boundary from vector file");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box");
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box");
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box");
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box");
-  Optionpk<bool>  hist_opt("hist", "hist", "Calculates histogram. Use --rel for a relative histogram output. ", false,0);
+  Optionpk<bool>  hist_opt("hist", "histogram", "Calculates histogram. Use --rel for a relative histogram output. ", false,0);
   Optionpk<unsigned int>  nbin_opt("nbin", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers");
   Optionpk<bool>  type_opt("ot", "otype", "Returns data type", false,0);
   Optionpk<bool>  description_opt("d", "description", "Returns image description", false,0);
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     doProcess=input_opt.retrieveOption(argc,argv);
     bbox_opt.retrieveOption(argc,argv);
     bbox_te_opt.retrieveOption(argc,argv);
-    centre_opt.retrieveOption(argc,argv);
+    center_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     samples_opt.retrieveOption(argc,argv);
     lines_opt.retrieveOption(argc,argv);
@@ -161,16 +161,16 @@ int main(int argc, char *argv[])
     }
     if(filename_opt[0])
       std::cout << " --input " << input_opt[ifile] << " ";
-    if(centre_opt[0]){
+    if(center_opt[0]){
       double theX, theY;
-      imgReader.getCentrePos(theX,theY);
+      imgReader.getCenterPos(theX,theY);
       std::cout << std::setprecision(12) << " -x " << theX << " -y " << theY << " ";
     }
     if(refpixel_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
       Egcs egcs;
       double refX,refY;
-      //get centre of reference (centre of gravity) pixel in image
+      //get center of reference (center of gravity) pixel in image
       imgReader.getRefPix(refX,refY,band_opt[0]);
       std::cout << std::setprecision(12) << "-x " << refX << " -y " << refY << std::endl;
       egcs.setLevel(egcs.res2level(imgReader.getDeltaX()));
@@ -246,12 +246,12 @@ int main(int argc, char *argv[])
         }
       }
       else
-        std::cout << "--ct none ";
+        std::cout << "-ct none ";
     }
     if(samples_opt[0])
-      std::cout << "--ns " << imgReader.nrOfCol() << " ";
+      std::cout << "--nsample " << imgReader.nrOfCol() << " ";
     if(lines_opt[0])
-      std::cout << "--nl " << imgReader.nrOfRow() << " ";
+      std::cout << "--nline " << imgReader.nrOfRow() << " ";
     if(nband_opt[0])
       std::cout << "--nband " << imgReader.nrOfBand() << " ";
     double minValue=0;
@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
       GDALRasterBand* rasterBand;
       rasterBand=imgReader.getRasterBand(band_opt[0]);
       rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
-      std::cout << "--min " << minValue << " --max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
+      std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
     }
 
     if(minmax_opt[0]||min_opt[0]||max_opt[0]){
@@ -279,12 +279,12 @@ int main(int argc, char *argv[])
       else
 	imgReader.getMinMax(minValue,maxValue,band_opt[0],true);
       if(minmax_opt[0])
-	std::cout << "--min " << minValue << " --max " << maxValue << " ";
+	std::cout << "-min " << minValue << " -max " << maxValue << " ";
       else{
 	if(min_opt[0])
-	  std::cout << "--min " << minValue << " ";
+	  std::cout << "-min " << minValue << " ";
 	if(max_opt[0])
-	  std::cout << "--max " << maxValue << " ";
+	  std::cout << "-max " << maxValue << " ";
       }
     }
     if(relative_opt[0])
@@ -321,11 +321,11 @@ int main(int argc, char *argv[])
     //   int minCol,minRow;
     //   if(src_min_opt.size()){
     //     assert(band_opt[0]<imgReader.nrOfBand());
-    //     std::cout << "--min " << imgReader.getMin(minCol, minRow,band_opt[0]);
+    //     std::cout << "-min " << imgReader.getMin(minCol, minRow,band_opt[0]);
     //   }
     //   if(src_max_opt.size()){
     //     assert(band_opt[0]<imgReader.nrOfBand());
-    //     std::cout << "--max " << imgReader.getMax(minCol, minRow,band_opt[0]);
+    //     std::cout << "-max " << imgReader.getMax(minCol, minRow,band_opt[0]);
     //   }
     // }
     if(projection_opt[0]){
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
         std::cout << " -a_srs none" << " ";
     }
     if(geo_opt[0]&&!read_opt[0]){
-      std::cout << " --geo " << std::setprecision(12) << imgReader.getGeoTransform();
+      std::cout << " -geo " << std::setprecision(12) << imgReader.getGeoTransform();
     }
     if(interleave_opt[0]){
       std::cout << " --interleave " << imgReader.getInterleave() << " ";

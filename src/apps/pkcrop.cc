@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
-  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
+  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
   if(resample_opt[0]=="near"){
     theResample=NEAR;
     if(verbose_opt[0])
-      cout << "resampling: nearest neighbour" << endl;
+      cout << "resampling: nearest neighbor" << endl;
   }
   else if(resample_opt[0]=="bilinear"){
     theResample=BILINEAR;

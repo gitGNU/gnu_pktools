@@ -34,7 +34,7 @@ using namespace std;
 
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input image file");
-  Optionpk<string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ");
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (zero is invalid, non-zero is valid).");
   Optionpk<string> output_opt("o", "output", "Output image file");
   Optionpk<int> band_opt("b", "band", "the band to be used from input file", 0);
   Optionpk<int> connect_opt("c", "connect", "the connectedness: 4 directions or 8 directions", 8);

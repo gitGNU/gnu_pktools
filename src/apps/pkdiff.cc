@@ -29,53 +29,55 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> input_opt("i", "input", "Input image file.");
-  Optionpk<string> reference_opt("ref", "reference", "Reference image file");
-  Optionpk<string> output_opt("o", "output", "Output image file. Default is empty: no output image, only report difference or identical.");
-  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also msknodata option. (default is empty)");
+  Optionpk<string> input_opt("i", "input", "Input raster dataset.");
+  Optionpk<string> reference_opt("ref", "reference", "Reference (raster or vector) dataset");
+  Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample. Leave empty to select all (for vector reference datasets only)");
+  Optionpk<string> output_opt("o", "output", "Output dataset (optional)");
+  Optionpk<string> ogrformat_opt("f", "f", "OGR format for output vector (for vector reference datasets only)","SQLite");
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<int> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
-  Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels (0)", 0,1);
-  Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label (default value is 1)", 1,1);
-  Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label (default value is 2)", 2,1);
-  Optionpk<short> nodata_opt("nodata", "nodata", "No value flag(s)");
-  Optionpk<short> band_opt("b", "band", "Band to extract (0)", 0);
-  Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out) (default value is 0)", false);
-  Optionpk<string> labelref_opt("lr", "lref", "name of the reference label in case reference is shape file(default is label)", "label");
-  Optionpk<string> labelclass_opt("lc", "lclass", "name of the classified label in case output is shape file (default is class)", "class");
-  Optionpk<short> boundary_opt("bnd", "boundary", "boundary for selecting the sample (default: 1)", 1,1);
-  Optionpk<bool> disc_opt("circ", "circular", "use circular disc kernel boundary)", false,1);
-  Optionpk<bool> homogeneous_opt("hom", "homogeneous", "only take homogeneous regions into account", false,1);
-  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,2);
+  Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,2);
+  Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
+  Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
+  Optionpk<short> band_opt("b", "band", "Input raster band", 0);
+  Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out)", false);
+  Optionpk<string> labelref_opt("lr", "lref", "attribute name of the reference label (for vector reference datasets only)", "label");
+  Optionpk<string> labelclass_opt("lc", "lclass", "attribute name of the classified label (for vector reference datasets only)", "class");
+  Optionpk<short> boundary_opt("bnd", "boundary", "boundary for selecting the sample (for vector reference datasets only)", 1,1);
+  Optionpk<bool> homogeneous_opt("hom", "homogeneous", "only take regions with homogeneous boundary into account (for reference datasets only)", false,1);
+  Optionpk<bool> disc_opt("circ", "circular", "use circular boundary (for vector reference datasets only)", false,1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (default value is 0)", 0);
+  Optionpk<string> colorTable_opt("ct", "ct", "color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid).");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
-    ogrformat_opt.retrieveOption(argc,argv);
-    option_opt.retrieveOption(argc,argv);
     reference_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
-    colorTable_opt.retrieveOption(argc,argv);
-    valueE_opt.retrieveOption(argc,argv);
-    valueO_opt.retrieveOption(argc,argv);
-    valueC_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
-    masknodata_opt.retrieveOption(argc,argv);
+    layer_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     confusion_opt.retrieveOption(argc,argv);
     labelref_opt.retrieveOption(argc,argv);
-    labelclass_opt.retrieveOption(argc,argv);
-    // class_opt.retrieveOption(argc,argv);
-    boundary_opt.retrieveOption(argc,argv);
-    disc_opt.retrieveOption(argc,argv);
-    homogeneous_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    masknodata_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    ogrformat_opt.retrieveOption(argc,argv);
+    labelclass_opt.retrieveOption(argc,argv);
+    valueE_opt.retrieveOption(argc,argv);
+    valueO_opt.retrieveOption(argc,argv);
+    valueC_opt.retrieveOption(argc,argv);
+    boundary_opt.retrieveOption(argc,argv);
+    homogeneous_opt.retrieveOption(argc,argv);
+    disc_opt.retrieveOption(argc,argv);
+    colorTable_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
+    // class_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -206,7 +208,8 @@ int main(int argc, char *argv[])
   // if(reference_opt[0].find(".shp")!=string::npos){
   if(!refIsRaster){
     for(int iinput=0;iinput<input_opt.size();++iinput){
-      cout << "Processing input " << input_opt[iinput] << endl;
+      if(verbose_opt[0])
+	cout << "Processing input " << input_opt[iinput] << endl;
       if(output_opt.size())
         assert(reference_opt.size()==output_opt.size());
       for(int iref=0;iref<reference_opt.size();++iref){
@@ -241,11 +244,17 @@ int main(int argc, char *argv[])
 	int nlayer=referenceReaderOgr.getDataSource()->GetLayerCount();
 	for(int ilayer=0;ilayer<nlayer;++ilayer){
 	  progress=0;
-	  OGRLayer  *readLayer;
-	  readLayer = referenceReaderOgr.getDataSource()->GetLayer(ilayer);
-	  cout << "processing layer " << readLayer->GetName() << endl;
+	  OGRLayer *readLayer=referenceReaderOgr.getLayer(ilayer);
+	  //	  readLayer = referenceReaderOgr.getDataSource()->GetLayer(ilayer);
+	  string currentLayername=readLayer->GetName();
+	  if(layer_opt.size())
+	    if(find(layer_opt.begin(),layer_opt.end(),currentLayername)==layer_opt.end())
+	      continue;
 	  if(!verbose_opt[0])
 	    pfnProgress(progress,pszMessage,pProgressArg);
+	  else
+	    cout << "processing layer " << readLayer->GetName() << endl;
+
 	  readLayer->ResetReading();
 	  OGRLayer *writeLayer;
 	  if(output_opt.size()){
@@ -332,6 +341,7 @@ int main(int argc, char *argv[])
 	      referenceValue=readFeature->GetFieldAsInteger(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
 	    if(verbose_opt[0])
 	      cout << "reference value: " << referenceValue << endl;
+	    
 	    bool pixelFlagged=false;
 	    bool maskFlagged=false;
 	    for(int iflag=0;iflag<nodata_opt.size();++iflag){
@@ -356,6 +366,7 @@ int main(int argc, char *argv[])
 	    //check if i_centre is out of bounds
 	    if(static_cast<int>(i_centre)<0||static_cast<int>(i_centre)>=inputReader.nrOfCol())
 	      continue;
+
 	    if(output_opt.size()){
 	      writeFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	      assert(readFeature);
@@ -433,6 +444,7 @@ int main(int argc, char *argv[])
 	      }
 	    }
 	    //at this point we know the values for the entire window
+
 	    if(homogeneous_opt[0]){//only centre pixel
 	      int j=j_centre;
 	      int i=i_centre;
@@ -539,7 +551,7 @@ int main(int argc, char *argv[])
 		if(verbose_opt[0])
 		  cout << "creating feature" << endl;
 		if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-		  string errorString="Failed to create feature in shapefile";
+		  string errorString="Failed to create feature in OGR vector file";
 		  throw(errorString);
 		}
 	      }

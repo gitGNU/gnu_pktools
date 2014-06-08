@@ -35,39 +35,40 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, pointOnSurface=9};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, median=9};
 }
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-  Optionpk<string> image_opt("i", "input", "Input image file");
-  Optionpk<string> sample_opt("s", "sample", "Input sample vector file or class file (e.g. Corine CLC) if class option is set");
+  Optionpk<string> image_opt("i", "input", "Raster input dataset containing band information");
+  Optionpk<string> sample_opt("s", "sample", "OGR vector file with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
   Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file");
-  Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file. Make sure to set classes if rule is set to maxvote or proportion");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
-  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","ESRI Shapefile");
-  Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
-  // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
-  Optionpk<short> geo_opt("g", "geo", "geo coordinates", 1);
-  Optionpk<short> down_opt("down", "down", "down sampling factor. Can be used to create grid points", 1);
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file. Make sure to set classes if rule is set to maxvote or proportion");
   Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample files. If using raster land cover maps as a sample file, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
-  Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
-  Optionpk<double> min_opt("min", "min", "minimum number of samples to select (0)", 0);
-  Optionpk<short> boundary_opt("bo", "boundary", "boundary for selecting the sample", 1);
-  // Optionpk<short> rbox_opt("rb", "rbox", "rectangular boundary box (total width in m) to draw around the selected pixel. Can not combined with class option. Use multiple rbox options for multiple boundary boxes. Use value 0 for no box)", 0);
-  // Optionpk<short> cbox_opt("cbox", "cbox", "circular boundary (diameter in m) to draw around the selected pixel. Can not combined with class option. Use multiple cbox options for multiple boundary boxes. Use value 0 for no box)", 0);
-  Optionpk<short> disc_opt("circ", "circular", "circular disc kernel boundary", 0);
+  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
-  Optionpk<string> fieldname_opt("bn", "bname", "Attribute field name of extracted raster band", "B");
+  Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint. Only valid if sample features are polygons.", false);
+  Optionpk<int> band_opt("b", "band", "band index(es) to extract. Use -1 to use all bands)", -1);
+  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
+  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value(s) for input image");
+  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
+  // Optionpk<string> mask_opt("m", "mask", "Mask image file");
+  // Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
+  // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
+  Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
+  Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
+  Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
   Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
-  Optionpk<bool> polygon_opt("polygon", "polygon", "create OGRPolygon as geometry instead of OGRPoint. Only if sample option is also of polygon type.", false);
-  Optionpk<int> band_opt("b", "band", "band index to crop. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature. point (value at each point or at centroid if polygon), pointOnSurface, centroid, mean (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
+  Optionpk<short> geo_opt("g", "geo", "use geo coordinates (set to 0 to use image coordinates)", 1);
+  Optionpk<short> down_opt("down", "down", "down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
+  Optionpk<short> boundary_opt("bo", "boundary", "boundary for selecting the sample (for vector sample datasets only) ", 1);
+  Optionpk<short> disc_opt("circ", "circular", "circular disc kernel boundary (for vector sample datasets only, use in combination with boundary option)", 0);
+  // Optionpk<short> rbox_opt("rb", "rbox", "rectangular boundary box (total width in m) to draw around the selected pixel. Can not combined with class option. Use multiple rbox options for multiple boundary boxes. Use value 0 for no box)", 0);
+  // Optionpk<short> cbox_opt("cbox", "cbox", "circular boundary (diameter in m) to draw around the selected pixel. Can not combined with class option. Use multiple cbox options for multiple boundary boxes. Use value 0 for no box)", 0);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -75,29 +76,30 @@ int main(int argc, char *argv[])
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
     layer_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
-    msknodata_opt.retrieveOption(argc,argv);
-    class_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    class_opt.retrieveOption(argc,argv);
+    threshold_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
-    test_opt.retrieveOption(argc,argv);
+    ftype_opt.retrieveOption(argc,argv);
+    ltype_opt.retrieveOption(argc,argv);
+    polygon_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    rule_opt.retrieveOption(argc,argv);
+    bndnodata_opt.retrieveOption(argc,argv);
+    srcnodata_opt.retrieveOption(argc,argv);
+    polythreshold_opt.retrieveOption(argc,argv);
+    // mask_opt.retrieveOption(argc,argv);
+    // msknodata_opt.retrieveOption(argc,argv);
     // bufferOutput_opt.retrieveOption(argc,argv);
+    test_opt.retrieveOption(argc,argv);
+    fieldname_opt.retrieveOption(argc,argv);
+    label_opt.retrieveOption(argc,argv);
     geo_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
-    threshold_opt.retrieveOption(argc,argv);
-    polythreshold_opt.retrieveOption(argc,argv);
-    min_opt.retrieveOption(argc,argv);
     boundary_opt.retrieveOption(argc,argv);
     // rbox_opt.retrieveOption(argc,argv);
     // cbox_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
-    ftype_opt.retrieveOption(argc,argv);
-    ltype_opt.retrieveOption(argc,argv);
-    fieldname_opt.retrieveOption(argc,argv);
-    label_opt.retrieveOption(argc,argv);
-    polygon_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
-    rule_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -112,15 +114,22 @@ int main(int argc, char *argv[])
   std::map<std::string, rule::RULE_TYPE> ruleMap;
   //initialize ruleMap
   ruleMap["point"]=rule::point;
-  ruleMap["pointOnSurface"]=rule::pointOnSurface;
   ruleMap["centroid"]=rule::centroid;
   ruleMap["mean"]=rule::mean;
+  ruleMap["median"]=rule::median;
   ruleMap["proportion"]=rule::proportion;
   ruleMap["minimum"]=rule::minimum;
   ruleMap["maximum"]=rule::maximum;
   ruleMap["custom"]=rule::custom;
   ruleMap["maxvote"]=rule::maxvote;
   ruleMap["sum"]=rule::sum;
+
+  if(srcnodata_opt.size()){
+    while(srcnodata_opt.size()<bndnodata_opt.size())
+      srcnodata_opt.push_back(srcnodata_opt[0]);
+    while(bndnodata_opt.size()<srcnodata_opt.size())
+      bndnodata_opt.push_back(bndnodata_opt[0]);
+  }
 
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
@@ -175,26 +184,26 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     std::cout << fieldname_opt << std::endl;
   vector<ImgReaderGdal> maskReader;
-  if(mask_opt.size()){
-    maskReader.resize(mask_opt.size());
-    for(int imask=0;imask<mask_opt.size();++imask){
-      if(verbose_opt[0]>1)
-        std::cout << "opening mask image file " << mask_opt[imask] << std::endl;
-      maskReader[imask].open(mask_opt[0]);
-      if(imgReader.isGeoRef())
-        assert(maskReader[imask].isGeoRef());
-    }
-  }
+  // if(mask_opt.size()){
+  //   maskReader.resize(mask_opt.size());
+  //   for(int imask=0;imask<mask_opt.size();++imask){
+  //     if(verbose_opt[0]>1)
+  //       std::cout << "opening mask image file " << mask_opt[imask] << std::endl;
+  //     maskReader[imask].open(mask_opt[0]);
+  //     if(imgReader.isGeoRef())
+  //       assert(maskReader[imask].isGeoRef());
+  //   }
+  // }
 
-  Vector2d<int> maskBuffer;
-  if(mask_opt.size()){
-    maskBuffer.resize(mask_opt.size());
-    for(int imask=0;imask<maskReader.size();++imask)
-      maskBuffer[imask].resize(maskReader[imask].nrOfCol());
-  }
-  vector<double> oldmaskrow(mask_opt.size());
-  for(int imask=0;imask<mask_opt.size();++imask)
-    oldmaskrow[imask]=-1;
+  // Vector2d<int> maskBuffer;
+  // if(mask_opt.size()){
+  //   maskBuffer.resize(mask_opt.size());
+  //   for(int imask=0;imask<maskReader.size();++imask)
+  //     maskBuffer[imask].resize(maskReader[imask].nrOfCol());
+  // }
+  // vector<double> oldmaskrow(mask_opt.size());
+  // for(int imask=0;imask<mask_opt.size();++imask)
+  //   oldmaskrow[imask]=-1;
   
   if(verbose_opt[0]>1)
     std::cout << "Number of bands in input image: " << imgReader.nrOfBand() << std::endl;
@@ -345,76 +354,89 @@ int main(int argc, char *argv[])
             }
             if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
               continue;
+
+            bool valid=true;
+
             if(static_cast<int>(jimg)!=static_cast<int>(oldimgrow)){
               assert(imgBuffer.size()==nband);
               for(int iband=0;iband<nband;++iband){
                 int theBand=(band_opt[0]<0)?iband:band_opt[iband];
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
-              }
+		if(srcnodata_opt.size()){
+		  vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
+		  if(bndit!=bndnodata_opt.end()){
+		    vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
+		    if(bndit!=bndnodata_opt.end()){
+		      if(imgBuffer[iband][static_cast<int>(iimg)]==srcnodata_opt[theBand])
+			valid=false;
+		    }
+		  }
+		}
+	      }
               oldimgrow=jimg;
-            }
-            // bool valid=true;
-            for(int imask=0;imask<mask_opt.size();++imask){
-              double colMask,rowMask;//image coordinates in mask image
-              if(mask_opt.size()>1){//multiple masks
-                if(geo_opt[0])
-                  maskReader[imask].geo2image(x,y,colMask,rowMask);
-                else{
-                  colMask=icol;
-                  rowMask=irow;
-                }
-                //nearest neighbour
-                rowMask=static_cast<int>(rowMask);
-                colMask=static_cast<int>(colMask);
-                if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
-                  continue;
-                if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
-                  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
-                    continue;
-                  else{
-                    maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
-                    oldmaskrow[imask]=rowMask;
-                  }
-                }
-                int ivalue=0;
-                if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(msknodata_opt[imask]);
-                else//use same invalid value for each mask
-                  ivalue=static_cast<int>(msknodata_opt[0]);
-                if(maskBuffer[imask][colMask]==ivalue){
-                  valid=false;
-                  break;
-                }
-              }
-              else if(maskReader.size()){
-                if(geo_opt[0])
-                  maskReader[0].geo2image(x,y,colMask,rowMask);
-                else{
-                  colMask=icol;
-                  rowMask=irow;
-                }
-                //nearest neighbour
-                rowMask=static_cast<int>(rowMask);
-                colMask=static_cast<int>(colMask);
-                if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
-                  continue;
-                if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
-                  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
-                    continue;
-                  else{
-                    maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
-                    oldmaskrow[0]=rowMask;
-                  }
-                }
-                for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
-                    valid=false;
-                    break;
-                  }
-                }
-              }
-            }
+	    }
+	    
+            // for(int imask=0;imask<mask_opt.size();++imask){
+            //   double colMask,rowMask;//image coordinates in mask image
+            //   if(mask_opt.size()>1){//multiple masks
+            //     if(geo_opt[0])
+            //       maskReader[imask].geo2image(x,y,colMask,rowMask);
+            //     else{
+            //       colMask=icol;
+            //       rowMask=irow;
+            //     }
+            //     //nearest neighbour
+            //     rowMask=static_cast<int>(rowMask);
+            //     colMask=static_cast<int>(colMask);
+            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
+            //       continue;
+            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
+            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
+            //         continue;
+            //       else{
+            //         maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
+            //         oldmaskrow[imask]=rowMask;
+            //       }
+            //     }
+            //     int ivalue=0;
+            //     if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+            //       ivalue=static_cast<int>(msknodata_opt[imask]);
+            //     else//use same invalid value for each mask
+            //       ivalue=static_cast<int>(msknodata_opt[0]);
+            //     if(maskBuffer[imask][colMask]==ivalue){
+            //       valid=false;
+            //       break;
+            //     }
+            //   }
+            //   else if(maskReader.size()){
+            //     if(geo_opt[0])
+            //       maskReader[0].geo2image(x,y,colMask,rowMask);
+            //     else{
+            //       colMask=icol;
+            //       rowMask=irow;
+            //     }
+            //     //nearest neighbour
+            //     rowMask=static_cast<int>(rowMask);
+            //     colMask=static_cast<int>(colMask);
+            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
+            //       continue;
+            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
+            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
+            //         continue;
+            //       else{
+            //         maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
+            //         oldmaskrow[0]=rowMask;
+            //       }
+            //     }
+            //     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+            //       if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
+            //         valid=false;
+            //         break;
+            //       }
+            //     }
+            //   }
+            // }
             if(valid){
               for(int iband=0;iband<imgBuffer.size();++iband){
                 if(imgBuffer[iband].size()!=imgReader.nrOfCol()){
@@ -589,76 +611,85 @@ int main(int argc, char *argv[])
             }
             if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
               continue;
+
+            bool valid=true;
+
             if(static_cast<int>(jimg)!=static_cast<int>(oldimgrow)){
               assert(imgBuffer.size()==nband);
               for(int iband=0;iband<nband;++iband){
                 int theBand=(band_opt[0]<0)?iband:band_opt[iband];
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
+		if(srcnodata_opt.size()){
+		  vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
+		  if(bndit!=bndnodata_opt.end()){
+		    if(imgBuffer[iband][static_cast<int>(iimg)]==srcnodata_opt[theBand])
+		      valid=false;
+		  }
+		}
               }
               oldimgrow=jimg;
             }
-            bool valid=true;
-            for(int imask=0;imask<mask_opt.size();++imask){
-              double colMask,rowMask;//image coordinates in mask image
-              if(mask_opt.size()>1){//multiple masks
-                if(geo_opt[0])
-                  maskReader[imask].geo2image(x,y,colMask,rowMask);
-                else{
-                  colMask=icol;
-                  rowMask=irow;
-                }
-                //nearest neighbour
-                rowMask=static_cast<int>(rowMask);
-                colMask=static_cast<int>(colMask);
-                if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
-                  continue;
-                if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
-                  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
-                    continue;
-                  else{
-                    maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
-                    oldmaskrow[imask]=rowMask;
-                  }
-                }
-                int ivalue=0;
-                if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
-                  ivalue=static_cast<int>(msknodata_opt[imask]);
-                else//use same invalid value for each mask
-                  ivalue=static_cast<int>(msknodata_opt[0]);
-                if(maskBuffer[imask][colMask]==ivalue){
-                  valid=false;
-                  break;
-                }
-              }
-              else if(maskReader.size()){
-                if(geo_opt[0])
-                  maskReader[0].geo2image(x,y,colMask,rowMask);
-                else{
-                  colMask=icol;
-                  rowMask=irow;
-                }
-                //nearest neighbour
-                rowMask=static_cast<int>(rowMask);
-                colMask=static_cast<int>(colMask);
-                if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
-                  continue;
-                if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
-                  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
-                    continue;
-                  else{
-                    maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
-                    oldmaskrow[0]=rowMask;
-                  }
-                }
-                for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-                  if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
-                    valid=false;
-                    break;
-                  }
-                }
-              }
-            }
+            // for(int imask=0;imask<mask_opt.size();++imask){
+            //   double colMask,rowMask;//image coordinates in mask image
+            //   if(mask_opt.size()>1){//multiple masks
+            //     if(geo_opt[0])
+            //       maskReader[imask].geo2image(x,y,colMask,rowMask);
+            //     else{
+            //       colMask=icol;
+            //       rowMask=irow;
+            //     }
+            //     //nearest neighbour
+            //     rowMask=static_cast<int>(rowMask);
+            //     colMask=static_cast<int>(colMask);
+            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
+            //       continue;
+            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
+            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
+            //         continue;
+            //       else{
+            //         maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
+            //         oldmaskrow[imask]=rowMask;
+            //       }
+            //     }
+            //     int ivalue=0;
+            //     if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+            //       ivalue=static_cast<int>(msknodata_opt[imask]);
+            //     else//use same invalid value for each mask
+            //       ivalue=static_cast<int>(msknodata_opt[0]);
+            //     if(maskBuffer[imask][colMask]==ivalue){
+            //       valid=false;
+            //       break;
+            //     }
+            //   }
+            //   else if(maskReader.size()){
+            //     if(geo_opt[0])
+            //       maskReader[0].geo2image(x,y,colMask,rowMask);
+            //     else{
+            //       colMask=icol;
+            //       rowMask=irow;
+            //     }
+            //     //nearest neighbour
+            //     rowMask=static_cast<int>(rowMask);
+            //     colMask=static_cast<int>(colMask);
+            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
+            //       continue;
+            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
+            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
+            //         continue;
+            //       else{
+            //         maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
+            //         oldmaskrow[0]=rowMask;
+            //       }
+            //     }
+            //     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+            //       if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
+            //         valid=false;
+            //         break;
+            //       }
+            //     }
+            //   }
+            // }
             if(valid){
               for(int iband=0;iband<imgBuffer.size();++iband){
                 if(imgBuffer[iband].size()!=imgReader.nrOfCol()){
@@ -821,32 +852,26 @@ int main(int argc, char *argv[])
       // assert(fieldnames.size()==ogrWriter.getFieldCount(ilayerWrite));
       // map<std::string,double> pointAttributes;
 
-      switch(ruleMap[rule_opt[0]]){
-	// switch(rule_opt[0]){
-      case(rule::proportion):{//proportion for each class
-	assert(class_opt.size());
-	for(int iclass=0;iclass<class_opt.size();++iclass){
-	  ostringstream cs;
-	  cs << class_opt[iclass];
-	  ogrWriter.createField(cs.str(),fieldType,ilayerWrite);
+      //todo: support multiple rules and write attribute for each rule...
+      if(class_opt.size()){
+	switch(ruleMap[rule_opt[0]]){
+	case(rule::proportion):{//proportion for each class
+	  for(int iclass=0;iclass<class_opt.size();++iclass){
+	    ostringstream cs;
+	    cs << class_opt[iclass];
+	    ogrWriter.createField(cs.str(),fieldType,ilayerWrite);
+	  }
+	  break;
 	}
+	case(rule::custom):
+	case(rule::maxvote):
+	  ogrWriter.createField(label_opt[0],fieldType,ilayerWrite);
+	if(test_opt.size())
+	  ogrTestWriter.createField(label_opt[0],fieldType,ilayerWrite);
 	break;
+	}
       }
-      case(rule::custom):
-      case(rule::minimum):
-      case(rule::maximum):
-      case(rule::maxvote):
-	assert(class_opt.size());
-      ogrWriter.createField(label_opt[0],fieldType,ilayerWrite);
-      if(test_opt.size())
-	ogrTestWriter.createField(label_opt[0],fieldType,ilayerWrite);
-      break;
-      case(rule::point):
-      case(rule::mean):
-      case(rule::sum):
-      case(rule::pointOnSurface):
-      case(rule::centroid):
-      default:{
+      else{
 	for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
 	  for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
 	    if(disc_opt[0]&&(windowI*windowI+windowJ*windowJ>(theDim/2)*(theDim/2)))
@@ -867,27 +892,10 @@ int main(int argc, char *argv[])
 	    }
 	  }
 	}
-	break;
-      }
       }
       OGRFeature *readFeature;
       unsigned long int ifeature=0;
       unsigned long int nfeature=sampleReaderOgr.getFeatureCount();
-      // ImgWriterOgr boxWriter;
-      // if(rbox_opt[0]>0||cbox_opt[0]>0){
-      // 	assert(bufferOutput_opt.size());
-      // 	assert(test_opt.empty());//not implemented
-      //   if(verbose_opt[0]>1)
-      //     std::cout << "opening box writer " << bufferOutput_opt[0] << std::endl;
-      //   boxWriter.open(bufferOutput_opt[0]);
-      //   std::string layername="buffer";
-      //   boxWriter.createLayer(layername, imgReader.getProjection(), wkbPolygon);
-      //   std::string fieldname="fid";//number of the point
-      //   if(verbose_opt[0]>1)
-      //     std::cout << "creating field " << fieldname << std::endl;
-      //   //       ogrWriter.createField(fieldname,OFTInteger,ilayerWrite);
-      //   boxWriter.createField(fieldname,OFTInteger,ilayer);
-      // }
       progress=0;
       pfnProgress(progress,pszMessage,pProgressArg);
       while( (readFeature = readLayer->GetNextFeature()) != NULL ){
@@ -926,72 +934,70 @@ int main(int argc, char *argv[])
 	    OGRPoint *poPoint = (OGRPoint *) poGeometry;
 	    x=poPoint->getX();
 	    y=poPoint->getY();
+
 	    bool valid=true;
-	    for(int imask=0;imask<mask_opt.size();++imask){
-	      double colMask,rowMask;//image coordinates in mask image
-	      if(mask_opt.size()>1){//multiple masks
-		maskReader[imask].geo2image(x,y,colMask,rowMask);
-		//nearest neighbour
-		rowMask=static_cast<int>(rowMask);
-		colMask=static_cast<int>(colMask);
-		if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
-		  continue;
-		if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
-		  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
-		    continue;
-		  else{
-		    maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
-		    oldmaskrow[imask]=rowMask;
-		    assert(maskBuffer.size()==maskReader[imask].nrOfBand());
-		  }
-		}
-		//               char ivalue=0;
-		int ivalue=0;
-		if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
-		  ivalue=static_cast<int>(msknodata_opt[imask]);
-		else//use same invalid value for each mask
-		  ivalue=static_cast<int>(msknodata_opt[0]);
-		if(maskBuffer[imask][colMask]==ivalue){
-		  valid=false;
-		  break;
-		}
-	      }
-	      else if(maskReader.size()){
-		maskReader[0].geo2image(x,y,colMask,rowMask);
-		//nearest neighbour
-		rowMask=static_cast<int>(rowMask);
-		colMask=static_cast<int>(colMask);
-		if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol()){
-		  continue;
-		  // cerr << colMask << " out of mask col range!" << std::endl;
-		  // cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-		  // assert(static_cast<int>(colMask)>=0&&static_cast<int>(colMask)<maskReader[0].nrOfCol());
-		}
+
+	    // for(int imask=0;imask<mask_opt.size();++imask){
+	    //   double colMask,rowMask;//image coordinates in mask image
+	    //   if(mask_opt.size()>1){//multiple masks
+	    // 	maskReader[imask].geo2image(x,y,colMask,rowMask);
+	    // 	//nearest neighbour
+	    // 	rowMask=static_cast<int>(rowMask);
+	    // 	colMask=static_cast<int>(colMask);
+	    // 	if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
+	    // 	  continue;
+	    // 	if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
+	    // 	  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
+	    // 	    continue;
+	    // 	  else{
+	    // 	    maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
+	    // 	    oldmaskrow[imask]=rowMask;
+	    // 	    assert(maskBuffer.size()==maskReader[imask].nrOfBand());
+	    // 	  }
+	    // 	}
+	    // 	//               char ivalue=0;
+	    // 	int ivalue=0;
+	    // 	if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+	    // 	  ivalue=static_cast<int>(msknodata_opt[imask]);
+	    // 	else//use same invalid value for each mask
+	    // 	  ivalue=static_cast<int>(msknodata_opt[0]);
+	    // 	if(maskBuffer[imask][colMask]==ivalue){
+	    // 	  valid=false;
+	    // 	  break;
+	    // 	}
+	    //   }
+	    //   else if(maskReader.size()){
+	    // 	maskReader[0].geo2image(x,y,colMask,rowMask);
+	    // 	//nearest neighbour
+	    // 	rowMask=static_cast<int>(rowMask);
+	    // 	colMask=static_cast<int>(colMask);
+	    // 	if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol()){
+	    // 	  continue;
+	    // 	  // cerr << colMask << " out of mask col range!" << std::endl;
+	    // 	  // cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
+	    // 	  // assert(static_cast<int>(colMask)>=0&&static_cast<int>(colMask)<maskReader[0].nrOfCol());
+	    // 	}
               
-		if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
-		  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow()){
-		    continue;
-		    // cerr << rowMask << " out of mask row range!" << std::endl;
-		    // cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-		    // assert(static_cast<int>(rowMask)>=0&&static_cast<int>(rowMask)<imgReader.nrOfRow());
-		  }
-		  else{
-		    maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
-		    oldmaskrow[0]=rowMask;
-		  }
-		}
-		for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-		  if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
-		    valid=false;
-		    break;
-		  }
-		}
-	      }
-	    }
-	    if(!valid)
-	      continue;
-	    else
-	      validFeature=true;
+	    // 	if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
+	    // 	  if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow()){
+	    // 	    continue;
+	    // 	    // cerr << rowMask << " out of mask row range!" << std::endl;
+	    // 	    // cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
+	    // 	    // assert(static_cast<int>(rowMask)>=0&&static_cast<int>(rowMask)<imgReader.nrOfRow());
+	    // 	  }
+	    // 	  else{
+	    // 	    maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
+	    // 	    oldmaskrow[0]=rowMask;
+	    // 	  }
+	    // 	}
+	    // 	for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+	    // 	  if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
+	    // 	    valid=false;
+	    // 	    break;
+	    // 	  }
+	    // 	}
+	    //   }
+	    // }
 
 	    double value;
 	    double i_centre,j_centre;
@@ -1089,6 +1095,20 @@ int main(int argc, char *argv[])
 	    if(verbose_opt[0]>1)
 	      std::cout << "write feature has " << writeFeature->GetFieldCount() << " fields" << std::endl;
 
+	    // //hiero
+	    // for(int vband=0;vband<bndnodata_opt.size();++vband){
+	    //   value=((readValues[bndnodata_opt[vband]])[j-ulj])[i-uli];
+	    //   if(value==srcnodata_opt[vband]){
+	    // 	valid=false;
+	    // 	break;
+	    //   }
+	    // }
+
+	    // if(!valid)
+	    //   continue;
+	    // else
+	    //   validFeature=true;
+
 	    vector<double> windowBuffer;
 	    for(int windowJ=-theDim/2;windowJ<(theDim+1)/2;++windowJ){
 	      for(int windowI=-theDim/2;windowI<(theDim+1)/2;++windowI){
@@ -1107,6 +1127,15 @@ int main(int argc, char *argv[])
 		for(int iband=0;iband<nband;++iband){
 		  int theBand=(band_opt[0]<0)?iband:band_opt[iband];
 		  imgReader.readData(value,GDT_Float64,i,j,theBand);
+
+		  if(srcnodata_opt.size()){
+		    Optionpk<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
+		    if(bndit!=bndnodata_opt.end()){
+		      if(value==srcnodata_opt[theBand])
+			valid=false;
+		    }
+		  }
+
 		  if(verbose_opt[0]>1)
 		    std::cout << ": " << value << std::endl;
 		  ostringstream fs;
@@ -1152,13 +1181,13 @@ int main(int argc, char *argv[])
 	      std::cout << "creating point feature" << std::endl;
 	    if(writeTest){
 	      if(writeTestLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-		std::string errorString="Failed to create feature in shapefile";
+		std::string errorString="Failed to create feature in ogr vector file";
 		throw(errorString);
 	      }
 	    }
 	    else{
 	      if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-		std::string errorString="Failed to create feature in shapefile";
+		std::string errorString="Failed to create feature in ogr vector file";
 		throw(errorString);
 	      }
 	    }
@@ -1180,632 +1209,11 @@ int main(int argc, char *argv[])
 	    readPolygon.closeRings();
 
 	    if(verbose_opt[0]>1)
-	      std::cout << "get centroid point from polygon" << std::endl;
-	    if(ruleMap[rule_opt[0]]==rule::pointOnSurface)
-	      readPolygon.PointOnSurface(&writeCentroidPoint);
-	    else
+	      std::cout << "get point on polygon" << std::endl;
+	    if(ruleMap[rule_opt[0]]==rule::centroid)
 	      readPolygon.Centroid(&writeCentroidPoint);
-
-	    double ulx,uly,lrx,lry;
-	    double uli,ulj,lri,lrj;
-	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)||(ruleMap[rule_opt[0]]==rule::pointOnSurface)){
-	      ulx=writeCentroidPoint.getX();
-	      uly=writeCentroidPoint.getY();
-	      lrx=ulx;
-	      lry=uly;
-	    }
-	    else{
-	      //get envelope
-	      if(verbose_opt[0])
-		std::cout << "reading envelope for polygon " << ifeature << std::endl;
-	      OGREnvelope* psEnvelope=new OGREnvelope();
-	      readPolygon.getEnvelope(psEnvelope);
-	      ulx=psEnvelope->MinX;
-	      uly=psEnvelope->MaxY;
-	      lrx=psEnvelope->MaxX;
-	      lry=psEnvelope->MinY;
-	      delete psEnvelope;
-	    }
-	    if(geo_opt[0]){
-	      imgReader.geo2image(ulx,uly,uli,ulj);
-	      imgReader.geo2image(lrx,lry,lri,lrj);
-	    }
-	    else{
-	      uli=ulx;
-	      ulj=uly;
-	      lri=lrx;
-	      lrj=lry;
-	    }
-	    //nearest neighbour
-	    ulj=static_cast<int>(ulj);
-	    uli=static_cast<int>(uli);
-	    lrj=static_cast<int>(lrj);
-	    lri=static_cast<int>(lri);
-	    //iterate through all pixels
-	    if(verbose_opt[0]>1)
-	      std::cout << "bounding box for polygon feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
-
-	    if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||ulj>=imgReader.nrOfRow())
-	      continue;
-
-	    int nPointPolygon=0;
-	    if(polygon_opt[0]){
-	      if(writeTest)
-		writePolygonFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
-	      else
-		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
-	    }
-	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum||ruleMap[rule_opt[0]]==rule::pointOnSurface){
-	      if(writeTest)
-		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
-	      else
-		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
-	    }
-	    vector<double> polyValues;
-	    switch(ruleMap[rule_opt[0]]){
-	    case(rule::point):
-	    case(rule::mean):
-	    case(rule::sum):
-	    case(rule::pointOnSurface):
-	    case(rule::centroid):
-	    default:
-	      polyValues.resize(nband);
-	    break;
-	    case(rule::proportion):
-	    case(rule::custom):
-	    case(rule::minimum):
-	    case(rule::maximum):
-	    case(rule::maxvote):
-	      assert(class_opt.size());
-	    polyValues.resize(class_opt.size());
-	    break;
-	    }
-	    for(int index=0;index<polyValues.size();++index)
-	      polyValues[index]=0;
-	    OGRPoint thePoint;
-	    for(int j=ulj;j<=lrj;++j){
-	      for(int i=uli;i<=lri;++i){
-		//check if point is on surface
-		double x=0;
-		double y=0;
-		imgReader.image2geo(i,j,x,y);
-		thePoint.setX(x);
-		thePoint.setY(y);
-		if(readPolygon.Contains(&thePoint)){
-		  bool valid=true;
-		  for(int imask=0;imask<mask_opt.size();++imask){
-		    double colMask,rowMask;//image coordinates in mask image
-		    if(mask_opt.size()>1){//multiple masks
-		      maskReader[imask].geo2image(x,y,colMask,rowMask);
-		      //nearest neighbour
-		      rowMask=static_cast<int>(rowMask);
-		      colMask=static_cast<int>(colMask);
-		      if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
-			continue;
-		      // {
-		      //   cerr << colMask << " out of mask col range!" << std::endl;
-		      //   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-		      //   assert(static_cast<int>(colMask)>=0&&static_cast<int>(colMask)<maskReader[imask].nrOfCol());
-		      // }
-              
-		      if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
-			if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
-			  continue;
-			// {
-			//   cerr << rowMask << " out of mask row range!" << std::endl;
-			//   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-			//   assert(static_cast<int>(rowMask)>=0&&static_cast<int>(rowMask)<imgReader.nrOfRow());
-			// }
-			else{
-			  maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
-			  oldmaskrow[imask]=rowMask;
-			  assert(maskBuffer.size()==maskReader[imask].nrOfBand());
-			}
-		      }
-		      //               char ivalue=0;
-		      int ivalue=0;
-		      if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
-			ivalue=static_cast<int>(msknodata_opt[imask]);
-		      else//use same invalid value for each mask
-			ivalue=static_cast<int>(msknodata_opt[0]);
-		      if(maskBuffer[imask][colMask]==ivalue){
-			valid=false;
-			break;
-		      }
-		    }
-		    else if(maskReader.size()){
-		      maskReader[0].geo2image(x,y,colMask,rowMask);
-		      //nearest neighbour
-		      rowMask=static_cast<int>(rowMask);
-		      colMask=static_cast<int>(colMask);
-		      if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
-			continue;
-		      // {
-		      //   cerr << colMask << " out of mask col range!" << std::endl;
-		      //   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-		      //   assert(static_cast<int>(colMask)>=0&&static_cast<int>(colMask)<maskReader[0].nrOfCol());
-		      // }
-              
-		      if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
-			if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
-			  continue;
-			// {
-			//   cerr << rowMask << " out of mask row range!" << std::endl;
-			//   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-			//   assert(static_cast<int>(rowMask)>=0&&static_cast<int>(rowMask)<imgReader.nrOfRow());
-			// }
-			else{
-			  maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
-			  oldmaskrow[0]=rowMask;
-			}
-		      }
-		      for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-			if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
-			  valid=false;
-			  break;
-			}
-		      }
-		    }
-		  }
-		  if(!valid)
-		    continue;
-		  else
-		    validFeature=true;
-		  //check if within raster image
-		  if(i<0||i>=imgReader.nrOfCol())
-		    continue;
-		  if(j<0||j>=imgReader.nrOfRow())
-		    continue;
-		  writeRing.addPoint(&thePoint);
-		  if(verbose_opt[0]>1)
-		    std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
-		  ++nPointPolygon;
-		  //test
-		  if(polythreshold_opt.size())
-		    if(nPointPolygon>polythreshold_opt[0])
-		      continue;
-		      // throw(nPointPolygon);
-		  OGRFeature *writePointFeature;
-		  if(!polygon_opt[0]){
-		    //create feature
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum&&ruleMap[rule_opt[0]]!=rule::pointOnSurface){//do not create in case of mean, sum, pointOnSurface or centroid (only create point at centroid)
-		      if(writeTest)
-			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
-		      else
-			writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
-		      if(verbose_opt[0]>1)
-			std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
-		      if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
-			cerr << "writing feature failed" << std::endl;
-		      writePointFeature->SetGeometry(&thePoint);
-		      OGRGeometry *updateGeometry;
-		      updateGeometry = writePointFeature->GetGeometryRef();
-		      OGRPoint *poPoint = (OGRPoint *) updateGeometry;
-		      if(verbose_opt[0]>1)
-			std::cout << "write feature has " << writePointFeature->GetFieldCount() << " fields" << std::endl;
-		    }
-		  }
-		  if(verbose_opt[0]>1)
-		    std::cout << "reading image value within polygon at position " << i << "," << j;
-		  for(int iband=0;iband<nband;++iband){
-		    int theBand=(band_opt[0]<0)?iband:band_opt[iband];
-		    double value=0;
-		    imgReader.readData(value,GDT_Float64,i,j,theBand);
-		    if(verbose_opt[0]>1)
-		      std::cout << ": " << value << std::endl;
-		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum||ruleMap[rule_opt[0]]==rule::pointOnSurface){
-		      int iclass=0;
-		      switch(ruleMap[rule_opt[0]]){
-		      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
-		      case(rule::pointOnSurface):
-		      case(rule::centroid):
-		      default:
-			polyValues[iband]=value;
-		      break;
-		      case(rule::sum):
-		      case(rule::mean)://mean as polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
-			polyValues[iband]+=value;
-			break;
-		      case(rule::proportion):
-		      case(rule::custom):
-		      case(rule::minimum):
-		      case(rule::maximum):
-		      case(rule::maxvote):
-			for(iclass=0;iclass<class_opt.size();++iclass){
-			  if(value==class_opt[iclass]){
-			    assert(polyValues.size()>iclass);
-			    polyValues[iclass]+=1;//value
-			    break;
-			  }
-			}
-		      break;
-		      }
-		    }
-		    else{
-		      // ostringstream fs;
-		      // if(imgReader.nrOfBand()==1)
-		      //   fs << fieldname_opt[0];
-		      // else
-		      //   fs << fieldname_opt[0] << theBand;
-		      if(verbose_opt[0]>1)
-			std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
-		      switch( fieldType ){
-		      case OFTInteger:
-			writePointFeature->SetField(fieldname_opt[iband].c_str(),static_cast<int>(value));
-			break;
-		      case OFTString:
-			{
-			  ostringstream os;
-			  os << value;
-			  writePointFeature->SetField(fieldname_opt[iband].c_str(),os.str().c_str());
-			  break;
-			}
-		      case OFTReal:
-			writePointFeature->SetField(fieldname_opt[iband].c_str(),value);
-			break;
-		      case OFTRealList:{
-			int fieldIndex=writePointFeature->GetFieldIndex(fieldname_opt[iband].c_str());
-			int nCount;
-			const double *theList;
-			theList=writePointFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-			vector<double> vectorList(nCount+1);
-			for(int index=0;index<nCount;++index)
-			  vectorList[nCount]=value;
-			writePointFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-			break;
-		      }
-		      default://not supported
-			assert(0);
-			break;
-		      }
-		    }
-		  }
-		  if(!polygon_opt[0]){
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum&&ruleMap[rule_opt[0]]!=rule::pointOnSurface){//do not create in case of mean value (only at centroid)
-		      //write feature
-		      if(verbose_opt[0]>1)
-			std::cout << "creating point feature" << std::endl;
-		      if(writeTest){
-			if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in test shapefile";
-			  throw(errorString);
-			}
-		      }
-		      else{
-			if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in shapefile";
-			  throw(errorString);
-			}
-		      }
-		      //destroy feature
-		      OGRFeature::DestroyFeature( writePointFeature );
-		      ++ntotalvalid;
-		      if(verbose_opt[0])
-			std::cout << "ntotalvalid(2): " << ntotalvalid << std::endl;
-		    }
-		  }
-		  // ++isample;
-		}
-	      }
-	    }
-	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum||ruleMap[rule_opt[0]]==rule::pointOnSurface){
-	      //do not create if no points found within polygon
-	      if(!nPointPolygon)
-		continue;
-	      //add ring to polygon
-	      if(polygon_opt[0]){
-		writePolygon.addRing(&writeRing);
-		writePolygon.closeRings();
-		//write geometry of writePolygon
-		writePolygonFeature->SetGeometry(&writePolygon);
-		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
-		  cerr << "writing feature failed" << std::endl;
-		if(verbose_opt[0]>1)
-		  std::cout << "copying new fields write polygon " << sample_opt[0] << std::endl;
-		if(verbose_opt[0]>1)
-		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
-		//write polygon feature
-	      }
-	      else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean)
-		//create feature
-		if(verbose_opt[0]>1)
-		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
-		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
-		  cerr << "writing feature failed" << std::endl;
-		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
-		OGRGeometry *updateGeometry;
-		updateGeometry = writeCentroidFeature->GetGeometryRef();
-		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
-		if(verbose_opt[0]>1)
-		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
-	      }
-	      switch(ruleMap[rule_opt[0]]){
-	      case(rule::point)://value at each point (or at centroid of polygon if line is set)
-	      default:{
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		for(int index=0;index<polyValues.size();++index){
-		  double theValue=polyValues[index];
-		  // ostringstream fs;
-		  if(verbose_opt[0])
-		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		  int theBand=(band_opt[0]<0)?index:band_opt[index];
-		  // if(nband==1)
-		  //   fs << fieldname_opt[0];
-		  // else
-		  //   fs << fieldname_opt[0] << theBand;
-
-		  if(verbose_opt[0]>1)
-		    std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		  switch( fieldType ){
-		  case OFTInteger:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    break;
-		  case OFTString:
-		    {
-		      ostringstream os;
-		      os << theValue;
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
-		      break;
-		    }
-		  case OFTReal:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    break;
-		  case OFTRealList:{
-		    int fieldIndex;
-		    int nCount;
-		    const double *theList;
-		    vector<double> vectorList;
-		    if(polygon_opt[0]){
-		      fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    else{
-		      fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    break;
-		  }
-		  default://not supported
-		    std::cout << "field type not supported yet..." << std::endl;
-		    break;
-		  }
-		}
-		break;
-	      }
-	      case(rule::mean):
-	      case(rule::sum):
-	      case(rule::pointOnSurface):
-	      case(rule::centroid):{//mean value (written to centroid of polygon if polygon_opt is not set)
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//test
-		if(ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::pointOnSurface)
-		  assert(nPointPolygon<=1);
-		for(int index=0;index<polyValues.size();++index){
-		  double theValue=polyValues[index];
-		  // ostringstream fs;
-		  if(ruleMap[rule_opt[0]]==rule::mean)
-		    theValue/=nPointPolygon;
-		  int theBand=(band_opt[0]<0)?index:band_opt[index];
-		  // if(nband==1)
-		  //   fs << fieldname_opt[0];
-		  // else
-		  //   fs << fieldname_opt[0] << theBand;
-		  if(verbose_opt[0]>1)
-		    std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		  switch( fieldType ){
-		  case OFTInteger:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    break;
-		  case OFTString:
-		    {
-		      ostringstream os;
-		      os << theValue;
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
-		      break;
-		    }
-		  case OFTReal:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    break;
-		  case OFTRealList:{
-		    int fieldIndex;
-		    int nCount;
-		    const double *theList;
-		    vector<double> vectorList;
-		    if(polygon_opt[0]){
-		      fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    else{
-		      fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    break;
-		  }
-		  default://not supported
-		    std::cout << "field type not supported yet..." << std::endl;
-		    break;
-		  }
-		}
-		break;
-	      }
-	      case(rule::proportion):{//proportion classes
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		stat.normalize_pct(polyValues);
-		// stat.sum(polyValues);
-		for(int index=0;index<polyValues.size();++index){
-		  double theValue=polyValues[index];
-		  ostringstream fs;
-		  fs << class_opt[index];
-		  if(polygon_opt[0])
-		    writePolygonFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
-		  else
-		    writeCentroidFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
-		}
-		break;
-	      }
-	      case(rule::custom):{//custom
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		stat.normalize_pct(polyValues);
-		assert(polyValues.size()==2);//11:broadleaved, 12:coniferous
-		if(polyValues[0]>=75)//broadleaved
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(11));
-		else if(polyValues[1]>=75)//coniferous
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(12));
-		else if(polyValues[0]>25&&polyValues[1]>25)//mixed
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(13));
-		else{
-		  if(verbose_opt[0]){
-		    std::cout << "No valid value in polyValues..." << std::endl;
-		    for(int index=0;index<polyValues.size();++index){
-		      double theValue=polyValues[index];
-		      std::cout << theValue << " ";
-		    }
-		    std::cout << std::endl;
-		  }
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(20));
-		}
-		break;
-	      }
-	      case(rule::minimum):{
-		//minimum of polygon
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//search for min class
-		int minClass=stat.mymax(class_opt);
-		for(int iclass=0;iclass<class_opt.size();++iclass){
-		  if(polyValues[iclass]>0){
-		    if(verbose_opt[0]>1)
-		      std::cout << class_opt[iclass] << ": " << polyValues[iclass] << std::endl;
-		    if(class_opt[iclass]<minClass)
-		      minClass=class_opt[iclass];
-		  }
-		}
-		if(verbose_opt[0]>0)
-		  std::cout << "minClass: " << minClass << std::endl;
-		writePolygonFeature->SetField(label_opt[0].c_str(),minClass);
-		break;
-	      }
-	      case(rule::maximum):{
-		//maximum of polygon
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//search for max class
-		int maxClass=stat.mymin(class_opt);
-		for(int iclass=0;iclass<class_opt.size();++iclass){
-		  if(polyValues[iclass]>0){
-		    if(verbose_opt[0]>1)
-		      std::cout << class_opt[iclass] << ": " << polyValues[iclass] << std::endl;
-		    if(class_opt[iclass]>maxClass)
-		      maxClass=class_opt[iclass];
-		  }
-		}
-		if(verbose_opt[0]>0)
-		  std::cout << "maxClass: " << maxClass << std::endl;
-		writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
-		break;
-	      }
-	      case(rule::maxvote):{
-		//maximum votes in polygon
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//search for class with maximum votes
-		int maxClass=stat.mymin(class_opt);
-		vector<double>::iterator maxit;
-		maxit=stat.mymax(polyValues,polyValues.begin(),polyValues.end());
-		int maxIndex=distance(polyValues.begin(),maxit);
-		maxClass=class_opt[maxIndex];
-		if(verbose_opt[0]>0)
-		  std::cout << "maxClass: " << maxClass << std::endl;
-		writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
-		break;
-	      }
-	      }
-	      if(polygon_opt[0]){
-		if(verbose_opt[0]>1)
-		  std::cout << "creating polygon feature" << std::endl;
-		if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		  std::string errorString="Failed to create polygon feature in shapefile";
-		  throw(errorString);
-		}
-		OGRFeature::DestroyFeature( writePolygonFeature );
-		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid(1): " << ntotalvalid << std::endl;
-	      }
-	      else{
-		if(verbose_opt[0]>1)
-		  std::cout << "creating point feature in centroid" << std::endl;
-		if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		  std::string errorString="Failed to create point feature in shapefile";
-		  throw(errorString);
-		}
-		OGRFeature::DestroyFeature( writeCentroidFeature );
-		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
-	      }
-	    }
-	  }
-	  else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon){//todo: try to use virtual OGRGeometry instead of OGRMultiPolygon and OGRPolygon
-	    OGRMultiPolygon readPolygon = *((OGRMultiPolygon *) poGeometry);
-	    OGRPolygon writePolygon;
-	    OGRLinearRing writeRing;
-	    OGRPoint writeCentroidPoint;
-	    OGRFeature *writePolygonFeature;
-	    OGRFeature *writeCentroidFeature;
-
-	    readPolygon.closeRings();
-
-	    if(verbose_opt[0]>1)
-	      std::cout << "get centroid point from polygon" << std::endl;
-	    assert(ruleMap[rule_opt[0]]!=rule::pointOnSurface);
-	    readPolygon.Centroid(&writeCentroidPoint);
+	    else
+	      readPolygon.PointOnSurface(&writeCentroidPoint);
 
 	    double ulx,uly,lrx,lry;
 	    double uli,ulj,lri,lrj;
@@ -1844,10 +1252,595 @@ int main(int argc, char *argv[])
 	    lri=static_cast<int>(lri);
 	    //iterate through all pixels
 	    if(verbose_opt[0]>1)
-	      std::cout << "bounding box for feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
+	      std::cout << "bounding box for polygon feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
 
-	    if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||ulj>=imgReader.nrOfRow())
-	      continue;
+	    if(uli<0)
+	      uli=0;
+	    if(lri<0)
+	      lri=0;
+	    if(uli>=imgReader.nrOfCol())
+	      uli=imgReader.nrOfCol()-1;
+	    if(lri>=imgReader.nrOfCol())
+	      lri=imgReader.nrOfCol()-1;
+	    if(ulj<0)
+	      ulj=0;
+	    if(lrj<0)
+	      lrj=0;
+	    if(ulj>=imgReader.nrOfRow())
+	      ulj=imgReader.nrOfRow()-1;
+	    if(lrj>=imgReader.nrOfRow())
+	      lrj=imgReader.nrOfRow()-1;
+	    // if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||lrj>=imgReader.nrOfRow())
+	    //   continue;
+
+	    int nPointPolygon=0;
+
+	    if(polygon_opt[0]){
+	      if(writeTest)
+		writePolygonFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+	      else
+		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	    }
+	    else if(ruleMap[rule_opt[0]]!=rule::point){
+	      if(writeTest)
+		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+	      else
+		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+	    }
+	    // vector<double> polyValues;
+	    Vector2d<double> polyValues;
+	    vector<double> polyClassValues;
+	    
+	    if(class_opt.size()){
+
+	      polyClassValues.resize(class_opt.size());
+	      //initialize
+	      for(int iclass=0;iclass<class_opt.size();++iclass)
+		polyClassValues[iclass]=0;
+	    }
+	    else
+	      polyValues.resize(nband);
+	    vector< Vector2d<double> > readValues(nband);
+	    for(int iband=0;iband<nband;++iband){
+	      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	      //test
+	      assert(uli>=0);
+	      assert(uli<imgReader.nrOfCol());	      
+	      assert(lri>=0);
+	      assert(lri<imgReader.nrOfCol());	      
+	      assert(ulj>=0);
+	      assert(ulj<imgReader.nrOfRow());	      
+	      assert(lrj>=0);
+	      assert(lrj<imgReader.nrOfRow());	      
+	      imgReader.readDataBlock(readValues[iband],GDT_Float64,uli,lri,ulj,lrj,theBand);
+	    }
+
+	    OGRPoint thePoint;
+	    for(int j=ulj;j<=lrj;++j){
+	      for(int i=uli;i<=lri;++i){
+		//check if within raster image
+		if(i<0||i>=imgReader.nrOfCol())
+		  continue;
+		if(j<0||j>=imgReader.nrOfRow())
+		  continue;
+		//check if point is on surface
+		double x=0;
+		double y=0;
+		imgReader.image2geo(i,j,x,y);
+		thePoint.setX(x);
+		thePoint.setY(y);
+		
+		if(ruleMap[rule_opt[0]]!=rule::centroid&&!readPolygon.Contains(&thePoint))
+		  continue;
+
+		bool valid=true;
+
+		if(srcnodata_opt.size()){
+		  for(int vband=0;vband<bndnodata_opt.size();++vband){
+		    double value=((readValues[bndnodata_opt[vband]])[j-ulj])[i-uli];
+		    if(value==srcnodata_opt[vband]){
+		      valid=false;
+		      break;
+		    }
+		  }
+		}
+
+		// for(int imask=0;imask<mask_opt.size();++imask){
+		//   double colMask,rowMask;//image coordinates in mask image
+		//   if(mask_opt.size()>1){//multiple masks
+		//     maskReader[imask].geo2image(x,y,colMask,rowMask);
+		//     //nearest neighbour
+		//     rowMask=static_cast<int>(rowMask);
+		//     colMask=static_cast<int>(colMask);
+		//     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
+		//       continue;
+              
+		//     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
+		//       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
+		// 	continue;
+		//       else{
+		// 	maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
+		// 	oldmaskrow[imask]=rowMask;
+		// 	assert(maskBuffer.size()==maskReader[imask].nrOfBand());
+		//       }
+		//     }
+		//     int ivalue=0;
+		//     if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+		//       ivalue=static_cast<int>(msknodata_opt[imask]);
+		//     else//use same invalid value for each mask
+		//       ivalue=static_cast<int>(msknodata_opt[0]);
+		//     if(maskBuffer[imask][colMask]==ivalue){
+		//       valid=false;
+		//       break;
+		//     }
+		//   }
+		//   else if(maskReader.size()){
+		//     maskReader[0].geo2image(x,y,colMask,rowMask);
+		//     //nearest neighbour
+		//     rowMask=static_cast<int>(rowMask);
+		//     colMask=static_cast<int>(colMask);
+		//     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
+		//       continue;
+              
+		//     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
+		//       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
+		// 	continue;
+		//       else{
+		// 	maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
+		// 	oldmaskrow[0]=rowMask;
+		//       }
+		//     }
+		//     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+		//       if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
+		// 	valid=false;
+		// 	break;
+		//       }
+		//     }
+		//   }
+		// }
+		if(!valid)
+		  continue;
+		else
+		  validFeature=true;
+		writeRing.addPoint(&thePoint);
+		if(verbose_opt[0]>1)
+		  std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
+		++nPointPolygon;
+
+		if(polythreshold_opt.size())
+		  if(nPointPolygon>polythreshold_opt[0])
+		    continue;
+		// throw(nPointPolygon);
+		OGRFeature *writePointFeature;
+		if(!polygon_opt[0]){
+		  //create feature
+		  if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, median, sum or centroid (only create point at centroid)
+		    if(writeTest)
+		      writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
+		    else
+		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
+		    if(verbose_opt[0]>1)
+		      std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
+		      cerr << "writing feature failed" << std::endl;
+		    writePointFeature->SetGeometry(&thePoint);
+		    OGRGeometry *updateGeometry;
+		    updateGeometry = writePointFeature->GetGeometryRef();
+		    OGRPoint *poPoint = (OGRPoint *) updateGeometry;
+		    if(verbose_opt[0]>1)
+		      std::cout << "write feature has " << writePointFeature->GetFieldCount() << " fields" << std::endl;
+		  }
+		}
+		if(class_opt.size()){
+		  short value=((readValues[0])[j-ulj])[i-uli];
+		  for(int iclass=0;iclass<class_opt.size();++iclass){
+		    if(value==class_opt[iclass])
+		      polyClassValues[iclass]+=1;
+		  }
+		}
+		else{
+		  for(int iband=0;iband<nband;++iband){
+		    int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+		    assert(j-ulj>=0);
+		    assert(j-ulj<readValues[iband].size());
+		    assert(i-uli>=0);
+		    assert(i-uli<((readValues[iband])[j-ulj]).size());
+		    double value=((readValues[iband])[j-ulj])[i-uli];
+		    // imgReader.readData(value,GDT_Float64,i,j,theBand);
+		    if(verbose_opt[0]>1)
+		      std::cout << ": " << value << std::endl;
+		    if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point)
+		      polyValues[iband].push_back(value);
+		    else{
+		      if(verbose_opt[0]>1)
+			std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
+		      switch( fieldType ){
+		      case OFTInteger:
+		      case OFTReal:
+			writePointFeature->SetField(fieldname_opt[iband].c_str(),value);
+			break;
+		      case OFTString:
+			writePointFeature->SetField(fieldname_opt[iband].c_str(),type2string<double>(value).c_str());
+			break;
+			// case OFTRealList:{
+			//   int fieldIndex=writePointFeature->GetFieldIndex(fieldname_opt[iband].c_str());
+			//   int nCount;
+			//   const double *theList;
+			//   theList=writePointFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+			//   vector<double> vectorList(nCount+1);
+			//   for(int index=0;index<nCount;++index)
+			// 	vectorList[nCount]=value;
+			//   writePointFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+			//   break;
+			// }
+		      default://not supported
+			assert(0);
+			break;
+		      }
+		    }//else
+		  }//iband
+		}//else (class_opt.size())
+		if(!polygon_opt[0]){
+		  if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean or median value (only at centroid)
+		    //write feature
+		    if(verbose_opt[0]>1)
+		      std::cout << "creating point feature" << std::endl;
+		    if(writeTest){
+		      if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
+			std::string errorString="Failed to create feature in test ogr vector file";
+			throw(errorString);
+		      }
+		    }
+		    else{
+		      if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
+			std::string errorString="Failed to create feature in ogr vector file";
+			throw(errorString);
+		      }
+		    }
+		    //destroy feature
+		    OGRFeature::DestroyFeature( writePointFeature );
+		    ++ntotalvalid;
+		    if(verbose_opt[0])
+		      std::cout << "ntotalvalid(2): " << ntotalvalid << std::endl;
+		  }
+		}
+	      }
+	    }
+	    if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point){
+	      //do not create if no points found within polygon
+	      if(!nPointPolygon){
+		if(verbose_opt[0])
+		  cout << "no points found in polygon, continuing" << endl;
+		continue;
+	      }
+	      //add ring to polygon
+	      if(polygon_opt[0]){
+		writePolygon.addRing(&writeRing);
+		writePolygon.closeRings();
+		//write geometry of writePolygon
+		writePolygonFeature->SetGeometry(&writePolygon);
+		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
+		  cerr << "writing feature failed" << std::endl;
+		if(verbose_opt[0]>1)
+		  std::cout << "copying new fields write polygon " << sample_opt[0] << std::endl;
+		if(verbose_opt[0]>1)
+		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
+		//write polygon feature
+	      }
+	      else{//write value of polygon to centroid point
+		//create feature
+		if(verbose_opt[0]>1)
+		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
+		  cerr << "writing feature failed" << std::endl;
+		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
+		OGRGeometry *updateGeometry;
+		updateGeometry = writeCentroidFeature->GetGeometryRef();
+		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
+		if(verbose_opt[0]>1)
+		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
+	      }
+	      if(class_opt.empty()){
+		if(ruleMap[rule_opt[0]]==rule::point){//value at each point (or at centroid of polygon if line is set)
+		  if(verbose_opt[0])
+		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		  for(int index=0;index<polyValues.size();++index){
+		    //test
+		    assert(polyValues[index].size()==1);
+		    double theValue=polyValues[index].back();
+
+		    if(verbose_opt[0])
+		      std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		    int theBand=(band_opt[0]<0)?index:band_opt[index];
+
+		    if(verbose_opt[0]>1)
+		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		    switch( fieldType ){
+		    case OFTInteger:
+		    case OFTReal:
+		      if(polygon_opt[0])
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+		      else
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+		      break;
+		    case OFTString:
+		      if(polygon_opt[0])
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      else
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      break;
+		      // case OFTRealList:{
+		      //   int fieldIndex;
+		      //   int nCount;
+		      //   const double *theList;
+		      //   vector<double> vectorList;
+		      //   if(polygon_opt[0]){
+		      //     fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //     theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //     vectorList.resize(nCount+1);
+		      //     for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //     vectorList[nCount]=theValue;
+		      //     writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      //   }
+		      //   else{
+		      //     fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //     theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //     vectorList.resize(nCount+1);
+		      //     for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //     vectorList[nCount]=theValue;
+		      //     writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      //   }
+		      //   break;
+		      // }
+		    default://not supported
+		      std::cout << "field type not supported yet..." << std::endl;
+		      break;
+		    }
+		  }
+		}
+		else{//ruleMap[rule_opt[0]] is not rule::point
+		  double theValue=0;
+		  for(int index=0;index<polyValues.size();++index){
+		    if(ruleMap[rule_opt[0]]==rule::mean)
+		      theValue=stat.mean(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::median)
+		      theValue=stat.median(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::sum)
+		      theValue=stat.sum(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::maximum)
+		      theValue=stat.mymax(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::minimum)
+		      theValue=stat.mymin(polyValues[index]);
+		    else{//rule::centroid
+		      if(verbose_opt[0])
+			std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		      assert(nPointPolygon<=1);
+		      assert(nPointPolygon==polyValues[index].size());
+		      theValue=polyValues[index].back();
+		    }
+		    if(verbose_opt[0]>1)
+		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		    switch( fieldType ){
+		    case OFTInteger:
+		    case OFTReal:
+		      if(polygon_opt[0])
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+		      else
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+		      break;
+		    case OFTString:
+		      if(polygon_opt[0])
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      else
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      break;
+		      // case OFTRealList:{
+		      // int fieldIndex;
+		      // int nCount;
+		      // const double *theList;
+		      // vector<double> vectorList;
+		      // if(polygon_opt[0]){
+		      //   fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //   theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //   vectorList.resize(nCount+1);
+		      //   for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //   vectorList[nCount]=theValue;
+		      //   writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      // }
+		      // else{
+		      //   fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //   theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //   vectorList.resize(nCount+1);
+		      //   for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //   vectorList[nCount]=theValue;
+		      //   writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      // }
+		      // break;
+		      //}
+		    default://not supported
+		      std::cout << "field type not supported yet..." << std::endl;
+		      break;
+		    }
+		  }
+		}
+	      }
+	      else{//class_opt is set
+		if(ruleMap[rule_opt[0]]==rule::proportion){
+		  if(verbose_opt[0])
+		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		  stat.normalize_pct(polyClassValues);
+		  for(int index=0;index<polyValues.size();++index){
+		    double theValue=polyClassValues[index];
+		    ostringstream fs;
+		    fs << class_opt[index];
+		    if(polygon_opt[0])
+		      writePolygonFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
+		    else
+		      writeCentroidFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
+		  }
+		}
+		else if(ruleMap[rule_opt[0]]==rule::custom){
+		  assert(polygon_opt[0]);//not implemented for points
+		  if(verbose_opt[0])
+		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		  stat.normalize_pct(polyClassValues);
+		  assert(polyClassValues.size()==2);//11:broadleaved, 12:coniferous
+		  if(polyClassValues[0]>=75)//broadleaved
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(11));
+		  else if(polyClassValues[1]>=75)//coniferous
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(12));
+		  else if(polyClassValues[0]>25&&polyClassValues[1]>25)//mixed
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(13));
+		  else{
+		    if(verbose_opt[0]){
+		      std::cout << "No valid value in polyClassValues..." << std::endl;
+		      for(int index=0;index<polyClassValues.size();++index){
+			double theValue=polyClassValues[index];
+			std::cout << theValue << " ";
+		      }
+		      std::cout << std::endl;
+		    }
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(20));
+		  }
+		}
+		else if(ruleMap[rule_opt[0]]==rule::maxvote){
+		  //maximum votes in polygon
+		  if(verbose_opt[0])
+		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		  //search for class with maximum votes
+		  int maxClass=stat.mymin(class_opt);
+		  vector<double>::iterator maxit;
+		  maxit=stat.mymax(polyClassValues,polyClassValues.begin(),polyClassValues.end());
+		  int maxIndex=distance(polyClassValues.begin(),maxit);
+		  maxClass=class_opt[maxIndex];
+		  if(verbose_opt[0]>0)
+		    std::cout << "maxClass: " << maxClass << std::endl;
+		  if(polygon_opt[0])
+		    writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
+		  else
+		    writeCentroidFeature->SetField(label_opt[0].c_str(),maxClass);
+		}
+	      }
+	      if(polygon_opt[0]){
+		if(verbose_opt[0]>1)
+		  std::cout << "creating polygon feature" << std::endl;
+		if(writeTest){
+		  if(writeTestLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
+		    throw(errorString);
+		  }
+		}
+		else{
+		  if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
+		    throw(errorString);
+		  }
+		}
+		OGRFeature::DestroyFeature( writePolygonFeature );
+		++ntotalvalid;
+		if(verbose_opt[0])
+		  std::cout << "ntotalvalid(1): " << ntotalvalid << std::endl;
+	      }
+	      else{
+		if(verbose_opt[0]>1)
+		  std::cout << "creating point feature in centroid" << std::endl;
+		if(writeTest){
+		  if(writeTestLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create point feature in ogr vector file";
+		    throw(errorString);
+		  }
+		}
+		else{
+		  //test
+		  assert(validFeature);
+		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
+		    std::string errorString="Failed to create point feature in ogr vector file";
+		    throw(errorString);
+		  }
+		}
+		OGRFeature::DestroyFeature( writeCentroidFeature );
+		++ntotalvalid;
+		if(verbose_opt[0])
+		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
+	      }
+	    }
+	  }
+	  else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon){//todo: try to use virtual OGRGeometry instead of OGRMultiPolygon and OGRPolygon
+	    OGRMultiPolygon readPolygon = *((OGRMultiPolygon *) poGeometry);
+	    OGRPolygon writePolygon;
+	    OGRLinearRing writeRing;
+	    OGRPoint writeCentroidPoint;
+	    OGRFeature *writePolygonFeature;
+	    OGRFeature *writeCentroidFeature;
+
+	    readPolygon.closeRings();
+
+	    if(verbose_opt[0]>1)
+	      std::cout << "get centroid point from polygon" << std::endl;
+
+	    readPolygon.Centroid(&writeCentroidPoint);
+
+	    double ulx,uly,lrx,lry;
+	    double uli,ulj,lri,lrj;
+	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
+	      ulx=writeCentroidPoint.getX();
+	      uly=writeCentroidPoint.getY();
+	      lrx=ulx;
+	      lry=uly;
+	    }
+	    else{
+	      //get envelope
+	      if(verbose_opt[0])
+		std::cout << "reading envelope for polygon " << ifeature << std::endl;
+	      OGREnvelope* psEnvelope=new OGREnvelope();
+	      readPolygon.getEnvelope(psEnvelope);
+	      ulx=psEnvelope->MinX;
+	      uly=psEnvelope->MaxY;
+	      lrx=psEnvelope->MaxX;
+	      lry=psEnvelope->MinY;
+	      delete psEnvelope;
+	    }
+	    // if(geo_opt[0]){
+	      imgReader.geo2image(ulx,uly,uli,ulj);
+	      imgReader.geo2image(lrx,lry,lri,lrj);
+	    // }
+	    // else{
+	    //   uli=ulx;
+	    //   ulj=uly;
+	    //   lri=lrx;
+	    //   lrj=lry;
+	    // }
+	    //nearest neighbour
+	    ulj=static_cast<int>(ulj);
+	    uli=static_cast<int>(uli);
+	    lrj=static_cast<int>(lrj);
+	    lri=static_cast<int>(lri);
+	    //iterate through all pixels
+	    if(verbose_opt[0]>1)
+	      std::cout << "bounding box for multipologon feature " << ifeature << ": " << uli << " " << ulj << " " << lri << " " << lrj << std::endl;
+
+	    if(uli<0)
+	      uli=0;
+	    if(lri<0)
+	      lri=0;
+	    if(uli>=imgReader.nrOfCol())
+	      uli=imgReader.nrOfCol()-1;
+	    if(lri>=imgReader.nrOfCol())
+	      lri=imgReader.nrOfCol()-1;
+	    if(ulj<0)
+	      ulj=0;
+	    if(lrj<0)
+	      lrj=0;
+	    if(ulj>=imgReader.nrOfRow())
+	      ulj=imgReader.nrOfRow()-1;
+	    if(lrj>=imgReader.nrOfRow())
+	      lrj=imgReader.nrOfRow()-1;
+	    // if(uli<0||lri>=imgReader.nrOfCol()||ulj<0||lrj>=imgReader.nrOfRow())
+	    //   continue;
 
 	    int nPointPolygon=0;
 	    if(polygon_opt[0]){
@@ -1856,140 +1849,139 @@ int main(int argc, char *argv[])
 	      else
 		writePolygonFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    else if(ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    else if(ruleMap[rule_opt[0]]!=rule::point){
 	      if(writeTest)
 		writeCentroidFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 	      else
 		writeCentroidFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 	    }
-	    vector<double> polyValues;
-	    switch(ruleMap[rule_opt[0]]){
-	    case(rule::point):
-	    case(rule::mean):
-	    case(rule::sum):
-	    case(rule::centroid):
-	    default:
-	      polyValues.resize(nband);
-	    break;
-	    case(rule::proportion):
-	    case(rule::custom):
-	    case(rule::minimum):
-	    case(rule::maximum):
-	    case(rule::maxvote):
-	      assert(class_opt.size());
-	    polyValues.resize(class_opt.size());
-	    break;
+	    // vector<double> polyValues;
+	    Vector2d<double> polyValues;
+	    vector<double> polyClassValues;
+
+	    if(class_opt.size()){
+	      polyClassValues.resize(class_opt.size());
+	      //initialize
+	      for(int iclass=0;iclass<class_opt.size();++iclass)
+		polyClassValues[iclass]=0;
 	    }
-	    for(int index=0;index<polyValues.size();++index)
-	      polyValues[index]=0;
+	    else
+	      polyValues.resize(nband);
+	    vector< Vector2d<double> > readValues(nband);
+	    for(int iband=0;iband<nband;++iband){
+	      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	      //test
+	      assert(uli>=0);
+	      assert(uli<imgReader.nrOfCol());	      
+	      assert(lri>=0);
+	      assert(lri<imgReader.nrOfCol());	      
+	      assert(ulj>=0);
+	      assert(ulj<imgReader.nrOfRow());	      
+	      assert(lrj>=0);
+	      assert(lrj<imgReader.nrOfRow());	      
+	      imgReader.readDataBlock(readValues[iband],GDT_Float64,uli,lri,ulj,lrj,theBand);
+	    }
+	    //todo: readDataBlock for maskReader...
 	    OGRPoint thePoint;
 	    for(int j=ulj;j<=lrj;++j){
 	      for(int i=uli;i<=lri;++i){
+		//check if within raster image
+		if(i<0||i>=imgReader.nrOfCol())
+		  continue;
+		if(j<0||j>=imgReader.nrOfRow())
+		  continue;
 		//check if point is on surface
 		double x=0;
 		double y=0;
 		imgReader.image2geo(i,j,x,y);
 		thePoint.setX(x);
 		thePoint.setY(y);
-		if(readPolygon.Contains(&thePoint)){
-		  bool valid=true;
-		  for(int imask=0;imask<mask_opt.size();++imask){
-		    double colMask,rowMask;//image coordinates in mask image
-		    if(mask_opt.size()>1){//multiple masks
-		      maskReader[imask].geo2image(x,y,colMask,rowMask);
-		      //nearest neighbour
-		      rowMask=static_cast<int>(rowMask);
-		      colMask=static_cast<int>(colMask);
-		      if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
-			continue;
-		      // {
-		      //   cerr << colMask << " out of mask col range!" << std::endl;
-		      //   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-		      //   assert(static_cast<int>(colMask)>=0&&static_cast<int>(colMask)<maskReader[imask].nrOfCol());
-		      // }
-              
-		      if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
-			if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
-			  continue;
-			// {
-			//   cerr << rowMask << " out of mask row range!" << std::endl;
-			//   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-			//   assert(static_cast<int>(rowMask)>=0&&static_cast<int>(rowMask)<imgReader.nrOfRow());
-			// }
-			else{
-			  maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
-			  oldmaskrow[imask]=rowMask;
-			  assert(maskBuffer.size()==maskReader[imask].nrOfBand());
-			}
-		      }
-		      //               char ivalue=0;
-		      int ivalue=0;
-		      if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
-			ivalue=static_cast<int>(msknodata_opt[imask]);
-		      else//use same invalid value for each mask
-			ivalue=static_cast<int>(msknodata_opt[0]);
-		      if(maskBuffer[imask][colMask]==ivalue){
-			valid=false;
-			break;
-		      }
-		    }
-		    else if(maskReader.size()){
-		      maskReader[0].geo2image(x,y,colMask,rowMask);
-		      //nearest neighbour
-		      rowMask=static_cast<int>(rowMask);
-		      colMask=static_cast<int>(colMask);
-		      if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
-			continue;
-		      // {
-		      //   cerr << colMask << " out of mask col range!" << std::endl;
-		      //   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-		      //   assert(static_cast<int>(colMask)>=0&&static_cast<int>(colMask)<maskReader[0].nrOfCol());
-		      // }
-              
-		      if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
-			if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
-			  continue;
-			// {
-			//   cerr << rowMask << " out of mask row range!" << std::endl;
-			//   cerr << x << " " << y << " " << colMask << " " << rowMask << std::endl;
-			//   assert(static_cast<int>(rowMask)>=0&&static_cast<int>(rowMask)<imgReader.nrOfRow());
-			// }
-			else{
-			  maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
-			  oldmaskrow[0]=rowMask;
-			}
-		      }
-		      for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-			if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
-			  valid=false;
-			  break;
-			}
-		      }
+
+		if(ruleMap[rule_opt[0]]!=rule::centroid&&!readPolygon.Contains(&thePoint))
+		  continue;
+
+		bool valid=true;
+
+		if(srcnodata_opt.size()){
+		  for(int vband=0;vband<bndnodata_opt.size();++vband){
+		    double value=((readValues[bndnodata_opt[vband]])[j-ulj])[i-uli];
+		    if(value==srcnodata_opt[vband]){
+		      valid=false;
+		      break;
 		    }
 		  }
+		}
+		// for(int imask=0;imask<mask_opt.size();++imask){
+		//     double colMask,rowMask;//image coordinates in mask image
+		//     if(mask_opt.size()>1){//multiple masks
+		//       maskReader[imask].geo2image(x,y,colMask,rowMask);
+		//       //nearest neighbour
+		//       rowMask=static_cast<int>(rowMask);
+		//       colMask=static_cast<int>(colMask);
+		//       if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
+		// 	continue;
+              
+		//       if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
+		// 	if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
+		// 	  continue;
+		// 	else{
+		// 	  maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
+		// 	  oldmaskrow[imask]=rowMask;
+		// 	  assert(maskBuffer.size()==maskReader[imask].nrOfBand());
+		// 	}
+		//       }
+		//       int ivalue=0;
+		//       if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
+		// 	ivalue=static_cast<int>(msknodata_opt[imask]);
+		//       else//use same invalid value for each mask
+		// 	ivalue=static_cast<int>(msknodata_opt[0]);
+		//       if(maskBuffer[imask][colMask]==ivalue){
+		// 	valid=false;
+		// 	break;
+		//       }
+		//     }
+		//     else if(maskReader.size()){
+		//       maskReader[0].geo2image(x,y,colMask,rowMask);
+		//       //nearest neighbour
+		//       rowMask=static_cast<int>(rowMask);
+		//       colMask=static_cast<int>(colMask);
+		//       if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
+		// 	continue;
+              
+		//       if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
+		// 	if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
+		// 	  continue;
+		// 	else{
+		// 	  maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
+		// 	  oldmaskrow[0]=rowMask;
+		// 	}
+		//       }
+		//       for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+		// 	if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
+		// 	  valid=false;
+		// 	  break;
+		// 	}
+		//       }
+		//     }
+		//   }
+
 		  if(!valid)
 		    continue;
 		  else
 		    validFeature=true;
-		  //check if within raster image
-		  if(i<0||i>=imgReader.nrOfCol())
-		    continue;
-		  if(j<0||j>=imgReader.nrOfRow())
-		    continue;
 		  writeRing.addPoint(&thePoint);
 		  if(verbose_opt[0]>1)
 		    std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
 		  ++nPointPolygon;
-		  //test
+
 		  if(polythreshold_opt.size())
 		    if(nPointPolygon>polythreshold_opt[0])
 		      continue;
-		      // throw(nPointPolygon);
-
+		  // throw(nPointPolygon);
 		  OGRFeature *writePointFeature;
 		  if(!polygon_opt[0]){
 		    //create feature
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean or sum (only create point at centroid)
+		    if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, mean or sum (only create point at centroid)
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -2006,94 +1998,69 @@ int main(int argc, char *argv[])
 			std::cout << "write feature has " << writePointFeature->GetFieldCount() << " fields" << std::endl;
 		    }
 		  }
-		  if(verbose_opt[0]>1)
-		    std::cout << "reading image value withinin polygon at position " << i << "," << j;
-		  for(int iband=0;iband<nband;++iband){
-		    int theBand=(band_opt[0]<0)?iband:band_opt[iband];
-		    double value=0;
-		    imgReader.readData(value,GDT_Float64,i,j,theBand);
-		    if(verbose_opt[0]>1)
-		      std::cout << ": " << value << std::endl;
-		    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
-		      int iclass=0;
-		      switch(ruleMap[rule_opt[0]]){
-		      case(rule::point)://in centroid if polygon_opt==true or all values as points if polygon_opt!=true
-		      case(rule::centroid):
-		      default:
-			polyValues[iband]=value;
-		      break;
-		      case(rule::sum):
-		      case(rule::mean)://mean or sum polygon if polygon_opt==true or as point in centroid if polygon_opt!=true
-			polyValues[iband]+=value;
-			break;
-		      case(rule::proportion):
-		      case(rule::custom):
-		      case(rule::minimum):
-		      case(rule::maximum):
-		      case(rule::maxvote):
-			for(iclass=0;iclass<class_opt.size();++iclass){
-			  if(value==class_opt[iclass]){
-			    assert(polyValues.size()>iclass);
-			    polyValues[iclass]+=1;//value
-			    break;
-			  }
-			}
-		      break;
-		      }
-		    }
-		    else{
-		      ostringstream fs;
-		      // if(imgReader.nrOfBand()==1)
-		      //   fs << fieldname_opt[0];
-		      // else
-		      //   fs << fieldname_opt[0] << theBand;
-		      if(verbose_opt[0]>1)
-			std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
-		      switch( fieldType ){
-		      case OFTInteger:
-			writePointFeature->SetField(fieldname_opt[iband].c_str(),static_cast<int>(value));
-			break;
-		      case OFTString:
-			{
-			  ostringstream os;
-			  os << value;
-			  writePointFeature->SetField(fieldname_opt[iband].c_str(),os.str().c_str());
-			  break;
-			}
-		      case OFTReal:
-			writePointFeature->SetField(fieldname_opt[iband].c_str(),value);
-			break;
-		      case OFTRealList:{
-			int fieldIndex=writePointFeature->GetFieldIndex(fieldname_opt[iband].c_str());
-			int nCount;
-			const double *theList;
-			theList=writePointFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-			vector<double> vectorList(nCount+1);
-			for(int index=0;index<nCount;++index)
-			  vectorList[nCount]=value;
-			writePointFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-			break;
-		      }
-		      default://not supported
-			assert(0);
-			break;
-		      }
+		  if(class_opt.size()){
+		    short value=((readValues[0])[j-ulj])[i-uli];
+		    for(int iclass=0;iclass<class_opt.size();++iclass){
+		      if(value==class_opt[iclass])
+			polyClassValues[iclass]+=1;
 		    }
 		  }
+		  else{
+		    for(int iband=0;iband<nband;++iband){
+		      //test
+		      assert(j-ulj>=0);
+		      assert(j-ulj<readValues[iband].size());
+		      assert(i-uli>=0);
+		      assert(i-uli<((readValues[iband])[j-ulj]).size());
+		      double value=((readValues[iband])[j-ulj])[i-uli];
+		      // imgReader.readData(value,GDT_Float64,i,j,theBand);
+		      if(verbose_opt[0]>1)
+			std::cout << ": " << value << std::endl;
+		      if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point)
+			polyValues[iband].push_back(value);
+		      else{
+			if(verbose_opt[0]>1)
+			  std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
+			switch( fieldType ){
+			case OFTInteger:
+			case OFTReal:
+			  writePointFeature->SetField(fieldname_opt[iband].c_str(),value);
+			  break;
+			case OFTString:
+			  writePointFeature->SetField(fieldname_opt[iband].c_str(),type2string<double>(value).c_str());
+			  break;
+			  // case OFTRealList:{
+			  //   int fieldIndex=writePointFeature->GetFieldIndex(fieldname_opt[iband].c_str());
+			  //   int nCount;
+			  //   const double *theList;
+			  //   theList=writePointFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+			  //   vector<double> vectorList(nCount+1);
+			  //   for(int index=0;index<nCount;++index)
+			  // 	vectorList[nCount]=value;
+			  //   writePointFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+			  //   break;
+			  // }
+			default://not supported
+			  assert(0);
+			  break;
+			}
+		      }//else
+		    }//iband
+		  }//else (class_opt.size())
 		  if(!polygon_opt[0]){
-		    if(ruleMap[rule_opt[0]]!=rule::mean&&ruleMap[rule_opt[0]]!=rule::centroid&&ruleMap[rule_opt[0]]!=rule::sum){//do not create in case of mean value (only at centroid)
+		    if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean /median value (only at centroid)
 		      //write feature
 		      if(verbose_opt[0]>1)
 			std::cout << "creating point feature" << std::endl;
 		      if(writeTest){
 			if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in shapefile";
+			  std::string errorString="Failed to create feature in ogr vector file";
 			  throw(errorString);
 			}
 		      }
 		      else{
 			if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in shapefile";
+			  std::string errorString="Failed to create feature in ogr vector file";
 			  throw(errorString);
 			}
 		      }
@@ -2105,13 +2072,16 @@ int main(int argc, char *argv[])
 		  ++ntotalvalid;
 		  if(verbose_opt[0])
 		    std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
-		}
 	      }
 	    }
+
 	    //test
 	    if(!validFeature)
 	      continue;
-	    if(polygon_opt[0]||ruleMap[rule_opt[0]]==rule::mean||ruleMap[rule_opt[0]]==rule::centroid||ruleMap[rule_opt[0]]==rule::sum){
+	    if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point){
+	      //do not create if no points found within polygon
+	      if(!nPointPolygon)
+		continue;
 	      //add ring to polygon
 	      if(polygon_opt[0]){
 		writePolygon.addRing(&writeRing);
@@ -2126,7 +2096,7 @@ int main(int argc, char *argv[])
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
 	      }
-	      else{//write mean value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean)
+	      else{//write mean /median value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean /median )
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
@@ -2139,250 +2109,203 @@ int main(int argc, char *argv[])
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }
-	      switch(ruleMap[rule_opt[0]]){
-	      case(rule::point)://value at each point (or at centroid of polygon if line is set)
-	      default:{
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		for(int index=0;index<polyValues.size();++index){
-		  double theValue=polyValues[index];
-		  ostringstream fs;
+	      if(class_opt.empty()){
+		if(ruleMap[rule_opt[0]]==rule::point){//value at each point (or at centroid of polygon if line is set)
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		  int theBand=(band_opt[0]<0)?index:band_opt[index];
-		  // if(nband==1)
-		  //   fs << fieldname_opt[0];
-		  // else
-		  //   fs << fieldname_opt[0] << theBand;
-		  if(verbose_opt[0]>1)
-		    std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		  switch( fieldType ){
-		  case OFTInteger:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    break;
-		  case OFTString:
-		    {
-		      ostringstream os;
-		      os << theValue;
+		  for(int index=0;index<polyValues.size();++index){
+		    //test
+		    assert(polyValues[index].size()==1);
+		    double theValue=polyValues[index].back();
+		    if(verbose_opt[0])
+		      std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		    int theBand=(band_opt[0]<0)?index:band_opt[index];
+
+		    if(verbose_opt[0]>1)
+		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		    switch( fieldType ){
+		    case OFTInteger:
+		    case OFTReal:
 		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
 		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+		      break;
+		    case OFTString:
+		      if(polygon_opt[0])
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      else
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      break;
+		      // case OFTRealList:{
+		      //   int fieldIndex;
+		      //   int nCount;
+		      //   const double *theList;
+		      //   vector<double> vectorList;
+		      //   if(polygon_opt[0]){
+		      //     fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //     theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //     vectorList.resize(nCount+1);
+		      //     for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //     vectorList[nCount]=theValue;
+		      //     writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      //   }
+		      //   else{
+		      //     fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //     theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //     vectorList.resize(nCount+1);
+		      //     for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //     vectorList[nCount]=theValue;
+		      //     writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      //   }
+		      //   break;
+		      // }
+		    default://not supported
+		      std::cout << "field type not supported yet..." << std::endl;
 		      break;
 		    }
-		  case OFTReal:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    break;
-		  case OFTRealList:{
-		    int fieldIndex;
-		    int nCount;
-		    const double *theList;
-		    vector<double> vectorList;
-		    if(polygon_opt[0]){
-		      fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    else{
-		      fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    break;
-		  }//case OFTRealList
-		  }//switch(fieldType)
-		}//for index
-		break;
-	      }//case 0 and default
-	      case(rule::mean):
-	      case(rule::sum):
-	      case(rule::centroid):{//mean value (written to centroid of polygon if line is not set)
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//test
-		if(ruleMap[rule_opt[0]]==rule::centroid)
-		  assert(nPointPolygon<=1);
-		for(int index=0;index<polyValues.size();++index){
-		  double theValue=polyValues[index];
-		  // ostringstream fs;
-		  if(ruleMap[rule_opt[0]]==rule::mean)
-		    theValue/=nPointPolygon;
-		  int theBand=(band_opt[0]<0)?index:band_opt[index];
-		  // if(nband==1)
-		  //   fs << fieldname_opt[0];
-		  // else
-		  //   fs << fieldname_opt[0] << theBand;
-		  if(verbose_opt[0]>1)
-		    std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		  switch( fieldType ){
-		  case OFTInteger:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),static_cast<int>(theValue));
-		    break;
-		  case OFTString:
-		    {
-		      ostringstream os;
-		      os << theValue;
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),os.str().c_str());
-		      break;
-		    }
-		  case OFTReal:
-		    if(polygon_opt[0])
-		      writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    else
-		      writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		    break;
-		  case OFTRealList:{
-		    int fieldIndex;
-		    int nCount;
-		    const double *theList;
-		    vector<double> vectorList;
-		    if(polygon_opt[0]){
-		      fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    else{
-		      fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      vectorList.resize(nCount+1);
-		      for(int index=0;index<nCount;++index)
-			vectorList[index]=theList[index];
-		      vectorList[nCount]=theValue;
-		      writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		    }
-		    break;
-		  }
 		  }
 		}
-		break;
+		else{//ruleMap[rule_opt[0]] is not rule::point
+		  double theValue=0;
+		  for(int index=0;index<polyValues.size();++index){
+		    if(ruleMap[rule_opt[0]]==rule::mean)
+		      theValue=stat.mean(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::median)
+		      theValue=stat.median(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::sum)
+		      theValue=stat.sum(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::maximum)
+		      theValue=stat.mymax(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::minimum)
+		      theValue=stat.mymin(polyValues[index]);
+		    else{//rule::centroid
+		      if(verbose_opt[0])
+			std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		      assert(nPointPolygon<=1);
+		      assert(nPointPolygon==polyValues[index].size());
+		      theValue=polyValues[index].back();
+		    }
+		    if(verbose_opt[0]>1)
+		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		    switch( fieldType ){
+		    case OFTInteger:
+		    case OFTReal:
+		      if(polygon_opt[0])
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+		      else
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+		      break;
+		    case OFTString:
+		      if(polygon_opt[0])
+			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      else
+			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+		      break;
+		      // case OFTRealList:{
+		      // int fieldIndex;
+		      // int nCount;
+		      // const double *theList;
+		      // vector<double> vectorList;
+		      // if(polygon_opt[0]){
+		      //   fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //   theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //   vectorList.resize(nCount+1);
+		      //   for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //   vectorList[nCount]=theValue;
+		      //   writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      // }
+		      // else{
+		      //   fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
+		      //   theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
+		      //   vectorList.resize(nCount+1);
+		      //   for(int index=0;index<nCount;++index)
+		      // 	vectorList[index]=theList[index];
+		      //   vectorList[nCount]=theValue;
+		      //   writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
+		      // }
+		      // break;
+		      // }
+		    default://not supported
+		      std::cout << "field type not supported yet..." << std::endl;
+		      break;
+		    }
+		  }
+		}
 	      }
-	      case(rule::proportion):{//proportion classes
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		stat.normalize_pct(polyValues);
-		// stat.sum(polyValues);
-		for(int index=0;index<polyValues.size();++index){
-		  double theValue=polyValues[index];
-		  ostringstream fs;
-		  fs << class_opt[index];
+	      else{//class_opt is set
+		if(ruleMap[rule_opt[0]]==rule::proportion){
+		  if(verbose_opt[0])
+		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		  stat.normalize_pct(polyClassValues);
+		  for(int index=0;index<polyValues.size();++index){
+		    double theValue=polyClassValues[index];
+		    ostringstream fs;
+		    fs << class_opt[index];
+		    if(polygon_opt[0])
+		      writePolygonFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
+		    else
+		      writeCentroidFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
+		  }
+		}
+		else if(ruleMap[rule_opt[0]]==rule::custom){
+		  assert(polygon_opt[0]);//not implemented for points
+		  if(verbose_opt[0])
+		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		  stat.normalize_pct(polyClassValues);
+		  assert(polyClassValues.size()==2);//11:broadleaved, 12:coniferous
+		  if(polyClassValues[0]>=75)//broadleaved
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(11));
+		  else if(polyClassValues[1]>=75)//coniferous
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(12));
+		  else if(polyClassValues[0]>25&&polyClassValues[1]>25)//mixed
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(13));
+		  else{
+		    if(verbose_opt[0]){
+		      std::cout << "No valid value in polyClassValues..." << std::endl;
+		      for(int index=0;index<polyClassValues.size();++index){
+			double theValue=polyClassValues[index];
+			std::cout << theValue << " ";
+		      }
+		      std::cout << std::endl;
+		    }
+		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(20));
+		  }
+		}
+		else if(ruleMap[rule_opt[0]]==rule::maxvote){
+		  //maximum votes in polygon
+		  if(verbose_opt[0])
+		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+		  //search for class with maximum votes
+		  int maxClass=stat.mymin(class_opt);
+		  vector<double>::iterator maxit;
+		  maxit=stat.mymax(polyClassValues,polyClassValues.begin(),polyClassValues.end());
+		  int maxIndex=distance(polyClassValues.begin(),maxit);
+		  maxClass=class_opt[maxIndex];
+		  if(verbose_opt[0]>0)
+		    std::cout << "maxClass: " << maxClass << std::endl;
 		  if(polygon_opt[0])
-		    writePolygonFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
+		    writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
 		  else
-		    writeCentroidFeature->SetField(fs.str().c_str(),static_cast<int>(theValue));
+		    writeCentroidFeature->SetField(label_opt[0].c_str(),maxClass);
 		}
-		break;
 	      }
-	      case(rule::custom):{//custom
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		stat.normalize_pct(polyValues);
-		assert(polyValues.size()==2);//11:broadleaved, 12:coniferous
-		if(polyValues[0]>=75)//broadleaved
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(11));
-		else if(polyValues[1]>=75)//coniferous
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(12));
-		else if(polyValues[0]>25&&polyValues[1]>25)//mixed
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(13));
-		else{
-		  if(verbose_opt[0]){
-		    std::cout << "No valid value in polyValues..." << std::endl;
-		    for(int index=0;index<polyValues.size();++index){
-		      double theValue=polyValues[index];
-		      std::cout << theValue << " ";
-		    }
-		    std::cout << std::endl;
-		  }
-		  writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(20));
-		}
-		break;
-	      }
-	      case(rule::minimum):{//minimum of polygon
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//search for min class
-		int minClass=stat.mymax(class_opt);
-		for(int iclass=0;iclass<class_opt.size();++iclass){
-		  if(polyValues[iclass]>0){
-		    if(verbose_opt[0]>1)
-		      std::cout << class_opt[iclass] << ": " << polyValues[iclass] << std::endl;
-		    if(class_opt[iclass]<minClass)
-		      minClass=class_opt[iclass];
-		  }
-		}
-		if(verbose_opt[0]>0)
-		  std::cout << "minClass: " << minClass << std::endl;
-		writePolygonFeature->SetField(label_opt[0].c_str(),minClass);
-		break;
-	      }
-	      case(rule::maximum):{//maximum of polygon
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//search for max class
-		int maxClass=stat.mymin(class_opt);
-		for(int iclass=0;iclass<class_opt.size();++iclass){
-		  if(polyValues[iclass]>0){
-		    if(verbose_opt[0]>1)
-		      std::cout << class_opt[iclass] << ": " << polyValues[iclass] << std::endl;
-		    if(class_opt[iclass]>maxClass)
-		      maxClass=class_opt[iclass];
-		  }
-		}
-		if(verbose_opt[0]>0)
-		  std::cout << "maxClass: " << maxClass << std::endl;
-		writePolygonFeature->SetField(label_opt[0].c_str(),maxClass);
-		break;
-	      }
-	      case(rule::maxvote):{//maximum votes in polygon
-		assert(polygon_opt[0]);//not implemented for points
-		if(verbose_opt[0])
-		  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		//search for max votes
-		int maxClass=stat.mymin(class_opt);
-		vector<double>::iterator maxit;
-		maxit=stat.mymax(polyValues,polyValues.begin(),polyValues.end());
-		int maxIndex=distance(polyValues.begin(),maxit);
-		maxClass=class_opt[maxIndex];
-	      }
-	      }
+
 	      if(polygon_opt[0]){
 		if(verbose_opt[0]>1)
 		  std::cout << "creating polygon feature" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in shapefile";
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
 		else{
 		  if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in shapefile";
+		    std::string errorString="Failed to create polygon feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
@@ -2396,7 +2319,7 @@ int main(int argc, char *argv[])
 		  std::cout << "creating point feature in centroid" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in shapefile";
+		    std::string errorString="Failed to create point feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}
@@ -2404,7 +2327,7 @@ int main(int argc, char *argv[])
 		  //test
 		  assert(validFeature);
 		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in shapefile";
+		    std::string errorString="Failed to create point feature in ogr vector file";
 		    throw(errorString);
 		  }
 		}

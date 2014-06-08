@@ -142,7 +142,9 @@ void MainWindow::on_actionInput_triggered()
     //todo: loop over all filenames and get the minimum number of bands?
     program+=fileNames[0];
     myProcess->start(program);
+    this->setCursor(Qt::WaitCursor);
     myProcess->waitForFinished(-1);
+    this->setCursor(Qt::ArrowCursor);
     QString p_stdout=myProcess->readAll();
     int nband=p_stdout.section(' ',1).toInt();
     QStringList bandlist;
@@ -260,7 +262,7 @@ void MainWindow::on_toolButton_Run_clicked()
         myProcess->start(program);
         myProcess->setProcessChannelMode(QProcess::MergedChannels);
         myProcess->waitForFinished(-1);
-        QString p_stderr = myProcess->readAllStandardError();
+        QString p_stderr = myProcess->readyReadStandardError();
         if(!p_stderr.isEmpty()){
             QMessageBox msgBox;
             msgBox.setText(p_stderr);
