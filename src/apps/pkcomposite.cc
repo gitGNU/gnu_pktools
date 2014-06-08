@@ -47,13 +47,13 @@ int main(int argc, char *argv[])
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<string> crule_opt("cr", "crule", "Composite rule for mosaic (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
-  Optionpk<int> ruleBand_opt("rb", "rband", "band index used for the rule (for ndvi, use --ruleBand=redBand --ruleBand=nirBand", 0);
+  Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for input image", 0);
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Bands in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
   Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
   Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
   Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output image if not valid or out of bounds.", 0);
-  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
+  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
   if(resample_opt[0]=="near"){
     theResample=NEAR;
     if(verbose_opt[0])
-      cout << "resampling: nearest neighbour" << endl;
+      cout << "resampling: nearest neighbor" << endl;
   }
   else if(resample_opt[0]=="bilinear"){
     theResample=BILINEAR;

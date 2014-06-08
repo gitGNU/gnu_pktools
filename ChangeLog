@@ -286,6 +286,7 @@ version 2.5.2
  - pkmosaic -> pkcomposite
 	name was confusing as also compositing is supported (unlike gdal_merge.py and gdalwarp)
 	resample option similar to pkcrop
+	option cb|cband (composite band) instead of rb|rband (ruleband)
  - version control for libraries
 	thanks to suggestion of Francesco Paolo Lovergine
  - subdirectory pktools for include headers
@@ -297,3 +298,6 @@ version 2.5.2
 	redesign to optimize vector polygon processing
 	removed option for masking, introduced srcnodata and bndnodata
 	(more testing is needed)
+Next versions: 
+ - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
+

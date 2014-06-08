@@ -27,9 +27,9 @@ extern "C" {
 #include "base/Optionpk.h"
 
 int main(int argc,char **argv) {
-  Optionpk<std::string> input_opt("i", "input", "Input image file");
+  Optionpk<std::string> input_opt("i", "input", "Input raster dataset");
   Optionpk<int> band_opt("b", "band", "band(s) to process (Default is -1: process all bands)");
-  Optionpk<std::string> mask_opt("m", "mask", "Mask band indicating pixels to be interpolated (zero valued) ");
+  Optionpk<std::string> mask_opt("m", "mask", "Mask raster dataset indicating pixels to be interpolated (zero valued) ");
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<double> distance_opt("d", "distance", "Maximum number of pixels to search in all directions to find values to interpolate from", 0);
   Optionpk<int> iteration_opt("it", "iteration", "Number of 3x3 smoothing filter passes to run (default 0)", 0);

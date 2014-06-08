@@ -63,14 +63,14 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
-  Optionpk<string> mask_opt("m", "mask", "mask image (support for single mask only, see also msknodata option)"); 
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<string> colorTable_opt("ct", "ct", "colour table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
+  Optionpk<string> colorTable_opt("ct", "ct", "colour table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image"); 
   Optionpk<string> entropy_opt("entropy", "entropy", "entropy image (measure for uncertainty of classifier output","",2); 
   Optionpk<string> active_opt("active", "active", "ogr output for active training sample.","",2); 

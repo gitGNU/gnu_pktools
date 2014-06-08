@@ -41,7 +41,18 @@ Please refer to pktools as: http://pktools.nongnu.org (Pieter Kempeneers)
 contact: kempenep at gmail.com
 
 \section pktools_installation Installation
-Download the latest release from http://download.savannah.gnu.org/releases/pktools/ (pktools-latest.tar.gz)
+
+\subsection Installation script for Debian based distributions
+
+Users working with Debian based distributions (e.g., Ubuntu) can download install_pktools.sh from http://download.savannah.gnu.org/releases/pktools/. This script will automatically download the latest release of pktools and dependencies. You need an internet connection when running the script (as root or sudo):
+
+\code
+sudo bash install_pktools.sh
+\endcode
+
+\subsection Manual installation
+
+For a manual installation, download the latest release pktools-latest.tar.gz from http://download.savannah.gnu.org/releases/pktools/ 
 
 Optionally: check the release md5sum to ensure originality.
 
@@ -51,13 +62,8 @@ md5sum pktools-latest.tar.gz
 
 The result should be identical to the content of the corresponding md5 file you can also download.
 
-Ubuntu users can download and run the installation script install_pktools.sh:
+Unpack the tar zip file
 
-\code
-sudo bash install_pktools.sh
-\endcode
-
-For a manual installation, download and unpack the latest release
 \code
 tar xzvf pktools-latest.tar.gz
 cd pktools-*

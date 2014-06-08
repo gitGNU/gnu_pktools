@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
   Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample. Leave empty to select all (for vector reference datasets only)");
   Optionpk<string> output_opt("o", "output", "Output dataset (optional)");
   Optionpk<string> ogrformat_opt("f", "f", "OGR format for output vector (for vector reference datasets only)","SQLite");
-  Optionpk<string> mask_opt("m", "mask", "Mask image file. A single mask is supported only, but several mask values can be used. See also msknodata option. (default is empty)");
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<int> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,2);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,2);
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> disc_opt("circ", "circular", "use circular boundary (for vector reference datasets only)", false,1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-  Optionpk<string> colorTable_opt("ct", "ct", "color table in ascii format having 5 columns: id R G B ALFA (0: transparent, 255: solid).");
+  Optionpk<string> colorTable_opt("ct", "ct", "color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid).");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
