@@ -11,9 +11,9 @@ The simplest way to compile this package is:
      
      You might need to execute:
      
-     automake --add-missing
+     autoreconf -i
 
-     before you are able to configure
+     before you are able to configure (in case there is no configure file)
      
      configure options (use ./configure --help for help info)
      

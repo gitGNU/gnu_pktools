@@ -21,7 +21,7 @@ LT_INIT
 
 # check if the source folder is correct
 AC_CONFIG_SRCDIR([src/apps/pkinfo.cc])
-AX_LIB_GDAL([1.10.0]) dnl uncomment if gdal version 1.10.0 is required
+AX_LIB_GDAL([1.9.0]) dnl uncomment if gdal version 1.10.0 is required
 
 AC_CHECK_HEADERS([gdal.h])
 

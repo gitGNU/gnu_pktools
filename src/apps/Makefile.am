@@ -6,7 +6,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 ###############################################################################
 
 # the program to build and install (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pkdiff pksvm pkfssvm pkascii2ogr pkeditogr
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkeditogr
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS =  pkxcorimg pkgeom
@@ -62,7 +62,6 @@ pkdsm2shadow_SOURCES = pkdsm2shadow.cc
 pkcomposite_SOURCES = pkcomposite.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
-pkdiff_SOURCES = pkdiff.cc
 pksvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pksvm.cc
 pkfssvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pkfssvm.cc
 pkfssvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS)
