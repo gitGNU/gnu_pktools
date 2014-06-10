@@ -59,8 +59,9 @@ int main(int argc, char *argv[])
   Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb",false);
   Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
-  Optionpk<bool> reg_opt("reg","regression","calculate linear regression error between two columns (defined by -c <col1> -c <col2>",false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode when > 0", 0);
+  Optionpk<bool> reg_opt("reg","regression","calculate linear regression between two columns and get correlation coefficient (defined by -c <col1> -c <col2>",false);
+  Optionpk<bool> regerr_opt("regerr","regerr","calculate linear regression between two columns and get root mean square error (defined by -c <col1> -c <col2>",false);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -96,6 +97,7 @@ int main(int argc, char *argv[])
     correlation_opt.retrieveOption(argc,argv);
     rmse_opt.retrieveOption(argc,argv);
     reg_opt.retrieveOption(argc,argv);
+    regerr_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -291,6 +293,16 @@ int main(int argc, char *argv[])
     double c1=0;
     double r2=stat.linear_regression(dataVector[0],dataVector[1],c0,c1);
     cout << "linear regression between columns: " << col_opt[0] << " and " << col_opt[1] << ": " << c0 << "+" << c1 << " * x " << " with R^2 (square correlation coefficient): " << r2 << endl;
+  }
+  if(regerr_opt[0]){
+    assert(dataVector.size()==2);
+    double c0=0;
+    double c1=0;
+    double err=stat.linear_regression_err(dataVector[0],dataVector[1],c0,c1);
+    if(verbose_opt[0])
+      cout << "linear regression between columns: " << col_opt[0] << " and " << col_opt[1] << ": " << c0 << "+" << c1 << " * x " << " with rmse: " << err << endl;
+    else
+      cout << c0 << " " << c1 << " " << err << endl;
   }
   if(histogram_opt[0]){
     for(int irow=0;irow<statVector.begin()->size();++irow){

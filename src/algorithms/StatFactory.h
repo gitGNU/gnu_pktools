@@ -178,6 +178,7 @@ public:
   template<class T> double correlation(const std::vector<T>& x, const std::vector<T>& y, int delay=0) const;
   template<class T> double cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const;
   template<class T> double linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
+  template<class T> double linear_regression_err(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
   template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose=false) const;
   template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector< std::vector<T> >& output, bool verbose=false) const;
   // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, std::vector< std::vector<T> >& output, double start, double end, double step, const gsl_interp_type* type);
@@ -871,7 +872,7 @@ template<class T> double StatFactory::cross_correlation(const std::vector<T>& x,
   return sumCorrelation;
 }
 
-  template<class T> double StatFactory::linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
+template<class T> double StatFactory::linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
   assert(x.size()==y.size());
   assert(x.size());
   double cov00;
@@ -880,6 +881,17 @@ template<class T> double StatFactory::cross_correlation(const std::vector<T>& x,
   double sumsq;
   gsl_fit_linear(&(x[0]),1,&(y[0]),1,x.size(),&c0,&c1,&cov00,&cov01,&cov11,&sumsq);
   return (1-sumsq/var(y)/(y.size()-1));
+}
+
+template<class T> double StatFactory::linear_regression_err(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
+  assert(x.size()==y.size());
+  assert(x.size());
+  double cov00;
+  double cov01;
+  double  cov11;
+  double sumsq;
+  gsl_fit_linear(&(x[0]),1,&(y[0]),1,x.size(),&c0,&c1,&cov00,&cov01,&cov11,&sumsq);
+  return sqrt((sumsq)/(y.size()));
 }
 
 //alternatively: use GNU scientific library:
