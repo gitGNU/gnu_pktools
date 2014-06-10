@@ -36,6 +36,7 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
   std::vector<double> buffer1;
   std::vector<double> buffer2;
 
+  srand(time(NULL));
   for(irow1=0;irow1<imgReader1.nrOfRow();++irow1){
     if(irow1%m_down)
       continue;
@@ -64,9 +65,8 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
       //check for nodata
       double value1=rowBuffer1[icol1];
       double value2=rowBuffer2[icol2];
-      bool readValid=true;
       if(imgReader1.isNoData(value1)||imgReader2.isNoData(value2))
-	readValid=false;
+	continue;
 
       buffer1.push_back(value1);
       buffer2.push_back(value2);
@@ -76,6 +76,7 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
   }
   statfactory::StatFactory stat;
   double err=stat.linear_regression_err(buffer1,buffer2,c0,c1);
+  
   if(verbose)
     std::cout << "linear regression model-model based on " << buffer1.size() << " points: " << c0 << "+" << c1 << " * x " << " with rmse: " << err << std::endl;
   return err;
