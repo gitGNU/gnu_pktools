@@ -35,10 +35,12 @@ int main(int argc,char **argv) {
   Optionpk<string> observation_opt("obs","observation","observation input datasets, e.g., landsat (use: -obs obs1 -obs obs2 etc.");
   Optionpk<int> tobservation_opt("tobs","tobservation","time sequence of observation input (sequence must have exact same length as observation input)"); 
   Optionpk<string> output_opt("o", "output", "Output raster dataset");
-  Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
-  Optionpk<double> modnodata_opt("modnodata", "modnodata", "invalid value for model input", 0);
+  Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
+  // Optionpk<double> modnodata_opt("modnodata", "modnodata", "invalid value for model input", 0);
   Optionpk<double> obsnodata_opt("obsnodata", "obsnodata", "invalid value for observation input", 0);
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
+  Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model");
+  Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression", 9);
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -51,9 +53,11 @@ int main(int argc,char **argv) {
     tobservation_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
-    modnodata_opt.retrieveOption(argc,argv);
+    // modnodata_opt.retrieveOption(argc,argv);
     obsnodata_opt.retrieveOption(argc,argv);
     eps_opt.retrieveOption(argc,argv);
+    uncertModel_opt.retrieveOption(argc,argv);
+    uncertNodata_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -128,8 +132,64 @@ int main(int argc,char **argv) {
 
   double c0obs=0;
   double c1obs=0;
-  double errObs=0;
+  double errObs=uncertNodata_opt[0];//start with high initial value in case we do not have first observation at time 0
+
+  //initialization
+  string output;
+  if(output_opt.size()==model_opt.size())
+    output=output_opt[0];
+  else{
+    ostringstream outputstream;
+    outputstream << output_opt[0] << "_0.tif";
+    output=outputstream.str();
+  }
+  imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+  imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
+  if(tobservation_opt[0]>0){//initialize output_opt[0] as model[0]
+    //write first model as output
+    imgReaderModel1.open(model_opt[0]);
+    //calculate standard deviation of image to serve as model uncertainty
+    GDALRasterBand* rasterBand;
+    rasterBand=imgReaderModel1.getRasterBand(0);
+    double minValue, maxValue, meanValue, stdDev;
+    void* pProgressData;
+    rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+
+    for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
+      vector<double> buffer;
+      imgReaderModel1.readData(buffer,GDT_Float64,irow);
+      imgWriterEst.writeData(buffer,GDT_Float64,irow,0);
+      for(int icol=0;icol<imgWriterEst.nrOfCol();++icol)
+	buffer[icol]=uncertModel_opt[0]*stdDev;
+      imgWriterEst.writeData(buffer,GDT_Float64,irow,1);
+    }
+    imgReaderModel1.close();
+    imgWriterEst.close();
+  }
+  else{//we have an observation at time 0
+    imgReaderObs.open(observation_opt[0]);
+    imgReaderObs.setNoData(obsnodata_opt);
+    for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
+      vector<double> buffer;
+      imgReaderObs.readData(buffer,GDT_Float64,irow);
+      imgWriterEst.writeData(buffer,GDT_Float64,irow,0);
+      for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
+	if(imgReaderObs.isNoData(buffer[icol]))
+	  buffer[icol]=uncertNodata_opt[0];
+	else
+	  buffer[icol]=0;
+      }
+      imgWriterEst.writeData(buffer,GDT_Float64,irow,1);
+    }
+    imgReaderObs.close();
+    imgWriterEst.close();
+  }
+
+  //todo: map modindex to real time (e.g., Julian day)
+
   for(int modindex=0;modindex<model_opt.size()-1;++modindex){
+    if(verbose_opt[0])
+      cout << "processing time " << modindex << endl;
     string output;
     if(output_opt.size()==model_opt.size())
       output=output_opt[modindex+1];
@@ -141,6 +201,7 @@ int main(int argc,char **argv) {
     
     //two band output band0=estimation, band1=uncertainty
     imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+    imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
     //calculate regression between two subsequence model inputs
     imgReaderModel1.open(model_opt[modindex]);
@@ -156,7 +217,9 @@ int main(int argc,char **argv) {
     double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod,verbose_opt[0]);
 
     bool update=(tobservation_opt[obsindex]==modindex);
-    if(update){//update
+    if(update){
+      if(verbose_opt[0])
+	cout << "***update " << tobservation_opt[obsindex] << " = " << modindex << " ***" << endl;
       imgReaderObs.open(observation_opt[obsindex]);
       imgReaderObs.setNoData(obsnodata_opt);
       //calculate regression between model and observation
@@ -165,7 +228,6 @@ int main(int argc,char **argv) {
     //prediction (also to fill cloudy pixels in update mode)
     string input;
     if(output_opt.size()==model_opt.size())
-      //todo: initialize output_opt[0] with model[0]
       input=output_opt[modindex];
     else{
       ostringstream outputstring;
@@ -176,43 +238,56 @@ int main(int argc,char **argv) {
 
     vector<double> obsBuffer;
     vector<double> estReadBuffer;
-    vector<double> estWriteBuffer;
-    vector<double> uncertWriteBuffer;
+    vector<double> uncertReadBuffer;
+    vector<double> estWriteBuffer(ncol);
+    vector<double> uncertWriteBuffer(ncol);
     for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
       assert(irow<imgReaderEst.nrOfRow());
-      imgReaderEst.readData(estReadBuffer,GDT_Float64,irow);
+      imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
+      imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
       if(update){
 	imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow);
-	//todo: write uncertainty image: 0 if observation, 
       }
       for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
-	if(update){//check for nodata in observation
-	  if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
-	    uncertWriteBuffer[icol]=0;
-	    continue;//no need to estimate
-	  }
-	}
-	//predict
+	double kalmanGain=0;
 	double estValue=estReadBuffer[icol];
-	double certNorm=(errMod*errMod+errObs*errObs);
-	double certMod=errObs*errObs/certNorm;
-	double certObs=errMod*errMod/certNorm;
-	estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
-	estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
-
-	double totalUncertainty=0;
-	if(errMod<eps_opt[0])
-	  totalUncertainty=errObs;
-	else if(errObs<eps_opt[0])
-	  totalUncertainty=errMod;
-	else{
-	  totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
-	  totalUncertainty=sqrt(1.0/totalUncertainty);
+	double uncertValue=uncertReadBuffer[icol];
+	if(update){//check for nodata in observation
+	  if(imgReaderObs.isNoData(estWriteBuffer[icol])){
+	    kalmanGain=0;
+	    // uncertWriteBuffer[icol]=0;
+	  }
+	  else
+	    kalmanGain=1;
+	  //todo: introduce gains between 0 and 1 in case of uncertain observations (SLC, potentially cloudy, etc.
+	  estWriteBuffer[icol]*=kalmanGain;
+	  estWriteBuffer[icol]+=(1-kalmanGain)*estReadBuffer[icol];
+	  uncertWriteBuffer[icol]=uncertReadBuffer[icol]*(1-kalmanGain);
 	}
-	uncertWriteBuffer[icol]=totalUncertainty;
+	else{//time update
+	  double estValue=estReadBuffer[icol];
+	  double certNorm=(errMod*errMod+errObs*errObs);
+	  double certMod=errObs*errObs/certNorm;
+	  double certObs=errMod*errMod/certNorm;
+	  estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
+	  estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
+	  
+	  double totalUncertainty=0;
+	  if(errMod<eps_opt[0])
+	    totalUncertainty=errObs;
+	  else if(errObs<eps_opt[0])
+	    totalUncertainty=errMod;
+	  else{
+	    totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
+	    totalUncertainty=sqrt(1.0/totalUncertainty);
+	  }
+	  uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
+	}
       }
       imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
       imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
+      progress=static_cast<float>((irow+1.0)/imgWriterEst.nrOfRow());
+      pfnProgress(progress,pszMessage,pProgressArg);
     }
 
     imgWriterEst.close();
