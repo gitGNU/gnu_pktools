@@ -32,12 +32,14 @@ using namespace std;
   Main procedure
   ----------------*/
 int main(int argc,char **argv) {
-  Optionpk<string> direction_opt("dir","direction","direction to run model (forward|backward)","forward");
+  Optionpk<string> direction_opt("dir","direction","direction to run model (forward|backward|smooth)","forward");
   Optionpk<string> model_opt("mod","model","model input datasets, e.g., MODIS (use: -mod model1 -mod model2 etc.");
   Optionpk<string> observation_opt("obs","observation","observation input datasets, e.g., landsat (use: -obs obs1 -obs obs2 etc.");
   Optionpk<int> tmodel_opt("tmod","tmodel","time sequence of model input. Sequence must have exact same length as model input. Leave empty to have default sequence 0,1,2,etc."); 
   Optionpk<int> tobservation_opt("tobs","tobservation","time sequence of observation input. Sequence must have exact same length as observation input)"); 
-  Optionpk<string> output_opt("o", "output", "Output raster dataset");
+  Optionpk<string> outputfw_opt("ofw", "outputfw", "Output raster dataset for forward model");
+  Optionpk<string> outputbw_opt("obw", "outputbw", "Output raster dataset for backward model");
+  Optionpk<string> outputfb_opt("ofb", "outputfb", "Output raster dataset for smooth model");
   Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
   // Optionpk<double> modnodata_opt("modnodata", "modnodata", "invalid value for model input", 0);
   Optionpk<double> obsnodata_opt("obsnodata", "obsnodata", "invalid value for observation input", 0);
@@ -56,7 +58,9 @@ int main(int argc,char **argv) {
     observation_opt.retrieveOption(argc,argv);
     tmodel_opt.retrieveOption(argc,argv);
     tobservation_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
+    outputfw_opt.retrieveOption(argc,argv);
+    outputbw_opt.retrieveOption(argc,argv);
+    outputfb_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
     // modnodata_opt.retrieveOption(argc,argv);
     obsnodata_opt.retrieveOption(argc,argv);
@@ -85,26 +89,47 @@ int main(int argc,char **argv) {
       errorStream << "Error: no observation dataset selected, use option -obs" << endl;
       throw(errorStream.str());
     }
-    if(model_opt.size()<observation_opt.size()){
-      errorStream << "Error: sequence of models should be larger than observations" << endl;
-      throw(errorStream.str());
+    if(direction_opt[0]=="smooth"){
+      if(outputfw_opt.empty()){
+	errorStream << "Error: output forward datasets is not provided, use option -ofw" << endl;
+	throw(errorStream.str());
+      }
+      if(outputbw_opt.empty()){
+	errorStream << "Error: output backward datasets is not provided, use option -obw" << endl;
+	throw(errorStream.str());
+      }
+      if(outputfb_opt.empty()){
+	errorStream << "Error: output smooth datasets is not provided, use option -ofb" << endl;
+	throw(errorStream.str());
+      }
     }
-    if(tmodel_opt.size()!=model_opt.size()){
-      if(tmodel_opt.empty())
-	cout << "Warning: time sequence is not provided, self generating time sequence from 0 to " << model_opt.size() << endl;
-      else
-	cout << "Warning: time sequence provided (" << tmodel_opt.size() << ") does not match number of model raster datasets (" << model_opt.size() << ")" << endl;
-      tmodel_opt.clear();
-      for(int tindex=0;tindex<model_opt.size();++tindex)
-	tmodel_opt.push_back(tindex);
-    }
-    if(tobservation_opt.size()!=observation_opt.size()){
-      errorStream << "Error: time sequence for observation must match size of observation dataset" << endl;
-      throw(errorStream.str());
-    }
-    if(output_opt.empty()){
-      errorStream << "Error: suffix for output datasets is not provided" << endl;
-      throw(errorStream.str());
+    else{
+      if(direction_opt[0]=="forward"&&outputfw_opt.empty()){
+	errorStream << "Error: output forward datasets is not provided, use option -ofw" << endl;
+	throw(errorStream.str());
+      }
+      else if(direction_opt[0]=="backward"&&outputbw_opt.empty()){
+	errorStream << "Error: output backward datasets is not provided, use option -obw" << endl;
+	throw(errorStream.str());
+      }
+
+      if(model_opt.size()<observation_opt.size()){
+	errorStream << "Error: sequence of models should be larger than observations" << endl;
+	throw(errorStream.str());
+      }
+      if(tmodel_opt.size()!=model_opt.size()){
+	if(tmodel_opt.empty())
+	  cout << "Warning: time sequence is not provided, self generating time sequence from 0 to " << model_opt.size() << endl;
+	else
+	  cout << "Warning: time sequence provided (" << tmodel_opt.size() << ") does not match number of model raster datasets (" << model_opt.size() << ")" << endl;
+	tmodel_opt.clear();
+	for(int tindex=0;tindex<model_opt.size();++tindex)
+	  tmodel_opt.push_back(tindex);
+      }
+      if(tobservation_opt.size()!=observation_opt.size()){
+	errorStream << "Error: time sequence for observation must match size of observation dataset" << endl;
+	throw(errorStream.str());
+      }
     }
   }
   catch(string errorString){
@@ -163,18 +188,18 @@ int main(int argc,char **argv) {
       cout << "tobservation_opt[tindex] " << tobservation_opt[tindex] << " " << relobsindex.back() << endl;
   }
 
-  if(direction_opt[0]=="forward"){
+  if(find(direction_opt.begin(),direction_opt.end(),"forward")!=direction_opt.end()){
     ///////////////////////////// forward model /////////////////////////
     obsindex=0;
     if(verbose_opt[0])
       cout << "Running forward model" << endl;
     //initialization
     string output;
-    if(output_opt.size()==model_opt.size())
-      output=output_opt[0];
+    if(outputfw_opt.size()==model_opt.size())
+      output=outputfw_opt[0];
     else{
       ostringstream outputstream;
-      outputstream << output_opt[0] << "_" << tmodel_opt[0] << ".tif";
+      outputstream << outputfw_opt[0] << "_" << tmodel_opt[0] << ".tif";
       output=outputstream.str();
     }
     if(verbose_opt[0])
@@ -229,11 +254,11 @@ int main(int argc,char **argv) {
 	cout << "last observation " << relobsindex[obsindex] << endl;
       }
       string output;
-      if(output_opt.size()==model_opt.size())
-	output=output_opt[modindex+1];
+      if(outputfw_opt.size()==model_opt.size())
+	output=outputfw_opt[modindex+1];
       else{
 	ostringstream outputstream;
-	outputstream << output_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
+	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
 	// outputstream << output_opt[0] << "_" << modindex+1 << ".tif";
 	output=outputstream.str();
       }
@@ -266,11 +291,11 @@ int main(int argc,char **argv) {
       }
       //prediction (also to fill cloudy pixels in update mode)
       string input;
-      if(output_opt.size()==model_opt.size())
-	input=output_opt[modindex];
+      if(outputfw_opt.size()==model_opt.size())
+	input=outputfw_opt[modindex];
       else{
 	ostringstream outputstream;
-	outputstream << output_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	input=outputstream.str();
       }
       ImgReaderGdal imgReaderEst(input);
@@ -340,18 +365,18 @@ int main(int argc,char **argv) {
       imgReaderModel2.close();
     }
   }
-  else{
+  if(find(direction_opt.begin(),direction_opt.end(),"backward")!=direction_opt.end()){
     obsindex=relobsindex.size()-1;
     ///////////////////////////// backward model /////////////////////////
     if(verbose_opt[0])
       cout << "Running backward model" << endl;
     //initialization
     string output;
-    if(output_opt.size()==model_opt.size())
-      output=output_opt.back();
+    if(outputbw_opt.size()==model_opt.size())
+      output=outputbw_opt.back();
     else{
       ostringstream outputstream;
-      outputstream << output_opt[0] << "_" << tmodel_opt.back() << ".tif";
+      outputstream << outputbw_opt[0] << "_" << tmodel_opt.back() << ".tif";
       output=outputstream.str();
     }
     if(verbose_opt[0])
@@ -406,11 +431,11 @@ int main(int argc,char **argv) {
 	cout << "last observation " << relobsindex[obsindex] << endl;
       }
       string output;
-      if(output_opt.size()==model_opt.size())
-	output=output_opt[modindex-1];
+      if(outputbw_opt.size()==model_opt.size())
+	output=outputbw_opt[modindex-1];
       else{
 	ostringstream outputstream;
-	outputstream << output_opt[0] << "_" << tmodel_opt[modindex-1] << ".tif";
+	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex-1] << ".tif";
 	// outputstream << output_opt[0] << "_" << modindex+1 << ".tif";
 	output=outputstream.str();
       }
@@ -443,11 +468,11 @@ int main(int argc,char **argv) {
       }
       //prediction (also to fill cloudy pixels in update mode)
       string input;
-      if(output_opt.size()==model_opt.size())
-	input=output_opt[modindex];
+      if(outputbw_opt.size()==model_opt.size())
+	input=outputbw_opt[modindex];
       else{
 	ostringstream outputstream;
-	outputstream << output_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	input=outputstream.str();
       }
       ImgReaderGdal imgReaderEst(input);
@@ -515,6 +540,137 @@ int main(int argc,char **argv) {
       }
       imgReaderModel1.close();
       imgReaderModel2.close();
+    }
+  }
+  if(find(direction_opt.begin(),direction_opt.end(),"smooth")!=direction_opt.end()){
+    ///////////////////////////// smooth model /////////////////////////
+    obsindex=0;
+    if(verbose_opt[0])
+      cout << "Running smooth model" << endl;
+    for(int modindex=0;modindex<model_opt.size();++modindex){
+      if(verbose_opt[0]){
+	cout << "processing time " << modindex << endl;
+      }
+      string output;
+      if(outputfb_opt.size()==model_opt.size())
+	output=outputfb_opt[modindex];
+      else{
+	ostringstream outputstream;
+	outputstream << outputfb_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	output=outputstream.str();
+      }
+    
+      //two band output band0=estimation, band1=uncertainty
+      imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+      imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
+
+      //open forward and backward estimates
+      //we assume forward in model and backward in observation...
+
+      string inputfw;
+      string inputbw;
+      if(outputfw_opt.size()==model_opt.size())
+	inputfw=outputfw_opt[modindex];
+      else{
+	ostringstream outputstream;
+	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	inputfw=outputstream.str();
+      }
+      if(outputbw_opt.size()==model_opt.size())
+	inputbw=outputbw_opt[modindex];
+      else{
+	ostringstream outputstream;
+	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	inputbw=outputstream.str();
+      }
+      ImgReaderGdal imgReaderForward(inputfw);
+      ImgReaderGdal imgReaderBackward(inputbw);
+    
+      vector<double> obsBuffer;
+      vector<double> estForwardBuffer;
+      vector<double> estBackwardBuffer;
+      vector<double> uncertObsBuffer;
+      vector<double> uncertForwardBuffer;
+      vector<double> uncertBackwardBuffer;
+      vector<double> uncertReadBuffer;
+      vector<double> estWriteBuffer(ncol);
+      vector<double> uncertWriteBuffer(ncol);
+
+      bool update=(relobsindex[obsindex]==modindex);
+
+      if(update){
+	if(verbose_opt[0])
+	  cout << "***update " << relobsindex[obsindex] << " = " << modindex << " ***" << endl;
+	imgReaderObs.open(observation_opt[obsindex]);
+	imgReaderObs.setNoData(obsnodata_opt);
+	//calculate regression between model and observation
+      }
+
+      pfnProgress(progress,pszMessage,pProgressArg);
+
+      for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
+	assert(irow<imgReaderForward.nrOfRow());
+	assert(irow<imgReaderBackward.nrOfRow());
+	imgReaderForward.readData(estForwardBuffer,GDT_Float64,irow,0);
+	imgReaderBackward.readData(estBackwardBuffer,GDT_Float64,irow,0);
+	imgReaderForward.readData(uncertForwardBuffer,GDT_Float64,irow,1);
+	imgReaderBackward.readData(uncertBackwardBuffer,GDT_Float64,irow,1);
+
+	if(update){
+	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow,0);
+	  if(imgReaderObs.nrOfBand()>1)
+	    imgReaderObs.readData(uncertObsBuffer,GDT_Float64,irow,1);
+	}
+
+	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
+	  double A=estForwardBuffer[icol];
+	  double B=estBackwardBuffer[icol];
+	  double C=uncertForwardBuffer[icol]*uncertForwardBuffer[icol];
+	  double D=uncertBackwardBuffer[icol]*uncertBackwardBuffer[icol];
+	  double uncertObs=0;
+
+	  if(update){//check for nodata in observation
+	    if(imgReaderObs.nrOfBand()>1)
+	      uncertObs=uncertObsBuffer[icol];
+	    else if(imgReaderObs.isNoData(estWriteBuffer[icol]))
+	      uncertObs=uncertNodata_opt[0];
+	    else
+	      uncertObs=0;
+	  }
+
+	  double noemer=(C+D);
+	  //todo: consistently check for division by zero...
+	  if(noemer<eps_opt[0])
+	    estWriteBuffer[icol]=obsnodata_opt[0];
+	  else{
+	    estWriteBuffer[icol]=(A*D+B*C)/noemer;
+	  }
+	  double P=0;
+	  if(C>eps_opt[0])
+	    P+=1.0/C;
+	  if(D>eps_opt[0])
+	    P+=1.0/D;
+	  if(uncertObs*uncertObs>eps_opt[0])
+	    P-=1.0/uncertObs/uncertObs;
+	  if(P>eps_opt[0])
+	    P=sqrt(1.0/P);
+	  else
+	    P=0;
+	  uncertWriteBuffer[icol]=P;
+	}
+	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
+	imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
+	progress=static_cast<float>((irow+1.0)/imgWriterEst.nrOfRow());
+	pfnProgress(progress,pszMessage,pProgressArg);
+      }
+
+      imgWriterEst.close();
+      imgReaderForward.close();
+      imgReaderBackward.close();
+      if(update){
+	imgReaderObs.close();
+	++obsindex;
+      }
     }
   }
 }
