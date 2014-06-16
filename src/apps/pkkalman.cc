@@ -28,6 +28,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/ImgRegression.h"
 
 				    //todo: keep original resolution of coarse model raster dataset
+				    //interprete 2nd band of obs dataset as uncert
 using namespace std;
 /*------------------
   Main procedure
@@ -38,6 +39,7 @@ int main(int argc,char **argv) {
   Optionpk<string> observation_opt("obs","observation","observation input datasets, e.g., landsat (use: -obs obs1 -obs obs2 etc.");
   Optionpk<int> tmodel_opt("tmod","tmodel","time sequence of model input. Sequence must have exact same length as model input. Leave empty to have default sequence 0,1,2,etc."); 
   Optionpk<int> tobservation_opt("tobs","tobservation","time sequence of observation input. Sequence must have exact same length as observation input)"); 
+  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<string> outputfw_opt("ofw", "outputfw", "Output raster dataset for forward model");
   Optionpk<string> outputbw_opt("obw", "outputbw", "Output raster dataset for backward model");
   Optionpk<string> outputfb_opt("ofb", "outputfb", "Output raster dataset for smooth model");
@@ -62,6 +64,7 @@ int main(int argc,char **argv) {
     observation_opt.retrieveOption(argc,argv);
     tmodel_opt.retrieveOption(argc,argv);
     tobservation_opt.retrieveOption(argc,argv);
+    projection_opt.retrieveOption(argc,argv);
     outputfw_opt.retrieveOption(argc,argv);
     outputbw_opt.retrieveOption(argc,argv);
     outputfb_opt.retrieveOption(argc,argv);
@@ -153,8 +156,13 @@ int main(int argc,char **argv) {
   ImgWriterGdal imgWriterEst;
 
   imgReaderObs.open(observation_opt[0]);
+
   int ncol=imgReaderObs.nrOfCol();
   int nrow=imgReaderObs.nrOfRow();
+  if(projection_opt.empty())
+    projection_opt.push_back(imgReaderObs.getProjection());
+  double geotransform[6];
+  imgReaderObs.getGeoTransform(geotransform);
 
   string imageType=imgReaderObs.getImageType();
   if(oformat_opt.size())//default
@@ -212,6 +220,8 @@ int main(int argc,char **argv) {
     if(verbose_opt[0])
       cout << "Opening image " << output << " for writing " << endl;
     imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+    imgWriterEst.setProjectionProj4(projection_opt[0]);
+    imgWriterEst.setGeoTransform(geotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
     if(verbose_opt[0]){
@@ -243,27 +253,34 @@ int main(int argc,char **argv) {
     }
     else{//we have an observation at time 0
       imgReaderObs.open(observation_opt[0]);
+      imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
       for(int irow=0;irow<nrow;++irow){
 	vector<double> estReadBuffer;
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,irow);
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
+	vector<double> uncertObsBuffer;
 	imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
+	if(imgReaderObs.nrOfBand()>1)
+	  imgReaderObs.readData(uncertObsBuffer,GDT_Float64,irow,1);
 	for(int icol=0;icol<ncol;++icol){
 	  if(imgReaderObs.isNoData(estWriteBuffer[icol])){
 	    estWriteBuffer[icol]=estReadBuffer[icol];
 	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
 	  }
 	  else{
-	    if(uncertObs_opt[0]>eps_opt[0]){
-	      double noemer=uncertObs_opt[0]*uncertObs_opt[0]+stdDev*stdDev;
+	    double uncertObs=uncertObs_opt[0];
+	    if(uncertObsBuffer.size()>icol)
+	      uncertObs=uncertObsBuffer[icol];
+	    if(uncertObs>eps_opt[0]){
+	      double noemer=uncertObs*uncertObs+stdDev*stdDev;
 	      estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
-	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs_opt[0]*uncertObs_opt[0]/noemer;
+	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;
 	    }
 	    else{
 	      //no need to fill write buffer (already done in imgReaderObs.readData
-	      uncertWriteBuffer[icol]=uncertObs_opt[0];
+	      uncertWriteBuffer[icol]=uncertObs;
 	    }
 	  }
 	}
@@ -296,6 +313,9 @@ int main(int argc,char **argv) {
     
       //two band output band0=estimation, band1=uncertainty
       imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+      imgWriterEst.setProjectionProj4(projection_opt[0]);
+      imgWriterEst.setGeoTransform(geotransform);
+
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
       //calculate regression between two subsequence model inputs
@@ -320,6 +340,7 @@ int main(int argc,char **argv) {
 	  cout << "***update " << relobsindex[obsindex] << " = " << modindex << " " << observation_opt[obsindex] << " ***" << endl;
 
 	imgReaderObs.open(observation_opt[obsindex]);
+	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
 	//calculate regression between model and observation
 	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
@@ -335,6 +356,7 @@ int main(int argc,char **argv) {
       ImgReaderGdal imgReaderEst(input);
 
       vector<double> obsBuffer;
+      vector<double> uncertObsBuffer;
       vector<double> estReadBuffer;
       vector<double> uncertReadBuffer;
       vector<double> estWriteBuffer(ncol);
@@ -344,7 +366,9 @@ int main(int argc,char **argv) {
 	imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
 	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
 	if(update){
-	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow);
+	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow,0);
+	  if(imgReaderObs.nrOfBand()>1)
+	    imgReaderObs.readData(uncertObsBuffer,GDT_Float64,irow,1);
 	}
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  double estValue=estReadBuffer[icol];
@@ -370,8 +394,11 @@ int main(int argc,char **argv) {
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsBuffer[icol])){
 	    double kalmanGain=1;
-	    if((uncertWriteBuffer[icol]+uncertObs_opt[0])>eps_opt[0])
-	      kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs_opt[0]);
+	    double uncertObs=uncertObs_opt[0];
+	    if(uncertObsBuffer.size()>icol)
+	      uncertObs=uncertObsBuffer[icol];
+	    if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
+	      kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs);
 	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsBuffer[icol]-estWriteBuffer[icol]);
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
@@ -411,6 +438,8 @@ int main(int argc,char **argv) {
     if(verbose_opt[0])
       cout << "Opening image " << output << " for writing " << endl;
     imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+    imgWriterEst.setProjectionProj4(projection_opt[0]);
+    imgWriterEst.setGeoTransform(geotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
     if(verbose_opt[0]){
@@ -441,27 +470,34 @@ int main(int argc,char **argv) {
     }
     else{//we have an observation at end time
       imgReaderObs.open(observation_opt.back());
+      imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
       for(int irow=0;irow<nrow;++irow){
 	vector<double> estReadBuffer;
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,irow);
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
-	imgReaderObs.readData(estReadBuffer,GDT_Float64,irow);
+	vector<double> uncertObsBuffer;
+	imgReaderObs.readData(estReadBuffer,GDT_Float64,irow,0);
+	if(imgReaderObs.nrOfBand()>1)
+	  imgReaderObs.readData(uncertObsBuffer,GDT_Float64,irow,1);
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  if(imgReaderObs.isNoData(estWriteBuffer[icol])){
 	    estWriteBuffer[icol]=estReadBuffer[icol];
 	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
 	  }
 	  else{
-	    if(uncertObs_opt[0]>eps_opt[0]){
-	      double noemer=uncertObs_opt[0]*uncertObs_opt[0]+stdDev*stdDev;
+	    double uncertObs=uncertObs_opt[0];
+	    if(uncertObsBuffer.size()>icol)
+	      uncertObs=uncertObsBuffer[icol];
+	    if(uncertObs>eps_opt[0]){
+	      double noemer=uncertObs*uncertObs+stdDev*stdDev;
 	      estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
-	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs_opt[0]*uncertObs_opt[0]/noemer;
+	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;
 	    }
 	    else{
 	      //no need to fill write buffer (already done in imgReaderObs.readData
-	      uncertWriteBuffer[icol]=uncertObs_opt[0];
+	      uncertWriteBuffer[icol]=uncertObs;
 	    }
 	  }
 	}
@@ -493,6 +529,8 @@ int main(int argc,char **argv) {
       }
       //two band output band0=estimation, band1=uncertainty
       imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+      imgWriterEst.setProjectionProj4(projection_opt[0]);
+      imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
       //calculate regression between two subsequence model inputs
@@ -516,6 +554,7 @@ int main(int argc,char **argv) {
 	if(verbose_opt[0])
 	  cout << "***update " << relobsindex[obsindex] << " = " << modindex << " " << observation_opt[obsindex] << " ***" << endl;
 	imgReaderObs.open(observation_opt[obsindex]);
+	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
 	//calculate regression between model and observation
 	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
@@ -533,6 +572,7 @@ int main(int argc,char **argv) {
       ImgReaderGdal imgReaderEst(input);
 
       vector<double> obsBuffer;
+      vector<double> uncertObsBuffer;
       vector<double> estReadBuffer;
       vector<double> uncertReadBuffer;
       vector<double> estWriteBuffer(ncol);
@@ -543,7 +583,9 @@ int main(int argc,char **argv) {
 	imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
 	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
 	if(update){
-	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow);
+	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow,0);
+	  if(imgReaderObs.nrOfBand()>1)
+	    imgReaderObs.readData(uncertObsBuffer,GDT_Float64,irow,1);
 	}
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  double estValue=estReadBuffer[icol];
@@ -560,17 +602,20 @@ int main(int argc,char **argv) {
 	  if(errMod<eps_opt[0])
 	    totalUncertainty=errObs;
 	  else if(errObs<eps_opt[0])
-	      totalUncertainty=errObs;
+	    totalUncertainty=errObs;
 	  else{
-	      totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
-	      totalUncertainty=sqrt(1.0/totalUncertainty);
-	    }
+	    totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
+	    totalUncertainty=sqrt(1.0/totalUncertainty);
+	  }
 	  uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsBuffer[icol])){
 	    double kalmanGain=1;
-	    if((uncertWriteBuffer[icol]+uncertObs_opt[0])>eps_opt[0])
-	      kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs_opt[0]);
+	    double uncertObs=uncertObs_opt[0];
+	    if(uncertObsBuffer.size()>icol)
+	      uncertObs=uncertObsBuffer[icol];
+	    if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
+	      kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs);
 	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsBuffer[icol]-estWriteBuffer[icol]);
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
@@ -617,6 +662,8 @@ int main(int argc,char **argv) {
     
       //two band output band0=estimation, band1=uncertainty
       imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+      imgWriterEst.setProjectionProj4(projection_opt[0]);
+      imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
       //open forward and backward estimates
@@ -660,6 +707,7 @@ int main(int argc,char **argv) {
 	if(verbose_opt[0])
 	  cout << "***update " << relobsindex[obsindex] << " = " << modindex << " " << observation_opt[obsindex] << " ***" << endl;
 	imgReaderObs.open(observation_opt[obsindex]);
+	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
 	//calculate regression between model and observation
       }
@@ -685,22 +733,20 @@ int main(int argc,char **argv) {
 	  double B=estBackwardBuffer[icol];
 	  double C=uncertForwardBuffer[icol]*uncertForwardBuffer[icol];
 	  double D=uncertBackwardBuffer[icol]*uncertBackwardBuffer[icol];
-	  double uncertObs=0;
+	  double uncertObs=uncertObs_opt[0];
 
 	  if(update){//check for nodata in observation
-	    if(imgReaderObs.nrOfBand()>1)
-	      uncertObs=uncertObsBuffer[icol];
-	    else if(imgReaderObs.isNoData(estWriteBuffer[icol]))
+	    if(imgReaderObs.isNoData(estWriteBuffer[icol]))
 	      uncertObs=uncertNodata_opt[0];
-	    else
-	      uncertObs=uncertObs_opt[0];
+	    else if(uncertObsBuffer.size()>icol)
+	      uncertObs=uncertObsBuffer[icol];
 	  }
 
 	  double noemer=(C+D);
 	  //todo: consistently check for division by zero...
 	  if(noemer<eps_opt[0]){//simple average if both uncertainties are ~>0
 	    estWriteBuffer[icol]=0.5*(A+B);
-	    uncertWriteBuffer[icol]=uncertObs_opt[0];
+	    uncertWriteBuffer[icol]=uncertObs;
 	  }
 	  else{
 	    estWriteBuffer[icol]=(A*D+B*C)/noemer;

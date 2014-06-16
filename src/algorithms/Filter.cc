@@ -142,6 +142,42 @@ void filter::Filter::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, c
   }
 }
 
+void filter::Filter::dwtCutFrom(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, int band){
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      dwtForward(pixelInput,wavelet_type,family);
+      for(int iband=0;iband<input.nrOfBand();++iband){
+	if(iband>=band)
+	  pixelInput[iband]=0;
+      }
+      dwtInverse(pixelInput,wavelet_type,family);
+      for(int iband=0;iband<input.nrOfBand();++iband)
+	lineOutput[iband][x]=pixelInput[iband];
+    }
+    for(int iband=0;iband<input.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
 void filter::Filter::dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family){
   int origsize=data.size();
   //make sure data size if power of 2
