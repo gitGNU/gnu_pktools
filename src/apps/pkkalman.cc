@@ -276,7 +276,7 @@ int main(int argc,char **argv) {
 	    if(uncertObs>eps_opt[0]){
 	      double noemer=uncertObs*uncertObs+stdDev*stdDev;
 	      estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
-	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;
+	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo:check! error?
 	    }
 	    else{
 	      //no need to fill write buffer (already done in imgReaderObs.readData
@@ -377,10 +377,11 @@ int main(int argc,char **argv) {
 	  double certNorm=(errMod*errMod+errObs*errObs);
 	  double certMod=errObs*errObs/certNorm;
 	  double certObs=errMod*errMod/certNorm;
-	  // estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod*regTime_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
-	  // estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs*regSensor_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
-	  estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
-	  estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
+	  double regTime=(c0mod+c1mod*estValue)*certMod*regTime_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
+	  double regSensor=(c0obs+c1obs*estValue)*certObs*regSensor_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
+	  estWriteBuffer[icol]=regTime+regSensor;
+	  // estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
+	  // estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
 	  double totalUncertainty=0;
 	  if(errMod<eps_opt[0])
 	    totalUncertainty=errObs;
@@ -493,7 +494,7 @@ int main(int argc,char **argv) {
 	    if(uncertObs>eps_opt[0]){
 	      double noemer=uncertObs*uncertObs+stdDev*stdDev;
 	      estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
-	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;
+	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo: check error?
 	    }
 	    else{
 	      //no need to fill write buffer (already done in imgReaderObs.readData
@@ -594,10 +595,11 @@ int main(int argc,char **argv) {
 	  double certNorm=(errMod*errMod+errObs*errObs);
 	  double certMod=errObs*errObs/certNorm;
 	  double certObs=errMod*errMod/certNorm;
-	  // estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod*regTime_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
-	  // estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs*regSensor_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
-	  estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
-	  estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
+	  double regTime=(c0mod+c1mod*estValue)*certMod*regTime_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
+	  double regSensor=(c0obs+c1obs*estValue)*certObs*regSensor_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
+	  estWriteBuffer[icol]=regTime+regSensor;
+	  // estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
+	  // estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
 	  double totalUncertainty=0;
 	  if(errMod<eps_opt[0])
 	    totalUncertainty=errObs;

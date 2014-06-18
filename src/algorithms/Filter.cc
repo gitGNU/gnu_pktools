@@ -284,6 +284,15 @@ void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, s
   filter(input,output,down,offset);
 }
 
+// void filter::Filter::smoothnodata(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down, int offset)
+// {
+//   assert(dim>0);
+//   m_taps.resize(dim);
+//   for(int itap=0;itap<dim;++itap)
+//     m_taps[itap]=1.0/dim;
+//   filter(input,output,down,offset);
+// }
+
 void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());

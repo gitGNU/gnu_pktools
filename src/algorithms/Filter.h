@@ -419,6 +419,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   for(i=offset;i<m_taps.size()/2;++i){
     if((i-offset)%down)
       continue;
+    //todo:introduce nodata
     output[(i-offset+down-1)/down]=m_taps[m_taps.size()/2]*input[i];
     for(int t=1;t<=m_taps.size()/2;++t)
       output[(i-offset+down-1)/down]+=(m_taps[m_taps.size()/2+t]+m_taps[m_taps.size()/2-t])*input[i+t];
@@ -427,6 +428,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   for(i=offset+m_taps.size()/2;i<input.size()-m_taps.size()/2;++i){
     if((i-offset)%down)
       continue;
+    //todo:introduce nodata
     T leaveOut=(*(m_taps.begin()))*input[i-m_taps.size()/2];
     T include=(m_taps.back())*input[i+m_taps.size()/2];
     output[(i-offset+down-1)/down]=0;
@@ -437,7 +439,9 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   for(i=input.size()-m_taps.size()/2;i<input.size();++i){
     if((i-offset)%down)
       continue;
+    //todo:introduce nodata
     output[(i-offset+down-1)/down]=m_taps[m_taps.size()/2]*input[i];
+    //todo:introduce nodata
     for(int t=1;t<=m_taps.size()/2;++t)
       output[(i-offset+down-1)/down]+=(m_taps[m_taps.size()/2+t]+m_taps[m_taps.size()/2-t])*input[i-t];
   }
