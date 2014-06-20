@@ -39,6 +39,7 @@ public:
   // void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType="GTiff", const std::string& interleave="BAND", const std::string& compression="LZW", int magicX=1, int magicY=1);
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   void close(void);
+  std::string getFileName() const {return m_filename;};
   int nrOfCol(void) const { return m_ncol;};
   int nrOfRow(void) const { return m_nrow;};
   int nrOfBand(void) const { return m_nband;};

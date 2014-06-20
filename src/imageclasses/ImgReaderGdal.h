@@ -38,6 +38,7 @@ public:
   ~ImgReaderGdal(void);
   void open(const std::string& filename);//, double magicX=1, double magicY=1);
   void close(void);
+  std::string getFileName() const {return m_filename;};
   int nrOfCol(void) const { return m_ncol;};
   int nrOfRow(void) const { return m_nrow;};
   int nrOfBand(void) const { return m_nband;};

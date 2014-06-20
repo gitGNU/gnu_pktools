@@ -50,8 +50,8 @@ int main(int argc,char **argv) {
   Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model",2);
   Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",0);
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
-  Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 0.5);
-  Optionpk<double> regSensor_opt("rs", "regsensor", "Relative Weight for regression in sensor series", 0.5);
+  // Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
+  // Optionpk<double> regSensor_opt("rs", "regsensor", "Relative Weight for regression in sensor series", 1.0);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression", 9);
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -75,8 +75,8 @@ int main(int argc,char **argv) {
     uncertModel_opt.retrieveOption(argc,argv);
     uncertObs_opt.retrieveOption(argc,argv);
     uncertNodata_opt.retrieveOption(argc,argv);
-    regTime_opt.retrieveOption(argc,argv);
-    regSensor_opt.retrieveOption(argc,argv);
+    // regTime_opt.retrieveOption(argc,argv);
+    // regSensor_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -187,7 +187,6 @@ int main(int argc,char **argv) {
   double c1obs=0;
   double errObs=uncertNodata_opt[0];//start with high initial value in case we do not have first observation at time 0
 
-  //todo: map modindex to real time (e.g., Julian day)
   vector<int> relobsindex;
   // cout << tmodel_opt << endl;
   // cout << tobservation_opt << endl;
@@ -273,10 +272,14 @@ int main(int argc,char **argv) {
 	    double uncertObs=uncertObs_opt[0];
 	    if(uncertObsBuffer.size()>icol)
 	      uncertObs=uncertObsBuffer[icol];
-	    if(uncertObs>eps_opt[0]){
-	      double noemer=uncertObs*uncertObs+stdDev*stdDev;
-	      estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
-	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo:check! error?
+	    if(uncertModel_opt[0]*stdDev+uncertObs>eps_opt[0]){
+	      // double noemer=uncertObs*uncertObs+stdDev*stdDev;//todo: multiply stdDev with uncertModel_opt[0]
+	      // estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
+	      // estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo:check! error?
+	      double kalmanGain=uncertModel_opt[0]*stdDev/(uncertModel_opt[0]*stdDev+uncertObs);
+	      assert(kalmanGain<=1);
+	      estWriteBuffer[icol]=estReadBuffer[icol]+kalmanGain*(estWriteBuffer[icol]-estReadBuffer[icol]);
+	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*(1-kalmanGain);
 	    }
 	    else{
 	      //no need to fill write buffer (already done in imgReaderObs.readData
@@ -329,7 +332,10 @@ int main(int argc,char **argv) {
       double c0mod=0;
       double c1mod=0;
 
-      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod,verbose_opt[0]);
+      if(verbose_opt[0])
+	  cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
+      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod);
+      // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod,verbose_opt[0]);
 
       bool update=false;
       if(obsindex<relobsindex.size()){
@@ -343,6 +349,8 @@ int main(int argc,char **argv) {
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
 	//calculate regression between model and observation
+	if(verbose_opt[0])
+	  cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderObs.getFileName() << endl;
 	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
       }
       string input;
@@ -377,11 +385,9 @@ int main(int argc,char **argv) {
 	  double certNorm=(errMod*errMod+errObs*errObs);
 	  double certMod=errObs*errObs/certNorm;
 	  double certObs=errMod*errMod/certNorm;
-	  double regTime=(c0mod+c1mod*estValue)*certMod*regTime_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
-	  double regSensor=(c0obs+c1obs*estValue)*certObs*regSensor_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
+	  double regTime=(c0mod+c1mod*estValue)*certMod;
+	  double regSensor=(c0obs+c1obs*estValue)*certObs;
 	  estWriteBuffer[icol]=regTime+regSensor;
-	  // estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
-	  // estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
 	  double totalUncertainty=0;
 	  if(errMod<eps_opt[0])
 	    totalUncertainty=errObs;
@@ -491,11 +497,20 @@ int main(int argc,char **argv) {
 	    double uncertObs=uncertObs_opt[0];
 	    if(uncertObsBuffer.size()>icol)
 	      uncertObs=uncertObsBuffer[icol];
-	    if(uncertObs>eps_opt[0]){
-	      double noemer=uncertObs*uncertObs+stdDev*stdDev;
-	      estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
-	      estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo: check error?
+	    if(uncertModel_opt[0]*stdDev+uncertObs>eps_opt[0]){
+	      // double noemer=uncertObs*uncertObs+stdDev*stdDev;//todo: multiply stdDev with uncertModel_opt[0]
+	      // estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
+	      // estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo:check! error?
+	      double kalmanGain=uncertModel_opt[0]*stdDev/(uncertModel_opt[0]*stdDev+uncertObs);
+	      assert(kalmanGain<=1);
+	      estWriteBuffer[icol]=estReadBuffer[icol]+kalmanGain*(estWriteBuffer[icol]-estReadBuffer[icol]);
+	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*(1-kalmanGain);
 	    }
+	    // if(uncertObs>eps_opt[0]){
+	    //   double noemer=uncertObs*uncertObs+stdDev*stdDev;
+	    //   estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
+	    //   estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo: check error?
+	    // }
 	    else{
 	      //no need to fill write buffer (already done in imgReaderObs.readData
 	      uncertWriteBuffer[icol]=uncertObs;
@@ -545,7 +560,10 @@ int main(int argc,char **argv) {
       double c0mod=0;
       double c1mod=0;
 
-      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod,verbose_opt[0]);
+      if(verbose_opt[0])
+	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
+      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod);
+      // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod,verbose_opt[0]);
 
       bool update=false;
       if(obsindex<relobsindex.size()){
@@ -558,6 +576,8 @@ int main(int argc,char **argv) {
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
 	//calculate regression between model and observation
+	if(verbose_opt[0])
+	  cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderObs.getFileName() << endl;
 	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
       }
       //prediction (also to fill cloudy pixels in update mode)
@@ -595,11 +615,9 @@ int main(int argc,char **argv) {
 	  double certNorm=(errMod*errMod+errObs*errObs);
 	  double certMod=errObs*errObs/certNorm;
 	  double certObs=errMod*errMod/certNorm;
-	  double regTime=(c0mod+c1mod*estValue)*certMod*regTime_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
-	  double regSensor=(c0obs+c1obs*estValue)*certObs*regSensor_opt[0]/(regTime_opt[0]+regSensor_opt[0]);
+	  double regTime=(c0mod+c1mod*estValue)*certMod;
+	  double regSensor=(c0obs+c1obs*estValue)*certObs;
 	  estWriteBuffer[icol]=regTime+regSensor;
-	  // estWriteBuffer[icol]=(c0mod+c1mod*estValue)*certMod;
-	  // estWriteBuffer[icol]+=(c0obs+c1obs*estValue)*certObs;
 	  double totalUncertainty=0;
 	  if(errMod<eps_opt[0])
 	    totalUncertainty=errObs;

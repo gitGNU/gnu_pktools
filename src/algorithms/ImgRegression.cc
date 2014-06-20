@@ -78,6 +78,6 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
   double err=stat.linear_regression_err(buffer1,buffer2,c0,c1);
   
   if(verbose)
-    std::cout << "linear regression model-model based on " << buffer1.size() << " points: " << c0 << "+" << c1 << " * x " << " with rmse: " << err << std::endl;
+    std::cout << "linear regression based on " << buffer1.size() << " points: " << c0 << "+" << c1 << " * x " << " with rmse: " << err << std::endl;
   return err;
 }
