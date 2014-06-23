@@ -28,47 +28,15 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/FeatureSelector.h"
 #include "algorithms/svm.h"
 #include "imageclasses/ImgReaderOgr.h"
+#include "pkfssvm.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-namespace svm{
-  enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};
-  enum KERNEL_TYPE {linear=0,polynomial=1,radial=2,sigmoid=3};
-}
-
-enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
-
 using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
-
-class CostFactorySVM : public CostFactory
-{
-public:
-  CostFactorySVM()
-    : CostFactory(2,0), m_svm_type("C_SVC"), m_kernel_type("radial"), m_kernel_degree(3), m_gamma(1.0), m_coef0(0), m_ccost(1000), m_nu(0.5),  m_epsilon_loss(100), m_cache(100), m_epsilon_tol(0.001), m_shrinking(false), m_prob_est(true){};
-  //  ~CostFactorySVM(){};
-  CostFactorySVM(std::string svm_type, std::string kernel_type, unsigned short kernel_degree, float gamma, float coef0, float ccost, float nu,  float epsilon_loss, int cache, float epsilon_tol, bool shrinking, bool prob_est, unsigned short cv, bool verbose)
-    : CostFactory(cv,verbose), m_svm_type(svm_type), m_kernel_type(kernel_type), m_kernel_degree(kernel_degree), m_gamma(gamma), m_coef0(coef0), m_ccost(ccost), m_nu(nu),  m_epsilon_loss(epsilon_loss), m_cache(cache), m_epsilon_tol(epsilon_tol), m_shrinking(shrinking), m_prob_est(prob_est){};
-  ~CostFactorySVM();
-  double getCost(const vector<Vector2d<float> > &trainingFeatures);
-  
-private:
-  string m_svm_type;
-  string m_kernel_type;
-  unsigned short m_kernel_degree;
-  float m_gamma;
-  float m_coef0;
-  float m_ccost;
-  float m_nu;
-  float m_epsilon_loss;
-  int m_cache;
-  float m_epsilon_tol;
-  bool m_shrinking;
-  bool m_prob_est;
-};
 
 //global parameters used in cost function getCost
 // ConfusionMatrix cm;
@@ -77,8 +45,17 @@ private:
 // vector<unsigned int> nctraining;
 // vector<unsigned int> nctest;
 
-double CostFactorySVM::getCost(const vector<Vector2d<float> > &trainingFeatures)
-{
+CostFactorySVM::CostFactorySVM()
+    : CostFactory(2,0), m_svm_type("C_SVC"), m_kernel_type("radial"), m_kernel_degree(3), m_gamma(1.0), m_coef0(0), m_ccost(1000), m_nu(0.5),  m_epsilon_loss(100), m_cache(100), m_epsilon_tol(0.001), m_shrinking(false), m_prob_est(true){
+}
+
+CostFactorySVM::~CostFactorySVM(){
+}
+
+CostFactorySVM::CostFactorySVM(std::string svm_type, std::string kernel_type, unsigned short kernel_degree, float gamma, float coef0, float ccost, float nu,  float epsilon_loss, int cache, float epsilon_tol, bool shrinking, bool prob_est, unsigned short cv, bool verbose)
+    : CostFactory(cv,verbose), m_svm_type(svm_type), m_kernel_type(kernel_type), m_kernel_degree(kernel_degree), m_gamma(gamma), m_coef0(coef0), m_ccost(ccost), m_nu(nu),  m_epsilon_loss(epsilon_loss), m_cache(cache), m_epsilon_tol(epsilon_tol), m_shrinking(shrinking), m_prob_est(prob_est){};
+
+double CostFactorySVM::getCost(const vector<Vector2d<float> > &trainingFeatures){
   std::map<std::string, svm::SVM_TYPE> svmMap;
 
   svmMap["C_SVC"]=svm::C_SVC;

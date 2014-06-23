@@ -30,8 +30,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 class CostFactory{
 public:
   CostFactory(void){};
- CostFactory(unsigned short cv, short verbose) : m_cv(cv), m_verbose(verbose){};
-  virtual ~CostFactory(void);
+  CostFactory(unsigned short cv, short verbose) : m_cv(cv), m_verbose(verbose){};
+
+  virtual ~CostFactory(void){};
   void setCv(unsigned short cv){m_cv=cv;};
   void setClassValueMap(const std::string& classname, short classvalue){ m_classValueMap[classname]=classvalue;};
   std::map<std::string,short> getClassValueMap(){return m_classValueMap;};
@@ -43,7 +44,7 @@ public:
   void setNcTraining(const std::vector<unsigned int> nctraining){m_nctraining=nctraining;};
   void setNcTest(const std::vector<unsigned int> nctest){m_nctest=nctest;};
   //getCost needs to be implemented case by case (e.g., SVM, ANN)
-  virtual double getCost(const std::vector<Vector2d<float> > &trainingFeatures);
+  virtual double getCost(const std::vector<Vector2d<float> > &trainingFeatures){};
   
 protected:
   ConfusionMatrix m_cm;
