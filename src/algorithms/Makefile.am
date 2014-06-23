@@ -25,7 +25,7 @@ libalgorithms_ladir = $(includedir)/pktools/algorithms
 libalgorithms_la_LDFLAGS = -version-info $(PKTOOLS_SO_VERSION) $(AM_LDFLAGS)
 
 # the list of header files that belong to the library (to be installed later)
-libalgorithms_la_HEADERS = Egcs.h Filter2d.h Filter.h StatFactory.h ConfusionMatrix.h svm.h FeatureSelector.h
+libalgorithms_la_HEADERS = Egcs.h Filter2d.h Filter.h StatFactory.h ConfusionMatrix.h svm.h CostFactory.h FeatureSelector.h
 
 if USE_FANN
 libalgorithms_la_HEADERS += myfann_cpp.h
