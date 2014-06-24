@@ -39,7 +39,7 @@ public:
   std::vector<std::string> getNameVector(){return m_nameVector;};
   void setNameVector(std::vector<std::string>& nameVector){m_nameVector=nameVector;};
   unsigned short getClassIndex(std::string classname){m_cm.getClassIndex(classname);};
-  void pushBackClassName(std::string classname){m_cm.pushBackClassName(classname);};
+  void pushBackClassName(std::string classname){m_cm.pushBackClassName(classname,true);};//doSort=true
   void pushBackName(std::string classname){m_nameVector.push_back(classname);};
   void setNcTraining(const std::vector<unsigned int> nctraining){m_nctraining=nctraining;};
   void setNcTest(const std::vector<unsigned int> nctest){m_nctest=nctest;};

@@ -25,81 +25,67 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "algorithms/ConfusionMatrix.h"
+#include "algorithms/CostFactory.h"
 #include "algorithms/FeatureSelector.h"
 #include "floatfann.h"
 #include "algorithms/myfann_cpp.h"
+#include "pkfsann.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4 };
-
 using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
+CostFactoryANN::CostFactoryANN(const vector<unsigned int>& nneuron, float connection, const std::vector<float> weights, float learning, unsigned int maxit, unsigned short cv, bool verbose)
+  : CostFactory(cv,verbose), m_nneuron(nneuron), m_connection(connection), m_weights(weights), m_learning(learning), m_maxit(maxit){};
 
-//global parameters used in cost function getCost
-ConfusionMatrix cm;
-map<string,short> classValueMap;
-vector<std::string> nameVector;
-vector<unsigned int> nctraining;
-vector<unsigned int> nctest;
-Optionpk<unsigned int> nneuron_opt("\0", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
-Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
-Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
-Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
-Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
-// Optionpk<bool> weight_opt("wi", "wi", "set the parameter C of class i to weight*C, for C-SVC",true);
-Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
-Optionpk<string> classname_opt("c", "class", "list of class names."); 
-Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+CostFactoryANN::~CostFactoryANN(){
+}
 
-double getCost(const vector<Vector2d<float> > &trainingFeatures)
+double CostFactoryANN::getCost(const vector<Vector2d<float> > &trainingFeatures)
 {
   unsigned short nclass=trainingFeatures.size();
   unsigned int ntraining=0;
   unsigned int ntest=0;
   for(int iclass=0;iclass<nclass;++iclass){
-    ntraining+=nctraining[iclass];
-    ntest+=nctest[iclass];
+    ntraining+=m_nctraining[iclass];
+    ntest+=m_nctest[iclass];
   }
   if(ntest)
-    assert(!cv_opt[0]);
-  if(!cv_opt[0])
+    assert(!m_cv);
+  if(!m_cv)
     assert(ntest);
   unsigned short nFeatures=trainingFeatures[0][0].size();
 
   FANN::neural_net net;//the neural network
-  const unsigned int num_layers = nneuron_opt.size()+2;
+  const unsigned int num_layers = m_nneuron.size()+2;
   const float desired_error = 0.0003;
-  const unsigned int iterations_between_reports = (verbose_opt[0])?maxit_opt[0]+1:0;
-  if(verbose_opt[0]>1){
-    cout << "creating artificial neural network with " << nneuron_opt.size() << " hidden layer, having " << endl;
-    for(int ilayer=0;ilayer<nneuron_opt.size();++ilayer)
-      cout << nneuron_opt[ilayer] << " ";
+  const unsigned int iterations_between_reports = (m_verbose) ? m_maxit+1:0;
+  if(m_verbose>1){
+    cout << "creating artificial neural network with " << m_nneuron.size() << " hidden layer, having " << endl;
+    for(int ilayer=0;ilayer<m_nneuron.size();++ilayer)
+      cout << m_nneuron[ilayer] << " ";
     cout << "neurons" << endl;
   }
   switch(num_layers){
   case(3):{
     unsigned int layers[3];
     layers[0]=nFeatures;
-    layers[1]=nneuron_opt[0];
+    layers[1]=m_nneuron[0];
     layers[2]=nclass;
-    net.create_sparse_array(connection_opt[0],num_layers,layers);
-    // net.create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nclass);
+    net.create_sparse_array(m_connection,num_layers,layers);
     break;
   }
   case(4):{
     unsigned int layers[4];
     layers[0]=nFeatures;
-    layers[1]=nneuron_opt[0];
-    layers[2]=nneuron_opt[1];
+    layers[1]=m_nneuron[0];
+    layers[2]=m_nneuron[1];
     layers[3]=nclass;
-    net.create_sparse_array(connection_opt[0],num_layers,layers);
-    // net.create_sparse(connection_opt[0],num_layers, nFeatures, nneuron_opt[0], nneuron_opt[1], nclass);
+    net.create_sparse_array(m_connection,num_layers,layers);
     break;
   }
   default:
@@ -108,70 +94,58 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
     break;
   }
 
-  net.set_learning_rate(learning_opt[0]);
-  //   net.set_activation_steepness_hidden(1.0);
-  //   net.set_activation_steepness_output(1.0);
+  net.set_learning_rate(m_learning);
     
   net.set_activation_function_hidden(FANN::SIGMOID_SYMMETRIC_STEPWISE);
   net.set_activation_function_output(FANN::SIGMOID_SYMMETRIC_STEPWISE);
 
-  // Set additional properties such as the training algorithm
-  //   net.set_training_algorithm(FANN::TRAIN_QUICKPROP);
-
   vector<unsigned short> referenceVector;
   vector<unsigned short> outputVector;
   float rmse=0;
-  // ConfusionMatrix cm;
-  // //set names in confusion matrix using nameVector
-  // for(int iname=0;iname<nameVector.size();++iname){
-  //   if(classValueMap.empty())
-  //     cm.pushBackClassName(nameVector[iname]);
-  //   else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
-  //     cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
-  // }
   vector<Vector2d<float> > tmpFeatures(nclass);
   for(int iclass=0;iclass<nclass;++iclass){
     tmpFeatures[iclass].resize(trainingFeatures[iclass].size(),nFeatures);
-    for(unsigned int isample=0;isample<nctraining[iclass];++isample){
+    for(unsigned int isample=0;isample<m_nctraining[iclass];++isample){
 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
           tmpFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][isample][ifeature];
       }
     }
   }
-  if(cv_opt[0]>0){
+  m_cm.clearResults();
+  if(m_cv>0){
     rmse=net.cross_validation(tmpFeatures,
                               ntraining,
-                              cv_opt[0],
-                              maxit_opt[0],
+                              m_cv,
+                              m_maxit,
                               desired_error,
                               referenceVector,
                               outputVector,
-                              verbose_opt[0]);
+                              m_verbose);
     for(int isample=0;isample<referenceVector.size();++isample){
-      string refClassName=nameVector[referenceVector[isample]];
-      string className=nameVector[outputVector[isample]];
-      if(classValueMap.size())
-	cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
+      string refClassName=m_nameVector[referenceVector[isample]];
+      string className=m_nameVector[outputVector[isample]];
+      if(m_classValueMap.size())
+	m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
       else
-	cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1.0);
+	m_cm.incrementResult(m_cm.getClass(referenceVector[isample]),m_cm.getClass(outputVector[isample]),1.0);
     }
   }
   else{//not working yet. please repair...
-    assert(cv_opt[0]>0);
+    assert(m_cv>0);
     bool initWeights=true;
-    net.train_on_data(tmpFeatures,ntraining,initWeights, maxit_opt[0],
+    net.train_on_data(tmpFeatures,ntraining,initWeights, m_maxit,
                       iterations_between_reports, desired_error);
     vector<Vector2d<float> > testFeatures(nclass);
     vector<float> result(nclass);
     int maxClass=-1;
     for(int iclass=0;iclass<nclass;++iclass){
-      testFeatures.resize(nctest[iclass],nFeatures);
-      for(unsigned int isample=0;isample<nctraining[iclass];++isample){
+      testFeatures.resize(m_nctest[iclass],nFeatures);
+      for(unsigned int isample=0;isample<m_nctraining[iclass];++isample){
 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
-          testFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][nctraining[iclass]+isample][ifeature];
+          testFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][m_nctraining[iclass]+isample][ifeature];
         }
         result=net.run(testFeatures[iclass][isample]);
-        string refClassName=nameVector[iclass];
+        string refClassName=m_nameVector[iclass];
         float maxP=-1;
         for(int ic=0;ic<nclass;++ic){
           float pv=(result[ic]+1.0)/2.0;//bring back to scale [0,1]
@@ -180,16 +154,16 @@ double getCost(const vector<Vector2d<float> > &trainingFeatures)
             maxClass=ic;
           }
         }
-        string className=nameVector[maxClass];
-        if(classValueMap.size())
-          cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
+        string className=m_nameVector[maxClass];
+        if(m_classValueMap.size())
+          m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
         else
-          cm.incrementResult(cm.getClass(referenceVector[isample]),cm.getClass(outputVector[isample]),1.0);
+          m_cm.incrementResult(m_cm.getClass(referenceVector[isample]),m_cm.getClass(outputVector[isample]),1.0);
       }
     }
   }
-  assert(cm.nReference());
-  return(cm.kappa());
+  assert(m_cm.nReference());
+  return(m_cm.kappa());
 }
 
 int main(int argc, char *argv[])
@@ -214,6 +188,15 @@ int main(int argc, char *argv[])
   // Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0);
   Optionpk<string> selector_opt("sm", "sm", "feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search)","sffs"); 
   Optionpk<float> epsilon_cost_opt("ecost", "ecost", "epsilon for stopping criterion in cost function to determine optimal number of features",0.001);
+  Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
+  Optionpk<string> classname_opt("c", "class", "list of class names."); 
+  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
+  Optionpk<unsigned int> nneuron_opt("n", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
+  Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
+  Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
+  Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
+  Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
+  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -232,16 +215,16 @@ int main(int argc, char *argv[])
     scale_opt.retrieveOption(argc,argv);
     aggreg_opt.retrieveOption(argc,argv);
     // priors_opt.retrieveOption(argc,argv);
+    selector_opt.retrieveOption(argc,argv);
+    epsilon_cost_opt.retrieveOption(argc,argv);
+    cv_opt.retrieveOption(argc,argv);
+    classname_opt.retrieveOption(argc,argv);
+    classvalue_opt.retrieveOption(argc,argv);
     nneuron_opt.retrieveOption(argc,argv);
     connection_opt.retrieveOption(argc,argv);
     weights_opt.retrieveOption(argc,argv);
     learning_opt.retrieveOption(argc,argv);
     maxit_opt.retrieveOption(argc,argv);
-    cv_opt.retrieveOption(argc,argv);
-    selector_opt.retrieveOption(argc,argv);
-    epsilon_cost_opt.retrieveOption(argc,argv);
-    classname_opt.retrieveOption(argc,argv);
-    classvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -253,6 +236,20 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
   
+  CostFactoryANN costfactory(nneuron_opt, connection_opt[0], weights_opt, learning_opt[0], maxit_opt[0], cv_opt[0], verbose_opt[0]);
+
+  assert(training_opt.size());
+  if(input_opt.size())
+    costfactory.setCv(0);
+  if(verbose_opt[0]>=1){
+    if(input_opt.size())
+      std::cout << "input filename: " << input_opt[0] << std::endl;
+    std::cout << "training vector file: " << std::endl;
+    for(int ifile=0;ifile<training_opt.size();++ifile)
+      std::cout << training_opt[ifile] << std::endl;
+    std::cout << "verbose: " << verbose_opt[0] << std::endl;
+  }
+
   static std::map<std::string, SelectorValue> selMap;
   //initialize selMap
   selMap["sffs"]=SFFS;
@@ -293,7 +290,7 @@ int main(int argc, char *argv[])
   if(classname_opt.size()){
     assert(classname_opt.size()==classvalue_opt.size());
     for(int iclass=0;iclass<classname_opt.size();++iclass)
-      classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
+      costfactory.setClassValueMap(classname_opt[iclass],classvalue_opt[iclass]);
   }
   //----------------------------------- Training -------------------------------
   vector<double> offset;
@@ -476,43 +473,28 @@ int main(int argc, char *argv[])
     // std::cout << std::endl;
   }
 
-  //new
-  mapit=trainingMap.begin();
-  bool doSort=true;
-  try{
-    while(mapit!=trainingMap.end()){
-      nameVector.push_back(mapit->first);
-      if(classValueMap.size()){
-	//check if name in training is covered by classname_opt (values can not be 0)
-	if(classValueMap[mapit->first]>0){
-	  if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0){
-	    cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]),doSort);
-	  }
-	}
-	else{
-	  std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
-	  exit(1);
-	}
-      }
-      else
-	cm.pushBackClassName(mapit->first,doSort);
-      ++mapit;
-    }
-  }
-  catch(BadConversion conversionString){
-    std::cerr << "Error: did you provide class pairs names (-c) and integer values (-r) for each class in training vector?" << std::endl;
-    exit(1);
-  }
-  if(classname_opt.empty()){
-    //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
-    for(int iclass=0;iclass<nclass;++iclass){
-      if(verbose_opt[0])
-	std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
-      classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
-    }
+  //set names in confusion matrix using nameVector
+  vector<string> nameVector=costfactory.getNameVector();
+  for(int iname=0;iname<nameVector.size();++iname){
+    if(costfactory.getClassValueMap().empty())
+      costfactory.pushBackClassName(nameVector[iname]);
+      // cm.pushBackClassName(nameVector[iname]);
+    else if(costfactory.getClassIndex(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]))<0)
+      costfactory.pushBackClassName(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]));
   }
 
+  // if(classname_opt.empty()){
+  //   for(int iclass=0;iclass<nclass;++iclass){
+  //     if(verbose_opt[0])
+  // 	std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
+  //     classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
+  //   }
+  // }
+
   //Calculate features of trainig set
+
+  vector<unsigned int> nctraining;
+  vector<unsigned int> nctest;
   nctraining.resize(nclass);
   nctest.resize(nclass);
   vector< Vector2d<float> > trainingFeatures(nclass);
@@ -558,6 +540,8 @@ int main(int argc, char *argv[])
     assert(trainingFeatures[iclass].size()==nctraining[iclass]+nctest[iclass]);
   }
     
+  costfactory.setNcTraining(nctraining);
+  costfactory.setNcTest(nctest);
   int nFeatures=trainingFeatures[0][0].size();
   int maxFeatures=(maxFeatures_opt[0])? maxFeatures_opt[0] : 1;
   double previousCost=-1;
@@ -569,7 +553,7 @@ int main(int argc, char *argv[])
       subset.clear();
       for(int ifeature=0;ifeature<nFeatures;++ifeature)
         subset.push_back(ifeature);
-      cost=getCost(trainingFeatures);
+      cost=costfactory.getCost(trainingFeatures);
     }
     else{
       while(fabs(cost-previousCost)>=epsilon_cost_opt[0]){
@@ -577,17 +561,17 @@ int main(int argc, char *argv[])
         switch(selMap[selector_opt[0]]){
         case(SFFS):
           subset.clear();//needed to clear in case of floating and brute force search
-          cost=selector.floating(trainingFeatures,&getCost,subset,maxFeatures,epsilon_cost_opt[0],verbose_opt[0]);
+          cost=selector.floating(trainingFeatures,costfactory,subset,maxFeatures,epsilon_cost_opt[0],verbose_opt[0]);
           break;
         case(SFS):
-          cost=selector.forward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          cost=selector.forward(trainingFeatures,costfactory,subset,maxFeatures,verbose_opt[0]);
           break;
         case(SBS):
-          cost=selector.backward(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          cost=selector.backward(trainingFeatures,costfactory,subset,maxFeatures,verbose_opt[0]);
           break;
         case(BFS):
           subset.clear();//needed to clear in case of floating and brute force search
-          cost=selector.bruteForce(trainingFeatures,&getCost,subset,maxFeatures,verbose_opt[0]);
+          cost=selector.bruteForce(trainingFeatures,costfactory,subset,maxFeatures,verbose_opt[0]);
           break;
         default:
           std::cout << "Error: selector not supported, please use sffs, sfs, sbs or bfs" << std::endl;

@@ -136,6 +136,7 @@ double CostFactorySVM::getCost(const vector<Vector2d<float> > &trainingFeatures)
   if(m_verbose>2)
     std::cout << "SVM is now trained" << std::endl;
 
+  m_cm.clearResults();
   if(m_cv>1){
     double *target = Malloc(double,prob.l);
     svm_cross_validation(&prob,&param,m_cv,target);
@@ -179,7 +180,8 @@ double CostFactorySVM::getCost(const vector<Vector2d<float> > &trainingFeatures)
     std::cout << m_cm << std::endl;
   assert(m_cm.nReference());
   // if(m_verbose)
-  //   std::cout << m_cm << std::endl;
+
+  // std::cout << m_cm << std::endl;
   // std::cout << "Kappa: " << m_cm.kappa() << std::endl;
   // double se95_oa=0;
   // double doa=0;
@@ -264,9 +266,9 @@ int main(int argc, char *argv[])
     epsilon_tol_opt.retrieveOption(argc,argv);
     shrinking_opt.retrieveOption(argc,argv);
     prob_est_opt.retrieveOption(argc,argv);
-    cv_opt.retrieveOption(argc,argv);
     selector_opt.retrieveOption(argc,argv);
     epsilon_cost_opt.retrieveOption(argc,argv);
+    cv_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
@@ -324,7 +326,6 @@ int main(int argc, char *argv[])
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
 
-  // map<string,short> classValueMap;//global variable for now (due to getCost)
   if(classname_opt.size()){
     assert(classname_opt.size()==classvalue_opt.size());
     for(int iclass=0;iclass<classname_opt.size();++iclass)
@@ -523,45 +524,8 @@ int main(int argc, char *argv[])
       // cm.pushBackClassName(nameVector[iname]);
     else if(costfactory.getClassIndex(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]))<0)
       costfactory.pushBackClassName(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]));
-    // else if(cm.getClassIndex(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]))<0)
-    //   cm.pushBackClassName(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]));
   }
 
-  // // map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
-  // mapit=trainingMap.begin();
-  // bool doSort=true;
-  // try{
-  //   while(mapit!=trainingMap.end()){
-  //     nameVector.push_back(mapit->first);
-  //     if(classValueMap.size()){
-  // 	//check if name in training is covered by classname_opt (values can not be 0)
-  // 	if(classValueMap[mapit->first]>0){
-  // 	  if(cm.getClassIndex(type2string<short>(classValueMap[mapit->first]))<0){
-  // 	    cm.pushBackClassName(type2string<short>(classValueMap[mapit->first]),doSort);
-  // 	  }
-  // 	}
-  // 	else{
-  // 	  std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
-  // 	  exit(1);
-  // 	}
-  //     }
-  //     else
-  // 	cm.pushBackClassName(mapit->first,doSort);
-  //     ++mapit;
-  //   }
-  // }
-  // catch(BadConversion conversionString){
-  //   std::cerr << "Error: did you provide class pairs names (-c) and integer values (-r) for each class in training vector?" << std::endl;
-  //   exit(1);
-  // }
-  // if(classname_opt.empty()){
-  //   //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
-  //   for(int iclass=0;iclass<nclass;++iclass){
-  //     if(verbose_opt[0])
-  // 	std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
-  //     classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
-  //   }
-  // }
 
   //Calculate features of training (and test) set
 

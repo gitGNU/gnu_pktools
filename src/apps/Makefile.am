@@ -6,7 +6,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 ###############################################################################
 
 # the program to build and install (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkkalman pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkeditogr
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkkalman pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pksvm pkfssvm pkfsann pkascii2ogr pkeditogr
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS =  pkxcorimg pkgeom
@@ -17,9 +17,9 @@ bin_PROGRAMS += pkann pkregann
 pkann_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkann.cc
 pkann_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 pkann_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
-#pkfsann_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkfsann.cc
-#pkfsann_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
-#pkfsann_LDADD = $(GSL_LIBS) $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
+pkfsann_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h $(top_srcdir)/src/algorithms/CostFactory.h pkfsann.h pkfsann.cc
+pkfsann_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
+pkfsann_LDADD = $(GSL_LIBS) $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS) -lalgorithms
 pkregann_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkregann.cc
 pkregann_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 pkregann_LDADD = $(GSL_LIBS) $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)
@@ -66,8 +66,8 @@ pkcomposite_SOURCES = pkcomposite.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pksvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pksvm.cc
-pkfssvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/FeatureSelector.h  $(top_srcdir)/src/algorithms/CostFactory.h $(top_srcdir)/src/algorithms/svm.cpp pkfssvm.cc
-pkfssvm_LDADD = -lalgorithms $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
+pkfssvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/FeatureSelector.h  $(top_srcdir)/src/algorithms/CostFactory.h $(top_srcdir)/src/algorithms/svm.cpp pkfssvm.h pkfssvm.cc
+pkfssvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
 pkeditogr_SOURCES = pkeditogr.cc
