@@ -41,21 +41,11 @@ class FeatureSelector
   template<class T> double backward(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int minFeatures, short verbose=0);
   template<class T> double floating(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, double epsilon=0.001, short verbose=0);
   template<class T> double bruteForce(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, short verbose=0);
-  /* //test */
-  /* template<class T> double mytest(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, double epsilon=0.001, short verbose=0); */
   
   private:
     template<class T> double addFeature(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, short verbose=0);
   template<class T> double removeFeature(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int& r, short verbose=0);  
   template<class T> double forwardUnivariate(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures, short verbose=0);
-  /* template<class T> double forward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures, short verbose=0); */
-  /* template<class T> double backward(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int minFeatures, short verbose=0); */
-  /* template<class T> double floating(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, double epsilon=0.001, short verbose=0); */
-  /* template<class T> double bruteForce(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int maxFeatures=0, short verbose=0); */
-  
-  /* private: */
-  /*   template<class T> double addFeature(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, short verbose=0); */
-  /* template<class T> double removeFeature(std::vector< Vector2d<T> >& v, double (*getCost)(const std::vector< Vector2d<T> >&), std::list<int>& subset, int& r, short verbose=0);   */
 };
 
 //sequential forward selection Univariate (N single best features)
@@ -217,48 +207,6 @@ template<class T> double FeatureSelector::floating(std::vector< Vector2d<T> >& v
   }
   return cost.back();
 }
-
-//test
-/* template<class T> double FeatureSelector::mytest(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures, double epsilon, short verbose){ */
-  
-/*   std::vector< Vector2d<T> > origv=v; */
-
-/*   std::vector<T> cost; */
-/*   subset.clear(); */
-/*   int k=subset.size(); */
-/*   while(k<maxFeatures){ */
-/*     std::list<int> tmpset=subset;//temporary set of selected features (levels) */
-/*     std::vector< Vector2d<T> > tmp(v.size()); */
-/*     double cost; */
-/*     int maxLevels=v[0][0].size(); */
-/*     for(int ilevel=0;ilevel<maxLevels;++ilevel){ */
-/*       if(find(tmpset.begin(),tmpset.end(),ilevel)!=tmpset.end()) */
-/*   	continue; */
-/*       tmpset.push_back(ilevel); */
-/*       for(int iclass=0;iclass<v.size();++iclass){ */
-/*   	//       tmp[iclass].resize(v[iclass].size()); */
-/*   	v[iclass].selectCols(tmpset,tmp[iclass]); */
-/*       } */
-/*       cost=theCostFactory.getCost(tmp); */
-/*       //    cost.push_back(addFeature(v,theCostFactory,subset,verbose)); */
-/*       std::cout << "tmpset.size: " << tmpset.size() << std::endl; */
-/*       std::cout << "cost " << tmpset.back() << ": " << cost << std::endl; */
-/*       ++k; */
-/*     } */
-/*   } */
-  
-/*   std::list<int> tmpset; */
-/*   tmpset.push_back(0); */
-/*   tmpset.push_back(1); */
-/*   std::vector< Vector2d<T> > tmp(origv.size()); */
-
-/*   for(int ilevel=0;ilevel<tmpset.size();++ilevel){ */
-/*     for(int iclass=0;iclass<origv.size();++iclass){ */
-/*       origv[iclass].selectCols(tmpset,tmp[iclass]); */
-/*     } */
-/*   } */
-/*   return(theCostFactory.getCost(tmp)); */
-/* } */
 
 //brute force search (search for all possible combinations and select best)
 template<class T> double FeatureSelector::bruteForce(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures, short verbose){

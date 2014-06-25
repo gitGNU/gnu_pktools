@@ -633,6 +633,7 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0])
     cout <<"cost: " << cost << endl;
+  subset.sort();
   for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
     std::cout << " -b " << *lit;
   std::cout << std::endl;
