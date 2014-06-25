@@ -30,6 +30,8 @@ ImgRegression::~ImgRegression(void)
 {}
 
 double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGdal& imgReader2, double& c0, double& c1, short verbose) const{
+  c0=0;
+  c1=1;
   int icol1=0,irow1=0;
   std::vector<double> rowBuffer1(imgReader1.nrOfCol());
   std::vector<double> rowBuffer2(imgReader2.nrOfCol());
@@ -74,9 +76,11 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
 	std::cout << geox << " " << geoy << " " << icol1 << " " << irow1 << " " << icol2 << " " << irow2 << " " << buffer1.back() << " " << buffer2.back() << std::endl;
     }
   }
-  statfactory::StatFactory stat;
-  double err=stat.linear_regression_err(buffer1,buffer2,c0,c1);
-  
+  double err=0;
+  if(buffer1.size()||buffer2.size()){
+    statfactory::StatFactory stat;
+    err=stat.linear_regression_err(buffer1,buffer2,c0,c1);
+  }
   if(verbose)
     std::cout << "linear regression based on " << buffer1.size() << " points: " << c0 << "+" << c1 << " * x " << " with rmse: " << err << std::endl;
   return err;

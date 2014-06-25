@@ -184,6 +184,7 @@ public:
   // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, std::vector< std::vector<T> >& output, double start, double end, double step, const gsl_interp_type* type);
   // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthIn, std::vector< std::vector<T> >& output, std::vector<double>& wavelengthOut, double start, double end, double step, const gsl_interp_type* type);
   template<class T> void interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin) const;
+  template<class T> void nearUp(const std::vector<T>& input, std::vector<T>& output) const;
   template<class T> void interpolateUp(double* input, int dim, std::vector<T>& output, int nbin);
   template<class T> void interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin) const;
   template<class T> void interpolateDown(double* input, int dim, std::vector<T>& output, int nbin);
@@ -986,6 +987,22 @@ template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, s
     }
     else
       output.push_back(input.back());
+  }
+}
+
+template<class T> void StatFactory::nearUp(const std::vector<T>& input, std::vector<T>& output) const
+{
+  assert(input.size());
+  assert(output.size()>=input.size());
+  int dimInput=input.size();
+  int dimOutput=output.size();
+  
+  for(int iin=0;iin<dimInput;++iin){
+    for(int iout=0;iout<dimOutput/dimInput;++iout){
+      int indexOutput=iin*dimOutput/dimInput+iout;
+      assert(indexOutput<output.size());
+      output[indexOutput]=input[iin];
+    }
   }
 }
 
