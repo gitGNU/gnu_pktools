@@ -6,14 +6,13 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 ###############################################################################
 
 # the program to build and install (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkkalman pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pksvm pkfssvm pkfsann pkascii2ogr pkeditogr
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkkalman pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkeditogr
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS =  pkxcorimg pkgeom
 
 if USE_FANN
-#bin_PROGRAMS += pkann pkfsann pkregann
-bin_PROGRAMS += pkann pkregann
+bin_PROGRAMS += pkann pkfsann pkregann
 pkann_SOURCES = $(top_srcdir)/src/algorithms/myfann_cpp.h pkann.cc
 pkann_CXXFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/base $(FANN_CFLAGS) -I$(top_srcdir)/src/algorithms $(AM_CXXFLAGS)
 pkann_LDADD = $(FANN_LIBS) $(FANN_CFLAGS) $(AM_LDFLAGS)

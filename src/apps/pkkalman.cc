@@ -598,7 +598,7 @@ int main(int argc,char **argv) {
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
 	vector<double> uncertObsBuffer;
-	imgReaderObs.readData(estReadBuffer,GDT_Float64,irow,0);
+	imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
 	if(imgReaderObs.nrOfBand()>1)
 	  imgReaderObs.readData(uncertObsBuffer,GDT_Float64,irow,1);
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
@@ -732,6 +732,7 @@ int main(int argc,char **argv) {
 	imgReaderEst.image2geo(0,irow,x,y);
 	imgReaderModel2.geo2image(x,y,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
+	imgReaderModel2.readData(modelBuffer,GDT_Float64,modRow,0);
 	if(update){
 	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow,0);
 	  if(imgReaderObs.nrOfBand()>1)
