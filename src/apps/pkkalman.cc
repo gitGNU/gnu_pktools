@@ -267,7 +267,7 @@ int main(int argc,char **argv) {
 	vector<double> uncertWriteBuffer(ncol);
 	imgWriterEst.image2geo(0,irow,x,y);
 	imgReaderModel1.geo2image(x,y,modCol,modRow);
-	assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
+	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	try{
 	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  //simple nearest neighbor
@@ -295,7 +295,7 @@ int main(int argc,char **argv) {
 	vector<double> estReadBuffer;
 	imgWriterEst.image2geo(0,irow,x,y);
 	imgReaderModel1.geo2image(x,y,modCol,modRow);
-	assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
+	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
@@ -307,8 +307,11 @@ int main(int argc,char **argv) {
 	  if(imgReaderObs.isNoData(estWriteBuffer[icol])){
 	    imgWriterEst.image2geo(icol,irow,x,y);
 	    imgReaderModel1.geo2image(x,y,modCol,modRow);
-	    assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
-	    estWriteBuffer[icol]=estReadBuffer[modCol];
+	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	    if(imgReaderModel1.isNoData(estReadBuffer[modCol]))//if both obs and model are no-data, set obs to nodata
+	      estWriteBuffer[icol]=obsnodata_opt[0];
+	    else
+	      estWriteBuffer[icol]=estReadBuffer[modCol];
 	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
 	  }
 	  else{
@@ -318,13 +321,16 @@ int main(int argc,char **argv) {
 	    if(uncertModel_opt[0]*stdDev+uncertObs>eps_opt[0]){
 	      imgWriterEst.image2geo(icol,irow,x,y);
 	      imgReaderModel1.geo2image(x,y,modCol,modRow);
-	      assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
+	      assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	      // double noemer=uncertObs*uncertObs+stdDev*stdDev;//todo: multiply stdDev with uncertModel_opt[0]
 	      // estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
 	      // estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo:check! error?
-	      double kalmanGain=uncertModel_opt[0]*stdDev/(uncertModel_opt[0]*stdDev+uncertObs);
-	      assert(kalmanGain<=1);
-	      estWriteBuffer[icol]=estReadBuffer[modCol]+kalmanGain*(estWriteBuffer[icol]-estReadBuffer[modCol]);
+	      double kalmanGain=1;
+	      if(!imgReaderModel1.isNoData(estReadBuffer[modCol])){
+		//if model is no-data, retain observation value
+		kalmanGain=uncertModel_opt[0]*stdDev/(uncertModel_opt[0]*stdDev+uncertObs);
+		estWriteBuffer[icol]=estReadBuffer[modCol]+kalmanGain*(estWriteBuffer[icol]-estReadBuffer[modCol]);
+	      }
 	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*(1-kalmanGain);
 	    }
 	    else{
@@ -410,8 +416,10 @@ int main(int argc,char **argv) {
 	input=outputstream.str();
       }
       ImgReaderGdal imgReaderEst(input);
+      imgReaderEst.setNoData(obsnodata_opt);
 
       vector<double> obsBuffer;
+      vector<double> modelBuffer;
       vector<double> uncertObsBuffer;
       vector<double> estReadBuffer;
       vector<double> uncertReadBuffer;
@@ -422,6 +430,11 @@ int main(int argc,char **argv) {
 	assert(irow<imgReaderEst.nrOfRow());
 	imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
 	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
+	//read model2 in case current estimate is nodata
+	imgReaderEst.image2geo(0,irow,x,y);
+	imgReaderModel2.geo2image(x,y,modCol,modRow);
+	assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
+	imgReaderModel2.readData(modelBuffer,GDT_Float64,modRow,0);
 	if(update){
 	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow,0);
 	  if(imgReaderObs.nrOfBand()>1)
@@ -429,24 +442,39 @@ int main(int argc,char **argv) {
 	}
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  double estValue=estReadBuffer[icol];
-	  double uncertValue=uncertReadBuffer[icol];
 	  //time update
-	  double certNorm=(errMod*errMod+errObs*errObs);
-	  double certMod=errObs*errObs/certNorm;
-	  double certObs=errMod*errMod/certNorm;
-	  double regTime=(c0mod+c1mod*estValue)*certMod;
-	  double regSensor=(c0obs+c1obs*estValue)*certObs;
-	  estWriteBuffer[icol]=regTime+regSensor;
-	  double totalUncertainty=0;
-	  if(errMod<eps_opt[0])
-	    totalUncertainty=errObs;
-	  else if(errObs<eps_opt[0])
-	    totalUncertainty=errMod;
+	  if(imgReaderEst.isNoData(estValue)){
+	    //pk: in case we have not found any valid data yet, better here to take the current model value
+	    imgReaderEst.image2geo(icol,irow,x,y);
+	    imgReaderModel2.geo2image(x,y,modCol,modRow);
+	    assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
+	    if(imgReaderModel2.isNoData(modelBuffer[modCol])){//if both estimate and model are no-data, set obs to nodata
+	      estWriteBuffer[icol]=obsnodata_opt[0];
+	      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+	    }
+	    else{
+	      estWriteBuffer[icol]=modelBuffer[modCol];
+	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	    }
+	  }	  
 	  else{
-	    totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
-	    totalUncertainty=sqrt(1.0/totalUncertainty);
+	    double certNorm=(errMod*errMod+errObs*errObs);
+	    double certMod=errObs*errObs/certNorm;
+	    double certObs=errMod*errMod/certNorm;
+	    double regTime=(c0mod+c1mod*estValue)*certMod;
+	    double regSensor=(c0obs+c1obs*estValue)*certObs;
+	    estWriteBuffer[icol]=regTime+regSensor;
+	    double totalUncertainty=0;
+	    if(errMod<eps_opt[0])
+	      totalUncertainty=errObs;
+	    else if(errObs<eps_opt[0])
+	      totalUncertainty=errMod;
+	    else{
+	      totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
+	      totalUncertainty=sqrt(1.0/totalUncertainty);
+	    }
+	    uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
 	  }
-	  uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsBuffer[icol])){
 	    double kalmanGain=1;
@@ -537,7 +565,7 @@ int main(int argc,char **argv) {
 	vector<double> uncertWriteBuffer(ncol);
 	imgWriterEst.image2geo(0,irow,x,y);
 	imgReaderModel1.geo2image(x,y,modCol,modRow);
-	assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
+	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	try{
 	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,irow);
 	  //simple nearest neighbor
@@ -565,7 +593,7 @@ int main(int argc,char **argv) {
 	vector<double> estReadBuffer;
 	imgWriterEst.image2geo(0,irow,x,y);
 	imgReaderModel1.geo2image(x,y,modCol,modRow);
-	assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
+	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
@@ -577,8 +605,11 @@ int main(int argc,char **argv) {
 	  if(imgReaderObs.isNoData(estWriteBuffer[icol])){
 	    imgWriterEst.image2geo(icol,irow,x,y);
 	    imgReaderModel1.geo2image(x,y,modCol,modRow);
-	    assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
-	    estWriteBuffer[icol]=estReadBuffer[modCol];
+	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	    if(imgReaderModel1.isNoData(estReadBuffer[modCol]))//if both obs and model are no-data, set obs to nodata
+	      estWriteBuffer[icol]=obsnodata_opt[0];
+	    else
+	      estWriteBuffer[icol]=estReadBuffer[modCol];
 	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
 	  }
 	  else{
@@ -588,13 +619,16 @@ int main(int argc,char **argv) {
 	    if(uncertModel_opt[0]*stdDev+uncertObs>eps_opt[0]){
 	      imgWriterEst.image2geo(icol,irow,x,y);
 	      imgReaderModel1.geo2image(x,y,modCol,modRow);
-	      assert(modRow>=0||modRow<imgReaderModel1.nrOfRow());
+	      assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	      // double noemer=uncertObs*uncertObs+stdDev*stdDev;//todo: multiply stdDev with uncertModel_opt[0]
 	      // estWriteBuffer[icol]*=uncertModel_opt[0]*stdDev*stdDev/noemer;
 	      // estWriteBuffer[icol]+=uncertModel_opt[0]*uncertObs*uncertObs/noemer;//todo:check! error?
-	      double kalmanGain=uncertModel_opt[0]*stdDev/(uncertModel_opt[0]*stdDev+uncertObs);
-	      assert(kalmanGain<=1);
-	      estWriteBuffer[icol]=estReadBuffer[modCol]+kalmanGain*(estWriteBuffer[icol]-estReadBuffer[modCol]);
+	      double kalmanGain=1;
+	      if(!imgReaderModel1.isNoData(estReadBuffer[modCol])){
+		//if model is no-data, retain observation value
+		kalmanGain=uncertModel_opt[0]*stdDev/(uncertModel_opt[0]*stdDev+uncertObs);
+		estWriteBuffer[icol]=estReadBuffer[modCol]+kalmanGain*(estWriteBuffer[icol]-estReadBuffer[modCol]);
+	      }
 	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*(1-kalmanGain);
 	    }
 	    else{
@@ -680,8 +714,10 @@ int main(int argc,char **argv) {
 	input=outputstream.str();
       }
       ImgReaderGdal imgReaderEst(input);
+      imgReaderEst.setNoData(obsnodata_opt);
 
       vector<double> obsBuffer;
+      vector<double> modelBuffer;
       vector<double> uncertObsBuffer;
       vector<double> estReadBuffer;
       vector<double> uncertReadBuffer;
@@ -692,6 +728,10 @@ int main(int argc,char **argv) {
 	assert(irow<imgReaderEst.nrOfRow());
 	imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
 	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
+	//read model2 in case current estimate is nodata
+	imgReaderEst.image2geo(0,irow,x,y);
+	imgReaderModel2.geo2image(x,y,modCol,modRow);
+	assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
 	if(update){
 	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow,0);
 	  if(imgReaderObs.nrOfBand()>1)
@@ -699,24 +739,39 @@ int main(int argc,char **argv) {
 	}
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  double estValue=estReadBuffer[icol];
-	  double uncertValue=uncertReadBuffer[icol];
 	  //time update
-	  double certNorm=(errMod*errMod+errObs*errObs);
-	  double certMod=errObs*errObs/certNorm;
-	  double certObs=errMod*errMod/certNorm;
-	  double regTime=(c0mod+c1mod*estValue)*certMod;
-	  double regSensor=(c0obs+c1obs*estValue)*certObs;
-	  estWriteBuffer[icol]=regTime+regSensor;
-	  double totalUncertainty=0;
-	  if(errMod<eps_opt[0])
-	    totalUncertainty=errObs;
-	  else if(errObs<eps_opt[0])
-	    totalUncertainty=errObs;
+	  if(imgReaderEst.isNoData(estValue)){
+	    //pk: in case we have not found any valid data yet, better here to take the current model value
+	    imgReaderEst.image2geo(icol,irow,x,y);
+	    imgReaderModel2.geo2image(x,y,modCol,modRow);
+	    assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
+	    if(imgReaderModel2.isNoData(modelBuffer[modCol])){//if both estimate and model are no-data, set obs to nodata
+	      estWriteBuffer[icol]=obsnodata_opt[0];
+	      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+	    }
+	    else{
+	      estWriteBuffer[icol]=modelBuffer[modCol];
+	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	    }
+	  }	  
 	  else{
-	    totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
-	    totalUncertainty=sqrt(1.0/totalUncertainty);
+	    double certNorm=(errMod*errMod+errObs*errObs);
+	    double certMod=errObs*errObs/certNorm;
+	    double certObs=errMod*errMod/certNorm;
+	    double regTime=(c0mod+c1mod*estValue)*certMod;
+	    double regSensor=(c0obs+c1obs*estValue)*certObs;
+	    estWriteBuffer[icol]=regTime+regSensor;
+	    double totalUncertainty=0;
+	    if(errMod<eps_opt[0])
+	      totalUncertainty=errObs;
+	    else if(errObs<eps_opt[0])
+	      totalUncertainty=errObs;
+	    else{
+	      totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
+	      totalUncertainty=sqrt(1.0/totalUncertainty);
+	    }
+	    uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
 	  }
-	  uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsBuffer[icol])){
 	    double kalmanGain=1;
@@ -796,8 +851,9 @@ int main(int argc,char **argv) {
       }
       ImgReaderGdal imgReaderForward(inputfw);
       ImgReaderGdal imgReaderBackward(inputbw);
+      imgReaderForward.setNoData(obsnodata_opt);
+      imgReaderBackward.setNoData(obsnodata_opt);
     
-      vector<double> obsBuffer;
       vector<double> estForwardBuffer;
       vector<double> estBackwardBuffer;
       vector<double> uncertObsBuffer;
@@ -832,7 +888,7 @@ int main(int argc,char **argv) {
 	imgReaderBackward.readData(uncertBackwardBuffer,GDT_Float64,irow,1);
 
 	if(update){
-	  imgReaderObs.readData(obsBuffer,GDT_Float64,irow,0);
+	  imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
 	  if(imgReaderObs.nrOfBand()>1)
 	    imgReaderObs.readData(uncertObsBuffer,GDT_Float64,irow,1);
 	}
@@ -844,33 +900,47 @@ int main(int argc,char **argv) {
 	  double D=uncertBackwardBuffer[icol]*uncertBackwardBuffer[icol];
 	  double uncertObs=uncertObs_opt[0];
 
-	  if(update){//check for nodata in observation
-	    if(imgReaderObs.isNoData(estWriteBuffer[icol]))
-	      uncertObs=uncertNodata_opt[0];
-	    else if(uncertObsBuffer.size()>icol)
-	      uncertObs=uncertObsBuffer[icol];
-	  }
+	  // if(update){//check for nodata in observation
+	  //   if(imgReaderObs.isNoData(estWriteBuffer[icol]))
+	  //     uncertObs=uncertNodata_opt[0];
+	  //   else if(uncertObsBuffer.size()>icol)
+	  //     uncertObs=uncertObsBuffer[icol];
+	  // }
 
 	  double noemer=(C+D);
 	  //todo: consistently check for division by zero...
-	  if(noemer<eps_opt[0]){//simple average if both uncertainties are ~>0
-	    estWriteBuffer[icol]=0.5*(A+B);
-	    uncertWriteBuffer[icol]=uncertObs;
+	  if(imgReaderForward.isNoData(A)&&imgReaderBackward.isNoData(B)){
+	    estWriteBuffer[icol]=obsnodata_opt[0];
+	    uncertWriteBuffer[icol]=uncertNodata_opt[0];
+	  }
+	  else if(imgReaderForward.isNoData(A)){
+	    estWriteBuffer[icol]=B;
+	    uncertWriteBuffer[icol]=uncertBackwardBuffer[icol];
+	  }
+	  else if(imgReaderForward.isNoData(B)){
+	    estWriteBuffer[icol]=A;
+	    uncertWriteBuffer[icol]=uncertForwardBuffer[icol];
 	  }
 	  else{
-	    estWriteBuffer[icol]=(A*D+B*C)/noemer;
-	    double P=0;
-	    if(C>eps_opt[0])
-	      P+=1.0/C;
-	    if(D>eps_opt[0])
-	      P+=1.0/D;
-	    if(uncertObs*uncertObs>eps_opt[0])
-	      P-=1.0/uncertObs/uncertObs;
-	    if(P>eps_opt[0])
-	      P=sqrt(1.0/P);
-	    else
-	      P=0;
-	    uncertWriteBuffer[icol]=P;
+	    if(noemer<eps_opt[0]){//simple average if both uncertainties are ~>0
+	      estWriteBuffer[icol]=0.5*(A+B);
+	      uncertWriteBuffer[icol]=uncertObs;
+	    }
+	    else{
+	      estWriteBuffer[icol]=(A*D+B*C)/noemer;
+	      double P=0;
+	      if(C>eps_opt[0])
+		P+=1.0/C;
+	      if(D>eps_opt[0])
+		P+=1.0/D;
+	      if(uncertObs*uncertObs>eps_opt[0])
+		P-=1.0/uncertObs/uncertObs;
+	      if(P>eps_opt[0])
+		P=sqrt(1.0/P);
+	      else
+		P=0;
+	      uncertWriteBuffer[icol]=P;
+	    }
 	  }
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
