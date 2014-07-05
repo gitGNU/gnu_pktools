@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input raster dataset.");
   Optionpk<string> reference_opt("ref", "reference", "Reference (raster or vector) dataset");
-  Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample. Leave empty to select all (for vector reference datasets only)");
+  Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample. Leave empty to select all (for vector reference datasets only)");
   Optionpk<string> output_opt("o", "output", "Output dataset (optional)");
   Optionpk<string> ogrformat_opt("f", "f", "OGR format for output vector (for vector reference datasets only)","SQLite");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
@@ -41,17 +41,17 @@ int main(int argc, char *argv[])
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
   Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
   Optionpk<short> band_opt("b", "band", "Input raster band", 0);
-  Optionpk<bool> confusion_opt("cm", "confusion", "create confusion matrix (to std out)", false);
-  Optionpk<string> labelref_opt("lr", "lref", "attribute name of the reference label (for vector reference datasets only)", "label");
-  Optionpk<string> labelclass_opt("lc", "lclass", "attribute name of the classified label (for vector reference datasets only)", "class");
-  Optionpk<short> boundary_opt("bnd", "boundary", "boundary for selecting the sample (for vector reference datasets only)", 1,1);
-  Optionpk<bool> homogeneous_opt("hom", "homogeneous", "only take regions with homogeneous boundary into account (for reference datasets only)", false,1);
-  Optionpk<bool> disc_opt("circ", "circular", "use circular boundary (for vector reference datasets only)", false,1);
-  Optionpk<string> classname_opt("c", "class", "list of class names."); 
-  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-  Optionpk<string> colorTable_opt("ct", "ct", "color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid).");
+  Optionpk<bool> confusion_opt("cm", "confusion", "Create confusion matrix (to std out)", false);
+  Optionpk<string> labelref_opt("lr", "lref", "Attribute name of the reference label (for vector reference datasets only)", "label");
+  Optionpk<string> labelclass_opt("lc", "lclass", "Attribute name of the classified label (for vector reference datasets only)", "class");
+  Optionpk<short> boundary_opt("bnd", "boundary", "Boundary for selecting the sample (for vector reference datasets only)", 1,1);
+  Optionpk<bool> homogeneous_opt("hom", "homogeneous", "Only take regions with homogeneous boundary into account (for reference datasets only)", false,1);
+  Optionpk<bool> disc_opt("circ", "circular", "Use circular boundary (for vector reference datasets only)", false,1);
+  Optionpk<string> classname_opt("c", "class", "List of class names."); 
+  Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in classname option)."); 
+  Optionpk<string> colorTable_opt("ct", "ct", "Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid).");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "Verbose level", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
