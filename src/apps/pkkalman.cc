@@ -46,6 +46,10 @@ int main(int argc,char **argv) {
   Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
   Optionpk<double> modnodata_opt("modnodata", "modnodata", "invalid value for model input", 0);
   Optionpk<double> obsnodata_opt("obsnodata", "obsnodata", "invalid value for observation input", 0);
+  Optionpk<double> modoffset_opt("modoffset", "modoffset", "offset used to read model input dataset (value=offset+scale*readValue", 0);
+  Optionpk<double> obsoffset_opt("obsoffset", "obsoffset", "offset used to read observation input dataset (value=offset+scale*readValue", 0);
+  Optionpk<double> modscale_opt("modscale", "modscale", "scale used to read model input dataset (value=offset+scale*readValue", 1);
+  Optionpk<double> obsscale_opt("obsscale", "obsscale", "scale used to read observation input dataset (value=offset+scale*readValue", 1);
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
   Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model",2);
   Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",0);
@@ -71,6 +75,10 @@ int main(int argc,char **argv) {
     threshold_opt.retrieveOption(argc,argv);
     modnodata_opt.retrieveOption(argc,argv);
     obsnodata_opt.retrieveOption(argc,argv);
+    modoffset_opt.retrieveOption(argc,argv);
+    modscale_opt.retrieveOption(argc,argv);
+    obsoffset_opt.retrieveOption(argc,argv);
+    obsscale_opt.retrieveOption(argc,argv);
     eps_opt.retrieveOption(argc,argv);
     uncertModel_opt.retrieveOption(argc,argv);
     uncertObs_opt.retrieveOption(argc,argv);
@@ -239,6 +247,8 @@ int main(int argc,char **argv) {
     try{
       imgReaderModel1.open(model_opt[0]);
       imgReaderModel1.setNoData(modnodata_opt);
+      imgReaderModel1.setOffset(modoffset_opt[0]);
+      imgReaderModel1.setScale(modscale_opt[0]);
     }
     catch(string errorString){
       cerr << errorString << endl;
@@ -291,6 +301,8 @@ int main(int argc,char **argv) {
       imgReaderObs.open(observation_opt[0]);
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
+      imgReaderObs.setOffset(obsoffset_opt[0]);
+      imgReaderObs.setScale(obsscale_opt[0]);
       for(int irow=0;irow<nrow;++irow){
 	vector<double> estReadBuffer;
 	imgWriterEst.image2geo(0,irow,x,y);
@@ -375,8 +387,12 @@ int main(int argc,char **argv) {
       //calculate regression between two subsequence model inputs
       imgReaderModel1.open(model_opt[modindex-1]);
       imgReaderModel1.setNoData(modnodata_opt);
+      imgReaderModel1.setOffset(modoffset_opt[0]);
+      imgReaderModel1.setScale(modscale_opt[0]);
       imgReaderModel2.open(model_opt[modindex]);
       imgReaderModel2.setNoData(modnodata_opt);
+      imgReaderModel2.setOffset(modoffset_opt[0]);
+      imgReaderModel2.setScale(modscale_opt[0]);
       //calculate regression
       //we could re-use the points from second image from last run, but
       //to keep it general, we must redo it (overlap might have changed)
@@ -401,6 +417,8 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
+	imgReaderObs.setOffset(obsoffset_opt[0]);
+	imgReaderObs.setScale(obsscale_opt[0]);
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
@@ -417,6 +435,8 @@ int main(int argc,char **argv) {
       }
       ImgReaderGdal imgReaderEst(input);
       imgReaderEst.setNoData(obsnodata_opt);
+      imgReaderEst.setOffset(obsoffset_opt[0]);
+      imgReaderEst.setScale(obsscale_opt[0]);
 
       vector<double> obsBuffer;
       vector<double> modelBuffer;
@@ -537,6 +557,8 @@ int main(int argc,char **argv) {
     try{
       imgReaderModel1.open(model_opt.back());
       imgReaderModel1.setNoData(modnodata_opt);
+      imgReaderModel1.setOffset(modoffset_opt[0]);
+      imgReaderModel1.setScale(modscale_opt[0]);
     }
     catch(string errorString){
       cerr << errorString << endl;
@@ -559,7 +581,8 @@ int main(int argc,char **argv) {
       //write last model as output
       if(verbose_opt[0])
 	cout << "write last model as output" << endl;
-      for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
+      // for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
+      for(int irow=0;irow<nrow;++irow){
 	vector<double> estReadBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
@@ -567,7 +590,7 @@ int main(int argc,char **argv) {
 	imgReaderModel1.geo2image(x,y,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	try{
-	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,irow);
+	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  //simple nearest neighbor
 	  stat.nearUp(estReadBuffer,estWriteBuffer);
 	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
@@ -589,6 +612,8 @@ int main(int argc,char **argv) {
       imgReaderObs.open(observation_opt.back());
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
+      imgReaderObs.setOffset(obsoffset_opt[0]);
+      imgReaderObs.setScale(obsscale_opt[0]);
       for(int irow=0;irow<nrow;++irow){
 	vector<double> estReadBuffer;
 	imgWriterEst.image2geo(0,irow,x,y);
@@ -673,8 +698,12 @@ int main(int argc,char **argv) {
       //calculate regression between two subsequence model inputs
       imgReaderModel1.open(model_opt[modindex+1]);
       imgReaderModel1.setNoData(modnodata_opt);
+      imgReaderModel1.setOffset(modoffset_opt[0]);
+      imgReaderModel1.setScale(modscale_opt[0]);
       imgReaderModel2.open(model_opt[modindex]);
       imgReaderModel2.setNoData(modnodata_opt);
+      imgReaderModel2.setOffset(modoffset_opt[0]);
+      imgReaderModel2.setScale(modscale_opt[0]);
       //calculate regression
       //we could re-use the points from second image from last run, but
       //to keep it general, we must redo it (overlap might have changed)
@@ -699,6 +728,8 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
+	imgReaderObs.setOffset(obsoffset_opt[0]);
+	imgReaderObs.setScale(obsscale_opt[0]);
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
@@ -715,6 +746,8 @@ int main(int argc,char **argv) {
       }
       ImgReaderGdal imgReaderEst(input);
       imgReaderEst.setNoData(obsnodata_opt);
+      imgReaderEst.setOffset(obsoffset_opt[0]);
+      imgReaderEst.setScale(obsscale_opt[0]);
 
       vector<double> obsBuffer;
       vector<double> modelBuffer;
@@ -853,7 +886,11 @@ int main(int argc,char **argv) {
       ImgReaderGdal imgReaderForward(inputfw);
       ImgReaderGdal imgReaderBackward(inputbw);
       imgReaderForward.setNoData(obsnodata_opt);
+      imgReaderForward.setOffset(obsoffset_opt[0]);
+      imgReaderForward.setScale(obsscale_opt[0]);
       imgReaderBackward.setNoData(obsnodata_opt);
+      imgReaderBackward.setOffset(obsoffset_opt[0]);
+      imgReaderBackward.setScale(obsscale_opt[0]);
     
       vector<double> estForwardBuffer;
       vector<double> estBackwardBuffer;
@@ -875,6 +912,8 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
+	imgReaderObs.setOffset(obsoffset_opt[0]);
+	imgReaderObs.setScale(obsscale_opt[0]);
 	//calculate regression between model and observation
       }
 
