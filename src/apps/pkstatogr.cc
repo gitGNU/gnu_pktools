@@ -30,23 +30,23 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input OGR vector file", "");
-  Optionpk<string> layer_opt("ln", "lname", "layer name(s) in sample (leave empty to select all)");
-  Optionpk<string> fieldname_opt("n", "fname", "fields on which to calculate statistics", "");
-  Optionpk<double> nodata_opt("nodata","nodata","set nodata value(s)");
-  Optionpk<double> src_min_opt("src_min","src_min","set minimum value for histogram");
-  Optionpk<double> src_max_opt("src_max","src_max","set maximum value for histogram");
-  Optionpk<bool> size_opt("s","size","sample size (number of points)",false);
-  Optionpk<bool> minmax_opt("mm","minmax","calculate minimum and maximum value",false);
-  Optionpk<bool> min_opt("min","min","calculate minimum value",0);
-  Optionpk<bool> max_opt("max","max","calculate maximum value",0);
-  Optionpk<bool> mean_opt("mean","mean","calculate mean value",false);
-  Optionpk<bool> median_opt("median","median","calculate median value",false);
-  Optionpk<bool> stdev_opt("stdev","stdev","calculate standard deviation",false);
-  Optionpk<bool> histogram_opt("hist","hist","calculate histogram",false);
-  Optionpk<unsigned int> nbin_opt("nbin", "nbin", "number of bins");
-  Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
+  Optionpk<string> layer_opt("ln", "lname", "Layer name(s) in sample (leave empty to select all)");
+  Optionpk<string> fieldname_opt("n", "fname", "Fields on which to calculate statistics", "");
+  Optionpk<double> nodata_opt("nodata","nodata","Set nodata value(s)");
+  Optionpk<double> src_min_opt("src_min","src_min","Set minimum value for histogram");
+  Optionpk<double> src_max_opt("src_max","src_max","Set maximum value for histogram");
+  Optionpk<bool> size_opt("s","size","Sample size (number of points)",false);
+  Optionpk<bool> minmax_opt("mm","minmax","Calculate minimum and maximum value",false);
+  Optionpk<bool> min_opt("min","min","Calculate minimum value",0);
+  Optionpk<bool> max_opt("max","max","Calculate maximum value",0);
+  Optionpk<bool> mean_opt("mean","mean","Calculate mean value",false);
+  Optionpk<bool> median_opt("median","median","Calculate median value",false);
+  Optionpk<bool> stdev_opt("stdev","stdev","Calculate standard deviation",false);
+  Optionpk<bool> histogram_opt("hist","hist","Calculate histogram",false);
+  Optionpk<unsigned int> nbin_opt("nbin", "nbin", "Number of bins");
+  Optionpk<bool> relative_opt("rel","relative","Use percentiles for histogram to calculate histogram",false);
   Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb",false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "Verbose level", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{

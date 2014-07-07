@@ -44,17 +44,17 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "input", "Raster input dataset containing band information");
   Optionpk<string> sample_opt("s", "sample", "OGR vector file with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
-  Optionpk<string> layer_opt("ln", "ln", "layer name(s) in sample (leave empty to select all)");
+  Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample (leave empty to select all)");
   Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file. Make sure to set classes if rule is set to maxvote or proportion");
-  Optionpk<float> threshold_opt("t", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample files. If using raster land cover maps as a sample file, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
+  Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample files. If using raster land cover maps as a sample file, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
   Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint. Only valid if sample features are polygons.", false);
-  Optionpk<int> band_opt("b", "band", "band index(es) to extract. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
-  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value(s) for input image");
+  Optionpk<int> band_opt("b", "band", "Band index(es) to extract. Use -1 to use all bands)", -1);
+  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
+  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
   // Optionpk<string> mask_opt("m", "mask", "Mask image file");
   // Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
@@ -62,14 +62,14 @@ int main(int argc, char *argv[])
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
   Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
   Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
-  Optionpk<string> label_opt("cn", "cname", "name of the class label in the output vector file", "label");
-  Optionpk<short> geo_opt("g", "geo", "use geo coordinates (set to 0 to use image coordinates)", 1);
-  Optionpk<short> down_opt("down", "down", "down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
-  Optionpk<short> boundary_opt("bo", "boundary", "boundary for selecting the sample (for vector sample datasets only) ", 1);
-  Optionpk<short> disc_opt("circ", "circular", "circular disc kernel boundary (for vector sample datasets only, use in combination with boundary option)", 0);
+  Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector file", "label");
+  Optionpk<short> geo_opt("g", "geo", "Use geo coordinates (set to 0 to use image coordinates)", 1);
+  Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
+  Optionpk<short> boundary_opt("bo", "boundary", "Boundary for selecting the sample (for vector sample datasets only) ", 1);
+  Optionpk<short> disc_opt("circ", "circular", "Circular disc kernel boundary (for vector sample datasets only, use in combination with boundary option)", 0);
   // Optionpk<short> rbox_opt("rb", "rbox", "rectangular boundary box (total width in m) to draw around the selected pixel. Can not combined with class option. Use multiple rbox options for multiple boundary boxes. Use value 0 for no box)", 0);
   // Optionpk<short> cbox_opt("cbox", "cbox", "circular boundary (diameter in m) to draw around the selected pixel. Can not combined with class option. Use multiple cbox options for multiple boundary boxes. Use value 0 for no box)", 0);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{

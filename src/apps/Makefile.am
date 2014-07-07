@@ -6,7 +6,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 ###############################################################################
 
 # the program to build and install (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkreclass pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkkalman pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkeditogr
+bin_PROGRAMS = pkinfo pkcrop pkreclass pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkkalman pkfilterdem pkenhance pkfilterascii pkdsm2shadow pkcomposite pkndvi pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkeditogr
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS =  pkxcorimg pkgeom
@@ -38,6 +38,7 @@ endif
 pkinfo_SOURCES = pkinfo.cc
 pkcrop_SOURCES = pkcrop.cc
 pkreclass_SOURCES = pkreclass.cc
+pkdiff_SOURCES = pkdiff.cc
 pkgetmask_SOURCES = pkgetmask.cc
 pksetmask_SOURCES = pksetmask.cc
 pkcreatect_SOURCES = pkcreatect.cc
