@@ -27,8 +27,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/StatFactory.h"
 #include "algorithms/ImgRegression.h"
 
-				    //todo: keep original resolution of coarse model raster dataset
-				    //interprete 2nd band of obs dataset as uncert
 using namespace std;
 /*------------------
   Main procedure
@@ -423,6 +421,8 @@ int main(int argc,char **argv) {
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
 	errObs=imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
+	if(verbose_opt[0])
+	  cout << "c0obs, c1obs: " << c0obs << ", " << c1obs << endl;
       }
       //prediction (also to fill cloudy pixels in update mode)
       string input;

@@ -50,6 +50,8 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
     imgReader2.geo2image(geox,geoy,icol2,irow2);
     icol2=static_cast<int>(icol2);
     irow2=static_cast<int>(irow2);
+    if(irow2<0||irow2>=imgReader2.nrOfRow())
+      continue;
     imgReader2.readData(rowBuffer2,GDT_Float64,irow2);
     for(icol1=0;icol1<imgReader1.nrOfCol();++icol1){
       if(icol1%m_down)
@@ -62,6 +64,8 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
       }
       imgReader1.image2geo(icol1,irow1,geox,geoy);
       imgReader2.geo2image(geox,geoy,icol2,irow2);
+      if(icol2<0||icol2>=imgReader2.nrOfCol())
+	continue;
       icol2=static_cast<int>(icol2);
       irow2=static_cast<int>(irow2);
       //check for nodata
