@@ -84,6 +84,8 @@ int main(int argc,char **argv) {
     // regTime_opt.retrieveOption(argc,argv);
     // regSensor_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
