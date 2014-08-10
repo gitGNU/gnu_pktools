@@ -283,7 +283,7 @@ int main(int argc,char **argv) {
           attribute_opt.erase(ait);
       }
     }
-    liblas::Point thePoint;
+    liblas::Point thePoint(&(lasReader.getHeader()));
     while(lasReader.readNextPoint(thePoint)){
       progress=static_cast<float>(ipoint)/totalPoints;
       pfnProgress(progress,pszMessage,pProgressArg);

@@ -332,8 +332,9 @@ int main(int argc,char **argv) {
       hThreshold=hThreshold_opt[0]+maxSlope_opt[0]*(newdim-dim)*input.getDeltaX();
       dim=newdim;
       if(hThreshold_opt.size()>1){
-	if(hThreshold>hThreshold_opt[1])
+	if(hThreshold>hThreshold_opt[1]){
 	  hThreshold=hThreshold_opt[1];
+	}
       }
       std::cout << "iteration " << iteration << ": " << nchange << " pixels changed" << std::endl;
       ++iteration;

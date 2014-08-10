@@ -298,6 +298,10 @@ version 2.5.2
 	redesign to optimize vector polygon processing
 	removed option for masking, introduced srcnodata and bndnodata
 	(more testing is needed)
+version 2.5.3
+ - pklas2img
+	libLAS 1.8.0 support (ticket #42951)
+
 Next versions: 
  - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
 

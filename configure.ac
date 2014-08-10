@@ -1,4 +1,4 @@
-AC_INIT([pktools], [2.5.2], [kempenep@gmail.com])
+AC_INIT([pktools], [2.5.3], [kempenep@gmail.com])
 #AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_INIT_AUTOMAKE([-Wall -Wno-extra-portability foreign])
 AC_CONFIG_MACRO_DIR([m4])
