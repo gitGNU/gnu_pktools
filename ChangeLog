@@ -301,7 +301,8 @@ version 2.5.2
 version 2.5.3
  - pklas2img
 	libLAS 1.8.0 support (ticket #42951)
-
+ - myfann_cpp.h 
+	Fix build failure on ARM due to va_list usage in myfann_cpp.h
 Next versions: 
  - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
 
