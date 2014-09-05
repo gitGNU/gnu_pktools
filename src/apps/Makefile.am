@@ -31,7 +31,7 @@ pklas2img_LDADD = $(top_srcdir)/src/lasclasses/liblasClasses.la -llas $(AM_LDFLA
 endif
 if USE_NLOPT
 bin_PROGRAMS += pkoptsvm
-pkoptsvm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h pkoptsvm.cc
+pkoptsvm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h $(top_srcdir)/src/algorithms/CostFactorySVM.h pkoptsvm.cc
 pkoptsvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt
 endif
 # list of sources for the binaries
@@ -66,7 +66,7 @@ pkcomposite_SOURCES = pkcomposite.cc
 pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pksvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pksvm.cc
-pkfssvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/FeatureSelector.h  $(top_srcdir)/src/algorithms/CostFactory.h $(top_srcdir)/src/algorithms/svm.cpp pkfssvm.h pkfssvm.cc
+pkfssvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/FeatureSelector.h  $(top_srcdir)/src/algorithms/CostFactorySVM.h $(top_srcdir)/src/algorithms/svm.cpp pkfssvm.cc
 pkfssvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc

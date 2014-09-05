@@ -174,11 +174,11 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "input test set (leave empty to perform a cross validation based on training only)"); 
   Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
-  Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
+  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
-  Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
+  Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");

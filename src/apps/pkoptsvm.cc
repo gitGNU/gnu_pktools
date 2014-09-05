@@ -28,17 +28,13 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
 #include "algorithms/OptFactory.h"
+#include "algorithms/CostFactorySVM.h"
 #include "algorithms/svm.h"
 #include "imageclasses/ImgReaderOgr.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-namespace svm{
-  enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};
-  enum KERNEL_TYPE {linear=0,polynomial=1,radial=2,sigmoid=3};
-}
 
 using namespace std;
 
@@ -70,21 +66,6 @@ Optionpk<short> verbose_opt("v", "verbose", "use 1 to output intermediate result
 
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
 
-  std::map<std::string, svm::SVM_TYPE> svmMap;
-
-  svmMap["C_SVC"]=svm::C_SVC;
-  svmMap["nu_SVC"]=svm::nu_SVC;
-  svmMap["one_class"]=svm::one_class;
-  svmMap["epsilon_SVR"]=svm::epsilon_SVR;
-  svmMap["nu_SVR"]=svm::nu_SVR;
-
-  std::map<std::string, svm::KERNEL_TYPE> kernelMap;
-
-  kernelMap["linear"]=svm::linear;
-  kernelMap["polynomial"]=svm::polynomial;
-  kernelMap["radial"]=svm::radial;
-  kernelMap["sigmoid;"]=svm::sigmoid;
-
   assert(grad.empty());
   vector<Vector2d<float> > *tf=reinterpret_cast<vector<Vector2d<float> >*> (my_func_data);
   float ccost=x[0];
@@ -92,138 +73,185 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   double error=1.0/epsilon_tol_opt[0];
   double kappa=1.0;
   double oa=1.0;
-  //todo: calculate kappa using cross validation
-  unsigned short nclass=tf->size();
-  unsigned int ntraining=0;
-  unsigned int ntest=0;
-  for(int iclass=0;iclass<nclass;++iclass){
-    ntraining+=nctraining[iclass];
-    ntest+=nctest[iclass];
-  }
-  if(ntest)
-    cv_opt[0]=0;
-  if(!cv_opt[0])
-    assert(ntest);
-    // ntraining+=(*tf)[iclass].size();
-  unsigned short nFeatures=(*tf)[0][0].size();
-  struct svm_parameter param;
-  param.svm_type = svmMap[svm_type_opt[0]];
-  param.kernel_type = kernelMap[kernel_type_opt[0]];
-  param.degree = kernel_degree_opt[0];
-  param.gamma = gamma;
-  param.coef0 = coef0_opt[0];
-  param.nu = nu_opt[0];
-  param.cache_size = cache_opt[0];
-  param.C = ccost;
-  param.eps = epsilon_tol_opt[0];
-  param.p = epsilon_loss_opt[0];
-  param.shrinking = (shrinking_opt[0])? 1 : 0;
-  param.probability = (prob_est_opt[0])? 1 : 0;
-  param.nr_weight = 0;//not used: I use priors and balancing
-  param.weight_label = NULL;
-  param.weight = NULL;
-  param.verbose=(verbose_opt[0]>2)? true:false;
-  struct svm_model* svm;
-  struct svm_problem prob;
-  struct svm_node* x_space;
-  prob.l=ntraining;
-  prob.y = Malloc(double,prob.l);
-  prob.x = Malloc(struct svm_node *,prob.l);
-  x_space = Malloc(struct svm_node,(nFeatures+1)*ntraining);
-  unsigned long int spaceIndex=0;
-  int lIndex=0;
-  for(int iclass=0;iclass<nclass;++iclass){
-    // for(int isample=0;isample<(*tf)[iclass].size();++isample){
-    for(int isample=0;isample<nctraining[iclass];++isample){
-      prob.x[lIndex]=&(x_space[spaceIndex]);
-      for(int ifeature=0;ifeature<nFeatures;++ifeature){
-        x_space[spaceIndex].index=ifeature+1;
-        x_space[spaceIndex].value=(*tf)[iclass][isample][ifeature];
-        ++spaceIndex;
-      }
-      x_space[spaceIndex++].index=-1;
-      prob.y[lIndex]=iclass;
-      ++lIndex;
-    }
-  }
 
-  assert(lIndex==prob.l);
-  if(verbose_opt[0]>2)
-    std::cout << "checking parameters" << std::endl;
-  svm_check_parameter(&prob,&param);
-  if(verbose_opt[0]>2)
-    std::cout << "parameters ok, training" << std::endl;
-  svm=svm_train(&prob,&param);
-  if(verbose_opt[0]>2)
-    std::cout << "SVM is now trained" << std::endl;
+  CostFactorySVM costfactory(svm_type_opt[0], kernel_type_opt[0], kernel_degree_opt[0], gamma, coef0_opt[0], ccost, nu_opt[0],  epsilon_loss_opt[0], cache_opt[0], epsilon_tol_opt[0], shrinking_opt[0], prob_est_opt[0], cv_opt[0], verbose_opt[0]);
 
-  ConfusionMatrix cm;
+  assert(tf->size());
+  // if(nctest>0)
+  //   costfactory.setCv(0);
+
+  costfactory.setCv(cv_opt[0]);
+
+  if(classname_opt.size()){
+    assert(classname_opt.size()==classvalue_opt.size());
+    for(int iclass=0;iclass<classname_opt.size();++iclass)
+      costfactory.setClassValueMap(classname_opt[iclass],classvalue_opt[iclass]);
+  }
   //set names in confusion matrix using nameVector
+  costfactory.setNameVector(nameVector);
+  // vector<string> nameVector=costfactory.getNameVector();
   for(int iname=0;iname<nameVector.size();++iname){
-    if(classValueMap.empty())
-      cm.pushBackClassName(nameVector[iname]);
-    else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
-      cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
-  }
-  if(cv_opt[0]>1){
-    double *target = Malloc(double,prob.l);
-    svm_cross_validation(&prob,&param,cv_opt[0],target);
-    assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
-    for(int i=0;i<prob.l;i++){
-      string refClassName=nameVector[prob.y[i]];
-      string className=nameVector[target[i]];
-      if(classValueMap.size())
-	cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
-      else
-	cm.incrementResult(cm.getClass(prob.y[i]),cm.getClass(target[i]),1.0);
+    if(costfactory.getClassValueMap().empty()){
+      costfactory.pushBackClassName(nameVector[iname]);
+      // cm.pushBackClassName(nameVector[iname]);
     }
-    free(target);
+    else if(costfactory.getClassIndex(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]))<0)
+      costfactory.pushBackClassName(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]));
   }
-  else{
-    struct svm_node *x_test;
-    x_test = Malloc(struct svm_node,(nFeatures+1));
-    for(int iclass=0;iclass<nclass;++iclass){
-      for(int isample=0;isample<nctest[iclass];++isample){
-	for(int ifeature=0;ifeature<nFeatures;++ifeature){
-	  x_test[ifeature].index=ifeature+1;
-	  x_test[ifeature].value=(*tf)[iclass][nctraining[iclass]+isample][ifeature];
-	}
-	x_test[nFeatures].index=-1;
-	double predict_label=0;
-	//todo: make distinction between svm_predict and svm_predict_probability?
-	predict_label = svm_predict(svm,x_test);
-	string refClassName=nameVector[iclass];
-	string className=nameVector[static_cast<short>(predict_label)];
-	if(classValueMap.size())
-	  cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
-	else
-	  cm.incrementResult(refClassName,className,1.0);
-      }
-    }
-    free(x_test);
-  }
-  if(verbose_opt[0]>1)
-    std::cout << cm << std::endl;
-  assert(cm.nReference());
-  free(prob.y);
-  free(prob.x);
-  free(x_space);
-  svm_free_and_destroy_model(&(svm));
-  if(verbose_opt[0]>2)
-    std::cout << cm << std::endl;
-  kappa=cm.kappa();
-  oa=cm.oa();
-  if(verbose_opt[0]>1){
-    std::cout << " --ccost " << x[0];
-    std::cout << " --gamma " << x[1];
-    std::cout << std::endl;
-    std::cout << "oa: " << oa << std::endl;
-    std::cout << "kappa: " << kappa << std::endl;
-  }
-  double cost=(costfunction_opt[0])? oa : kappa;
-  if(cost>0)
-    error=1.0/cost;
-  return(error);
+
+  costfactory.setNcTraining(nctraining);
+  costfactory.setNcTest(nctest);
+
+  kappa=costfactory.getCost(*tf);
+  return(kappa);
+
+  // std::map<std::string, svm::SVM_TYPE> svmMap;
+
+  // svmMap["C_SVC"]=svm::C_SVC;
+  // svmMap["nu_SVC"]=svm::nu_SVC;
+  // svmMap["one_class"]=svm::one_class;
+  // svmMap["epsilon_SVR"]=svm::epsilon_SVR;
+  // svmMap["nu_SVR"]=svm::nu_SVR;
+
+  // std::map<std::string, svm::KERNEL_TYPE> kernelMap;
+
+  // kernelMap["linear"]=svm::linear;
+  // kernelMap["polynomial"]=svm::polynomial;
+  // kernelMap["radial"]=svm::radial;
+  // kernelMap["sigmoid;"]=svm::sigmoid;
+
+  // unsigned short nclass=tf->size();
+  // unsigned int ntraining=0;
+  // unsigned int ntest=0;
+  // for(int iclass=0;iclass<nclass;++iclass){
+  //   ntraining+=nctraining[iclass];
+  //   ntest+=nctest[iclass];
+  // }
+  // if(ntest)
+  //   cv_opt[0]=0;
+  // if(!cv_opt[0])
+  //   assert(ntest);
+
+  // unsigned short nFeatures=(*tf)[0][0].size();
+  // struct svm_parameter param;
+  // param.svm_type = svmMap[svm_type_opt[0]];
+  // param.kernel_type = kernelMap[kernel_type_opt[0]];
+  // param.degree = kernel_degree_opt[0];
+  // param.gamma = gamma;
+  // param.coef0 = coef0_opt[0];
+  // param.nu = nu_opt[0];
+  // param.cache_size = cache_opt[0];
+  // param.C = ccost;
+  // param.eps = epsilon_tol_opt[0];
+  // param.p = epsilon_loss_opt[0];
+  // param.shrinking = (shrinking_opt[0])? 1 : 0;
+  // param.probability = (prob_est_opt[0])? 1 : 0;
+  // param.nr_weight = 0;//not used: I use priors and balancing
+  // param.weight_label = NULL;
+  // param.weight = NULL;
+  // param.verbose=(verbose_opt[0]>2)? true:false;
+  // struct svm_model* svm;
+  // struct svm_problem prob;
+  // struct svm_node* x_space;
+
+  // prob.l=ntraining;
+  // prob.y = Malloc(double,prob.l);
+  // prob.x = Malloc(struct svm_node *,prob.l);
+  // x_space = Malloc(struct svm_node,(nFeatures+1)*ntraining);
+  // unsigned long int spaceIndex=0;
+  // int lIndex=0;
+  // for(int iclass=0;iclass<nclass;++iclass){
+  //   // for(int isample=0;isample<(*tf)[iclass].size();++isample){
+  //   for(int isample=0;isample<nctraining[iclass];++isample){
+  //     prob.x[lIndex]=&(x_space[spaceIndex]);
+  //     for(int ifeature=0;ifeature<nFeatures;++ifeature){
+  //       x_space[spaceIndex].index=ifeature+1;
+  //       x_space[spaceIndex].value=(*tf)[iclass][isample][ifeature];
+  //       ++spaceIndex;
+  //     }
+  //     x_space[spaceIndex++].index=-1;
+  //     prob.y[lIndex]=iclass;
+  //     ++lIndex;
+  //   }
+  // }
+
+  // assert(lIndex==prob.l);
+  // if(verbose_opt[0]>2)
+  //   std::cout << "checking parameters" << std::endl;
+  // svm_check_parameter(&prob,&param);
+  // if(verbose_opt[0]>2)
+  //   std::cout << "parameters ok, training" << std::endl;
+  // svm=svm_train(&prob,&param);
+  // if(verbose_opt[0]>2)
+  //   std::cout << "SVM is now trained" << std::endl;
+
+  // ConfusionMatrix cm;
+  // //set names in confusion matrix using nameVector
+  // for(int iname=0;iname<nameVector.size();++iname){
+  //   if(classValueMap.empty())
+  //     cm.pushBackClassName(nameVector[iname]);
+  //   else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
+  //     cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
+  // }
+  // if(cv_opt[0]>1){
+  //   double *target = Malloc(double,prob.l);
+  //   svm_cross_validation(&prob,&param,cv_opt[0],target);
+  //   assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
+  //   for(int i=0;i<prob.l;i++){
+  //     string refClassName=nameVector[prob.y[i]];
+  //     string className=nameVector[target[i]];
+  //     if(classValueMap.size())
+  // 	cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
+  //     else
+  // 	cm.incrementResult(cm.getClass(prob.y[i]),cm.getClass(target[i]),1.0);
+  //   }
+  //   free(target);
+  // }
+  // else{
+  //   struct svm_node *x_test;
+  //   x_test = Malloc(struct svm_node,(nFeatures+1));
+  //   for(int iclass=0;iclass<nclass;++iclass){
+  //     for(int isample=0;isample<nctest[iclass];++isample){
+  // 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
+  // 	  x_test[ifeature].index=ifeature+1;
+  // 	  x_test[ifeature].value=(*tf)[iclass][nctraining[iclass]+isample][ifeature];
+  // 	}
+  // 	x_test[nFeatures].index=-1;
+  // 	double predict_label=0;
+  // 	//todo: make distinction between svm_predict and svm_predict_probability?
+  // 	predict_label = svm_predict(svm,x_test);
+  // 	string refClassName=nameVector[iclass];
+  // 	string className=nameVector[static_cast<short>(predict_label)];
+  // 	if(classValueMap.size())
+  // 	  cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
+  // 	else
+  // 	  cm.incrementResult(refClassName,className,1.0);
+  //     }
+  //   }
+  //   free(x_test);
+  // }
+  // if(verbose_opt[0]>1)
+  //   std::cout << cm << std::endl;
+  // assert(cm.nReference());
+  // free(prob.y);
+  // free(prob.x);
+  // free(x_space);
+  // svm_free_and_destroy_model(&(svm));
+  // if(verbose_opt[0]>2)
+  //   std::cout << cm << std::endl;
+  // kappa=cm.kappa();
+  // oa=cm.oa();
+  // if(verbose_opt[0]>1){
+  //   std::cout << " --ccost " << x[0];
+  //   std::cout << " --gamma " << x[1];
+  //   std::cout << std::endl;
+  //   std::cout << "oa: " << oa << std::endl;
+  //   std::cout << "kappa: " << kappa << std::endl;
+  // }
+  // double cost=(costfunction_opt[0])? oa : kappa;
+  // if(cost>0)
+  //   error=1.0/cost;
+  // return(error);
 }
 
 int main(int argc, char *argv[])
@@ -231,13 +259,13 @@ int main(int argc, char *argv[])
   map<short,int> reclassMap;
   vector<int> vreclass;
   Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option)."); 
-  Optionpk<string> input_opt("i", "input", "input test vectro file"); 
+  Optionpk<string> input_opt("i", "input", "input test vector file"); 
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
-  Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
+  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   // Optionpk<unsigned short> reclass_opt("\0", "rc", "reclass code (e.g. --rc=12 --rc=23 to reclass first two classes to 12 and 23 resp.).", 0);
-  Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
-  Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
+  Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
@@ -374,6 +402,9 @@ int main(int argc, char *argv[])
       trainingReader.close();
     }
     if(trainingMap.size()<2){
+      // map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
+      // while(mapit!=trainingMap.end())
+      // 	cerr << mapit->first << " -> " << classValueMap[mapit->first] << std::endl;
       string errorstring="Error: could not read at least two classes from training input file";
       throw(errorstring);
     }
@@ -596,9 +627,12 @@ int main(int argc, char *argv[])
   if(algorithm_opt[0]=="GRID"){
     if(step_opt.size()<2)//[0] for cost, [1] for gamma
       step_opt.push_back(step_opt.back());
-    double minError=1000;
-    double minCost=0;
-    double minGamma=0;
+    // double minError=1000;
+    // double minCost=0;
+    // double minGamma=0;
+    double maxKappa=0;
+    double maxCost=0;
+    double maxGamma=0;
     const char* pszMessage;
     void* pProgressArg=NULL;
     GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -612,15 +646,15 @@ int main(int argc, char *argv[])
 	x[0]=ccost;
 	x[1]=gamma;
 	std::vector<double> theGrad;
-	double error=0;
-	error=objFunction(x,theGrad,&trainingFeatures);
-	if(error<minError){
-	  minError=error;
-	  minCost=ccost;
-	  minGamma=gamma;
+	double kappa=0;
+	kappa=objFunction(x,theGrad,&trainingFeatures);
+	if(kappa>maxKappa){
+	  maxKappa=kappa;
+	  maxCost=ccost;
+	  maxGamma=gamma;
 	}
 	if(verbose_opt[0])
-	  std::cout << ccost << " " << gamma << " " << error<< std::endl;
+	  std::cout << ccost << " " << gamma << " " << kappa<< std::endl;
 	progress+=1.0/ncost/ngamma;
 	if(!verbose_opt[0])
 	  pfnProgress(progress,pszMessage,pProgressArg);
@@ -629,8 +663,8 @@ int main(int argc, char *argv[])
     progress=1.0;
     if(!verbose_opt[0])
       pfnProgress(progress,pszMessage,pProgressArg);
-    x[0]=minCost;
-    x[1]=minGamma;
+    x[0]=maxCost;
+    x[1]=maxGamma;
   }
   else{
     nlopt::opt optimizer=OptFactory::getOptimizer(algorithm_opt[0],2);
@@ -646,7 +680,8 @@ int main(int argc, char *argv[])
     init[1]=(gamma_opt[2]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
     ub[0]=ccost_opt[1];
     ub[1]=(gamma_opt[1]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
-    optimizer.set_min_objective(objFunction, &trainingFeatures);
+    // optimizer.set_min_objective(objFunction, &trainingFeatures);
+    optimizer.set_max_objective(objFunction, &trainingFeatures);
     optimizer.set_lower_bounds(lb);
     optimizer.set_upper_bounds(ub);
     if(verbose_opt[0]>1)
