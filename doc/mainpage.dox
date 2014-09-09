@@ -91,7 +91,7 @@ packages to install before pktools
 
 \subsection pktools_installation_optional Optional packages
 
-<b>To enable program \ref pkopt_svm</b>
+<b>To enable program \ref pkoptsvm</b>
 
    Install additional package 
 
@@ -115,7 +115,7 @@ packages to install before pktools
    \endcode
 
 
-<b>To enable programs \ref pkclassify_nn and \ref pkfs_nn</b>
+<b>To enable programs \ref pkann and \ref pkfsann</b>
 
    Install package 
 
@@ -164,6 +164,8 @@ packages to install before pktools
     \endcode
    
    Or install manually as explained in http://www.liblas.org/compilation.html#using-unix-makefiles-on-linux
+
+   ! Note that if you want support for compressed las format (LAZ), you need to install laszip first (http://www.laszip.org) and install liblas manually
 
    - Install pktools with with extra configuration option --enable-las:
 
