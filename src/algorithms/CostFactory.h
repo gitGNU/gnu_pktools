@@ -38,8 +38,10 @@ public:
   std::map<std::string,short> getClassValueMap(){return m_classValueMap;};
   std::vector<std::string> getNameVector(){return m_nameVector;};
   void setNameVector(std::vector<std::string>& nameVector){m_nameVector=nameVector;};
-  unsigned short getClassIndex(std::string classname) const {return m_cm.getClassIndex(classname);};
+  int getClassIndex(std::string classname) const {return m_cm.getClassIndex(classname);};
+  //pushBackClassName is for confusion matrix
   void pushBackClassName(std::string classname){m_cm.pushBackClassName(classname,true);};//doSort=true
+  //pushBackName is for nameVector in CostFactory
   void pushBackName(std::string classname){m_nameVector.push_back(classname);};
   void setNcTraining(const std::vector<unsigned int> nctraining){m_nctraining=nctraining;};
   void setNcTest(const std::vector<unsigned int> nctest){m_nctest=nctest;};
@@ -53,8 +55,8 @@ protected:
   std::vector<unsigned int> m_nctraining;
   std::vector<unsigned int> m_nctest;
   unsigned short m_cv;
-  std::string m_classname;
+  /* std::string m_classname; */
   short m_classvalue;
   short m_verbose;
 };
-#endif /* _FEATURESELECTOR_H_ */
+#endif

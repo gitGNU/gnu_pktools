@@ -24,11 +24,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include "base/Optionpk.h"
 #include "algorithms/ConfusionMatrix.h"
-#include "algorithms/CostFactory.h"
+#include "algorithms/CostFactorySVM.h"
 #include "algorithms/FeatureSelector.h"
 #include "algorithms/svm.h"
 #include "imageclasses/ImgReaderOgr.h"
-#include "pkfssvm.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -36,169 +35,162 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 
-#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
+enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4};
 
-//global parameters used in cost function getCost
-// ConfusionMatrix cm;
-// map<string,short> classValueMap;
-// vector<std::string> nameVector;
-// vector<unsigned int> nctraining;
-// vector<unsigned int> nctest;
+// CostFactorySVM::CostFactorySVM()
+//     : CostFactory(2,0), m_svm_type("C_SVC"), m_kernel_type("radial"), m_kernel_degree(3), m_gamma(1.0), m_coef0(0), m_ccost(1000), m_nu(0.5),  m_epsilon_loss(100), m_cache(100), m_epsilon_tol(0.001), m_shrinking(false), m_prob_est(true){
+// }
 
-CostFactorySVM::CostFactorySVM()
-    : CostFactory(2,0), m_svm_type("C_SVC"), m_kernel_type("radial"), m_kernel_degree(3), m_gamma(1.0), m_coef0(0), m_ccost(1000), m_nu(0.5),  m_epsilon_loss(100), m_cache(100), m_epsilon_tol(0.001), m_shrinking(false), m_prob_est(true){
-}
+// CostFactorySVM::~CostFactorySVM(){
+// }
 
-CostFactorySVM::~CostFactorySVM(){
-}
+// CostFactorySVM::CostFactorySVM(std::string svm_type, std::string kernel_type, unsigned short kernel_degree, float gamma, float coef0, float ccost, float nu,  float epsilon_loss, int cache, float epsilon_tol, bool shrinking, bool prob_est, unsigned short cv, bool verbose)
+//     : CostFactory(cv,verbose), m_svm_type(svm_type), m_kernel_type(kernel_type), m_kernel_degree(kernel_degree), m_gamma(gamma), m_coef0(coef0), m_ccost(ccost), m_nu(nu),  m_epsilon_loss(epsilon_loss), m_cache(cache), m_epsilon_tol(epsilon_tol), m_shrinking(shrinking), m_prob_est(prob_est){};
 
-CostFactorySVM::CostFactorySVM(std::string svm_type, std::string kernel_type, unsigned short kernel_degree, float gamma, float coef0, float ccost, float nu,  float epsilon_loss, int cache, float epsilon_tol, bool shrinking, bool prob_est, unsigned short cv, bool verbose)
-    : CostFactory(cv,verbose), m_svm_type(svm_type), m_kernel_type(kernel_type), m_kernel_degree(kernel_degree), m_gamma(gamma), m_coef0(coef0), m_ccost(ccost), m_nu(nu),  m_epsilon_loss(epsilon_loss), m_cache(cache), m_epsilon_tol(epsilon_tol), m_shrinking(shrinking), m_prob_est(prob_est){};
+// double CostFactorySVM::getCost(const vector<Vector2d<float> > &trainingFeatures){
+//   std::map<std::string, svm::SVM_TYPE> svmMap;
 
-double CostFactorySVM::getCost(const vector<Vector2d<float> > &trainingFeatures){
-  std::map<std::string, svm::SVM_TYPE> svmMap;
+//   svmMap["C_SVC"]=svm::C_SVC;
+//   svmMap["nu_SVC"]=svm::nu_SVC;
+//   svmMap["one_class"]=svm::one_class;
+//   svmMap["epsilon_SVR"]=svm::epsilon_SVR;
+//   svmMap["nu_SVR"]=svm::nu_SVR;
 
-  svmMap["C_SVC"]=svm::C_SVC;
-  svmMap["nu_SVC"]=svm::nu_SVC;
-  svmMap["one_class"]=svm::one_class;
-  svmMap["epsilon_SVR"]=svm::epsilon_SVR;
-  svmMap["nu_SVR"]=svm::nu_SVR;
+//   std::map<std::string, svm::KERNEL_TYPE> kernelMap;
 
-  std::map<std::string, svm::KERNEL_TYPE> kernelMap;
+//   kernelMap["linear"]=svm::linear;
+//   kernelMap["polynomial"]=svm::polynomial;
+//   kernelMap["radial"]=svm::radial;
+//   kernelMap["sigmoid;"]=svm::sigmoid;
 
-  kernelMap["linear"]=svm::linear;
-  kernelMap["polynomial"]=svm::polynomial;
-  kernelMap["radial"]=svm::radial;
-  kernelMap["sigmoid;"]=svm::sigmoid;
+//   unsigned short nclass=trainingFeatures.size();
+//   unsigned int ntraining=0;
+//   unsigned int ntest=0;
+//   for(int iclass=0;iclass<nclass;++iclass){
+//     ntraining+=m_nctraining[iclass];
+//     ntest+=m_nctest[iclass];
+//   }
+//   if(ntest)
+//     assert(!m_cv);
+//   if(!m_cv)
+//     assert(ntest);
+//   unsigned short nFeatures=trainingFeatures[0][0].size();
 
-  unsigned short nclass=trainingFeatures.size();
-  unsigned int ntraining=0;
-  unsigned int ntest=0;
-  for(int iclass=0;iclass<nclass;++iclass){
-    ntraining+=m_nctraining[iclass];
-    ntest+=m_nctest[iclass];
-  }
-  if(ntest)
-    assert(!m_cv);
-  if(!m_cv)
-    assert(ntest);
-  unsigned short nFeatures=trainingFeatures[0][0].size();
+//   struct svm_parameter param;
+//   param.svm_type = svmMap[m_svm_type];
+//   param.kernel_type = kernelMap[m_kernel_type];
+//   param.degree = m_kernel_degree;
+//   param.gamma = (m_gamma>0)? m_gamma : 1.0/nFeatures;
+//   param.coef0 = m_coef0;
+//   param.nu = m_nu;
+//   param.cache_size = m_cache;
+//   param.C = m_ccost;
+//   param.eps = m_epsilon_tol;
+//   param.p = m_epsilon_loss;
+//   param.shrinking = (m_shrinking)? 1 : 0;
+//   param.probability = (m_prob_est)? 1 : 0;
+//   param.nr_weight = 0;//not used: I use priors and balancing
+//   param.weight_label = NULL;
+//   param.weight = NULL;
+//   param.verbose=(m_verbose>1)? true:false;
+//   struct svm_model* svm;
+//   struct svm_problem prob;
+//   struct svm_node* x_space;
 
-  struct svm_parameter param;
-  param.svm_type = svmMap[m_svm_type];
-  param.kernel_type = kernelMap[m_kernel_type];
-  param.degree = m_kernel_degree;
-  param.gamma = (m_gamma>0)? m_gamma : 1.0/nFeatures;
-  param.coef0 = m_coef0;
-  param.nu = m_nu;
-  param.cache_size = m_cache;
-  param.C = m_ccost;
-  param.eps = m_epsilon_tol;
-  param.p = m_epsilon_loss;
-  param.shrinking = (m_shrinking)? 1 : 0;
-  param.probability = (m_prob_est)? 1 : 0;
-  param.nr_weight = 0;//not used: I use priors and balancing
-  param.weight_label = NULL;
-  param.weight = NULL;
-  param.verbose=(m_verbose>1)? true:false;
-  struct svm_model* svm;
-  struct svm_problem prob;
-  struct svm_node* x_space;
+//   prob.l=ntraining;
+//   prob.y = Malloc(double,prob.l);
+//   prob.x = Malloc(struct svm_node *,prob.l);
+//   x_space = Malloc(struct svm_node,(nFeatures+1)*ntraining);
+//   unsigned long int spaceIndex=0;
+//   int lIndex=0;
+//   for(int iclass=0;iclass<nclass;++iclass){
+//     // for(int isample=0;isample<trainingFeatures[iclass].size();++isample){
+//     for(int isample=0;isample<m_nctraining[iclass];++isample){
+//       prob.x[lIndex]=&(x_space[spaceIndex]);
+//       for(int ifeature=0;ifeature<nFeatures;++ifeature){
+//         x_space[spaceIndex].index=ifeature+1;
+//         x_space[spaceIndex].value=trainingFeatures[iclass][isample][ifeature];
+//         ++spaceIndex;
+//       }
+//       x_space[spaceIndex++].index=-1;
+//       prob.y[lIndex]=iclass;
+//       ++lIndex;
+//     }
+//   }
 
-  prob.l=ntraining;
-  prob.y = Malloc(double,prob.l);
-  prob.x = Malloc(struct svm_node *,prob.l);
-  x_space = Malloc(struct svm_node,(nFeatures+1)*ntraining);
-  unsigned long int spaceIndex=0;
-  int lIndex=0;
-  for(int iclass=0;iclass<nclass;++iclass){
-    // for(int isample=0;isample<trainingFeatures[iclass].size();++isample){
-    for(int isample=0;isample<m_nctraining[iclass];++isample){
-      prob.x[lIndex]=&(x_space[spaceIndex]);
-      for(int ifeature=0;ifeature<nFeatures;++ifeature){
-        x_space[spaceIndex].index=ifeature+1;
-        x_space[spaceIndex].value=trainingFeatures[iclass][isample][ifeature];
-        ++spaceIndex;
-      }
-      x_space[spaceIndex++].index=-1;
-      prob.y[lIndex]=iclass;
-      ++lIndex;
-    }
-  }
+//   assert(lIndex==prob.l);
+//   if(m_verbose>2)
+//     std::cout << "checking parameters" << std::endl;
+//   svm_check_parameter(&prob,&param);
+//   if(m_verbose>2)
+//     std::cout << "parameters ok, training" << std::endl;
+//   svm=svm_train(&prob,&param);
+//   if(m_verbose>2)
+//     std::cout << "SVM is now trained" << std::endl;
 
-  assert(lIndex==prob.l);
-  if(m_verbose>2)
-    std::cout << "checking parameters" << std::endl;
-  svm_check_parameter(&prob,&param);
-  if(m_verbose>2)
-    std::cout << "parameters ok, training" << std::endl;
-  svm=svm_train(&prob,&param);
-  if(m_verbose>2)
-    std::cout << "SVM is now trained" << std::endl;
+//   m_cm.clearResults();
+//   if(m_cv>1){
+//     double *target = Malloc(double,prob.l);
+//     svm_cross_validation(&prob,&param,m_cv,target);
+//     assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
+//     for(int i=0;i<prob.l;i++){
+//       string refClassName=m_nameVector[prob.y[i]];
+//       string className=m_nameVector[target[i]];
+//       if(m_classValueMap.size())
+// 	m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
+//       else
+// 	m_cm.incrementResult(m_cm.getClass(prob.y[i]),m_cm.getClass(target[i]),1.0);
+//     }
+//     free(target);
+//   }
+//   else{
+//     struct svm_node *x_test;
+//     vector<double> result(nclass);
+//     x_test = Malloc(struct svm_node,(nFeatures+1));
+//     for(int iclass=0;iclass<nclass;++iclass){
+//       for(int isample=0;isample<m_nctest[iclass];++isample){
+// 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
+// 	  x_test[ifeature].index=ifeature+1;
+// 	  x_test[ifeature].value=trainingFeatures[iclass][m_nctraining[iclass]+isample][ifeature];
+// 	}
+// 	x_test[nFeatures].index=-1;
+// 	double predict_label=0;
+// 	assert(svm_check_probability_model(svm));
+// 	predict_label = svm_predict_probability(svm,x_test,&(result[0]));
+// 	// predict_label = svm_predict(svm,x_test);
+// 	string refClassName=m_nameVector[iclass];
+// 	string className=m_nameVector[static_cast<short>(predict_label)];
+// 	if(m_classValueMap.size())
+// 	  m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
+// 	else
+// 	  m_cm.incrementResult(refClassName,className,1.0);
+//       }
+//     }
+//     free(x_test);
+//   }
+//   if(m_verbose>1)
+//     std::cout << m_cm << std::endl;
+//   assert(m_cm.nReference());
+//   // if(m_verbose)
 
-  m_cm.clearResults();
-  if(m_cv>1){
-    double *target = Malloc(double,prob.l);
-    svm_cross_validation(&prob,&param,m_cv,target);
-    assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
-    for(int i=0;i<prob.l;i++){
-      string refClassName=m_nameVector[prob.y[i]];
-      string className=m_nameVector[target[i]];
-      if(m_classValueMap.size())
-	m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
-      else
-	m_cm.incrementResult(m_cm.getClass(prob.y[i]),m_cm.getClass(target[i]),1.0);
-    }
-    free(target);
-  }
-  else{
-    struct svm_node *x_test;
-    vector<double> result(nclass);
-    x_test = Malloc(struct svm_node,(nFeatures+1));
-    for(int iclass=0;iclass<nclass;++iclass){
-      for(int isample=0;isample<m_nctest[iclass];++isample){
-	for(int ifeature=0;ifeature<nFeatures;++ifeature){
-	  x_test[ifeature].index=ifeature+1;
-	  x_test[ifeature].value=trainingFeatures[iclass][m_nctraining[iclass]+isample][ifeature];
-	}
-	x_test[nFeatures].index=-1;
-	double predict_label=0;
-	assert(svm_check_probability_model(svm));
-	predict_label = svm_predict_probability(svm,x_test,&(result[0]));
-	// predict_label = svm_predict(svm,x_test);
-	string refClassName=m_nameVector[iclass];
-	string className=m_nameVector[static_cast<short>(predict_label)];
-	if(m_classValueMap.size())
-	  m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
-	else
-	  m_cm.incrementResult(refClassName,className,1.0);
-      }
-    }
-    free(x_test);
-  }
-  if(m_verbose>1)
-    std::cout << m_cm << std::endl;
-  assert(m_cm.nReference());
-  // if(m_verbose)
+//   // std::cout << m_cm << std::endl;
+//   // std::cout << "Kappa: " << m_cm.kappa() << std::endl;
+//   // double se95_oa=0;
+//   // double doa=0;
+//   // doa=m_cm.oa_pct(&se95_oa);
+//   // std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
 
-  // std::cout << m_cm << std::endl;
-  // std::cout << "Kappa: " << m_cm.kappa() << std::endl;
-  // double se95_oa=0;
-  // double doa=0;
-  // doa=m_cm.oa_pct(&se95_oa);
-  // std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+//   // *NOTE* Because svm_model contains pointers to svm_problem, you can
+//   // not free the memory used by svm_problem if you are still using the
+//   // svm_model produced by svm_train(). 
+//   // however, we will re-train the svm later on after the feature selection
+//   free(prob.y);
+//   free(prob.x);
+//   free(x_space);
+//   svm_free_and_destroy_model(&(svm));
 
-  // *NOTE* Because svm_model contains pointers to svm_problem, you can
-  // not free the memory used by svm_problem if you are still using the
-  // svm_model produced by svm_train(). 
-  // however, we will re-train the svm later on after the feature selection
-  free(prob.y);
-  free(prob.x);
-  free(x_space);
-  svm_free_and_destroy_model(&(svm));
-
-  return(m_cm.kappa());
-}
+//   return(m_cm.kappa());
+// }
 
 int main(int argc, char *argv[])
 {
@@ -208,11 +200,11 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "input test set (leave empty to perform a cross validation based on training only)"); 
   Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option)."); 
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
-  Optionpk<string> label_opt("\0", "label", "identifier for class label in training vector file.","label"); 
+  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
-  Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
+  Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
-  Optionpk<int> minSize_opt("m", "min", "if number of training pixels is less then min, do not take this class into account", 0);
+  Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
   Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");

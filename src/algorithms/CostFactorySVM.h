@@ -1,6 +1,6 @@
 /**********************************************************************
-pkfssvm.h: feature selection for svm classifier
-Copyright (C) 2008-2014 Pieter Kempeneers
+CostFactorySVM.h: select features, typical use: feature selection for classification
+Copyright (C) 2008-2012 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -17,24 +17,25 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-#include <string>
-#include <vector>
-#include "base/Vector2d.h"
+#ifndef _COSTFACTORYSVM_H_
+#define _COSTFACTORYSVM_H_
 
-#ifndef _PKFSSVMH_H_
-#define _PKFSSVMH_H_
+#include <math.h>
+#include <vector>
+#include <map>
+#include "base/Vector2d.h"
+#include "CostFactory.h"
+
 namespace svm{
   enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};
   enum KERNEL_TYPE {linear=0,polynomial=1,radial=2,sigmoid=3};
 }
 
-enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4};
-
 class CostFactorySVM : public CostFactory
 {
 public:
 CostFactorySVM();
-CostFactorySVM(std::string svm_type, std::string kernel_type, unsigned short kernel_degree, float gamma, float coef0, float ccost, float nu,  float epsilon_loss, int cache, float epsilon_tol, bool shrinking, bool prob_est, unsigned short cv, bool verbose);
+CostFactorySVM(std::string svm_type, std::string kernel_type, unsigned short kernel_degree, float gamma, float coef0, float ccost, float nu,  float epsilon_loss, int cache, float epsilon_tol, bool shrinking, bool prob_est, unsigned short cv, short verbose);
 ~CostFactorySVM();
 double getCost(const std::vector<Vector2d<float> > &trainingFeatures);
   
@@ -52,6 +53,4 @@ float m_epsilon_tol;
 bool m_shrinking;
 bool m_prob_est;
 };
-
-
 #endif

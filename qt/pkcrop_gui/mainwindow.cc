@@ -258,10 +258,11 @@ void MainWindow::on_toolButton_Run_clicked()
 
         ui->commandLineEdit->insert(program);
 
-//        QProcess *myProcess = new QProcess(parent);
+//        QProcess *myProcess = new QProcess(parent);        
         QProcess *myProcess = new QProcess(this);
         myProcess->start(program);
         myProcess->setProcessChannelMode(QProcess::MergedChannels);
+        this->setCursor(Qt::WaitCursor);
         myProcess->waitForFinished(-1);
 //        QString p_stderr = myProcess->readyReadStandardError();
 //        if(!p_stderr.isEmpty()){
@@ -269,6 +270,7 @@ void MainWindow::on_toolButton_Run_clicked()
 //            msgBox.setText(p_stderr);
 //            msgBox.exec();
 //        }
+        this->setCursor(Qt::ArrowCursor);
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;

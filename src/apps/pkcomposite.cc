@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
-  Optionpk<string> crule_opt("cr", "crule", "Composite rule for mosaic (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
+  Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum", "overwrite");
   Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for input image", 0);
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Bands in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
-  Optionpk<bool> file_opt("file", "file", "write number of observations for each pixels as additional layer in mosaic", false);
-  Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the mosaic, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
+  Optionpk<bool> file_opt("file", "file", "write number of observations for each pixels as additional layer in composite", false);
+  Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image).", 0);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
     double theULX, theULY, theLRX, theLRY;
     imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
     if(theLRY>theULY){
-      cerr << "Error: " << input_opt[ifile] << " is not georeferenced, only referenced images are supported for pkmosaic " << endl;
+      cerr << "Error: " << input_opt[ifile] << " is not georeferenced, only referenced images are supported for pkcomposite " << endl;
       exit(1);
     }
     if(verbose_opt[0])
@@ -238,31 +238,31 @@ int main(int argc, char *argv[])
         switch(cruleMap[crule_opt[0]]){
         default:
         case(crule::overwrite):
-          cout << "Mosaic rule: overwrite" << endl;
+          cout << "Composite rule: overwrite" << endl;
           break;
         case(crule::maxndvi):
-          cout << "Mosaic rule: max ndvi" << endl;
+          cout << "Composite rule: max ndvi" << endl;
           break;
         case(crule::maxband):
-          cout << "Mosaic rule: max band" << endl;
+          cout << "Composite rule: max band" << endl;
           break;
         case(crule::minband):
-          cout << "Mosaic rule: min band" << endl;
+          cout << "Composite rule: min band" << endl;
           break;
         case(crule::validband):
-          cout << "Mosaic rule: valid band" << endl;
+          cout << "Composite rule: valid band" << endl;
           break;
         case(crule::mean):
-          cout << "Mosaic rule: mean value" << endl;
+          cout << "Composite rule: mean value" << endl;
           break;
         case(crule::mode):
-          cout << "Mosaic rule: max voting (only for byte images)" << endl;
+          cout << "Composite rule: max voting (only for byte images)" << endl;
           break;
         case(crule::median):
-          cout << "Mosaic rule: median" << endl;
+          cout << "Composite rule: median" << endl;
           break;
         case(crule::sum):
-          cout << "Mosaic rule: sum" << endl;
+          cout << "Composite rule: sum" << endl;
           break;
         }
       }
@@ -362,10 +362,10 @@ int main(int argc, char *argv[])
   }
 
   if(verbose_opt[0])
-    cout << "bounding box mosaic image (ULX ULY LRX LRY): " << fixed << setprecision(6) << minULX << " " << maxULY << " " << maxLRX << " " << minLRY << endl;
+    cout << "bounding box composite image (ULX ULY LRX LRY): " << fixed << setprecision(6) << minULX << " " << maxULY << " " << maxLRX << " " << minLRY << endl;
   //initialize image
   if(verbose_opt[0])
-    cout << "initializing mosaic image..." << endl;
+    cout << "initializing composite image..." << endl;
 //   double dcol=(maxLRX-minULX+dx-1)/dx;
 //   double drow=(maxULY-minLRY+dy-1)/dy;
 //   int ncol=static_cast<int>(dcol);
@@ -375,7 +375,7 @@ int main(int argc, char *argv[])
   int nrow=ceil((maxULY-minLRY)/dy);
 
   if(verbose_opt[0])
-    cout << "mosaic image dim (nrow x ncol): " << nrow << " x " << ncol << endl;
+    cout << "composite image dim (nrow x ncol): " << nrow << " x " << ncol << endl;
   ImgWriterGdal imgWriter;
   while(weight_opt.size()<input_opt.size())
     weight_opt.push_back(weight_opt[0]);
@@ -430,9 +430,9 @@ int main(int argc, char *argv[])
     else if(theColorTable)
       imgWriter.setColorTable(theColorTable);
   }
-  //create mosaic image
+  //create composite image
   if(verbose_opt[0])
-     cout << "creating mosaic image" << endl;
+     cout << "creating composite image" << endl;
   Vector2d<double> writeBuffer(nband,imgWriter.nrOfCol());
   vector<short> fileBuffer(ncol);//holds the number of used files
   Vector2d<short> maxBuffer;//buffer used for maximum voting
