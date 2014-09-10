@@ -23,6 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <QFileDialog>
 #include <QProcess>
 #include <QMessageBox>
+#include <QProcess>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -263,13 +264,13 @@ void MainWindow::on_toolButton_Run_clicked()
         myProcess->setProcessChannelMode(QProcess::MergedChannels);
         this->setCursor(Qt::WaitCursor);
         myProcess->waitForFinished(-1);
+//        QString p_stderr = myProcess->readyReadStandardError();
+//        if(!p_stderr.isEmpty()){
+//            QMessageBox msgBox;
+//            msgBox.setText(p_stderr);
+//            msgBox.exec();
+//        }
         this->setCursor(Qt::ArrowCursor);
-        QMessageBox msgBox;
-        QString p_stderr = myProcess->readAllStandardError();
-        if(!p_stderr.isEmpty()){
-            msgBox.setText(p_stderr);
-            msgBox.exec();
-        }
         QString p_stdout = myProcess->readAll();
         ui->consoleEdit->insertPlainText(p_stdout);
         delete myProcess;
