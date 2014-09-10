@@ -402,7 +402,8 @@ int main(int argc,char **argv) {
       double c1mod=0;
 
       if(verbose_opt[0])
-	  cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
+	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
+      
       double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod);
       // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0mod,c1mod,verbose_opt[0]);
 

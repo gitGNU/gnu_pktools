@@ -303,6 +303,8 @@ version 2.5.3
 	libLAS 1.8.0 support (ticket #42951)
  - myfann_cpp.h 
 	Fix build failure on ARM due to va_list usage in myfann_cpp.h
+ - pkinfo
+	Support multiple input bands when calculating statistics
 Next versions: 
  - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
 

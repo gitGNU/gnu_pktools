@@ -258,33 +258,39 @@ int main(int argc, char *argv[])
     double maxValue=0;
     double meanValue=0;
     double stdDev=0;
-    if(stat_opt[0]){
-      assert(band_opt[0]<imgReader.nrOfBand());
-      GDALProgressFunc pfnProgress;
-      void* pProgressData;
-      GDALRasterBand* rasterBand;
-      rasterBand=imgReader.getRasterBand(band_opt[0]);
-      rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
-      std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
-    }
-
-    if(minmax_opt[0]||min_opt[0]||max_opt[0]){
-      assert(band_opt[0]<imgReader.nrOfBand());
-      if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
-	double uli,ulj,lri,lrj;
-	imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
-	imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
-	imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),band_opt[0],minValue,maxValue);
+    int nband=band_opt.size();
+    if(band_opt[0]<0)
+      nband=imgReader.nrOfBand();
+    for(int iband=0;iband<nband;++iband){
+      unsigned short theBand=(band_opt[0]<0)? iband : band_opt[iband];
+      if(stat_opt[0]){
+	assert(theBand<imgReader.nrOfBand());
+	GDALProgressFunc pfnProgress;
+	void* pProgressData;
+	GDALRasterBand* rasterBand;
+	rasterBand=imgReader.getRasterBand(theBand);
+	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+	std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
       }
-      else
-	imgReader.getMinMax(minValue,maxValue,band_opt[0],true);
-      if(minmax_opt[0])
-	std::cout << "-min " << minValue << " -max " << maxValue << " ";
-      else{
-	if(min_opt[0])
-	  std::cout << "-min " << minValue << " ";
-	if(max_opt[0])
-	  std::cout << "-max " << maxValue << " ";
+
+      if(minmax_opt[0]||min_opt[0]||max_opt[0]){
+	assert(theBand<imgReader.nrOfBand());
+	if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
+	  double uli,ulj,lri,lrj;
+	  imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
+	  imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
+	  imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),theBand,minValue,maxValue);
+	}
+	else
+	  imgReader.getMinMax(minValue,maxValue,theBand,true);
+	if(minmax_opt[0])
+	  std::cout << "-min " << minValue << " -max " << maxValue << " ";
+	else{
+	  if(min_opt[0])
+	    std::cout << "-min " << minValue << " ";
+	  if(max_opt[0])
+	    std::cout << "-max " << maxValue << " ";
+	}
       }
     }
     if(relative_opt[0])
@@ -374,9 +380,9 @@ int main(int argc, char *argv[])
 //       }
     }
     if(read_opt[0]){
-      int nband=band_opt.size();
-      if(band_opt[0]<0)
-        nband=imgReader.nrOfBand();
+      // int nband=band_opt.size();
+      // if(band_opt[0]<0)
+      //   nband=imgReader.nrOfBand();
       std::cout.precision(12);
       for(int iband=0;iband<nband;++iband){
         unsigned short theBand=(band_opt[0]<0)? iband : band_opt[iband];
