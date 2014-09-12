@@ -28,6 +28,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input shape file");
+  Optionpk<string> layer_opt("ln", "lname", "Layer name(s) in sample (leave empty to select all)");
   Optionpk<string> output_opt("o", "output", "Output ASCII file");
   Optionpk<string> attribute_opt("n", "name", "names of the attributes to select. Each attribute is stored in a separate band. Default is ALL: write all attributes", "ALL");
   Optionpk<bool> pos_opt("pos","pos","include position (x and y)",false);
@@ -37,6 +38,7 @@ int main(int argc, char *argv[])
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
+    layer_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     attribute_opt.retrieveOption(argc,argv);
     pos_opt.retrieveOption(argc,argv);
@@ -65,124 +67,143 @@ int main(int argc, char *argv[])
     outputFile.open(output_opt[0].c_str(),ios::out);
 
   ImgReaderOgr inputReader(input_opt[0]);
-  if(attribute_opt[0]!="ALL"){
-    vector<double> xvector;
-    vector<double> yvector;
-    if(inputReader.getGeometryType()==wkbPoint)
-      inputReader.readXY(xvector,yvector);
-    Vector2d<std::string> theData(attribute_opt.size());
-    for(int ifield=0;ifield<attribute_opt.size();++ifield){
-      if(verbose_opt[0])
-        cout << "field: " << ifield << endl;
-      theData[ifield].clear();
-      inputReader.readData(theData[ifield],OFTReal,attribute_opt[ifield],0,verbose_opt[0]);
-    }
-    if(verbose_opt[0]){
-      std::cout << "number of fields: " << theData.size() << std::endl;
-      std::cout << "number of samples: " << theData[0].size() << std::endl;
-    }
-    if(transpose_opt[0]){
-      if(pos_opt[0]&&(inputReader.getGeometryType()==wkbPoint)){
-        if(output_opt.size()){
-          outputFile << "X" << " ";
-          for(int isample=0;isample<xvector.size();++isample){
-            outputFile << xvector[isample];
-            if(isample<xvector.size()-1)
-              outputFile << " ";
-            else
-              outputFile << std::endl;
-          }
-          outputFile << "Y" << " ";
-          for(int isample=0;isample<yvector.size();++isample){
-            outputFile << yvector[isample];
-            if(isample<yvector.size()-1)
-              outputFile << " ";
-            else
-              outputFile << std::endl;
-          }
-        }
-        else{
-          std::cout << "X" << " ";
-          for(int isample=0;isample<xvector.size();++isample){
-            std::cout << xvector[isample];
-            if(isample<xvector.size()-1)
-              std::cout << " ";
-            else
-              std::cout << std::endl;
-          }
-          std::cout << "Y" << " ";
-          for(int isample=0;isample<yvector.size();++isample){
-            std::cout << yvector[isample];
-            if(isample<yvector.size()-1)
-              std::cout << " ";
-            else
-              std::cout << std::endl;
-          }
-        }
+
+  //support multiple layers
+  int nlayerRead=inputReader.getDataSource()->GetLayerCount();
+  if(verbose_opt[0])
+    cout << "number of layers: " << nlayerRead << endl;
+      
+  for(int ilayer=0;ilayer<nlayerRead;++ilayer){
+    OGRLayer *readLayer=inputReader.getLayer(ilayer);
+    string currentLayername=readLayer->GetName();
+    if(layer_opt.size())
+      if(find(layer_opt.begin(),layer_opt.end(),currentLayername)==layer_opt.end())
+	continue;
+    if(verbose_opt[0])
+      cout << "processing layer " << currentLayername << endl;
+    if(layer_opt.size())
+      cout << " --lname " << currentLayername;
+      
+    if(attribute_opt[0]!="ALL"){
+      vector<double> xvector;
+      vector<double> yvector;
+      if(inputReader.getGeometryType()==wkbPoint)
+	inputReader.readXY(xvector,yvector);
+      Vector2d<std::string> theData(attribute_opt.size());
+      for(int ifield=0;ifield<attribute_opt.size();++ifield){
+	if(verbose_opt[0])
+	  cout << "field: " << ifield << endl;
+	theData[ifield].clear();
+	inputReader.readData(theData[ifield],OFTReal,attribute_opt[ifield],ilayer,verbose_opt[0]);
       }
-      for(int ifield=0;ifield<theData.size();++ifield){
-        if(output_opt.size()){
-          outputFile << ifield << " ";
-          for(int isample=0;isample<theData[0].size();++isample){
-            outputFile << theData[ifield][isample];
-            if(isample<theData[0].size()-1)
-              outputFile << " ";
-            else
-              outputFile << std::endl;
-          }
-        }
-        else{
-          std::cout << ifield << " ";
-          for(int isample=0;isample<theData[0].size();++isample){
-            std::cout << theData[ifield][isample];
-            if(isample<theData[0].size()-1)
-              std::cout << " ";
-            else
-              std::cout << std::endl;
-          }
-        }
+      if(verbose_opt[0]){
+	std::cout << "number of fields: " << theData.size() << std::endl;
+	std::cout << "number of samples: " << theData[0].size() << std::endl;
       }
+      if(transpose_opt[0]){
+	if(pos_opt[0]&&(inputReader.getGeometryType()==wkbPoint)){
+	  if(output_opt.size()){
+	    outputFile << "X" << " ";
+	    for(int isample=0;isample<xvector.size();++isample){
+	      outputFile << xvector[isample];
+	      if(isample<xvector.size()-1)
+		outputFile << " ";
+	      else
+		outputFile << std::endl;
+	    }
+	    outputFile << "Y" << " ";
+	    for(int isample=0;isample<yvector.size();++isample){
+	      outputFile << yvector[isample];
+	      if(isample<yvector.size()-1)
+		outputFile << " ";
+	      else
+		outputFile << std::endl;
+	    }
+	  }
+	  else{
+	    std::cout << "X" << " ";
+	    for(int isample=0;isample<xvector.size();++isample){
+	      std::cout << xvector[isample];
+	      if(isample<xvector.size()-1)
+		std::cout << " ";
+	      else
+		std::cout << std::endl;
+	    }
+	    std::cout << "Y" << " ";
+	    for(int isample=0;isample<yvector.size();++isample){
+	      std::cout << yvector[isample];
+	      if(isample<yvector.size()-1)
+		std::cout << " ";
+	      else
+		std::cout << std::endl;
+	    }
+	  }
+	}
+	for(int ifield=0;ifield<theData.size();++ifield){
+	  if(output_opt.size()){
+	    outputFile << ifield << " ";
+	    for(int isample=0;isample<theData[0].size();++isample){
+	      outputFile << theData[ifield][isample];
+	      if(isample<theData[0].size()-1)
+		outputFile << " ";
+	      else
+		outputFile << std::endl;
+	    }
+	  }
+	  else{
+	    std::cout << ifield << " ";
+	    for(int isample=0;isample<theData[0].size();++isample){
+	      std::cout << theData[ifield][isample];
+	      if(isample<theData[0].size()-1)
+		std::cout << " ";
+	      else
+		std::cout << std::endl;
+	    }
+	  }
+	}
+      }
+      else{
+	for(int isample=0;isample<theData[0].size();++isample){
+	  if(output_opt.size()){
+	    outputFile << isample << " ";
+	    if(pos_opt[0])
+	      outputFile << xvector[isample] << " " << yvector[isample] << " ";
+	    for(int ifield=0;ifield<theData.size();++ifield){
+	      outputFile << theData[ifield][isample];
+	      if(ifield<theData.size()-1)
+		outputFile << " ";
+	      else
+		outputFile << std::endl;
+	    }
+	  }
+	  else{
+	    std::cout << isample << " ";
+	    if(pos_opt[0])
+	      std::cout  << xvector[isample] << " " << yvector[isample] << " ";
+	    for(int ifield=0;ifield<theData.size();++ifield){
+	      std::cout << theData[ifield][isample];
+	      if(ifield<theData.size()-1)
+		std::cout << " ";
+	      else
+		std::cout << std::endl;
+	    }
+	  }
+	}
+      }
+      if(output_opt.size())
+	outputFile.close();
     }
     else{
-      for(int isample=0;isample<theData[0].size();++isample){
-        if(output_opt.size()){
-          outputFile << isample << " ";
-          if(pos_opt[0])
-            outputFile << xvector[isample] << " " << yvector[isample] << " ";
-          for(int ifield=0;ifield<theData.size();++ifield){
-            outputFile << theData[ifield][isample];
-            if(ifield<theData.size()-1)
-              outputFile << " ";
-            else
-              outputFile << std::endl;
-          }
-        }
-        else{
-          std::cout << isample << " ";
-          if(pos_opt[0])
-            std::cout  << xvector[isample] << " " << yvector[isample] << " ";
-          for(int ifield=0;ifield<theData.size();++ifield){
-            std::cout << theData[ifield][isample];
-            if(ifield<theData.size()-1)
-              std::cout << " ";
-            else
-              std::cout << std::endl;
-          }
-        }
+      if(output_opt.size()){
+	ofstream outputFile(output_opt[0].c_str(),ios::out);
+	outputFile << imgReader;
+	outputFile.close();
       }
+      else
+	std::cout << imgReader;
     }
-    if(output_opt.size())
-      outputFile.close();
   }
-  else{
-    if(output_opt.size()){
-      ofstream outputFile(output_opt[0].c_str(),ios::out);
-      outputFile << imgReader;
-      outputFile.close();
-    }
-    else
-      std::cout << imgReader;
-  }
+  inputReader.close();
   imgReader.close();
 }
 

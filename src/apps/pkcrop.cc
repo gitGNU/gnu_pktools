@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
-  Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
+  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -479,7 +479,7 @@ int main(int argc, char *argv[])
 	    writeBuffer.push_back(nodataValue);
 	}
 	else{
-	  if(verbose_opt[0])
+	  if(verbose_opt[0]>1)
 	    cout << "reading row: " << readRow << endl;
 	  try{
             if(endCol<imgReader.nrOfCol()-1)

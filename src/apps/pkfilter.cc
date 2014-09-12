@@ -706,7 +706,10 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	std::cout << "classes set" << std::endl;
     default:
-      filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      if(dimZ_opt.size()){
+      }
+      else
+	filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       break;
     }
   }
