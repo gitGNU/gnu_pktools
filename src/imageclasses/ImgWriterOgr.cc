@@ -176,6 +176,29 @@ OGRLayer* ImgWriterOgr::createLayer(const std::string& layername, const std::str
   //if points: use wkbPoint
   //if no constraints on the types geometry to be written: use wkbUnknown 
   OGRLayer* poLayer;
+
+  //always overwrite...
+  //todo: test if overwrite works...
+  //check if layername already exists for this dataset
+  int iLayer = -1;
+  poLayer=m_datasource->GetLayerByName(layername.c_str());
+  if(poLayer!=NULL){
+    int nLayerCount = m_datasource->GetLayerCount();
+    for(iLayer = 0; iLayer < nLayerCount; iLayer++ ){
+      OGRLayer *tmpLayer = m_datasource->GetLayer(iLayer);
+      if (tmpLayer == poLayer)
+	break;
+    }
+    if (iLayer == nLayerCount){
+      // shouldn't happen with an ideal driver
+      poLayer = NULL;
+    }
+    if(m_datasource->DeleteLayer(iLayer)!=OGRERR_NONE){
+      std::string errorstring="DeleteLayer() failed when overwrite requested";
+      throw(errorstring);
+    }
+  }
+
   OGRSpatialReference oSRS;
 
   if(theProjection!=""){
