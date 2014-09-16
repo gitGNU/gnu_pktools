@@ -303,8 +303,16 @@ version 2.5.3
 	libLAS 1.8.0 support (ticket #42951)
  - myfann_cpp.h 
 	Fix build failure on ARM due to va_list usage in myfann_cpp.h
+
+
+version 2.5.4
  - pkinfo
 	Support multiple input bands when calculating statistics
+
 Next versions: 
  - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
+ - pkextract
+	support variance rule for polygon features (ticket #43193)
+	support overwrite vector files (ticket #43194)
+	support multiple attributes
 

@@ -281,10 +281,15 @@ int main(int argc,char **argv) {
 	try{
 	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  //simple nearest neighbor
-	  stat.nearUp(estReadBuffer,estWriteBuffer);
-	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
-	  for(int icol=0;icol<ncol;++icol)
+	  //stat.nearUp(estReadBuffer,estWriteBuffer);
+
+	  for(int icol=0;icol<ncol;++icol){
+	    imgWriterEst.image2geo(icol,irow,x,y);
+	    imgReaderModel1.geo2image(x,y,modCol,modRow);
+	    estWriteBuffer[icol]=estReadBuffer[modCol];
 	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	  }
+	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	  imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
 	}
 	catch(string errorString){
@@ -595,10 +600,15 @@ int main(int argc,char **argv) {
 	try{
 	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  //simple nearest neighbor
-	  stat.nearUp(estReadBuffer,estWriteBuffer);
-	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
-	  for(int icol=0;icol<imgWriterEst.nrOfCol();++icol)
+	  //stat.nearUp(estReadBuffer,estWriteBuffer);
+
+	  for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
+	    imgWriterEst.image2geo(icol,irow,x,y);	    
+	    imgReaderModel1.geo2image(x,y,modCol,modRow);
+	    estWriteBuffer[icol]=estReadBuffer[modCol];
 	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	  }
+	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	  imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
 	}
 	catch(string errorString){
