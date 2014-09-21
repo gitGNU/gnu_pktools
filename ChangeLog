@@ -308,6 +308,8 @@ version 2.5.3
 version 2.5.4
  - pkinfo
 	Support multiple input bands when calculating statistics
+ - pkfilter
+	Support filtering and statistics in spectral domain (see ticket #43252)
 
 Next versions: 
  - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)

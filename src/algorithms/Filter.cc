@@ -338,10 +338,14 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
+    if((y+1+down/2)%down)
+      continue;
     for(int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],GDT_Float64,y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
+      if((x+1+down/2)%down)
+	continue;
       pixelInput=lineInput.selectCol(x);
       switch(getFilterType(method)){
       case(filter::median):
@@ -354,10 +358,13 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
 	lineOutput[(x-offset+down-1)/down]=stat.mymax(pixelInput);
 	break;
       case(filter::sum):
-	lineOutput[(x-offset+down-1)/down]=sqrt(stat.sum(pixelInput));
+	lineOutput[(x-offset+down-1)/down]=stat.sum(pixelInput);
 	break;
       case(filter::var):
 	lineOutput[(x-offset+down-1)/down]=stat.var(pixelInput);
+	break;
+      case(filter::stdev):
+	lineOutput[(x-offset+down-1)/down]=sqrt(stat.var(pixelInput));
 	break;
       case(filter::mean):
 	lineOutput[(x-offset+down-1)/down]=stat.mean(pixelInput);
@@ -369,10 +376,10 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
       }
     }
     try{
-      output.writeData(lineOutput,GDT_Float64,y);
+      output.writeData(lineOutput,GDT_Float64,y/down);
     }
     catch(string errorstring){
-      cerr << errorstring << "in line " << y << endl;
+      cerr << errorstring << "in line " << y/down << endl;
     }
     progress=(1.0+y)/output.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
