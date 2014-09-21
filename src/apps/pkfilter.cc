@@ -188,8 +188,10 @@ int main(int argc,char **argv) {
       int nband=fwhm_opt.size()? fwhm_opt.size():srf_opt.size();
       output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
     }
-    else
-      output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],input.nrOfBand(),theType,imageType,option_opt);
+    else{
+      int nband=(dimZ_opt[0]==1)? 1 : input.nrOfBand();
+      output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
+    }
   }
   catch(string errorstring){
     cout << errorstring << endl;
@@ -707,6 +709,10 @@ int main(int argc,char **argv) {
 	std::cout << "classes set" << std::endl;
     default:
       if(dimZ_opt.size()){
+	if(dimZ_opt.size()==1)
+	  filter1d.stat(input,output,method_opt[0],down_opt[0]);
+	else
+	  filter1d.filter(input,output,method_opt[0],dimZ_opt[0],down_opt[0]);
       }
       else
 	filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);

@@ -58,12 +58,15 @@ public:
   void pushClass(short theClass=1){m_class.push_back(theClass);};
   void pushMask(short theMask=0){m_mask.push_back(theMask);};
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, int down=1, int offset=0);
+  template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, int down=1, int offset=0);
   template<class T> void smooth(const std::vector<T>& input, std::vector<T>& output, short dim, int down=1, int offset=0);
   template<class T> void filter(T* input, int inputSize, std::vector<T>& output, int down=1, int offset=0);
   template<class T> void smooth(T* input, int inputSize, std::vector<T>& output, short dim, int down=1, int offset=0);
   template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down=1, int offset=0, bool verbose=false);
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0, short verbose=0);
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
+  void stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, short down=1, int offset=0);
+  void filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0);
   void smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down=1, int offset=0);
   double getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta=1.0, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
@@ -447,6 +450,202 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   }
 }
 
+ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, int down, int offset)
+{
+  bool verbose=false;
+  assert(dim);
+  output.resize((input.size()-offset+down-1)/down);
+  int i=0;
+  statfactory::StatFactory stat;
+  std::vector<T> statBuffer;
+  short binValue=0;
+  //start: extend input with mirrored version of itself
+  for(i=offset;i<dim/2;++i){
+    binValue=0;
+    for(int iclass=0;iclass<m_class.size();++iclass){
+      if(input[i]==m_class[iclass]){
+        binValue=m_class[0];
+        break;
+      }
+    }
+    if(m_class.size())
+      statBuffer.push_back(binValue);
+    else
+      statBuffer.push_back(input[i]);
+    for(int t=1;t<=dim/2;++t){
+      binValue=0;
+      for(int iclass=0;iclass<m_class.size();++iclass){
+        if(input[i+t]==m_class[iclass]){
+          binValue=m_class[0];
+          break;
+        }
+      }
+      if(m_class.size()){
+        statBuffer.push_back(binValue);
+        statBuffer.push_back(binValue);
+      }
+      else{
+        statBuffer.push_back(input[i+t]);
+        statBuffer.push_back(input[i+t]);
+      }
+    }
+    assert(statBuffer.size()==dim);
+    if((i-offset)%down){
+      statBuffer.clear();
+      continue;
+    }
+    switch(getFilterType(method)){
+    case(filter::median):
+      output[(i-offset+down-1)/down]=stat.median(statBuffer);
+      break;
+    case(filter::min):
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
+      break;
+    case(filter::max):
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
+      break;
+    case(filter::sum):
+      output[(i-offset+down-1)/down]=sqrt(stat.sum(statBuffer));
+      break;
+    case(filter::var):
+      output[(i-offset+down-1)/down]=stat.var(statBuffer);
+      break;
+    case(filter::mean):
+      output[(i-offset+down-1)/down]=stat.mean(statBuffer);
+      break;
+    default:
+      std::string errorString="method not supported";
+      throw(errorString);
+      break;
+    }
+    if(verbose){
+      std::cout << "buffer: ";
+      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
+    }
+  }
+  //main
+  statBuffer.clear();
+  for(i=offset+dim/2;i<input.size()-dim/2;++i){
+    binValue=0;
+    for(int t=0;t<dim;++t){
+      for(int iclass=0;iclass<m_class.size();++iclass){
+        if(input[i-dim/2+t]==m_class[iclass]){
+          binValue=m_class[0];
+          break;
+        }
+      }
+      if(m_class.size())
+        statBuffer.push_back(binValue);
+      else
+        statBuffer.push_back(input[i-dim/2+t]);
+    }
+    assert(statBuffer.size()==dim);
+    if((i-offset)%down){
+      statBuffer.clear();
+      continue;
+    }
+    switch(getFilterType(method)){
+    case(filter::median):
+      output[(i-offset+down-1)/down]=stat.median(statBuffer);
+      break;
+    case(filter::min):
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
+      break;
+    case(filter::max):
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
+      break;
+    case(filter::sum):
+      output[(i-offset+down-1)/down]=sqrt(stat.sum(statBuffer));
+      break;
+    case(filter::var):
+      output[(i-offset+down-1)/down]=stat.var(statBuffer);
+      break;
+    case(filter::mean):
+      output[(i-offset+down-1)/down]=stat.mean(statBuffer);
+      break;
+    default:
+      std::string errorString="method not supported";
+      throw(errorString);
+      break;
+    }
+    if(verbose){
+      std::cout << "buffer: ";
+      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
+    }
+    statBuffer.clear();
+  }
+  //end: extend input with mirrored version of itself
+  for(i=input.size()-dim/2;i<input.size();++i){
+      binValue=0;
+      for(int iclass=0;iclass<m_class.size();++iclass){
+        if(input[i]==m_class[iclass]){
+          binValue=m_class[0];
+          break;
+        }
+      }
+      if(m_class.size())
+        statBuffer.push_back(binValue);
+      else
+        statBuffer.push_back(input[i]);
+      for(int t=1;t<=dim/2;++t){
+        binValue=0;
+        for(int iclass=0;iclass<m_class.size();++iclass){
+          if(input[i-t]==m_class[iclass]){
+            binValue=m_class[0];
+            break;
+          }
+        }
+        if(m_class.size()){
+          statBuffer.push_back(binValue);
+          statBuffer.push_back(binValue);
+        }
+        else{
+          statBuffer.push_back(input[i-t]);
+          statBuffer.push_back(input[i-t]);
+        }
+      }
+    if((i-offset)%down){
+      statBuffer.clear();
+      continue;
+    }
+    switch(getFilterType(method)){
+    case(filter::median):
+      output[(i-offset+down-1)/down]=stat.median(statBuffer);
+      break;
+    case(filter::min):
+      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
+      break;
+    case(filter::max):
+      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
+      break;
+    case(filter::sum):
+      output[(i-offset+down-1)/down]=sqrt(stat.sum(statBuffer));
+      break;
+    case(filter::var):
+      output[(i-offset+down-1)/down]=stat.var(statBuffer);
+      break;
+    case(filter::mean):
+      output[(i-offset+down-1)/down]=stat.mean(statBuffer);
+      break;
+    default:
+      std::string errorString="method not supported";
+      throw(errorString);
+      break;
+    }
+    if(verbose){
+      std::cout << "buffer: ";
+      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
+        std::cout << statBuffer[ibuf] << " ";
+      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
+    }
+  }
+}
+
+ //todo: this function is redundant, can be incorporated within filter
 template<class T> void Filter::morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down, int offset, bool verbose)
 {
   assert(dim);

@@ -326,6 +326,93 @@ void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, s
   }
 }
 
+void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, short down, int offset)
+{
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  assert(output.nrOfCol()==(input.nrOfCol()+down-1)/down);
+  vector<double> lineOutput(output.nrOfCol());
+  statfactory::StatFactory stat;
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      switch(getFilterType(method)){
+      case(filter::median):
+	lineOutput[(x-offset+down-1)/down]=stat.median(pixelInput);
+	break;
+      case(filter::min):
+	lineOutput[(x-offset+down-1)/down]=stat.mymin(pixelInput);
+	break;
+      case(filter::max):
+	lineOutput[(x-offset+down-1)/down]=stat.mymax(pixelInput);
+	break;
+      case(filter::sum):
+	lineOutput[(x-offset+down-1)/down]=sqrt(stat.sum(pixelInput));
+	break;
+      case(filter::var):
+	lineOutput[(x-offset+down-1)/down]=stat.var(pixelInput);
+	break;
+      case(filter::mean):
+	lineOutput[(x-offset+down-1)/down]=stat.mean(pixelInput);
+	break;
+      default:
+	std::string errorString="method not supported";
+	throw(errorString);
+	break;
+      }
+    }
+    try{
+      output.writeData(lineOutput,GDT_Float64,y);
+    }
+    catch(string errorstring){
+      cerr << errorstring << "in line " << y << endl;
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
+void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset)
+{
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput;
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    vector<double> pixelOutput;
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      filter(pixelInput,pixelOutput,method,dim,down,offset);
+      lineOutput.resize(pixelOutput.size(),input.nrOfCol());
+      for(int iband=0;iband<pixelOutput.size();++iband)
+        lineOutput[iband][x]=pixelOutput[iband];
+    }
+    for(int iband=0;iband<input.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
 double filter::Filter::getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta, bool verbose)
 {  
   assert(srf.size()==2);//[0]: wavelength, [1]: response function
