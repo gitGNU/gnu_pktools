@@ -711,8 +711,10 @@ int main(int argc,char **argv) {
       if(dimZ_opt.size()){
 	if(dimZ_opt.size()==1)
 	  filter1d.stat(input,output,method_opt[0],down_opt[0]);
-	else
-	  filter1d.filter(input,output,method_opt[0],dimZ_opt[0],down_opt[0]);
+	else{
+	  assert(down_opt[0]==1);//not implemented yet...
+	  filter1d.filter(input,output,method_opt[0],dimZ_opt[0]);
+	}
       }
       else
 	filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);

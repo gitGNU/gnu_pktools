@@ -386,10 +386,10 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
   }
 }
 
-void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset)
+void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
-  Vector2d<double> lineOutput;
+  Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());;
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -402,8 +402,7 @@ void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, c
     vector<double> pixelOutput;
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      filter(pixelInput,pixelOutput,method,dim,down,offset);
-      lineOutput.resize(pixelOutput.size(),input.nrOfCol());
+      filter(pixelInput,pixelOutput,method,dim);
       for(int iband=0;iband<pixelOutput.size();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
