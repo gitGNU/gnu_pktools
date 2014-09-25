@@ -1673,7 +1673,8 @@ int main(int argc, char *argv[])
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		  stat.normalize_pct(polyClassValues);
-		  for(int index=0;index<polyValues.size();++index){
+		  //hiero (replaced polyValues with polyClassValues)
+		  for(int index=0;index<polyClassValues.size();++index){
 		    double theValue=polyClassValues[index];
 		    ostringstream fs;
 		    fs << class_opt[index];
@@ -2241,7 +2242,7 @@ int main(int argc, char *argv[])
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		  stat.normalize_pct(polyClassValues);
-		  for(int index=0;index<polyValues.size();++index){
+		  for(int index=0;index<polyClassValues.size();++index){
 		    double theValue=polyClassValues[index];
 		    ostringstream fs;
 		    fs << class_opt[index];
