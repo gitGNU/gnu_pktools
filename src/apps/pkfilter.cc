@@ -709,7 +709,7 @@ int main(int argc,char **argv) {
 	std::cout << "classes set" << std::endl;
     default:
       if(dimZ_opt.size()){
-	if(dimZ_opt.size()==1)
+	if(dimZ_opt[0]==1)
 	  filter1d.stat(input,output,method_opt[0],down_opt[0]);
 	else{
 	  assert(down_opt[0]==1);//not implemented yet...

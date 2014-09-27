@@ -489,7 +489,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
         statBuffer.push_back(input[i+t]);
       }
     }
-    assert(statBuffer.size()==dim);
+    /* assert(statBuffer.size()==dim); */
     /* if((i-offset)%down){ */
     /*   statBuffer.clear(); */
     /*   continue; */
@@ -535,7 +535,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
       else
         statBuffer.push_back(input[i-dim/2+t]);
     }
-    assert(statBuffer.size()==dim);
+    /* assert(statBuffer.size()==dim); */
     switch(getFilterType(method)){
     case(filter::median):
       output[i]=stat.median(statBuffer);
@@ -658,7 +658,7 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
         statBuffer.push_back(input[i+t]);
       }
     }
-    assert(statBuffer.size()==dim);
+    /* assert(statBuffer.size()==dim); */
     if((i-offset)%down){
       statBuffer.clear();
       continue;
@@ -698,7 +698,7 @@ template<class T> void Filter::morphology(const std::vector<T>& input, std::vect
       else
         statBuffer.push_back(input[i-dim/2+t]);
     }
-    assert(statBuffer.size()==dim);
+    /* assert(statBuffer.size()==dim); */
     if((i-offset)%down){
       statBuffer.clear();
       continue;
