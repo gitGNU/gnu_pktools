@@ -10,11 +10,6 @@ pkextract -i input.tif -s points.shp -f "ESRI Shapefile" -o extracted.shp
 Same example as above, but vector format is ESRI Shapefile
 
 \code
-pkextract -i input.tif -s points.sqlite -m mask.tif -msknodata 255 -o extracted.sqlite 
-\endcode
-extract all bands from input.tif to extracted.sqlite at pixel locations defined in points.sqlite that have not a value 255 in mask.tif
-
-\code
 pkextract -i input.tif -s polygons.sqlite -o training.sqlite -r point
 \endcode
 extract all pixels from input.tif covered by the polygons in locations.sqlite. Each polygon can thus result in multiple point features with attributes for each input band. Write the extracted points to a point vector file training.sqlite.
