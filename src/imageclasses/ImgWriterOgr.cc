@@ -139,8 +139,27 @@ void ImgWriterOgr::setCodec(const std::string& imageType){
     std::string errorString="FileOpenError";
     throw(errorString);
   }
-  //create the data source
-  m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
+  m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), TRUE );
+  if( m_datasource == NULL ){
+    m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), FALSE );
+    if ( m_datasource != NULL){// we can only open in not update mode
+      std::string errorString="Update mode not supported, delete output dataset first";
+      throw(errorString);
+      OGRDataSource::DestroyDataSource(m_datasource);
+      m_datasource = NULL;
+    }
+    else //create the data source
+      m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
+  }
+  else{//datasets exists, always overwrite all layers (no update append for now)
+    int nLayerCount = m_datasource->GetLayerCount();
+    for(int iLayer = 0; iLayer < nLayerCount; ++iLayer){
+      if(m_datasource->DeleteLayer(iLayer)!=OGRERR_NONE){
+	std::string errorstring="DeleteLayer() failed when overwrite requested";
+	throw(errorstring);
+      }
+    }
+  }
   if(m_datasource==NULL){
     std::string errorString="Creation of output file failed";
     throw(errorString);
@@ -153,8 +172,27 @@ void ImgWriterOgr::setCodec(OGRSFDriver *poDriver){
     std::string errorString="FileOpenError";
     throw(errorString);
   }
-  //create the data source
-  m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
+  m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), TRUE );
+  if( m_datasource == NULL ){
+    m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), FALSE );
+    if ( m_datasource != NULL){// we can only open in not update mode
+      std::string errorString="Update mode not supported, delete output dataset first";
+      throw(errorString);
+      OGRDataSource::DestroyDataSource(m_datasource);
+      m_datasource = NULL;
+    }
+    else //create the data source
+      m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
+  }
+  else{//datasets exists, always overwrite all layers (no update append for now)
+    int nLayerCount = m_datasource->GetLayerCount();
+    for(int iLayer = 0; iLayer < nLayerCount; ++iLayer){
+      if(m_datasource->DeleteLayer(iLayer)!=OGRERR_NONE){
+	std::string errorstring="DeleteLayer() failed when overwrite requested";
+	throw(errorstring);
+      }
+    }
+  }
   if(m_datasource==NULL){
     std::string errorString="Creation of output file failed";
     throw(errorString);
@@ -176,28 +214,6 @@ OGRLayer* ImgWriterOgr::createLayer(const std::string& layername, const std::str
   //if points: use wkbPoint
   //if no constraints on the types geometry to be written: use wkbUnknown 
   OGRLayer* poLayer;
-
-  //always overwrite...
-  //todo: test if overwrite works...
-  //check if layername already exists for this dataset
-  int iLayer = -1;
-  poLayer=m_datasource->GetLayerByName(layername.c_str());
-  if(poLayer!=NULL){
-    int nLayerCount = m_datasource->GetLayerCount();
-    for(iLayer = 0; iLayer < nLayerCount; iLayer++ ){
-      OGRLayer *tmpLayer = m_datasource->GetLayer(iLayer);
-      if (tmpLayer == poLayer)
-	break;
-    }
-    if (iLayer == nLayerCount){
-      // shouldn't happen with an ideal driver
-      poLayer = NULL;
-    }
-    if(m_datasource->DeleteLayer(iLayer)!=OGRERR_NONE){
-      std::string errorstring="DeleteLayer() failed when overwrite requested";
-      throw(errorstring);
-    }
-  }
 
   OGRSpatialReference oSRS;
 

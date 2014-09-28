@@ -35,7 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, median=9};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, median=9, stdev=10};
 }
 
 using namespace std;
@@ -43,26 +43,26 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "input", "Raster input dataset containing band information");
-  Optionpk<string> sample_opt("s", "sample", "OGR vector file with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
+  Optionpk<string> sample_opt("s", "sample", "OGR vector dataset with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
   Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample (leave empty to select all)");
-  Optionpk<string> output_opt("o", "output", "Output sample file (image file)");
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample file. Make sure to set classes if rule is set to maxvote or proportion");
-  Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample files. If using raster land cover maps as a sample file, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
-  Optionpk<string> ogrformat_opt("f", "f", "Output sample file format","SQLite");
+  Optionpk<string> output_opt("o", "output", "Output sample dataset");
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to maxvote or proportion");
+  Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
+  Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint. Only valid if sample features are polygons.", false);
   Optionpk<int> band_opt("b", "band", "Band index(es) to extract. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
+  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean (of polygon), stdev (of polygon), median (of polygon), proportion, minimum (of polygon), maximum (of polygon), maxvote, sum.", "point");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
-  // Optionpk<string> mask_opt("m", "mask", "Mask image file");
+  // Optionpk<string> mask_opt("m", "mask", "Mask image dataset");
   // Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value where image is invalid. If a single mask is used, more nodata values can be set. If more masks are used, use one value for each mask.", 1);
-  // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape file");
+  // Optionpk<string> bufferOutput_opt("bu", "bu", "Buffer output shape dataset");
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
-  Optionpk<string> test_opt("test", "test", "Test sample file (use this option in combination with threshold<100 to create a training (output) and test set");
+  Optionpk<string> test_opt("test", "test", "Test sample dataset (use this option in combination with threshold<100 to create a training (output) and test set");
   Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
-  Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector file", "label");
+  Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector dataset", "label");
   Optionpk<short> geo_opt("g", "geo", "Use geo coordinates (set to 0 to use image coordinates)", 1);
   Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
   Optionpk<short> boundary_opt("bo", "boundary", "Boundary for selecting the sample (for vector sample datasets only) ", 1);
@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
   ruleMap["point"]=rule::point;
   ruleMap["centroid"]=rule::centroid;
   ruleMap["mean"]=rule::mean;
+  ruleMap["stdev"]=rule::stdev;
   ruleMap["median"]=rule::median;
   ruleMap["proportion"]=rule::proportion;
   ruleMap["minimum"]=rule::minimum;
@@ -149,15 +150,15 @@ int main(int argc, char *argv[])
     std::cout << "boundary: " << boundary_opt[0] << std::endl;
   ImgReaderGdal imgReader;
   if(image_opt.empty()){
-    std::cerr << "No image file provided (use option -i). Use --help for help information";
+    std::cerr << "No image dataset provided (use option -i). Use --help for help information";
       exit(0);
   }
   if(output_opt.empty()){
-    std::cerr << "No output file provided (use option -o). Use --help for help information";
+    std::cerr << "No output dataset provided (use option -o). Use --help for help information";
       exit(0);
   }
   if(sample_opt.empty()){
-    std::cerr << "No sample file provided (use option -s). Use --help for help information";
+    std::cerr << "No sample dataset provided (use option -s). Use --help for help information";
     exit(0);
   }
   try{
@@ -188,7 +189,7 @@ int main(int argc, char *argv[])
   //   maskReader.resize(mask_opt.size());
   //   for(int imask=0;imask<mask_opt.size();++imask){
   //     if(verbose_opt[0]>1)
-  //       std::cout << "opening mask image file " << mask_opt[imask] << std::endl;
+  //       std::cout << "opening mask image dataset " << mask_opt[imask] << std::endl;
   //     maskReader[imask].open(mask_opt[0]);
   //     if(imgReader.isGeoRef())
   //       assert(maskReader[imask].isGeoRef());
@@ -787,7 +788,7 @@ int main(int argc, char *argv[])
       }
     }
   }
-  else{//vector file
+  else{//vector dataset
     if(verbose_opt[0]>1)
       std::cout << "creating image sample writer " << output_opt[0] << std::endl;
     ImgWriterOgr ogrWriter;
@@ -1181,13 +1182,13 @@ int main(int argc, char *argv[])
 	      std::cout << "creating point feature" << std::endl;
 	    if(writeTest){
 	      if(writeTestLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-		std::string errorString="Failed to create feature in ogr vector file";
+		std::string errorString="Failed to create feature in ogr vector dataset";
 		throw(errorString);
 	      }
 	    }
 	    else{
 	      if(writeLayer->CreateFeature( writeFeature ) != OGRERR_NONE ){
-		std::string errorString="Failed to create feature in ogr vector file";
+		std::string errorString="Failed to create feature in ogr vector dataset";
 		throw(errorString);
 	      }
 	    }
@@ -1414,7 +1415,7 @@ int main(int argc, char *argv[])
 		OGRFeature *writePointFeature;
 		if(!polygon_opt[0]){
 		  //create feature
-		  if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, median, sum or centroid (only create point at centroid)
+		  if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, stdev, median, sum or centroid (only create point at centroid)
 		    if(writeTest)
 		      writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		    else
@@ -1487,13 +1488,13 @@ int main(int argc, char *argv[])
 		      std::cout << "creating point feature" << std::endl;
 		    if(writeTest){
 		      if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			std::string errorString="Failed to create feature in test ogr vector file";
+			std::string errorString="Failed to create feature in test ogr vector dataset";
 			throw(errorString);
 		      }
 		    }
 		    else{
 		      if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			std::string errorString="Failed to create feature in ogr vector file";
+			std::string errorString="Failed to create feature in ogr vector dataset";
 			throw(errorString);
 		      }
 		    }
@@ -1605,6 +1606,8 @@ int main(int argc, char *argv[])
 		  for(int index=0;index<polyValues.size();++index){
 		    if(ruleMap[rule_opt[0]]==rule::mean)
 		      theValue=stat.mean(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::stdev)
+		      theValue=sqrt(stat.var(polyValues[index]));
 		    else if(ruleMap[rule_opt[0]]==rule::median)
 		      theValue=stat.median(polyValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::sum)
@@ -1731,13 +1734,13 @@ int main(int argc, char *argv[])
 		  std::cout << "creating polygon feature" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in ogr vector file";
+		    std::string errorString="Failed to create polygon feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}
 		else{
 		  if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in ogr vector file";
+		    std::string errorString="Failed to create polygon feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}
@@ -1751,7 +1754,7 @@ int main(int argc, char *argv[])
 		  std::cout << "creating point feature in centroid" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in ogr vector file";
+		    std::string errorString="Failed to create point feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}
@@ -1759,7 +1762,7 @@ int main(int argc, char *argv[])
 		  //test
 		  assert(validFeature);
 		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in ogr vector file";
+		    std::string errorString="Failed to create point feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}
@@ -1982,7 +1985,7 @@ int main(int argc, char *argv[])
 		  OGRFeature *writePointFeature;
 		  if(!polygon_opt[0]){
 		    //create feature
-		    if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, mean or sum (only create point at centroid)
+		    if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, stdev, median or sum (only create point at centroid)
 		      if(writeTest)
 			writePointFeature = OGRFeature::CreateFeature(writeTestLayer->GetLayerDefn());
 		      else
@@ -2049,19 +2052,19 @@ int main(int argc, char *argv[])
 		    }//iband
 		  }//else (class_opt.size())
 		  if(!polygon_opt[0]){
-		    if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean /median value (only at centroid)
+		    if(ruleMap[rule_opt[0]]==rule::point){//do not create in case of mean, stdev or median value (only at centroid)
 		      //write feature
 		      if(verbose_opt[0]>1)
 			std::cout << "creating point feature" << std::endl;
 		      if(writeTest){
 			if(writeTestLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in ogr vector file";
+			  std::string errorString="Failed to create feature in ogr vector dataset";
 			  throw(errorString);
 			}
 		      }
 		      else{
 			if(writeLayer->CreateFeature( writePointFeature ) != OGRERR_NONE ){
-			  std::string errorString="Failed to create feature in ogr vector file";
+			  std::string errorString="Failed to create feature in ogr vector dataset";
 			  throw(errorString);
 			}
 		      }
@@ -2097,7 +2100,7 @@ int main(int argc, char *argv[])
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
 	      }
-	      else{//write mean /median value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean /median )
+	      else{//write mean /median value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean, stdev or median )
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
@@ -2174,6 +2177,8 @@ int main(int argc, char *argv[])
 		  for(int index=0;index<polyValues.size();++index){
 		    if(ruleMap[rule_opt[0]]==rule::mean)
 		      theValue=stat.mean(polyValues[index]);
+		    else if(ruleMap[rule_opt[0]]==rule::stdev)
+		      theValue=sqrt(stat.var(polyValues[index]));
 		    else if(ruleMap[rule_opt[0]]==rule::median)
 		      theValue=stat.median(polyValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::sum)
@@ -2300,13 +2305,13 @@ int main(int argc, char *argv[])
 		  std::cout << "creating polygon feature" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in ogr vector file";
+		    std::string errorString="Failed to create polygon feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}
 		else{
 		  if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create polygon feature in ogr vector file";
+		    std::string errorString="Failed to create polygon feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}
@@ -2320,7 +2325,7 @@ int main(int argc, char *argv[])
 		  std::cout << "creating point feature in centroid" << std::endl;
 		if(writeTest){
 		  if(writeTestLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in ogr vector file";
+		    std::string errorString="Failed to create point feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}
@@ -2328,7 +2333,7 @@ int main(int argc, char *argv[])
 		  //test
 		  assert(validFeature);
 		  if(writeLayer->CreateFeature( writeCentroidFeature ) != OGRERR_NONE ){
-		    std::string errorString="Failed to create point feature in ogr vector file";
+		    std::string errorString="Failed to create point feature in ogr vector dataset";
 		    throw(errorString);
 		  }
 		}

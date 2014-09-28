@@ -310,11 +310,14 @@ version 2.5.4
 	Support multiple input bands when calculating statistics
  - pkfilter
 	Support filtering and statistics in spectral domain (see ticket #43252)
+ - pkextract
+	bug fix for proportion rule
+	support standard deviation rule (stdev) for polygon features (ticket #43193)
+	support overwrite vector files (ticket #43194)
 
 Next versions: 
  - todo for API: ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
+	         Img[Reader|Writer]Ogr replace OGRDataSource with GDALDataset conform to GDAL API 2.x
  - pkextract
-	support variance rule for polygon features (ticket #43193)
-	support overwrite vector files (ticket #43194)
 	support multiple attributes
 
