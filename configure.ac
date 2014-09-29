@@ -97,7 +97,7 @@ AC_SUBST([LIBS])
 # For information on how to properly maintain the library version information,
 # refer to the libtool manual, section "Updating library version information":
 # http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
-AC_SUBST([PKTOOLS_SO_VERSION], [1:1:0])
+AC_SUBST([PKTOOLS_SO_VERSION], [1:2:0])
 
 # files to generate via autotools (.am or .in source files)
 AC_CONFIG_HEADERS([config.h])
