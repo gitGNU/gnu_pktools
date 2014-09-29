@@ -315,6 +315,8 @@ version 2.5.4
 	support standard deviation rule (stdev) for polygon features (ticket #43193)
 	support overwrite vector files (ticket #43194)
 	support statistic rules (mean, stdev, median, etc.) for point features by taking into account buffer (default= 3 by 3 pixels). If option -polygon is set, output ogr features are polygons defining the buffer.
+ - ImgWriteOgr
+	overwrite existing ogr datasets per default
 
 Next versions: 
  - todo for API

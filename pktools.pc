@@ -6,6 +6,6 @@ includedir=${prefix}/include
 Name: pktools
 Description: API library for pktools
 Requires: gdal gsl
-Version: 2.5.3
+Version: 2.5.4
 Libs: -L${libdir} -lbase -lalgorithms -limageClasses -lfileClasses -llasClasses
 Cflags: -I${includedir}/pktools
