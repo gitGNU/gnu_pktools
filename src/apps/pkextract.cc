@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector dataset", "label");
   Optionpk<short> geo_opt("g", "geo", "Use geo coordinates (set to 0 to use image coordinates)", 1);
   Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
-  Optionpk<short> buffer_opt("buf", "buffer", "Buffer for calculating statistics for point features ", 3);
+  Optionpk<short> buffer_opt("buf", "buffer", "Buffer for calculating statistics for point features ");
   Optionpk<bool> disc_opt("circ", "circular", "Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option)", false);
   Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0);
 
@@ -137,9 +137,7 @@ int main(int argc, char *argv[])
     nvalid[it]=0;
     ninvalid[it]=0;
   }
-  short theDim=(ruleMap[rule_opt[0]]==rule::point)? 1 : buffer_opt[0];
-  if(verbose_opt[0]>1)
-    std::cout << "boundary: " << buffer_opt[0] << std::endl;
+
   ImgReaderGdal imgReader;
   if(image_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
@@ -913,6 +911,17 @@ int main(int argc, char *argv[])
 	assert(poGeometry!=NULL);
 	try{
 	  if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint ){
+
+	    if(!buffer_opt.size()){
+	      if(ruleMap[rule_opt[0]]==rule::point)
+		buffer_opt.push_back(1);//default
+	      else
+		buffer_opt.push_back(3);//default
+	    }
+
+	    if(verbose_opt[0]>1)
+	      std::cout << "boundary: " << buffer_opt[0] << std::endl;
+
 	    OGRPolygon writePolygon;
 	    OGRLinearRing writeRing;
 	    OGRPoint writeCentroidPoint;
@@ -936,10 +945,34 @@ int main(int argc, char *argv[])
 	    j_centre=static_cast<int>(j_centre);
 	    i_centre=static_cast<int>(i_centre);
 
-	    double uli=i_centre-theDim/2-0.5;
-	    double ulj=j_centre-theDim/2-0.5;
-	    double lri=i_centre+theDim/2+0.5;
-	    double lrj=j_centre+theDim/2+0.5;
+	    double uli=i_centre-buffer_opt[0]/2;
+	    double ulj=j_centre-buffer_opt[0]/2;
+	    double lri=i_centre+buffer_opt[0]/2;
+	    double lrj=j_centre+buffer_opt[0]/2;
+	    // double uli=i_centre-buffer_opt[0]/2-0.5;
+	    // double ulj=j_centre-buffer_opt[0]/2-0.5;
+	    // double lri=i_centre+buffer_opt[0]/2+0.5;
+	    // double lrj=j_centre+buffer_opt[0]/2+0.5;
+
+	    //nearest neighbour
+	    ulj=static_cast<int>(ulj);
+	    uli=static_cast<int>(uli);
+	    lrj=static_cast<int>(lrj);
+	    lri=static_cast<int>(lri);
+
+	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
+	      uli=i_centre;
+	      ulj=j_centre;
+	      lri=i_centre;
+	      lrj=j_centre;
+	    }
+
+	    //check if j is out of bounds
+	    if(static_cast<int>(ulj)<0||static_cast<int>(ulj)>=imgReader.nrOfRow())
+	      continue;
+	    //check if j is out of bounds
+	    if(static_cast<int>(uli)<0||static_cast<int>(lri)>=imgReader.nrOfCol())
+	      continue;
 
 	    OGRPoint ulPoint,urPoint,llPoint,lrPoint;
 	    double ulx,uly;
@@ -948,7 +981,7 @@ int main(int argc, char *argv[])
 	    if(polygon_opt[0]){
 	      if(disc_opt[0]){
 		double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-		double radius=theDim/2.0*sqrt(imgReader.getDeltaX()*imgReader.getDeltaY());
+		double radius=buffer_opt[0]/2.0*sqrt(imgReader.getDeltaX()*imgReader.getDeltaY());
 		unsigned short nstep = 25;
 		for(int i=0;i<nstep;++i){
 		  OGRPoint aPoint;
@@ -981,24 +1014,6 @@ int main(int argc, char *argv[])
 		writePolygon.closeRings();
 	      }
 	    }
-
-	    if(ruleMap[rule_opt[0]]==rule::centroid){
-	      uli=i_centre;
-	      ulj=j_centre;
-	      lri=i_centre;
-	      lrj=j_centre;
-	    }
-	    //nearest neighbour
-	    ulj=static_cast<int>(ulj);
-	    uli=static_cast<int>(uli);
-	    lrj=static_cast<int>(lrj);
-	    lri=static_cast<int>(lri);
-	    //check if j is out of bounds
-	    if(static_cast<int>(ulj)<0||static_cast<int>(ulj)>=imgReader.nrOfRow())
-	      continue;
-	    //check if j is out of bounds
-	    if(static_cast<int>(uli)<0||static_cast<int>(lri)>=imgReader.nrOfCol())
-	      continue;
 
 	    int nPointWindow=0;//similar to nPointPolygon for polygons
 	    if(polygon_opt[0]){
@@ -1054,8 +1069,8 @@ int main(int argc, char *argv[])
 		thePoint.setX(theX);
 		thePoint.setY(theY);
 
-		if(disc_opt[0]&&theDim>1){
-		  double radius=theDim/2.0*sqrt(imgReader.getDeltaX()*imgReader.getDeltaY());
+		if(disc_opt[0]&&buffer_opt[0]>1){
+		  double radius=buffer_opt[0]/2.0*sqrt(imgReader.getDeltaX()*imgReader.getDeltaY());
 		  if((theX-x)*(theX-x)+(theY-y)*(theY-y)>radius*radius)
 		    continue;
 		}
@@ -1198,12 +1213,15 @@ int main(int argc, char *argv[])
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }
 	      if(class_opt.empty()){
-		if(ruleMap[rule_opt[0]]==rule::point){//value at each point (or at centroid of polygon if line is set)
+		if(ruleMap[rule_opt[0]]==rule::point){//value at centroid of polygon
 		  if(verbose_opt[0])
 		    std::cout << "number of points in window: " << nPointWindow << std::endl;
 		  for(int index=0;index<windowValues.size();++index){
 		    //test
-		    assert(windowValues[index].size()==1);
+		    if(windowValues[index].size()!=1){
+		      cerr << "Error: windowValues[index].size()=" << windowValues[index].size() << endl;
+		      assert(windowValues[index].size()==1);
+		    }
 		    double theValue=windowValues[index].back();
 
 		    if(verbose_opt[0])
@@ -1235,6 +1253,9 @@ int main(int argc, char *argv[])
 		else{//ruleMap[rule_opt[0]] is not rule::point
 		  double theValue=0;
 		  for(int index=0;index<windowValues.size();++index){
+		    if(windowValues[index].size()!=buffer_opt[0]*buffer_opt[0]){
+		      cerr << "Error: windowValues[index].size()=" << windowValues[index].size() << endl;
+		    }
 		    if(ruleMap[rule_opt[0]]==rule::mean)
 		      theValue=stat.mean(windowValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::stdev)
@@ -1659,7 +1680,7 @@ int main(int argc, char *argv[])
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }
 	      if(class_opt.empty()){
-		if(ruleMap[rule_opt[0]]==rule::point){//value at each point (or at centroid of polygon if line is set)
+		if(ruleMap[rule_opt[0]]==rule::point){//value at centroid of polygon
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		  for(int index=0;index<polyValues.size();++index){
@@ -2128,7 +2149,7 @@ int main(int argc, char *argv[])
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }
 	      if(class_opt.empty()){
-		if(ruleMap[rule_opt[0]]==rule::point){//value at each point (or at centroid of polygon if line is set)
+		if(ruleMap[rule_opt[0]]==rule::point){//value at centroid of polygon
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		  for(int index=0;index<polyValues.size();++index){

@@ -2,36 +2,51 @@
 \code
 pkextract -i input.tif -s points.sqlite -o extracted.sqlite
 \endcode
-extract the points read in points.sqlite from input.tif. Create a new point vector file  extracted.sqlite, where each point will contain an attribute for the individual input bands in input.tif.
+Extract all points for all layers read in points.sqlite from input.tif. Create a new point vector dataset named extracted.sqlite, where each point will contain an attribute for the individual input bands in input.tif. Notice that the default vector format is Spatialite (.sqlite).
+
+\code
+pkextract -i input.tif -s points.sqlite -ln valid -o extracted.sqlite
+\endcode
+Same example as above, but only extract the points for the layer in points.sqlite named "valid"
 
 \code
 pkextract -i input.tif -s points.shp -f "ESRI Shapefile" -o extracted.shp
 \endcode
-Same example as above, but vector format is ESRI Shapefile
+Extract points and write output in ESRI Shapefile format
+
+\code
+pkextract -i input.tif -s points.sqlite -o extracted.sqlite -r stdev -buf 3 -polygon
+\endcode
+Extract the standard deviation for each input band in a 3 by 3 window, centered around the points in the sample vector dataset points.sqlite. The output vector dataset will contain polygon features defined by the buffered points (3x3 window). Use the option -circ to define a circular buffer.
 
 \code
 pkextract -i input.tif -s polygons.sqlite -o training.sqlite -r point
 \endcode
-extract all pixels from input.tif covered by the polygons in locations.sqlite. Each polygon can thus result in multiple point features with attributes for each input band. Write the extracted points to a point vector file training.sqlite.
+Extract all pixels from input.tif covered by the polygons in locations.sqlite. Each polygon can thus result in multiple point features with attributes for each input band. Write the extracted points to a point vector dataset training.sqlite.
 
 \code
 pkextract -i input.tif -b 0 -s polygons.sqlite -r centroid -o extracted.sqlite -polygon  
 \endcode
-extract the first band from input.tif at the centroids of the polygons in vector filepolygons.sqlite. Assign the extracted point value to a new attribute of the polygon and write to the vector file extracted.sqlite.
+Extract the first band from input.tif at the centroids of the polygons in vector dataset polygons.sqlite. Assign the extracted point value to a new attribute of the polygon and write to the vector dataset extracted.sqlite.
 
 \code
 pkextract -i input.tif -b 1 -s polygons.sqlite -r mean -o extracted.sqlite -polygon  
 \endcode
-extract the mean values for the second band in input.tif covered by each polygon in polygons.sqlite. The mean values are written to a copy of the polygons in output vector file extracted.sqlite
+Extract the mean values for the second band in input.tif covered by each polygon in polygons.sqlite. The mean values are written to a copy of the polygons in output vector dataset extracted.sqlite
+
+\code
+pkextract -i landcover.tif -s polygons.sqlite -r maxvote -o majority.sqlite -polygon -c 1 -c 2 -c 3 -c 4 -c 5
+\endcode
+Extract the majority class in each polygon for the input land cover map. The land cover map contains five valid classes, labeled 1-5. Other class values (e.g., labeled as 0) are not taken into account in the voting.
 
 \code
 pkextract -i input.tif -s sample.tif -o extracted.sqlite -t 10 -c 1 -c 2 -c 3
 \endcode
-Typical use where pixels are extracted based on a land cover map (sample.tif). Extract all bands for a random sample of 10 percent of the pixels in the land cover map sample.tif where the land cover classes are either 1,2 or 3 (class values). Write output to the point vector file extracted.sqlite.
+Typical use where pixels are extracted based on a land cover map (sample.tif). Extract all bands for a random sample of 10 percent of the pixels in the land cover map sample.tif where the land cover classes are either 1,2 or 3 (class values). Write output to the point vector dataset extracted.sqlite.
 
 \code
 pkextract -i input.tif -s sample.tif -o extracted.sqlite -t -5000 -c 1
 \endcode
-extract all bands for the first 5000 pixels encountered in sample.tif where pixels have a value equal to 1. Write output to point vector file extracted.sqlite.
+Extract all bands for the first 5000 pixels encountered in sample.tif where pixels have a value equal to 1. Write output to point vector dataset extracted.sqlite.
 
 
