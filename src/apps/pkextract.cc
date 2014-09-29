@@ -45,6 +45,8 @@ int main(int argc, char *argv[])
   Optionpk<string> image_opt("i", "input", "Raster input dataset containing band information");
   Optionpk<string> sample_opt("s", "sample", "OGR vector dataset with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
   Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample (leave empty to select all)");
+  Optionpk<unsigned int> random_opt("rand", "random", "Create random sample of points. Provide number of points to generate");
+  Optionpk<unsigned int> grid_opt("grid", "grid", "Create systematic grid of points. Provide number of points to generate");
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to maxvote or proportion");
   Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
@@ -71,6 +73,8 @@ int main(int argc, char *argv[])
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
     layer_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
+    grid_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
@@ -147,10 +151,6 @@ int main(int argc, char *argv[])
     std::cerr << "No output dataset provided (use option -o). Use --help for help information";
       exit(0);
   }
-  if(sample_opt.empty()){
-    std::cerr << "No sample dataset provided (use option -s). Use --help for help information";
-    exit(0);
-  }
   try{
     imgReader.open(image_opt[0]);
   }
@@ -174,27 +174,6 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0])
     std::cout << fieldname_opt << std::endl;
-  vector<ImgReaderGdal> maskReader;
-  // if(mask_opt.size()){
-  //   maskReader.resize(mask_opt.size());
-  //   for(int imask=0;imask<mask_opt.size();++imask){
-  //     if(verbose_opt[0]>1)
-  //       std::cout << "opening mask image dataset " << mask_opt[imask] << std::endl;
-  //     maskReader[imask].open(mask_opt[0]);
-  //     if(imgReader.isGeoRef())
-  //       assert(maskReader[imask].isGeoRef());
-  //   }
-  // }
-
-  // Vector2d<int> maskBuffer;
-  // if(mask_opt.size()){
-  //   maskBuffer.resize(mask_opt.size());
-  //   for(int imask=0;imask<maskReader.size();++imask)
-  //     maskBuffer[imask].resize(maskReader[imask].nrOfCol());
-  // }
-  // vector<double> oldmaskrow(mask_opt.size());
-  // for(int imask=0;imask<mask_opt.size();++imask)
-  //   oldmaskrow[imask]=-1;
   
   if(verbose_opt[0]>1)
     std::cout << "Number of bands in input image: " << imgReader.nrOfBand() << std::endl;
@@ -255,7 +234,22 @@ int main(int argc, char *argv[])
     sampleReaderOgr.open(sample_opt[0]);
   }
   catch(string errorString){
-    sampleIsRaster=true;
+    if(sample_opt.empty()){
+      if(random_opt.size()){
+	//todo: create random sample of points (can be virtual dataset in memory only, as in http://www.gdal.org/gdal_vrttut.html: 
+
+	//poVRTDS = poDriver->CreateCopy( "", poSrcDS, FALSE, NULL, NULL, NULL ); with empty filename...
+      }
+      else if(systematic_opt.size()){
+	//todo: create systematic grid of points (can be virtual dataset in memory only?) 
+      }
+      else{
+	std::cerr << "No sample dataset provided (use option -s). Use --help for help information";
+	exit(0);
+      }
+    }
+    else
+      sampleIsRaster=true;
   }
 
   if(sampleIsRaster){
@@ -263,16 +257,6 @@ int main(int argc, char *argv[])
       // std::cout << "Warning: no classes selected, if a classes must be extracted, set to -1 for all classes using option -c -1" << std::endl;
       ImgReaderGdal classReader;
       ImgWriterOgr ogrWriter;
-      // if(verbose_opt[0]>1){
-      //   std::cout << "reading position from " << sample_opt[0] << std::endl;
-      //   std::cout << "class thresholds: " << std::endl;
-      //   for(int iclass=0;iclass<class_opt.size();++iclass){
-      //     if(threshold_opt.size()>1)
-      //       std::cout << class_opt[iclass] << ": " << threshold_opt[iclass] << std::endl;
-      //     else
-      //       std::cout << class_opt[iclass] << ": " << threshold_opt[0] << std::endl;
-      //   }
-      // }
       classReader.open(sample_opt[0]);
       // vector<int> classBuffer(classReader.nrOfCol());
       vector<double> classBuffer(classReader.nrOfCol());
@@ -367,67 +351,7 @@ int main(int argc, char *argv[])
 	      }
               oldimgrow=jimg;
 	    }
-	    
-            // for(int imask=0;imask<mask_opt.size();++imask){
-            //   double colMask,rowMask;//image coordinates in mask image
-            //   if(mask_opt.size()>1){//multiple masks
-            //     if(geo_opt[0])
-            //       maskReader[imask].geo2image(x,y,colMask,rowMask);
-            //     else{
-            //       colMask=icol;
-            //       rowMask=irow;
-            //     }
-            //     //nearest neighbour
-            //     rowMask=static_cast<int>(rowMask);
-            //     colMask=static_cast<int>(colMask);
-            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
-            //       continue;
-            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
-            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
-            //         continue;
-            //       else{
-            //         maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
-            //         oldmaskrow[imask]=rowMask;
-            //       }
-            //     }
-            //     int ivalue=0;
-            //     if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
-            //       ivalue=static_cast<int>(msknodata_opt[imask]);
-            //     else//use same invalid value for each mask
-            //       ivalue=static_cast<int>(msknodata_opt[0]);
-            //     if(maskBuffer[imask][colMask]==ivalue){
-            //       valid=false;
-            //       break;
-            //     }
-            //   }
-            //   else if(maskReader.size()){
-            //     if(geo_opt[0])
-            //       maskReader[0].geo2image(x,y,colMask,rowMask);
-            //     else{
-            //       colMask=icol;
-            //       rowMask=irow;
-            //     }
-            //     //nearest neighbour
-            //     rowMask=static_cast<int>(rowMask);
-            //     colMask=static_cast<int>(colMask);
-            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
-            //       continue;
-            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
-            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
-            //         continue;
-            //       else{
-            //         maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
-            //         oldmaskrow[0]=rowMask;
-            //       }
-            //     }
-            //     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-            //       if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
-            //         valid=false;
-            //         break;
-            //       }
-            //     }
-            //   }
-            // }
+
             if(valid){
               for(int iband=0;iband<imgBuffer.size();++iband){
                 if(imgBuffer[iband].size()!=imgReader.nrOfCol()){
@@ -621,66 +545,6 @@ int main(int argc, char *argv[])
               }
               oldimgrow=jimg;
             }
-            // for(int imask=0;imask<mask_opt.size();++imask){
-            //   double colMask,rowMask;//image coordinates in mask image
-            //   if(mask_opt.size()>1){//multiple masks
-            //     if(geo_opt[0])
-            //       maskReader[imask].geo2image(x,y,colMask,rowMask);
-            //     else{
-            //       colMask=icol;
-            //       rowMask=irow;
-            //     }
-            //     //nearest neighbour
-            //     rowMask=static_cast<int>(rowMask);
-            //     colMask=static_cast<int>(colMask);
-            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[imask].nrOfCol())
-            //       continue;
-            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[imask])){
-            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[imask].nrOfRow())
-            //         continue;
-            //       else{
-            //         maskReader[imask].readData(maskBuffer[imask],GDT_Int32,static_cast<int>(rowMask));
-            //         oldmaskrow[imask]=rowMask;
-            //       }
-            //     }
-            //     int ivalue=0;
-            //     if(mask_opt.size()==msknodata_opt.size())//one invalid value for each mask
-            //       ivalue=static_cast<int>(msknodata_opt[imask]);
-            //     else//use same invalid value for each mask
-            //       ivalue=static_cast<int>(msknodata_opt[0]);
-            //     if(maskBuffer[imask][colMask]==ivalue){
-            //       valid=false;
-            //       break;
-            //     }
-            //   }
-            //   else if(maskReader.size()){
-            //     if(geo_opt[0])
-            //       maskReader[0].geo2image(x,y,colMask,rowMask);
-            //     else{
-            //       colMask=icol;
-            //       rowMask=irow;
-            //     }
-            //     //nearest neighbour
-            //     rowMask=static_cast<int>(rowMask);
-            //     colMask=static_cast<int>(colMask);
-            //     if(static_cast<int>(colMask)<0||static_cast<int>(colMask)>=maskReader[0].nrOfCol())
-            //       continue;
-            //     if(static_cast<int>(rowMask)!=static_cast<int>(oldmaskrow[0])){
-            //       if(static_cast<int>(rowMask)<0||static_cast<int>(rowMask)>=maskReader[0].nrOfRow())
-            //         continue;
-            //       else{
-            //         maskReader[0].readData(maskBuffer[0],GDT_Int32,static_cast<int>(rowMask));
-            //         oldmaskrow[0]=rowMask;
-            //       }
-            //     }
-            //     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-            //       if(maskBuffer[0][colMask]==static_cast<int>(msknodata_opt[ivalue])){
-            //         valid=false;
-            //         break;
-            //       }
-            //     }
-            //   }
-            // }
             if(valid){
               for(int iband=0;iband<imgBuffer.size();++iband){
                 if(imgBuffer[iband].size()!=imgReader.nrOfCol()){
