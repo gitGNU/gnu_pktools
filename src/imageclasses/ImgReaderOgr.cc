@@ -229,7 +229,7 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
   int totalSamples=0;  
   int nband=0;
   if(verbose)
-    std::cout << "reading shape file " << m_filename  << std::endl;
+    std::cout << "reading OGR dataset " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
     std::string currentLayername=getLayer(ilayer)->GetName();
     if(layers.size())
@@ -313,7 +313,7 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
   int totalSamples=0;  
   int nband=0;
   if(verbose)
-    std::cout << "reading shape file " << m_filename  << std::endl;
+    std::cout << "reading OGR dataset file " << m_filename  << std::endl;
   for(int ilayer=0;ilayer<getLayerCount();++ilayer){
     std::string currentLayername=getLayer(ilayer)->GetName();
     if(layers.size())

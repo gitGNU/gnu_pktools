@@ -132,7 +132,7 @@ void ImgWriterOgr::close(void)
 void ImgWriterOgr::setCodec(const std::string& imageType){
   //register the drivers
   OGRRegisterAll();
-  //fetch the shape file driver
+  //fetch the OGR file driver
   OGRSFDriver *poDriver;
   poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(imageType.c_str());
   if( poDriver == NULL ){
@@ -330,7 +330,7 @@ void ImgWriterOgr::addPoint(double x, double y, const std::map<std::string,doubl
   pt.setY(y);
   poFeature->SetGeometry( &pt );
   if(createFeature(poFeature,layer)!=OGRERR_NONE){
-    std::string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
@@ -355,7 +355,7 @@ void ImgWriterOgr::addPoint(double x, double y, const std::map<std::string,doubl
   pt.setY(y);
   poFeature->SetGeometry( &pt );
   if(createFeature(poFeature,layer)!=OGRERR_NONE){
-    std::string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
@@ -376,7 +376,7 @@ void ImgWriterOgr::addLineString(std::vector<OGRPoint*>& points, const std::stri
     throw(errorString);
   }
   if(createFeature(poFeature,layer)!=OGRERR_NONE){
-    std::string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
@@ -400,7 +400,7 @@ void ImgWriterOgr::addRing(std::vector<OGRPoint*>& points, const std::string& fi
   // SetSpatialFilter(&thePolygon)
   poFeature->SetGeometry( &thePolygon );
   if(createFeature(poFeature,layer)!=OGRERR_NONE){
-    std::string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature";
     throw(errorString);
     OGRFeature::DestroyFeature( poFeature );
   }
@@ -425,7 +425,7 @@ void ImgWriterOgr::addLineString(std::vector<OGRPoint*>& points, const std::stri
     throw(errorString);
   }
   if(createFeature(poFeature,layer)!=OGRERR_NONE){
-    std::string errorString="Failed to create feature in shapefile";
+    std::string errorString="Failed to create feature";
     throw(errorString);
   }
   OGRFeature::DestroyFeature( poFeature );
@@ -532,7 +532,7 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
       if(eGType==wkbPoint){
         pointFeature->SetGeometry( &thePoint );
         if(createFeature(pointFeature)!=OGRERR_NONE){
-          std::string errorString="Failed to create feature in shapefile";
+          std::string errorString="Failed to create feature";
           throw(errorString);
           OGRFeature::DestroyFeature( pointFeature );
         }
@@ -596,7 +596,7 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
       if(eGType==wkbPoint){
         pointFeature->SetGeometry( &thePoint );
         if(createFeature(pointFeature)!=OGRERR_NONE){
-          std::string errorString="Failed to create feature in shapefile";
+          std::string errorString="Failed to create feature";
           throw(errorString);
           OGRFeature::DestroyFeature( pointFeature );
         }
@@ -615,7 +615,7 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
     // SetSpatialFilter(&thePolygon)
     polyFeature->SetGeometry( &thePolygon );
     if(createFeature(polyFeature)!=OGRERR_NONE){
-      std::string errorString="Failed to create feature in shapefile";
+      std::string errorString="Failed to create feature";
       throw(errorString);
       OGRFeature::DestroyFeature( polyFeature );
     }

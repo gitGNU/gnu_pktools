@@ -35,7 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, minimum=4, maximum=5, maxvote=6, centroid=7, sum=8, median=9, stdev=10};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, maxvote=6, centroid=7, sum=8, median=9, stdev=10};
 }
 
 using namespace std;
@@ -45,8 +45,8 @@ int main(int argc, char *argv[])
   Optionpk<string> image_opt("i", "input", "Raster input dataset containing band information");
   Optionpk<string> sample_opt("s", "sample", "OGR vector dataset with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
   Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample (leave empty to select all)");
-  Optionpk<unsigned int> random_opt("rand", "random", "Create random sample of points. Provide number of points to generate");
-  Optionpk<unsigned int> grid_opt("grid", "grid", "Create systematic grid of points. Provide number of points to generate");
+  Optionpk<unsigned int> random_opt("rand", "random", "Create simple random sample of points. Provide number of points to generate");
+  Optionpk<double> grid_opt("grid", "grid", "Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m)");
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to maxvote or proportion");
   Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint.", false);
   Optionpk<int> band_opt("b", "band", "Band index(es) to extract. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, minimum, maximum, maxvote, sum.", "point");
+  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, maxvote, sum.", "point");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
@@ -115,8 +115,8 @@ int main(int argc, char *argv[])
   ruleMap["stdev"]=rule::stdev;
   ruleMap["median"]=rule::median;
   ruleMap["proportion"]=rule::proportion;
-  ruleMap["minimum"]=rule::minimum;
-  ruleMap["maximum"]=rule::maximum;
+  ruleMap["min"]=rule::min;
+  ruleMap["max"]=rule::max;
   ruleMap["custom"]=rule::custom;
   ruleMap["maxvote"]=rule::maxvote;
   ruleMap["sum"]=rule::sum;
@@ -229,27 +229,78 @@ int main(int argc, char *argv[])
   srand(time(NULL));
 
   bool sampleIsRaster=false;
-  ImgReaderOgr sampleReaderOgr;
-  try{
-    sampleReaderOgr.open(sample_opt[0]);
-  }
-  catch(string errorString){
-    if(sample_opt.empty()){
-      if(random_opt.size()){
-	//todo: create random sample of points (can be virtual dataset in memory only, as in http://www.gdal.org/gdal_vrttut.html: 
+  bool sampleIsVirtual=false;
 
-	//poVRTDS = poDriver->CreateCopy( "", poSrcDS, FALSE, NULL, NULL, NULL ); with empty filename...
-      }
-      else if(systematic_opt.size()){
-	//todo: create systematic grid of points (can be virtual dataset in memory only?) 
-      }
-      else{
-	std::cerr << "No sample dataset provided (use option -s). Use --help for help information";
-	exit(0);
+  ImgReaderOgr sampleReaderOgr;
+  ImgWriterOgr sampleWriterOgr;
+
+  if(sample_opt.size()){
+    try{
+      sampleReaderOgr.open(sample_opt[0]);
+    }
+    catch(string errorString){
+      sampleIsRaster=true;
+    }
+  }
+  else{
+    sampleWriterOgr.open("/vsimem/sample",ogrformat_opt[0]);
+    char     **papszOptions=NULL;
+    sampleWriterOgr.createLayer("points", imgReader.getProjection(), wkbPoint, papszOptions);
+    sampleIsVirtual=true;
+
+    string fieldName="label";
+    string fieldValue="class";
+    sampleWriterOgr.createField(fieldName,OFTString);
+    if(random_opt.size()){
+      //create simple random sampling within boundary
+      OGRPoint pt;
+      double ulx,uly,lrx,lry;
+      imgReader.getBoundingBox(ulx,uly,lrx,lry);
+      for(unsigned int ipoint=1;ipoint<=random_opt[0];++ipoint){
+	OGRFeature *pointFeature;
+	pointFeature=sampleWriterOgr.createFeature();
+	pointFeature->SetField(fieldName.c_str(),fieldValue.c_str());
+	double theX=ulx+static_cast<double>(rand())/(RAND_MAX)*(lrx-ulx);
+	double theY=uly-static_cast<double>(rand())/(RAND_MAX)*(uly-lry);
+	pt.setX(theX);
+	pt.setY(theY);
+	pointFeature->SetGeometry( &pt ); 
+	if(sampleWriterOgr.createFeature(pointFeature) != OGRERR_NONE ){
+	  cerr << "Failed to create feature in shapefile" << endl;
+	  exit( 1 );
+	}
+	OGRFeature::DestroyFeature(pointFeature);
       }
     }
-    else
-      sampleIsRaster=true;
+    else if(grid_opt.size()){
+      //create systematic grid of points 
+      OGRPoint pt;
+      double ulx,uly,lrx,lry;
+      imgReader.getBoundingBox(ulx,uly,lrx,lry);
+      unsigned int ipoint=0;
+      for(double theY=uly-grid_opt[0]/2;theY>lry;theY-=grid_opt[0]){
+	for(double theX=ulx+grid_opt[0]/2;theX<lrx;theX+=grid_opt[0]){
+	  if(verbose_opt[0]>1)
+	    cout << "position: " << theX << " " << theY << endl;
+	  OGRFeature *pointFeature;
+	  pointFeature=sampleWriterOgr.createFeature();
+	  pointFeature->SetField(fieldName.c_str(),fieldValue.c_str());
+	  pt.setX(theX);
+	  pt.setY(theY);
+	  pointFeature->SetGeometry( &pt ); 
+	  if(sampleWriterOgr.createFeature(pointFeature) != OGRERR_NONE ){
+	    cerr << "Failed to create feature in shapefile" << endl;
+	    exit( 1 );
+	  }
+	  OGRFeature::DestroyFeature(pointFeature);
+	}
+      }
+    }
+    else{
+      std::cerr << "No sample dataset provided (use option -s). Use --help for help information";
+      exit(0);
+    }
+    sampleReaderOgr.open("/vsimem/sample");
   }
 
   if(sampleIsRaster){
@@ -257,6 +308,7 @@ int main(int argc, char *argv[])
       // std::cout << "Warning: no classes selected, if a classes must be extracted, set to -1 for all classes using option -c -1" << std::endl;
       ImgReaderGdal classReader;
       ImgWriterOgr ogrWriter;
+      assert(sample_opt.size());
       classReader.open(sample_opt[0]);
       // vector<int> classBuffer(classReader.nrOfCol());
       vector<double> classBuffer(classReader.nrOfCol());
@@ -447,7 +499,7 @@ int main(int argc, char *argv[])
       ImgReaderGdal classReader;
       ImgWriterOgr ogrWriter;
       if(verbose_opt[0]>1){
-        std::cout << "reading position from " << sample_opt[0] << std::endl;
+        std::cout << "reading position from sample dataset " << std::endl;
         std::cout << "class thresholds: " << std::endl;
         for(int iclass=0;iclass<class_opt.size();++iclass){
           if(threshold_opt.size()>1)
@@ -861,14 +913,14 @@ int main(int argc, char *argv[])
 		double lrx,lry;
 		imgReader.image2geo(uli,ulj,ulx,uly);
 		imgReader.image2geo(lri,lrj,lrx,lry);
-		ulPoint.setX(ulx);
-		ulPoint.setY(uly);
-		lrPoint.setX(lrx);
-		lrPoint.setY(lry);
-		urPoint.setX(lrx);
-		urPoint.setY(uly);
-		llPoint.setX(ulx);
-		llPoint.setY(lry);
+		ulPoint.setX(ulx-imgReader.getDeltaX()/2.0);
+		ulPoint.setY(uly+imgReader.getDeltaY()/2.0);
+		lrPoint.setX(lrx+imgReader.getDeltaX()/2.0);
+		lrPoint.setY(lry-imgReader.getDeltaY()/2.0);
+		urPoint.setX(lrx+imgReader.getDeltaX()/2.0);
+		urPoint.setY(uly+imgReader.getDeltaY()/2.0);
+		llPoint.setX(ulx-imgReader.getDeltaX()/2.0);
+		llPoint.setY(lry-imgReader.getDeltaY()/2.0);
 
 		writeRing.addPoint(&ulPoint);
 		writeRing.addPoint(&urPoint);
@@ -967,7 +1019,7 @@ int main(int argc, char *argv[])
 		    else
 		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		    if(verbose_opt[0]>1)
-		      std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+		      std::cout << "copying fields from polygons " << std::endl;
 		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		      cerr << "writing feature failed" << std::endl;
 		    writePointFeature->SetGeometry(&thePoint);
@@ -996,8 +1048,9 @@ int main(int argc, char *argv[])
 		    // imgReader.readData(value,GDT_Float64,i,j,theBand);
 		    if(verbose_opt[0]>1)
 		      std::cout << ": " << value << std::endl;
-		    if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point)
+		    if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point){
 		      windowValues[iband].push_back(value);
+		    }
 		    else{
 		      if(verbose_opt[0]>1)
 			std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
@@ -1058,7 +1111,7 @@ int main(int argc, char *argv[])
 		  cerr << "writing feature failed" << std::endl;
 		writePolygonFeature->SetGeometry(&writePolygon);
 		if(verbose_opt[0]>1)
-		  std::cout << "copying new fields write polygon " << sample_opt[0] << std::endl;
+		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
@@ -1066,7 +1119,7 @@ int main(int argc, char *argv[])
 	      else{//write value of polygon to centroid point
 		//create feature
 		if(verbose_opt[0]>1)
-		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+		  std::cout << "copying fields from polygons " << std::endl;
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
 		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
@@ -1128,9 +1181,9 @@ int main(int argc, char *argv[])
 		      theValue=stat.median(windowValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::sum)
 		      theValue=stat.sum(windowValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::maximum)
+		    else if(ruleMap[rule_opt[0]]==rule::max)
 		      theValue=stat.mymax(windowValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::minimum)
+		    else if(ruleMap[rule_opt[0]]==rule::min)
 		      theValue=stat.mymin(windowValues[index]);
 		    else{//rule::centroid
 		      if(verbose_opt[0])
@@ -1434,7 +1487,7 @@ int main(int argc, char *argv[])
 		    else
 		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		    if(verbose_opt[0]>1)
-		      std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+		      std::cout << "copying fields from polygons " << std::endl;
 		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		      cerr << "writing feature failed" << std::endl;
 		    writePointFeature->SetGeometry(&thePoint);
@@ -1525,7 +1578,7 @@ int main(int argc, char *argv[])
 		  cerr << "writing feature failed" << std::endl;
 		writePolygonFeature->SetGeometry(&writePolygon);
 		if(verbose_opt[0]>1)
-		  std::cout << "copying new fields write polygon " << sample_opt[0] << std::endl;
+		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
@@ -1533,7 +1586,7 @@ int main(int argc, char *argv[])
 	      else{//write value of polygon to centroid point
 		//create feature
 		if(verbose_opt[0]>1)
-		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+		  std::cout << "copying fields from polygons " << std::endl;
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
 		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
@@ -1589,9 +1642,9 @@ int main(int argc, char *argv[])
 		      theValue=stat.median(polyValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::sum)
 		      theValue=stat.sum(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::maximum)
+		    else if(ruleMap[rule_opt[0]]==rule::max)
 		      theValue=stat.mymax(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::minimum)
+		    else if(ruleMap[rule_opt[0]]==rule::min)
 		      theValue=stat.mymin(polyValues[index]);
 		    else{//rule::centroid
 		      if(verbose_opt[0])
@@ -1890,7 +1943,7 @@ int main(int argc, char *argv[])
 		      else
 			writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		      if(verbose_opt[0]>1)
-			std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+			std::cout << "copying fields from polygons " << std::endl;
 		      if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 			cerr << "writing feature failed" << std::endl;
 		      writePointFeature->SetGeometry(&thePoint);
@@ -1994,7 +2047,7 @@ int main(int argc, char *argv[])
 		  cerr << "writing feature failed" << std::endl;
 		writePolygonFeature->SetGeometry(&writePolygon);
 		if(verbose_opt[0]>1)
-		  std::cout << "copying new fields write polygon " << sample_opt[0] << std::endl;
+		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
@@ -2002,7 +2055,7 @@ int main(int argc, char *argv[])
 	      else{//write mean /median value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean, stdev or median )
 		//create feature
 		if(verbose_opt[0]>1)
-		  std::cout << "copying fields from polygons " << sample_opt[0] << std::endl;
+		  std::cout << "copying fields from polygons " << std::endl;
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
 		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
@@ -2082,9 +2135,9 @@ int main(int argc, char *argv[])
 		      theValue=stat.median(polyValues[index]);
 		    else if(ruleMap[rule_opt[0]]==rule::sum)
 		      theValue=stat.sum(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::maximum)
+		    else if(ruleMap[rule_opt[0]]==rule::max)
 		      theValue=stat.mymax(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::minimum)
+		    else if(ruleMap[rule_opt[0]]==rule::min)
 		      theValue=stat.mymin(polyValues[index]);
 		    else{//rule::centroid
 		      if(verbose_opt[0])
@@ -2271,6 +2324,8 @@ int main(int argc, char *argv[])
       ++ilayerWrite;
     }//for ilayer
     ogrWriter.close();
+    if(sampleIsVirtual)
+      sampleWriterOgr.close();
     if(test_opt.size())
       ogrTestWriter.close();
   }//else (vector)

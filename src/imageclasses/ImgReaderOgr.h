@@ -63,7 +63,7 @@ public:
 				const std::vector<std::string>& layers,
 				int verbose=false);
 
-  void shape2ascii(std::ostream& theOstream, const std::string& pointname, int layer=0, bool verbose=false);
+  //  void shape2ascii(std::ostream& theOstream, const std::string& pointname, int layer=0, bool verbose=false);
   unsigned long int getFeatureCount(int layer=0) const;
   int getFieldCount(int layer=0) const;
   OGRLayer* getLayer(int layer=0){return m_datasource->GetLayer(layer);};
