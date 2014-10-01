@@ -54,15 +54,15 @@ int main(int argc, char *argv[])
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint.", false);
-  Optionpk<int> band_opt("b", "band", "Band index(es) to extract. Use -1 to use all bands)", -1);
-  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, maxvote, sum.", "point");
+  Optionpk<int> band_opt("b", "band", "Band index(es) to extract. Leave empty to use all bands");
+  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, maxvote, sum.", "centroid");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
   Optionpk<string> test_opt("test", "test", "Test sample dataset (use this option in combination with threshold<100 to create a training (output) and test set");
   Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
   Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector dataset", "label");
-  Optionpk<short> geo_opt("g", "geo", "Use geo coordinates (set to 0 to use image coordinates)", 1);
+  Optionpk<short> geo_opt("geo", "geo", "Use geo coordinates (set to 0 to use image coordinates)", 1);
   Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
   Optionpk<short> buffer_opt("buf", "buffer", "Buffer for calculating statistics for point features ");
   Optionpk<bool> disc_opt("circ", "circular", "Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option)", false);
@@ -158,14 +158,15 @@ int main(int argc, char *argv[])
     std::cout << errorstring << std::endl;
     exit(0);
   }
-  int nband=(band_opt[0]<0)?imgReader.nrOfBand():band_opt.size();
+  
+  int nband=(band_opt.size()) ? band_opt.size() : imgReader.nrOfBand();
 
   if(fieldname_opt.size()<nband){
     std::string bandString=fieldname_opt[0];
     fieldname_opt.clear();
     fieldname_opt.resize(nband);
     for(int iband=0;iband<nband;++iband){
-      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+      int theBand=(band_opt.size()) ? band_opt[iband] : iband;
       ostringstream fs;
       fs << bandString << theBand;
       fieldname_opt[iband]=fs.str();
@@ -248,9 +249,9 @@ int main(int argc, char *argv[])
     sampleWriterOgr.createLayer("points", imgReader.getProjection(), wkbPoint, papszOptions);
     sampleIsVirtual=true;
 
-    string fieldName="label";
-    string fieldValue="class";
-    sampleWriterOgr.createField(fieldName,OFTString);
+    // string fieldName="label";
+    // string fieldValue="class";
+    // sampleWriterOgr.createField(fieldName,OFTString);
     if(random_opt.size()){
       //create simple random sampling within boundary
       OGRPoint pt;
@@ -259,7 +260,7 @@ int main(int argc, char *argv[])
       for(unsigned int ipoint=1;ipoint<=random_opt[0];++ipoint){
 	OGRFeature *pointFeature;
 	pointFeature=sampleWriterOgr.createFeature();
-	pointFeature->SetField(fieldName.c_str(),fieldValue.c_str());
+	// pointFeature->SetField(fieldName.c_str(),fieldValue.c_str());
 	double theX=ulx+static_cast<double>(rand())/(RAND_MAX)*(lrx-ulx);
 	double theY=uly-static_cast<double>(rand())/(RAND_MAX)*(uly-lry);
 	pt.setX(theX);
@@ -284,7 +285,7 @@ int main(int argc, char *argv[])
 	    cout << "position: " << theX << " " << theY << endl;
 	  OGRFeature *pointFeature;
 	  pointFeature=sampleWriterOgr.createFeature();
-	  pointFeature->SetField(fieldName.c_str(),fieldValue.c_str());
+	  // pointFeature->SetField(fieldName.c_str(),fieldValue.c_str());
 	  pt.setX(theX);
 	  pt.setY(theY);
 	  pointFeature->SetGeometry( &pt ); 
@@ -387,7 +388,7 @@ int main(int argc, char *argv[])
             if(static_cast<int>(jimg)!=static_cast<int>(oldimgrow)){
               assert(imgBuffer.size()==nband);
               for(int iband=0;iband<nband;++iband){
-                int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+		int theBand=(band_opt.size()) ? band_opt[iband] : iband;
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
 		if(srcnodata_opt.size()){
@@ -456,7 +457,7 @@ int main(int argc, char *argv[])
         map<std::string,double> pointAttributes;
         ogrWriter.createField(label_opt[0],labelType);
         for(int iband=0;iband<nband;++iband){
-          int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	  int theBand=(band_opt.size()) ? band_opt[iband] : iband;
           ogrWriter.createField(fieldname_opt[iband],fieldType);
         }
         std::cout << "writing sample to " << output_opt[0] << "..." << std::endl;
@@ -467,7 +468,7 @@ int main(int argc, char *argv[])
             std::cout << "writing sample " << isample << std::endl;
           pointAttributes[label_opt[0]]=writeBufferClass[isample];
           for(int iband=0;iband<writeBuffer[0].size()-2;++iband){
-            int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	    int theBand=(band_opt.size()) ? band_opt[iband] : iband;
             // ostringstream fs;
             // if(nband==1)
             //   fs << fieldname_opt[0];
@@ -584,7 +585,7 @@ int main(int argc, char *argv[])
             if(static_cast<int>(jimg)!=static_cast<int>(oldimgrow)){
               assert(imgBuffer.size()==nband);
               for(int iband=0;iband<nband;++iband){
-                int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+		int theBand=(band_opt.size()) ? band_opt[iband] : iband;
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
 		if(srcnodata_opt.size()){
@@ -649,7 +650,7 @@ int main(int argc, char *argv[])
         //         ogrWriter.createField(label_opt[0],OFTInteger);
         ogrWriter.createField(label_opt[0],labelType);
         for(int iband=0;iband<nband;++iband){
-          int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	  int theBand=(band_opt.size()) ? band_opt[iband] : iband;
           // ostringstream fs;
           // if(nband==1)
           //   fs << fieldname_opt[0];
@@ -665,7 +666,7 @@ int main(int argc, char *argv[])
         for(int isample=0;isample<writeBuffer.size();++isample){
           pointAttributes[label_opt[0]]=writeBufferClass[isample];
           for(int iband=0;iband<writeBuffer[0].size()-2;++iband){
-            int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	    int theBand=(band_opt.size()) ? band_opt[iband] : iband;
             // ostringstream fs;
             // if(nband==1)
             //   fs << fieldname_opt[0];
@@ -779,7 +780,7 @@ int main(int argc, char *argv[])
       }
       else{
 	for(int iband=0;iband<nband;++iband){
-	  int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	  int theBand=(band_opt.size()) ? band_opt[iband] : iband;
 	  ostringstream fs;
 	  fs << fieldname_opt[iband];
 	  if(verbose_opt[0]>1)
@@ -829,10 +830,14 @@ int main(int argc, char *argv[])
 	  if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint ){
 
 	    if(!buffer_opt.size()){
-	      if(ruleMap[rule_opt[0]]==rule::point)
+	      switch(ruleMap[rule_opt[0]]){
+	      case(rule::point):
+	      case(rule::centroid):
 		buffer_opt.push_back(1);//default
-	      else
+	      break;
+	      default:
 		buffer_opt.push_back(3);//default
+	      }
 	    }
 
 	    if(verbose_opt[0]>1)
@@ -957,7 +962,7 @@ int main(int argc, char *argv[])
 	      windowValues.resize(nband);
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
-	      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	      int theBand=(band_opt.size()) ? band_opt[iband] : iband;
 	      //test
 	      assert(uli>=0);
 	      assert(uli<imgReader.nrOfCol());	      
@@ -1039,7 +1044,7 @@ int main(int argc, char *argv[])
 		}
 		else{
 		  for(int iband=0;iband<nband;++iband){
-		    int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+		    int theBand=(band_opt.size()) ? band_opt[iband] : iband;
 		    assert(j-ulj>=0);
 		    assert(j-ulj<readValues[iband].size());
 		    assert(i-uli>=0);
@@ -1143,7 +1148,7 @@ int main(int argc, char *argv[])
 
 		    if(verbose_opt[0])
 		      std::cout << "number of points in window: " << nPointWindow << std::endl;
-		    int theBand=(band_opt[0]<0)?index:band_opt[index];
+		    int theBand=(band_opt.size()) ? band_opt[index] : index;
 
 		    if(verbose_opt[0]>1)
 		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
@@ -1421,7 +1426,7 @@ int main(int argc, char *argv[])
 	      polyValues.resize(nband);
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
-	      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	      int theBand=(band_opt.size()) ? band_opt[iband] : iband;
 	      //test
 	      assert(uli>=0);
 	      assert(uli<imgReader.nrOfCol());	      
@@ -1507,7 +1512,7 @@ int main(int argc, char *argv[])
 		}
 		else{
 		  for(int iband=0;iband<nband;++iband){
-		    int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+		    int theBand=(band_opt.size()) ? band_opt[iband] : iband;
 		    assert(j-ulj>=0);
 		    assert(j-ulj<readValues[iband].size());
 		    assert(i-uli>=0);
@@ -1607,7 +1612,7 @@ int main(int argc, char *argv[])
 
 		    if(verbose_opt[0])
 		      std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		    int theBand=(band_opt[0]<0)?index:band_opt[index];
+		    int theBand=(band_opt.size()) ? band_opt[index] : index;
 
 		    if(verbose_opt[0]>1)
 		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
@@ -1877,7 +1882,7 @@ int main(int argc, char *argv[])
 	      polyValues.resize(nband);
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
-	      int theBand=(band_opt[0]<0)?iband:band_opt[iband];
+	      int theBand=(band_opt.size()) ? band_opt[iband] : iband;
 	      //test
 	      assert(uli>=0);
 	      assert(uli<imgReader.nrOfCol());	      
@@ -2075,7 +2080,7 @@ int main(int argc, char *argv[])
 		    double theValue=polyValues[index].back();
 		    if(verbose_opt[0])
 		      std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		    int theBand=(band_opt[0]<0)?index:band_opt[index];
+		    int theBand=(band_opt.size()) ? band_opt[index] : index;
 
 		    if(verbose_opt[0]>1)
 		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;

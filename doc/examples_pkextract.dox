@@ -40,6 +40,16 @@ pkextract -i landcover.tif -s polygons.sqlite -r maxvote -o majority.sqlite -pol
 Extract the majority class in each polygon for the input land cover map. The land cover map contains five valid classes, labeled 1-5. Other class values (e.g., labeled as 0) are not taken into account in the voting.
 
 \code
+pkextract -i input.tif -o random.sqlite -rand 100 -median -buf 3 -polygon
+\endcode
+Extract 100 sample units following a simple random sampling design. For each sample unit, the median value is extracted from the input raster dataset in a window of 3 by 3 pixels and written to an attribute of the output vector dataset. The output vector dataset contains polygon features defined by the windows centered at the random selected sample units.
+
+\code
+pkextract -i input.tif -o systematic.sqlite -grid 100 -srcnodata 0
+\endcode
+Extract points following a systematic grid with grid cell size of 100 m. Discard pixels that have a value 0 in the input raster dataset.
+
+\code
 pkextract -i input.tif -s sample.tif -o extracted.sqlite -t 10 -c 1 -c 2 -c 3
 \endcode
 Typical use where pixels are extracted based on a land cover map (sample.tif). Extract all bands for a random sample of 10 percent of the pixels in the land cover map sample.tif where the land cover classes are either 1,2 or 3 (class values). Write output to the point vector dataset extracted.sqlite.

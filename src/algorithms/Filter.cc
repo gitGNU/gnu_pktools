@@ -405,8 +405,8 @@ void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, c
       filter(pixelInput,pixelOutput,method,dim);
       for(int iband=0;iband<pixelOutput.size();++iband){
         lineOutput[iband][x]=pixelOutput[iband];
-	if(pixelInput[iband]!=0)
-	  assert(pixelOutput[iband]!=0);
+	// if(pixelInput[iband]!=0)
+	//   assert(pixelOutput[iband]!=0);
       }
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
