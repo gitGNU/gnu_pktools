@@ -237,14 +237,25 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, c
   GDALRasterBand  *poBand;
   assert(band<nrOfBand()+1);
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  assert(minCol<nrOfCol());
-  assert(minCol>=0);
-  assert(maxCol<nrOfCol());
-  assert(minCol<=maxCol);
-  assert(minRow<nrOfRow());
-  assert(minRow>=0);
-  assert(maxRow<nrOfRow());
-  assert(minRow<=maxRow);
+  if(minCol>=nrOfCol() ||
+     (minCol<0) ||
+     (maxCol>=nrOfCol()) ||
+     (minCol>maxCol) ||
+     (minRow>=nrOfRow()) ||
+     (minRow<0) ||
+     (maxRow>=nrOfRow()) ||
+     (minRow>maxRow)){
+    std::string errorString="block not within image boundaries";
+    throw(errorString);
+  }
+  /* assert(minCol<nrOfCol()); */
+  /* assert(minCol>=0); */
+  /* assert(maxCol<nrOfCol()); */
+  /* assert(minCol<=maxCol); */
+  /* assert(minRow<nrOfRow()); */
+  /* assert(minRow>=0); */
+  /* assert(maxRow<nrOfRow()); */
+  /* assert(minRow<=maxRow); */
   if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
     buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
   poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);

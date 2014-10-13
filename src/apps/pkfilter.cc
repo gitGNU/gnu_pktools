@@ -54,6 +54,7 @@ int main(int argc,char **argv) {
   Optionpk<short> nodata_opt("nodata", "nodata", "nodata value(s) for smoothnodata filter");
   Optionpk<std::string> tap_opt("tap", "tap", "text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps");
   Optionpk<double> tapz_opt("tapz", "tapz", "taps used for spectral filtering");
+  Optionpk<string> padding_opt("pad","pad", "Padding method for filtering (how to handle edge effects). Choose between: symmetric, replicate, circular, constant (pad with 0).", "symmetric");
   Optionpk<double> fwhm_opt("fwhm", "fwhm", "list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...)");
   Optionpk<std::string> srf_opt("srf", "srf", "list of ASCII files containing spectral response functions (two columns: wavelength response)");
   Optionpk<double> wavelengthIn_opt("win", "wavelengthIn", "list of wavelengths in input spectrum (-win band1 -win band2 ...)");
@@ -92,6 +93,7 @@ int main(int argc,char **argv) {
     nodata_opt.retrieveOption(argc,argv);
     tap_opt.retrieveOption(argc,argv);
     tapz_opt.retrieveOption(argc,argv);
+    padding_opt.retrieveOption(argc,argv);
     fwhm_opt.retrieveOption(argc,argv);
     srf_opt.retrieveOption(argc,argv);
     wavelengthIn_opt.retrieveOption(argc,argv);
@@ -222,6 +224,9 @@ int main(int argc,char **argv) {
 
   filter2d::Filter2d filter2d;
   filter::Filter filter1d;
+  if(verbose_opt[0])
+    cout << "Set padding to " << padding_opt[0] << endl;
+  filter1d.setPadding(padding_opt[0]);
   if(class_opt.size()){
     if(verbose_opt[0])
       std::cout<< "class values: ";
@@ -278,7 +283,7 @@ int main(int argc,char **argv) {
       std::cout<< std::endl;
     }
     filter1d.setTaps(tapz_opt);    
-    filter1d.filter(input,output,down_opt[0]);
+    filter1d.filter(input,output);
   }
   else if(fwhm_opt.size()){
     if(verbose_opt[0])
@@ -385,7 +390,7 @@ int main(int argc,char **argv) {
       if(dimZ_opt.size()){
         if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
-        filter1d.morphology(input,output,"dilate",dimZ_opt[0],1,0,verbose_opt[0]);
+        filter1d.morphology(input,output,"dilate",dimZ_opt[0],verbose_opt[0]);
       }
       else{
 	filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
@@ -710,7 +715,7 @@ int main(int argc,char **argv) {
     default:
       if(dimZ_opt.size()){
 	if(dimZ_opt[0]==1)
-	  filter1d.stat(input,output,method_opt[0],down_opt[0]);
+	  filter1d.stat(input,output,method_opt[0]);
 	else{
 	  assert(down_opt[0]==1);//not implemented yet...
 	  filter1d.filter(input,output,method_opt[0],dimZ_opt[0]);

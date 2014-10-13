@@ -310,6 +310,7 @@ version 2.5.4
 	Support multiple input bands when calculating statistics
  - pkfilter
 	Support filtering and statistics in spectral domain (see ticket #43252)
+	Support different padding strategies (currently only supported for spectral/temporal filtering)
  - pkextract
 	bug fix for proportion rule
 	support standard deviation rule (stdev) for polygon features (ticket #43193)

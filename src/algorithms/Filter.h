@@ -35,12 +35,19 @@ namespace filter
   
   enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29};
 
+   enum PADDING { symmetric=0, replicate=1, circular=2, constant=3};
+
 class Filter
 {
 public:
   Filter(void);
   Filter(const std::vector<double> &taps);
   virtual ~Filter(){};
+
+  void setPadding(const std::string& padString){
+    m_padding=padString;
+  };
+
   static const gsl_wavelet_type* getWaveletType(const std::string waveletType){
     if(waveletType=="daubechies") return(gsl_wavelet_daubechies);
     if(waveletType=="daubechies_centered") return(gsl_wavelet_daubechies_centered);
@@ -54,20 +61,21 @@ public:
     initFilterMap(m_filterMap);
     return m_filterMap[filterType];
   };
+
   void setTaps(const std::vector<double> &taps, bool normalize=true);
   void pushClass(short theClass=1){m_class.push_back(theClass);};
   void pushMask(short theMask=0){m_mask.push_back(theMask);};
-  template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, int down=1, int offset=0);
+  template<class T> void filter(const std::vector<T>& input, std::vector<T>& output);
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim);
-  template<class T> void smooth(const std::vector<T>& input, std::vector<T>& output, short dim, int down=1, int offset=0);
-  template<class T> void filter(T* input, int inputSize, std::vector<T>& output, int down=1, int offset=0);
-  template<class T> void smooth(T* input, int inputSize, std::vector<T>& output, short dim, int down=1, int offset=0);
-  template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down=1, int offset=0, bool verbose=false);
-  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, int offset=0, short verbose=0);
-  void filter(const ImgReaderGdal& input, ImgWriterGdal& output, short down=1, int offset=0);
-  void stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, short down=1, int offset=0);
+  template<class T> void smooth(const std::vector<T>& input, std::vector<T>& output, short dim);
+  template<class T> void filter(T* input, int inputSize, std::vector<T>& output);
+  template<class T> void smooth(T* input, int inputSize, std::vector<T>& output, short dim);
+  //template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, bool verbose=false);
+  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose=0);
+  void filter(const ImgReaderGdal& input, ImgWriterGdal& output);
+  void stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method);
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim);
-  void smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down=1, int offset=0);
+  void smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim);
   double getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta=1.0, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, std::vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool transposeInput=false, bool verbose=false);
@@ -118,10 +126,23 @@ private:
     m_filterMap["order"]=filter::order;
     m_filterMap["median"]=filter::median;
   }
+
+
+  static PADDING getPadding(const std::string& padString){
+    std::map<std::string, PADDING> padMap;
+    padMap["constant"]=filter::constant;
+    padMap["symmetric"]=filter::symmetric;
+    padMap["replicate"]=filter::replicate;
+    padMap["circular"]=filter::circular;
+    return(padMap[padString]);
+  };
+
   std::vector<double> m_taps;
   std::vector<short> m_class;
   std::vector<short> m_mask;
+   std::string m_padding;
 };
+
 
 //input[band], output
 //returns wavelength for which srf is maximum
@@ -195,15 +216,6 @@ private:
   gsl_spline_free(splineOut);
   gsl_interp_accel_free(accOut);
 
-  // double maxResponse=0;
-  // int maxIndex=0;
-  // for(int index=0;index<srf[1].size();++index){
-    // if(maxResponse<srf[1][index]){
-    //   maxResponse=srf[1][index];
-    //   maxIndex=index;
-    // }
-  // }
-  // return(srf[0][maxIndex]);
   return(centreWavelength);
 }
 
@@ -291,15 +303,6 @@ private:
   gsl_spline_free(splineOut);
   gsl_interp_accel_free(accOut);
 
-  // double maxResponse=0;
-  // int maxIndex=0;
-  // for(int index=0;index<srf[1].size();++index){
-    // if(maxResponse<srf[1][index]){
-    //   maxResponse=srf[1][index];
-    //   maxIndex=index;
-    // }
-  // }
-  // return(srf[0][maxIndex]);
   return(centreWavelength);
 }
 
@@ -405,51 +408,88 @@ template<class T> void Filter::applyFwhm(const std::vector<double> &wavelengthIn
   }
 }
 
-  template<class T> void Filter::smooth(const std::vector<T>& input, std::vector<T>& output, short dim, int down, int offset)
+  template<class T> void Filter::smooth(const std::vector<T>& input, std::vector<T>& output, short dim)
 {
   assert(dim>0);
   m_taps.resize(dim);
   for(int itap=0;itap<dim;++itap)
     m_taps[itap]=1.0/dim;
-  filter(input,output,down,offset);
+  filter(input,output);
  }
 
-template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T>& output, int down, int offset)
+template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T>& output)
 {
-  output.resize((input.size()-offset+down-1)/down);
+  assert(input.size()>m_taps.size());
+  output.resize(input.size());
   int i=0;
-  //start: extend input with mirrored version of itself
-  for(i=offset;i<m_taps.size()/2;++i){
-    if((i-offset)%down)
-      continue;
+  //start: extend input by padding
+  for(i=0;i<m_taps.size()/2;++i){
     //todo:introduce nodata
-    output[(i-offset+down-1)/down]=m_taps[m_taps.size()/2]*input[i];
-    for(int t=1;t<=m_taps.size()/2;++t)
-      output[(i-offset+down-1)/down]+=(m_taps[m_taps.size()/2+t]+m_taps[m_taps.size()/2-t])*input[i+t];
+    output[i]=m_taps[m_taps.size()/2]*input[i];
+    for(int t=1;t<=m_taps.size()/2;++t){
+      output[i]+=m_taps[m_taps.size()/2+t]*input[i+t];
+      if(i>=t)
+	output[i]+=m_taps[m_taps.size()/2-t]*input[i-t];
+      else{
+	switch(getPadding(m_padding)){
+	case(replicate):
+	  output[i]+=m_taps[m_taps.size()/2-t]*input[0];
+	  break;
+	case(circular):
+	  output[i]+=m_taps[m_taps.size()/2-t]*input[input.size()+i-t];
+	  break;
+	case(constant):
+	  output[i]+=m_taps[m_taps.size()/2-t]*0;
+	  break;
+	case(symmetric):
+	default:
+	  output[i]+=m_taps[m_taps.size()/2-t]*input[t-i];
+	  break;
+	}
+      }
+    }
   }
   //main
-  for(i=offset+m_taps.size()/2;i<input.size()-m_taps.size()/2;++i){
-    if((i-offset)%down)
-      continue;
+  for(i=m_taps.size()/2;i<input.size()-m_taps.size()/2;++i){
     //todo:introduce nodata
     T leaveOut=(*(m_taps.begin()))*input[i-m_taps.size()/2];
     T include=(m_taps.back())*input[i+m_taps.size()/2];
-    output[(i-offset+down-1)/down]=0;
+    output[i]=0;
     for(int t=0;t<m_taps.size();++t)
-      output[(i-offset+down-1)/down]+=input[i-m_taps.size()/2+t]*m_taps[t];
+      output[i]+=input[i-m_taps.size()/2+t]*m_taps[t];
   }
-  //end: extend input with mirrored version of itself
+  //end: extend input by padding
   for(i=input.size()-m_taps.size()/2;i<input.size();++i){
-    if((i-offset)%down)
-      continue;
     //todo:introduce nodata
-    output[(i-offset+down-1)/down]=m_taps[m_taps.size()/2]*input[i];
+    output[i]=m_taps[m_taps.size()/2]*input[i];
     //todo:introduce nodata
-    for(int t=1;t<=m_taps.size()/2;++t)
-      output[(i-offset+down-1)/down]+=(m_taps[m_taps.size()/2+t]+m_taps[m_taps.size()/2-t])*input[i-t];
+    for(int t=1;t<=m_taps.size()/2;++t){
+      output[i]+=m_taps[m_taps.size()/2-t]*input[i-t];
+      if(i+t<input.size())
+	output[i]+=m_taps[m_taps.size()/2+t]*input[i+t];
+      else{
+	switch(getPadding(m_padding)){
+	case(replicate):
+	  output[i]+=m_taps[m_taps.size()/2+t]*input.back();
+	  break;
+	case(circular):
+	  output[i]+=m_taps[m_taps.size()/2+t]*input[t-1];
+	  break;
+	case(constant):
+	  output[i]+=m_taps[m_taps.size()/2+t]*0;
+	  break;
+	case(symmetric):
+	default:
+	  output[i]+=m_taps[m_taps.size()/2+t]*input[i-t];
+	  break;
+	}
+      }
+    //output[i]+=(m_taps[m_taps.size()/2+t]+m_taps[m_taps.size()/2-t])*input[i-t];
+    }
   }
 }
 
+//todo: filling statBuffer can be optimized (no need to clear and fill entire buffer, just push back new value...)
  template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim)
 {
   bool verbose=false;
@@ -459,7 +499,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   statfactory::StatFactory stat;
   std::vector<T> statBuffer;
   short binValue=0;
-  //start: extend input with mirrored version of itself
+  //start: extend input by padding
   for(i=0;i<dim/2;++i){
     binValue=0;
     for(int iclass=0;iclass<m_class.size();++iclass){
@@ -472,36 +512,62 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
       statBuffer.push_back(binValue);
     else
       statBuffer.push_back(input[i]);
+
     for(int t=1;t<=dim/2;++t){
-      binValue=0;
+      T theValue=input[i+t];
       for(int iclass=0;iclass<m_class.size();++iclass){
-        if(input[i+t]==m_class[iclass]){
+        if(theValue==m_class[iclass]){
           binValue=m_class[0];
           break;
         }
       }
-      if(m_class.size()){
-        statBuffer.push_back(binValue);
-        statBuffer.push_back(binValue);
+      if(m_class.size())
+	statBuffer.push_back(binValue);
+      else
+	statBuffer.push_back(theValue);
+
+      if(i>=t){
+	theValue=input[i-t];
       }
       else{
-        statBuffer.push_back(input[i+t]);
-        statBuffer.push_back(input[i+t]);
+	switch(getPadding(m_padding)){
+	case(replicate):
+	  theValue=input[0];
+	  break;
+	case(circular):
+	  theValue=input[input.size()+i-t];
+	  break;
+	case(constant):
+	  theValue=0;
+	  break;
+	case(symmetric):
+	default:
+	  theValue=input[t-i];
+	  break;
+	}
       }
+      for(int iclass=0;iclass<m_class.size();++iclass){
+        if(theValue==m_class[iclass]){
+          binValue=m_class[0];
+          break;
+        }
+      }
+      if(m_class.size())
+	statBuffer.push_back(binValue);
+      else
+	statBuffer.push_back(theValue);
     }
-    /* assert(statBuffer.size()==dim); */
-    /* if((i-offset)%down){ */
-    /*   statBuffer.clear(); */
-    /*   continue; */
-    /* } */
+
     switch(getFilterType(method)){
     case(filter::median):
       output[i]=stat.median(statBuffer);
       break;
     case(filter::min):
+    case(filter::erode):
       output[i]=stat.mymin(statBuffer);
       break;
     case(filter::max):
+    case(filter::dilate):
       output[i]=stat.mymax(statBuffer);
       break;
     case(filter::sum):
@@ -535,15 +601,16 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
       else
         statBuffer.push_back(input[i-dim/2+t]);
     }
-    /* assert(statBuffer.size()==dim); */
     switch(getFilterType(method)){
     case(filter::median):
       output[i]=stat.median(statBuffer);
       break;
     case(filter::min):
+    case(filter::erode):
       output[i]=stat.mymin(statBuffer);
       break;
     case(filter::max):
+    case(filter::dilate):
       output[i]=stat.mymax(statBuffer);
       break;
     case(filter::sum):
@@ -562,262 +629,173 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
     }
     statBuffer.clear();
   }
-  //end: extend input with mirrored version of itself
+  //end: extend input by padding
   for(i=input.size()-dim/2;i<input.size();++i){
-      binValue=0;
-      for(int iclass=0;iclass<m_class.size();++iclass){
-        if(input[i]==m_class[iclass]){
-          binValue=m_class[0];
-          break;
-        }
-      }
-      if(m_class.size())
-        statBuffer.push_back(binValue);
-      else
-        statBuffer.push_back(input[i]);
-      for(int t=1;t<=dim/2;++t){
-        binValue=0;
-        for(int iclass=0;iclass<m_class.size();++iclass){
-          if(input[i-t]==m_class[iclass]){
-            binValue=m_class[0];
-            break;
-          }
-        }
-        if(m_class.size()){
-          statBuffer.push_back(binValue);
-          statBuffer.push_back(binValue);
-        }
-        else{
-          statBuffer.push_back(input[i-t]);
-          statBuffer.push_back(input[i-t]);
-        }
-      }
-    switch(getFilterType(method)){
-    case(filter::median):
-      output[i]=stat.median(statBuffer);
-      break;
-    case(filter::min):
-      output[i]=stat.mymin(statBuffer);
-      break;
-    case(filter::max):
-      output[i]=stat.mymax(statBuffer);
-      break;
-    case(filter::sum):
-      output[i]=sqrt(stat.sum(statBuffer));
-      break;
-    case(filter::var):
-      output[i]=stat.var(statBuffer);
-      break;
-    case(filter::mean):
-      output[i]=stat.mean(statBuffer);
-      break;
-    default:
-      std::string errorString="method not supported";
-      throw(errorString);
-      break;
-    }
-  }
-}
-
- //todo: this function is redundant, can be incorporated within filter
-template<class T> void Filter::morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, short down, int offset, bool verbose)
-{
-  assert(dim);
-  output.resize((input.size()-offset+down-1)/down);
-  int i=0;
-  statfactory::StatFactory stat;
-  std::vector<T> statBuffer;
-  short binValue=0;
-  //start: extend input with mirrored version of itself
-  for(i=offset;i<dim/2;++i){
     binValue=0;
     for(int iclass=0;iclass<m_class.size();++iclass){
       if(input[i]==m_class[iclass]){
-        binValue=m_class[0];
-        break;
+	binValue=m_class[0];
+	break;
       }
     }
     if(m_class.size())
       statBuffer.push_back(binValue);
     else
       statBuffer.push_back(input[i]);
-    for(int t=1;t<=dim/2;++t){
-      binValue=0;
-      for(int iclass=0;iclass<m_class.size();++iclass){
-        if(input[i+t]==m_class[iclass]){
-          binValue=m_class[0];
-          break;
-        }
-      }
-      if(m_class.size()){
-        statBuffer.push_back(binValue);
-        statBuffer.push_back(binValue);
-      }
-      else{
-        statBuffer.push_back(input[i+t]);
-        statBuffer.push_back(input[i+t]);
-      }
-    }
-    /* assert(statBuffer.size()==dim); */
-    if((i-offset)%down){
-      statBuffer.clear();
-      continue;
-    }
-    switch(getFilterType(method)){
-    case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
-      break;
-    case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
-      break;
-    default:
-      std::string errorString="method not supported";
-      throw(errorString);
-      break;
-    }
-    if(verbose){
-      std::cout << "buffer: ";
-      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        std::cout << statBuffer[ibuf] << " ";
-      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
-    }
-  }
-  //main
-  statBuffer.clear();
-  for(i=offset+dim/2;i<input.size()-dim/2;++i){
-    binValue=0;
-    for(int t=0;t<dim;++t){
-      for(int iclass=0;iclass<m_class.size();++iclass){
-        if(input[i-dim/2+t]==m_class[iclass]){
-          binValue=m_class[0];
-          break;
-        }
-      }
-      if(m_class.size())
-        statBuffer.push_back(binValue);
-      else
-        statBuffer.push_back(input[i-dim/2+t]);
-    }
-    /* assert(statBuffer.size()==dim); */
-    if((i-offset)%down){
-      statBuffer.clear();
-      continue;
-    }
-    switch(getFilterType(method)){
-    case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
-      break;
-    case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
-      break;
-    default:
-      std::string errorString="method not supported";
-      throw(errorString);
-      break;
-    }
-    if(verbose){
-      std::cout << "buffer: ";
-      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        std::cout << statBuffer[ibuf] << " ";
-      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
-    }
-    statBuffer.clear();
-  }
-  //end: extend input with mirrored version of itself
-  for(i=input.size()-dim/2;i<input.size();++i){
-      binValue=0;
-      for(int iclass=0;iclass<m_class.size();++iclass){
-        if(input[i]==m_class[iclass]){
-          binValue=m_class[0];
-          break;
-        }
-      }
-      if(m_class.size())
-        statBuffer.push_back(binValue);
-      else
-        statBuffer.push_back(input[i]);
-      for(int t=1;t<=dim/2;++t){
-        binValue=0;
-        for(int iclass=0;iclass<m_class.size();++iclass){
-          if(input[i-t]==m_class[iclass]){
-            binValue=m_class[0];
-            break;
-          }
-        }
-        if(m_class.size()){
-          statBuffer.push_back(binValue);
-          statBuffer.push_back(binValue);
-        }
-        else{
-          statBuffer.push_back(input[i-t]);
-          statBuffer.push_back(input[i-t]);
-        }
-      }
-    if((i-offset)%down){
-      statBuffer.clear();
-      continue;
-    }
-    switch(getFilterType(method)){
-    case(filter::dilate):
-      output[(i-offset+down-1)/down]=stat.mymax(statBuffer);
-      break;
-    case(filter::erode):
-      output[(i-offset+down-1)/down]=stat.mymin(statBuffer);
-      break;
-    default:
-      std::string errorString="method not supported";
-      throw(errorString);
-      break;
-    }
-    if(verbose){
-      std::cout << "buffer: ";
-      for(int ibuf=0;ibuf<statBuffer.size();++ibuf)
-        std::cout << statBuffer[ibuf] << " ";
-      std::cout << "->" << output[(i-offset+down-1)/down] << std::endl;
-    }
-  }
-}
 
- template<class T> void Filter::smooth(T* input, int inputSize, std::vector<T>& output, short dim, int down, int offset)
+    for(int t=1;t<=dim/2;++t){
+      T theValue=input[i-t];
+      for(int iclass=0;iclass<m_class.size();++iclass){
+	if(theValue==m_class[iclass]){
+	  binValue=m_class[0];
+	  break;
+	}
+      }
+      if(m_class.size())
+	statBuffer.push_back(binValue);
+      else
+	statBuffer.push_back(theValue);
+      if(i+t<input.size())
+	theValue=input[i+t];
+      else{
+	switch(getPadding(m_padding)){
+	case(replicate):
+	  theValue=input.back();
+	  break;
+	case(circular):
+	  theValue=input[t-1];
+	  break;
+	case(constant):
+	  theValue=0;
+	  break;
+	case(symmetric):
+	default:
+	  theValue=input[i-t];
+	  break;
+	}
+      }
+      for(int iclass=0;iclass<m_class.size();++iclass){
+	if(theValue==m_class[iclass]){
+	  binValue=m_class[0];
+	  break;
+	}
+      }
+      if(m_class.size())
+	statBuffer.push_back(binValue);
+      else
+	statBuffer.push_back(theValue);
+    }
+    switch(getFilterType(method)){
+    case(filter::median):
+      output[i]=stat.median(statBuffer);
+      break;
+    case(filter::min):
+    case(filter::erode):
+      output[i]=stat.mymin(statBuffer);
+      break;
+    case(filter::max):
+    case(filter::dilate):
+      output[i]=stat.mymax(statBuffer);
+      break;
+    case(filter::sum):
+      output[i]=sqrt(stat.sum(statBuffer));
+      break;
+    case(filter::var):
+      output[i]=stat.var(statBuffer);
+      break;
+    case(filter::mean):
+      output[i]=stat.mean(statBuffer);
+      break;
+    default:
+      std::string errorString="method not supported";
+      throw(errorString);
+      break;
+    }
+  }
+ }
+
+ template<class T> void Filter::smooth(T* input, int inputSize, std::vector<T>& output, short dim)
 {
   assert(dim>0);
   m_taps.resize(dim);
   for(int itap=0;itap<dim;++itap)
     m_taps[itap]=1.0/dim;
-  filter(input,output,down,offset);
+  filter(input,output);
  }
 
-template<class T> void Filter::filter(T* input, int inputSize, std::vector<T>& output, int down, int offset)
+template<class T> void Filter::filter(T* input, int inputSize, std::vector<T>& output)
 {
-  output.resize((inputSize-offset+down-1)/down);
+  assert(inputSize>m_taps.size());
+  output.resize(inputSize);
   int i=0;
-  //start: extend input with mirrored version of itself
-  for(i=offset;i<m_taps.size()/2;++i){
-    if((i-offset)%down)
-      continue;
-    output[(i-offset+down-1)/down]=m_taps[m_taps.size()/2]*input[i];
-    for(int t=1;t<=m_taps.size()/2;++t)
-      output[(i-offset+down-1)/down]+=(m_taps[m_taps.size()/2+t]+m_taps[m_taps.size()/2-t])*input[i+t];
+
+  //start: extend input by padding
+  for(i=0;i<m_taps.size()/2;++i){
+    //todo:introduce nodata
+    output[i]=m_taps[m_taps.size()/2]*input[i];
+
+    for(int t=1;t<=m_taps.size()/2;++t){
+      output[i]+=m_taps[m_taps.size()/2+t]*input[i+t];
+      if(i>=t)
+	output[i]+=m_taps[m_taps.size()/2-t]*input[i-t];
+      else{
+	switch(getPadding(m_padding)){
+	case(replicate):
+	  output[i]+=m_taps[m_taps.size()/2-t]*input[0];
+	  break;
+	case(circular):
+	  output[i]+=m_taps[m_taps.size()/2-t]*input[input.size()+i-t];
+	  break;
+	case(constant):
+	  output[i]+=m_taps[m_taps.size()/2-t]*0;
+	  break;
+	case(symmetric):
+	default:
+	  output[i]+=m_taps[m_taps.size()/2-t]*input[t-i];
+	  break;
+	}
+      }
+    }
   }
   //main
-  for(i=offset+m_taps.size()/2;i<inputSize-m_taps.size()/2;++i){
-    if((i-offset)%down)
-      continue;
+  for(i=m_taps.size()/2;i<input.size()-m_taps.size()/2;++i){
+    //todo:introduce nodata
     T leaveOut=(*(m_taps.begin()))*input[i-m_taps.size()/2];
     T include=(m_taps.back())*input[i+m_taps.size()/2];
-    output[(i-offset+down-1)/down]=0;
+    output[i]=0;
     for(int t=0;t<m_taps.size();++t)
-      output[(i-offset+down-1)/down]+=input[i-m_taps.size()/2+t]*m_taps[t];
+      output[i]+=input[i-m_taps.size()/2+t]*m_taps[t];
   }
-  //end: extend input with mirrored version of itself
-  for(i=inputSize-m_taps.size()/2;i<inputSize;++i){
-    if((i-offset)%down)
-      continue;
-    output[(i-offset+down-1)/down]=m_taps[m_taps.size()/2]*input[i];
-    for(int t=1;t<=m_taps.size()/2;++t)
-      output[(i-offset+down-1)/down]+=(m_taps[m_taps.size()/2+t]+m_taps[m_taps.size()/2-t])*input[i-t];
+  //end: extend input by padding
+  for(i=input.size()-m_taps.size()/2;i<input.size();++i){
+    //todo:introduce nodata
+    output[i]=m_taps[m_taps.size()/2]*input[i];
+    //todo:introduce nodata
+    for(int t=1;t<=m_taps.size()/2;++t){
+      output[i]+=m_taps[m_taps.size()/2-t]*input[i-t];
+      if(i+t<input.size())
+	output[i]+=m_taps[m_taps.size()/2+t]*input[i+t];
+      else{
+	switch(getPadding(m_padding)){
+	case(replicate):
+	  output[i]+=m_taps[m_taps.size()/2+t]*input.back();
+	  break;
+	case(circular):
+	  output[i]+=m_taps[m_taps.size()/2+t]*input[t-1];
+	  break;
+	case(constant):
+	  output[i]+=m_taps[m_taps.size()/2+t]*0;
+	  break;
+	case(symmetric):
+	default:
+	  output[i]+=m_taps[m_taps.size()/2+t]*input[i-t];
+	  break;
+	}
+      }
+    }
   }
 }
+
 }
 
 #endif /* _MYFILTER_H_ */

@@ -81,7 +81,7 @@ double ImgRegression::getRMSE(const ImgReaderGdal& imgReader1, const ImgReaderGd
     }
   }
   double err=0;
-  if(buffer1.size()||buffer2.size()){
+  if(buffer1.size()&&buffer2.size()){
     statfactory::StatFactory stat;
     err=stat.linear_regression_err(buffer1,buffer2,c0,c1);
   }

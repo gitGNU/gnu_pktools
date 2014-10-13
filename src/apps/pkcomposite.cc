@@ -627,8 +627,8 @@ int main(int argc, char *argv[])
                     val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
                     writeBuffer[iband][ib]=val_new;
                   }
-                  // fileBuffer[ib]=ifile;
-                  ++fileBuffer[ib];
+                  fileBuffer[ib]=ifile;
+                  // ++fileBuffer[ib];
                 }
                 break;
               default:
@@ -642,8 +642,8 @@ int main(int argc, char *argv[])
                     val_new=readBuffer[iband][readCol-startCol];
                     writeBuffer[iband][ib]=val_new;
                   }
-                  ++fileBuffer[ib];
-                  // fileBuffer[ib]=ifile;
+                  fileBuffer[ib]=ifile;
+                  // ++fileBuffer[ib];
                 }
                 break;
               }

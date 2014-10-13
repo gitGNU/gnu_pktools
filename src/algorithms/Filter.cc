@@ -25,11 +25,13 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 
 filter::Filter::Filter(void)
+  : m_padding("symmetric")
 {
 }
 
 
 filter::Filter::Filter(const vector<double> &taps)
+  : m_padding("symmetric")
 {
   setTaps(taps);
 }
@@ -178,6 +180,7 @@ void filter::Filter::dwtCutFrom(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
+//todo: support different padding strategies
 void filter::Filter::dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family){
   int origsize=data.size();
   //make sure data size if power of 2
@@ -196,6 +199,7 @@ void filter::Filter::dwtForward(std::vector<double>& data, const std::string& wa
   gsl_wavelet_workspace_free (work);
 }
 
+//todo: support different padding strategies
 void filter::Filter::dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family){
   int origsize=data.size();
   //make sure data size if power of 2
@@ -213,6 +217,7 @@ void filter::Filter::dwtInverse(std::vector<double>& data, const std::string& wa
   gsl_wavelet_workspace_free (work);
 }
 
+//todo: support different padding strategies
 void filter::Filter::dwtCut(std::vector<double>& data, const std::string& wavelet_type, int family, double cut){
   int origsize=data.size();
   //make sure data size if power of 2
@@ -241,9 +246,9 @@ void filter::Filter::dwtCut(std::vector<double>& data, const std::string& wavele
   gsl_wavelet_workspace_free (work);
 }
 
-void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, int offset, short verbose)
+void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose)
 {
-  bool bverbose=(verbose>1)? true:false;
+  // bool bverbose=(verbose>1)? true:false;
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
   const char* pszMessage;
@@ -258,7 +263,8 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      morphology(pixelInput,pixelOutput,method,dim,down,offset,bverbose);
+      filter(pixelInput,pixelOutput,method,dim);
+      // morphology(pixelInput,pixelOutput,method,dim,bverbose);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
@@ -275,13 +281,13 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
-void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down, int offset)
+void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim)
 {
   assert(dim>0);
   m_taps.resize(dim);
   for(int itap=0;itap<dim;++itap)
     m_taps[itap]=1.0/dim;
-  filter(input,output,down,offset);
+  filter(input,output);
 }
 
 // void filter::Filter::smoothnodata(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down, int offset)
@@ -293,7 +299,7 @@ void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, s
 //   filter(input,output,down,offset);
 // }
 
-void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, short down, int offset)
+void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -309,7 +315,7 @@ void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, s
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
-      filter(pixelInput,pixelOutput,down,offset);
+      filter(pixelInput,pixelOutput);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
@@ -326,10 +332,10 @@ void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, s
   }
 }
 
-void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, short down, int offset)
+void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
-  assert(output.nrOfCol()==(input.nrOfCol()+down-1)/down);
+  assert(output.nrOfCol()==input.nrOfCol());
   vector<double> lineOutput(output.nrOfCol());
   statfactory::StatFactory stat;
   const char* pszMessage;
@@ -338,36 +344,32 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
-    if((y+1+down/2)%down)
-      continue;
     for(int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],GDT_Float64,y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
-      if((x+1+down/2)%down)
-	continue;
       pixelInput=lineInput.selectCol(x);
       switch(getFilterType(method)){
       case(filter::median):
-	lineOutput[(x-offset+down-1)/down]=stat.median(pixelInput);
+	lineOutput[x]=stat.median(pixelInput);
 	break;
       case(filter::min):
-	lineOutput[(x-offset+down-1)/down]=stat.mymin(pixelInput);
+	lineOutput[x]=stat.mymin(pixelInput);
 	break;
       case(filter::max):
-	lineOutput[(x-offset+down-1)/down]=stat.mymax(pixelInput);
+	lineOutput[x]=stat.mymax(pixelInput);
 	break;
       case(filter::sum):
-	lineOutput[(x-offset+down-1)/down]=stat.sum(pixelInput);
+	lineOutput[x]=stat.sum(pixelInput);
 	break;
       case(filter::var):
-	lineOutput[(x-offset+down-1)/down]=stat.var(pixelInput);
+	lineOutput[x]=stat.var(pixelInput);
 	break;
       case(filter::stdev):
-	lineOutput[(x-offset+down-1)/down]=sqrt(stat.var(pixelInput));
+	lineOutput[x]=sqrt(stat.var(pixelInput));
 	break;
       case(filter::mean):
-	lineOutput[(x-offset+down-1)/down]=stat.mean(pixelInput);
+	lineOutput[x]=stat.mean(pixelInput);
 	break;
       default:
 	std::string errorString="method not supported";
@@ -376,10 +378,10 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
       }
     }
     try{
-      output.writeData(lineOutput,GDT_Float64,y/down);
+      output.writeData(lineOutput,GDT_Float64,y);
     }
     catch(string errorstring){
-      cerr << errorstring << "in line " << y/down << endl;
+      cerr << errorstring << "in line " << y << endl;
     }
     progress=(1.0+y)/output.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
