@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true,2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
-  Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
-  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<double> bstart_opt("bs", "bstart", "start band sequence number",0); 
+  Optionpk<double> bend_opt("be", "bend", "end band sequence number (set to 0 to include bands)", 0); 
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (1: sum rule, 2: max rule).",1);
@@ -89,9 +89,9 @@ int main(int argc, char *argv[])
     balance_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
-    start_opt.retrieveOption(argc,argv);
-    end_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    bstart_opt.retrieveOption(argc,argv);
+    bend_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
     aggreg_opt.retrieveOption(argc,argv);
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
         if(band_opt.size())
           totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
         else
-          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);
@@ -723,7 +723,7 @@ int main(int argc, char *argv[])
           }
         }
         else{
-          for(int iband=start_opt[0];iband<start_opt[0]+nband;++iband){
+          for(int iband=bstart_opt[0];iband<bstart_opt[0]+nband;++iband){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);

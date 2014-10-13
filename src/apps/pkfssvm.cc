@@ -205,9 +205,9 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
-  Optionpk<double> start_opt("s", "start", "start band sequence number",0); 
-  Optionpk<double> end_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<double> bstart_opt("bs", "bstart", "start band sequence number",0); 
+  Optionpk<double> bend_opt("be", "bend", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<string> selector_opt("sm", "sm", "feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search)","sffs"); 
@@ -240,9 +240,9 @@ int main(int argc, char *argv[])
     balance_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
-    start_opt.retrieveOption(argc,argv);
-    end_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    bstart_opt.retrieveOption(argc,argv);
+    bend_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
     // priors_opt.retrieveOption(argc,argv);
@@ -350,10 +350,10 @@ int main(int argc, char *argv[])
       }
     }
     else{
-      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=inputReader.readDataImageOgr(testMap,fields,start_opt[0],end_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+	totalTestSamples=inputReader.readDataImageOgr(testMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }

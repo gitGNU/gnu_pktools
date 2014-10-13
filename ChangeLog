@@ -318,9 +318,18 @@ version 2.5.4
 	support statistic rules (mean, stdev, median, etc.) for point features by taking into account buffer (default= 3 by 3 pixels). If option -polygon is set, output ogr features are polygons defining the buffer.
 	changed names for maximum and minumum rule to max and min respectively
 	new options -rand and -grid to support simple random sampling and systematic grid (do not provide sample vector dataset)
+ - pksvm
+	replaced options s|start and e|end with bs|bstart and be|bend
+ - pkann
+	replaced options s|start and e|end with bs|bstart and be|bend
+ - pkfssvm
+	replaced options s|start and e|end with bs|bstart and be|bend
+ - pkfsann
+	replaced options s|start and e|end with bs|bstart and be|bend
+ - pkoptsvm
+	replaced options s|start and e|end with bs|bstart and be|bend
  - ImgWriteOgr
 	overwrite existing ogr datasets per default
-
 Next versions: 
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
