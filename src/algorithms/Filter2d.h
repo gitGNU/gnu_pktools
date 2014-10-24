@@ -58,7 +58,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, majority=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135};
+  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
@@ -149,7 +149,7 @@ private:
     m_filterMap["sobelyx"]=filter2d::sobelyx;
     m_filterMap["smooth"]=filter2d::smooth;
     m_filterMap["density"]=filter2d::density;
-    m_filterMap["majority"]=filter2d::majority;
+    m_filterMap["mode"]=filter2d::mode;
     m_filterMap["mixed"]=filter2d::mixed;
     m_filterMap["smoothnodata"]=filter2d::smoothnodata;
     m_filterMap["threshold"]=filter2d::threshold;
@@ -453,7 +453,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           outBuffer[x/down]=noDataValue;
         break;
       }
-      case(filter2d::majority):{
+      case(filter2d::mode):{
         if(occurrence.size()){
           std::map<int,int>::const_iterator maxit=occurrence.begin();
           for(std::map<int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){

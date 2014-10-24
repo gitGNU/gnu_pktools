@@ -301,7 +301,7 @@ version 2.5.2
 version 2.5.3
  - pklas2img
 	libLAS 1.8.0 support (ticket #42951)
- - myfann_cpp.h 
+ - myfann_cpp.h
 	Fix build failure on ARM due to va_list usage in myfann_cpp.h
 
 
@@ -311,6 +311,7 @@ version 2.5.4
  - pkfilter
 	Support filtering and statistics in spectral domain (see ticket #43252)
 	Support different padding strategies (currently only supported for spectral/temporal filtering)
+	Renamed "majority" to "mode" for majority voting filter
  - pkextract
 	bug fix for proportion rule
 	support standard deviation rule (stdev) for polygon features (ticket #43193)
@@ -330,7 +331,8 @@ version 2.5.4
 	replaced options s|start and e|end with bs|bstart and be|bend
  - ImgWriteOgr
 	overwrite existing ogr datasets per default
-Next versions: 
+
+Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
 	Img[Reader|Writer]Ogr replace OGRDataSource with GDALDataset conform to GDAL API 2.x

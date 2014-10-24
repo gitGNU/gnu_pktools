@@ -50,6 +50,7 @@ int main(int argc,char **argv) {
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
   Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model",2);
   Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",0);
+  Optionpk<double> deltaObs_opt("dobs", "deltaobs", "Threshold for relative difference (in percentage) in observation and model pixel");
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   // Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
   // Optionpk<double> regSensor_opt("rs", "regsensor", "Relative Weight for regression in sensor series", 1.0);
@@ -57,7 +58,7 @@ int main(int argc,char **argv) {
   Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
   Optionpk<int> minreg_opt("minreg", "minreg", "Minimum number of pixels to take into account for regression", 5, 2);
   // Optionpk<bool> regObs_opt("regobs", "regobs", "Perform regression between modeled and observed value",false);
-  Optionpk<bool> checkDiff_opt("diff", "diff", "Flag observation as invalid if difference with model is above uncertainty",false);
+  // Optionpk<double> checkDiff_opt("diff", "diff", "Flag observation as invalid if difference with model is above uncertainty",false);
   Optionpk<unsigned short> window_opt("win", "window", "window size for calculating regression (use 0 for global)", 0);
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -83,6 +84,7 @@ int main(int argc,char **argv) {
     eps_opt.retrieveOption(argc,argv);
     uncertModel_opt.retrieveOption(argc,argv);
     uncertObs_opt.retrieveOption(argc,argv);
+    deltaObs_opt.retrieveOption(argc,argv);
     uncertNodata_opt.retrieveOption(argc,argv);
     // regTime_opt.retrieveOption(argc,argv);
     // regSensor_opt.retrieveOption(argc,argv);
@@ -90,7 +92,7 @@ int main(int argc,char **argv) {
     threshold_opt.retrieveOption(argc,argv);
     minreg_opt.retrieveOption(argc,argv);
     // regObs_opt.retrieveOption(argc,argv);
-    checkDiff_opt.retrieveOption(argc,argv);
+    // checkDiff_opt.retrieveOption(argc,argv);
     window_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
@@ -613,13 +615,14 @@ int main(int argc,char **argv) {
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    bool doUpdate=true;
-	    if(checkDiff_opt[0]){
+	    if(deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=statobs.mean(obsWindowBuffer);
 	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
+	      difference/=modValue;//make relative difference
 	      difference*=difference;
-	      doUpdate=(sqrt(difference)<uncertModel_opt[0]*stdDev);
+	      doUpdate=(100*sqrt(difference)<deltaObs_opt[0]);
 	    }
 	    if(doUpdate){
 	      double kalmanGain=1;
@@ -1035,13 +1038,15 @@ int main(int argc,char **argv) {
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    bool doUpdate=true;
-	    if(checkDiff_opt[0]){
+	    if(deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=statobs.mean(obsWindowBuffer);
 	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
 	      difference*=difference;
-	      doUpdate=(sqrt(difference)<uncertModel_opt[0]*stdDev);
+	      difference/=modValue;//make relative difference
+	      difference*=difference;
+	      doUpdate=(100*sqrt(difference)<deltaObs_opt[0]);
 	    }
 	    if(doUpdate){
 	      double kalmanGain=1;

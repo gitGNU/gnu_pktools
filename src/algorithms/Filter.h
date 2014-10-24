@@ -33,7 +33,7 @@ extern "C" {
 namespace filter
 {
   
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, majority=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29};
 
    enum PADDING { symmetric=0, replicate=1, circular=2, constant=3};
 
@@ -116,7 +116,7 @@ private:
     m_filterMap["sobelyx"]=filter::sobelyx;
     m_filterMap["smooth"]=filter::smooth;
     m_filterMap["density"]=filter::density;
-    m_filterMap["majority"]=filter::majority;
+    m_filterMap["mode"]=filter::mode;
     m_filterMap["mixed"]=filter::mixed;
     m_filterMap["smoothnodata"]=filter::smoothnodata;
     m_filterMap["threshold"]=filter::threshold;
