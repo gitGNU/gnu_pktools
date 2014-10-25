@@ -35,7 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, maxvote=6, centroid=7, sum=8, median=9, stdev=10};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, mode=6, centroid=7, sum=8, median=9, stdev=10};
 }
 
 using namespace std;
@@ -48,14 +48,14 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> random_opt("rand", "random", "Create simple random sample of points. Provide number of points to generate");
   Optionpk<double> grid_opt("grid", "grid", "Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m)");
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to maxvote or proportion");
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode or proportion");
   Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
   Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint.", false);
   Optionpk<int> band_opt("b", "band", "Band index(es) to extract. Leave empty to use all bands");
-  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, maxvote, sum.", "centroid");
+  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum.", "centroid");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
   ruleMap["min"]=rule::min;
   ruleMap["max"]=rule::max;
   ruleMap["custom"]=rule::custom;
-  ruleMap["maxvote"]=rule::maxvote;
+  ruleMap["mode"]=rule::mode;
   ruleMap["sum"]=rule::sum;
 
   if(srcnodata_opt.size()){
@@ -771,7 +771,7 @@ int main(int argc, char *argv[])
 	  break;
 	}
 	case(rule::custom):
-	case(rule::maxvote):
+	case(rule::mode):
 	  ogrWriter.createField(label_opt[0],fieldType,ilayerWrite);
 	if(test_opt.size())
 	  ogrTestWriter.createField(label_opt[0],fieldType,ilayerWrite);
@@ -1259,7 +1259,7 @@ int main(int argc, char *argv[])
 		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(20));
 		  }
 		}
-		else if(ruleMap[rule_opt[0]]==rule::maxvote){
+		else if(ruleMap[rule_opt[0]]==rule::mode){
 		  //maximum votes in polygon
 		  if(verbose_opt[0])
 		    std::cout << "number of points in window: " << nPointWindow << std::endl;
@@ -1720,7 +1720,7 @@ int main(int argc, char *argv[])
 		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(20));
 		  }
 		}
-		else if(ruleMap[rule_opt[0]]==rule::maxvote){
+		else if(ruleMap[rule_opt[0]]==rule::mode){
 		  //maximum votes in polygon
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
@@ -2238,7 +2238,7 @@ int main(int argc, char *argv[])
 		    writePolygonFeature->SetField(label_opt[0].c_str(),static_cast<int>(20));
 		  }
 		}
-		else if(ruleMap[rule_opt[0]]==rule::maxvote){
+		else if(ruleMap[rule_opt[0]]==rule::mode){
 		  //maximum votes in polygon
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
