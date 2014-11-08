@@ -1,22 +1,36 @@
 \section examples_pkcreatect Examples of pkcreatect
+
+Attach a color table to image with values between 0 and 50
+
 \code
 pkcreatect -i image.tif -o image_ct.tif -min 0 -max 50
 \endcode
-attach color table to image with values between 0 and 50
 
+Attach a grey scale "color" table to image with values between 0 and 100 and create a legend image (annotation needs to be drawn manually)
 
 \code
 pkcreatect -i image.tif -o image_ct.tif -min 0 -max 100 -l legend.tif -g
 \endcode
-attach grey scale "color" table to image with values between 0 and 100 and create a legend image (annotation needs to be drawn manually)
+
+Attach a predefined color table to image.tif. The colortable has 5 entries for the values 0 (black), 1 (red), 2 (green), 3 (blue) and 4 (grey)
 
 \code
-pkcreatect -i image.tif -o image_ct.tif -ct colourtable.txt
+cat colortable.txt
+
+0 0 0 0 255
+1 255 0 0 255
+2 0 255 0 255
+3 0 0 255 255
+4 100 100 100 255
 \endcode
-attach predefined color table to image
+
+\code
+pkcreatect -i image.tif -o image_ct.tif -ct colortable.txt
+\endcode
+
+Remove the color table from an image 
 
 \code
 pkcreatect -i image.tif -o image_noct.tif -ct none
 \endcode
-remove color table from image 
   
