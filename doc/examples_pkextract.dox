@@ -1,4 +1,6 @@
 \section examples_pkextract Examples of pkextract
+
+\subsection example_pkextract_vector Using vector samples
 \code
 pkextract -i input.tif -s points.sqlite -o extracted.sqlite
 \endcode
@@ -39,6 +41,8 @@ pkextract -i landcover.tif -s polygons.sqlite -r maxvote -o majority.sqlite -pol
 \endcode
 Extract the majority class in each polygon for the input land cover map. The land cover map contains five valid classes, labeled 1-5. Other class values (e.g., labeled as 0) are not taken into account in the voting.
 
+\subsection example_pkextract_random Using random and grid samples
+
 \code
 pkextract -i input.tif -o random.sqlite -rand 100 -median -buf 3 -polygon
 \endcode
@@ -48,6 +52,8 @@ Extract 100 sample units following a simple random sampling design. For each sam
 pkextract -i input.tif -o systematic.sqlite -grid 100 -srcnodata 0
 \endcode
 Extract points following a systematic grid with grid cell size of 100 m. Discard pixels that have a value 0 in the input raster dataset.
+
+\subsection example_pkextract_raster Using raster samples
 
 \code
 pkextract -i input.tif -s sample.tif -o extracted.sqlite -t 10 -c 1 -c 2 -c 3

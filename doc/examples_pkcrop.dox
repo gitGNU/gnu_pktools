@@ -1,19 +1,23 @@
 \section examples_pkcrop Examples of pkcrop
 \code
+
+Crop the input image to the given bounding box
+
 pkcrop -i input.tif -ulx 100 -uly 1000 -lrx 600 -lry 100 -o output.tif
 \endcode
-crop image.tif to the given bounding box
+
+Crop the input image to the envelop of the given polygon and mask all pixels outside polygon as 0 (using gdal_rasterize)
 
 \code
 pkcrop -i input.tif -e extent.shp -o output.tif
 gdal_rasterize -i -burn 0 -l extent extent.shp output.tif
 \endcode
-crop image.tif to the envelop of the given polygon and mask all pixels outside polygon as 0 (using gdal_rasterize)
+
+Extract bands 3,2,1 (starting from 0) in that order from multi-band raster image input.tif
 
 \code
 pkcrop -i input.tif -b 3 -b 2 -b 1 -o output.tif
 \endcode
-extract bands 3,2,1 (starting from 0) in that order from multi-band raster image input.tif
 
 \code
 pkcrop -i fimage.tif -s 100 -ot Byte -o bimage.tif -ct colortable.txt
