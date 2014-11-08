@@ -1,0 +1,8 @@
+\section examples_pkdumpimg Examples of pkdumpimg
+
+Dump the image content of tiny.tif to screen
+
+\code
+pkdumpimg -i tiny.tif
+\endcode
+

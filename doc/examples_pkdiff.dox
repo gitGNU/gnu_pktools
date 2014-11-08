@@ -1,12 +1,14 @@
 \section examples_pkdiff Examples of pkdiff
+
+Check if two raster images are different (reports only if images are different or not)
+
 \code
 pkdiff -i input.tif -ref reference.tif
 \endcode
 
-Check if two raster images are different (reports only if images are different or not)
+Validate a classification map using points from a reference sample and report confusion matrix
 
 \code
 pkdiff -i classificationMap.tif -ref referencePoints.shp -cm	
 \endcode
 
-Validate a classification map using points from a reference sample and report confusion matrix

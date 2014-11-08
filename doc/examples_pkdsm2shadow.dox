@@ -1,0 +1,8 @@
+\section examples_pkdsm2shadow Examples of pkdsm2shadow
+
+Create a shadow mask for the input raster dataset dsm.tif, using Sun zenith angle of 10 degrees and a Sun azimuth angle of 135 degrees (South-South-East). All shadow pixels are set to a value of 1.
+
+\code
+pkdsm2shadow -i dsm.tif -sza 10 -saa 170 -f 1 -o shadow.tif
+\endcode
+

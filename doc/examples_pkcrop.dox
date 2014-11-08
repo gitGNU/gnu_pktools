@@ -1,8 +1,8 @@
 \section examples_pkcrop Examples of pkcrop
-\code
 
 Crop the input image to the given bounding box
 
+\code
 pkcrop -i input.tif -ulx 100 -uly 1000 -lrx 600 -lry 100 -o output.tif
 \endcode
 
@@ -19,17 +19,20 @@ Extract bands 3,2,1 (starting from 0) in that order from multi-band raster image
 pkcrop -i input.tif -b 3 -b 2 -b 1 -o output.tif
 \endcode
 
+Scale raster floating point image fimage.tif with factor 100 and write as single byte image with the given colourtable (for auto scaling, see next example)
+
 \code
 pkcrop -i fimage.tif -s 100 -ot Byte -o bimage.tif -ct colortable.txt
 \endcode
-scale raster floating point image fimage.tif with factor 100 and write as single byte image with the given colourtable (for auto scaling, see next example)
+
+Automatically scale raster floating point image fimage.tif to [0:100] and write the output as a single byte image with the given colourtable 
 
 \code
 pkcrop -i fimage.tif -as 0 -as 100 -ot Byte -o bimage.tif -ct colortable.txt
 \endcode
-auto scale raster floating point image fimage.tif to [0:100] and write as single byte image with the given colourtable 
+
+Crop raster image large.tif to the bounding box of raster image small.tif and use the same pixel size.
 
 \code
 pkcrop -i large.tif $(pkinfo -i small.tif -bb -dx -dy) -o output.tif
 \endcode
-crop raster image large.tif to the bounding box of raster image small.tif and forcing to the same pixel size 
