@@ -1,0 +1,15 @@
+\section examples_pkann Examples of pkann
+
+Classify input image input.tif with an Artificial Neural Network using one hidden layer with 5 neurons. A training sample that is provided as an OGR vector dataset. It contains all features (same dimensionality as input.tif) in its fields (please check \ref pkextract "pkextract" on how to obtain such a file from a "clean" vector file containing locations only). A two-fold cross validation (cv) is performed (output on screen).
+
+\code
+pkann -i input.tif -t training.sqlite -o output.tif --nneuron 5 -cv 2
+\endcode
+
+Same example as above, but use two hidden layers with 15 and 5 neurons respectively
+
+\code
+pkann -i input.tif -t training.sqlite -o output.tif --nneuron 15 --neuron 5 -cv 2
+\endcode
+
+
