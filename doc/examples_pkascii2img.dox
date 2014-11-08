@@ -1,0 +1,64 @@
+\section examples_pkascii2img Examples of pkascii2img
+
+We create a 5x5 raster dataset containing all 0 values except for its center (value=1)
+
+\code
+cat input.txt
+
+0 0 0 0 0
+0 0 0 0 0
+0 0 1 0 0
+0 0 0 0 0
+0 0 0 0 0
+\endcode
+
+We define a pixel size of 25 by 25 m and and a projected in the European projection system ETS89/LAEA. The location of the upper left pixel is also set:
+
+\code
+pkascii2img -i input.txt -o output.tif -of GTiff -a_srs epsg:3035 -dx 25 -dy 25 -ulx 1000000 -uly 1000000
+\endcode
+
+We check the output GeoTIFF using gdalinfo :
+
+\code
+gdalinfo output.tif 
+
+Driver: GTiff/GeoTIFF
+Files: output.tif
+Size is 5, 5
+Coordinate System is:
+PROJCS["ETRS89 / LAEA Europe",
+    GEOGCS["ETRS89",
+        DATUM["European_Terrestrial_Reference_System_1989",
+            SPHEROID["GRS 1980",6378137,298.2572221010042,
+                AUTHORITY["EPSG","7019"]],
+            TOWGS84[0,0,0,0,0,0,0],
+            AUTHORITY["EPSG","6258"]],
+        PRIMEM["Greenwich",0],
+        UNIT["degree",0.0174532925199433],
+        AUTHORITY["EPSG","4258"]],
+    PROJECTION["Lambert_Azimuthal_Equal_Area"],
+    PARAMETER["latitude_of_center",52],
+    PARAMETER["longitude_of_center",10],
+    PARAMETER["false_easting",4321000],
+    PARAMETER["false_northing",3210000],
+    UNIT["metre",1,
+        AUTHORITY["EPSG","9001"]],
+    AUTHORITY["EPSG","3035"]]
+Origin = (1000000.000000000000000,1000000.000000000000000)
+Pixel Size = (25.000000000000000,-25.000000000000000)
+Metadata:
+  AREA_OR_POINT=Area
+  TIFFTAG_DATETIME=2014:11:08 11:33:52
+  TIFFTAG_DOCUMENTNAME=output.tif
+  TIFFTAG_SOFTWARE=pktools 2.5.4 by Pieter Kempeneers
+Image Structure Metadata:
+  INTERLEAVE=BAND
+Corner Coordinates:
+Upper Left  ( 1000000.000, 1000000.000) ( 23d13' 9.44"W, 25d30'21.01"N)
+Lower Left  ( 1000000.000,  999875.000) ( 23d13' 8.02"W, 25d30'17.24"N)
+Upper Right ( 1000125.000, 1000000.000) ( 23d13' 5.27"W, 25d30'22.72"N)
+Lower Right ( 1000125.000,  999875.000) ( 23d13' 3.85"W, 25d30'18.95"N)
+Center      ( 1000062.500,  999937.500) ( 23d13' 6.65"W, 25d30'19.98"N)
+Band 1 Block=5x5 Type=Byte, ColorInterp=Gray
+\endcode
