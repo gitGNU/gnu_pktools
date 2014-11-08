@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter) (0.0: keep original resolution)",0.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter) (0.0: keep original resolution)",0.0);
   Optionpk<string> resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
-  Optionpk<short> dstnodata_opt("dstnodata", "dstnodata", "nodata value for ouptut if out of bounds.", 0);
+  Optionpk<short> dstnodata_opt("dstnodata", "dstnodata", "nodata value for output if out of bounds.", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "set no data value(s) for input image");
   Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0);
 
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
   }
 
   ofstream outputStream;
-  if(!output_opt[0].empty())
+  if(!output_opt.empty())
     outputStream.open(output_opt[0].c_str());
   
   RESAMPLE theResample;
@@ -100,14 +100,19 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  ImgWriterGdal imgWriter;
+  // ImgWriterGdal imgWriter;
   GDALDataType theType;
+
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
 
   ImgReaderGdal imgReader(input_opt[0]);
   for(int inodata=0;inodata<srcnodata_opt.size();++inodata)
     imgReader.pushNoDataValue(srcnodata_opt[inodata]);
 
-  ImgWriterGdal virtualWriter;//only for coordinate conversion (no output file defined)
+  // ImgWriterGdal virtualWriter;//only for coordinate conversion (no output file defined)
   
   int nband=imgReader.nrOfBand();
   //get number of lines
@@ -206,7 +211,7 @@ int main(int argc, char *argv[])
   }
   double gt[6];
   imgReader.getGeoTransform(gt);
-  imgWriter.setGeoTransform(gt);
+  // imgWriter.setGeoTransform(gt);
   // imgWriter.setProjection(imgReader.getProjection());
 
   double readRow=0;
@@ -231,7 +236,8 @@ int main(int argc, char *argv[])
       double x=0;
       double y=0;
       //convert irow to geo
-      imgWriter.image2geo(0,irow,x,y);
+      // imgWriter.image2geo(0,irow,x,y);
+      imgReader.image2geo(0,irow,x,y);
       //lookup corresponding row for irow in this file
       imgReader.geo2image(x,y,readCol,readRow);
       if(readRow<0||readRow>=imgReader.nrOfRow()){
@@ -247,7 +253,8 @@ int main(int argc, char *argv[])
         else
           imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,band_opt[iband],theResample);
         for(int ib=0;ib<ncropcol;++ib){
-          assert(imgWriter.image2geo(ib,irow,x,y));
+          // assert(imgWriter.image2geo(ib,irow,x,y));
+          assert(imgReader.image2geo(ib,irow,x,y));
           //lookup corresponding row for irow in this file
           imgReader.geo2image(x,y,readCol,readRow);
           if(readCol<0||readCol>=imgReader.nrOfCol()){

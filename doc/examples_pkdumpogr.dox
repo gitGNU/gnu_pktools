@@ -1,15 +1,45 @@
 \section examples_pkdumpogr Examples of pkdumpogr
-\code
-pkdumpogr -i input.shp
-\endcode
-dump entire content of vector file to standard output
+
+Dump the attributes label and description for the vector dataset sample.sqlite to standard output (screen)
 
 \code
-pkdumpogr -i input.shp -o output.txt -n ATTRIBUTE -pos
+pkdumpogr -i sample.sqlite -n label -n description
 \endcode
-dump only ATTRIBUTE of vector file including x and y position and output to ASCII file
 
 \code
-pkdumpogr -i input.shp -o output.txt -n ATTRIBUTE1 -n ATTRIBUTE2 -t
+0 2 noforest
+1 2 noforest
+2 2 noforest
+3 2 noforest
+4 2 noforest
+5 2 noforest
+6 2 noforest
+7 2 noforest
+8 2 noforest
+9 2 noforest
+10 1 forest
+11 2 noforest
 \endcode
-dump the two attributes ATTRIBUTE1 and ATTRIBUTE2 of vector file and transpose output 
+
+Similar to previous example, but transpose output (does not work without explicitly defining options -n for attributes)
+
+\code
+pkdumpogr -i sample.sqlite -n label -n description -t
+\endcode
+
+\code
+0 2 2 2 2 2 2 2 2 2 2 1 2
+1 noforest noforest noforest noforest noforest noforest noforest noforest noforest noforest forest noforest 
+\endcode
+
+Dump the entire content of vector dataset input.sqlite to standard output
+
+\code
+pkdumpogr -i input.sqlite
+\endcode
+
+Dump only ATTRIBUTE of vector dataset input.sqlite including x and y position and output to ASCII file output.txt
+
+\code
+pkdumpogr -i input.sqlite -o output.txt -n ATTRIBUTE -pos
+\endcode

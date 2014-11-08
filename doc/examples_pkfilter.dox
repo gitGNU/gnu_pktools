@@ -1,21 +1,30 @@
 \section examples_pkfilter Examples of pkfilter
+
+\subsection examples_pkfilter_spatial Filtering in spatial domain
+
+Filter input.tif with morphological dilation filter. Use a circular kernel (instead of rectangular) of size 3x3.
+
 \code
 pkfilter -i input.tif -o filter.tif -dx 3 -dy 3 -f dilate -c
 \endcode
-filter input.tif with morphological dilation filter. Use a circular kernel (instead of rectangular) of size 3x3.
+
+Similar to previous example, but consider only values of 255 for filtering operation. Typical usage: dilate cloud values in input image that are flagged as 255
 
 \code
 pkfilter -i input.tif -o filter.tif -dx 3 -dy 3 -class 255 -f dilate -c
 \endcode
-Similar to previous example, but consider only values of 255 for filtering operation. Typical usage: dilate cloud values in input image that are flagged as 255
+
+\subsection examples_pkfilter_spectral Filtering in spectral/temporal domain
+
+Filtering in spectral/temporal domain. Calculate the median value for each pixel, calculated on a moving window of width 3 (-dz 3) over all input bands. The output raster dataset will contain as many bands as the input raster dataset.
 
 \code
 pkfilter -i input.tif -o filter_stdev.tif -dz 3 -f median
 \endcode
-Filtering in spectral/temporal domain. Calculate the median value for each pixel, calculated on a moving window of width 3 (-dz 3) over all input bands. The output raster dataset will contain as many bands as the input raster dataset.
+
+"Filtering" in spectral/temporal domain. No moving window (-dz 1). Calculate the standard deviation for each pixel, calculated on all input bands. The output raster dataset will contain a single band only.
 
 \code
 pkfilter -i input.tif -o filter_stdev.tif -dz 1 -f stdev
 \endcode
-"Filtering" in spectral/temporal domain. No moving window (-dz 1). Calculate the standard deviation for each pixel, calculated on all input bands. The output raster dataset will contain a single band only.
 

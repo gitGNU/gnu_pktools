@@ -1,8 +1,33 @@
 \section examples_pkdumpimg Examples of pkdumpimg
 
-Dump the image content of tiny.tif to screen
+We create a 5x5 raster dataset containing all 0 values except for its center (value=1)
 
 \code
-pkdumpimg -i tiny.tif
+cat input.txt
+
+0 0 0 0 0
+0 0 0 0 0
+0 0 1 0 0
+0 0 0 0 0
+0 0 0 0 0
 \endcode
 
+Use \ref pkascii2img "pkascii2img" to create an raster dataset from input.txt
+
+\code
+pkascii2img -i input.txt -o output.tif -of GTiff -a_srs epsg:3035 -dx 25 -dy 25 -ulx 1000000 -uly 1000000
+\endcode
+
+Dump the image content of output.tif to screen
+
+\code
+pkdumpimg -i output.tif
+\endcode
+
+\code
+0 0 0 0 0
+0 0 0 0 0
+0 0 1 0 0
+0 0 0 0 0
+0 0 0 0 0
+\endcode
