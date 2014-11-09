@@ -6,17 +6,18 @@
    - \ref pktools_refer "How to refer"
    - \ref pktools_installation "Installation"
    - \ref available_tools "Available Tools"
+   - \ref pktools_bugs "Found a bug or need a change?"
 
 \section pktools_introduction Introduction
 
-pktools is a collection of programs written in C++ to perform operations image data with a focus on remote sensing applications. It heavily relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR.
+pktools is a collection of programs written in C++ for image processing with a focus on remote sensing applications. It relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR.
 
 All utilities in pktools use command line options and have a built in help
 
 - use the `-h` option to get help
 - pktools ALWAYS use -i for input and -o for output (unlike GDAL utilities that commonly use last argument as output and second but last argument as input)
 
-Check the code statistics on http://www.ohloh.net/p/pktools
+Check the code <a href="https://www.openhub.net/p/pktools">statistics</a>
 
 \section pktools_license License
 
@@ -26,9 +27,9 @@ See http://www.gnu.org/licenses for more details
 
 \section pktools_download Download
 
-You can download the latest release from Savannah https://savannah.nongnu.org/projects/pktools
-- from http://download.savannah.gnu.org/releases/pktools/ (tar ball)
-- or by getting a copy of the Git repository
+You can <a href="http://download.savannah.gnu.org/releases/pktools/">download</a> the latest release from <a href="https://savannah.nongnu.org/projects/pktools">Savannah</a>
+
+Or you can get a copy from the Git repository
 
 ~~~
 git clone git://git.savannah.nongnu.org/pktools.git
@@ -38,29 +39,31 @@ git clone git://git.savannah.nongnu.org/pktools.git
 
 Please refer to pktools as: http://pktools.nongnu.org (Pieter Kempeneers)
 
+Or use the following reference to the book on <a href="http://www.springer.com/earth+sciences+and+geography/earth+system+sciences/book/978-3-319-01823-2">Open Source Geospatial Tools</a>
+
 contact: kempenep at gmail.com
 
 \section pktools_installation Installation
 
-\subsection Installation script for Debian based distributions
+\subsection install_debian Installation script for Debian based distributions
 
-Users working with Debian based distributions (e.g., Ubuntu) can download install_pktools.sh from http://download.savannah.gnu.org/releases/pktools/. This script will automatically download the latest release of pktools and dependencies. You need an internet connection when running the script (as root or sudo):
+Users working with Debian based distributions (e.g., Ubuntu) can download <a href="http://download.savannah.gnu.org/releases/pktools/install_pktools.sh">install_pktools.sh</a>. This script will automatically download the latest release of pktools and dependencies. You need an internet connection when running the script (as root or sudo):
 
 \code
 sudo bash install_pktools.sh
 \endcode
 
-\subsection Manual installation
+\subsection install_manual Manual installation
 
-For a manual installation, download the latest release pktools-latest.tar.gz from http://download.savannah.gnu.org/releases/pktools/ 
+For a manual installation, download the <a href="http://download.savannah.gnu.org/releases/pktools/pktools-latest.tar.gz">latest</a> release from <a href="http://download.savannah.gnu.org/releases/pktools/">Savannah</a>
 
-Optionally: check the release md5sum to ensure originality.
+Optionally: check the release <a href="http://download.savannah.gnu.org/releases/pktools/pktools-latest.md5">md5sum</a> to ensure originality.
 
 \code 
 md5sum pktools-latest.tar.gz
 \endcode
 
-The result should be identical to the content of the corresponding md5 file you can also download.
+The result should be identical to the content of the corresponding md5 file you downloaded.
 
 Unpack the tar zip file
 
@@ -77,7 +80,7 @@ sudo make install
 sudo ldconfig
 \endcode
 
-\subsection pktools_installation_required Required packages (required)
+\subsection pktools_installation_required Required dependences
 
 packages to install before pktools
    - g++
@@ -89,7 +92,7 @@ packages to install before pktools
    Example on how to install required packages in Debian based system (using apt-get):
   - sudo apt-get install g++ make libgdal-dev libgsl0-dev libarmadillo-dev
 
-\subsection pktools_installation_optional Optional packages
+\subsection pktools_installation_optional Optional dependences
 
 <b>To enable program \ref pkoptsvm</b>
 
@@ -175,3 +178,6 @@ packages to install before pktools
    sudo make install
    sudo ldconfig
    \endcode
+
+\section pktools_bugs Bug reports and change requests
+Please write a <a href="https://savannah.nongnu.org/bugs/?func=additem&group=pktools">ticket</a> in savannah to report bugs and request changes. You will automatically be informed about the ticket status and this helps me to keep track of the bugs/changes.
