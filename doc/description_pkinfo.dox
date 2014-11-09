@@ -1,0 +1,10 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkinfo -i input [options]
+
+</code>
+
+\section pkinfo_description Description
+
+The utility pkinfo retrieves basic information about a raster data set. An important difference with gdalinfo is that pkinfo only reports the information that is requested via the corresponding command line option, whereas gdalinfo provides all basic information at once. The reported information is in a format that can be used as input for other pktools utilities. This mechanism facilitates command substitution in the bash scripting language. Some examples are given in later in this section.

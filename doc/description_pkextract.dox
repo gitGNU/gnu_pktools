@@ -1,0 +1,19 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output 
+
+  Options: [-ln layer]* [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-polygon] [-b band]* [-r rule]
+
+  Advanced options:
+       [-bndnodata band -srcnodata value]* [-tp threshold] [-test testSample] [-bn attribute] [-cn attribute] [-geo value] [-down value] [-bo value [-circ]]
+</code>
+
+\section pkextract_description Description
+
+The utility pkextract extracts pixel values from an input raster dataset, based on the locations you provide via a sample file. Alternatively, a random sample or systematic grid of points can also be extracted. The sample can be a vector file with points or polygons. In the case of polygons, you can either extract the values for all raster pixels that are covered by the polygons, or extract a single value for each polygon such as the centroid, mean, median, etc. As output, a new copy of the vector file is created with an extra attribute for the extracted pixel value. For each raster band in the input image, a separate attribute is created. For instance, if the raster dataset contains three bands, three attributes are created (b0, b1 and b2). 
+
+Instead of a vector dataset, the sample can also be a raster dataset with categorical values. The typical use case is a land cover map that overlaps the input raster dataset. The utility then extracts pixels from the input raster for the respective land cover classes. To select a random subset of the sample raster dataset you can set the threshold option -t with a percentage value. 
+
+A typical usage of pkextract is to prepare a training sample for one of the classifiers implemented in pktools.
+

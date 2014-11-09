@@ -1,0 +1,16 @@
+## SYNOPSIS
+
+<code>
+  Usage: pksvm -t training [-i input -o output] [-cv value]
+
+  Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-g gamma] [-cc cost] [-m filename [-msknodata value]*] [-nodata value]
+
+  Advanced options:
+       [-b band] [-bs band] [-be band] [-balance size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [-svmt type] [-kt type] [-kd value]  [-c0 value] [-nu value] [-eloss value] [-cache value] [-etol value] [-shrink]
+</code>
+
+\section pksvm_description Description
+
+The utility pksvm implements a support vector machine (SVM) to solve a supervised classification problem. The implementation is based on the open source C++ library libSVM (http://www.csie.ntu.edu.tw/~cjlin/libsvm). 
+Both raster and vector files are supported as input. The output will contain the classification result, either in raster or vector format, corresponding to the format of the input. A training sample must be provided as an OGR vector dataset that contains the class labels and the features for each training point. The point locations are not considered in the training step. You can use the same training sample for classifying different images, provided the number of bands of the images are identical. Use the utility \ref pkextract "pkextract" to create a suitable training sample, based on a sample of points or polygons. For raster output maps you can attach a color table using the option -ct.
+

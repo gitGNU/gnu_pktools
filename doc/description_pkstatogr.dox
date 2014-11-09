@@ -1,0 +1,11 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkstatogr -i input 
+
+  Options: [-ln layer]* [-n attribute]* [srcnodata]* [src_min] [src_max] [-s] [-mm] [-min] [-max] [-mean] [-median] [-stdev] [-hist] [-nbin] [-rel] [-kde]
+</code>
+
+\section pkstatogr_description Description
+
+The utility pkstatogr calculates basic statistics on attributes of a vector file. Examples of the basic statistics include: minimum, maximum, median, mean and standard deviation. Histograms (in percentage or absolute values) can also be calculated. The attribute of interest can be selected using the option -n|--fname. Values defined by the -nodata option, or not withing the limits set by the options -src_min and -src_max are ignored for the statistics.

@@ -1,0 +1,16 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkoptsvm -t training
+
+  Options: [-cc startvalue -cc endvalue] [-g startvalue -g endvalue] [-stepcc stepsize] [-stepg stepsize]
+
+  Advanced options:
+</code>
+
+\section pkoptsvm_description Description
+
+The support vector machine depends on several parameters. Ideally, these parameters should be optimized for each classification problem. In case of a radial basis kernel function, two important parameters are \em{cost} and \em{gamma}. The utility pkoptsvm can optimize these two parameters, based on an accuracy assessment (the Kappa value). If an input test set (-i) is provided, it is used for the accuracy assessment. If not, the accuracy assessment is based on a cross validation (-cv) of the training sample.
+
+The optimization routine uses a grid search. The initial and final values of the parameters can be set with -cc startvalue -cc endvalue and -g startvalue -g endvalue for cost and gamma respectively. The search uses a multiplicative step for iterating the parameters (set with the options -stepcc and -stepg). An often used approach is to define a relatively large multiplicative step first (e.g 10) to obtain an initial estimate for both parameters. The estimate can then be optimized by defining a smaller step (>1) with constrained start and end values for the parameters cost and gamma.
+

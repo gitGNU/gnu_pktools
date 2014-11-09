@@ -1,0 +1,14 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkcomposite -i input [-i input]* -o output 
+
+  Options: [-b band]* [-dx xres] [-dy yres] [-e vector] [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-cr rule] [-cb band] [-srcnodata value] [-bndnodata band] [-min value] [-max value] [-dstnodata value] [-r resampling_method] [-ot {Byte / Int16 / UInt16 / UInt32 / Int32 / Float32 / Float64 / CInt16 / CInt32 / CFloat32 / CFloat64}] [-of format] [-co NAME=VALUE]* [-a_srs epsg:number]
+
+  Advanced options:
+       [-file] [-w weight]* [-c class]* [-ct colortable] [-d description]
+</code>
+
+\section pkcomposite_description Description
+
+The utility pkcomposite can be used to \em{mosaic} and \em{composite} multiple (georeferenced) raster datasets. A mosaic can merge images with different geographical extents into a single larger image. Compositing resolves the overlapping pixels according to some rule (e.g, the median of all overlapping pixels). This utility is complementary to GDAL, which currently does not support a composite step. Input datasets can have different bounding boxes and spatial resolutionsresolution.
