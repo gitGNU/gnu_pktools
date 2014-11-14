@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
 {
   Optionpk<std::string> input_opt("i","input","input image file","");
   Optionpk<string> output_opt("o", "output", "Output ascii file (Default is empty: use stdout", "");
-  Optionpk<string> otype_opt("ot", "otype", "Data type for output ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string> oformat_opt("of", "oformat", "Output format (matrix form or list (x,y,z) form. Default is matrix form", "matrix");
   Optionpk<int> band_opt("b", "band", "band index to crop");
   Optionpk<string> extent_opt("e", "extent", "get boundary from extent from polygons in vector file", "");
@@ -56,7 +55,6 @@ int main(int argc, char *argv[])
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
-    otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);

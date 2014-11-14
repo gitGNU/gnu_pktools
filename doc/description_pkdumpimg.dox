@@ -1,0 +1,16 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkdumpimg -i input.txt [-o output]
+
+  
+  Options: [-of matrix | line] [-b band] [-e vector | -ulx value -uly value -lrx value -lry value]
+
+  Advanced options: [-dx value -dy value] [-r resampling] -srcnodata value -dstnodata value
+
+</code>
+
+\section pkdumpimg_description Description
+
+The utility pkdumpimg dumps the content of a raster dataset to (standard) output (screen or filename). The default is to dump the output in matrix format. Use -of line to dump each pixel value on a separate line, preceded by its position (x and y value). You can specify a bounding box to dump with either the extent of an OGR vector dataset or via the options -ulx -uly -lrx and -lry.
+
