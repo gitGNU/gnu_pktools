@@ -35,7 +35,6 @@ int main(int argc, char *argv[])
   Optionpk<bool> polygon_opt("l", "line", "create OGRPolygon as geometry instead of points.  Fields are taken from first point and polygon is automatically closed (no need to repeat first point at last line). (false: use OGRPoint)", false);
   Optionpk<string> fname_opt("n", "name", "Field names for the columns in the input ascii file");
   Optionpk<string> ftype_opt("ot", "ot", "Field type (Real, Integer, String) for each of the fields as defined by name","Real");
-  Optionpk<string> itype_opt("of", "of", "image type string", "ESRI Shapefile");
   Optionpk<string> projection_opt("a_srs", "a_srs", "Override the projection for the output file, use epsg:<code> or Wkt string", "epsg:4326");
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
   Optionpk<int> verbose_opt("v", "verbose", "verbose (0)", 0);
@@ -50,7 +49,6 @@ int main(int argc, char *argv[])
     polygon_opt.retrieveOption(argc,argv);
     fname_opt.retrieveOption(argc,argv);
     ftype_opt.retrieveOption(argc,argv);
-    itype_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
     fs_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);

@@ -1,0 +1,14 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkascii2ogr -i input.txt -o output
+
+  
+  Options: [-f OGRformat] [-x col] [-y col] [--line] [-n fieldname -ot type]* [-fs separator]
+
+</code>
+
+\section pkascii2ogr_description Description
+
+Poor man's utility to create a vector dataset (points or single polygon) from an ASCII textfile. A better alternative is to use <a href="http://www.gdal.org/drv_vrt.html">virtual vector datasets</a>. Specify the position of the vertices (x and y) in the columns defined by the options (-x -y), starting from 0. The default is to use the first (-dx 0) and second (-dx 1) columns for x and y respectvely. Specify the names and types of the remaining columns in your input file via the option pairs -n and -ot respectively. The default field separator is space.
+

@@ -1,0 +1,15 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkcreatect -i input.txt -o output [-ct colortable | -min value -max value]
+
+  
+  Options: [--grey] [-of GDALformat] [-co option]* [-d description]
+
+  Advanced options: [--legend filename [--dim cols --dim rows]] 
+</code>
+
+\section pkascii2ogr_description Description
+
+Utility to include a color table to a raster dataset. You can either define an existing color table (ASCII text file) with the option -ct or define a minimum (-min) and maximum (-max) value.
+

@@ -1,0 +1,15 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkdsm2shadow -i input.txt -o output [-sza angle] [-saa angle]	
+
+  
+  Options: [-f value] [-ot type] [-of GDALformat] [-ct filename] [-co option]* 
+
+  Advanced options: [--scale value] [--offset value]
+</code>
+
+\section pkdsm2shadow_description Description
+
+Utility to create a binary shadow mask from a digital surface model, based on Sun zenith (-sza) and azimuth angles (-saa).
+

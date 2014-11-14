@@ -1,5 +1,5 @@
 /**********************************************************************
-pkfilterascii.cc: program to filter data in ASCII file (spectral respons function, dwt)
+pkfilterascii.cc: program to filter data in an ASCII file
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
