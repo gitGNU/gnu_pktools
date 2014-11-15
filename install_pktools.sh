@@ -2,6 +2,9 @@
 # install_pktools.sh script to install pktools on a debian based Linux distro (e.g., Ubuntu)
 # Copyright (C) 2014 Pieter Kempeneers
 #
+# Basic usage: bash install_pktools.sh
+# Advanced usage: bash install_pktools.sh [--enable-las] [--enable-nlopt] [--enable-fann]
+#
 # pktools is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
