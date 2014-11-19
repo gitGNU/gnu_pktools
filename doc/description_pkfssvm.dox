@@ -1,9 +1,9 @@
 ## SYNOPSIS
 
 <code>
-  Usage: pkfssvm -t training
+  Usage: pkfssvm -t training -n number
 
-  Options: [-n number]
+  Options:
 
   Advanced options:
 </code>

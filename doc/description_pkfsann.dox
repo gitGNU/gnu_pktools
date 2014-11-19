@@ -1,0 +1,15 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkfsann -t training -n number
+
+  Options:
+
+  Advanced options:
+</code>
+
+\section pkfsann_description Description
+
+Classification problems dealing with high dimensional input data can be challenging due to the Hughes phenomenon. Hyperspectral data, for instance, can have hundreds of spectral bands and require special attention when being classified. In particular when limited training data are available, the classification of such data can be problematic without reducing the dimension.
+
+The utility pkfsann implements a number of feature selection techniques, among which a sequential floating forward search (SFFS). Also consider the SVM classifier implemented in pksvm, which has been shown to be more robust to this type of problem than others.
