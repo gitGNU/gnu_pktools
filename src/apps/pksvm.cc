@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> random_opt("random", "random", "Randomize training data for balancing and bagging", true, 2);
   Optionpk<int> minSize_opt("min", "min", "If number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
   Optionpk<short> band_opt("b", "band", "Band index (starting from 0, either use band option or use start to end)");
-  Optionpk<double> bstart_opt("bs", "bstart", "Start band sequence number",0); 
-  Optionpk<double> bend_opt("be", "bend", "End band sequence number (set to 0 to include all bands)", 0); 
+  Optionpk<double> bstart_opt("s", "start", "Start band sequence number",0); 
+  Optionpk<double> bend_opt("e", "end", "End band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<double> offset_opt("\0", "offset", "Offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "Scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<double> priors_opt("prior", "prior", "Prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation)", 0.0); 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
   // Optionpk<bool> weight_opt("wi", "wi", "Set the parameter C of class i to weight*C, for C_SVC",true);
   Optionpk<unsigned short> comb_opt("comb", "comb", "How to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option.",0); 
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations", 1);
-  Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
+  Optionpk<int> bagSize_opt("bagsize", "bagsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "Output for each individual bootstrap aggregation");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
@@ -467,7 +467,8 @@ int main(int argc, char *argv[])
       int index=0;
       if(bagSize_opt[iclass]<100)
         random_shuffle(trainingPixels[iclass].begin(),trainingPixels[iclass].end());
-      
+      if(verbose_opt[0]>1)
+	std::cout << "nctraining (class " << iclass << "): " << nctraining << std::endl;
       trainingFeatures[iclass].resize(nctraining);
       for(int isample=0;isample<nctraining;++isample){
         //scale pixel values according to scale and offset!!!
@@ -480,9 +481,13 @@ int main(int argc, char *argv[])
     }
     
     unsigned int nFeatures=trainingFeatures[0][0].size();
+    if(verbose_opt[0]>=1)
+      std::cout << "number of features: " << nFeatures << std::endl;
     unsigned int ntraining=0;
     for(short iclass=0;iclass<nclass;++iclass)
       ntraining+=trainingFeatures[iclass].size();
+    if(verbose_opt[0]>=1)
+      std::cout << "training size over all classes: " << ntraining << std::endl;
 
     prob[ibag].l=ntraining;
     prob[ibag].y = Malloc(double,prob[ibag].l);
@@ -529,7 +534,11 @@ int main(int argc, char *argv[])
     if(verbose_opt[0])
       std::cout << "parameters ok, training" << std::endl;
     svm[ibag]=svm_train(&prob[ibag],&param[ibag]);
+    if(verbose_opt[0]>1)
+      std::cout << "SVM is now trained" << std::endl;
     if(cv_opt[0]>1){
+      if(verbose_opt[0]>1)
+	std::cout << "Cross validating" << std::endl;
       double *target = Malloc(double,prob[ibag].l);
       svm_cross_validation(&prob[ibag],&param[ibag],cv_opt[0],target);
       assert(param[ibag].svm_type != EPSILON_SVR&&param[ibag].svm_type != NU_SVR);//only for regression
@@ -544,8 +553,6 @@ int main(int argc, char *argv[])
       }
       free(target);
     }
-    if(verbose_opt[0]>1)
-      std::cout << "SVM is now trained" << std::endl;
     // *NOTE* Because svm_model contains pointers to svm_problem, you can
     // not free the memory used by svm_problem if you are still using the
     // svm_model produced by svm_train(). 

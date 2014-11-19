@@ -1,5 +1,5 @@
 /**********************************************************************
-pkinfo.cc: program to retrieve information from raster images
+pkinfo.cc: Report basic information from raster datasets (similar to gdalinfo)
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools

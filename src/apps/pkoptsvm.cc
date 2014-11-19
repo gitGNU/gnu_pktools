@@ -267,8 +267,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<double> bstart_opt("bs", "bstart", "start band sequence number",0); 
-  Optionpk<double> bend_opt("be", "bend", "bend band sequence number (set to 0 to include all bands)", 0); 
+  Optionpk<double> bstart_opt("s", "start", "start band sequence number",0); 
+  Optionpk<double> bend_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<float> gamma_opt("g", "gamma", "min max boundaries for gamma in kernel function (optional: initial value)",0);

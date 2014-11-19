@@ -107,7 +107,7 @@ public:
   template<class T> void dwtCut(Vector2d<T>& data, const std::string& wavelet_type, int family, double cut);
   void majorVoting(const std::string& inputFilename, const std::string& outputFilename,int dim=0,const std::vector<int> &prior=std::vector<int>());
   /* void homogeneousSpatial(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false, int noValue=0); */
-  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=2, bool disc=false);
+  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, bool disc=false);
   void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
   void mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity=true, short down=1, bool verbose=false);
   void mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity=true, short down=1, bool verbose=false);

@@ -1,5 +1,5 @@
 /**********************************************************************
-pkfilterdem.cc: program to post filter raster images created with pklas2img
+pkfilterdem.cc: Filter digital elevation model raster datasets
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools

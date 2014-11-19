@@ -1,5 +1,5 @@
 /**********************************************************************
-pklas2img.cc: program to create (e.g., DEM) raster image from las files
+pklas2img.cc: Rasterize LAS/LAZ point clouds with filtering/compositing options
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
