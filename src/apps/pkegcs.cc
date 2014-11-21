@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short>  band_opt("b", "band", "Band specific information", 0);
   Optionpk<std::string> cell2bb_opt("c2b","cell2bb","convert cell code to geo coordinates of boundingbox (e.g. 32-AB)","");
   Optionpk<std::string> cell2mid_opt("c2m","cell2mid","convert cell code to centre in geo coordinates (e.g. 32-AB)","");
-  Optionpk<bool> refpixel_opt("\0", "ref", "get reference pixel (lower left corner of centre of gravity pixel)", false);
+  Optionpk<bool> refpixel_opt("ref", "ref", "get reference pixel (lower left corner of centre of gravity pixel)", false);
   Optionpk<double> maskValue_opt("m", "mask", "mask value(s) for no data to calculate reference pixel in image",0);
   Optionpk<int> dx_opt("dx","dx","resolution",250);
   Optionpk<bool> geo2cell_opt("g2c", "geo2cell", "get cell code for coordinates in x_opt and y_opt given the resolution in dx_opt", false);
