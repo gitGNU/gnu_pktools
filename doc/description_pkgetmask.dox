@@ -1,0 +1,14 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkgetmask -i input -o output
+  
+  Options: [-min value]* [-max value]* [-data value]* [-nodata value]*
+ 
+  Advanced options: [-b band]* [-operator AND|OR] [-ot type] [-of format] [-co option]* [-ct table] 
+
+</code>
+
+\section pkgetmask_description Description
+
+The utility pkgetmask creates a mask raster dataset from an input raster dataset. Values smaller than the minimum value (-min) or larger than the maximum value (-max) will result in a -nodata value in the mask.
