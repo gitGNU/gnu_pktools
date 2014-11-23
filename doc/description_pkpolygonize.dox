@@ -1,0 +1,12 @@
+## SYNOPSIS
+
+<code>
+  Usage: pkpolygonize -i input [-m mask] -o output 
+  
+  Options: [-f format] [-b band] [-n fieldname] [-nodata value]
+
+</code>
+
+\section pkpolygonize_description Description
+
+The utility pkpolygonize converts a raster to a vector dataset. All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use the same input file as mask to remove the background polygon (recommended).

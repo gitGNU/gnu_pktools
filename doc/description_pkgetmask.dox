@@ -5,7 +5,7 @@
   
   Options: [-min value]* [-max value]* [-data value]* [-nodata value]*
  
-  Advanced options: [-b band]* [-operator AND|OR] [-ot type] [-of format] [-co option]* [-ct table] 
+  Advanced options: [-b band]* [--operator AND|OR] [-ot type] [-of format] [-co option]* [-ct table] 
 
 </code>
 

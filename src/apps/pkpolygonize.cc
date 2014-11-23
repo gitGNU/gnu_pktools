@@ -41,7 +41,7 @@ int main(int argc,char **argv) {
   Optionpk<string> mask_opt("m", "mask", "All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use input file as mask to remove background polygon! ");
   Optionpk<double> nodata_opt("nodata", "nodata", "Disgard this nodata value when creating polygons.");
   Optionpk<string> output_opt("o", "output", "Output vector file");
-  Optionpk<string> ogrformat_opt("f", "f", "Output OGR file format","ESRI Shapefile");
+  Optionpk<string> ogrformat_opt("f", "f", "Output OGR file format","SQLite");
   Optionpk<int> band_opt("b", "band", "the band to be used from input file", 0);
   Optionpk<string> fname_opt("n", "name", "the field name of the output layer", "DN");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);

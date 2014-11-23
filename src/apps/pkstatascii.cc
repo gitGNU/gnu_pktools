@@ -1,5 +1,5 @@
 /**********************************************************************
-pkstatascii.cc: program to calculate basic statistics from raster image
+pkstatascii.cc: program to calculate basic statistics from text file
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools

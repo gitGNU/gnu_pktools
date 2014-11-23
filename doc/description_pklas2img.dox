@@ -1,0 +1,14 @@
+## SYNOPSIS
+
+<code>
+  Usage: pklas2img -i lasfile -o output 
+  
+  Options: [-n attribute] [-comp method] [-fir type] [-a_srs] [-ulx value -uly value -lrx value -lry value] [-dx value -dy value] [-ot type] [-of format] [-ret value]* [-class number]* 
+
+  Advanced options: [-nbin value] [-nodata value] [-co option]* [-ct colortable] 
+
+</code>
+
+\section pklas2img_description Description
+
+The utility pklas2img converts a las/laz point cloud into a gridded raster dataset. The implementation is based on <a href="www.liblas.org">liblas</a> API. You can define the bounding box, grid cell size and spatial reference set. The composite rule for multiple returns within a single grid cell can be set with the option -comp. The default attribute is z (heiht), but can also be intensity (if available), the return number (-n return) or the total number of returns in that grid cell (-n nreturn). To select specific returns only, set the option -fir (first, last, single, multiple, or all).
