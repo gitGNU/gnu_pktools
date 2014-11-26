@@ -61,7 +61,7 @@ add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
 apt-get update
 
 #Install required pre-requisites for pktools
-apt-get -y install g++ make libgdal-dev libgsl0-dev libarmadillo-dev
+apt-get -y install g++ make gdal-bin libgdal-dev libgsl0-dev libarmadillo-dev
 
 if [ "${FANN}" -eq 1 ];then
     #Install optional pre-requisites for Artificial Neural Network support
