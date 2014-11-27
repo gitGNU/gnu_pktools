@@ -51,6 +51,13 @@ void filter::Filter::setTaps(const vector<double> &taps, bool normalize)
   assert(m_taps.size()%2);
 }
 
+int filter::Filter::pushNoDataValue(double noDataValue)
+{
+  if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
+    m_noDataValues.push_back(noDataValue);
+  return(m_noDataValues.size());
+}
+
 void filter::Filter::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
   const char* pszMessage;
   void* pProgressArg=NULL;
@@ -338,6 +345,7 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
   assert(output.nrOfCol()==input.nrOfCol());
   vector<double> lineOutput(output.nrOfCol());
   statfactory::StatFactory stat;
+  stat.setNoDataValues(m_noDataValues);
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;

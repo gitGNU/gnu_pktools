@@ -210,149 +210,238 @@ private:
 
 template<class T> inline typename std::vector<T>::const_iterator StatFactory::mymin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
+  bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt=begin;
-  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
-    if(!isNoData(*it))
+  for(typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(!isNoData(*it)){
+      isValid=true;
       if(*tmpIt>*it)
 	tmpIt=it;
+    }
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline typename std::vector<T>::iterator StatFactory::mymin(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const
 {
+  bool isValid=false;
   typename std::vector<T>::iterator tmpIt=begin;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
-    if(!isNoData(*it))
+    if(!isNoData(*it)){
+      isValid=true;
       if(*tmpIt>*it)
 	tmpIt=it;
+    }
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline  typename std::vector<T>::const_iterator StatFactory::mymin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T minConstraint) const
 {
+  bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt=v.end();
   T minValue=minConstraint;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if((minConstraint<=*it)&&(*it<=minValue)){
       tmpIt=it;
       minValue=*it;
     }
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline typename std::vector<T>::iterator StatFactory::mymin(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, T minConstraint) const
 {
+  bool isValid=false;
   typename std::vector<T>::iterator tmpIt=v.end();
   T minValue=minConstraint;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if((minConstraint<=*it)&&(*it<=minValue)){
       tmpIt=it;
       minValue=*it;
     }
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline typename std::vector<T>::const_iterator StatFactory::mymax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
+  bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt=begin;
   for (typename std::vector<T>::iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(*tmpIt<*it)
       tmpIt=it;
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline typename std::vector<T>::iterator StatFactory::mymax(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const
 {
+  bool isValid=false;
   typename std::vector<T>::iterator tmpIt=begin;
   for (typename std::vector<T>::iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(*tmpIt<*it)
       tmpIt=it;
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else
+    return end;
 }
 
 template<class T> inline typename std::vector<T>::const_iterator StatFactory::mymax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T maxConstraint) const
 {
+  bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt=v.end();
   T maxValue=maxConstraint;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if((maxValue<=*it)&&(*it<=maxConstraint)){
       tmpIt=it;
       maxValue=*it;
     }
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else  
+    return end;
 }
 
 template<class T> inline typename std::vector<T>::iterator StatFactory::mymax(const std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end, T maxConstraint) const
 {
+  bool isValid=false;
   typename std::vector<T>::iterator tmpIt=v.end();
   T maxValue=maxConstraint;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if((maxValue<=*it)&&(*it<=maxConstraint)){
       tmpIt=it;
       maxValue=*it;
     }
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else  
+    return end;
 }
-
-
-
 
 template<class T> inline T StatFactory::mymin(const std::vector<T>& v) const
 {
+  bool isValid=false;
   T minValue=*(v.begin());
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(minValue>*it)
       minValue=*it;
   }
-  return minValue;
+  if(isValid)
+    return minValue;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
  template<class T> inline T StatFactory::mymin(const std::vector<T>& v, T minConstraint) const
 {
+  bool isValid=false;
   T minValue=minConstraint;
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
+    if(isNoData(*it))
+      continue;
+    isValid=true;
     if((minConstraint<=*it)&&(*it<=minValue))
       minValue=*it;
   }
-  return minValue;
+  if(isValid)
+    return minValue;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline T StatFactory::mymax(const std::vector<T>& v) const
 {
+  bool isValid=false;
   T maxValue=*(v.begin());
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(maxValue<*it)
       maxValue=*it;
   }
-  return maxValue;
+  if(isValid)
+    return maxValue;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline T StatFactory::mymax(const std::vector<T>& v, T maxConstraint) const
 {
+  bool isValid=false;
   T maxValue=maxConstraint;
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(isNoData(*it))
@@ -360,56 +449,95 @@ template<class T> inline T StatFactory::mymax(const std::vector<T>& v, T maxCons
     if((maxValue<=*it)&&(*it<=maxConstraint))
       maxValue=*it;
   }
-  return maxValue;
+  if(isValid)
+    return maxValue;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
+  bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt=begin;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(abs(*tmpIt)<abs(*it))
       tmpIt=it;
   }
-  return tmpIt;
+  if(isValid)
+    return tmpIt;
+  else
+    return end;
 }
 
 template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
+  bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt=begin;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(abs(*tmpIt)>abs(*it))
       tmpIt=it;
   }
+  if(isValid)
+    return tmpIt;
+  else
+    return end;
 }
 
 template<class T> inline void StatFactory::minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const
 {
+  bool isValid=false;
   theMin=*begin;
   theMax=*begin;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(theMin>*it)
       theMin=*it;
     if(theMax<*it)
       theMax=*it;
   }
+  if(!isValid){
+    if(m_noDataValues.size()){
+      theMin=m_noDataValues[0];
+      theMax=m_noDataValues[0];
+    }
+    else{
+      std::string errorString="Error: no valid data found";
+      throw(errorString);
+    }
+  }
 }
 
 template<class T> inline T StatFactory::sum(const std::vector<T>& v) const
 {
+  bool isValid=false;
   typename std::vector<T>::const_iterator it;
   T tmpSum=0;
   for (it = v.begin(); it!= v.end(); ++it){
     if(isNoData(*it))
       continue;
+    isValid=true;
     tmpSum+=*it;
   }
-  return tmpSum;
+  if(isValid)
+    return tmpSum;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline double StatFactory::mean(const std::vector<T>& v) const
@@ -426,18 +554,24 @@ template<class T> inline double StatFactory::mean(const std::vector<T>& v) const
   }
   if(validSize)
     return static_cast<double>(tmpSum)/validSize;
-  else
-    return 0;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> inline void StatFactory::eraseNoData(std::vector<T>& v) const
 {
-  typename std::vector<T>::iterator it=v.begin();
-  while(it!=v.end()){
-    if(isNoData(*it))
-      v.erase(it);
-    else
-      ++it;
+  if(m_noDataValues.size()){
+    typename std::vector<T>::iterator it=v.begin();
+    while(it!=v.end()){
+      if(isNoData(*it))
+	v.erase(it);
+      else
+	++it;
+    }
   }
 }
 
@@ -445,11 +579,19 @@ template<class T> T StatFactory::median(const std::vector<T>& v) const
 {
   std::vector<T> tmpV=v;
   eraseNoData(tmpV);
-  sort(tmpV.begin(),tmpV.end());
-  if(tmpV.size()%2)
-    return tmpV[tmpV.size()/2];
-  else
-    return 0.5*(tmpV[tmpV.size()/2-1]+tmpV[tmpV.size()/2]);
+  if(tmpV.size()){
+    sort(tmpV.begin(),tmpV.end());
+    if(tmpV.size()%2)
+      return tmpV[tmpV.size()/2];
+    else
+      return 0.5*(tmpV[tmpV.size()/2-1]+tmpV[tmpV.size()/2]);
+  }
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> double StatFactory::var(const std::vector<T>& v) const
@@ -470,17 +612,12 @@ template<class T> double StatFactory::var(const std::vector<T>& v) const
     m1/=validSize;
     return m2-m1*m1;
   }
-  else
-    return 0;
-  /* double v1=0; */
-  /* double m1=mean(v); */
-  /* double n=v.size(); */
-  /* assert(n>1); */
-  /* for (it = v.begin(); it!= v.end(); ++it) */
-  /*   v1+=(*it-m1)*(*it-m1); */
-  /* v1/=(n-1); */
-  /* assert(v1>=0); */
-  /* return v1; */
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> double StatFactory::moment(const std::vector<T>& v, int n) const
@@ -498,9 +635,12 @@ template<class T> double StatFactory::moment(const std::vector<T>& v, int n) con
   }
   if(validSize)
     return m/validSize;
-  else
-    return 0;
-  /* return m/v.size(); */
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
   //central moment
@@ -517,17 +657,25 @@ template<class T> double StatFactory::cmoment(const std::vector<T>& v, int n) co
     m+=pow((*it-m1),n);
     ++validSize;
   }
-  return m/validSize;
-  return m/v.size();
+  if(validSize)
+    return m/validSize;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T> double StatFactory::skewness(const std::vector<T>& v) const
 {
+  //todo: what if nodata value?
   return cmoment(v,3)/pow(var(v),1.5);
 }
 
 template<class T> double StatFactory::kurtosis(const std::vector<T>& v) const
 {
+  //todo: what if nodata value?
   double m2=cmoment(v,2);
   double m4=cmoment(v,4);
   return m4/m2/m2-3.0;
@@ -552,15 +700,14 @@ template<class T> void StatFactory::meanVar(const std::vector<T>& v, double& m1,
     m1/=validSize;
     v1=m2-m1*m1;
   }
-  /* typename std::vector<T>::const_iterator it; */
-  /* v1=0; */
-  /* m1=mean(v); */
-  /* double n=v.size(); */
-  /* assert(n>1); */
-  /* for (it = v.begin(); it!= v.end(); ++it) */
-  /*   v1+=(*(it)-m1)*(*(it)-m1); */
-  /* v1/=(n-1); */
-  /* assert(v1>=0); */
+  else if(m_noDataValues.size()){
+    m1=m_noDataValues[0];
+    v1=m_noDataValues[0];
+  }
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
 }
 
 template<class T1, class T2> void StatFactory::scale2byte(const std::vector<T1>& input, std::vector<T2>& output, unsigned char lbound,  unsigned char ubound) const
@@ -570,8 +717,10 @@ template<class T1, class T2> void StatFactory::scale2byte(const std::vector<T1>&
   T1 maximum=mymax(input);
   assert(maximum>minimum);
   double scale=(ubound-lbound)/(maximum-minimum);
-  for (int i=0;i<input.size();++i)
+  //todo: what if nodata value?
+  for (int i=0;i<input.size();++i){
     output[i]=scale*(input[i]-(minimum))+lbound;
+  }
 }
 
 template<class T> void  StatFactory::distribution(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<double>& output, int nbin, T &minimum, T &maximum, double sigma, const std::string &filename) const
@@ -594,11 +743,15 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
     throw(s.str());
   }
   assert(nbin);
-  assert(input.size());
+  if(!input.size()){
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
   if(output.size()!=nbin){
     output.resize(nbin);
     for(int i=0;i<nbin;output[i++]=0);
   }
+  bool isValid=false;
   typename std::vector<T>::const_iterator it;
   for(it=begin;it!=end;++it){
     if(*it<minimum)
@@ -607,6 +760,7 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
       continue;
     if(isNoData(*it))
       continue;
+    isValid=true;
     if(sigma>0){
       // minimum-=2*sigma;
       // maximum+=2*sigma;
@@ -632,7 +786,11 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
       //   ++output[static_cast<int>(static_cast<double>((*it)-minimum)/(maximum-minimum)*nbin)];
     }
   }
-  if(!filename.empty()){
+  if(!isValid){
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
+  else if(!filename.empty()){
     std::ofstream outputfile;
     outputfile.open(filename.c_str());
     if(!outputfile){
@@ -726,14 +884,11 @@ template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX
   }
 }
 
+//todo: what with nodata values?
 template<class T> void  StatFactory::percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin, T &minimum, T &maximum, const std::string &filename) const
 {
   if(maximum<=minimum)
     minmax(input,begin,end,minimum,maximum);
-  // if(!minimum)
-  //   minimum=*(min(input,begin,end));
-  // if(!maximum)
-  //   maximum=*(max(input,begin,end));
   assert(maximum>minimum);
   assert(nbin>1);
   assert(input.size());
@@ -757,7 +912,6 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
       ++vit;
     }
     if(inputBin.size()){
-      /* output[ibin]=median(inputBin); */
       output[ibin]=mymax(inputBin);
     }
   }
@@ -775,27 +929,6 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
   }
 }
 
-// template<class T> void  StatFactory::cumulative (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<int>& output, int nbin, T &minimum, T &maximum)
-// {
-//   assert(nbin>1);
-//   assert(input.size());
-//   distribution(input,output,nbin,minimum,maximum);
-//   for(std::vector<int>::iterator it=begin+1;it!=end;++it)
-//     *it+=*(it-1);
-//   if(!filename.empty()){
-//     std::ofstream outputfile;
-//     outputfile.open(filename.c_str());
-//     if(!outputfile){
-//       std::ostringstream s;
-//       s<<"error opening cumulative file , " << filename;
-//       throw(s.str());
-//     }
-//     for(int bin=0;bin<nbin;++bin)
-//       outputfile << (maximum-minimum)*bin/(nbin-1)+minimum << " " << static_cast<double>(output[bin])/input.size() << std::endl;
-//     outputfile.close();
-//   }
-// }
-
 template<class T> void StatFactory::signature(const std::vector<T>& input, double&k, double& alpha, double& beta, double e) const
 {
   double m1=moment(input,1);
@@ -803,6 +936,7 @@ template<class T> void StatFactory::signature(const std::vector<T>& input, doubl
   signature(m1,m2,k,alpha,beta,e);
 }
 
+//todo: what with nodata values?
 template<class T> void StatFactory::normalize(const std::vector<T>& input, std::vector<double>& output) const{
   double total=sum(input);
   if(total){
@@ -814,6 +948,7 @@ template<class T> void StatFactory::normalize(const std::vector<T>& input, std::
     output=input;
 }
 
+//todo: what with nodata values?
 template<class T> void StatFactory::normalize_pct(std::vector<T>& input) const{
   double total=sum(input);
   if(total){
@@ -828,6 +963,8 @@ template<class T> double StatFactory::rmse(const std::vector<T>& x, const std::v
   assert(x.size());
   double mse=0;
   for(int isample=0;isample<x.size();++isample){
+    if(isNoData(x[isample])||isNoData(y[isample]))
+       continue;
     double e=x[isample]-y[isample];
     mse+=e*e/x.size();
   }
@@ -843,6 +980,7 @@ template<class T> double StatFactory::correlation(const std::vector<T>& x, const
   meanVar(x,meanX,varX);
   meanVar(y,meanY,varY);
   double denom = sqrt(varX*varY);
+  bool isValid=false;
   if(denom){
     //Calculate the correlation series
     sXY = 0;
@@ -850,19 +988,31 @@ template<class T> double StatFactory::correlation(const std::vector<T>& x, const
       int j = i + delay;
       if (j < 0 || j >= y.size())
         continue;
+      else if(isNoData(x[i])||isNoData(y[j]))
+	continue;
       else{
+	isValid=true;
         assert(i>=0&&i<x.size());
         assert(j>=0&&j<y.size());
         sXY += (x[i] - meanX) * (y[j] - meanY);
       }
     }
-    double minSize=(x.size()<y.size())?x.size():y.size();
-    return(sXY / denom / (minSize-1));
+    if(isValid){
+      double minSize=(x.size()<y.size())?x.size():y.size();
+      return(sXY / denom / (minSize-1));
+    }
+    else if(m_noDataValues.size())
+      return m_noDataValues[0];
+    else{
+      std::string errorString="Error: no valid data found";
+      throw(errorString);
+    }
   }
   else
     return 0;
 }
 
+//todo: what if no valid data?
 template<class T> double StatFactory::cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const{
   z.clear();
   double sumCorrelation=0;
@@ -873,6 +1023,7 @@ template<class T> double StatFactory::cross_correlation(const std::vector<T>& x,
   return sumCorrelation;
 }
 
+//todo: nodata?
 template<class T> double StatFactory::linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
   assert(x.size()==y.size());
   assert(x.size());
@@ -884,6 +1035,7 @@ template<class T> double StatFactory::linear_regression(const std::vector<T>& x,
   return (1-sumsq/var(y)/(y.size()-1));
 }
 
+//todo: nodata?
 template<class T> double StatFactory::linear_regression_err(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
   assert(x.size()==y.size());
   assert(x.size());
@@ -898,6 +1050,7 @@ template<class T> double StatFactory::linear_regression_err(const std::vector<T>
 //alternatively: use GNU scientific library:
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
+//todo: nodata?
 template<class T> void StatFactory::interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose) const{
   assert(wavelengthIn.size());
   assert(input.size()==wavelengthIn.size());
@@ -969,6 +1122,7 @@ template<class T> void StatFactory::interpolateUp(const std::vector<double>& wav
 //   gsl_interp_accel_free(acc);
 // }
 
+//todo: nodata?
 template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin) const
 {
   assert(input.size());
@@ -990,6 +1144,7 @@ template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, s
   }
 }
 
+//todo: nodata?
 template<class T> void StatFactory::nearUp(const std::vector<T>& input, std::vector<T>& output) const
 {
   assert(input.size());
@@ -1006,6 +1161,7 @@ template<class T> void StatFactory::nearUp(const std::vector<T>& input, std::vec
   }
 }
 
+//todo: nodata?
 template<class T> void StatFactory::interpolateUp(double* input, int dim, std::vector<T>& output, int nbin)
 {
   assert(nbin);
@@ -1025,6 +1181,7 @@ template<class T> void StatFactory::interpolateUp(double* input, int dim, std::v
   }
 }
 
+//todo: nodata?
 template<class T> void StatFactory::interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin) const
 {
   assert(input.size());
@@ -1043,6 +1200,7 @@ template<class T> void StatFactory::interpolateDown(const std::vector<T>& input,
   }
 }
 
+//todo: nodata?
 template<class T> void StatFactory::interpolateDown(double* input, int dim, std::vector<T>& output, int nbin)
 {
   assert(nbin);

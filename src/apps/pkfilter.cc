@@ -251,6 +251,7 @@ int main(int argc,char **argv) {
     for(int imask=0;imask<nodata_opt.size();++imask){
       if(verbose_opt[0])
         std::cout<< nodata_opt[imask] << " ";
+      filter1d.pushNoDataValue(nodata_opt[imask]);
       filter2d.pushNoDataValue(nodata_opt[imask]);
     }
     if(verbose_opt[0])

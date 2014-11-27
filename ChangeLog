@@ -322,6 +322,13 @@ version 2.5.4
  - ImgWriteOgr
 	overwrite existing ogr datasets per default
 
+version 2.6.1
+ - API
+	Filter.h support nodata values
+ - pkfilter
+	Declare nodata option as double (see ticket #43500)
+	Support nodata values for filtering in spectral/temporal domain (see ticket #43713)
+
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
