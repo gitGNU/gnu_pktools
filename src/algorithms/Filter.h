@@ -65,6 +65,7 @@ public:
   void setTaps(const std::vector<double> &taps, bool normalize=true);
   void pushClass(short theClass=1){m_class.push_back(theClass);};
   void pushMask(short theMask=0){m_mask.push_back(theMask);};
+  int pushNoDataValue(double noDataValue=0);//{m_mask.push_back(theMask);};
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output);
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim);
   template<class T> void smooth(const std::vector<T>& input, std::vector<T>& output, short dim);
@@ -140,7 +141,8 @@ private:
   std::vector<double> m_taps;
   std::vector<short> m_class;
   std::vector<short> m_mask;
-   std::string m_padding;
+  std::string m_padding;
+  std::vector<double> m_noDataValues;
 };
 
 
@@ -424,7 +426,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   int i=0;
   //start: extend input by padding
   for(i=0;i<m_taps.size()/2;++i){
-    //todo:introduce nodata
+    //todo:introduce nodata?
     output[i]=m_taps[m_taps.size()/2]*input[i];
     for(int t=1;t<=m_taps.size()/2;++t){
       output[i]+=m_taps[m_taps.size()/2+t]*input[i+t];
@@ -460,9 +462,9 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   }
   //end: extend input by padding
   for(i=input.size()-m_taps.size()/2;i<input.size();++i){
-    //todo:introduce nodata
+    //todo:introduce nodata?
     output[i]=m_taps[m_taps.size()/2]*input[i];
-    //todo:introduce nodata
+    //todo:introduce nodata?
     for(int t=1;t<=m_taps.size()/2;++t){
       output[i]+=m_taps[m_taps.size()/2-t]*input[i-t];
       if(i+t<input.size())
@@ -497,6 +499,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   output.resize(input.size());
   int i=0;
   statfactory::StatFactory stat;
+  stat.setNoDataValues(m_noDataValues);
   std::vector<T> statBuffer;
   short binValue=0;
   //start: extend input by padding
