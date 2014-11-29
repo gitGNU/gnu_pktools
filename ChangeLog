@@ -328,7 +328,8 @@ version 2.6.1
  - pkfilter
 	Declare nodata option as double (see ticket #43500)
 	Support nodata values for filtering in spectral/temporal domain (see ticket #43713)
-
+ - pkextract
+	debug: Order of SetGeometry must be before SetFrom caused bad vector features (First SetGeometry, then SetFrom)
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)

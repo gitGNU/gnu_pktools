@@ -1025,9 +1025,9 @@ int main(int argc, char *argv[])
 		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		    if(verbose_opt[0]>1)
 		      std::cout << "copying fields from polygons " << std::endl;
+		    writePointFeature->SetGeometry(&thePoint);
 		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		      cerr << "writing feature failed" << std::endl;
-		    writePointFeature->SetGeometry(&thePoint);
 		    OGRGeometry *updateGeometry;
 		    updateGeometry = writePointFeature->GetGeometryRef();
 		    OGRPoint *poPoint = (OGRPoint *) updateGeometry;
@@ -1112,9 +1112,9 @@ int main(int argc, char *argv[])
 		// writePolygon.addRing(&writeRing);//already done
 		// writePolygon.closeRings();//already done
 		//write geometry of writePolygon
+		writePolygonFeature->SetGeometry(&writePolygon);
 		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		writePolygonFeature->SetGeometry(&writePolygon);
 		if(verbose_opt[0]>1)
 		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
@@ -1125,9 +1125,9 @@ int main(int argc, char *argv[])
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
+		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		OGRGeometry *updateGeometry;
 		updateGeometry = writeCentroidFeature->GetGeometryRef();
 		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
@@ -1475,6 +1475,8 @@ int main(int argc, char *argv[])
 		  validFeature=true;
 
 		writeRing.addPoint(&thePoint);//todo: check if I need to add all interior points to ring or do I need to check if point is on ring first?
+		// if(writeRing.isPointOnRingBoundary(&thePoint))
+		//    writeRing.addPoint(&thePoint);
 		if(verbose_opt[0]>1)
 		  std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
 		++nPointPolygon;
@@ -1493,9 +1495,9 @@ int main(int argc, char *argv[])
 		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		    if(verbose_opt[0]>1)
 		      std::cout << "copying fields from polygons " << std::endl;
+		    writePointFeature->SetGeometry(&thePoint);
 		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		      cerr << "writing feature failed" << std::endl;
-		    writePointFeature->SetGeometry(&thePoint);
 		    OGRGeometry *updateGeometry;
 		    updateGeometry = writePointFeature->GetGeometryRef();
 		    OGRPoint *poPoint = (OGRPoint *) updateGeometry;
@@ -1579,9 +1581,9 @@ int main(int argc, char *argv[])
 		writePolygon.addRing(&writeRing);
 		writePolygon.closeRings();
 		//write geometry of writePolygon
+		writePolygonFeature->SetGeometry(&writePolygon);
 		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		writePolygonFeature->SetGeometry(&writePolygon);
 		if(verbose_opt[0]>1)
 		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
@@ -1592,9 +1594,9 @@ int main(int argc, char *argv[])
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
+		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		OGRGeometry *updateGeometry;
 		updateGeometry = writeCentroidFeature->GetGeometryRef();
 		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
@@ -1931,6 +1933,8 @@ int main(int argc, char *argv[])
 		  validFeature=true;
 		
 		writeRing.addPoint(&thePoint);
+		// if(writeRing.isPointOnRingBoundary(&thePoint))
+		//    writeRing.addPoint(&thePoint);
 		if(verbose_opt[0]>1)
 		    std::cout << "point is on surface:" << thePoint.getX() << "," << thePoint.getY() << std::endl;
 		  ++nPointPolygon;
@@ -1949,9 +1953,9 @@ int main(int argc, char *argv[])
 			writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		      if(verbose_opt[0]>1)
 			std::cout << "copying fields from polygons " << std::endl;
+		      writePointFeature->SetGeometry(&thePoint);
 		      if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 			cerr << "writing feature failed" << std::endl;
-		      writePointFeature->SetGeometry(&thePoint);
 		      OGRGeometry *updateGeometry;
 		      updateGeometry = writePointFeature->GetGeometryRef();
 		      OGRPoint *poPoint = (OGRPoint *) updateGeometry;
@@ -2048,9 +2052,9 @@ int main(int argc, char *argv[])
 		writePolygon.addRing(&writeRing);
 		writePolygon.closeRings();
 		//write geometry of writePolygon
+		writePolygonFeature->SetGeometry(&writePolygon);
 		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		writePolygonFeature->SetGeometry(&writePolygon);
 		if(verbose_opt[0]>1)
 		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
@@ -2061,9 +2065,9 @@ int main(int argc, char *argv[])
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
+		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		OGRGeometry *updateGeometry;
 		updateGeometry = writeCentroidFeature->GetGeometryRef();
 		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
