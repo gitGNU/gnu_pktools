@@ -1057,19 +1057,26 @@ int main(int argc, char *argv[])
 		      windowValues[iband].push_back(value);
 		    }
 		    else{
-		      if(verbose_opt[0]>1)
-			std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
-		      switch( fieldType ){
-		      case OFTInteger:
-		      case OFTReal:
-			writePointFeature->SetField(fieldname_opt[iband].c_str(),value);
-			break;
-		      case OFTString:
-			writePointFeature->SetField(fieldname_opt[iband].c_str(),type2string<double>(value).c_str());
-			break;
-		      default://not supported
-			assert(0);
-			break;
+		      try{
+			if(verbose_opt[0]>1)
+			  std::cout << "set field " << fieldname_opt[iband] << " to " << value << std::endl;
+			switch( fieldType ){
+			case OFTInteger:
+			case OFTReal:
+			  writePointFeature->SetField(fieldname_opt[iband].c_str(),value);
+			  break;
+			case OFTString:
+			  writePointFeature->SetField(fieldname_opt[iband].c_str(),type2string<double>(value).c_str());
+			  break;
+			default://not supported
+			  std::string errorString="field type not supported";
+			  throw(errorString);
+			  break;
+			}
+		      }
+		      catch(std::string e){
+			std::cout << e << std::endl;
+			exit(1);
 		      }
 		    }//else
 		  }//iband
@@ -1091,7 +1098,7 @@ int main(int argc, char *argv[])
 			throw(errorString);
 		      }
 		    }
-		    //destroy feature
+ 		    //destroy feature
 		    OGRFeature::DestroyFeature( writePointFeature );
 		    ++ntotalvalid;
 		    if(verbose_opt[0])
@@ -1150,72 +1157,91 @@ int main(int argc, char *argv[])
 		      std::cout << "number of points in window: " << nPointWindow << std::endl;
 		    int theBand=(band_opt.size()) ? band_opt[index] : index;
 
-		    if(verbose_opt[0]>1)
-		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		    switch( fieldType ){
-		    case OFTInteger:
-		    case OFTReal:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      break;
-		    case OFTString:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      break;
-		    default://not supported
-		      std::cout << "field type not supported yet..." << std::endl;
-		      break;
+		    try{
+		      if(verbose_opt[0]>1)
+			std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		      switch( fieldType ){
+		      case OFTInteger:
+		      case OFTReal:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			break;
+		      case OFTString:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			break;
+		      default://not supported
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
+		    }
+		    catch(std::string e){
+		      std::cout << e << std::endl;
+		      exit(1);
 		    }
 		  }
 		}
 		else{//ruleMap[rule_opt[0]] is not rule::point
 		  double theValue=0;
 		  for(int index=0;index<windowValues.size();++index){
-		    if(windowValues[index].size()!=buffer_opt[0]*buffer_opt[0]){
-		      cerr << "Error: windowValues[index].size()=" << windowValues[index].size() << endl;
+		    try{
+		      if(windowValues[index].size()!=buffer_opt[0]*buffer_opt[0]){
+			std::string errorString="windowValues[index].size()!=buffer*buffer";
+			throw(errorString);
+		      }
+		      if(ruleMap[rule_opt[0]]==rule::mean)
+			theValue=stat.mean(windowValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::stdev)
+			theValue=sqrt(stat.var(windowValues[index]));
+		      else if(ruleMap[rule_opt[0]]==rule::median)
+			theValue=stat.median(windowValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::sum)
+			theValue=stat.sum(windowValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::max)
+			theValue=stat.mymax(windowValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::min)
+			theValue=stat.mymin(windowValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::centroid){
+			if(verbose_opt[0])
+			  std::cout << "number of points in polygon: " << nPointWindow << std::endl;
+			assert(nPointWindow<=1);
+			assert(nPointWindow==windowValues[index].size());
+			theValue=windowValues[index].back();
+		      }
+		      else{
+			std::string errorString="rule not supported";
+			throw(errorString);
+		      }
+		      if(verbose_opt[0]>1)
+			std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		      switch( fieldType ){
+		      case OFTInteger:
+		      case OFTReal:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			break;
+		      case OFTString:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			break;
+		      default://not supported
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
 		    }
-		    if(ruleMap[rule_opt[0]]==rule::mean)
-		      theValue=stat.mean(windowValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::stdev)
-		      theValue=sqrt(stat.var(windowValues[index]));
-		    else if(ruleMap[rule_opt[0]]==rule::median)
-		      theValue=stat.median(windowValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::sum)
-		      theValue=stat.sum(windowValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::max)
-		      theValue=stat.mymax(windowValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::min)
-		      theValue=stat.mymin(windowValues[index]);
-		    else{//rule::centroid
-		      if(verbose_opt[0])
-			std::cout << "number of points in polygon: " << nPointWindow << std::endl;
-		      assert(nPointWindow<=1);
-		      assert(nPointWindow==windowValues[index].size());
-		      theValue=windowValues[index].back();
-		    }
-		    if(verbose_opt[0]>1)
-		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		    switch( fieldType ){
-		    case OFTInteger:
-		    case OFTReal:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      break;
-		    case OFTString:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      break;
-		    default://not supported
-		      std::cout << "field type not supported yet..." << std::endl;
-		      break;
+		    catch(std::string e){
+		      std::cout << e << std::endl;
+		      exit(1);
 		    }
 		  }
 		}
@@ -1615,70 +1641,87 @@ int main(int argc, char *argv[])
 		    if(verbose_opt[0])
 		      std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		    int theBand=(band_opt.size()) ? band_opt[index] : index;
-
-		    if(verbose_opt[0]>1)
-		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		    switch( fieldType ){
-		    case OFTInteger:
-		    case OFTReal:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      break;
-		    case OFTString:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      break;
-		    default://not supported
-		      std::cout << "field type not supported yet..." << std::endl;
-		      break;
+		    try{
+		      if(verbose_opt[0]>1)
+			std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		      switch( fieldType ){
+		      case OFTInteger:
+		      case OFTReal:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			break;
+		      case OFTString:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			break;
+		      default://not supported
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
+		    }
+		    catch(std::string e){
+		      std::cout << e << std::endl;
+		      exit(1);
 		    }
 		  }
 		}
 		else{//ruleMap[rule_opt[0]] is not rule::point
 		  double theValue=0;
 		  for(int index=0;index<polyValues.size();++index){
-		    if(ruleMap[rule_opt[0]]==rule::mean)
-		      theValue=stat.mean(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::stdev)
-		      theValue=sqrt(stat.var(polyValues[index]));
-		    else if(ruleMap[rule_opt[0]]==rule::median)
-		      theValue=stat.median(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::sum)
-		      theValue=stat.sum(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::max)
-		      theValue=stat.mymax(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::min)
-		      theValue=stat.mymin(polyValues[index]);
-		    else{//rule::centroid
-		      if(verbose_opt[0])
-			std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		      assert(nPointPolygon<=1);
-		      assert(nPointPolygon==polyValues[index].size());
-		      theValue=polyValues[index].back();
+		    try{
+		      if(ruleMap[rule_opt[0]]==rule::mean)
+			theValue=stat.mean(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::stdev)
+			theValue=sqrt(stat.var(polyValues[index]));
+		      else if(ruleMap[rule_opt[0]]==rule::median)
+			theValue=stat.median(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::sum)
+			theValue=stat.sum(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::max)
+			theValue=stat.mymax(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::min)
+			theValue=stat.mymin(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::centroid){
+			if(verbose_opt[0])
+			  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+			assert(nPointPolygon<=1);
+			assert(nPointPolygon==polyValues[index].size());
+			theValue=polyValues[index].back();
+		      }
+		      else{
+			std::string errorString="rule not supported";
+			throw(errorString);
+		      }
+		      if(verbose_opt[0]>1)
+			std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		      switch( fieldType ){
+		      case OFTInteger:
+		      case OFTReal:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			break;
+		      case OFTString:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			break;
+		      default:
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
 		    }
-		    if(verbose_opt[0]>1)
-		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		    switch( fieldType ){
-		    case OFTInteger:
-		    case OFTReal:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      break;
-		    case OFTString:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      break;
-		    default://not supported
-		      std::cout << "field type not supported yet..." << std::endl;
-		      break;
+		    catch(std::string e){
+		      std::cout << e << std::endl;
+		      exit(1);
 		    }
 		  }
 		}
@@ -2085,120 +2128,87 @@ int main(int argc, char *argv[])
 		    if(verbose_opt[0])
 		      std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		    int theBand=(band_opt.size()) ? band_opt[index] : index;
-
-		    if(verbose_opt[0]>1)
-		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		    switch( fieldType ){
-		    case OFTInteger:
-		    case OFTReal:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      break;
-		    case OFTString:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      break;
-		      // case OFTRealList:{
-		      //   int fieldIndex;
-		      //   int nCount;
-		      //   const double *theList;
-		      //   vector<double> vectorList;
-		      //   if(polygon_opt[0]){
-		      //     fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      //     theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      //     vectorList.resize(nCount+1);
-		      //     for(int index=0;index<nCount;++index)
-		      // 	vectorList[index]=theList[index];
-		      //     vectorList[nCount]=theValue;
-		      //     writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		      //   }
-		      //   else{
-		      //     fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      //     theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      //     vectorList.resize(nCount+1);
-		      //     for(int index=0;index<nCount;++index)
-		      // 	vectorList[index]=theList[index];
-		      //     vectorList[nCount]=theValue;
-		      //     writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		      //   }
-		      //   break;
-		      // }
-		    default://not supported
-		      std::cout << "field type not supported yet..." << std::endl;
-		      break;
+		    try{
+		      if(verbose_opt[0]>1)
+			std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		      switch( fieldType ){
+		      case OFTInteger:
+		      case OFTReal:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			break;
+		      case OFTString:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			break;
+		      default://not supported
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
+		    }
+		    catch(std::string e){
+		      std::cout << e << std::endl;
+		      exit(1);
 		    }
 		  }
 		}
 		else{//ruleMap[rule_opt[0]] is not rule::point
 		  double theValue=0;
 		  for(int index=0;index<polyValues.size();++index){
-		    if(ruleMap[rule_opt[0]]==rule::mean)
-		      theValue=stat.mean(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::stdev)
-		      theValue=sqrt(stat.var(polyValues[index]));
-		    else if(ruleMap[rule_opt[0]]==rule::median)
-		      theValue=stat.median(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::sum)
-		      theValue=stat.sum(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::max)
-		      theValue=stat.mymax(polyValues[index]);
-		    else if(ruleMap[rule_opt[0]]==rule::min)
-		      theValue=stat.mymin(polyValues[index]);
-		    else{//rule::centroid
-		      if(verbose_opt[0])
-			std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		      assert(nPointPolygon<=1);
-		      assert(nPointPolygon==polyValues[index].size());
-		      theValue=polyValues[index].back();
+		    try{
+		      if(ruleMap[rule_opt[0]]==rule::mean)
+			theValue=stat.mean(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::stdev)
+			theValue=sqrt(stat.var(polyValues[index]));
+		      else if(ruleMap[rule_opt[0]]==rule::median)
+			theValue=stat.median(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::sum)
+			theValue=stat.sum(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::max)
+			theValue=stat.mymax(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::min)
+			theValue=stat.mymin(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::centroid){
+			if(verbose_opt[0])
+			  std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
+			assert(nPointPolygon<=1);
+			assert(nPointPolygon==polyValues[index].size());
+			theValue=polyValues[index].back();
+		      }
+		      else{
+			std::string errorString="rule not supported";
+			throw(errorString);
+		      }
+		      if(verbose_opt[0]>1)
+			std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
+		      switch( fieldType ){
+		      case OFTInteger:
+		      case OFTReal:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
+			break;
+		      case OFTString:
+			if(polygon_opt[0])
+			  writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			else
+			  writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
+			break;
+		      default://not supported
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
 		    }
-		    if(verbose_opt[0]>1)
-		      std::cout << "set field " << fieldname_opt[index] << " to " << theValue << std::endl;
-		    switch( fieldType ){
-		    case OFTInteger:
-		    case OFTReal:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),theValue);
-		      break;
-		    case OFTString:
-		      if(polygon_opt[0])
-			writePolygonFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      else
-			writeCentroidFeature->SetField(fieldname_opt[index].c_str(),type2string<double>(theValue).c_str());
-		      break;
-		      // case OFTRealList:{
-		      // int fieldIndex;
-		      // int nCount;
-		      // const double *theList;
-		      // vector<double> vectorList;
-		      // if(polygon_opt[0]){
-		      //   fieldIndex=writePolygonFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      //   theList=writePolygonFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      //   vectorList.resize(nCount+1);
-		      //   for(int index=0;index<nCount;++index)
-		      // 	vectorList[index]=theList[index];
-		      //   vectorList[nCount]=theValue;
-		      //   writePolygonFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		      // }
-		      // else{
-		      //   fieldIndex=writeCentroidFeature->GetFieldIndex(fieldname_opt[index].c_str());
-		      //   theList=writeCentroidFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-		      //   vectorList.resize(nCount+1);
-		      //   for(int index=0;index<nCount;++index)
-		      // 	vectorList[index]=theList[index];
-		      //   vectorList[nCount]=theValue;
-		      //   writeCentroidFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-		      // }
-		      // break;
-		      // }
-		    default://not supported
-		      std::cout << "field type not supported yet..." << std::endl;
-		      break;
+		    catch(std::string e){
+		      std::cout << e << std::endl;
+		      exit(1);
 		    }
 		  }
 		}
