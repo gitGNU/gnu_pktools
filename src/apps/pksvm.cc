@@ -614,8 +614,8 @@ int main(int argc, char *argv[])
         if(verbose_opt[0]>=1)
           std::cout << "opening mask image file " << mask_opt[0] << std::endl;
         maskReader.open(mask_opt[0]);
-        assert(maskReader.nrOfCol()==testImage.nrOfCol());
-        assert(maskReader.nrOfRow()==testImage.nrOfRow());
+        // assert(maskReader.nrOfCol()==testImage.nrOfCol());
+        // assert(maskReader.nrOfRow()==testImage.nrOfRow());
       }
       catch(string error){
         cerr << error << std::endl;
@@ -699,8 +699,6 @@ int main(int argc, char *argv[])
     for(int iline=0;iline<nrow;++iline){
       vector<float> buffer(ncol);
       vector<short> lineMask;
-      if(mask_opt.size())
-        lineMask.resize(maskReader.nrOfCol());
       Vector2d<float> linePrior;
       if(priorimg_opt.size())
 	 linePrior.resize(nclass,ncol);//prior prob for each class
@@ -745,20 +743,6 @@ int main(int argc, char *argv[])
       assert(nband==hpixel[0].size());
       if(verbose_opt[0]>1)
         std::cout << "used bands: " << nband << std::endl;
-      //read mask
-      if(!lineMask.empty()){
-        try{
-          maskReader.readData(lineMask,GDT_Int16,iline);
-        }
-        catch(string theError){
-          cerr << "Error reading " << mask_opt[0] << ": " << theError << std::endl;
-          exit(3);
-        }
-        catch(...){
-          cerr << "error catched" << std::endl;
-          exit(3);
-        }
-      }
       //read prior
       if(priorimg_opt.size()){
         try{
@@ -777,39 +761,70 @@ int main(int argc, char *argv[])
           exit(3);
         }
       }
+      double oldRowMask=-1;//keep track of row mask to optimize number of line readings
       //process per pixel
       for(int icol=0;icol<ncol;++icol){
         assert(hpixel[icol].size()==nband);
         bool masked=false;
-        if(!lineMask.empty()){
-          short theMask=0;
-          for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-            if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
-              if(lineMask[icol]==msknodata_opt[ivalue]){
-                theMask=lineMask[icol];
-                masked=true;
-                break;
-              }
-            }
-            else{//only values set in msknodata_opt are valid
-              if(lineMask[icol]!=-msknodata_opt[ivalue]){
-                theMask=lineMask[icol];
-                masked=true;
-              }
-              else{
-                masked=false;
-                break;
-              }
-            }
-          }
-          if(masked){
-            if(classBag_opt.size())
-              for(int ibag=0;ibag<nbag;++ibag)
-                classBag[ibag][icol]=theMask;
-            classOut[icol]=theMask;
-            continue;
-          }
-        }
+        if(mask_opt.size()){
+	  //read mask
+	  double colMask=0;
+	  double rowMask=0;
+	  double geox=0;
+	  double geoy=0;
+
+	  testImage.image2geo(icol,iline,geox,geoy);
+	  maskReader.geo2image(geox,geoy,colMask,rowMask);
+	  colMask=static_cast<int>(colMask);
+	  rowMask=static_cast<int>(rowMask);
+	  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
+	      try{
+		// maskReader.readData(lineMask[imask],GDT_Int32,static_cast<int>(rowMask));
+		maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	      }
+	      catch(string errorstring){
+		cerr << errorstring << endl;
+		exit(1);
+	      }
+	      catch(...){
+		cerr << "error catched" << std::endl;
+		exit(3);
+	      }
+	      oldRowMask=rowMask;
+	    }
+	  }
+	  else
+	    continue;//no coverage in this mask
+	  short theMask=0;
+	  for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+	    if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
+	      if(lineMask[colMask]==msknodata_opt[ivalue]){
+		theMask=lineMask[colMask];
+		masked=true;
+		break;
+	      }
+	    }
+	    else{//only values set in msknodata_opt are valid
+	      if(lineMask[icol]!=-msknodata_opt[ivalue]){
+		theMask=lineMask[colMask];
+		masked=true;
+	      }
+	      else{
+		masked=false;
+		break;
+	      }
+	    }
+	  }
+	  if(masked){
+	    if(classBag_opt.size())
+	      for(int ibag=0;ibag<nbag;++ibag)
+		classBag[ibag][icol]=theMask;
+	    classOut[icol]=theMask;
+	    continue;
+	  }
+	}
         bool valid=false;
         for(int iband=0;iband<hpixel[icol].size();++iband){
           if(hpixel[icol][iband]){

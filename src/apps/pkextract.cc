@@ -421,7 +421,7 @@ int main(int argc, char *argv[])
 		  continue;//do not select for now, go to next column
               }
               else if(nvalid.size()>processClass){//absolute value
-                if(nvalid[processClass]>-theThreshold)
+                if(nvalid[processClass]>=-theThreshold)
                   continue;//do not select any more pixels for this class, go to next column to search for other classes
               }
 	      writeBuffer.push_back(sample);
@@ -614,7 +614,7 @@ int main(int argc, char *argv[])
                   continue;//do not select for now, go to next column
               }
               else if(nvalid.size()>processClass){//absolute value
-                if(nvalid[processClass]>-theThreshold)
+                if(nvalid[processClass]>=-theThreshold)
                   continue;//do not select any more pixels for this class, go to next column to search for other classes
               }
               writeBuffer.push_back(sample);
@@ -812,7 +812,7 @@ int main(int argc, char *argv[])
 	  }
 	}
 	else{//absolute value
-	  if(ntotalvalid>-threshold_opt[0]){
+	  if(ntotalvalid>=-threshold_opt[0]){
 	    if(test_opt.size())
 	      writeTest=true;
 	    else

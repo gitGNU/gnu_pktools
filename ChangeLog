@@ -328,7 +328,8 @@ version 2.6.1
  - pkfilter
 	Declare nodata option as double (see ticket #43500)
 	Support nodata values for filtering in spectral/temporal domain (see ticket #43713)
-
+ - pkextract
+	extracting with absolute threshold (negative value) was selecting 1 extra sample unit
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
