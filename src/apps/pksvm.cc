@@ -614,8 +614,6 @@ int main(int argc, char *argv[])
         if(verbose_opt[0]>=1)
           std::cout << "opening mask image file " << mask_opt[0] << std::endl;
         maskReader.open(mask_opt[0]);
-        // assert(maskReader.nrOfCol()==testImage.nrOfCol());
-        // assert(maskReader.nrOfRow()==testImage.nrOfRow());
       }
       catch(string error){
         cerr << error << std::endl;
@@ -807,7 +805,7 @@ int main(int argc, char *argv[])
 	      }
 	    }
 	    else{//only values set in msknodata_opt are valid
-	      if(lineMask[icol]!=-msknodata_opt[ivalue]){
+	      if(lineMask[colMask]!=-msknodata_opt[ivalue]){
 		theMask=lineMask[colMask];
 		masked=true;
 	      }
