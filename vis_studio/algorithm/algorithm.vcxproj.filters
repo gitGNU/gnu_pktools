@@ -48,6 +48,9 @@
     <ClInclude Include="..\..\src\algorithms\CostFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\algorithms\ConfusionMatrix.cc">
@@ -63,6 +66,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\algorithms\svm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\algorithms\CostFactorySVM.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
