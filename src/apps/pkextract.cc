@@ -1025,12 +1025,17 @@ int main(int argc, char *argv[])
 		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		    if(verbose_opt[0]>1)
 		      std::cout << "copying fields from polygons " << std::endl;
-		    writePointFeature->SetGeometry(&thePoint);
+		    //Geometry of readFeature and writePointFeature are both wkbPoint
+		    //attributes AND geometry are copied with SetFrom
+		    //test
+		    // writePointFeature->SetGeometry(&thePoint);
 		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		      cerr << "writing feature failed" << std::endl;
-		    OGRGeometry *updateGeometry;
-		    updateGeometry = writePointFeature->GetGeometryRef();
-		    OGRPoint *poPoint = (OGRPoint *) updateGeometry;
+
+		    assert(wkbFlatten(writePointFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
+		    // OGRGeometry *updateGeometry;
+		    // updateGeometry = writePointFeature->GetGeometryRef();
+		    // OGRPoint *poPoint = (OGRPoint *) updateGeometry;
 		    if(verbose_opt[0]>1)
 		      std::cout << "write feature has " << writePointFeature->GetFieldCount() << " fields" << std::endl;
 		  }
@@ -1119,9 +1124,14 @@ int main(int argc, char *argv[])
 		// writePolygon.addRing(&writeRing);//already done
 		// writePolygon.closeRings();//already done
 		//write geometry of writePolygon
-		writePolygonFeature->SetGeometry(&writePolygon);
+		//test
+		// writePolygonFeature->SetGeometry(&writePolygon);
 		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
+		//test
+		writePolygonFeature->SetGeometry(&writePolygon);
+		assert(wkbFlatten(writePolygonFeature->GetGeometryRef()->getGeometryType()) == wkbPolygon);
+
 		if(verbose_opt[0]>1)
 		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
@@ -1132,12 +1142,17 @@ int main(int argc, char *argv[])
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
-		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
+		//test
+		//Geometry of readFeature and writeCentroidFeature are both wkbPoint
+		//attributes AND geometry are copied with SetFrom
+		// writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		OGRGeometry *updateGeometry;
-		updateGeometry = writeCentroidFeature->GetGeometryRef();
-		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
+		assert(wkbFlatten(writeCentroidFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
+		//test
+		// OGRGeometry *updateGeometry;
+		// updateGeometry = writeCentroidFeature->GetGeometryRef();
+		// assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }
@@ -1521,12 +1536,17 @@ int main(int argc, char *argv[])
 		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		    if(verbose_opt[0]>1)
 		      std::cout << "copying fields from polygons " << std::endl;
-		    writePointFeature->SetGeometry(&thePoint);
+		    //test
+		    // writePointFeature->SetGeometry(&thePoint);
 		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		      cerr << "writing feature failed" << std::endl;
-		    OGRGeometry *updateGeometry;
-		    updateGeometry = writePointFeature->GetGeometryRef();
-		    OGRPoint *poPoint = (OGRPoint *) updateGeometry;
+		    //test
+		    writePointFeature->SetGeometry(&thePoint);
+		    assert(wkbFlatten(writePolygonFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
+		    //test
+		    // OGRGeometry *updateGeometry;
+		    // updateGeometry = writePointFeature->GetGeometryRef();
+		    // OGRPoint *poPoint = (OGRPoint *) updateGeometry;
 		    if(verbose_opt[0]>1)
 		      std::cout << "write feature has " << writePointFeature->GetFieldCount() << " fields" << std::endl;
 		  }
@@ -1607,7 +1627,9 @@ int main(int argc, char *argv[])
 		writePolygon.addRing(&writeRing);
 		writePolygon.closeRings();
 		//write geometry of writePolygon
-		writePolygonFeature->SetGeometry(&writePolygon);
+		//test
+		//writePolygonFeature and readFeature are both of type wkbPolygon
+		// writePolygonFeature->SetGeometry(&writePolygon);
 		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
 		if(verbose_opt[0]>1)
@@ -1620,12 +1642,16 @@ int main(int argc, char *argv[])
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
-		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
+		//test
+		//writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		OGRGeometry *updateGeometry;
-		updateGeometry = writeCentroidFeature->GetGeometryRef();
-		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
+		//test
+		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
+		assert(wkbFlatten(writeCentroidFeature->GetGeometryRef()->getGeometryType()) == wkbPoint );
+		// OGRGeometry *updateGeometry;
+		// updateGeometry = writeCentroidFeature->GetGeometryRef();
+		// assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }
@@ -1634,7 +1660,6 @@ int main(int argc, char *argv[])
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
 		  for(int index=0;index<polyValues.size();++index){
-		    //test
 		    assert(polyValues[index].size()==1);
 		    double theValue=polyValues[index].back();
 
@@ -1996,12 +2021,16 @@ int main(int argc, char *argv[])
 			writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		      if(verbose_opt[0]>1)
 			std::cout << "copying fields from polygons " << std::endl;
-		      writePointFeature->SetGeometry(&thePoint);
+		      //test
+		      // writePointFeature->SetGeometry(&thePoint);
 		      if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 			cerr << "writing feature failed" << std::endl;
-		      OGRGeometry *updateGeometry;
-		      updateGeometry = writePointFeature->GetGeometryRef();
-		      OGRPoint *poPoint = (OGRPoint *) updateGeometry;
+		      //test
+		      writePointFeature->SetGeometry(&thePoint);
+		      assert(wkbFlatten(writePolygonFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
+		      // OGRGeometry *updateGeometry;
+		      // updateGeometry = writePointFeature->GetGeometryRef();
+		      // OGRPoint *poPoint = (OGRPoint *) updateGeometry;
 		      if(verbose_opt[0]>1)
 			std::cout << "write feature has " << writePointFeature->GetFieldCount() << " fields" << std::endl;
 		    }
@@ -2082,8 +2111,6 @@ int main(int argc, char *argv[])
 		    std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
 	      }
 	    }
-
-	    //test
 	    if(!validFeature)
 	      continue;
 	    if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point){
@@ -2095,25 +2122,32 @@ int main(int argc, char *argv[])
 		writePolygon.addRing(&writeRing);
 		writePolygon.closeRings();
 		//write geometry of writePolygon
-		writePolygonFeature->SetGeometry(&writePolygon);
+		//test
+		//writePolygon and readFeature are from geometry type wkbMultiPolygon
+		// writePolygonFeature->SetGeometry(&writePolygon);
 		if(writePolygonFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
+		assert(writePolygonFeature->GetGeometryRef()->getGeometryType()==wkbMultiPolygon);
 		if(verbose_opt[0]>1)
 		  std::cout << "copying new fields write polygon " << std::endl;
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 		//write polygon feature
 	      }
-	      else{//write mean /median value of polygon to centroid point (ruleMap[rule_opt[0]]==rule::mean, stdev or median )
+	      else{//write band information of polygon to centroid point
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
-		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
+		//test
+		// writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		OGRGeometry *updateGeometry;
-		updateGeometry = writeCentroidFeature->GetGeometryRef();
-		assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
+		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
+		assert(wkbFlatten(writeCentroidFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
+		//test
+		// OGRGeometry *updateGeometry;
+		// updateGeometry = writeCentroidFeature->GetGeometryRef();
+		// assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }

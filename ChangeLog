@@ -330,7 +330,7 @@ version 2.6.1
 	Support nodata values for filtering in spectral/temporal domain (see ticket #43713)
  - pkextract
 	extracting with absolute threshold (negative value) was selecting 1 extra sample unit
-	debug: Order of SetGeometry must be before SetFrom caused bad vector features (First SetGeometry, then SetFrom)
+	debug: removed (redundant?) SetGeometry after SetFrom when readFeature was of appropriate geometry type. This caused wrong polygons in output vectro dataset
  - pksvm
 	support for mask in geo coordinates (does not need to be in same dimensions as input raster dataset, only in same projection)
  - pkann

@@ -621,8 +621,12 @@ int main(int argc,char **argv) {
 	      double obsMeanValue=statobs.mean(obsWindowBuffer);
 	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
 	      difference/=modValue;//make relative difference
-	      difference*=difference;
-	      doUpdate=(100*sqrt(difference)<deltaObs_opt[0]);
+	      if(deltaObs_opt[0]<0)
+		doUpdate=((100*difference)<deltaObs_opt[0]);
+	      else{
+		difference*=difference;
+		doUpdate=(100*sqrt(difference)<deltaObs_opt[0]);
+	      }
 	    }
 	    if(doUpdate){
 	      double kalmanGain=1;
@@ -1046,7 +1050,12 @@ int main(int argc,char **argv) {
 	      difference*=difference;
 	      difference/=modValue;//make relative difference
 	      difference*=difference;
-	      doUpdate=(100*sqrt(difference)<deltaObs_opt[0]);
+	      if(deltaObs_opt[0]<0)
+		doUpdate=((100*difference)<deltaObs_opt[0]);
+	      else{
+		difference*=difference;
+		doUpdate=(100*sqrt(difference)<deltaObs_opt[0]);
+	      }
 	    }
 	    if(doUpdate){
 	      double kalmanGain=1;
