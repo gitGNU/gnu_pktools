@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
   Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
   Optionpk<short> band_opt("b", "band", "Input raster band", 0);
+  Optionpk<bool> rmse_opt("rmse", "rmse", "Report root mean squared error", false);
   Optionpk<bool> confusion_opt("cm", "confusion", "Create confusion matrix (to std out)", false);
   Optionpk<string> labelref_opt("lr", "lref", "Attribute name of the reference label (for vector reference datasets only)", "label");
   Optionpk<string> labelclass_opt("lc", "lclass", "Attribute name of the classified label (for vector reference datasets only)", "class");
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
     reference_opt.retrieveOption(argc,argv);
     layer_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    rmse_opt.retrieveOption(argc,argv);
     confusion_opt.retrieveOption(argc,argv);
     labelref_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
@@ -627,7 +629,7 @@ int main(int argc, char *argv[])
     if(inputReader.isGeoRef()){
       assert(referenceReaderGdal.isGeoRef());
       if(inputReader.getProjection()!=referenceReaderGdal.getProjection())
-        cout << "projection of input image and reference image are different!" << endl;
+        cerr << "Warning: projection of input image and reference image are different" << endl;
     }
     vector<short> lineReference(referenceReaderGdal.nrOfCol());
     if(confusion_opt[0]){
@@ -655,6 +657,7 @@ int main(int argc, char *argv[])
         exit(1);
       }
     }
+    double rmse=0;
     for(irow=0;irow<inputReader.nrOfRow()&&!isDifferent;++irow){
       //read line in lineInput, lineReference and lineMask
       inputReader.readData(lineInput,GDT_Int16,irow,band_opt[0]);
@@ -702,6 +705,9 @@ int main(int argc, char *argv[])
           }
         }
         if(!flagged){
+	  if(rmse_opt[0])//divide by image size to prevent overflow. At the end we need to take care about flagged pixels by normalizing...
+	    rmse+=static_cast<double>(lineInput[icol]-lineReference[ireference])*(lineInput[icol]-lineReference[ireference])/inputReader.nrOfCol()/inputReader.nrOfRow();
+
           if(confusion_opt[0]){
             ++ntotalValidation;
             int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),lineReference[ireference]));
@@ -724,22 +730,11 @@ int main(int argc, char *argv[])
             }
           }
           else{//error
-            if(output_opt.empty()&&!confusion_opt[0]){
+            if(output_opt.empty()&&!confusion_opt[0]&&!rmse_opt[0]){
               isDifferent=true;
               break;
             }
             if(output_opt.size()){
-              // if(lineInput[icol]<20){//forest
-              //   if(lineReference[icol]>=20)//gain
-              //     lineOutput[icol]=lineInput[icol]*10+1;//GAIN is 111,121,131
-              //   else//forest type changed: mixed
-              //     lineOutput[icol]=130;//MIXED FOREST
-              // }
-              // else if(lineReference[icol]<20){//loss
-              //   lineOutput[icol]=20*10+lineReference[icol];//LOSS is 211 212 213
-              // }
-              // else//no forest
-              //   lineOutput[icol]=20*10;//NON FOREST is 200
               if(lineInput[icol]>lineReference[ireference])
 		lineOutput[icol]=valueO_opt[0];//omission error
 	      else
@@ -768,7 +763,7 @@ int main(int argc, char *argv[])
           exit(1);
         }
       }
-      else if(isDifferent&&!confusion_opt[0]){//we can break off here, files are different...
+      else if(isDifferent&&!confusion_opt[0]&&!rmse_opt[0]){//we can break off here, files are different...
         if(!verbose_opt[0])
           pfnProgress(1.0,pszMessage,pProgressArg);
         break;
@@ -780,7 +775,11 @@ int main(int argc, char *argv[])
     if(output_opt.size())
       gdalWriter.close();
     else if(!confusion_opt[0]){
-      if(isDifferent)
+      if(rmse_opt[0]){
+	double normalization=1.0*inputReader.nrOfCol()*inputReader.nrOfRow()/(inputReader.nrOfCol()*inputReader.nrOfRow()-nflagged);
+	cout << "--rmse " << sqrt(rmse/normalization) << endl;
+      }
+      else if(isDifferent)
         cout << input_opt[0] << " and " << reference_opt[0] << " are different" << endl;
       else
         cout << input_opt[0] << " and " << reference_opt[0] << " are identical" << endl;
@@ -789,67 +788,9 @@ int main(int argc, char *argv[])
     inputReader.close();
     if(mask_opt.size())
       maskReader.close();
-  }
+  }//raster dataset
 
   if(confusion_opt[0]){
-    // double totalResult=0;
-    // cout << " ";
-    // for(int ic=0;ic<inputRange.size();++ic)
-    //   cout << inputRange[ic] << " ";
-    // cout << endl;
-    // unsigned int ntotal=0;
-    // vector<unsigned int> ntotalclass(referenceRange.size());
-    // for(int rc=0;rc<referenceRange.size();++rc){
-    //   ntotalclass[rc]=0;
-    //   cout << referenceRange[rc] << " ";
-    //   //initialize
-    //   for(int ic=0;ic<inputRange.size();++ic){
-    //     unsigned int result=0;
-    //     user[ic]=0;
-    //     producer[ic]=0;	
-    //     for(int k=0;k<nclass;++k){
-    //       user[ic]+=resultClass[k][ic];
-    //       producer[ic]+=resultClass[ic][k];
-    //     }	  
-    //     result=resultClass[rc][ic];
-    //     ntotal+=result;
-    //     ntotalclass[rc]+=result;
-    //     if(ic==rc){
-    //       totalResult+=result;
-    //     }
-    //     cout << result << " ";
-    //   }
-    //   cout << endl;
-    // }
-    // if(verbose_opt[0]){
-    //   cout << "totalResult: " << totalResult << endl;
-    //   cout << "ntotalValidation: " << ntotalValidation << endl;
-    //   cout << "nflagged: " << nflagged << endl;
-    //   cout << "ntotal: " << ntotal << endl;
-    // }
-    // totalResult*=100.0/ntotal;
-    // int nclass0=0;//number of classes without any reference
-    // for(int rc=0;rc<referenceRange.size();++rc)
-    //   if(!nvalidation[rc])
-    //     ++nclass0;
-    // double pChance=0;
-    // double pCorrect=0;
-    // double totalEntries=0;
-    // cout << "class #samples userAcc prodAcc" << endl;    
-    // for(int rc=0;rc<referenceRange.size();++rc){
-    //   totalEntries+=user[rc];
-    //   pChance+=user[rc]*producer[rc];
-    //   pCorrect+=resultClass[rc][rc];
-    //   cout << referenceRange[rc] << " " << nvalidation[rc] << " ";
-    //   cout << 100.0*resultClass[rc][rc]/user[rc] << " "//user accuracy
-    //        << 100.0*resultClass[rc][rc]/producer[rc] << " " << endl;//producer accuracy
-    // }
-    // pCorrect/=totalEntries;
-    // pChance/=totalEntries*totalEntries;    
-    // double kappa=pCorrect-pChance;
-    // kappa/=1-pChance;
-    // cout << "Kappa: " << kappa << endl;    
-    // cout << "total weighted: " << static_cast<int>(0.5+totalResult) << endl;
     assert(cm.nReference());
     cout << cm << endl;
     cout << "class #samples userAcc prodAcc" << endl;

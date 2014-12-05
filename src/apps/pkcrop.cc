@@ -99,6 +99,10 @@ int main(int argc, char *argv[])
     std::cout << predefinedString << std::endl;
     exit(0);
   }
+  //test
+  if(verbose_opt[0])
+    cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
+
   if(!doProcess){
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
@@ -190,6 +194,10 @@ int main(int argc, char *argv[])
   double croplry=lry_opt[0];
   //get bounding box from extentReader if defined
   ImgReaderOgr extentReader;
+  //test
+  if(verbose_opt[0])
+    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
+
   if(extent_opt.size()){
     for(int iextent=0;iextent<extent_opt.size();++iextent){
       extentReader.open(extent_opt[iextent]);
@@ -214,6 +222,9 @@ int main(int argc, char *argv[])
     lrx_opt[0]=cx_opt[0]+ns_opt[0]*dx/2.0;
     lry_opt[0]=(isGeoRef) ? cy_opt[0]-nl_opt[0]*dy/2.0 : cy_opt[0]+nl_opt[0]*dy/2.0;
   }
+  //test
+  if(verbose_opt[0])
+    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
   if(ulx_opt[0]<cropulx)
     cropulx=ulx_opt[0];
   if(uly_opt[0]>cropuly)

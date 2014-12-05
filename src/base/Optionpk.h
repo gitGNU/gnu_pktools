@@ -356,6 +356,26 @@ template<> inline std::string string2type(std::string const& s){
   return s;
 }
 
+template<> inline double string2type(std::string const& s){
+  std::istringstream i;
+  i.precision(12);
+  i.str(s);
+  double x;
+  if (!(i >> std::setprecision(12) >> x) )
+     throw BadConversion(s);
+  return x;
+}
+
+template<> inline float string2type(std::string const& s){
+  std::istringstream i;
+  i.precision(12);
+  i.str(s);
+  float x;
+  if (!(i >> std::setprecision(12) >> x) )
+     throw BadConversion(s);
+  return x;
+}
+
 ///specialization for OGRFieldType
 template<> inline OGRFieldType string2type(std::string const& s){
   OGRFieldType ftype;
