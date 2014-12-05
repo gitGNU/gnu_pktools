@@ -328,6 +328,7 @@ version 2.6.1
  - pkfilter
 	Declare nodata option as double (see ticket #43500)
 	Support nodata values for filtering in spectral/temporal domain (see ticket #43713)
+	make use of memory buffer vsimem for morphological closing and opening instead of tmp file
  - pkextract
 	extracting with absolute threshold (negative value) was selecting 1 extra sample unit
 	debug: removed (redundant?) SetGeometry after SetFrom when readFeature was of appropriate geometry type. This caused wrong polygons in output vectro dataset

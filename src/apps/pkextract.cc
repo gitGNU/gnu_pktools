@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint.", false);
-  Optionpk<int> band_opt("b", "band", "Band index(es) to extract. Leave empty to use all bands");
+  Optionpk<int> band_opt("b", "band", "Band index(es) to extract (0 based). Leave empty to use all bands");
   Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum.", "centroid");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
   statfactory::StatFactory stat;
+  stat.setNoDataValues(srcnodata_opt);
   Vector2d<unsigned int> posdata;
   unsigned long int nsample=0;
   unsigned long int ntotalvalid=0;
@@ -392,12 +393,16 @@ int main(int argc, char *argv[])
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
 		if(srcnodata_opt.size()){
-		  vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
-		  if(bndit!=bndnodata_opt.end()){
-		    vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
-		    if(bndit!=bndnodata_opt.end()){
-		      if(imgBuffer[iband][static_cast<int>(iimg)]==srcnodata_opt[theBand])
-			valid=false;
+		  vector<int>::const_iterator bndit=bndnodata_opt.begin();
+		  vector<double>::const_iterator srcit=srcnodata_opt.begin();
+		  while(bndit!=bndnodata_opt.end()&&srcit!=srcnodata_opt.end()){
+		    if((*bndit==theBand)&&(*srcit==imgBuffer[iband][static_cast<int>(iimg)])){
+		      valid=false;
+		      break;
+		    }
+		    else{
+		      ++bndit;
+		      ++srcit;
 		    }
 		  }
 		}
@@ -588,11 +593,19 @@ int main(int argc, char *argv[])
 		int theBand=(band_opt.size()) ? band_opt[iband] : iband;
                 imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
                 assert(imgBuffer[iband].size()==imgReader.nrOfCol());
+
 		if(srcnodata_opt.size()){
-		  vector<int>::const_iterator bndit=find(bndnodata_opt.begin(),bndnodata_opt.end(),theBand);
-		  if(bndit!=bndnodata_opt.end()){
-		    if(imgBuffer[iband][static_cast<int>(iimg)]==srcnodata_opt[theBand])
+		  vector<int>::const_iterator bndit=bndnodata_opt.begin();
+		  vector<double>::const_iterator srcit=srcnodata_opt.begin();
+		  while(bndit!=bndnodata_opt.end()&&srcit!=srcnodata_opt.end()){
+		    if((*bndit==theBand)&&(*srcit==imgBuffer[iband][static_cast<int>(iimg)])){
 		      valid=false;
+		      break;
+		    }
+		    else{
+		      ++bndit;
+		      ++srcit;
+		    }
 		  }
 		}
               }
@@ -1536,13 +1549,13 @@ int main(int argc, char *argv[])
 		      writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		    if(verbose_opt[0]>1)
 		      std::cout << "copying fields from polygons " << std::endl;
-		    //test
-		    // writePointFeature->SetGeometry(&thePoint);
 		    if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		      cerr << "writing feature failed" << std::endl;
+		    if(verbose_opt[0]>1)
+		      std::cout << "set geometry as point " << std::endl;
 		    //test
 		    writePointFeature->SetGeometry(&thePoint);
-		    assert(wkbFlatten(writePolygonFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
+		    assert(wkbFlatten(writePointFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
 		    //test
 		    // OGRGeometry *updateGeometry;
 		    // updateGeometry = writePointFeature->GetGeometryRef();
@@ -2027,7 +2040,7 @@ int main(int argc, char *argv[])
 			cerr << "writing feature failed" << std::endl;
 		      //test
 		      writePointFeature->SetGeometry(&thePoint);
-		      assert(wkbFlatten(writePolygonFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
+		      assert(wkbFlatten(writePointFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
 		      // OGRGeometry *updateGeometry;
 		      // updateGeometry = writePointFeature->GetGeometryRef();
 		      // OGRPoint *poPoint = (OGRPoint *) updateGeometry;

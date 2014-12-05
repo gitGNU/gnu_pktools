@@ -179,6 +179,7 @@ public:
   template<class T> double cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const;
   template<class T> double linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
   template<class T> double linear_regression_err(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
+  template<class T> void interpolateNoData(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::string& type, std::vector<T>& output, bool verbose=false) const;
   template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose=false) const;
   template<class T> void interpolateUp(const std::vector<double>& wavelengthIn, const std::vector< std::vector<T> >& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector< std::vector<T> >& output, bool verbose=false) const;
   // template<class T> void interpolateUp(const std::vector< std::vector<T> >& input, std::vector< std::vector<T> >& output, double start, double end, double step, const gsl_interp_type* type);
@@ -1050,7 +1051,33 @@ template<class T> double StatFactory::linear_regression_err(const std::vector<T>
 //alternatively: use GNU scientific library:
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
-//todo: nodata?
+template<class T> void StatFactory::interpolateNoData(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::string& type, std::vector<T>& output, bool verbose) const{
+  assert(wavelengthIn.size());
+  std::vector<double> wavelengthOut=wavelengthIn;
+  std::vector<T> validIn=input;
+  assert(input.size()==wavelengthIn.size());
+  int nband=wavelengthIn.size();
+  output.clear();
+  //remove nodata from input and corresponding wavelengthIn
+  if(m_noDataValues.size()){
+    typename std::vector<T>::iterator itValue=validIn.begin();
+    typename std::vector<T>::iterator itWavelength=wavelengthOut.begin();
+    while(itValue!=validIn.end()&&itWavelength!=wavelengthOut.end()){
+      if(isNoData(*itValue)){
+	validIn.erase(itValue);
+	wavelengthOut.erase(itWavelength);
+      }
+      else{
+	++itValue;
+	++itWavelength;
+      }
+    }
+    interpolateUp(wavelengthOut, validIn, wavelengthIn, type, output, verbose);
+  }
+  else//no nodata values to interpolate
+    output=input;
+}
+
 template<class T> void StatFactory::interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose) const{
   assert(wavelengthIn.size());
   assert(input.size()==wavelengthIn.size());

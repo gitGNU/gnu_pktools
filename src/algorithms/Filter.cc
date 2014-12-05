@@ -288,6 +288,39 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
+void filter::Filter::smoothNoData(const ImgReaderGdal& input, const std::string& interpolationType, ImgWriterGdal& output)
+{
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    vector<double> pixelOutput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      smoothNoData(pixelInput,interpolationType,pixelOutput);
+      for(int iband=0;iband<input.nrOfBand();++iband)
+        lineOutput[iband][x]=pixelOutput[iband];
+    }
+    for(int iband=0;iband<input.nrOfBand();++iband){
+      try{
+        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+      }
+      catch(string errorstring){
+        cerr << errorstring << "in band " << iband << ", line " << y << endl;
+      }
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
 void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim)
 {
   assert(dim>0);
@@ -296,15 +329,6 @@ void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, s
     m_taps[itap]=1.0/dim;
   filter(input,output);
 }
-
-// void filter::Filter::smoothnodata(const ImgReaderGdal& input, ImgWriterGdal& output, short dim, short down, int offset)
-// {
-//   assert(dim>0);
-//   m_taps.resize(dim);
-//   for(int itap=0;itap<dim;++itap)
-//     m_taps[itap]=1.0/dim;
-//   filter(input,output,down,offset);
-// }
 
 void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output)
 {
@@ -429,6 +453,145 @@ void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, c
     }
     progress=(1.0+y)/output.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
+void filter::Filter::getSavGolayCoefficients(vector<double> &tapz, int np, int nl, int nr, int ld, int m) {
+  int j, k, imj, ipj, kk, mm;
+  double d, fac, sum;
+
+  // c.resize(nl+1+nr);
+  vector<double> tmpc(np);
+  if(np < nl + nr + 1 || nl < 0 || nr < 0 || ld > m || nl + nr < m) {
+    cerr << "bad args in savgol" << endl;
+    return;
+  }
+  vector<int> indx(m + 1, 0);
+  vector<double> a((m + 1) * (m + 1), 0.0);
+  vector<double> b(m + 1, 0.0);
+
+  for(ipj = 0; ipj <= (m << 1); ++ipj) {
+    sum = (ipj ? 0.0 : 1.0);
+    for(k = 1; k <= nr; ++k)
+      sum += (int)pow((double)k, (double)ipj);
+    for(k = 1; k <= nl; ++k)
+      sum += (int)pow((double) - k, (double)ipj);
+    mm = (ipj < 2 * m - ipj ? ipj : 2 * m - ipj);
+    for(imj = -mm; imj <= mm; imj += 2)
+      a[(ipj + imj) / 2 * (m + 1) + (ipj - imj) / 2] = sum;
+  }
+  ludcmp(a, indx, d);
+
+  for(j = 0; j < m + 1; ++j)
+    b[j] = 0.0;
+  b[ld] = 1.0;
+
+  lubksb(a, indx, b);
+  // for(kk = 0; kk < np; ++kk)
+  //   c[kk] = 0.0;
+  for(k = -nl; k <= nr; ++k) {
+  // for(k = -nl; k < nr; ++k) {
+    sum = b[0];
+    fac = 1.0;
+    for(mm = 1; mm <= m; ++mm)
+      sum += b[mm] * (fac *= k);
+    // store in wrap=around order
+    kk = (np - k) % np;
+    //re-order c as I need for taps
+    // kk=k+nl;
+    tmpc[kk] = sum;
+  }
+  tapz.resize(nl+1+nr);
+  //  for(k=0;k<nl+1+nr)
+  tapz[tapz.size()/2]=tmpc[0];
+  //past data points
+  for(k=1;k<=tapz.size()/2;++k)
+    tapz[tapz.size()/2-k]=tmpc[k];
+  //future data points
+  for(k=1;k<=tapz.size()/2;++k)
+    tapz[tapz.size()/2+k]=tmpc[np-k];
+}
+
+void filter::Filter::ludcmp(vector<double> &a, vector<int> &indx, double &d) {
+  const double TINY = 1.0e-20;
+  int i, imax = -1, j, k;
+  double big, dum, sum, temp;
+
+  int n = indx.size();
+  vector<double> vv(n, 0.0);
+
+  d = 1.0;
+  for(i = 0; i < n; ++i) {
+    big = 0.0;
+    for(j = 0; j < n; ++j)
+      if((temp = fabs(a[i * n + j])) > big) big = temp;
+
+    if(big == 0.0) {
+      cerr << "Singular matrix in routine ludcmp" << endl;
+      return;
+    }
+    vv[i] = 1. / big;
+  }
+
+  for(j = 0; j < n; ++j) {
+    for(i = 0; i < j; ++i) {
+      sum = a[i * n + j];
+      for(k = 0; k < i; ++k)
+	sum -= a[i * n + k] * a[k * n + j];
+      a[i * n + j] = sum;
+    }
+    big = 0.0;
+    for(i = j; i < n; ++i) {
+      sum = a[i * n + j];
+      for(k = 0; k < j; ++k)
+	sum -= a[i * n + k] * a[k * n + j];
+      a[i * n + j] = sum;
+      if((dum = vv[i] * fabs(sum)) >= big) {
+	big = dum;
+	imax = i;
+      }
+    }
+
+    if(j != imax) {
+      for(k = 0; k < n; ++k) {
+	dum = a[imax * n + k];
+	a[imax * n + k] = a[j * n + k];
+	a[j * n + k] = dum;
+      }
+      d = -d;
+      vv[imax] = vv[j];
+    }
+    indx[j] = imax;
+    if(a[j * n + j] == 0.0) a[j * n + j] = TINY;
+    if(j != n - 1) {
+      dum = 1. / a[j * n + j];
+      for(i = j + 1; i < n; ++i)
+	a[i * n + j] *= dum;
+    }
+  }
+}
+
+void filter::Filter::lubksb(vector<double> &a, vector<int> &indx, vector<double> &b) {
+  int i, ii = 0, ip, j;
+  double sum;
+  int n = indx.size();
+
+  for(i = 0; i < n; ++i) {
+    ip = indx[i];
+    sum = b[ip];
+    b[ip] = b[i];
+    if(ii != 0)
+      for(j = ii - 1; j < i; ++j)
+	sum -= a[i * n + j] * b[j];
+    else if(sum != 0.0)
+      ii = i + 1;
+    b[i] = sum;
+  }
+  for(i = n - 1; i >= 0; --i) {
+    sum = b[i];
+    for(j = i + 1; j < n; ++j)
+      sum -= a[i * n + j] * b[j];
+    b[i] = sum / a[i * n + i];
   }
 }
 

@@ -39,16 +39,20 @@ using namespace std;
 int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input image file");
   Optionpk<std::string> output_opt("o", "output", "Output image file");
-  Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
+  // Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, heterogeneous (central pixel must be different than all other pixels within window), order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, linearfeature)", "median");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, heterogeneous (central pixel must be different than all other pixels within window), order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, linearfeature, savgolay)", "median");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, better use odd value to avoid image shift", 3);
   Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, better use odd value to avoid image shift", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
   Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
+  Optionpk<int> savgolay_nl_opt("nl", "nl", "Number of leftward (past) data points used in Savitzky-Golay filter)", 2);
+  Optionpk<int> savgolay_nr_opt("nr", "nr", "Number of rightward (future) data points used in Savitzky-Golay filter)", 2);
+  Optionpk<int> savgolay_ld_opt("ld", "ld", "order of the derivative desired in Savitzky-Golay filter (e.g., ld=0 for smoothed function)", 0);
+  Optionpk<int> savgolay_m_opt("m", "m", "order of the smoothing polynomial in Savitzky-Golay filter, also equal to the highest conserved moment; usual values are m = 2 or m = 4)", 2);
   Optionpk<short> class_opt("class", "class", "class value(s) to use for density, erosion, dilation, openening and closing, thresholding");
   Optionpk<double> threshold_opt("t", "threshold", "threshold value(s) to use for threshold filter (one for each class), or threshold to cut for dwt_cut (use 0 to keep all) or dwt_cut_from, or sigma for shift", 0);
   Optionpk<double> nodata_opt("nodata", "nodata", "nodata value(s) (used for smoothnodata filter)");
@@ -77,7 +81,7 @@ int main(int argc,char **argv) {
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
-    tmpdir_opt.retrieveOption(argc,argv);
+    // tmpdir_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
     // angle_opt.retrieveOption(argc,argv);
     method_opt.retrieveOption(argc,argv);
@@ -87,7 +91,10 @@ int main(int argc,char **argv) {
     dimZ_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     wavelet_type_opt.retrieveOption(argc,argv);
-    family_opt.retrieveOption(argc,argv);
+    savgolay_nl_opt.retrieveOption(argc,argv);
+    savgolay_nr_opt.retrieveOption(argc,argv);
+    savgolay_ld_opt.retrieveOption(argc,argv);
+    savgolay_m_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
@@ -192,9 +199,19 @@ int main(int argc,char **argv) {
     }
     else{
       int nband=input.nrOfBand();
-      if(dimZ_opt.size())
-	if(dimZ_opt[0]==1)
+      if(dimZ_opt.size()){
+	if(filter2d::Filter2d::getFilterType(method_opt[0])==filter2d::smoothnodata)
+	  dimZ_opt[0]=nband;
+	if(dimZ_opt[0]==1){
 	  nband=1;
+	  if(verbose_opt[0])
+	    std::cout << "opening single band output image " << output_opt[0] << std::endl;
+	}
+	else if(verbose_opt[0])
+	  std::cout << "opening multi-band output image " << output_opt[0] << std::endl;
+      }
+      else
+	std::cout << "opening output image " << output_opt[0] << std::endl;
       output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
     }
   }
@@ -287,7 +304,7 @@ int main(int argc,char **argv) {
 	std::cout<< tapz_opt[itap] << " ";
       std::cout<< std::endl;
     }
-    filter1d.setTaps(tapz_opt);    
+    filter1d.setTaps(tapz_opt);
     filter1d.filter(input,output);
   }
   else if(fwhm_opt.size()){
@@ -420,10 +437,12 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for morphological operator" << std::endl;
 	exit(1);
       }
-      ostringstream tmps;
-      tmps << tmpdir_opt[0] << "/dilation_" << getpid() << ".tif";
+
+      // ostringstream tmps;
+      // tmps << tmpdir_opt[0] << "/dilation_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
-      tmpout.open(tmps.str(),input);
+      tmpout.open("/vsimem/dilation",input);
+      // tmpout.open(tmps.str(),input);
       try{
         if(dimZ_opt.size()){
           filter1d.morphology(input,tmpout,"dilate",dimZ_opt[0]);
@@ -436,19 +455,21 @@ int main(int argc,char **argv) {
 	std::cout<< errorString;
 	exit(1);
       }
-      tmpout.close();
+      // tmpout.close();
       ImgReaderGdal tmpin;
-      tmpin.open(tmps.str());
+      tmpin.open("/vsimem/dilation");
+      // tmpin.open(tmps.str());
       if(dimZ_opt.size()){
         filter1d.morphology(tmpin,output,"erode",dimZ_opt[0]);
       }
       else{
-          filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
       tmpin.close();
-      if(remove(tmps.str().c_str( )) !=0){
-        cerr << "could not remove " << tmps.str() << std::endl;
-      }
+      tmpout.close();
+      // if(remove(tmps.str().c_str( )) !=0){
+      //   cerr << "could not remove " << tmps.str() << std::endl;
+      // }
       break;
     }
     case(filter2d::open):{//opening
@@ -456,19 +477,27 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for morphological operator" << std::endl;
 	exit(1);
       }
-      ostringstream tmps;
-      tmps << tmpdir_opt[0] << "/erosion_" << getpid() << ".tif";
+      // ostringstream tmps;
+      // tmps << tmpdir_opt[0] << "/erosion_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
-      tmpout.open(tmps.str(),input);
-      if(dimZ_opt.size()){
-        filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
+      tmpout.open("/vsimem/erosion",input);
+      // tmpout.open(tmps.str(),input);
+      try{
+	if(dimZ_opt.size()){
+	  filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
+	}
+	else{
+	  filter2d.morphology(input,tmpout,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	}
       }
-      else{
-	filter2d.morphology(input,tmpout,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+      catch(std::string errorString){
+	std::cout<< errorString;
+	exit(1);
       }
-      tmpout.close();
+      // tmpout.close();
       ImgReaderGdal tmpin;
-      tmpin.open(tmps.str());
+      tmpin.open("/vsimem/erosion");
+      // tmpin.open(tmps.str());
       if(dimZ_opt.size()){
         filter1d.morphology(tmpin,output,"dilate",dimZ_opt[0]);
       }
@@ -476,9 +505,10 @@ int main(int argc,char **argv) {
 	filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
       tmpin.close();
-      if(remove(tmps.str().c_str( )) !=0){
-        cerr << "could not remove " << tmps.str() << std::endl;
-      }
+      tmpout.close();
+      // if(remove(tmps.str().c_str( )) !=0){
+      //   cerr << "could not remove " << tmps.str() << std::endl;
+      // }
       break;
     }
     case(filter2d::homog):{//spatially homogeneous
@@ -654,7 +684,13 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
+      if(dimZ_opt.size()){
+        if(verbose_opt[0])
+          std::cout<< "1-D filtering: smooth" << std::endl;
+        filter1d.smoothNoData(input,interpolationType_opt[0],output);
+      }
+      else
+	filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
       break;
     }
     case(filter2d::dwt):
@@ -711,6 +747,24 @@ int main(int argc,char **argv) {
 	exit(1);
       }
       break;
+    case(filter2d::savgolay):{
+      assert(savgolay_nl_opt.size());
+      assert(savgolay_nr_opt.size());
+      assert(savgolay_ld_opt.size());
+      assert(savgolay_m_opt.size());
+      if(verbose_opt[0])
+      	std::cout << "Calculating Savitzky-Golay coefficients: " << endl;
+      filter1d.getSavGolayCoefficients(tapz_opt, input.nrOfBand(), savgolay_nl_opt[0], savgolay_nr_opt[0], savgolay_ld_opt[0], savgolay_m_opt[0]);
+      if(verbose_opt[0]){
+      	std::cout << "taps (size is " << tapz_opt.size() << "): ";
+      	for(int itap=0;itap<tapz_opt.size();++itap)
+      	  std::cout<< tapz_opt[itap] << " ";
+      	std::cout<< std::endl;
+      }
+      filter1d.setTaps(tapz_opt);
+      filter1d.filter(input,output);
+      break;
+    }
     case(filter2d::threshold):
       filter2d.setThresholds(threshold_opt);//deliberate fall through
     case(filter2d::density):

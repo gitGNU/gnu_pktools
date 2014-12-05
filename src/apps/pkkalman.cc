@@ -50,7 +50,7 @@ int main(int argc,char **argv) {
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
   Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model",2);
   Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",0);
-  Optionpk<double> deltaObs_opt("dobs", "deltaobs", "Threshold for relative difference (in percentage) in observation and model pixel");
+  Optionpk<double> deltaObs_opt("dobs", "deltaobs", "Lower and upper thresholds for relative pixel differences (in percentage): (observation-model)/model. For instance to force the observation within a +/- 10 % interval, use: -dobs -10 -dobs 10 (equivalent to -dobs 10). Leave empty to always update on observation");
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   // Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
   // Optionpk<double> regSensor_opt("rs", "regsensor", "Relative Weight for regression in sensor series", 1.0);
@@ -620,13 +620,16 @@ int main(int argc,char **argv) {
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=statobs.mean(obsWindowBuffer);
 	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
-	      difference/=modValue;//make relative difference
-	      if(deltaObs_opt[0]<0)
-		doUpdate=((100*difference)<deltaObs_opt[0]);
-	      else{
-		difference*=difference;
-		doUpdate=(100*sqrt(difference)<deltaObs_opt[0]);
+	      difference/=modValue;//relative difference
+	      difference*=100;//in percentage
+	      if(deltaObs_opt.size()<2){
+		if(deltaObs_opt[0]<=0)
+		  deltaObs_opt.push_back(-deltaObs_opt[0]);
+		else
+		  deltaObs_opt.insert(deltaObs_opt.begin(),-deltaObs_opt[0]);
 	      }
+	      doUpdate=((100*difference)>=deltaObs_opt[0]);//lower bound
+	      doUpdate&=((100*difference)<=deltaObs_opt[1]);//upper bound
 	    }
 	    if(doUpdate){
 	      double kalmanGain=1;

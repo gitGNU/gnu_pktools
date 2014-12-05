@@ -33,7 +33,7 @@ extern "C" {
 namespace filter
 {
   
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29, savgolay=30};
 
    enum PADDING { symmetric=0, replicate=1, circular=2, constant=3};
 
@@ -69,6 +69,7 @@ public:
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output);
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim);
   template<class T> void smooth(const std::vector<T>& input, std::vector<T>& output, short dim);
+  template<class T> void smoothNoData(const std::vector<T>& input, const std::string& interpolationType, std::vector<T>& output);
   template<class T> void filter(T* input, int inputSize, std::vector<T>& output);
   template<class T> void smooth(T* input, int inputSize, std::vector<T>& output, short dim);
   //template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, bool verbose=false);
@@ -76,7 +77,12 @@ public:
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output);
   void stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method);
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim);
+  void getSavGolayCoefficients(std::vector<double> &c, int np, int nl, int nr, int ld, int m);
+  void ludcmp(std::vector<double> &a, std::vector<int> &indx, double &d);
+  void lubksb(std::vector<double> &a, std::vector<int> &indx, std::vector<double> &b);
+  /* void savgolay(const ImgReaderGdal& input, ImgWriterGdal& output, int np, int nl, int nr, int m); */
   void smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim);
+  void smoothNoData(const ImgReaderGdal& input, const std::string& interpolationType, ImgWriterGdal& output);
   double getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta=1.0, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, std::vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool transposeInput=false, bool verbose=false);
@@ -126,6 +132,7 @@ private:
     m_filterMap["heterog"]=filter::heterog;
     m_filterMap["order"]=filter::order;
     m_filterMap["median"]=filter::median;
+    m_filterMap["savgolay"]=filter::savgolay;
   }
 
 
@@ -419,9 +426,19 @@ template<class T> void Filter::applyFwhm(const std::vector<double> &wavelengthIn
   filter(input,output);
  }
 
+  template<class T> void Filter::smoothNoData(const std::vector<T>& input, const std::string& interpolationType, std::vector<T>& output)
+{
+  statfactory::StatFactory stat;
+  stat.setNoDataValues(m_noDataValues);
+  std::vector<double> abscis(input.size());
+  for(int i=0;i<abscis.size();++i)
+    abscis[i]=i;
+  stat.interpolateNoData(abscis,input,interpolationType,output);
+ }
+
 template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T>& output)
 {
-  assert(input.size()>m_taps.size());
+  assert(input.size()>=m_taps.size());
   output.resize(input.size());
   int i=0;
   //start: extend input by padding
@@ -728,7 +745,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
 
 template<class T> void Filter::filter(T* input, int inputSize, std::vector<T>& output)
 {
-  assert(inputSize>m_taps.size());
+  assert(inputSize>=m_taps.size());
   output.resize(inputSize);
   int i=0;
 
