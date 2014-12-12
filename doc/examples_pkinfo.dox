@@ -33,7 +33,7 @@ show bounding box (-ulx -uly -lrx -lry) in geo coordinates for each image (and u
 \code
 pkinfo -i image1.tif --mask 0 --mask 255 -ref
 \endcode
-show the refence pixel (centre of gravity) for image1.tif, treating 0 and 255 as NO VALUE
+show the reference pixel (centre of gravity) for image1.tif, treating 0 and 255 as NO VALUE
 
 \code
 pkinfo -i image.tif $(pkinfo -i image.tif -c) -geo -r
