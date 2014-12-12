@@ -1,9 +1,9 @@
 \section faq_pkcomposite Frequently asked questions about pkcomposite
 
  Q1. First questiona
- A1. For individual invalid value(s) in input image, use -t (–invalid)
+ A1. For individual invalid value(s) in input image, use -t (--invalid)
 
- Usage: use unique value for each invalid bands set in -vb (–bndnodata) or use a single value that will be applied to all invalid bands
+ Usage: use unique value for each invalid bands set in -vb (--bndnodata) or use a single value that will be applied to all invalid bands
 
  Example:
 
@@ -17,7 +17,7 @@ pkcomposite -i input1.tif -i input2.tif -o output.tif -t 0 -vb 0 -vb 1
 \endcode
 will consider 0 in both bands 0 and 1 of input images as no value
 
-For range(s) of invalid values in input images: use -min (–min) and -max (–max) Usage: use unique range set for each invalid bands set in -vb (–bndnodata)
+For range(s) of invalid values in input images: use -min (--min) and -max (--max) Usage: use unique range set for each invalid bands set in -vb (--bndnodata)
 
 Example: 
 \code

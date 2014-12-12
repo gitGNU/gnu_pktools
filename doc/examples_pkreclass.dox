@@ -10,7 +10,7 @@ pkreclass -i vector.shp -o output.shp -c FROM -r TO -n INFIELD
 replace FROM with TO in field INFIELD (of type string) in vector file vector.shp and write to new vector output.shp
 
 \code
-for((i=0;i<256;++i));do if(($i<100));then echo "$i 1";else echo "$i 0";fi;done > code.txt; pkreclass -i input1.tif -o output.tif –code code.txt
+for((i=0;i<256;++i));do if(($i<100));then echo "$i 1";else echo "$i 0";fi;done > code.txt; pkreclass -i input1.tif -o output.tif --code code.txt
 \endcode
 replace all values smaller than 100 with 1, all other values with 0
 
