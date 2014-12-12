@@ -1072,7 +1072,10 @@ template<class T> void StatFactory::interpolateNoData(const std::vector<double>&
 	++itWavelength;
       }
     }
-    interpolateUp(wavelengthOut, validIn, wavelengthIn, type, output, verbose);
+    if(validIn.size())
+      interpolateUp(wavelengthOut, validIn, wavelengthIn, type, output, verbose);
+    else//we can not interpolate if no valid data
+      output=input;
   }
   else//no nodata values to interpolate
     output=input;

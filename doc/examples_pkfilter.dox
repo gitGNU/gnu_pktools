@@ -5,13 +5,13 @@
 Filter input.tif with morphological dilation filter. Use a circular kernel (instead of rectangular) of size 3x3.
 
 \code
-pkfilter -i input.tif -o filter.tif -dx 3 -dy 3 -f dilate -c
+pkfilter -i input.tif -o filter.tif -dx 3 -dy 3 -f dilate -circ
 \endcode
 
 Similar to previous example, but consider only values of 255 for filtering operation. Typical usage: dilate cloud values in input image that are flagged as 255
 
 \code
-pkfilter -i input.tif -o filter.tif -dx 3 -dy 3 -class 255 -f dilate -c
+pkfilter -i input.tif -o filter.tif -dx 3 -dy 3 -class 255 -f dilate -circ
 \endcode
 
 \subsection examples_pkfilter_spectral Filtering in spectral/temporal domain
@@ -26,5 +26,11 @@ pkfilter -i input.tif -o filter_stdev.tif -dz 3 -f median
 
 \code
 pkfilter -i input.tif -o filter_stdev.tif -dz 1 -f stdev
+\endcode
+
+"Smooth" (interpolate) nodata in spectral/temporal domain (-dz 1), using a linear interpolation. The following interpolation types are supported: akima (default), linear, polynomial, cspline, cspline_periodic, akima_periodic (please check <a href="http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html">gsl</a> page for more information on the interpolation types).
+
+\code
+pkfilter -i input.tif -o input_smoothed.tif -dz 1 -f smoothnodata -interp linear
 \endcode
 

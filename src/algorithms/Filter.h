@@ -35,7 +35,7 @@ namespace filter
   
   enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29, savgolay=30};
 
-   enum PADDING { symmetric=0, replicate=1, circular=2, constant=3};
+   enum PADDING { symmetric=0, replicate=1, circular=2, zero=3};
 
 class Filter
 {
@@ -138,7 +138,7 @@ private:
 
   static PADDING getPadding(const std::string& padString){
     std::map<std::string, PADDING> padMap;
-    padMap["constant"]=filter::constant;
+    padMap["zero"]=filter::zero;
     padMap["symmetric"]=filter::symmetric;
     padMap["replicate"]=filter::replicate;
     padMap["circular"]=filter::circular;
@@ -457,7 +457,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
 	case(circular):
 	  output[i]+=m_taps[m_taps.size()/2-t]*input[input.size()+i-t];
 	  break;
-	case(constant):
+	case(zero):
 	  output[i]+=m_taps[m_taps.size()/2-t]*0;
 	  break;
 	case(symmetric):
@@ -494,7 +494,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
 	case(circular):
 	  output[i]+=m_taps[m_taps.size()/2+t]*input[t-1];
 	  break;
-	case(constant):
+	case(zero):
 	  output[i]+=m_taps[m_taps.size()/2+t]*0;
 	  break;
 	case(symmetric):
@@ -557,7 +557,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
 	case(circular):
 	  theValue=input[input.size()+i-t];
 	  break;
-	case(constant):
+	case(zero):
 	  theValue=0;
 	  break;
 	case(symmetric):
@@ -685,7 +685,7 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
 	case(circular):
 	  theValue=input[t-1];
 	  break;
-	case(constant):
+	case(zero):
 	  theValue=0;
 	  break;
 	case(symmetric):
@@ -766,7 +766,7 @@ template<class T> void Filter::filter(T* input, int inputSize, std::vector<T>& o
 	case(circular):
 	  output[i]+=m_taps[m_taps.size()/2-t]*input[input.size()+i-t];
 	  break;
-	case(constant):
+	case(zero):
 	  output[i]+=m_taps[m_taps.size()/2-t]*0;
 	  break;
 	case(symmetric):
@@ -803,7 +803,7 @@ template<class T> void Filter::filter(T* input, int inputSize, std::vector<T>& o
 	case(circular):
 	  output[i]+=m_taps[m_taps.size()/2+t]*input[t-1];
 	  break;
-	case(constant):
+	case(zero):
 	  output[i]+=m_taps[m_taps.size()/2+t]*0;
 	  break;
 	case(symmetric):
