@@ -1,4 +1,4 @@
-\section examples_pkpolygonize Examples of pkpolygonize
+\section examples_pksieve Examples of pksieve
 \code
 pksieve -i input.tif -c 8 -s 5 -o ouput.shp
 \endcode
