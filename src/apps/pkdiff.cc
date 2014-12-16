@@ -35,13 +35,14 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output dataset (optional)");
   Optionpk<string> ogrformat_opt("f", "f", "OGR format for output vector (for vector reference datasets only)","SQLite");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
-  Optionpk<int> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
+  Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,2);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,2);
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
   Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
-  Optionpk<short> band_opt("b", "band", "Input raster band", 0);
+  Optionpk<short> band_opt("b", "band", "Input (reference) raster band. Optionally, you can define different bands for input and reference bands respectively: -b 1 -b 0.", 0);
   Optionpk<bool> rmse_opt("rmse", "rmse", "Report root mean squared error", false);
+  Optionpk<bool> regression_opt("reg", "reg", "Report linear regression (Input = c0+c1*Reference)", false);
   Optionpk<bool> confusion_opt("cm", "confusion", "Create confusion matrix (to std out)", false);
   Optionpk<string> labelref_opt("lr", "lref", "Attribute name of the reference label (for vector reference datasets only)", "label");
   Optionpk<string> labelclass_opt("lc", "lclass", "Attribute name of the classified label (for vector reference datasets only)", "class");
@@ -61,13 +62,14 @@ int main(int argc, char *argv[])
     layer_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     rmse_opt.retrieveOption(argc,argv);
+    regression_opt.retrieveOption(argc,argv);
     confusion_opt.retrieveOption(argc,argv);
     labelref_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
-    masknodata_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     labelclass_opt.retrieveOption(argc,argv);
@@ -110,6 +112,11 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
+  //band_opt[0] is for input
+  //band_opt[1] is for reference
+  if(band_opt.size()<2)
+    band_opt.push_back(band_opt[0]);
+
   if(mask_opt.size())
     while(mask_opt.size()<input_opt.size())
       mask_opt.push_back(mask_opt[0]);
@@ -120,6 +127,14 @@ int main(int argc, char *argv[])
   map<string,short> classValueMap;
   vector<std::string> nameVector(255);//the inverse of the classValueMap
   vector<string> classNames;
+
+  unsigned int ntotalValidation=0;
+  unsigned int nflagged=0;
+  Vector2d<int> resultClass;
+  vector<float> user;
+  vector<float> producer;
+  vector<unsigned int> nvalidation;
+
   if(confusion_opt[0]){
     // if(class_opt.size()>1)
     //   inputRange=class_opt;
@@ -170,16 +185,6 @@ int main(int argc, char *argv[])
       for(int iclass=0;iclass<cm.nClasses();++iclass)
         cout << iclass << " " << cm.getClass(iclass) << endl;
     }
-  }
-
-  unsigned int ntotalValidation=0;
-  unsigned int nflagged=0;
-  Vector2d<int> resultClass(nclass,nclass);
-  vector<float> user(nclass);
-  vector<float> producer(nclass);
-  vector<unsigned int> nvalidation(nclass);
-
-  if(confusion_opt[0]){
     resultClass.resize(nclass,nclass);
     user.resize(nclass);
     producer.resize(nclass);
@@ -193,8 +198,8 @@ int main(int argc, char *argv[])
   }
   
   bool isDifferent=false;
-
   bool refIsRaster=false;
+
   ImgReaderOgr referenceReaderOgr;
   try{
     referenceReaderOgr.open(reference_opt[0]);
@@ -405,7 +410,7 @@ int main(int argc, char *argv[])
 		  continue;
 		if(verbose_opt[0])
 		  cout << setprecision(12) << "reading image value at x,y " << x << "," << y << " (" << i << "," << j << "), ";
-		inputReader.readData(inputValue,GDT_Int16,i,j,band_opt[0]);
+		inputReader.readData(inputValue,GDT_Float64,i,j,band_opt[0]);
 		inputValues.push_back(inputValue);
 		if(inputValues.back()!=*(inputValues.begin()))
 		  isHomogeneous=false;
@@ -418,18 +423,18 @@ int main(int argc, char *argv[])
 		    break;
 		  }
 		}
-		maskFlagged=false;//(masknodata_opt[ivalue]>=0)?false:true;
+		maskFlagged=false;//(msknodata_opt[ivalue]>=0)?false:true;
 		if(mask_opt.size()){
-		  maskReader.readData(maskValue,GDT_Int16,i,j,band_opt[0]);
-		  for(int ivalue=0;ivalue<masknodata_opt.size();++ivalue){
-		    if(masknodata_opt[ivalue]>=0){//values set in masknodata_opt are invalid
-		      if(maskValue==masknodata_opt[ivalue]){
+		  maskReader.readData(maskValue,GDT_Float64,i,j,0);
+		  for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+		    if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
+		      if(maskValue==msknodata_opt[ivalue]){
 			maskFlagged=true;
 			break;
 		      }
 		    }
-		    else{//only values set in masknodata_opt are valid
-		      if(maskValue!=-masknodata_opt[ivalue])
+		    else{//only values set in msknodata_opt are valid
+		      if(maskValue!=-msknodata_opt[ivalue])
 			maskFlagged=true;
 		      else{
 			maskFlagged=false;
@@ -573,11 +578,11 @@ int main(int argc, char *argv[])
       }//next reference
     }//next input
     pfnProgress(1.0,pszMessage,pProgressArg);
-  }//reference is OGR
-  else{
+  }//reference is OGR vector
+  else{//reference is GDAL raster
     ImgWriterGdal gdalWriter;
     try{
-      inputReader.open(input_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
+      inputReader.open(input_opt[0]);
       if(mask_opt.size())
         maskReader.open(mask_opt[0]);
       if(output_opt.size()){
@@ -609,15 +614,18 @@ int main(int argc, char *argv[])
       exit(2);
     }
     //todo: support different data types!
-    vector<short> lineInput(inputReader.nrOfCol());
-    vector<short> lineMask(maskReader.nrOfCol());
-    vector<short> lineOutput;
+    vector<double> lineInput(inputReader.nrOfCol());
+    vector<double> lineMask(maskReader.nrOfCol());
+    vector<double> lineOutput;
+    vector<double> bufferInput;//for regression
+    vector<double> bufferReference;//for regression
     if(output_opt.size())
       lineOutput.resize(inputReader.nrOfCol());
 
     int irow=0;
     int icol=0;
     double oldreferencerow=-1;
+    double oldmaskrow=-1;
     ImgReaderGdal referenceReaderGdal;
     try{
       referenceReaderGdal.open(reference_opt[0]);//,rmagicX_opt[0],rmagicY_opt[0]);
@@ -631,9 +639,9 @@ int main(int argc, char *argv[])
       if(inputReader.getProjection()!=referenceReaderGdal.getProjection())
         cerr << "Warning: projection of input image and reference image are different" << endl;
     }
-    vector<short> lineReference(referenceReaderGdal.nrOfCol());
+    vector<double> lineReference(referenceReaderGdal.nrOfCol());
     if(confusion_opt[0]){
-      referenceReaderGdal.getRange(referenceRange,band_opt[0]);
+      referenceReaderGdal.getRange(referenceRange,band_opt[1]);
       for(int iflag=0;iflag<nodata_opt.size();++iflag){
         vector<short>::iterator fit;
         fit=find(referenceRange.begin(),referenceRange.end(),nodata_opt[iflag]);
@@ -658,32 +666,40 @@ int main(int argc, char *argv[])
       }
     }
     double rmse=0;
-    for(irow=0;irow<inputReader.nrOfRow()&&!isDifferent;++irow){
+    // for(irow=0;irow<inputReader.nrOfRow()&&!isDifferent;++irow){
+    for(irow=0;irow<inputReader.nrOfRow();++irow){
       //read line in lineInput, lineReference and lineMask
-      inputReader.readData(lineInput,GDT_Int16,irow,band_opt[0]);
-      if(mask_opt.size())
-        maskReader.readData(lineMask,GDT_Int16,irow);
+      inputReader.readData(lineInput,GDT_Float64,irow,band_opt[0]);
       double x,y;//geo coordinates
       double ireference,jreference;//image coordinates in reference image
+      double imask,jmask;//image coordinates in mask image
       for(icol=0;icol<inputReader.nrOfCol();++icol){
         //find col in reference
         inputReader.image2geo(icol,irow,x,y);
         referenceReaderGdal.geo2image(x,y,ireference,jreference);
         if(ireference<0||ireference>=referenceReaderGdal.nrOfCol()){
-          cerr << ireference << " out of reference range!" << endl;
-          cerr << x << " " << y << " " << icol << " " << irow << endl;
-          cerr << x << " " << y << " " << ireference << " " << jreference << endl;
-          exit(1);
+	  if(rmse_opt[0]||regression_opt[0])
+	    continue;
+	  else{
+	    cerr << ireference << " out of reference range!" << endl;
+	    cerr << x << " " << y << " " << icol << " " << irow << endl;
+	    cerr << x << " " << y << " " << ireference << " " << jreference << endl;
+	    exit(1);
+	  }
         }
         if(jreference!=oldreferencerow){
           if(jreference<0||jreference>=referenceReaderGdal.nrOfRow()){
-            cerr << jreference << " out of reference range!" << endl;
-            cerr << x << " " << y << " " << icol << " " << irow << endl;
-            cerr << x << " " << y << " " << ireference << " " << jreference << endl;
-            exit(1);
+	    if(rmse_opt[0]||regression_opt[0])
+	      continue;
+	    else{
+	      cerr << jreference << " out of reference range!" << endl;
+	      cerr << x << " " << y << " " << icol << " " << irow << endl;
+	      cerr << x << " " << y << " " << ireference << " " << jreference << endl;
+	      exit(1);
+	    }
           }
           else{
-            referenceReaderGdal.readData(lineReference,GDT_Int16,static_cast<int>(jreference),band_opt[0]);
+            referenceReaderGdal.readData(lineReference,GDT_Float64,static_cast<int>(jreference),band_opt[1]);
             oldreferencerow=jreference;
           }
         }
@@ -697,16 +713,26 @@ int main(int argc, char *argv[])
           }
         }
         if(mask_opt.size()){
-          for(int ivalue=0;ivalue<masknodata_opt.size();++ivalue){
-            if(lineMask[icol]==masknodata_opt[ivalue]){
-              flagged=true;
-              break;
-            }
+	  maskReader.geo2image(x,y,imask,jmask);
+	  if(jmask>=0&&jmask<maskReader.nrOfRow()){
+	    if(jmask!=oldmaskrow)
+	      maskReader.readData(lineMask,GDT_Float64,jmask);
+	    for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+	      if(lineMask[icol]==msknodata_opt[ivalue]){
+		flagged=true;
+		break;
+	      }
+	    }
           }
         }
         if(!flagged){
-	  if(rmse_opt[0])//divide by image size to prevent overflow. At the end we need to take care about flagged pixels by normalizing...
+	  if(rmse_opt[0]){//divide by image size to prevent overflow. At the end we need to take care about flagged pixels by normalizing...
 	    rmse+=static_cast<double>(lineInput[icol]-lineReference[ireference])*(lineInput[icol]-lineReference[ireference])/inputReader.nrOfCol()/inputReader.nrOfRow();
+	  }
+	  else if(regression_opt[0]){
+	    bufferInput.push_back(lineInput[icol]);
+	    bufferReference.push_back(lineReference[ireference]);
+	  }
 
           if(confusion_opt[0]){
             ++ntotalValidation;
@@ -730,7 +756,7 @@ int main(int argc, char *argv[])
             }
           }
           else{//error
-            if(output_opt.empty()&&!confusion_opt[0]&&!rmse_opt[0]){
+            if(output_opt.empty()&&!confusion_opt[0]&&!rmse_opt[0]&&!regression_opt[0]){
               isDifferent=true;
               break;
             }
@@ -754,7 +780,7 @@ int main(int argc, char *argv[])
       }
       if(output_opt.size()){
         try{
-          gdalWriter.writeData(lineOutput,GDT_Int16,irow);
+          gdalWriter.writeData(lineOutput,GDT_Float64,irow);
         }
         catch(string errorstring){
           cerr << "lineOutput.size(): " << lineOutput.size() << endl;
@@ -763,7 +789,7 @@ int main(int argc, char *argv[])
           exit(1);
         }
       }
-      else if(isDifferent&&!confusion_opt[0]&&!rmse_opt[0]){//we can break off here, files are different...
+      else if(isDifferent&&!confusion_opt[0]&&!rmse_opt[0]&&!regression_opt[0]){//we can break off here, files are different...
         if(!verbose_opt[0])
           pfnProgress(1.0,pszMessage,pProgressArg);
         break;
@@ -777,7 +803,34 @@ int main(int argc, char *argv[])
     else if(!confusion_opt[0]){
       if(rmse_opt[0]){
 	double normalization=1.0*inputReader.nrOfCol()*inputReader.nrOfRow()/(inputReader.nrOfCol()*inputReader.nrOfRow()-nflagged);
+	if(verbose_opt[0]){
+	  cout << "normalization: " << normalization << endl;
+	  cout << "rmse before sqrt and normalization: " << rmse << endl;
+	}
 	cout << "--rmse " << sqrt(rmse/normalization) << endl;
+      }
+      else if(regression_opt[0]){
+	double err=0;
+	double c0=0;
+	double c1=1;
+	statfactory::StatFactory stat;
+	if(bufferInput.size()&&bufferReference.size()){
+	  err=stat.linear_regression_err(bufferInput,bufferReference,c0,c1);
+	}
+	if(verbose_opt[0]){
+	  cout << "bufferInput.size(): " << bufferInput.size() << endl;
+	  cout << "bufferReference.size(): " << bufferReference.size() << endl;
+	  double theMin=0;
+	  double theMax=0;
+	  stat.minmax(bufferInput,bufferInput.begin(),bufferInput.end(),theMin,theMax);
+	  cout << "min,  max input: " << theMin << ", " << theMax << endl;
+	  theMin=0;
+	  theMax=0;
+	  stat.minmax(bufferReference,bufferReference.begin(),bufferReference.end(),theMin,theMax);
+	  cout << "min,  max reference: " << theMin << ", " << theMax << endl;
+	}
+	cout << "--c0 " << c0 << "--c1 " << c1 << " --rmse: " << err << endl;
+	
       }
       else if(isDifferent)
         cout << input_opt[0] << " and " << reference_opt[0] << " are different" << endl;

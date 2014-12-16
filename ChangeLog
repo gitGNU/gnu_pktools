@@ -337,6 +337,12 @@ version 2.6.1
  - pkann
 	support for mask in geo coordinates (does not need to be in same dimensions as input raster dataset, only in same projection)
 
+version 2.6.2
+ - pkdiff
+	support double data types for input and mask
+	support new option -reg to calculate regression between input and reference
+	support of duplicate option -b to select band in reference image
+	always use first band in mask image instead of using band defined in option -b
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
