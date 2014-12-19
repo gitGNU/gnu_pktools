@@ -421,7 +421,8 @@ int main(int argc,char **argv) {
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
 		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		uncertObs=difference;
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	      if(verbose_opt[0]>1){
 		if(!doUpdate)
@@ -701,7 +702,8 @@ int main(int argc,char **argv) {
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
 		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		uncertObs=difference;
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	    }
 	    if(doUpdate){
@@ -911,7 +913,8 @@ int main(int argc,char **argv) {
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
 		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		uncertObs=difference;
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	      if(verbose_opt[0]>1){
 		if(!doUpdate)
@@ -1191,7 +1194,8 @@ int main(int argc,char **argv) {
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
 		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		uncertObs=difference;
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	    }
 	    if(doUpdate){
