@@ -1,0 +1,16 @@
+\section installation_windows Installation on Windows machines (beta)
+
+\subsection installation_windows_new New Installation
+
+An installation <a href="http://download.savannah.gnu.org/releases/pktools/pktools-windows-latest.exe">latest</a> executable file is available for Windows.
+
+\subsection installation_windows_update Updates
+
+To install an update, first uninstall the previous installed version (via Programs and Features in Control Panel). Then install the <a href="http://download.savannah.gnu.org/releases/pktools/pktools-windows-latest.exe">latest</a> version.
+
+\section pktools_windows Run pktools utilities on Windows
+The utilities can be run from the command line using a command prompt window (from the Start button, click All Programs, Accessories, and then Command Prompt). 
+
+The environment variable PATH is automatically set by the installation.
+
+
