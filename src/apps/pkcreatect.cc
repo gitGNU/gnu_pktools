@@ -41,7 +41,7 @@ int main(int argc,char **argv) {
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  description_opt("d", "description", "Set image description");
-  Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
+  Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false,2);
   
   legend_opt.setHide(1);
   dim_opt.setHide(1);

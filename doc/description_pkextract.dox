@@ -6,7 +6,7 @@
   Options: [-ln layer]* [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-polygon] [-b band]* [-r rule]
 
   Advanced options:
-       [-bndnodata band -srcnodata value]* [-tp threshold] [-test testSample] [-bn attribute] [-cn attribute] [-geo value] [-down value] [-bo value [-circ]]
+       [-bndnodata band -srcnodata value]* [-tp threshold] [-test testSample] [-bn attribute] [-cn attribute] [-geo value] [-down value] [-buf value [-circ]]
 </code>
 
 \section pkextract_description Description

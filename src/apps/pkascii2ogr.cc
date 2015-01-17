@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
   Optionpk<string> ftype_opt("ot", "ot", "Field type (Real, Integer, String) for each of the fields as defined by name","Real");
   Optionpk<string> projection_opt("a_srs", "a_srs", "Override the projection for the output file, use epsg:<code> or Wkt string", "epsg:4326");
   Optionpk<char> fs_opt("fs","fs","field separator.",' ');
-  Optionpk<int> verbose_opt("v", "verbose", "verbose (0)", 0);
+  Optionpk<int> verbose_opt("v", "verbose", "verbose (0)", 0,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{

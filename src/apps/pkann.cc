@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
-  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
 
   band_opt.setHide(1);
   bstart_opt.setHide(1);

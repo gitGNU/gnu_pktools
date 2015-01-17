@@ -41,13 +41,16 @@ int main(int argc,char **argv) {
   Optionpk<double> sza_opt("sza", "sza", "Sun zenith angle.");
   Optionpk<double> saa_opt("saa", "saa", "Sun azimuth angle (N=0 E=90 S=180 W=270).");
   Optionpk<int> flag_opt("f", "flag", "Flag to put in image if pixel shadow", 0);
-  Optionpk<double> scale_opt("s", "scale", "scale used for input dsm: height=scale*input+offset");
-  Optionpk<double> offset_opt("off", "offset", "offset used for input dsm: height=scale*input+offset");
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<double> scale_opt("s", "scale", "scale used for input dsm: height=scale*input+offset");
+  Optionpk<double> offset_opt("off", "offset", "offset used for input dsm: height=scale*input+offset");
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
+
+  scale_opt.setHide(1);
+  offset_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -69,6 +72,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkdsm2shadow -i input.txt -o output [-sza angle] [-saa angle]" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

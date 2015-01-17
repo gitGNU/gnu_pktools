@@ -49,8 +49,14 @@ int main(int argc, char *argv[])
   Optionpk<string> resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<short> dstnodata_opt("dstnodata", "dstnodata", "nodata value for output if out of bounds.", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "set no data value(s) for input image");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0,2);
 
+  dx_opt.setHide(1);
+  dy_opt.setHide(1);
+  resample_opt.setHide(1);
+  srcnodata_opt.setHide(1);
+  dstnodata_opt.setHide(1);
+  
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
@@ -74,6 +80,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkdumpimg -i input.txt [-o output]" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

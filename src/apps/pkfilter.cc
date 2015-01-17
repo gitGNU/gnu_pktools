@@ -75,20 +75,49 @@ int main(int argc,char **argv) {
   Optionpk<bool> l2_opt("l2","l2", "obtain shortest object length for linear feature",false,2);
   Optionpk<bool> a1_opt("a1","a1", "obtain angle found for longest object length for linear feature",false);
   Optionpk<bool> a2_opt("a2","a2", "obtain angle found for shortest object length for linear feature",false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
+
+  resample_opt.setHide(1);
+  option_opt.setHide(1);
+  wavelet_type_opt.setHide(1);
+  savgolay_nl_opt.setHide(1);
+  savgolay_nr_opt.setHide(1);
+  savgolay_ld_opt.setHide(1);
+  savgolay_m_opt.setHide(1);
+  class_opt.setHide(1);
+  threshold_opt.setHide(1);
+  tap_opt.setHide(1);
+  tapz_opt.setHide(1);
+  padding_opt.setHide(1);
+  wavelengthIn_opt.setHide(1);
+  wavelengthOut_opt.setHide(1);
+  down_opt.setHide(1);
+  beta_opt.setHide(1);
+  eps_opt.setHide(1);
+  l1_opt.setHide(1);
+  l2_opt.setHide(1);
+  a1_opt.setHide(1);
+  a2_opt.setHide(1);
+  interpolationType_opt.setHide(1);
+  otype_opt.setHide(1);
+  oformat_opt.setHide(1);
+  colorTable_opt.setHide(1);
+  disc_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     // tmpdir_opt.retrieveOption(argc,argv);
-    disc_opt.retrieveOption(argc,argv);
     // angle_opt.retrieveOption(argc,argv);
     method_opt.retrieveOption(argc,argv);
-    resample_opt.retrieveOption(argc,argv);
+    srf_opt.retrieveOption(argc,argv);
+    fwhm_opt.retrieveOption(argc,argv);
     dimX_opt.retrieveOption(argc,argv);
     dimY_opt.retrieveOption(argc,argv);
     dimZ_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
+    resample_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     wavelet_type_opt.retrieveOption(argc,argv);
     savgolay_nl_opt.retrieveOption(argc,argv);
@@ -97,12 +126,9 @@ int main(int argc,char **argv) {
     savgolay_m_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
     tap_opt.retrieveOption(argc,argv);
     tapz_opt.retrieveOption(argc,argv);
     padding_opt.retrieveOption(argc,argv);
-    fwhm_opt.retrieveOption(argc,argv);
-    srf_opt.retrieveOption(argc,argv);
     wavelengthIn_opt.retrieveOption(argc,argv);
     wavelengthOut_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
@@ -116,6 +142,7 @@ int main(int argc,char **argv) {
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    disc_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -123,6 +150,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkfilter -i input -o ouptut [-f filter | -srf file [-srf file]* | -fwhm value [-fwhm value]*]" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

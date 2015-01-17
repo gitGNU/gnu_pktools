@@ -26,6 +26,8 @@ extern "C" {
 #include <string>
 #include "base/Optionpk.h"
 
+using namespace std;
+
 int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i", "input", "Input raster dataset");
   Optionpk<int> band_opt("b", "band", "band(s) to process (Default is -1: process all bands)");
@@ -33,7 +35,10 @@ int main(int argc,char **argv) {
   Optionpk<std::string> output_opt("o", "output", "Output image file");
   Optionpk<double> distance_opt("d", "distance", "Maximum number of pixels to search in all directions to find values to interpolate from", 0);
   Optionpk<int> iteration_opt("it", "iteration", "Number of 3x3 smoothing filter passes to run (default 0)", 0);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0,2);
+
+  distance_opt.setHide(1);
+  iteration_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -50,6 +55,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkfillnodata -i input.txt -m mask -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

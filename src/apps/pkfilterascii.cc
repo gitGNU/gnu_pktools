@@ -54,7 +54,18 @@ int main(int argc,char **argv) {
   Optionpk<double> wavelengthOut_opt("wout", "wavelengthOut", "list of wavelengths in output spectrum (-wout band1 -wout band2 ...)");
   Optionpk<std::string> interpolationType_opt("interp", "interp", "type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html)","akima");
   Optionpk<bool> transpose_opt("t", "transpose", "transpose output with samples in rows and wavelengths in cols", false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
+
+  tapZ_opt.setHide(1);
+  fwhm_opt.setHide(1);
+  srf_opt.setHide(1);
+  wavelengthIn_opt.setHide(1);
+  wavelengthOut_opt.setHide(1);
+  interpolationType_opt.setHide(1);
+  transpose_opt.setHide(1);
+  wavelet_type_opt.setHide(1);
+  family_opt.setHide(1);
+  threshold_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -62,9 +73,6 @@ int main(int argc,char **argv) {
     output_opt.retrieveOption(argc,argv);
     inputCols_opt.retrieveOption(argc,argv);
     method_opt.retrieveOption(argc,argv);
-    wavelet_type_opt.retrieveOption(argc,argv);
-    family_opt.retrieveOption(argc,argv);
-    threshold_opt.retrieveOption(argc,argv);
     dimZ_opt.retrieveOption(argc,argv);
     tapZ_opt.retrieveOption(argc,argv);
     fwhm_opt.retrieveOption(argc,argv);
@@ -73,6 +81,9 @@ int main(int argc,char **argv) {
     wavelengthOut_opt.retrieveOption(argc,argv);
     interpolationType_opt.retrieveOption(argc,argv);
     transpose_opt.retrieveOption(argc,argv);
+    wavelet_type_opt.retrieveOption(argc,argv);
+    family_opt.retrieveOption(argc,argv);
+    threshold_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -80,6 +91,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkfilterascii -i input.txt [-ic column]*" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

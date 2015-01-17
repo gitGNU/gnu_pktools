@@ -3,7 +3,7 @@
 <code>
   Usage: pkfillnodata -i input.txt -m mask -o output 
   
-  Options: [-b band]* [-n attribute]* [-pos] [-transpose]
+  Options: [-b band]*
 
   Advanced options: [-d distance] [-it iterations]
 

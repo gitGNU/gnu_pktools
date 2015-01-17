@@ -66,7 +66,18 @@ int main(int argc, char *argv[])
   Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
   Optionpk<short> buffer_opt("buf", "buffer", "Buffer for calculating statistics for point features ");
   Optionpk<bool> disc_opt("circ", "circular", "Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option)", false);
-  Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0,2);
+
+  bndnodata_opt.setHide(1);
+  srcnodata_opt.setHide(1);
+  polythreshold_opt.setHide(1);
+  test_opt.setHide(1);
+  fieldname_opt.setHide(1);
+  label_opt.setHide(1);
+  geo_opt.setHide(1);
+  down_opt.setHide(1);
+  buffer_opt.setHide(1);
+  disc_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -103,6 +114,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

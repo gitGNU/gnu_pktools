@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
-  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0);
+  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
   mask_opt.setHide(1);
