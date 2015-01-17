@@ -56,8 +56,8 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
   Optionpk<unsigned int> nneuron_opt("nn", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
   Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
-  Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
   Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
+  Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
   Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
   Optionpk<unsigned short> comb_opt("comb", "comb", "how to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option. Default is sum rule (0)",0); 
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
@@ -79,6 +79,26 @@ int main(int argc, char *argv[])
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+
+  band_opt.setHide(1);
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
+  balance_opt.setHide(1);
+  minSize_opt.setHide(1);
+  bag_opt.setHide(1);
+  bagSize_opt.setHide(1);
+  comb_opt.setHide(1);
+  classBag_opt.setHide(1);
+  minSize_opt.setHide(1);
+  prob_opt.setHide(1);
+  priorimg_opt.setHide(1);
+  minSize_opt.setHide(1);
+  offset_opt.setHide(1);
+  scale_opt.setHide(1);
+  connection_opt.setHide(1);
+  weights_opt.setHide(1);
+  maxit_opt.setHide(1);
+  learning_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -129,7 +149,10 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
-    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    cout << endl;
+    cout << "Usage: pkann -t training [-i input -o output] [-cv value]" << endl;
+    cout << endl;
+    cout << "short option -h shows basic options only, use long option --help to show all options" << endl;
     exit(0);//help was invoked, stop processing
   }
 
