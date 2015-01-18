@@ -337,6 +337,10 @@ version 2.6.1
  - pkann
 	support for mask in geo coordinates (does not need to be in same dimensions as input raster dataset, only in same projection)
 
+version 2.6.2
+ - documentation
+	minor bug fixes, thanks to patches introduced by Bas Couwenberg
+
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
