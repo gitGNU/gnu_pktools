@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkoptsvm -t training
 
   Options: [-cc startvalue -cc endvalue] [-g startvalue -g endvalue] [-stepcc stepsize] [-stepg stepsize]
 

@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkdumpimg -i input.txt [-o output]
 
   
   Options: [-of matrix | line] [-b band] [-e vector | -ulx value -uly value -lrx value -lry value]

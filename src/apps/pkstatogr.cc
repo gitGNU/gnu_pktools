@@ -46,13 +46,13 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nbin_opt("nbin", "nbin", "Number of bins");
   Optionpk<bool> relative_opt("rel","relative","Use percentiles for histogram to calculate histogram",false);
   Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb",false);
-  Optionpk<short> verbose_opt("v", "verbose", "Verbose level", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "Verbose level", 0,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    layer_opt.retrieveOption(argc,argv);
     fieldname_opt.retrieveOption(argc,argv);
+    layer_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     src_min_opt.retrieveOption(argc,argv);
     src_max_opt.retrieveOption(argc,argv);
@@ -74,6 +74,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkstatogr -i input [-n attribute]*" << endl;
+    cout << endl;
     cout << "short option -h shows basic options only, use long option --help to show all options" << endl;
     exit(0);//help was invoked, stop processing
   }

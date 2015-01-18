@@ -1,7 +1,5 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkfilter -i input -o ouptut [-f filter | -srf file [-srf file]* | -fwhm value [-fwhm value]*]
+alue]*]
 
   Options: [-dx value [-dy value] | -dz value] [-nodata value]
 

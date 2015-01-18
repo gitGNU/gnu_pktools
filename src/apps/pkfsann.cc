@@ -1,5 +1,5 @@
 /**********************************************************************
-pkfsann.cc: feature selection for nn classifier
+pkfsann.cc: feature selection for artificial neural network classifier pkann
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools

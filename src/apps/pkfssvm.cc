@@ -1,5 +1,5 @@
 /**********************************************************************
-pkfssvm.cc: feature selection for svm classifier
+pkfssvm.cc: feature selection for support vector machine classifier pksvm
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools

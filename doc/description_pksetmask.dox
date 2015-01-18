@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pksetmask -i input -m mask [-msknodata value] -o output
   
   Options: [-min value]* [-max value]* [-data value]* [-nodata value]*
  

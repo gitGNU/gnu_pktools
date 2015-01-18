@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkfilterdem -i input.txt -o output 
   
   Options: [-f filter] [-dim maxsize]
 

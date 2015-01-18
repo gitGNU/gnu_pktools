@@ -43,21 +43,27 @@ int main(int argc, char *argv[])
   // Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
   Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
   Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
-  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
+
+  offset_opt.setHide(1);
+  scale_opt.setHide(1);
+  connection_opt.setHide(1);
+  learning_opt.setHide(1);
+  maxit_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
+    training_opt.retrieveOption(argc,argv);
     inputCols_opt.retrieveOption(argc,argv);
     outputCols_opt.retrieveOption(argc,argv);
-    training_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
     from_opt.retrieveOption(argc,argv);
     to_opt.retrieveOption(argc,argv);
-    offset_opt.retrieveOption(argc,argv);
-    scale_opt.retrieveOption(argc,argv);
     cv_opt.retrieveOption(argc,argv);
     nneuron_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
     connection_opt.retrieveOption(argc,argv);
     // weights_opt.retrieveOption(argc,argv);
     learning_opt.retrieveOption(argc,argv);
@@ -69,6 +75,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkregann -i input -t training [-ic col]* [-oc col]* -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

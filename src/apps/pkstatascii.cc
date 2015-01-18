@@ -61,17 +61,22 @@ int main(int argc, char *argv[])
   Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two columns (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression between two columns and get correlation coefficient (defined by -c <col1> -c <col2>",false);
   Optionpk<bool> regerr_opt("regerr","regerr","calculate linear regression between two columns and get root mean square error (defined by -c <col1> -c <col2>",false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0,2);
+
+  src_min_opt.setHide(1);
+  src_max_opt.setHide(1);
+  fs_opt.setHide(1);
+  range_opt.setHide(1);
+  output_opt.setHide(1);
+  transpose_opt.setHide(1);
+  comment_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
+    //mandatory options
     doProcess=input_opt.retrieveOption(argc,argv);
-    fs_opt.retrieveOption(argc,argv);
-    comment_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
-    transpose_opt.retrieveOption(argc,argv);
     col_opt.retrieveOption(argc,argv);
-    range_opt.retrieveOption(argc,argv);
+    //optional options
     size_opt.retrieveOption(argc,argv);
     rand_opt.retrieveOption(argc,argv);
     randdist_opt.retrieveOption(argc,argv);
@@ -87,17 +92,23 @@ int main(int argc, char *argv[])
     minmax_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
-    src_min_opt.retrieveOption(argc,argv);
-    src_max_opt.retrieveOption(argc,argv);
     histogram_opt.retrieveOption(argc,argv);
-    histogram2d_opt.retrieveOption(argc,argv);
     nbin_opt.retrieveOption(argc,argv);
     relative_opt.retrieveOption(argc,argv);
     kde_opt.retrieveOption(argc,argv);
+    histogram2d_opt.retrieveOption(argc,argv);
     correlation_opt.retrieveOption(argc,argv);
     rmse_opt.retrieveOption(argc,argv);
     reg_opt.retrieveOption(argc,argv);
     regerr_opt.retrieveOption(argc,argv);
+    //advanced options
+    src_min_opt.retrieveOption(argc,argv);
+    src_max_opt.retrieveOption(argc,argv);
+    fs_opt.retrieveOption(argc,argv);
+    range_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    transpose_opt.retrieveOption(argc,argv);
+    comment_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -105,6 +116,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkstatascii -i input [-c column]*" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

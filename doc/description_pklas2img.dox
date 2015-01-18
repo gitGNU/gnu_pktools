@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pklas2img -i lasfile -o output 
   
   Options: [-n attribute] [-comp method] [-fir type] [-a_srs] [-ulx value -uly value -lrx value -lry value] [-dx value -dy value] [-ot type] [-of format] [-ret value]* [-class number]* 
 

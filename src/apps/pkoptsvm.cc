@@ -1,5 +1,5 @@
 /**********************************************************************
-pkoptsvm.cc: program to optimize parameters for SVM classification
+pkoptsvm.cc: program to optimize parameters for support vector machine classifier pksvm
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -62,7 +62,7 @@ Optionpk<bool> costfunction_opt("cf", "cf", "use Overall Accuracy instead of kap
 Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
 Optionpk<string> classname_opt("c", "class", "list of class names."); 
 Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
-Optionpk<short> verbose_opt("v", "verbose", "use 1 to output intermediate results for plotting",0);
+Optionpk<short> verbose_opt("v", "verbose", "use 1 to output intermediate results for plotting",0,2);
 
 double objFunction(const std::vector<double> &x, std::vector<double> &grad, void *my_func_data){
 
@@ -259,6 +259,10 @@ int main(int argc, char *argv[])
   map<short,int> reclassMap;
   vector<int> vreclass;
   Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option)."); 
+  Optionpk<float> ccost_opt("cc", "ccost", "min and max boundaries the parameter C of C-SVC, epsilon-SVR, and nu-SVR (optional: initial value)",1);
+  Optionpk<float> gamma_opt("g", "gamma", "min max boundaries for gamma in kernel function (optional: initial value)",0);
+  Optionpk<double> stepcc_opt("stepcc","stepcc","multiplicative step for ccost in GRID search",2);
+  Optionpk<double> stepg_opt("stepg","stepg","multiplicative step for gamma in GRID search",2);
   Optionpk<string> input_opt("i", "input", "input test vector file"); 
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
   Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
@@ -271,20 +275,49 @@ int main(int argc, char *argv[])
   Optionpk<double> bend_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
-  Optionpk<float> gamma_opt("g", "gamma", "min max boundaries for gamma in kernel function (optional: initial value)",0);
-  Optionpk<float> ccost_opt("cc", "ccost", "min and max boundaries the parameter C of C-SVC, epsilon-SVR, and nu-SVR (optional: initial value)",1);
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
   Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
-  Optionpk<double> step_opt("step","step","multiplicative step for ccost and gamma in GRID search",2);
 
+  input_opt.setHide(1);
+  tlayer_opt.setHide(1);
+  label_opt.setHide(1);
+  balance_opt.setHide(1);
+  random_opt.setHide(1);
+  minSize_opt.setHide(1);
+  band_opt.setHide(1);
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
+  offset_opt.setHide(1);
+  scale_opt.setHide(1);
+  svm_type_opt.setHide(1);
+  kernel_type_opt.setHide(1);
+  kernel_degree_opt.setHide(1);
+  coef0_opt.setHide(1);
+  nu_opt.setHide(1);
+  epsilon_loss_opt.setHide(1);
+  cache_opt.setHide(1);
+  epsilon_tol_opt.setHide(1);
+  shrinking_opt.setHide(1);
+  prob_est_opt.setHide(1);
+  cv_opt.setHide(1);
+  costfunction_opt.setHide(1);
+  maxit_opt.setHide(1);
+  tolerance_opt.setHide(1);
+  algorithm_opt.setHide(1);
+  classname_opt.setHide(1);
+  classvalue_opt.setHide(1);
+  
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=training_opt.retrieveOption(argc,argv);
+    ccost_opt.retrieveOption(argc,argv);
+    gamma_opt.retrieveOption(argc,argv);
+    stepcc_opt.retrieveOption(argc,argv);
+    stepg_opt.retrieveOption(argc,argv);
     input_opt.retrieveOption(argc,argv);
     tlayer_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
-    // reclass_opt.retrieveOption(argc,argv);
     balance_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
     minSize_opt.retrieveOption(argc,argv);
@@ -296,9 +329,7 @@ int main(int argc, char *argv[])
     svm_type_opt.retrieveOption(argc,argv);
     kernel_type_opt.retrieveOption(argc,argv);
     kernel_degree_opt.retrieveOption(argc,argv);
-    gamma_opt.retrieveOption(argc,argv);
     coef0_opt.retrieveOption(argc,argv);
-    ccost_opt.retrieveOption(argc,argv);
     nu_opt.retrieveOption(argc,argv);
     epsilon_loss_opt.retrieveOption(argc,argv);
     cache_opt.retrieveOption(argc,argv);
@@ -309,7 +340,6 @@ int main(int argc, char *argv[])
     costfunction_opt.retrieveOption(argc,argv);
     maxit_opt.retrieveOption(argc,argv);
     tolerance_opt.retrieveOption(argc,argv);
-    step_opt.retrieveOption(argc,argv);
     algorithm_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
@@ -320,6 +350,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkoptsvm -t training" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
@@ -625,8 +658,6 @@ int main(int argc, char *argv[])
 
   std::vector<double> x(2);
   if(algorithm_opt[0]=="GRID"){
-    if(step_opt.size()<2)//[0] for cost, [1] for gamma
-      step_opt.push_back(step_opt.back());
     // double minError=1000;
     // double minCost=0;
     // double minGamma=0;
@@ -639,10 +670,10 @@ int main(int argc, char *argv[])
     double progress=0;
     if(!verbose_opt[0])
       pfnProgress(progress,pszMessage,pProgressArg);
-    double ncost=log(ccost_opt[1])/log(step_opt[0])-log(ccost_opt[0])/log(step_opt[0]);
-    double ngamma=log(gamma_opt[1])/log(step_opt[1])-log(gamma_opt[0])/log(step_opt[1]);
-    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=step_opt[0]){
-      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=step_opt[1]){
+    double ncost=log(ccost_opt[1])/log(stepcc_opt[0])-log(ccost_opt[0])/log(stepcc_opt[0]);
+    double ngamma=log(gamma_opt[1])/log(stepg_opt[0])-log(gamma_opt[0])/log(stepg_opt[0]);
+    for(double ccost=ccost_opt[0];ccost<=ccost_opt[1];ccost*=stepcc_opt[0]){
+      for(double gamma=gamma_opt[0];gamma<=gamma_opt[1];gamma*=stepg_opt[0]){
 	x[0]=ccost;
 	x[1]=gamma;
 	std::vector<double> theGrad;

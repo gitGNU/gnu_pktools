@@ -1,4 +1,4 @@
-\section examples_pkpolygonize Examples of pkpolygonize
+\section examples_pkreclass Examples of pkreclass
 \code
 pkreclass -i input1.tif -o output.tif -c 1 -r 0 -c 2 -r 0
 \endcode

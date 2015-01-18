@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkascii2img -i input.txt -o output
 
   
   Options: [-ot type] [-of GDALformat] [-co NAME=VALUE]* [-dx value] [-dy value] [-ulx value] [-uly value] [-ct filename] [-a_srs EPSG:number] [-d description]

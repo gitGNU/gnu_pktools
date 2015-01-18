@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkcreatect -i input.txt -o output [-ct colortable | -min value -max value]
 
   
   Options: [--grey] [-of GDALformat] [-co option]* [-d description]

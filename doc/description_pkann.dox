@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkann -t training [-i input -o output] [-cv value]
 
   
   Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-nn number]* [-m filename [-msknodata value]*] [-nodata value]

@@ -94,15 +94,44 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nactive_opt("na", "nactive", "Number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "List of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in class opt)."); 
-  Optionpk<short> verbose_opt("v", "verbose", "Verbose level",0);
+  Optionpk<short> verbose_opt("v", "verbose", "Verbose level",0,2);
+
+  band_opt.setHide(1);
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
+  balance_opt.setHide(1);
+  minSize_opt.setHide(1);
+  bag_opt.setHide(1);
+  bagSize_opt.setHide(1);
+  comb_opt.setHide(1);
+  classBag_opt.setHide(1);
+  prob_opt.setHide(1);
+  priorimg_opt.setHide(1);
+  offset_opt.setHide(1);
+  scale_opt.setHide(1);
+  svm_type_opt.setHide(1);
+  kernel_type_opt.setHide(1);
+  kernel_degree_opt.setHide(1);
+  coef0_opt.setHide(1);
+  nu_opt.setHide(1);
+  epsilon_loss_opt.setHide(1);
+  cache_opt.setHide(1);
+  epsilon_tol_opt.setHide(1);
+  shrinking_opt.setHide(1);
+  prob_est_opt.setHide(1);
+  entropy_opt.setHide(1);
+  active_opt.setHide(1);
+  nactive_opt.setHide(1);
+  verbose_opt.setHide(1);
+  random_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=training_opt.retrieveOption(argc,argv);
-    tlayer_opt.retrieveOption(argc,argv);
     input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     cv_opt.retrieveOption(argc,argv);
+    tlayer_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -116,6 +145,7 @@ int main(int argc, char *argv[])
     mask_opt.retrieveOption(argc,argv);
     msknodata_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
+    // Advanced options
     band_opt.retrieveOption(argc,argv);
     bstart_opt.retrieveOption(argc,argv);
     bend_opt.retrieveOption(argc,argv);
@@ -150,6 +180,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pksvm -t training [-i input -o output] [-cv value]" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

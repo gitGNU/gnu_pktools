@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkcomposite -i input [-i input]* -o output 
 
   Options: [-b band]* [-dx xres] [-dy yres] [-e vector] [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-cr rule] [-cb band] [-srcnodata value] [-bndnodata band] [-min value] [-max value] [-dstnodata value] [-r resampling_method] [-ot {Byte / Int16 / UInt16 / UInt32 / Int32 / Float32 / Float64 / CInt16 / CInt32 / CFloat32 / CFloat64}] [-of format] [-co NAME=VALUE]* [-a_srs epsg:number]
 

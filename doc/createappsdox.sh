@@ -8,16 +8,22 @@ for file in ../src/apps/pk*.cc;do
     echo ${THETOOL}
 
     THESHORTDESCRIPTION=$(grep "${THETOOL}.cc: " $file | awk -v FS=':' '{print $2}')
-    THESYNOPSIS="${THETOOL} [OPTIONS]"
+    USAGE=$(${THETOOL} -h|grep Usage)
     cat > ../doc/${THETOOL}.dox <<EOF
 \section $THETOOL $THETOOL
 $THESHORTDESCRIPTION
+## SYNOPSIS
+
+<code>
+  ${USAGE}
+</code>
 
 EOF
 
     #create description if not exists
-    touch ../doc/description_${THETOOL}.dox
-
+    if [ ! -f ../doc/description_${THETOOL}.dox ];then
+	touch ../doc/description_${THETOOL}.dox
+    fi
     cat ../doc/description_${THETOOL}.dox >> ../doc/${THETOOL}.dox
 
 ## OPTIONS ##
@@ -31,12 +37,16 @@ EOF
 
     ${THETOOL} --doxygen|sed '$d' >> ../doc/${THETOOL}.dox
     echo >> ../doc/${THETOOL}.dox
-    echo "Examples" >> ../doc/${THETOOL}.dox
-    echo "========" >> ../doc/${THETOOL}.dox
-    echo "Some examples how to use ${THETOOL} can be found \\ref examples_${THETOOL} \"here\"" >> ../doc/${THETOOL}.dox
-    echo "FAQ" >> ../doc/${THETOOL}.dox
-    echo "========" >> ../doc/${THETOOL}.dox
-    echo "Frequently asked questions on ${THETOOL} can be found \\ref faq_${THETOOL} \"here\"" >> ../doc/${THETOOL}.dox
+    if [ -f examples_${THETOOL}.dox ];then
+	echo "Examples" >> ../doc/${THETOOL}.dox
+	echo "========" >> ../doc/${THETOOL}.dox
+	echo "Some examples how to use ${THETOOL} can be found \\ref examples_${THETOOL} \"here\"" >> ../doc/${THETOOL}.dox
+    fi
+    if [ -f faq_${THETOOL}.dox ];then
+	echo "FAQ" >> ../doc/${THETOOL}.dox
+	echo "========" >> ../doc/${THETOOL}.dox
+	echo "Frequently asked questions on ${THETOOL} can be found \\ref faq_${THETOOL} \"here\"" >> ../doc/${THETOOL}.dox
+    fi
 done
 
 echo "create general dox file for aps list"

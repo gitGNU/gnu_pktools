@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkstatascii -i input [-c column]*
   
   Options: [-size] [-rnd number [-dist function] [-rnda value -rndb value]] [-mean] [-median] [-var] [-skew] [-stdev] [-sum] [-mm] [-min] [-max] [-hist [-nbin value] [-rel] [-kde]] [-hist2d [-nbin value] [-rel] [-kde]] [-cor] [-rmse] [-reg] [-regerr]
 

@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output 
 
   Options: [-ln layer]* [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-polygon] [-b band]* [-r rule]
 

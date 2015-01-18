@@ -39,21 +39,21 @@ using namespace std;
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input image file");
   Optionpk<string> mask_opt("m", "mask", "All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use input file as mask to remove background polygon! ");
-  Optionpk<double> nodata_opt("nodata", "nodata", "Disgard this nodata value when creating polygons.");
   Optionpk<string> output_opt("o", "output", "Output vector file");
   Optionpk<string> ogrformat_opt("f", "f", "Output OGR file format","SQLite");
   Optionpk<int> band_opt("b", "band", "the band to be used from input file", 0);
   Optionpk<string> fname_opt("n", "name", "the field name of the output layer", "DN");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<double> nodata_opt("nodata", "nodata", "Disgard this nodata value when creating polygons.");
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
     fname_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -62,6 +62,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkpolygonize -i input [-m mask] -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

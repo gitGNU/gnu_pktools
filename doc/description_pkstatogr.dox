@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkstatogr -i input 
 
   Options: [-ln layer]* [-n attribute]* [srcnodata]* [src_min] [src_max] [-s] [-mm] [-min] [-max] [-mean] [-median] [-stdev] [-hist] [-nbin] [-rel] [-kde]
 </code>

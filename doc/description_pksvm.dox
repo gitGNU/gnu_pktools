@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pksvm -t training [-i input -o output] [-cv value]
 
   Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-g gamma] [-cc cost] [-m filename [-msknodata value]*] [-nodata value]
 
