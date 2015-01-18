@@ -1,0 +1,139 @@
+\section installation_linux Installation on Linux
+
+\subsection install_debian Installation for Debian Linux (via repository)
+
+A <a href="https://packages.debian.org/source/sid/pktools">binary package</a> of pktools for Debian is maintained by Francesco Paolo Lovergine. The version might not be the latest available. Please check the <a href="https://qa.debian.org/developer.php?login=pkg-grass-devel%40lists.alioth.debian.org">packages overview</a> for the available package versions. The latest version of pktools can always be installed via the \ref install_ubuntu "installation script" or from the source code using a \ref install_manual "manual" installation.
+
+\subsection install_ubuntu Installation for Ubuntu (Debian based) Linux distributions (from source code via automatic script)
+
+Users working with Debian based distributions (e.g., Ubuntu) can download <a href="http://download.savannah.gnu.org/releases/pktools/install_pktools.sh">install_pktools.sh</a>. This script will automatically download the latest release of pktools and dependencies. You need an internet connection when running the script (as root or sudo):
+
+\code
+sudo bash install_pktools.sh
+\endcode
+
+\subsection install_manual Manual installation for (all Linux distributions)
+
+For a manual installation, download the <a href="http://download.savannah.gnu.org/releases/pktools/pktools-latest.tar.gz">latest</a> release from <a href="http://download.savannah.gnu.org/releases/pktools/">Savannah</a>
+
+Optionally: check the release <a href="http://download.savannah.gnu.org/releases/pktools/pktools-latest.md5">md5sum</a> to ensure originality.
+
+\code 
+md5sum pktools-latest.tar.gz
+\endcode
+
+The result should be identical to the content of the corresponding md5 file you downloaded.
+
+Unpack the tar zip file
+
+\code
+tar xzvf pktools-latest.tar.gz
+cd pktools-*
+\endcode
+
+Basic installation (please refer to INSTALL file for more advanced configuration)
+\code
+./configure
+make
+sudo make install
+sudo ldconfig
+\endcode
+
+\subsubsection pktools_installation_required Required dependences
+
+packages to install before pktools
+   - g++
+   - make
+   - libgdal-dev (see also http://trac.osgeo.org/gdal/wiki/BuildingOnUnix)
+   - libgsl0-dev (see also http://www.gnu.org/software/gsl/)
+   - libarmadillo-dev (see also http://arma.sourceforge.net/download.html)
+
+   Example on how to install required packages in Debian based system (using apt-get):
+  - sudo apt-get install g++ make libgdal-dev libgsl0-dev libarmadillo-dev
+
+\subsubsection pktools_installation_optional Optional dependences
+
+<b>To enable program \ref pkoptsvm</b>
+
+   Install additional package 
+
+   - libnlopt-dev (see also http://ab-initio.mit.edu/wiki/index.php/NLopt#Download_and_installation )
+
+   Example on how to install required packages in Debian based system (using apt-get):
+
+   \code   
+   sudo apt-get install libnlopt-dev
+   \endcode
+
+   Note: currently, the repository seems not to include this package anymore and manual installation is required (see also http://ab-initio.mit.edu/wiki/index.php/NLopt#Download_and_installation)
+
+   - Install pktools with with extra configuration option --enable-nlopt:
+
+   \code
+   ./configure --enable-nlopt
+   make
+   sudo make install
+   sudo ldconfig
+   \endcode
+
+
+<b>To enable programs \ref pkann and \ref pkfsann</b>
+
+   Install package 
+
+   - libfann-dev (see also http://leenissen.dk/fann/wp/download/)
+
+   Example on how to install required packages in Debian based system (using apt-get):
+   
+   \code
+   sudo apt-get install libfann-dev
+   \endcode
+
+   Install pktools with extra configuration option --libfann-dev:
+
+   \code
+   ./configure --enable-fann
+   make
+   sudo make install
+   sudo ldconfig
+   \endcode
+
+<b>To enable program \ref pklas2img</b>
+
+   Install additional packages:
+
+   - libboost-dev (see also http://www.boost.org/)
+   - liblas1 (from Mateusz Loskot, see also http://www.liblas.org/tutorial/cpp.html)
+   - liblas-dev 
+   - python-liblas 
+   - liblas2 
+   - liblas-c2 
+   - liblas-c-dev
+
+   Example on how to install required packages in Debian based system (using apt-get):
+
+    - first add the following two lines to /etc/apt/sources.list (replace <codename> with what you get from lsb_release -c)
+
+    \code
+      deb http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu <codename> main 
+      deb-src http://ppa.launchpad.net/ubuntugis/ubuntugis-unstable/ubuntu <codename> main 
+    \endcode      
+      
+    - then install extra packages:      
+
+    \code
+      sudo apt-get install libboost-dev liblas-dev liblas-c-dev liblas1 liblas2 liblas-c2  python-liblas
+    \endcode
+   
+   Or install manually as explained in http://www.liblas.org/compilation.html#using-unix-makefiles-on-linux
+
+   ! Note that if you want support for compressed las format (LAZ), you need to install laszip first (http://www.laszip.org) and install liblas manually
+
+   - Install pktools with with extra configuration option --enable-las:
+
+   \code
+   ./configure --enable-las
+   make
+   sudo make install
+   sudo ldconfig
+   \endcode

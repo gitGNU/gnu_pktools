@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   Optionpk<string> projection_opt("a_srs", "a_srs", "Override the projection for the output file");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> description_opt("d", "description", "Set image description");
-  Optionpk<bool> verbose_opt("v", "verbose", "verbose", false);
+  Optionpk<bool> verbose_opt("v", "verbose", "verbose", false,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -62,6 +62,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkascii2img -i input.txt -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

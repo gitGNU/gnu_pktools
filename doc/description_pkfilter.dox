@@ -1,11 +1,10 @@
 ## SYNOPSIS
 
 <code>
-  Usage: pkfilter -i input -o ouptut
+  Usage: pkfilter -i input -o ouptut [-f filter | -srf file [-srf file]* | -fwhm value [-fwhm value]*]
 
-  Options: [-f filter] [options]
+  Options: [-dx value [-dy value] | -dz value] [-nodata value]
 
-  Advanced options:
 </code>
 
 This utility implements spatial and spectral filtering for raster data. In the spatial domain (X, Y), the filter typically involves a rectangular convolution kernel (moving window). To avoid image shifting, the size of the window should be odd (3, 5, 7, ...). You can set the window sizes in X and Y directions separately with the options -dx and -dy. A circular kernel (disc) is applied if option -circ is set. An overview of the supported filters (option -f|--filter) is given below. You can create customized filters by defining your own filter taps (multiplicative elements of the filter kernel) via an ascii file (option -tap). In the spectral/temporal domain (Z) you can filter multi-band raster inputs. The kernel filter size can be set with the option -dz (use odd values only).

@@ -33,7 +33,7 @@ using namespace std;
 int main(int argc,char **argv) {
   Optionpk<std::string> input_opt("i","input","input image file");
   Optionpk<std::string> output_opt("o", "output", "Output image file");
-  Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
+  // Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   Optionpk<string> postFilter_opt("f", "filter", "post processing filter: vito, etew_min, promorph (progressive morphological filter),open,close).");
   Optionpk<double> dim_opt("dim", "dim", "maximum filter kernel size", 17);
@@ -45,16 +45,25 @@ int main(int argc,char **argv) {
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> nodata_opt("nodata", "nodata", "nodata value");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
+
+  disc_opt.setHide(1);
+  maxSlope_opt.setHide(1);
+  hThreshold_opt.setHide(1);
+  minChange_opt.setHide(1);
+  otype_opt.setHide(1);
+  oformat_opt.setHide(1);
+  colorTable_opt.setHide(1);
+  nodata_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
-    tmpdir_opt.retrieveOption(argc,argv);
-    disc_opt.retrieveOption(argc,argv);
+    // tmpdir_opt.retrieveOption(argc,argv);
     postFilter_opt.retrieveOption(argc,argv);
     dim_opt.retrieveOption(argc,argv);
+    disc_opt.retrieveOption(argc,argv);
     maxSlope_opt.retrieveOption(argc,argv);
     hThreshold_opt.retrieveOption(argc,argv);
     minChange_opt.retrieveOption(argc,argv);
@@ -69,6 +78,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkfilterdem -i input.txt -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

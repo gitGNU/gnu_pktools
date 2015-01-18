@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   Optionpk<string> attribute_opt("n", "name", "names of the attributes to select. Each attribute is stored in a separate band. Default is ALL: write all attributes", "ALL");
   Optionpk<bool> pos_opt("pos","pos","include position (x and y)",false);
   Optionpk<bool> transpose_opt("t","transpose","transpose output (does not work for -n ALL ",false);
-  Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -50,6 +50,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkdumpogr -i input.txt [-o output]" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

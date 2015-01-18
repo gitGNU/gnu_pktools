@@ -400,6 +400,8 @@ int main(int argc,char **argv) {
 	  //observation update if observation is valid
 
 	  if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
+	    double kalmanGain=1;
+	    double uncertObs=uncertObs_opt[0];
 	    bool doUpdate=true;
 	    if(deltaObs_opt.size()){
 	      vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
@@ -418,6 +420,9 @@ int main(int argc,char **argv) {
 		difference*=100;//in percentage
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
+		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	      if(verbose_opt[0]>1){
 		if(!doUpdate)
@@ -425,8 +430,6 @@ int main(int argc,char **argv) {
 	      }
 	    }
 	    if(doUpdate){
-	      double kalmanGain=1;
-	      double uncertObs=uncertObs_opt[0];
 	      if(uncertObsLineBuffer.size()>icol)
 		uncertObs=uncertObsLineBuffer[icol];
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
@@ -686,6 +689,7 @@ int main(int argc,char **argv) {
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
+	    double uncertObs=uncertObs_opt[0];
 	    bool doUpdate=true;
 	    if(deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
@@ -697,10 +701,12 @@ int main(int argc,char **argv) {
 		difference*=100;//in percentage
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
+		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	    }
 	    if(doUpdate){
-	      double uncertObs=uncertObs_opt[0];
 	      if(uncertObsLineBuffer.size()>icol)
 		uncertObs=uncertObsLineBuffer[icol];
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
@@ -886,7 +892,9 @@ int main(int argc,char **argv) {
 	  //observation update if observation is valid
 
 	  if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
+	    double kalmanGain=1;
 	    bool doUpdate=true;
+	    double uncertObs=uncertObs_opt[0];
 	    if(deltaObs_opt.size()){
 	      vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	      int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
@@ -904,6 +912,9 @@ int main(int argc,char **argv) {
 		difference*=100;//in percentage
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
+		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	      if(verbose_opt[0]>1){
 		if(!doUpdate)
@@ -911,8 +922,6 @@ int main(int argc,char **argv) {
 	      }
 	    }
 	    if(doUpdate){
-	      double kalmanGain=1;
-	      double uncertObs=uncertObs_opt[0];
 	      if(uncertObsLineBuffer.size()>icol)
 		uncertObs=uncertObsLineBuffer[icol];
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
@@ -1172,6 +1181,7 @@ int main(int argc,char **argv) {
 	  //observation update
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
+	    double uncertObs=uncertObs_opt[0];
 	    bool doUpdate=true;
 	    if(deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
@@ -1183,10 +1193,12 @@ int main(int argc,char **argv) {
 		difference*=100;//in percentage
 		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
 		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
+		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
+		if(-difference>uncertObs_opt[0])
+		  uncertObs=-difference;
 	      }
 	    }
 	    if(doUpdate){
-	      double uncertObs=uncertObs_opt[0];
 	      if(uncertObsLineBuffer.size()>icol)
 		uncertObs=uncertObsLineBuffer[icol];
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])

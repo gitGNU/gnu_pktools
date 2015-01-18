@@ -3,9 +3,9 @@
 <code>
   Usage: pkfilterdem -i input.txt -o output 
   
-  Options: [-f filter] [-dim maxsize] [-ot type] [-of format] [-ct colortable] [-nodata value] 
+  Options: [-f filter] [-dim maxsize]
 
-  Advanced options: [-circ] [-st threshold] [-ht threshold] [-minchange value]
+  Advanced options: [-ot type] [-of format] [-ct colortable] [-nodata value] [-circ] [-st threshold] [-ht threshold] [-minchange value]
 
 </code>
 

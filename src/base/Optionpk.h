@@ -87,7 +87,8 @@ Several command line option formats are supported:
 - `--longOption` (no value for boolean options, which are automatically set by invoking the option)
 
 Option names should have regular characters and no white space in them. Some names are reserved and can not be used either:
-- short option `h` or long option `help`: shows help info
+- short option `h` or long option `help`: shows usage
+- long option `help` shows long help info
 - long option `license`: shows license info
 - long option `version`: shows current version of pktools
 - long option `doxygen`: shows help info in table format, ready to be included in doxygen
@@ -115,6 +116,7 @@ public:
   ~Optionpk();
   ///set help information
   void setHelp(const std::string& helpInfo){m_help=helpInfo;};
+  void setHide(short hide){m_hide=hide;};
   bool retrieveOption(int argc, char ** argv);
   template<class T1> friend std::ostream& operator<<(std::ostream & os, const Optionpk<T1>& theOption);
 
@@ -194,7 +196,7 @@ shortName is option invoked with `-`\n
 longName is option invoked with `--`\n
 helpInfo is the help message that is shown when option -h or --help is invoked\n
 defaultValue is default value of the option (first value of vector: option[0])\n
-hide=0 : option is visible for in both short (`-h`) and long (`--help`) help. Typical use: mandatory options\n
+hide=0 : option is visible for in both short (`-h`). Typical use: mandatory options\n
 hide=1 : option is only visible in long help (`--help`). Typical use: expert options\n
 hide=2 : option is hidden for user. Typical use: Easter eggs or options only known to author
 **/
