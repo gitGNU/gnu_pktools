@@ -61,37 +61,51 @@ int main(int argc, char *argv[])
   Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
-  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0);
+  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
+  extent_opt.setHide(1);
+  mask_opt.setHide(1);
+  option_opt.setHide(1);
+  cx_opt.setHide(1);
+  cy_opt.setHide(1);
+  nx_opt.setHide(1);
+  ny_opt.setHide(1);
+  ns_opt.setHide(1);
+  nl_opt.setHide(1);
+  scale_opt.setHide(1);
+  offset_opt.setHide(1);
+  nodata_opt.setHide(1);
+  description_opt.setHide(1);
+  
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
-    extent_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
     ulx_opt.retrieveOption(argc,argv);
     uly_opt.retrieveOption(argc,argv);
     lrx_opt.retrieveOption(argc,argv);
     lry_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     autoscale_opt.retrieveOption(argc,argv);
-    scale_opt.retrieveOption(argc,argv);
-    offset_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
-    option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     dx_opt.retrieveOption(argc,argv);
     dy_opt.retrieveOption(argc,argv);
+    resample_opt.retrieveOption(argc,argv);
+    extent_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
     cx_opt.retrieveOption(argc,argv);
     cy_opt.retrieveOption(argc,argv);
     nx_opt.retrieveOption(argc,argv);
     ny_opt.retrieveOption(argc,argv);
     ns_opt.retrieveOption(argc,argv);
     nl_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
-    resample_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -104,6 +118,9 @@ int main(int argc, char *argv[])
     cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkcrop -i input -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

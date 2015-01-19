@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkascii2ogr -i input.txt -o output
 
   
   Options: [-f OGRformat] [-x col] [-y col] [--line] [-n fieldname -ot type]* [-fs separator]

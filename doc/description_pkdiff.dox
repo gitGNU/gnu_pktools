@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkdiff -i input -ref reference 
 
   Options: [-ln layer] [-b band] [-cm] [-lr attribute] [-c name -r value]* [-nodata value]* [-m mask] [-msknodata value]*
 

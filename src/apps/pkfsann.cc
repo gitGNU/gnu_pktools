@@ -1,5 +1,5 @@
 /**********************************************************************
-pkfsann.cc: feature selection for nn classifier
+pkfsann.cc: feature selection for artificial neural network classifier pkann
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -196,7 +196,30 @@ int main(int argc, char *argv[])
   Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
   Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
   Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
-  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
+
+  tlayer_opt.setHide(1);
+  label_opt.setHide(1);
+  balance_opt.setHide(1);
+  random_opt.setHide(1);
+  minSize_opt.setHide(1);
+  band_opt.setHide(1);
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
+  offset_opt.setHide(1);
+  scale_opt.setHide(1);
+  aggreg_opt.setHide(1);
+    // priors_opt.setHide(1);
+  selector_opt.setHide(1);
+  epsilon_cost_opt.setHide(1);
+  cv_opt.setHide(1);
+  classname_opt.setHide(1);
+  classvalue_opt.setHide(1);
+  nneuron_opt.setHide(1);
+  connection_opt.setHide(1);
+  weights_opt.setHide(1);
+  learning_opt.setHide(1);
+  maxit_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -232,6 +255,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkfsann -t training -n number" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkgetmask -i input -o output
   
   Options: [-min value]* [-max value]* [-data value]* [-nodata value]*
  

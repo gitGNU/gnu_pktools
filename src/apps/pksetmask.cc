@@ -38,19 +38,24 @@ int main(int argc, char *argv[])
   Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each msknodata option", '=');
   Optionpk<int> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0,2);
 
+  otype_opt.setHide(1);
+  oformat_opt.setHide(1);
+  option_opt.setHide(1);
+  colorTable_opt.setHide(1);
+  
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
+    operator_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
-    msknodata_opt.retrieveOption(argc,argv);
-    operator_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -59,6 +64,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pksetmask -i input -m mask [-msknodata value] -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

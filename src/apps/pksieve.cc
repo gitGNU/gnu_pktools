@@ -42,16 +42,16 @@ int main(int argc,char **argv) {
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
-    connect_opt.retrieveOption(argc,argv);
     size_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
+    connect_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
@@ -62,6 +62,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pksieve -i input [-s size] -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

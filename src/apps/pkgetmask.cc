@@ -37,18 +37,25 @@ int main(int argc,char **argv) {
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose", 0,2);
+
+  band_opt.setHide(1);
+  operator_opt.setHide(1);
+  otype_opt.setHide(1);
+  oformat_opt.setHide(1);
+  option_opt.setHide(1);
+  colorTable_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
+    output_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
-    operator_opt.retrieveOption(argc,argv);
     data_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
-    output_opt.retrieveOption(argc,argv);
+    band_opt.retrieveOption(argc,argv);
+    operator_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
@@ -60,6 +67,9 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkgetmask -i input -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

@@ -32,28 +32,37 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i", "input", "Input raster dataset.");
   Optionpk<string> reference_opt("ref", "reference", "Reference (raster or vector) dataset");
   Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample. Leave empty to select all (for vector reference datasets only)");
-  Optionpk<string> output_opt("o", "output", "Output dataset (optional)");
-  Optionpk<string> ogrformat_opt("f", "f", "OGR format for output vector (for vector reference datasets only)","SQLite");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
-  Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,2);
-  Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,2);
-  Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
   Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
   Optionpk<short> band_opt("b", "band", "Input (reference) raster band. Optionally, you can define different bands for input and reference bands respectively: -b 1 -b 0.", 0);
   Optionpk<bool> rmse_opt("rmse", "rmse", "Report root mean squared error", false);
   Optionpk<bool> regression_opt("reg", "reg", "Report linear regression (Input = c0+c1*Reference)", false);
   Optionpk<bool> confusion_opt("cm", "confusion", "Create confusion matrix (to std out)", false);
   Optionpk<string> labelref_opt("lr", "lref", "Attribute name of the reference label (for vector reference datasets only)", "label");
+  Optionpk<string> classname_opt("c", "class", "List of class names."); 
+  Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in classname option)."); 
+  Optionpk<string> output_opt("o", "output", "Output dataset (optional)");
+  Optionpk<string> ogrformat_opt("f", "f", "OGR format for output vector (for vector reference datasets only)","SQLite");
   Optionpk<string> labelclass_opt("lc", "lclass", "Attribute name of the classified label (for vector reference datasets only)", "class");
   Optionpk<short> boundary_opt("bnd", "boundary", "Boundary for selecting the sample (for vector reference datasets only)", 1,1);
   Optionpk<bool> homogeneous_opt("hom", "homogeneous", "Only take regions with homogeneous boundary into account (for reference datasets only)", false,1);
   Optionpk<bool> disc_opt("circ", "circular", "Use circular boundary (for vector reference datasets only)", false,1);
-  Optionpk<string> classname_opt("c", "class", "List of class names."); 
-  Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in classname option)."); 
   Optionpk<string> colorTable_opt("ct", "ct", "Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid).");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
-  Optionpk<short> verbose_opt("v", "verbose", "Verbose level", 0);
+  Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,2);
+  Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,2);
+  Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
+  Optionpk<short> verbose_opt("v", "verbose", "Verbose level", 0,2);
+
+  output_opt.setHide(1);
+  ogrformat_opt.setHide(1);
+  labelclass_opt.setHide(1);
+  boundary_opt.setHide(1);
+  homogeneous_opt.setHide(1);
+  disc_opt.setHide(1);
+  colorTable_opt.setHide(1);
+  option_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -73,15 +82,15 @@ int main(int argc, char *argv[])
     output_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     labelclass_opt.retrieveOption(argc,argv);
-    valueE_opt.retrieveOption(argc,argv);
-    valueO_opt.retrieveOption(argc,argv);
-    valueC_opt.retrieveOption(argc,argv);
     boundary_opt.retrieveOption(argc,argv);
     homogeneous_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     // class_opt.retrieveOption(argc,argv);
+    valueE_opt.retrieveOption(argc,argv);
+    valueO_opt.retrieveOption(argc,argv);
+    valueC_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -89,6 +98,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkdiff -i input -ref reference" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkdumpogr -i input.txt [-o output]
 
   Options: [-ln layername] [-n attribute]* [-pos] [-transpose]
 

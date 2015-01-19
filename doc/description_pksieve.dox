@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pksieve -i input [-s size] -o output
   
   Options: [-c 4|8] [-b band] [-m mask] [-ot type] [-of format] [-co option]* [-ct table] 
 

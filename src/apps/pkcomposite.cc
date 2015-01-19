@@ -63,7 +63,14 @@ int main(int argc, char *argv[])
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.", 0);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
-  Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false);
+  Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false,2);
+
+  file_opt.setHide(1);
+  weight_opt.setHide(1);
+  class_opt.setHide(1);
+  colorTable_opt.setHide(1);
+  description_opt.setHide(1);
+  verbose_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -101,6 +108,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkcomposite -i input [-i input]* -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

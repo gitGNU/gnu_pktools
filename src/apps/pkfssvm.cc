@@ -1,5 +1,5 @@
 /**********************************************************************
-pkfssvm.cc: feature selection for svm classifier
+pkfssvm.cc: feature selection for support vector machine classifier pksvm
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -228,7 +228,35 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0);
+  Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
+
+  tlayer_opt.setHide(1);
+  label_opt.setHide(1);
+  balance_opt.setHide(1);
+  random_opt.setHide(1);
+  minSize_opt.setHide(1);
+  band_opt.setHide(1);
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
+  offset_opt.setHide(1);
+  scale_opt.setHide(1);
+  svm_type_opt.setHide(1);
+  kernel_type_opt.setHide(1);
+  kernel_degree_opt.setHide(1);
+  gamma_opt.setHide(1);
+  coef0_opt.setHide(1);
+  ccost_opt.setHide(1);
+  nu_opt.setHide(1);
+  epsilon_loss_opt.setHide(1);
+  cache_opt.setHide(1);
+  epsilon_tol_opt.setHide(1);
+  shrinking_opt.setHide(1);
+  prob_est_opt.setHide(1);
+  selector_opt.setHide(1);
+  epsilon_cost_opt.setHide(1);
+  cv_opt.setHide(1);
+  classname_opt.setHide(1);
+  classvalue_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -245,7 +273,6 @@ int main(int argc, char *argv[])
     bend_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
-    // priors_opt.retrieveOption(argc,argv);
     svm_type_opt.retrieveOption(argc,argv);
     kernel_type_opt.retrieveOption(argc,argv);
     kernel_degree_opt.retrieveOption(argc,argv);
@@ -270,6 +297,9 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkfssvm -t training -n number" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

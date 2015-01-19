@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkregann -i input -t training [-ic col]* [-oc col]* -o output 
   
   Options: [-from row] [-to row] [-cv size] [-nn number]
 

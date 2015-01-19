@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkfilterascii -i input.txt [-ic column]*
   
   Options: [-f filter] [-dz value] [-t]
 

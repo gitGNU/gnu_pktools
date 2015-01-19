@@ -30,13 +30,11 @@ using namespace std;
 
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input las file");
-  Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
   Optionpk<string> attribute_opt("n", "name", "names of the attribute to select: intensity, return, nreturn, z", "z");
   // Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering", 0.0);
   // Optionpk<double> hThreshold_opt("ht", "maxHeight", "initial and maximum height threshold for progressive morphological filtering (e.g., -ht 0.2 -ht 2.5)", 0.2);
   // Optionpk<short> maxIter_opt("maxit", "maxit", "Maximum number of iterations in post filter", 5);
-  Optionpk<short> nbin_opt("nbin", "nbin", "Number of percentile bins for calculating percentile height value profile (=number of output bands)", 10.0);
   Optionpk<unsigned short> returns_opt("ret", "ret", "number(s) of returns to include");
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
   Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), number (point density)). Last: overwrite cells with latest point", "last");
@@ -52,31 +50,27 @@ int main(int argc,char **argv) {
   Optionpk<double> lry_opt("lry", "lry", "Lower right y value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
-  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter)", 1.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)", 1.0);
+  Optionpk<short> nbin_opt("nbin", "nbin", "Number of percentile bins for calculating percentile height value profile (=number of output bands)", 10.0);
+  Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<short> verbose_opt("v", "verbose", "verbose mode", 0);
+  Optionpk<short> verbose_opt("v", "verbose", "verbose mode", 0,2);
+
+  nbin_opt.setHide(1);
+  nodata_opt.setHide(1);
+  option_opt.setHide(1);
+  colorTable_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
-    // mask_opt.retrieveOption(argc,argv);
-    // invalid_opt.retrieveOption(argc,argv);
-    nodata_opt.retrieveOption(argc,argv);
     attribute_opt.retrieveOption(argc,argv);
-    // disc_opt.retrieveOption(argc,argv);
-    // maxSlope_opt.retrieveOption(argc,argv);
-    // hThreshold_opt.retrieveOption(argc,argv);
-    // maxIter_opt.retrieveOption(argc,argv);
-    nbin_opt.retrieveOption(argc,argv);
     returns_opt.retrieveOption(argc,argv);
     classes_opt.retrieveOption(argc,argv);
     composite_opt.retrieveOption(argc,argv);
     filter_opt.retrieveOption(argc,argv);
-    // postFilter_opt.retrieveOption(argc,argv);
-    // dimx_opt.retrieveOption(argc,argv);
-    // dimy_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
     ulx_opt.retrieveOption(argc,argv);
@@ -85,9 +79,11 @@ int main(int argc,char **argv) {
     lry_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
-    option_opt.retrieveOption(argc,argv);
     dx_opt.retrieveOption(argc,argv);
     dy_opt.retrieveOption(argc,argv);
+    nbin_opt.retrieveOption(argc,argv);
+    nodata_opt.retrieveOption(argc,argv);
+    option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -95,7 +91,11 @@ int main(int argc,char **argv) {
     std::cout << predefinedString << std::endl;
     exit(0);
   }
+
   if(!doProcess){
+    cout << endl;
+    cout << "pklas2img -i lasfile -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }

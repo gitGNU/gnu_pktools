@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkpolygonize -i input [-m mask] -o output 
   
   Options: [-f format] [-b band] [-n fieldname] [-nodata value]
 

@@ -1,7 +1,4 @@
-## SYNOPSIS
-
 <code>
-  Usage: pkdsm2shadow -i input.txt -o output [-sza angle] [-saa angle]	
 
   
   Options: [-f value] [-ot type] [-of GDALformat] [-ct filename] [-co option]* 
