@@ -286,11 +286,6 @@ int main(int argc, char *argv[])
         cerr << "error catched" << std::endl;
         exit(1);
       }
-      //todo: delete class 0 ?
-      // if(verbose_opt[0]>=1)
-      //   std::cout << "erasing class 0 from training set (" << trainingMap[0].size() << " from " << totalSamples << ") samples" << std::endl;
-      // totalSamples-=trainingMap[0].size();
-      // trainingMap.erase(0);
 
       //convert map to vector
       // short iclass=0;
