@@ -88,8 +88,8 @@ public:
     }
     assert(spline);
   };
-  static void initSpline(gsl_spline *spline, const double *x, const double *y, int size){
-    gsl_spline_init (spline, x, y, size);
+  static int initSpline(gsl_spline *spline, const double *x, const double *y, int size){
+    return gsl_spline_init (spline, x, y, size);
   };
   static double evalSpline(gsl_spline *spline, double x, gsl_interp_accel *acc){
     return gsl_spline_eval (spline, x, acc);
@@ -1072,8 +1072,14 @@ template<class T> void StatFactory::interpolateNoData(const std::vector<double>&
 	++itWavelength;
       }
     }
-    if(validIn.size())
-      interpolateUp(wavelengthOut, validIn, wavelengthIn, type, output, verbose);
+    if(validIn.size()>1){
+      try{
+	interpolateUp(wavelengthOut, validIn, wavelengthIn, type, output, verbose);
+      }
+      catch(...){
+	output=input;
+      }
+    }
     else//we can not interpolate if no valid data
       output=input;
   }
@@ -1094,7 +1100,11 @@ template<class T> void StatFactory::interpolateUp(const std::vector<double>& wav
   assert(spline);
   assert(&(wavelengthIn[0]));
   assert(&(input[0]));
-  initSpline(spline,&(wavelengthIn[0]),&(input[0]),nband);
+  int status=initSpline(spline,&(wavelengthIn[0]),&(input[0]),nband);
+  if(status){
+    std::string errorString="Could not initialize spline";
+    throw(errorString);
+  }
   for(int index=0;index<wavelengthOut.size();++index){
     if(wavelengthOut[index]<*wavelengthIn.begin()){
       output.push_back(*(input.begin()));
@@ -1104,16 +1114,6 @@ template<class T> void StatFactory::interpolateUp(const std::vector<double>& wav
       output.push_back(input.back());
       continue;
     }
-    // if(type=="linear"){
-    //   if(wavelengthOut[index]<wavelengthIn.back()){
-    //     output.push_back(*(input.begin()));
-    //     continue;
-    //   }
-    //   else if(wavelengthOut[index]>wavelengthIn.back()){
-    //     output.push_back(input.back());
-    //     continue;
-    //   }
-    // }
     double dout=evalSpline(spline,wavelengthOut[index],acc);
     output.push_back(dout);
   }
