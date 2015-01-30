@@ -176,6 +176,8 @@ public:
   template<class T> void normalize_pct(std::vector<T>& input) const;
   template<class T> double rmse(const std::vector<T>& x, const std::vector<T>& y) const;
   template<class T> double correlation(const std::vector<T>& x, const std::vector<T>& y, int delay=0) const;
+  //  template<class T> double gsl_correlation(const std::vector<T>& x, const std::vector<T>& y) const;
+  template<class T> double gsl_covariance(const std::vector<T>& x, const std::vector<T>& y) const;
   template<class T> double cross_correlation(const std::vector<T>& x, const std::vector<T>& y, int maxdelay, std::vector<T>& z) const;
   template<class T> double linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
   template<class T> double linear_regression_err(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const;
@@ -875,10 +877,24 @@ template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX
       s<<"Error opening distribution file , " << filename;
       throw(s.str());
     }
-    for(int bin=0;bin<nbin;++bin){
-      for(int bin=0;bin<nbin;++bin){
-        double value=static_cast<double>(output[binX][binY])/npoint;
-        outputfile << (maxX-minX)*bin/(nbin-1)+minX << " " << (maxY-minY)*bin/(nbin-1)+minY << " " << value << std::endl;
+    for(int binX=0;binX<nbin;++binX){
+      outputfile << std::endl;
+      for(int binY=0;binY<nbin;++binY){
+	double binValueX=0;
+	if(nbin==maxX-minX+1)
+	  binValueX=minX+binX;
+	else
+	  binValueX=minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin;
+	double binValueY=0;
+	if(nbin==maxY-minY+1)
+	  binValueY=minY+binY;
+	else
+	  binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
+        double value=0;
+        value=static_cast<double>(output[binX][binY])/npoint;
+	outputfile << binValueX << " " << binValueY << " " << value << std::endl;
+        /* double value=static_cast<double>(output[binX][binY])/npoint; */
+        /* outputfile << (maxX-minX)*bin/(nbin-1)+minX << " " << (maxY-minY)*bin/(nbin-1)+minY << " " << value << std::endl; */
       }
     }
     outputfile.close();
@@ -971,6 +987,15 @@ template<class T> double StatFactory::rmse(const std::vector<T>& x, const std::v
   }
   return sqrt(mse);
 }
+
+// template<class T> double StatFactory::gsl_correlation(const std::vector<T>& x, const std::vector<T>& y) const{
+//  return(gsl_stats_correlation(&(x[0]),1,&(y[0]),1,x.size()));
+// }
+
+ template<class T> double StatFactory::gsl_covariance(const std::vector<T>& x, const std::vector<T>& y) const{
+   return(gsl_stats_covariance(&(x[0]),1,&(y[0]),1,x.size()));
+ }
+
 
 template<class T> double StatFactory::correlation(const std::vector<T>& x, const std::vector<T>& y, int delay) const{
   double meanX=0;

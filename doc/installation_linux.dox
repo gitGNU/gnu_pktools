@@ -2,7 +2,13 @@
 
 \subsection install_debian Installation for Debian Linux (via repository)
 
-A <a href="https://packages.debian.org/source/sid/pktools">binary package</a> of pktools for Debian is maintained by Francesco Paolo Lovergine. The version might not be the latest available. Please check the <a href="https://qa.debian.org/developer.php?login=pkg-grass-devel%40lists.alioth.debian.org">packages overview</a> for the available package versions. The latest version of pktools can always be installed via the \ref install_ubuntu "installation script" or from the source code using a \ref install_manual "manual" installation.
+A <a href="https://packages.debian.org/source/sid/pktools">binary package</a> of pktools for Debian is maintained by Francesco Paolo Lovergine and available in the repository. You can install it using the advanced package tool (apt):
+
+\code
+sudo apt-get install pktools
+\endcode
+
+The version in the repository might not be the latest available (please check the <a href="https://qa.debian.org/developer.php?login=pkg-grass-devel%40lists.alioth.debian.org">packages overview</a>). The latest version of pktools can always be installed via the \ref install_ubuntu "installation script" or from the source code using a \ref install_manual "manual" installation.
 
 \subsection install_ubuntu Installation for Ubuntu (Debian based) Linux distributions (from source code via automatic script)
 

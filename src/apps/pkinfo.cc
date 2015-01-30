@@ -301,16 +301,14 @@ int main(int argc, char *argv[])
     if(hist_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
       unsigned int nbin=(nbin_opt.size())? nbin_opt[0]:0;
-      std::vector<unsigned long int> output;
-      minValue=0;
-      maxValue=0;
-      //todo: optimize such that getMinMax is only called once...
-      imgReader.getMinMax(minValue,maxValue,band_opt[0]);
       
       if(src_min_opt.size())
         minValue=src_min_opt[0];
       if(src_max_opt.size())
         maxValue=src_max_opt[0];
+      if(minValue>=maxValue)
+	imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+      std::vector<unsigned long int> output;
       unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0]);
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){

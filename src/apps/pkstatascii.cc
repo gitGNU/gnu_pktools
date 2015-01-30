@@ -123,6 +123,14 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
+  if(src_min_opt.size()){
+    while(src_min_opt.size()<col_opt.size())
+      src_min_opt.push_back(src_min_opt[0]);
+  }
+  if(src_max_opt.size()){
+    while(src_max_opt.size()<col_opt.size())
+      src_max_opt.push_back(src_max_opt[0]);
+  }
   statfactory::StatFactory stat;
   if(rand_opt[0]>0){
     gsl_rng* r=stat.getRandomGenerator(time(NULL));
@@ -348,7 +356,7 @@ int main(int argc, char *argv[])
       // if(kde_opt[0]>0)
       //   sigma=kde_opt[0];
       // else
-        sigma=1.06*sqrt(sqrt(stat.var(dataVector[0]))*sqrt(stat.var(dataVector[0])))*pow(dataVector[0].size(),-0.2);
+        sigma=1.06*sqrt(sqrt(stat.var(dataVector[0]))*sqrt(stat.var(dataVector[1])))*pow(dataVector[0].size(),-0.2);
     }
     assert(nbin);
     if(verbose_opt[0]){

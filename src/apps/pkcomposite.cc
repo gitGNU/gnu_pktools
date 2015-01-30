@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
-  Optionpk<bool> file_opt("file", "file", "write number of observations for each pixels as additional layer in composite", false);
+  Optionpk<short> file_opt("file", "file", "write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite", 0);
   Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.", 0);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
@@ -645,8 +645,10 @@ int main(int argc, char *argv[])
                     val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
                     writeBuffer[iband][ib]=val_new;
                   }
-                  fileBuffer[ib]=ifile;
-                  // ++fileBuffer[ib];
+		  if(file_opt[0]>1)
+		    fileBuffer[ib]=ifile;
+		  else
+		    ++fileBuffer[ib];
                 }
                 break;
               default:
@@ -660,8 +662,10 @@ int main(int argc, char *argv[])
                     val_new=readBuffer[iband][readCol-startCol];
                     writeBuffer[iband][ib]=val_new;
                   }
-                  fileBuffer[ib]=ifile;
-                  // ++fileBuffer[ib];
+		  if(file_opt[0]>1)
+		    fileBuffer[ib]=ifile;
+		  else
+		    ++fileBuffer[ib];
                 }
                 break;
               }
@@ -689,8 +693,10 @@ int main(int argc, char *argv[])
                     val_new*=weight_opt[ifile];
                     writeBuffer[iband][ib]=val_new;
                   }
-                  // fileBuffer[ib]=ifile;
-                  ++fileBuffer[ib];
+		  if(file_opt[0]>1)
+		    fileBuffer[ib]=ifile;
+		  else
+		    ++fileBuffer[ib];
                 }
                 break;
               default:
@@ -703,8 +709,10 @@ int main(int argc, char *argv[])
                     val_new*=weight_opt[ifile];
                     writeBuffer[iband][ib]=val_new;
                   }
-                  // fileBuffer[ib]=ifile;
-                  ++fileBuffer[ib];
+		  if(file_opt[0]>1)
+		    fileBuffer[ib]=ifile;
+		  else
+		    ++fileBuffer[ib];
                 }
                 break;
               }
@@ -768,6 +776,9 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
+	    if(file_opt[0]>1)
+	      fileBuffer[ib]=ifile;
+	    else
               ++fileBuffer[ib];
 	      break;
 	    case(crule::overwrite):
@@ -797,8 +808,10 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-            // fileBuffer[ib]=ifile;
-            ++fileBuffer[ib];
+	    if(file_opt[0]>1)
+	      fileBuffer[ib]=ifile;
+	    else
+	      ++fileBuffer[ib];
             break;
 	    }
 	  }
@@ -836,8 +849,11 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              ++fileBuffer[ib];
-              break;
+	    if(file_opt[0]>1)
+	      fileBuffer[ib]=ifile;
+	    else
+	      ++fileBuffer[ib];
+	    break;
             case(crule::mode):
               switch(theResample){
               case(BILINEAR):
@@ -891,8 +907,10 @@ int main(int argc, char *argv[])
                 }
                 break;
               }
-              // fileBuffer[ib]=ifile;
-              ++fileBuffer[ib];
+	      if(file_opt[0]>1)
+		fileBuffer[ib]=ifile;
+	      else
+		++fileBuffer[ib];
               break;
             }
           }
@@ -920,7 +938,8 @@ int main(int argc, char *argv[])
           vector<short>::iterator maxit=maxBuffer[icol].begin();
           maxit=stat.mymax(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
           writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
-          fileBuffer[icol]=*(maxit);
+	  if(file_opt[0]>1)
+	    fileBuffer[icol]=*(maxit);
         }
         try{
           imgWriter.writeData(writeBuffer[0],GDT_Float64,irow,0);
@@ -940,27 +959,32 @@ int main(int argc, char *argv[])
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
           switch(cruleMap[crule_opt[0]]){
           case(crule::mean):
-            assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	    if(file_opt[0]<2)
+	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::median):
-            assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	    if(file_opt[0]<2)
+	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::sum)://sum
-            assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	    if(file_opt[0]<2)
+	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::minallbands):
-            assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	    if(file_opt[0]<2)
+	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mymin(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::maxallbands):
-            assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	    if(file_opt[0]<2)
+	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mymax(storeBuffer[bands[iband]][icol]);
             break;

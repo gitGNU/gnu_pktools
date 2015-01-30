@@ -509,11 +509,16 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
 unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, unsigned int& nbin, int theBand) const{
   double minValue=0;
   double maxValue=0;
-  getMinMax(minValue,maxValue,theBand);
-  if(min<max&&min>minValue)
+  if(min>=max)
+    getMinMax(minValue,maxValue,theBand);
+  else{
     minValue=min;
-  if(min<max&&max<maxValue)
     maxValue=max;
+  }
+  // if(min<max&&min>minValue)
+  //   minValue=min;
+  // if(min<max&&max<maxValue)
+  //   maxValue=max;
   min=minValue;
   max=maxValue;
   double scale=0;

@@ -346,6 +346,12 @@ version 2.6.2
 	support of duplicate option -b to select band in reference image
 	always use first band in mask image instead of using band defined in option -b
  - command line help info (change request #43845)
+
+version 2.6.3
+ - pkcomposite
+	Advanced option -file supports two modes: 1 (total number of files used) and 2 (sequence number of selected file)
+ - pkstat
+	New utility for calculating statistics on raster datasets (regression, histograms, etc.)
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
