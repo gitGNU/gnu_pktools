@@ -83,7 +83,7 @@ void MainWindow::setDefaults()
     //composit
     ui->resample->setCurrentIndex(0);
     ui->crule->setCurrentIndex(0);
-    ui->rband->setText("0");
+    ui->cband->setText("0");
     ui->bndnodata->setText("0");
     ui->srcnodata->setText("0");
     ui->min->clear();

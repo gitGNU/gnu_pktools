@@ -168,7 +168,7 @@
          </widget>
         </item>
         <item row="1" column="4">
-         <widget class="QLineEdit" name="rband"/>
+         <widget class="QLineEdit" name="cband"/>
         </item>
         <item row="3" column="0" colspan="4">
          <widget class="QGroupBox" name="groupBox">
@@ -528,7 +528,7 @@
      <x>0</x>
      <y>0</y>
      <width>798</width>
-     <height>27</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -604,7 +604,7 @@
   <tabstop>toolButton_extent</tabstop>
   <tabstop>resample</tabstop>
   <tabstop>crule</tabstop>
-  <tabstop>rband</tabstop>
+  <tabstop>cband</tabstop>
   <tabstop>bndnodata</tabstop>
   <tabstop>srcnodata</tabstop>
   <tabstop>min</tabstop>
