@@ -43,13 +43,14 @@ int main(int argc,char **argv) {
   Optionpk<string> outputfb_opt("ofb", "outputfb", "Output raster dataset for smooth model");
   Optionpk<double> modnodata_opt("modnodata", "modnodata", "invalid value for model input", 0);
   Optionpk<double> obsnodata_opt("obsnodata", "obsnodata", "invalid value for observation input", 0);
-  Optionpk<double> modoffset_opt("modoffset", "modoffset", "offset used to read model input dataset (value=offset+scale*readValue", 0);
-  Optionpk<double> obsoffset_opt("obsoffset", "obsoffset", "offset used to read observation input dataset (value=offset+scale*readValue", 0);
-  Optionpk<double> modscale_opt("modscale", "modscale", "scale used to read model input dataset (value=offset+scale*readValue", 1);
-  Optionpk<double> obsscale_opt("obsscale", "obsscale", "scale used to read observation input dataset (value=offset+scale*readValue", 1);
+  Optionpk<double> modoffset_opt("modoffset", "modoffset", "offset used to read model input dataset (value=offset+scale*readValue");
+  Optionpk<double> obsoffset_opt("obsoffset", "obsoffset", "offset used to read observation input dataset (value=offset+scale*readValue");
+  Optionpk<double> modscale_opt("modscale", "modscale", "scale used to read model input dataset (value=offset+scale*readValue");
+  Optionpk<double> obsscale_opt("obsscale", "obsscale", "scale used to read observation input dataset (value=offset+scale*readValue");
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
   Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model",2);
   Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",0);
+  Optionpk<double> weight_opt("w", "weight", "Set observation uncertainty as weighted difference between observation and model (use -w 0 to use a constant observation uncertainty, use -w value >> 1 to penalize low observation values with respect to model, use -w value << 0 to penalize a high observation values with respect to model");
   Optionpk<double> deltaObs_opt("dobs", "deltaobs", "Lower and upper thresholds for relative pixel differences (in percentage): (observation-model)/model. For instance to force the observation within a +/- 10 % interval, use: -dobs -10 -dobs 10 (equivalent to -dobs 10). Leave empty to always update on observation");
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   // Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
@@ -84,6 +85,7 @@ int main(int argc,char **argv) {
     eps_opt.retrieveOption(argc,argv);
     uncertModel_opt.retrieveOption(argc,argv);
     uncertObs_opt.retrieveOption(argc,argv);
+    weight_opt.retrieveOption(argc,argv);
     deltaObs_opt.retrieveOption(argc,argv);
     uncertNodata_opt.retrieveOption(argc,argv);
     // regTime_opt.retrieveOption(argc,argv);
@@ -107,6 +109,13 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
+  if(deltaObs_opt.size()==1){
+    if(deltaObs_opt[0]<=0)
+      deltaObs_opt.push_back(-deltaObs_opt[0]);
+    else
+      deltaObs_opt.insert(deltaObs_opt.begin(),-deltaObs_opt[0]);
+  }
+
   try{
     ostringstream errorStream;
     if(model_opt.size()<2){
@@ -116,12 +125,6 @@ int main(int argc,char **argv) {
     if(observation_opt.size()<1){
       errorStream << "Error: no observation dataset selected, use option -obs" << endl;
       throw(errorStream.str());
-    }
-    if(deltaObs_opt.size()==1){
-      if(deltaObs_opt[0]<=0)
-	deltaObs_opt.push_back(-deltaObs_opt[0]);
-      else
-	deltaObs_opt.insert(deltaObs_opt.begin(),-deltaObs_opt[0]);
     }
     if(direction_opt[0]=="smooth"){
       if(outputfw_opt.empty()){
@@ -268,8 +271,10 @@ int main(int argc,char **argv) {
     try{
       imgReaderModel1.open(model_opt[0]);
       imgReaderModel1.setNoData(modnodata_opt);
-      imgReaderModel1.setOffset(modoffset_opt[0]);
-      imgReaderModel1.setScale(modscale_opt[0]);
+      if(modoffset_opt.size())
+	imgReaderModel1.setOffset(modoffset_opt[0]);
+      if(modscale_opt.size())
+	imgReaderModel1.setScale(modscale_opt[0]);
     }
     catch(string errorString){
       cerr << errorString << endl;
@@ -334,8 +339,10 @@ int main(int argc,char **argv) {
       imgReaderObs.open(observation_opt[0]);
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
-      imgReaderObs.setOffset(obsoffset_opt[0]);
-      imgReaderObs.setScale(obsscale_opt[0]);
+      if(obsoffset_opt.size())
+	imgReaderObs.setOffset(obsoffset_opt[0]);
+      if(obsscale_opt.size())
+	imgReaderObs.setScale(obsscale_opt[0]);
 
       if(regSensor_opt[0])
 	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
@@ -402,8 +409,9 @@ int main(int argc,char **argv) {
 	  if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
 	    double uncertObs=uncertObs_opt[0];
-	    bool doUpdate=true;
-	    if(deltaObs_opt.size()){
+	    if(uncertObsLineBuffer.size()>icol)
+	      uncertObs=uncertObsLineBuffer[icol];
+	    else if(weight_opt.size()||deltaObs_opt.size()){
 	      vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	      int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 	      int maxCol=(icol+down_opt[0]/2<imgReaderObs.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderObs.nrOfCol()-1;
@@ -415,29 +423,26 @@ int main(int argc,char **argv) {
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=(statobs.mean(obsWindowBuffer)-c0obs)/c1obs;
 	      double difference=obsMeanValue-modValue;
-	      if(modValue){
-		difference/=modValue;//relative difference
-		difference*=100;//in percentage
-		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
-		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
-		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		if(-difference>uncertObs_opt[0])
-		  uncertObs=-difference;
-	      }
-	      if(verbose_opt[0]>1){
-		if(!doUpdate)
-		  cout << "obsMeanValue:" << obsMeanValue << ", modValue: " << modValue << endl;
-	      }
+	      if(modValue&&deltaObs_opt.size()){
+		double relativeDifference=100.0*difference/modValue;
+		if(relativeDifference<deltaObs_opt[0])//lower bound
+		  kalmanGain=0;
+		else if(relativeDifference>deltaObs_opt[1])//upper bound
+		  kalmanGain=0;
+	      }		  
+	      uncertObs=-weight_opt[0]*difference;
+	      if(uncertObs<=0)
+		uncertObs=0;
+	      if(verbose_opt[0]>1)
+		cout << "obsMeanValue:" << obsMeanValue << ", modValue: " << modValue << endl;
 	    }
-	    if(doUpdate){
-	      if(uncertObsLineBuffer.size()>icol)
-		uncertObs=uncertObsLineBuffer[icol];
+	    if(kalmanGain>0){
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
 		kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs);
-	      assert(kalmanGain<=1);
-	      estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
-	      uncertWriteBuffer[icol]*=(1-kalmanGain);
 	    }
+	    assert(kalmanGain<=1);
+	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
+	    uncertWriteBuffer[icol]*=(1-kalmanGain);
 	  }
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
@@ -476,12 +481,16 @@ int main(int argc,char **argv) {
       //calculate regression between two subsequence model inputs
       imgReaderModel1.open(model_opt[modindex-1]);
       imgReaderModel1.setNoData(modnodata_opt);
-      imgReaderModel1.setOffset(modoffset_opt[0]);
-      imgReaderModel1.setScale(modscale_opt[0]);
+      if(modoffset_opt.size())
+	imgReaderModel1.setOffset(modoffset_opt[0]);
+      if(modscale_opt.size())
+	imgReaderModel1.setScale(modscale_opt[0]);
       imgReaderModel2.open(model_opt[modindex]);
       imgReaderModel2.setNoData(modnodata_opt);
-      imgReaderModel2.setOffset(modoffset_opt[0]);
-      imgReaderModel2.setScale(modscale_opt[0]);
+      if(modoffset_opt.size())
+	imgReaderModel2.setOffset(modoffset_opt[0]);
+      if(modscale_opt.size())
+	imgReaderModel2.setScale(modscale_opt[0]);
       //calculate regression
       //we could re-use the points from second image from last run, but
       //to keep it general, we must redo it (overlap might have changed)
@@ -505,8 +514,10 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
-	imgReaderObs.setOffset(obsoffset_opt[0]);
-	imgReaderObs.setScale(obsscale_opt[0]);
+	if(obsoffset_opt.size())
+	  imgReaderObs.setOffset(obsoffset_opt[0]);
+	if(obsscale_opt.size())
+	  imgReaderObs.setScale(obsscale_opt[0]);
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
@@ -531,9 +542,11 @@ int main(int argc,char **argv) {
       }
       ImgReaderGdal imgReaderEst(input);
       imgReaderEst.setNoData(obsnodata_opt);
-      imgReaderEst.setOffset(obsoffset_opt[0]);
-      imgReaderEst.setScale(obsscale_opt[0]);
-
+      if(obsoffset_opt.size())
+	imgReaderEst.setOffset(obsoffset_opt[0]);
+      if(obsscale_opt.size())
+	imgReaderEst.setScale(obsscale_opt[0]);
+      
       vector< vector<double> > obsLineVector(down_opt[0]);
       vector<double> obsLineBuffer;
       vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
@@ -690,31 +703,29 @@ int main(int argc,char **argv) {
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
 	    double uncertObs=uncertObs_opt[0];
-	    bool doUpdate=true;
-	    if(deltaObs_opt.size()){
+	    if(uncertObsLineBuffer.size()>icol)
+	      uncertObs=uncertObsLineBuffer[icol];
+	    else if(weight_opt.size()||deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=statobs.mean(obsWindowBuffer);
 	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
-	      if(modValue){
-		difference/=modValue;//relative difference
-		difference*=100;//in percentage
-		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
-		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
-		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		if(-difference>uncertObs_opt[0])
-		  uncertObs=-difference;
-	      }
+	      if(modValue&&deltaObs_opt.size()){
+		double relativeDifference=100.0*difference/modValue;
+		if(relativeDifference<deltaObs_opt[0])//lower bound
+		  kalmanGain=0;
+		else if(relativeDifference>deltaObs_opt[1])//upper bound
+		  kalmanGain=0;
+	      }		  
+	      uncertObs=-weight_opt[0]*difference;
+	      if(uncertObs<=0)
+		uncertObs=0;
 	    }
-	    if(doUpdate){
-	      if(uncertObsLineBuffer.size()>icol)
-		uncertObs=uncertObsLineBuffer[icol];
+	    if(kalmanGain>0){
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
-		kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs);
-	      assert(kalmanGain<=1);
+	      kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs);
 	    }
-	    else
-	      kalmanGain=0;
+	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
 	  }
@@ -767,8 +778,10 @@ int main(int argc,char **argv) {
     try{
       imgReaderModel1.open(model_opt.back());
       imgReaderModel1.setNoData(modnodata_opt);
-      imgReaderModel1.setOffset(modoffset_opt[0]);
-      imgReaderModel1.setScale(modscale_opt[0]);
+      if(modoffset_opt.size())
+	imgReaderModel1.setOffset(modoffset_opt[0]);
+      if(modscale_opt.size())
+	imgReaderModel1.setScale(modscale_opt[0]);
     }
     catch(string errorString){
       cerr << errorString << endl;
@@ -826,9 +839,11 @@ int main(int argc,char **argv) {
       imgReaderObs.open(observation_opt.back());
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
-      imgReaderObs.setOffset(obsoffset_opt[0]);
-      imgReaderObs.setScale(obsscale_opt[0]);
-
+      if(obsoffset_opt.size())
+	imgReaderObs.setOffset(obsoffset_opt[0]);
+      if(obsscale_opt.size())
+	imgReaderObs.setScale(obsscale_opt[0]);
+      
       if(regSensor_opt[0])
 	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
       else{
@@ -893,9 +908,10 @@ int main(int argc,char **argv) {
 
 	  if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
-	    bool doUpdate=true;
 	    double uncertObs=uncertObs_opt[0];
-	    if(deltaObs_opt.size()){
+	    if(uncertObsLineBuffer.size()>icol)
+	      uncertObs=uncertObsLineBuffer[icol];
+	    else if(weight_opt.size()||deltaObs_opt.size()){
 	      vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	      int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 	      int maxCol=(icol+down_opt[0]/2<imgReaderObs.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderObs.nrOfCol()-1;
@@ -907,29 +923,26 @@ int main(int argc,char **argv) {
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=(statobs.mean(obsWindowBuffer)-c0obs)/c1obs;
 	      double difference=obsMeanValue-modValue;
-	      if(modValue){
-		difference/=modValue;//relative difference
-		difference*=100;//in percentage
-		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
-		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
-		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		if(-difference>uncertObs_opt[0])
-		  uncertObs=-difference;
-	      }
-	      if(verbose_opt[0]>1){
-		if(!doUpdate)
-		  cout << "obsMeanValue:" << obsMeanValue << ", modValue: " << modValue << endl;
-	      }
+	      if(modValue&&deltaObs_opt.size()){
+		double relativeDifference=100.0*difference/modValue;
+		if(relativeDifference<deltaObs_opt[0])//lower bound
+		  kalmanGain=0;
+		else if(relativeDifference>deltaObs_opt[1])//upper bound
+		  kalmanGain=0;
+	      }		  
+	      uncertObs=-weight_opt[0]*difference;
+	      if(uncertObs<=0)
+		uncertObs=0;
+	      if(verbose_opt[0]>1)
+		cout << "obsMeanValue:" << obsMeanValue << ", modValue: " << modValue << endl;
 	    }
-	    if(doUpdate){
-	      if(uncertObsLineBuffer.size()>icol)
-		uncertObs=uncertObsLineBuffer[icol];
+	    if(kalmanGain>0){
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
 		kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs);
-	      assert(kalmanGain<=1);
-	      estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
-	      uncertWriteBuffer[icol]*=(1-kalmanGain);
 	    }
+	    assert(kalmanGain<=1);
+	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
+	    uncertWriteBuffer[icol]*=(1-kalmanGain);
 	  }
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
@@ -968,12 +981,16 @@ int main(int argc,char **argv) {
       //calculate regression between two subsequence model inputs
       imgReaderModel1.open(model_opt[modindex+1]);
       imgReaderModel1.setNoData(modnodata_opt);
-      imgReaderModel1.setOffset(modoffset_opt[0]);
-      imgReaderModel1.setScale(modscale_opt[0]);
+      if(modoffset_opt.size())
+	imgReaderModel1.setOffset(modoffset_opt[0]);
+      if(modscale_opt.size())
+	imgReaderModel1.setScale(modscale_opt[0]);
       imgReaderModel2.open(model_opt[modindex]);
       imgReaderModel2.setNoData(modnodata_opt);
-      imgReaderModel2.setOffset(modoffset_opt[0]);
-      imgReaderModel2.setScale(modscale_opt[0]);
+      if(modoffset_opt.size())
+	imgReaderModel2.setOffset(modoffset_opt[0]);
+      if(modscale_opt.size())
+	imgReaderModel2.setScale(modscale_opt[0]);
       //calculate regression
       //we could re-use the points from second image from last run, but
       //to keep it general, we must redo it (overlap might have changed)
@@ -997,8 +1014,10 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
-	imgReaderObs.setOffset(obsoffset_opt[0]);
-	imgReaderObs.setScale(obsscale_opt[0]);
+	if(obsoffset_opt.size())
+	  imgReaderObs.setOffset(obsoffset_opt[0]);
+	if(obsscale_opt.size())
+	  imgReaderObs.setScale(obsscale_opt[0]);
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
@@ -1023,9 +1042,11 @@ int main(int argc,char **argv) {
       }
       ImgReaderGdal imgReaderEst(input);
       imgReaderEst.setNoData(obsnodata_opt);
-      imgReaderEst.setOffset(obsoffset_opt[0]);
-      imgReaderEst.setScale(obsscale_opt[0]);
-
+      if(obsoffset_opt.size())
+	imgReaderEst.setOffset(obsoffset_opt[0]);
+      if(obsscale_opt.size())
+	imgReaderEst.setScale(obsscale_opt[0]);
+      
       vector< vector<double> > obsLineVector(down_opt[0]);
       vector<double> obsLineBuffer;
       vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
@@ -1182,31 +1203,29 @@ int main(int argc,char **argv) {
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
 	    double uncertObs=uncertObs_opt[0];
-	    bool doUpdate=true;
-	    if(deltaObs_opt.size()){
+	    if(uncertObsLineBuffer.size()>icol)
+	      uncertObs=uncertObsLineBuffer[icol];
+	    else if(weight_opt.size()||deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=statobs.mean(obsWindowBuffer);
 	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
-	      if(modValue){
-		difference/=modValue;//relative difference
-		difference*=100;//in percentage
-		doUpdate=(difference>=deltaObs_opt[0]);//lower bound
-		doUpdate&=(difference<=deltaObs_opt[1]);//upper bound
-		//todo: use deltaObs to set observation uncertainty instead of setting doUpdate
-		if(-difference>uncertObs_opt[0])
-		  uncertObs=-difference;
-	      }
+	      if(modValue&&deltaObs_opt.size()){
+		double relativeDifference=100.0*difference/modValue;
+		if(relativeDifference<deltaObs_opt[0])//lower bound
+		  kalmanGain=0;
+		else if(relativeDifference>deltaObs_opt[1])//upper bound
+		  kalmanGain=0;
+	      }		  
+	      uncertObs=-weight_opt[0]*difference;
+	      if(uncertObs<=0)
+		uncertObs=0;
 	    }
-	    if(doUpdate){
-	      if(uncertObsLineBuffer.size()>icol)
-		uncertObs=uncertObsLineBuffer[icol];
+	    if(kalmanGain>0){
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
 		kalmanGain=uncertWriteBuffer[icol]/(uncertWriteBuffer[icol]+uncertObs);
-	      assert(kalmanGain<=1);
 	    }
-	    else
-	      kalmanGain=0;
+	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
 	  }
@@ -1277,12 +1296,16 @@ int main(int argc,char **argv) {
       ImgReaderGdal imgReaderForward(inputfw);
       ImgReaderGdal imgReaderBackward(inputbw);
       imgReaderForward.setNoData(obsnodata_opt);
-      imgReaderForward.setOffset(obsoffset_opt[0]);
-      imgReaderForward.setScale(obsscale_opt[0]);
+      if(obsoffset_opt.size())
+	imgReaderForward.setOffset(obsoffset_opt[0]);
+      if(obsscale_opt.size())
+	imgReaderForward.setScale(obsscale_opt[0]);
       imgReaderBackward.setNoData(obsnodata_opt);
-      imgReaderBackward.setOffset(obsoffset_opt[0]);
-      imgReaderBackward.setScale(obsscale_opt[0]);
-    
+      if(obsoffset_opt.size())
+	imgReaderBackward.setOffset(obsoffset_opt[0]);
+      if(obsscale_opt.size())
+	imgReaderBackward.setScale(obsscale_opt[0]);
+      
       vector<double> estForwardBuffer;
       vector<double> estBackwardBuffer;
       vector<double> uncertObsLineBuffer;
@@ -1303,8 +1326,10 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
-	imgReaderObs.setOffset(obsoffset_opt[0]);
-	imgReaderObs.setScale(obsscale_opt[0]);
+	if(obsoffset_opt.size())
+	  imgReaderObs.setOffset(obsoffset_opt[0]);
+	if(obsscale_opt.size())
+	  imgReaderObs.setScale(obsscale_opt[0]);
 	//calculate regression between model and observation
       }
 
