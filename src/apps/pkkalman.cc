@@ -55,12 +55,15 @@ int main(int argc,char **argv) {
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   // Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
   Optionpk<bool> regSensor_opt("rs", "regsensor", "Set optional regression for sensor difference (model - observation).", false);
-  Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression", 9);
+  Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
   Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
   Optionpk<int> minreg_opt("minreg", "minreg", "Minimum number of pixels to take into account for regression", 5, 2);
   // Optionpk<bool> regObs_opt("regobs", "regobs", "Perform regression between modeled and observed value",false);
   // Optionpk<double> checkDiff_opt("diff", "diff", "Flag observation as invalid if difference with model is above uncertainty",false);
   Optionpk<unsigned short> window_opt("win", "window", "window size for calculating regression (use 0 for global)", 0);
+  // Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
+  // Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value(s) not to consider for filtering. First value will be set in output image.", 0);
+
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0);
@@ -96,6 +99,8 @@ int main(int argc,char **argv) {
     // regObs_opt.retrieveOption(argc,argv);
     // checkDiff_opt.retrieveOption(argc,argv);
     window_opt.retrieveOption(argc,argv);
+    // mask_opt.retrieveOption(argc,argv);
+    // msknodata_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
@@ -202,7 +207,38 @@ int main(int argc,char **argv) {
     option_opt.push_back(theInterleave);
   }
 
+  if(down_opt.empty()){
+    imgReaderModel1.open(model_opt[0]);
+    double resModel=imgReaderModel1.getDeltaX();
+    double resObs=imgReaderObs.getDeltaX();
+    int down=static_cast<int>(ceil(resModel/resObs));
+    if(!(down%2))
+      down+=1;
+    down_opt.push_back(down);
+    imgReaderModel1.close();
+  }
   imgReaderObs.close();
+
+  // ImgReaderGdal maskReader;
+  // double colMask=0;
+  // double rowMask=0;
+
+  // if(mask_opt.size()){
+  //   try{
+  //     if(verbose_opt[0]>=1)
+  // 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
+  //     maskReader.open(mask_opt[0]);
+  //     maskReader.setNoData(msknodata_opt);
+  //   }
+  //   catch(string error){
+  //     cerr << error << std::endl;
+  //     exit(2);
+  //   }
+  //   catch(...){
+  //     cerr << "error catched" << std::endl;
+  //     exit(1);
+  //   }
+  // }
 
   int obsindex=0;
 
@@ -239,6 +275,9 @@ int main(int argc,char **argv) {
     // if(verbose_opt[0])
     //   cout << "tobservation_opt[tindex] " << tobservation_opt[tindex] << " " << relobsindex.back() << endl;
   }
+
+  double geox=0;
+  double geoy=0;
 
   if(find(direction_opt.begin(),direction_opt.end(),"forward")!=direction_opt.end()){
     ///////////////////////////// forward model /////////////////////////
@@ -289,8 +328,6 @@ int main(int argc,char **argv) {
     double minValue, maxValue, meanValue, stdDev;
     void* pProgressData;
     rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
-    double x=0;
-    double y=0;
     double modRow=0;
     double modCol=0;
     if(relobsindex[0]>0){//initialize output_opt[0] as model[0]
@@ -301,17 +338,46 @@ int main(int argc,char **argv) {
 	vector<double> estReadBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
-	imgWriterEst.image2geo(0,irow,x,y);
-	imgReaderModel1.geo2image(x,y,modCol,modRow);
+	// vector<double> lineMask;
+	imgWriterEst.image2geo(0,irow,geox,geoy);
+	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	try{
 	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  //simple nearest neighbor
 	  //stat.nearUp(estReadBuffer,estWriteBuffer);
 
+	  // double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	  for(int icol=0;icol<ncol;++icol){
-	    imgWriterEst.image2geo(icol,irow,x,y);
-	    imgReaderModel1.geo2image(x,y,modCol,modRow);
+	    imgWriterEst.image2geo(icol,irow,geox,geoy);
+	    // bool masked=false;
+	    // if(mask_opt.size()){
+	    //   //read mask
+	    //   maskReader.geo2image(geox,geoy,colMask,rowMask);
+	    //   colMask=static_cast<int>(colMask);
+	    //   rowMask=static_cast<int>(rowMask);
+	    //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	    // 	if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	    // 	  try{
+	    // 	    maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	    // 	  }
+	    // 	  catch(string errorstring){
+	    // 	    cerr << errorstring << endl;
+	    // 	    exit(1);
+	    // 	  }
+	    // 	  catch(...){
+	    // 	    cerr << "error catched" << std::endl;
+	    // 	    exit(3);
+	    // 	  }
+	    // 	  oldRowMask=rowMask;
+	    // 	}
+	    // 	masked=(maskReader.isNoData(lineMask[colMask]));
+	    //   }
+	    //   estWriteBuffer[icol]=msknodata_opt[0];
+	    //   uncertWriteBuffer[icol]=msknodata_opt[0];
+	    //   continue;//next column
+	    // }
+	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    double modValue=estReadBuffer[modCol];
 	    if(imgReaderModel1.isNoData(modValue)){
 	      estWriteBuffer[icol]=obsnodata_opt[0];
@@ -345,31 +411,62 @@ int main(int argc,char **argv) {
 	imgReaderObs.setScale(obsscale_opt[0]);
 
       if(regSensor_opt[0])
-	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
+	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
       else{
 	c0obs=0;
 	c1obs=1;
 	errObs=0;
       }
+      if(verbose_opt[0])
+	cout << "c0obs, c1obs: " << c0obs << ", " << c1obs << endl;
 
       for(int irow=0;irow<nrow;++irow){
 	vector<double> estReadBuffer;
-	imgWriterEst.image2geo(0,irow,x,y);
-	imgReaderModel1.geo2image(x,y,modCol,modRow);
+	imgWriterEst.image2geo(0,irow,geox,geoy);
+	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	vector<double> obsLineBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
 	vector<double> uncertObsLineBuffer;
+	// vector<double> lineMask;
 	// imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
 	imgReaderObs.readData(obsLineBuffer,GDT_Float64,irow,0);
 	
 	if(imgReaderObs.nrOfBand()>1)
 	  imgReaderObs.readData(uncertObsLineBuffer,GDT_Float64,irow,1);
+	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<ncol;++icol){
-	  imgWriterEst.image2geo(icol,irow,x,y);
-	  imgReaderModel1.geo2image(x,y,modCol,modRow);
+	  imgWriterEst.image2geo(icol,irow,geox,geoy);
+	  // bool masked=false;
+	  // if(mask_opt.size()){
+	  //   //read mask
+	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
+	  //   colMask=static_cast<int>(colMask);
+	  //   rowMask=static_cast<int>(rowMask);
+	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	  // 	try{
+	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	  // 	}
+	  // 	catch(string errorstring){
+	  // 	  cerr << errorstring << endl;
+	  // 	  exit(1);
+	  // 	}
+	  // 	catch(...){
+	  // 	  cerr << "error catched" << std::endl;
+	  // 	  exit(3);
+	  // 	}
+	  // 	oldRowMask=rowMask;
+	  //     }
+	  //     masked=(maskReader.isNoData(lineMask[colMask]));
+	  //   }
+	  //   estWriteBuffer[icol]=msknodata_opt[0];
+	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
+	  //   continue;//next column
+	  // }
+	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	  double modValue=estReadBuffer[modCol];
 	  if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
@@ -500,8 +597,10 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
       
-      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal);
+      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,0,0);
       // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,verbose_opt[0]);
+      if(verbose_opt[0])
+	cout << "c0modGlobal, c1modGlobal: " << c0modGlobal << ", " << c1modGlobal << endl;
 
       bool update=false;
       if(obsindex<relobsindex.size()){
@@ -522,7 +621,7 @@ int main(int argc,char **argv) {
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
 	if(regSensor_opt[0])
-	  errObs=imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
+	  errObs=imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
 	else{
 	  c0obs=0;
 	  c1obs=1;
@@ -560,6 +659,7 @@ int main(int argc,char **argv) {
       vector<double> uncertReadBuffer;
       vector<double> estWriteBuffer(ncol);
       vector<double> uncertWriteBuffer(ncol);
+      // vector<double> lineMask;
 
       //initialize obsLineVector
       assert(down_opt[0]%2);//window size must be odd 
@@ -575,12 +675,12 @@ int main(int argc,char **argv) {
 	imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
 	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
 	//read model2 in case current estimate is nodata
-	imgReaderEst.image2geo(0,irow,x,y);
-	imgReaderModel2.geo2image(x,y,modCol,modRow);
+	imgReaderEst.image2geo(0,irow,geox,geoy);
+	imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
 	imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,0);
 
-	imgReaderModel1.geo2image(x,y,modCol,modRow);
+	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,0);
 
@@ -594,7 +694,37 @@ int main(int argc,char **argv) {
 	  if(imgReaderObs.nrOfBand()>1)
 	    imgReaderObs.readData(uncertObsLineBuffer,GDT_Float64,irow,1);
 	}
+	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
+	  imgReaderEst.image2geo(icol,irow,geox,geoy);
+	  // bool masked=false;
+	  // if(mask_opt.size()){
+	  //   //read mask
+	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
+	  //   colMask=static_cast<int>(colMask);
+	  //   rowMask=static_cast<int>(rowMask);
+	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	  // 	try{
+	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	  // 	}
+	  // 	catch(string errorstring){
+	  // 	  cerr << errorstring << endl;
+	  // 	  exit(1);
+	  // 	}
+	  // 	catch(...){
+	  // 	  cerr << "error catched" << std::endl;
+	  // 	  exit(3);
+	  // 	}
+	  // 	oldRowMask=rowMask;
+	  //     }
+	  //     masked=(maskReader.isNoData(lineMask[colMask]));
+	  //   }
+	  //   estWriteBuffer[icol]=msknodata_opt[0];
+	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
+	  //   continue;//next column
+	  // }
+
 	  int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 	  int maxCol=(icol+down_opt[0]/2<imgReaderEst.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderEst.nrOfCol()-1;
 	  int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
@@ -613,8 +743,7 @@ int main(int argc,char **argv) {
 	  double estMeanValue=0;//stat.mean(estWindowBuffer);
 	  double nvalid=0;
 	  //time update
-	  imgReaderEst.image2geo(icol,irow,x,y);
-	  imgReaderModel2.geo2image(x,y,modCol,modRow);
+	  imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	  assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
 	  double modValue=model2LineBuffer[modCol];
 	  bool estNodata=imgReaderEst.isNoData(estValue);//validity of current estimate
@@ -632,21 +761,21 @@ int main(int argc,char **argv) {
 	  else{
 	    if(window_opt[0]>0){
 	      try{
-		// imgReaderModel2.geo2image(x,y,modCol,modRow);//did that already
+		// imgReaderModel2.geo2image(geox,geoy,modCol,modRow);//did that already
 		minCol=(modCol>window_opt[0]/2) ? modCol-window_opt[0]/2 : 0;
 		maxCol=(modCol+window_opt[0]/2<imgReaderModel2.nrOfCol()) ? modCol+window_opt[0]/2 : imgReaderModel2.nrOfCol()-1;
 		minRow=(modRow>window_opt[0]/2) ? modRow-window_opt[0]/2 : 0;
 		maxRow=(modRow+window_opt[0]/2<imgReaderModel2.nrOfRow()) ? modRow+window_opt[0]/2 : imgReaderModel2.nrOfRow()-1;
 		imgReaderModel2.readDataBlock(model2buffer,GDT_Float64,minCol,maxCol,minRow,maxRow,0);
 
-		imgReaderModel1.geo2image(x,y,modCol,modRow);
+		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 		assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 		minCol=(modCol>window_opt[0]/2) ? modCol-window_opt[0]/2 : 0;
 		maxCol=(modCol+window_opt[0]/2<imgReaderModel1.nrOfCol()) ? modCol+window_opt[0]/2 : imgReaderModel1.nrOfCol()-1;
 		minRow=(modRow>window_opt[0]/2) ? modRow-window_opt[0]/2 : 0;
 		maxRow=(modRow+window_opt[0]/2<imgReaderModel1.nrOfRow()) ? modRow+window_opt[0]/2 : imgReaderModel1.nrOfRow()-1;
 		imgReaderModel1.readDataBlock(model1buffer,GDT_Float64,minCol,maxCol,minRow,maxRow,0);
-		// imgReaderEst.image2geo(icol,irow,x,y);
+		// imgReaderEst.image2geo(icol,irow,geox,geoy);
 	      }
 	      catch(string errorString){
 		cerr << "Error reading data block for " << minCol << "-" << maxCol << ", " << minRow << "-" << maxRow << endl;
@@ -796,8 +925,6 @@ int main(int argc,char **argv) {
     double minValue, maxValue, meanValue, stdDev;
     void* pProgressData;
     rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
-    double x=0;
-    double y=0;
     double modRow=0;
     double modCol=0;
     if(relobsindex.back()<model_opt.size()-1){//initialize output_opt.back() as model[0]
@@ -808,17 +935,46 @@ int main(int argc,char **argv) {
 	vector<double> estReadBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
-	imgWriterEst.image2geo(0,irow,x,y);
-	imgReaderModel1.geo2image(x,y,modCol,modRow);
+	// vector<double> lineMask;
+	imgWriterEst.image2geo(0,irow,geox,geoy);
+	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	try{
 	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  //simple nearest neighbor
 	  //stat.nearUp(estReadBuffer,estWriteBuffer);
 
+	  // double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	  for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
-	    imgWriterEst.image2geo(icol,irow,x,y);	    
-	    imgReaderModel1.geo2image(x,y,modCol,modRow);
+	    imgWriterEst.image2geo(icol,irow,geox,geoy);	    
+	    // bool masked=false;
+	    // if(mask_opt.size()){
+	    //   //read mask
+	    //   maskReader.geo2image(geox,geoy,colMask,rowMask);
+	    //   colMask=static_cast<int>(colMask);
+	    //   rowMask=static_cast<int>(rowMask);
+	    //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	    // 	if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	    // 	  try{
+	    // 	    maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	    // 	  }
+	    // 	  catch(string errorstring){
+	    // 	    cerr << errorstring << endl;
+	    // 	    exit(1);
+	    // 	  }
+	    // 	  catch(...){
+	    // 	    cerr << "error catched" << std::endl;
+	    // 	    exit(3);
+	    // 	  }
+	    // 	  oldRowMask=rowMask;
+	    // 	}
+	    // 	masked=(maskReader.isNoData(lineMask[colMask]));
+	    //   }
+	    //   estWriteBuffer[icol]=msknodata_opt[0];
+	    //   uncertWriteBuffer[icol]=msknodata_opt[0];
+	    //   continue;//next column
+	    // }
+	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    estWriteBuffer[icol]=estReadBuffer[modCol];
 	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
 	  }
@@ -845,31 +1001,62 @@ int main(int argc,char **argv) {
 	imgReaderObs.setScale(obsscale_opt[0]);
       
       if(regSensor_opt[0])
-	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
+	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
       else{
 	c0obs=0;
 	c1obs=1;
 	errObs=0;
       }
+      if(verbose_opt[0])
+	cout << "c0obs, c1obs: " << c0obs << ", " << c1obs << endl;
 
       for(int irow=0;irow<nrow;++irow){
 	vector<double> estReadBuffer;
-	imgWriterEst.image2geo(0,irow,x,y);
-	imgReaderModel1.geo2image(x,y,modCol,modRow);
+	imgWriterEst.image2geo(0,irow,geox,geoy);
+	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	vector<double> obsLineBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
 	vector<double> uncertObsLineBuffer;
+	// vector<double> lineMask;
 	// imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
 	imgReaderObs.readData(obsLineBuffer,GDT_Float64,irow,0);
 
 	if(imgReaderObs.nrOfBand()>1)
 	  imgReaderObs.readData(uncertObsLineBuffer,GDT_Float64,irow,1);
+	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
-	  imgWriterEst.image2geo(icol,irow,x,y);
-	  imgReaderModel1.geo2image(x,y,modCol,modRow);
+	  imgWriterEst.image2geo(icol,irow,geox,geoy);
+	  // bool masked=false;
+	  // if(mask_opt.size()){
+	  //   //read mask
+	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
+	  //   colMask=static_cast<int>(colMask);
+	  //   rowMask=static_cast<int>(rowMask);
+	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	  // 	try{
+	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	  // 	}
+	  // 	catch(string errorstring){
+	  // 	  cerr << errorstring << endl;
+	  // 	  exit(1);
+	  // 	}
+	  // 	catch(...){
+	  // 	  cerr << "error catched" << std::endl;
+	  // 	  exit(3);
+	  // 	}
+	  // 	oldRowMask=rowMask;
+	  //     }
+	  //     masked=(maskReader.isNoData(lineMask[colMask]));
+	  //   }
+	  //   estWriteBuffer[icol]=msknodata_opt[0];
+	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
+	  //   continue;//next column
+	  // }
+	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	  double modValue=estReadBuffer[modCol];
 	  if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
@@ -1000,8 +1187,10 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
 
-      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal);
+      double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,0,0);
       // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,verbose_opt[0]);
+      if(verbose_opt[0])
+	cout << "c0modGlobal, c1modGlobal: " << c0modGlobal << ", " << c1modGlobal << endl;
 
       bool update=false;
       if(obsindex<relobsindex.size()){
@@ -1022,7 +1211,7 @@ int main(int argc,char **argv) {
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
 	if(regSensor_opt[0])
-	  errObs=imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,verbose_opt[0]);
+	  errObs=imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
 	else{
 	  c0obs=0;
 	  c1obs=1;
@@ -1060,6 +1249,7 @@ int main(int argc,char **argv) {
       vector<double> uncertReadBuffer;
       vector<double> estWriteBuffer(ncol);
       vector<double> uncertWriteBuffer(ncol);
+      // vector<double> lineMask;
 
       //initialize obsLineVector
       assert(down_opt[0]%2);//window size must be odd 
@@ -1075,12 +1265,12 @@ int main(int argc,char **argv) {
 	imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
 	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
 	//read model2 in case current estimate is nodata
-	imgReaderEst.image2geo(0,irow,x,y);
-	imgReaderModel2.geo2image(x,y,modCol,modRow);
+	imgReaderEst.image2geo(0,irow,geox,geoy);
+	imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
 	imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,0);
 
-	imgReaderModel1.geo2image(x,y,modCol,modRow);
+	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,0);
 
@@ -1094,7 +1284,36 @@ int main(int argc,char **argv) {
 	  if(imgReaderObs.nrOfBand()>1)
 	    imgReaderObs.readData(uncertObsLineBuffer,GDT_Float64,irow,1);
 	}
+	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
+	  imgReaderEst.image2geo(icol,irow,geox,geoy);
+	  // bool masked=false;
+	  // if(mask_opt.size()){
+	  //   //read mask
+	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
+	  //   colMask=static_cast<int>(colMask);
+	  //   rowMask=static_cast<int>(rowMask);
+	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	  // 	try{
+	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	  // 	}
+	  // 	catch(string errorstring){
+	  // 	  cerr << errorstring << endl;
+	  // 	  exit(1);
+	  // 	}
+	  // 	catch(...){
+	  // 	  cerr << "error catched" << std::endl;
+	  // 	  exit(3);
+	  // 	}
+	  // 	oldRowMask=rowMask;
+	  //     }
+	  //     masked=(maskReader.isNoData(lineMask[colMask]));
+	  //   }
+	  //   estWriteBuffer[icol]=msknodata_opt[0];
+	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
+	  //   continue;//next column
+	  // }
 	  int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 	  int maxCol=(icol+down_opt[0]/2<imgReaderEst.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderEst.nrOfCol()-1;
 	  int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
@@ -1113,8 +1332,7 @@ int main(int argc,char **argv) {
 	  double estMeanValue=0;//stat.mean(estWindowBuffer);
 	  double nvalid=0;
 	  //time update
-	  imgReaderEst.image2geo(icol,irow,x,y);
-	  imgReaderModel2.geo2image(x,y,modCol,modRow);
+	  imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	  assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
 	  double modValue=model2LineBuffer[modCol];
 	  bool estNodata=imgReaderEst.isNoData(estValue);
@@ -1132,21 +1350,21 @@ int main(int argc,char **argv) {
 	  else{
 	    if(window_opt[0]>0){
 	      try{
-		// imgReaderModel2.geo2image(x,y,modCol,modRow);//did that already
+		// imgReaderModel2.geo2image(geox,geoy,modCol,modRow);//did that already
 		minCol=(modCol>window_opt[0]/2) ? modCol-window_opt[0]/2 : 0;
 		maxCol=(modCol+window_opt[0]/2<imgReaderModel2.nrOfCol()) ? modCol+window_opt[0]/2 : imgReaderModel2.nrOfCol()-1;
 		minRow=(modRow>window_opt[0]/2) ? modRow-window_opt[0]/2 : 0;
 		maxRow=(modRow+window_opt[0]/2<imgReaderModel2.nrOfRow()) ? modRow+window_opt[0]/2 : imgReaderModel2.nrOfRow()-1;
 		imgReaderModel2.readDataBlock(model2buffer,GDT_Float64,minCol,maxCol,minRow,maxRow,0);
 
-		imgReaderModel1.geo2image(x,y,modCol,modRow);
+		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 		assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 		minCol=(modCol>window_opt[0]/2) ? modCol-window_opt[0]/2 : 0;
 		maxCol=(modCol+window_opt[0]/2<imgReaderModel1.nrOfCol()) ? modCol+window_opt[0]/2 : imgReaderModel1.nrOfCol()-1;
 		minRow=(modRow>window_opt[0]/2) ? modRow-window_opt[0]/2 : 0;
 		maxRow=(modRow+window_opt[0]/2<imgReaderModel1.nrOfRow()) ? modRow+window_opt[0]/2 : imgReaderModel1.nrOfRow()-1;
 		imgReaderModel1.readDataBlock(model1buffer,GDT_Float64,minCol,maxCol,minRow,maxRow,0);
-		// imgReaderEst.image2geo(icol,irow,x,y);
+		// imgReaderEst.image2geo(icol,irow,geox,geoy);
 	      }
 	      catch(string errorString){
 		cerr << "Error reading data block for " << minCol << "-" << maxCol << ", " << minRow << "-" << maxRow << endl;
@@ -1314,6 +1532,7 @@ int main(int argc,char **argv) {
       vector<double> uncertReadBuffer;
       vector<double> estWriteBuffer(ncol);
       vector<double> uncertWriteBuffer(ncol);
+      // vector<double> lineMask;
 
       bool update=false;
       if(obsindex<relobsindex.size()){
@@ -1349,7 +1568,36 @@ int main(int argc,char **argv) {
 	    imgReaderObs.readData(uncertObsLineBuffer,GDT_Float64,irow,1);
 	}
 
+	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
+	  imgWriterEst.image2geo(icol,irow,geox,geoy);
+	  // bool masked=false;
+	  // if(mask_opt.size()){
+	  //   //read mask
+	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
+	  //   colMask=static_cast<int>(colMask);
+	  //   rowMask=static_cast<int>(rowMask);
+	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	  // 	try{
+	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+	  // 	}
+	  // 	catch(string errorstring){
+	  // 	  cerr << errorstring << endl;
+	  // 	  exit(1);
+	  // 	}
+	  // 	catch(...){
+	  // 	  cerr << "error catched" << std::endl;
+	  // 	  exit(3);
+	  // 	}
+	  // 	oldRowMask=rowMask;
+	  //     }
+	  //     masked=(maskReader.isNoData(lineMask[colMask]));
+	  //   }
+	  //   estWriteBuffer[icol]=msknodata_opt[0];
+	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
+	  //   continue;//next column
+	  // }
 	  double A=estForwardBuffer[icol];
 	  double B=estBackwardBuffer[icol];
 	  double C=uncertForwardBuffer[icol]*uncertForwardBuffer[icol];
@@ -1414,5 +1662,7 @@ int main(int argc,char **argv) {
       }
     }
   }
+  // if(mask_opt.size())
+  //   maskReader.close();
 }
 

@@ -348,6 +348,10 @@ version 2.6.2
  - command line help info (change request #43845)
 
 version 2.6.3
+ - pksvm
+	solved bug in mask handling
+ - pkann
+	solved bug in mask handling
  - pkcomposite
 	Advanced option -file supports two modes: 1 (total number of files used) and 2 (sequence number of selected file)
  - pkstat

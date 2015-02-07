@@ -820,51 +820,49 @@ int main(int argc, char *argv[])
 	      }
 	      oldRowMask=rowMask;
 	    }
-	  }
-	  else
-	    continue;//no coverage in this mask
-	  short theMask=0;
-	  for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-	    if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
-	      if(lineMask[colMask]==msknodata_opt[ivalue]){
-		theMask=lineMask[colMask];
-		masked=true;
+	    short theMask=0;
+	    for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+	      if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
+		if(lineMask[colMask]==msknodata_opt[ivalue]){
+		  theMask=lineMask[colMask];
+		  masked=true;
 		break;
+		}
+	      }
+	      else{//only values set in msknodata_opt are valid
+		if(lineMask[colMask]!=-msknodata_opt[ivalue]){
+		  theMask=lineMask[colMask];
+		  masked=true;
+		}
+		else{
+		  masked=false;
+		  break;
+		}
 	      }
 	    }
-	    else{//only values set in msknodata_opt are valid
-	      if(lineMask[colMask]!=-msknodata_opt[ivalue]){
-		theMask=lineMask[colMask];
-		masked=true;
-	      }
-	      else{
-		masked=false;
-		break;
-	      }
+	    if(masked){
+	      if(classBag_opt.size())
+		for(int ibag=0;ibag<nbag;++ibag)
+		  classBag[ibag][icol]=theMask;
+	      classOut[icol]=theMask;
+	      continue;
 	    }
 	  }
-	  if(masked){
+	  bool valid=false;
+	  for(int iband=0;iband<hpixel[icol].size();++iband){
+	    if(hpixel[icol][iband]){
+	      valid=true;
+	      break;
+	    }
+	  }
+	  if(!valid){
 	    if(classBag_opt.size())
 	      for(int ibag=0;ibag<nbag;++ibag)
-		classBag[ibag][icol]=theMask;
-	    classOut[icol]=theMask;
-	    continue;
+		classBag[ibag][icol]=nodata_opt[0];
+	    classOut[icol]=nodata_opt[0];
+	    continue;//next column
 	  }
 	}
-        bool valid=false;
-        for(int iband=0;iband<hpixel[icol].size();++iband){
-          if(hpixel[icol][iband]){
-            valid=true;
-            break;
-          }
-        }
-        if(!valid){
-          if(classBag_opt.size())
-            for(int ibag=0;ibag<nbag;++ibag)
-              classBag[ibag][icol]=nodata_opt[0];
-          classOut[icol]=nodata_opt[0];
-          continue;//next column
-        }
         for(short iclass=0;iclass<nclass;++iclass)
           probOut[iclass][icol]=0;
 	if(verbose_opt[0]>1)
