@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands", "overwrite");
   Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
-  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for input image", 0);
+  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Bands in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
   Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
   Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
@@ -131,8 +131,10 @@ int main(int argc, char *argv[])
   cruleMap["maxallbands"]=crule::maxallbands;
   cruleMap["minallbands"]=crule::minallbands;
 
-  while(srcnodata_opt.size()<bndnodata_opt.size())
-    srcnodata_opt.push_back(srcnodata_opt[0]);
+  if(srcnodata_opt.size()){
+    while(srcnodata_opt.size()<bndnodata_opt.size())
+      srcnodata_opt.push_back(srcnodata_opt[0]);
+  }
   while(bndnodata_opt.size()<srcnodata_opt.size())
     bndnodata_opt.push_back(bndnodata_opt[0]);
   if(minValue_opt.size()){
@@ -614,6 +616,8 @@ int main(int argc, char *argv[])
           break;
 	}
 	if(readValid){
+	  if(file_opt[0]==1)
+	    ++fileBuffer[ib];
           if(writeValid[ib]){
             int iband=0;
 	    switch(cruleMap[crule_opt[0]]){
@@ -647,8 +651,6 @@ int main(int argc, char *argv[])
                   }
 		  if(file_opt[0]>1)
 		    fileBuffer[ib]=ifile;
-		  else
-		    ++fileBuffer[ib];
                 }
                 break;
               default:
@@ -664,8 +666,6 @@ int main(int argc, char *argv[])
                   }
 		  if(file_opt[0]>1)
 		    fileBuffer[ib]=ifile;
-		  else
-		    ++fileBuffer[ib];
                 }
                 break;
               }
@@ -695,8 +695,6 @@ int main(int argc, char *argv[])
                   }
 		  if(file_opt[0]>1)
 		    fileBuffer[ib]=ifile;
-		  else
-		    ++fileBuffer[ib];
                 }
                 break;
               default:
@@ -711,8 +709,6 @@ int main(int argc, char *argv[])
                   }
 		  if(file_opt[0]>1)
 		    fileBuffer[ib]=ifile;
-		  else
-		    ++fileBuffer[ib];
                 }
                 break;
               }
@@ -778,8 +774,6 @@ int main(int argc, char *argv[])
               }
 	    if(file_opt[0]>1)
 	      fileBuffer[ib]=ifile;
-	    else
-              ++fileBuffer[ib];
 	      break;
 	    case(crule::overwrite):
 	    default:
@@ -810,8 +804,6 @@ int main(int argc, char *argv[])
               }
 	    if(file_opt[0]>1)
 	      fileBuffer[ib]=ifile;
-	    else
-	      ++fileBuffer[ib];
             break;
 	    }
 	  }
@@ -851,8 +843,6 @@ int main(int argc, char *argv[])
               }
 	    if(file_opt[0]>1)
 	      fileBuffer[ib]=ifile;
-	    else
-	      ++fileBuffer[ib];
 	    break;
             case(crule::mode):
               switch(theResample){
@@ -909,8 +899,6 @@ int main(int argc, char *argv[])
               }
 	      if(file_opt[0]>1)
 		fileBuffer[ib]=ifile;
-	      else
-		++fileBuffer[ib];
               break;
             }
           }
