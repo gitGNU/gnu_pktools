@@ -43,9 +43,6 @@ int main(int argc, char *argv[])
   Optionpk<bool>  min_opt("min", "minimum", "Shows min value of the image ", false,0);
   Optionpk<bool>  max_opt("max", "maximum", "Shows max value of the image ", false,0);
   Optionpk<bool>  stat_opt("stats", "statistics", "Shows statistics (min,max, mean and stdDev of the image)", false,0);
-  Optionpk<double>  src_min_opt("src_min", "src_min", "Sets minimum for histogram (does not calculate min value: use -mm instead)");
-  Optionpk<double>  src_max_opt("src_max", "src_max", "Sets maximum for histogram (does not calculate min value: use -mm instead)");
-  Optionpk<bool>  relative_opt("rel", "relative", "Calculates relative histogram in percentage", false,0);
   Optionpk<bool>  projection_opt("a_srs", "a_srs", "Shows projection of the image ", false,0);
   Optionpk<bool>  geo_opt("geo", "geo", "Gets geotransform  ", false,0);
   Optionpk<bool>  interleave_opt("il", "interleave", "Shows interleave ", false,0);
@@ -61,8 +58,6 @@ int main(int argc, char *argv[])
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box");
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box");
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box");
-  Optionpk<bool>  hist_opt("hist", "histogram", "Calculates histogram. Use --rel for a relative histogram output. ", false,0);
-  Optionpk<unsigned int>  nbin_opt("nbin", "nbin", "Number of bins used in histogram. Use 0 for all input values as integers");
   Optionpk<bool>  type_opt("ot", "otype", "Returns data type", false,0);
   Optionpk<bool>  description_opt("d", "description", "Returns image description", false,0);
   Optionpk<bool>  metadata_opt("meta", "meta", "Shows meta data ", false,0);
@@ -85,9 +80,6 @@ int main(int argc, char *argv[])
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
     stat_opt.retrieveOption(argc,argv);
-    src_min_opt.retrieveOption(argc,argv);
-    src_max_opt.retrieveOption(argc,argv);
-    relative_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
     geo_opt.retrieveOption(argc,argv);
     interleave_opt.retrieveOption(argc,argv);
@@ -103,8 +95,6 @@ int main(int argc, char *argv[])
     uly_opt.retrieveOption(argc,argv);
     lrx_opt.retrieveOption(argc,argv);
     lry_opt.retrieveOption(argc,argv);
-    hist_opt.retrieveOption(argc,argv);
-    nbin_opt.retrieveOption(argc,argv);
     type_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     metadata_opt.retrieveOption(argc,argv);
@@ -296,45 +286,6 @@ int main(int argc, char *argv[])
 	}
       }
     }
-    if(relative_opt[0])
-      hist_opt[0]=true;
-    if(hist_opt[0]){
-      assert(band_opt[0]<imgReader.nrOfBand());
-      unsigned int nbin=(nbin_opt.size())? nbin_opt[0]:0;
-      
-      if(src_min_opt.size())
-        minValue=src_min_opt[0];
-      if(src_max_opt.size())
-        maxValue=src_max_opt[0];
-      if(minValue>=maxValue)
-	imgReader.getMinMax(minValue,maxValue,band_opt[0]);
-      std::vector<unsigned long int> output;
-      unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0]);
-      std::cout.precision(10);
-      for(int bin=0;bin<nbin;++bin){
-	double binValue=0;
-	if(nbin==maxValue-minValue+1)
-	  binValue=minValue+bin;
-	else
-	  binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
-	std::cout << binValue << " ";
-	if(relative_opt[0])
-	  std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
-	else
-	  std::cout << static_cast<double>(output[bin]) << std::endl;
-      }
-    }
-    // else{
-    //   int minCol,minRow;
-    //   if(src_min_opt.size()){
-    //     assert(band_opt[0]<imgReader.nrOfBand());
-    //     std::cout << "-min " << imgReader.getMin(minCol, minRow,band_opt[0]);
-    //   }
-    //   if(src_max_opt.size()){
-    //     assert(band_opt[0]<imgReader.nrOfBand());
-    //     std::cout << "-max " << imgReader.getMax(minCol, minRow,band_opt[0]);
-    //   }
-    // }
     if(projection_opt[0]){
       if(imgReader.isGeoRef())
         std::cout << " -a_srs " << imgReader.getProjection() << " ";
@@ -427,6 +378,6 @@ int main(int argc, char *argv[])
     else
       std::cout << "no intersect" << std::endl;
   }
-  if(!read_opt[0]&&!hist_opt[0])
+  if(!read_opt[0])
     std::cout << std::endl;
 }

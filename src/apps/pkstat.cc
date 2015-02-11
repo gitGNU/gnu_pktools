@@ -432,6 +432,16 @@ int main(int argc, char *argv[])
       double err=imgreg.getRMSE(imgReader,band_opt[0],band_opt[1],c0,c1,verbose_opt[0]);
       std::cout << "-c0 " << c0 << " -c1 " << c1 << " -rmse " << err << std::endl;
     }
+    if(rmse_opt[0]){
+      if(band_opt.size()<2)
+	continue;
+      imgreg.setDown(down_opt[0]);
+      imgreg.setThreshold(random_opt[0]);
+      double c0=0;//offset
+      double c1=1;//scale
+      double err=imgreg.getRMSE(imgReader,band_opt[0],band_opt[1],c0,c1,verbose_opt[0]);
+      std::cout << " -rmse " << err << std::endl;
+    }
     if(preg_opt[0]){
       if(band_opt.size()<2)
 	continue;
@@ -483,6 +493,20 @@ int main(int argc, char *argv[])
     ImgReaderGdal imgReader2(input_opt[1]);
     double err=imgreg.getRMSE(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
     std::cout << "-c0 " << c0 << " -c1 " << c1 << " -rmse " << err << std::endl;
+    imgReader1.close();
+    imgReader2.close();
+  }
+  if(rmse_opt[0]&&(input_opt.size()>1)){
+    while(band_opt.size()<input_opt.size())
+      band_opt.push_back(band_opt[0]);
+    imgreg.setDown(down_opt[0]);
+    imgreg.setThreshold(random_opt[0]);
+    double c0=0;//offset
+    double c1=1;//scale
+    ImgReaderGdal imgReader1(input_opt[0]);
+    ImgReaderGdal imgReader2(input_opt[1]);
+    double err=imgreg.getRMSE(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
+    std::cout << "-rmse " << err << std::endl;
     imgReader1.close();
     imgReader2.close();
   }
