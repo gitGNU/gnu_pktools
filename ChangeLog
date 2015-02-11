@@ -357,6 +357,8 @@ version 2.6.3
 	No default for option -srcnodata
  - pkstat
 	New utility for calculating statistics on raster datasets (regression, histograms, etc.)
+ - pkinfo
+	Removed hist from pkinfo (now in pkstat)
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
