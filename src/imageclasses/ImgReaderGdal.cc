@@ -21,6 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include <sstream>
 #include <iostream>
+#include <gsl/gsl_cdf.h>
 
 ImgReaderGdal::ImgReaderGdal(void)
   : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
@@ -506,9 +507,17 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
   }
 }
 
-unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, unsigned int& nbin, int theBand) const{
+unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
   double minValue=0;
   double maxValue=0;
+  double meanValue=0;
+  double stdDev=0;
+  GDALProgressFunc pfnProgress;
+  void* pProgressData;
+  GDALRasterBand* rasterBand;
+  rasterBand=getRasterBand(theBand);
+  rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+
   if(min>=max)
     getMinMax(minValue,maxValue,theBand);
   else{
@@ -521,6 +530,11 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
   //   maxValue=max;
   min=minValue;
   max=maxValue;
+
+  double sigma=0;
+  if(kde)
+    sigma=1.06*stdDev*pow(getNvalid(theBand),-0.2);
+
   double scale=0;
   if(maxValue>minValue){
     if(nbin==0)
@@ -547,10 +561,23 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
       else if(nbin==1)
 	++histvector[0];
       else{//scale to [0:nbin]
-	int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
-	assert(theBin>=0);
-	assert(theBin<nbin);
-	++histvector[theBin];
+	if(sigma>0){
+	  //create kde for Gaussian basis function
+	  //todo: speed up by calculating first and last bin with non-zero contriubtion...
+	  //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
+	  //hiero
+	  for(int ibin=0;ibin<nbin;++ibin){
+	    double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
+	    double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
+	    histvector[ibin]+=thePdf;
+	  }
+	}
+	else{
+	  int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
+	  assert(theBin>=0);
+	  assert(theBin<nbin);
+	  ++histvector[theBin];
+	}
       // else if(lineBuffer[icol]==maxValue)
       //   ++histvector[nbin-1];
       // else
@@ -574,6 +601,26 @@ void ImgReaderGdal::getRange(std::vector<short>& range, int band) const
     }
   }
   sort(range.begin(),range.end());
+}
+
+unsigned long int ImgReaderGdal::getNvalid(int band) const
+{
+  unsigned long int nvalid=0;
+  if(m_noDataValues.size()){
+    std::vector<short> lineBuffer(nrOfCol());
+    for(int irow=0;irow<nrOfRow();++irow){
+      readData(lineBuffer,GDT_Float64,irow,band);
+      for(int icol=0;icol<nrOfCol();++icol){
+	if(isNoData(lineBuffer[icol]))
+	  continue;
+	else
+	  ++nvalid;
+      }
+    }
+    return nvalid;
+  }
+  else
+    return(nrOfCol()*nrOfRow());
 }
 
 int ImgReaderGdal::getNoDataValues(std::vector<double>& noDataValues) const

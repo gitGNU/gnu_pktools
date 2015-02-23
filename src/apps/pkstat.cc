@@ -220,18 +220,22 @@ int main(int argc, char *argv[])
 	}
       }
     }
-    if(histogram_opt[0]){//only for band 0
+    if(histogram_opt[0]){//only for first selected band
       assert(band_opt[0]<imgReader.nrOfBand());
       nbin=(nbin_opt.size())? nbin_opt[0]:0;
       
+      imgReader.getMinMax(minValue,maxValue,band_opt[0]);
       if(src_min_opt.size())
         minValue=src_min_opt[0];
       if(src_max_opt.size())
         maxValue=src_max_opt[0];
       if(minValue>=maxValue)
 	imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+
+      if(verbose_opt[0])
+	cout << "number of valid pixels in image: " << imgReader.getNvalid(band_opt[0]) << endl;
       std::vector<unsigned long int> output;
-      unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0]);
+      unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){
 	double binValue=0;
@@ -247,6 +251,10 @@ int main(int argc, char *argv[])
       }
     }
     if(histogram2d_opt[0]){
+      if(band_opt.size()<2)
+	continue;
+      imgReader.getMinMax(minX,maxX,band_opt[0]);
+      imgReader.getMinMax(minY,maxY,band_opt[1]);
       if(src_min_opt.size()){
 	minX=src_min_opt[0];
 	minY=src_min_opt[1];
@@ -256,8 +264,6 @@ int main(int argc, char *argv[])
 	maxY=src_max_opt[1];
       }
       nbin=(nbin_opt.size())? nbin_opt[0]:0;
-      if(band_opt.size()<2)
-	continue;
       if(nbin<=1){
 	std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
 	if(minX>=maxX)
@@ -287,8 +293,7 @@ int main(int argc, char *argv[])
 	rasterBand=imgReader.getRasterBand(band_opt[1]);
 	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev2,pfnProgress,pProgressData);
 
-	//todo: think of smarter way how to estimate size (nodata!)
-	double estimatedSize=1.0*imgReader.nrOfCol()/down_opt[0]*imgReader.nrOfRow()/down_opt[0];
+	double estimatedSize=1.0*imgReader.getNvalid(band_opt[0])/down_opt[0]/down_opt[0];
 	if(random_opt[0]>0)
 	  estimatedSize*=random_opt[0]/100.0;
         sigma=1.06*sqrt(stdDev1*stdDev2)*pow(estimatedSize,-0.2);
@@ -511,6 +516,8 @@ int main(int argc, char *argv[])
     imgReader2.close();
   }
   if(histogram2d_opt[0]&&(input_opt.size()>1)){
+    imgReader.getMinMax(minX,maxX,band_opt[0]);
+    imgReader.getMinMax(minY,maxY,band_opt[1]);
     if(src_min_opt.size()){
       while(src_min_opt.size()<input_opt.size())
 	src_min_opt.push_back(src_min_opt[0]);
@@ -568,7 +575,7 @@ int main(int argc, char *argv[])
       rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev2,pfnProgress,pProgressData);
 
       //todo: think of smarter way how to estimate size (nodata!)
-      double estimatedSize=1.0*imgReader1.nrOfCol()/down_opt[0]*imgReader.nrOfRow()/down_opt[0];
+      double estimatedSize=1.0*imgReader.getNvalid(band_opt[0])/down_opt[0]/down_opt[0];
       if(random_opt[0]>0)
 	estimatedSize*=random_opt[0]/100.0;
       sigma=1.06*sqrt(stdDev1*stdDev2)*pow(estimatedSize,-0.2);
