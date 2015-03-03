@@ -1232,10 +1232,6 @@ int main(int argc, char *argv[])
 		  double theValue=0;
 		  for(int index=0;index<windowValues.size();++index){
 		    try{
-		      if(windowValues[index].size()!=buffer_opt[0]*buffer_opt[0]){
-			std::string errorString="windowValues[index].size()!=buffer*buffer";
-			throw(errorString);
-		      }
 		      if(ruleMap[rule_opt[0]]==rule::mean)
 			theValue=stat.mean(windowValues[index]);
 		      else if(ruleMap[rule_opt[0]]==rule::stdev)
