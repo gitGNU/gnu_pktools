@@ -359,6 +359,9 @@ version 2.6.3
 	New utility for calculating statistics on raster datasets (regression, histograms, etc.)
  - pkinfo
 	Removed hist from pkinfo (now in pkstat)
+ - pkdiff
+	support double data types for input, but cast to unsigned short in case of accuracy assessment
+	
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
