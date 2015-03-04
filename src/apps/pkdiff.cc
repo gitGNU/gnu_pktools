@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
   Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample. Leave empty to select all (for vector reference datasets only)");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
-  Optionpk<short> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
+  Optionpk<double> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
   Optionpk<short> band_opt("b", "band", "Input (reference) raster band. Optionally, you can define different bands for input and reference bands respectively: -b 1 -b 0.", 0);
   Optionpk<bool> rmse_opt("rmse", "rmse", "Report root mean squared error", false);
   Optionpk<bool> regression_opt("reg", "reg", "Report linear regression (Input = c0+c1*Reference)", false);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
   
     for(int iflag=0;iflag<nodata_opt.size();++iflag){
       vector<short>::iterator fit;
-      fit=find(inputRange.begin(),inputRange.end(),nodata_opt[iflag]);
+      fit=find(inputRange.begin(),inputRange.end(),static_cast<short>(nodata_opt[iflag]));
       if(fit!=inputRange.end())
         inputRange.erase(fit);
     }
@@ -344,13 +344,13 @@ int main(int argc, char *argv[])
 	    }
 	    x=poPoint->getX();
 	    y=poPoint->getY();
-	    short inputValue;
-	    vector<short> inputValues;
+	    double inputValue;
+	    vector<double> inputValues;
 	    bool isHomogeneous=true;
 	    short maskValue;
 	    short outputValue;
 	    //read referenceValue from feature
-	    short referenceValue;
+	    unsigned short referenceValue;
 	    string referenceClassName;
 	    if(classValueMap.size()){
 	      referenceClassName=readFeature->GetFieldAsString(readFeature->GetFieldIndex(labelref_opt[0].c_str()));
@@ -476,12 +476,12 @@ int main(int argc, char *argv[])
 		  ++ntotalValidation;
 		  if(classValueMap.size()){
 		    assert(inputValue<nameVector.size());
-		    string className=nameVector[inputValue];
+		    string className=nameVector[static_cast<unsigned short>(inputValue)];
 		    cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
 		  }
 		  else{
-		    int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-		    int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+		    int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),static_cast<unsigned short>(referenceValue)));
+		    int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),static_cast<unsigned short>(inputValue)));
 		    assert(rc<nclass);
 		    assert(ic<nclass);
 		    ++nvalidation[rc];
@@ -524,18 +524,18 @@ int main(int argc, char *argv[])
 		    else
 		      fs << labelclass_opt[0];
 		    if(output_opt.size())
-		      writeFeature->SetField(fs.str().c_str(),static_cast<int>(inputValue));
+		      writeFeature->SetField(fs.str().c_str(),inputValue);
 		    if(!windowJ&&!windowI){//centre pixel
 		      if(confusion_opt[0]){
 			++ntotalValidation;
 			if(classValueMap.size()){
 			  assert(inputValue<nameVector.size());
-			  string className=nameVector[inputValue];
+			  string className=nameVector[static_cast<unsigned short>(inputValue)];
 			  cm.incrementResult(type2string<short>(classValueMap[referenceClassName]),type2string<short>(classValueMap[className]),1);
 			}
 			else{
-			  int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),referenceValue));
-			  int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),inputValue));
+			  int rc=distance(referenceRange.begin(),find(referenceRange.begin(),referenceRange.end(),static_cast<unsigned short>(referenceValue)));
+			  int ic=distance(inputRange.begin(),find(inputRange.begin(),inputRange.end(),static_cast<unsigned short>(inputValue)));
 			  if(rc>=nclass)
 			    continue;
 			  if(ic>=nclass)
@@ -656,7 +656,7 @@ int main(int argc, char *argv[])
       referenceReaderGdal.getRange(referenceRange,band_opt[1]);
       for(int iflag=0;iflag<nodata_opt.size();++iflag){
         vector<short>::iterator fit;
-        fit=find(referenceRange.begin(),referenceRange.end(),nodata_opt[iflag]);
+        fit=find(referenceRange.begin(),referenceRange.end(),static_cast<unsigned short>(nodata_opt[iflag]));
         if(fit!=referenceRange.end())
           referenceRange.erase(fit);
       }
@@ -856,7 +856,8 @@ int main(int argc, char *argv[])
   }//raster dataset
 
   if(confusion_opt[0]){
-    assert(cm.nReference());
+    
+    // assert(cm.nReference());
     cout << cm << endl;
     cout << "class #samples userAcc prodAcc" << endl;
     double se95_ua=0;
