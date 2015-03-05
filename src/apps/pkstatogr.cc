@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 	    else
 	      binValue=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
 	    cout << binValue << " ";
-	    if(relative_opt[0])
+	    if(relative_opt[0]||kde_opt[0])
 	      cout << 100.0*static_cast<double>(binData[ibin])/theData.size() << endl;
 	    else
 	      cout << binData[ibin] << endl;

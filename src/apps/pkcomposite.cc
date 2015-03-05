@@ -948,31 +948,31 @@ int main(int argc, char *argv[])
           switch(cruleMap[crule_opt[0]]){
           case(crule::mean):
 	    if(file_opt[0]<2)
-	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::median):
 	    if(file_opt[0]<2)
-	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::sum)://sum
 	    if(file_opt[0]<2)
-	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::minallbands):
 	    if(file_opt[0]<2)
-	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mymin(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::maxallbands):
 	    if(file_opt[0]<2)
-	      assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
+	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mymax(storeBuffer[bands[iband]][icol]);
             break;

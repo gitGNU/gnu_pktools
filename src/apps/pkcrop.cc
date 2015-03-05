@@ -457,7 +457,12 @@ int main(int argc, char *argv[])
       double theMin=0;
       double theMax=0;
       if(autoscale_opt.size()){
-	imgReader.getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
+	try{
+	  imgReader.getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
+	}
+	catch(string errorString){
+	  cout << errorString << endl;
+	}
 	if(verbose_opt[0])
 	  cout << "minmax: " << theMin << ", " << theMax << endl;
 	double theScale=(autoscale_opt[1]-autoscale_opt[0])/(theMax-theMin);

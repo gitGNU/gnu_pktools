@@ -234,8 +234,9 @@ int main(int argc, char *argv[])
 
       if(verbose_opt[0])
 	cout << "number of valid pixels in image: " << imgReader.getNvalid(band_opt[0]) << endl;
-      std::vector<unsigned long int> output;
-      unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
+      std::vector<double> output;
+      double nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
+
       std::cout.precision(10);
       for(int bin=0;bin<nbin;++bin){
 	double binValue=0;
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
 	else
 	  binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
 	std::cout << binValue << " ";
-	if(relative_opt[0])
+	if(relative_opt[0]||kde_opt[0])
 	  std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
 	else
 	  std::cout << static_cast<double>(output[bin]) << std::endl;
@@ -622,7 +623,7 @@ int main(int argc, char *argv[])
     int binY=0;
     vector<double> inputX(imgReader1.nrOfCol());
     vector<double> inputY(imgReader2.nrOfCol());
-    unsigned long int nvalid=0;
+    double nvalid=0;
     double geoX=0;
     double geoY=0;
     double icol1=0;
@@ -655,7 +656,7 @@ int main(int argc, char *argv[])
 	icol2=static_cast<int>(icol2);
 	if(imgReader2.isNoData(inputY[icol2]))
 	  continue;
-	++nvalid;
+	// ++nvalid;
 	if(inputX[icol1]>=maxX)
 	  binX=nbin-1;
 	else if(inputX[icol]<=minX)
@@ -683,11 +684,14 @@ int main(int argc, char *argv[])
 	      double centerY=minY+static_cast<double>(maxY-minY)*ibinY/nbin;
 	      double pdfY=gsl_ran_gaussian_pdf(inputY[icol2]-centerY, sigma);
 	      output[ibinX][binY]+=pdfX*pdfY;
+	      nvalid+=pdfX*pdfY;
 	    }
 	  }
 	}
-	else
+	else{
 	  ++output[binX][binY];
+	  ++nvalid;
+	}
       }
     }
     if(verbose_opt[0])
@@ -707,7 +711,7 @@ int main(int argc, char *argv[])
 	  binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
 	double value=static_cast<double>(output[binX][binY]);
 	  
-	if(relative_opt[0])
+	if(relative_opt[0]||kde_opt[0])
 	  value*=100.0/nvalid;
 
 	cout << binValueX << " " << binValueY << " " << value << std::endl;

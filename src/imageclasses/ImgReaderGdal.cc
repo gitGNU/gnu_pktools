@@ -507,7 +507,7 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
   }
 }
 
-unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
+double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
   double minValue=0;
   double maxValue=0;
   double meanValue=0;
@@ -545,6 +545,7 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
     nbin=1;
   assert(nbin>0);
   histvector.resize(nbin);
+  double nvalid=0;
   unsigned long int nsample=0;
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());
@@ -570,6 +571,7 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
 	    double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
 	    double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
 	    histvector[ibin]+=thePdf;
+	    nvalid+=thePdf;
 	  }
 	}
 	else{
@@ -577,6 +579,7 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
 	  assert(theBin>=0);
 	  assert(theBin<nbin);
 	  ++histvector[theBin];
+	  ++nvalid;
 	}
       // else if(lineBuffer[icol]==maxValue)
       //   ++histvector[nbin-1];
@@ -585,7 +588,7 @@ unsigned long int ImgReaderGdal::getHistogram(std::vector<unsigned long int>& hi
       }
     }
   }
-  unsigned long int nvalid=nrOfCol()*nrOfRow()-ninvalid;
+  // unsigned long int nvalid=nrOfCol()*nrOfRow()-ninvalid;
   return nvalid;
 }
 

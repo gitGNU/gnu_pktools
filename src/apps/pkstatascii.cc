@@ -295,8 +295,6 @@ int main(int argc, char *argv[])
       //end test
       
       stat.distribution(dataVector[icol],dataVector[icol].begin(),dataVector[icol].end(),statVector[icol],nbin,minValue,maxValue,sigma);
-      //test
-      cout << "debug1" << endl;
       if(verbose_opt[0])
         std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
     }

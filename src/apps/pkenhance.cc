@@ -138,8 +138,8 @@ int main(int argc,char **argv) {
       //calculate histograms
       unsigned int nbinRef=nbin_opt[0];
       unsigned int nbinInput=nbin_opt[0];
-      std::vector<unsigned long int> histRef(nbinRef);
-      std::vector<unsigned long int> histInput(nbinInput);
+      std::vector<double> histRef(nbinRef);
+      std::vector<double> histInput(nbinInput);
       double minValueRef=0;
       double maxValueRef=0;
       double minValueInput=0;

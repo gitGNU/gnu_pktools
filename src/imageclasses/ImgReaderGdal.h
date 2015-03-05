@@ -99,7 +99,7 @@ public:
   void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
   void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=false) const;
   double getMin(int& col, int& row, int band=0) const;
-  unsigned long int getHistogram(std::vector<unsigned long int>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0, bool kde=false);
+  double getHistogram(std::vector<double>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0, bool kde=false);
   double getMax(int& col, int& row, int band=0) const;
   void getRefPix(double& refX, double &refY, int band=0) const;
   void getRange(std::vector<short>& range, int Band=0) const;
