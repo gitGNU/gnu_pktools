@@ -31,4 +31,11 @@ nodist_pktools_libinclude_HEADERS = config.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pktools.pc
 
+########################################################################
+#             Additional files to be included in tarball               #
+########################################################################
+
+# Here we need include all files that are not mentioned in other Makefiles
+
+EXTRA_DIST = doc Doxyfile
 #bin_SCRIPTS = pktools-config

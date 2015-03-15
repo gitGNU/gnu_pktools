@@ -67,9 +67,16 @@ int main(int argc, char *argv[])
   Optionpk<bool> preg_opt("preg","preg","calculate perpendicular regression between two raster datasets and get correlation coefficient",false);
   Optionpk<bool> pregerr_opt("pregerr","pregerr","calculate perpendicular regression between two raster datasets and get root mean square error",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0,2);
-
+  ulx_opt.setHide(1);
+  uly_opt.setHide(1);
+  lrx_opt.setHide(1);
+  lry_opt.setHide(1);
+  down_opt.setHide(1);
+  random_opt.setHide(1);
   src_min_opt.setHide(1);
   src_max_opt.setHide(1);
+  kde_opt.setHide(1);
+
   // range_opt.setHide(1);
   // transpose_opt.setHide(1);
 
@@ -81,30 +88,17 @@ int main(int argc, char *argv[])
     band_opt.retrieveOption(argc,argv);
     filename_opt.retrieveOption(argc,argv);
     stat_opt.retrieveOption(argc,argv);
-    ulx_opt.retrieveOption(argc,argv);
-    uly_opt.retrieveOption(argc,argv);
-    lrx_opt.retrieveOption(argc,argv);
-    lry_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
-    down_opt.retrieveOption(argc,argv);
-    random_opt.retrieveOption(argc,argv);
-    // randdist_opt.retrieveOption(argc,argv);
-    // randa_opt.retrieveOption(argc,argv);
-    // randb_opt.retrieveOption(argc,argv);
     mean_opt.retrieveOption(argc,argv);
     median_opt.retrieveOption(argc,argv);
     var_opt.retrieveOption(argc,argv);
     stdev_opt.retrieveOption(argc,argv);
-    // skewness_opt.retrieveOption(argc,argv);
-    // kurtosis_opt.retrieveOption(argc,argv);
-    // sum_opt.retrieveOption(argc,argv);
     minmax_opt.retrieveOption(argc,argv);
     min_opt.retrieveOption(argc,argv);
     max_opt.retrieveOption(argc,argv);
     histogram_opt.retrieveOption(argc,argv);
     nbin_opt.retrieveOption(argc,argv);
     relative_opt.retrieveOption(argc,argv);
-    kde_opt.retrieveOption(argc,argv);
     histogram2d_opt.retrieveOption(argc,argv);
     correlation_opt.retrieveOption(argc,argv);
     rmse_opt.retrieveOption(argc,argv);
@@ -113,11 +107,15 @@ int main(int argc, char *argv[])
     preg_opt.retrieveOption(argc,argv);
     pregerr_opt.retrieveOption(argc,argv);
     //advanced options
+    ulx_opt.retrieveOption(argc,argv);
+    uly_opt.retrieveOption(argc,argv);
+    lrx_opt.retrieveOption(argc,argv);
+    lry_opt.retrieveOption(argc,argv);
+    down_opt.retrieveOption(argc,argv);
+    random_opt.retrieveOption(argc,argv);
     src_min_opt.retrieveOption(argc,argv);
     src_max_opt.retrieveOption(argc,argv);
-    // range_opt.retrieveOption(argc,argv);
-    // transpose_opt.retrieveOption(argc,argv);
-    // comment_opt.retrieveOption(argc,argv);
+    kde_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -126,7 +124,7 @@ int main(int argc, char *argv[])
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkstat -i input [-c column]*" << endl;
+    cout << "Usage: pkstat -i input" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
