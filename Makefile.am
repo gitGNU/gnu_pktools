@@ -7,6 +7,7 @@ SUBDIRS = src/base \
 	src/algorithms \
 	src/fileclasses \
 	$(LASCLASSES_OPT) \
+	$(DOX_OPT) \
 	src/apps
 
 ## The generated configuration header is installed in its own subdirectory of
@@ -37,5 +38,5 @@ pkgconfig_DATA = pktools.pc
 
 # Here we need include all files that are not mentioned in other Makefiles
 
-EXTRA_DIST = doc Doxyfile
+EXTRA_DIST = doc
 #bin_SCRIPTS = pktools-config

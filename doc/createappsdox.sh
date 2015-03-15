@@ -59,10 +59,6 @@ done >> ../doc/apps.dox
 
 #remove depricated utilities and those not ready to publish"
 
-for TOOL in pkeditogr pkenhance pkkalman pkndvi pkreclass; do 
-    rm -f ../doc/${TOOL}.dox ../html/md_doc_${TOOL}.html ../html/${TOOL}_8cc_source.html
-    sed -i "/${TOOL}/d" ../doc/apps.dox
-done
 echo "Savannah repository for homepage can only be maintained via cvs"
 #mkdir ~/tmp
 #cd ~/tmp

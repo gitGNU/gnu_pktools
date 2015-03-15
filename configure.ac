@@ -26,6 +26,22 @@ AX_LIB_GDAL([1.10.0]) dnl uncomment if gdal version 1.10.0 is required
 
 AC_CHECK_HEADERS([gdal.h])
 
+# check if doxygen is installed
+
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+if test -z "$DOXYGEN";
+   then AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
+fi
+
+#Check to see if we have Doxygen and if so, add some files to later be processed.
+AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
+AM_COND_IF([HAVE_DOXYGEN],
+	DOX_OPT="doc"
+	AC_SUBST([DOX_OPT])
+	[AC_CONFIG_FILES([
+      	doc/Doxyfile
+      	doc/Makefile])])
+
 dnl Default-disabled features
 AC_ARG_ENABLE([fann],
 AS_HELP_STRING([--enable-fann], [Enable feature fann]))

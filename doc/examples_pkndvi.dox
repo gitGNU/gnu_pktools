@@ -1,5 +1,0 @@
-\section examples_pkndvi Examples of pkndvi
-\code
-pkndvi -i input.tif -b 0 -b 1 -r ndvi -o ndvi.tif
-\endcode
-create normalized difference vegetation index (NDVI) from input image, where band 0 and 1 contain the reflectances in red and near infrared respectively
