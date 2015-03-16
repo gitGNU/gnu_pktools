@@ -348,6 +348,8 @@ version 2.6.2
  - command line help info (change request #43845)
 
 version 2.6.3
+ - configuration of autotools
+	add doc directory in release tarballs (ticket #44484)
  - pksvm
 	solved bug in mask handling
  - pkann
@@ -357,11 +359,14 @@ version 2.6.3
 	No default for option -srcnodata
  - pkstat
 	New utility for calculating statistics on raster datasets (regression, histograms, etc.)
+	minor documentation fixes (ticket #44486)
  - pkinfo
 	Removed hist from pkinfo (now in pkstat)
  - pkdiff
 	support double data types for input, but cast to unsigned short in case of accuracy assessment
-	
+ - pkkalman
+	minor documentation fixes (ticket #44486)
+
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)

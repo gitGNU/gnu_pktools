@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   // Optionpk<std::string> randdist_opt("dist", "dist", "distribution for generating random numbers, see http://www.gn/software/gsl/manual/gsl-ref_toc.html#TOC320 (only uniform and Gaussian supported yet)", "gaussian");
   // Optionpk<double> randa_opt("rnda", "rnda", "first parameter for random distribution (mean value in case of Gaussian)", 0);
   // Optionpk<double> randb_opt("rndb", "rndb", "second parameter for random distribution (standard deviation in case of Gaussian)", 1);
-  Optionpk<bool> mean_opt("mean","mean","calculate median",false);
+  Optionpk<bool> mean_opt("mean","mean","calculate mean",false);
   Optionpk<bool> median_opt("median","median","calculate median",false);
   Optionpk<bool> var_opt("var","var","calculate variance",false);
   Optionpk<bool> skewness_opt("skew","skewness","calculate skewness",false);
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Optionpk<short> nbin_opt("nbin","nbin","number of bins to calculate histogram");
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
   Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb",false);
-  Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two raster datasets (defined by -c <col1> -c <col2>",false);
+  Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two raster datasets (defined by -c <col1> -c <col2>)",false);
   Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two raster datasets",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression between two raster datasets and get correlation coefficient",false);
   Optionpk<bool> regerr_opt("regerr","regerr","calculate linear regression between two raster datasets and get root mean square error",false);

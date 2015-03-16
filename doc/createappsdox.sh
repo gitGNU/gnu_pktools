@@ -1,15 +1,21 @@
 #!/bin/bash
 
+if [ "$#" -eq 1 ];then
+    SRCDIR=$1
+else
+    SRCDIR=../src
+fi
+
 echo "create header"
 
 echo "create dox files for applications"
-for file in ../src/apps/pk*.cc;do    
+for file in ${SRCDIR}/apps/pk*.cc;do    
     THETOOL=$(basename $file .cc)
     echo ${THETOOL}
 
     THESHORTDESCRIPTION=$(grep "${THETOOL}.cc: " $file | awk -v FS=':' '{print $2}')
     USAGE=$(${THETOOL} -h|grep Usage)
-    cat > ../doc/${THETOOL}.dox <<EOF
+    cat > ${SRCDIR}/../doc/${THETOOL}.dox <<EOF
 \section $THETOOL $THETOOL
 $THESHORTDESCRIPTION
 ## SYNOPSIS
@@ -51,7 +57,7 @@ done
 
 echo "create general dox file for aps list"
 echo "\section available_tools Available tools" > ../doc/apps.dox
-for file in ../src/apps/pk*.cc;do
+for file in ${SRCDIR}/apps/pk*.cc;do
     THETOOL=$(basename $file .cc)
     THESHORTDESCRIPTION=$(grep "${THETOOL}.cc: " $file | awk -v FS=':' '{print $2}')
     echo "- \\ref ${THETOOL} ${THESHORTDESCRIPTION}"; 
@@ -59,10 +65,6 @@ done >> ../doc/apps.dox
 
 #remove depricated utilities and those not ready to publish"
 
-for TOOL in pkeditogr pkenhance pkkalman pkndvi pkreclass; do 
-    rm -f ../doc/${TOOL}.dox ../html/md_doc_${TOOL}.html ../html/${TOOL}_8cc_source.html
-    sed -i "/${TOOL}/d" ../doc/apps.dox
-done
 echo "Savannah repository for homepage can only be maintained via cvs"
 #mkdir ~/tmp
 #cd ~/tmp

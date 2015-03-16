@@ -6,10 +6,10 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 ###############################################################################
 
 # the program to build and install (the names of the final binaries)
-bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkkalman
+bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr
 
 # the program to build but not install (the names of the final binaries)
-noinst_PROGRAMS = pkeditogr pkenhance pkndvi pkreclass
+noinst_PROGRAMS = pkkalman
 
 if USE_FANN
 bin_PROGRAMS += pkann pkfsann pkregann
@@ -39,7 +39,6 @@ pkinfo_SOURCES = pkinfo.cc
 pkinfo_LDADD = -lgsl
 pkcrop_SOURCES = pkcrop.cc
 pkcrop_LDADD = -lgsl
-pkreclass_SOURCES = pkreclass.cc
 pkdiff_SOURCES = pkdiff.cc
 pkdiff_LDADD = -lgsl
 pkgetmask_SOURCES = pkgetmask.cc
@@ -64,14 +63,11 @@ pkkalman_SOURCES = pkkalman.cc $(top_srcdir)/src/algorithms/ImgRegression.h $(to
 pkkalman_LDADD = -lalgorithms -lgsl $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
 pkfilterdem_SOURCES = pkfilterdem.cc
 pkfilterdem_LDADD = -lgsl
-pkenhance_SOURCES = pkenhance.cc
-pkenhance_LDADD = $(AM_LDFLAGS) -lgdal
 pkfilterascii_SOURCES = pkfilterascii.cc
 pkfilterascii_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl -lgdal
 pkdsm2shadow_SOURCES = pkdsm2shadow.cc
 pkdsm2shadow_LDADD = -lgsl
 pkcomposite_SOURCES = pkcomposite.cc
-pkndvi_SOURCES = pkndvi.cc
 pkpolygonize_SOURCES = pkpolygonize.cc
 pksvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/svm.cpp pksvm.cc
 pksvm_LDADD = -lgsl
@@ -79,6 +75,4 @@ pkfssvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithm
 pkfssvm_LDADD = -lgsl $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
-pkeditogr_SOURCES = pkeditogr.cc
-pkeditogr_LDADD = $(AM_LDFLAGS)
 ###############################################################################
