@@ -357,6 +357,7 @@ version 2.6.3
  - pkcomposite
 	Advanced option -file supports two modes: 1 (total number of files used) and 2 (sequence number of selected file)
 	No default for option -srcnodata
+	Support of stdev composite rule (ticket #)
  - pkstat
 	New utility for calculating statistics on raster datasets (regression, histograms, etc.)
 	minor documentation fixes (ticket #44486)

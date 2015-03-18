@@ -29,7 +29,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/StatFactory.h"
 
 namespace crule{
-  enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10};
+  enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
 }
 
 using namespace std;
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
-  Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands", "overwrite");
+  Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev", "overwrite");
   Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Bands in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
@@ -130,6 +130,7 @@ int main(int argc, char *argv[])
   cruleMap["sum"]=crule::sum;
   cruleMap["maxallbands"]=crule::maxallbands;
   cruleMap["minallbands"]=crule::minallbands;
+  cruleMap["stdev"]=crule::stdev;
 
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
@@ -274,6 +275,9 @@ int main(int argc, char *argv[])
           break;
         case(crule::median):
           cout << "Composite rule: median" << endl;
+          break;
+        case(crule::stdev):
+          cout << "Composite rule: stdev" << endl;
           break;
         case(crule::sum):
           cout << "Composite rule: sum" << endl;
@@ -479,7 +483,12 @@ int main(int argc, char *argv[])
     Vector2d< vector<double> > storeBuffer;
     vector<bool> writeValid(ncol);
 
-    if(cruleMap[crule_opt[0]]==crule::mean||cruleMap[crule_opt[0]]==crule::median||cruleMap[crule_opt[0]]==crule::sum||cruleMap[crule_opt[0]]==crule::minallbands||cruleMap[crule_opt[0]]==crule::maxallbands)//mean, median, (weighted) sum value, minallbands, maxallbands
+    if(cruleMap[crule_opt[0]]==crule::mean ||
+       cruleMap[crule_opt[0]]==crule::median ||
+       cruleMap[crule_opt[0]]==crule::sum ||
+       cruleMap[crule_opt[0]]==crule::minallbands ||
+       cruleMap[crule_opt[0]]==crule::maxallbands ||
+       cruleMap[crule_opt[0]]==crule::stdev)
       storeBuffer.resize(nband,ncol);
     for(int icol=0;icol<imgWriter.nrOfCol();++icol){
       writeValid[icol]=false;
@@ -744,6 +753,7 @@ int main(int argc, char *argv[])
 	    case(crule::sum)://sum value
 	    case(crule::minallbands)://minimum for each and every band
 	    case(crule::maxallbands)://maximum for each and every band
+	    case(crule::stdev)://maximum for each and every band
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -816,6 +826,7 @@ int main(int argc, char *argv[])
             case(crule::sum):
             case(crule::minallbands):
             case(crule::maxallbands):
+            case(crule::stdev):
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -947,34 +958,28 @@ int main(int argc, char *argv[])
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
           switch(cruleMap[crule_opt[0]]){
           case(crule::mean):
-	    if(file_opt[0]<2)
-	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::median):
-	    if(file_opt[0]<2)
-	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::sum)://sum
-	    if(file_opt[0]<2)
-	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::minallbands):
-	    if(file_opt[0]<2)
-	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mymin(storeBuffer[bands[iband]][icol]);
             break;
           case(crule::maxallbands):
-	    if(file_opt[0]<2)
-	      // assert(storeBuffer[bands[iband]][icol].size()==fileBuffer[icol]);
             if(storeBuffer[bands[iband]][icol].size())
               writeBuffer[iband][icol]=stat.mymax(storeBuffer[bands[iband]][icol]);
+            break;
+          case(crule::stdev):
+            if(storeBuffer[bands[iband]][icol].size()>1)
+              writeBuffer[iband][icol]=sqrt(stat.var(storeBuffer[bands[iband]][icol]));
             break;
           default:
             break;
