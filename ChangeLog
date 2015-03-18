@@ -366,7 +366,10 @@ version 2.6.3
 	support double data types for input, but cast to unsigned short in case of accuracy assessment
  - pkkalman
 	minor documentation fixes (ticket #44486)
-
+ - pkextract
+	support for percentile rule (ticket #108771)
+ - pklas2img
+	support for percentile composite rule
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)

@@ -35,6 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
+#include <gsl/gsl_statistics.h>
 
 namespace statfactory
 {
@@ -170,6 +171,7 @@ public:
   template<class T> void  distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX, T& maxX, T& minY, T& maxY, double sigma=0, const std::string& filename="") const;
   template<class T> void cumulative (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<int>& output, int nbin, T &minimum, T &maximum) const;
   template<class T> void  percentiles (const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, std::vector<T>& output, int nbin, T &minimum, T &maximum, const std::string &filename="") const;
+  template<class T> T percentile(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, double percent, T minimum=0, T maximum=0) const;
   template<class T> void signature(const std::vector<T>& input, double& k, double& alpha, double& beta, double e) const;
   void signature(double m1, double m2, double& k, double& alpha, double& beta, double e) const;
   template<class T> void normalize(const std::vector<T>& input, std::vector<double>& output) const;
@@ -944,6 +946,25 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
       outputfile << ibin*100.0/nbin << " " << static_cast<double>(output[ibin])/input.size() << std::endl;
     outputfile.close();
   }
+}
+
+//todo: what with nodata values?
+template<class T> T  StatFactory::percentile(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, double percent, T minimum, T maximum) const
+{
+  assert(input.size());
+  std::vector<T> inputSort;
+  inputSort.assign(begin,end);
+  typename std::vector<T>::iterator vit=inputSort.begin();
+  while(vit!=inputSort.end()){
+    if(maximum>minimum){
+      if(*vit<minimum||*vit>maximum)
+	inputSort.erase(vit);
+    }
+    else
+      ++vit;
+  }
+  std::sort(inputSort.begin(),inputSort.end());
+  return gsl_stats_quantile_from_sorted_data(&(inputSort[0]),1,inputSort.size(),percent/100.0);
 }
 
 template<class T> void StatFactory::signature(const std::vector<T>& input, double&k, double& alpha, double& beta, double e) const

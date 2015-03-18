@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> masknodata_opt("msknodata", "msknodata", "Mask value(s) where image has nodata. Use one value for each mask, or multiple values for a single mask.", 1);
   Optionpk<int> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid (0)", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<unsigned short>  band_opt("b", "band", "band index to replace (other bands are copied to output)", 0);
+  Optionpk<unsigned short>  band_opt("b", "band", "band index(es) to replace (other bands are copied to output)", 0);
   Optionpk<string> type_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string> code_opt("code", "code", "Recode text file (2 colums: from to)");
   Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)");
@@ -228,6 +228,7 @@ int main(int argc, char *argv[])
       for(int imask=0;imask<mask_opt.size();++imask)
         assert(maskReader[imask].isGeoRef());
     }
+    outputWriter.copyGeoTransform(inputReader);
     outputWriter.setProjection(inputReader.getProjection());
     double ulx,uly,lrx,lry;
     inputReader.getBoundingBox(ulx,uly,lrx,lry);

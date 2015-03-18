@@ -37,7 +37,7 @@ int main(int argc,char **argv) {
   // Optionpk<short> maxIter_opt("maxit", "maxit", "Maximum number of iterations in post filter", 5);
   Optionpk<unsigned short> returns_opt("ret", "ret", "number(s) of returns to include");
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
-  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), number (point density)). Last: overwrite cells with latest point", "last");
+  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point", "last");
   Optionpk<string> filter_opt("fir", "filter", "filter las points (first,last,single,multiple,all).", "all");
   // Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none).", "none");
   // Optionpk<short> dimx_opt("dimx", "dimx", "Dimension X of postFilter", 3);
@@ -53,12 +53,14 @@ int main(int argc,char **argv) {
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter)", 1.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)", 1.0);
   Optionpk<short> nbin_opt("nbin", "nbin", "Number of percentile bins for calculating percentile height value profile (=number of output bands)", 10.0);
+  Optionpk<double> percentile_opt("perc","perc","Percentile value used for rule percentile",95);
   Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode", 0,2);
 
   nbin_opt.setHide(1);
+  percentile_opt.setHide(1);
   nodata_opt.setHide(1);
   option_opt.setHide(1);
   colorTable_opt.setHide(1);
@@ -82,6 +84,7 @@ int main(int argc,char **argv) {
     dx_opt.retrieveOption(argc,argv);
     dy_opt.retrieveOption(argc,argv);
     nbin_opt.retrieveOption(argc,argv);
+    percentile_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
@@ -108,7 +111,7 @@ int main(int argc,char **argv) {
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
 
-  Vector2d<vector<float> > inputData;//row,col,point
+  Vector2d<vector<double> > inputData;//row,col,point
 
    
   ImgReaderGdal maskReader;
@@ -229,7 +232,7 @@ int main(int argc,char **argv) {
 
   inputData.clear();
   inputData.resize(nrow,ncol);
-  Vector2d<float> outputData(nrow,ncol);
+  Vector2d<double> outputData(nrow,ncol);
   for(int irow=0;irow<nrow;++irow)
     for(int icol=0;icol<ncol;++icol)
       outputData[irow][icol]=0;
@@ -353,11 +356,11 @@ int main(int argc,char **argv) {
   for(int irow=0;irow<nrow;++irow){
     if(composite_opt[0]=="number")
       continue;//outputData already set
-    Vector2d<float> outputProfile(nband,ncol);
+    Vector2d<double> outputProfile(nband,ncol);
     for(int icol=0;icol<ncol;++icol){
-      std::vector<float> profile;
+      std::vector<double> profile;
       if(!inputData[irow][icol].size())
-        outputData[irow][icol]=(static_cast<float>((nodata_opt[0])));
+        outputData[irow][icol]=(static_cast<double>((nodata_opt[0])));
       else{
         statfactory::StatFactory stat;
         if(composite_opt[0]=="min")
@@ -366,6 +369,8 @@ int main(int argc,char **argv) {
           outputData[irow][icol]=stat.mymax(inputData[irow][icol]);
         else if(composite_opt[0]=="median")
           outputData[irow][icol]=stat.median(inputData[irow][icol]);
+        else if(composite_opt[0]=="percentile")
+          outputData[irow][icol]=stat.percentile(inputData[irow][icol],inputData[irow][icol].begin(),inputData[irow][icol].end(),percentile_opt[0]);
         else if(composite_opt[0]=="mean")
           outputData[irow][icol]=stat.mean(inputData[irow][icol]);
         else if(composite_opt[0]=="sum")
@@ -377,11 +382,11 @@ int main(int argc,char **argv) {
         else if(composite_opt[0]=="profile"){
           if(inputData[irow][icol].size()<2){
             for(int iband=0;iband<nband;++iband)
-              outputProfile[iband][icol]=static_cast<float>(nodata_opt[0]);
+              outputProfile[iband][icol]=static_cast<double>(nodata_opt[0]);
             continue;
           }
-          float min=0;
-          float max=0;
+          double min=0;
+          double max=0;
           stat.minmax(inputData[irow][icol],inputData[irow][icol].begin(),inputData[irow][icol].end(),min,max);
           if(verbose_opt[0])
             std::cout << "min,max: " << min << "," << max << std::endl;
@@ -407,7 +412,7 @@ int main(int argc,char **argv) {
         // assert(outputProfile[iband].size()==outputWriter.nrOfRow());
         assert(outputProfile[iband].size()==outputWriter.nrOfCol());
         try{
-          outputWriter.writeData(outputProfile[iband],GDT_Float32,irow,iband);
+          outputWriter.writeData(outputProfile[iband],GDT_Float64,irow,iband);
         }
         catch(std::string errorString){
           cout << errorString << endl;
@@ -527,7 +532,7 @@ int main(int argc,char **argv) {
       try{
         assert(outputData.size()==outputWriter.nrOfRow());
         assert(outputData[0].size()==outputWriter.nrOfCol());
-        outputWriter.writeData(outputData[irow],GDT_Float32,irow,0);
+        outputWriter.writeData(outputData[irow],GDT_Float64,irow,0);
       }
       catch(std::string errorString){
         cout << errorString << endl;

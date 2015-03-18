@@ -35,7 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, mode=6, centroid=7, sum=8, median=9, stdev=10};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, mode=6, centroid=7, sum=8, median=9, stdev=10, percentile=11};
 }
 
 using namespace std;
@@ -50,12 +50,13 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode or proportion");
   Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
+  Optionpk<double> percentile_opt("perc","perc","Percentile value used for rule percentile",95);
   Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint.", false);
   Optionpk<int> band_opt("b", "band", "Band index(es) to extract (0 based). Leave empty to use all bands");
-  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum.", "centroid");
+  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum, percentile.", "centroid");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
@@ -71,6 +72,7 @@ int main(int argc, char *argv[])
   bndnodata_opt.setHide(1);
   srcnodata_opt.setHide(1);
   polythreshold_opt.setHide(1);
+  percentile_opt.setHide(1);
   test_opt.setHide(1);
   fieldname_opt.setHide(1);
   label_opt.setHide(1);
@@ -89,6 +91,7 @@ int main(int argc, char *argv[])
     output_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
+    percentile_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     ftype_opt.retrieveOption(argc,argv);
     ltype_opt.retrieveOption(argc,argv);
@@ -134,6 +137,7 @@ int main(int argc, char *argv[])
   ruleMap["custom"]=rule::custom;
   ruleMap["mode"]=rule::mode;
   ruleMap["sum"]=rule::sum;
+  ruleMap["percentile"]=rule::percentile;
 
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
@@ -1238,6 +1242,8 @@ int main(int argc, char *argv[])
 			theValue=sqrt(stat.var(windowValues[index]));
 		      else if(ruleMap[rule_opt[0]]==rule::median)
 			theValue=stat.median(windowValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::percentile)
+			theValue=stat.percentile(windowValues[index],windowValues[index].begin(),windowValues[index].end(),percentile_opt[0]);
 		      else if(ruleMap[rule_opt[0]]==rule::sum)
 			theValue=stat.sum(windowValues[index]);
 		      else if(ruleMap[rule_opt[0]]==rule::max)
@@ -1728,6 +1734,8 @@ int main(int argc, char *argv[])
 			theValue=sqrt(stat.var(polyValues[index]));
 		      else if(ruleMap[rule_opt[0]]==rule::median)
 			theValue=stat.median(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::percentile)
+			theValue=stat.percentile(polyValues[index],polyValues[index].begin(),polyValues[index].end(),percentile_opt[0]);
 		      else if(ruleMap[rule_opt[0]]==rule::sum)
 			theValue=stat.sum(polyValues[index]);
 		      else if(ruleMap[rule_opt[0]]==rule::max)
@@ -2224,6 +2232,8 @@ int main(int argc, char *argv[])
 			theValue=sqrt(stat.var(polyValues[index]));
 		      else if(ruleMap[rule_opt[0]]==rule::median)
 			theValue=stat.median(polyValues[index]);
+		      else if(ruleMap[rule_opt[0]]==rule::percentile)
+			theValue=stat.percentile(polyValues[index],polyValues[index].begin(),polyValues[index].end(),percentile_opt[0]);
 		      else if(ruleMap[rule_opt[0]]==rule::sum)
 			theValue=stat.sum(polyValues[index]);
 		      else if(ruleMap[rule_opt[0]]==rule::max)
