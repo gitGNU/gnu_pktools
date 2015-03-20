@@ -956,40 +956,48 @@ int main(int argc, char *argv[])
         // assert(writeBuffer[bands[iband]].size()==imgWriter.nrOfCol());
         assert(writeBuffer[iband].size()==imgWriter.nrOfCol());
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
-          switch(cruleMap[crule_opt[0]]){
-          case(crule::mean):
-            if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
-            break;
-          case(crule::median):
-            if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
-            break;
-          case(crule::sum)://sum
-            if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
-            break;
-          case(crule::minallbands):
-            if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=stat.mymin(storeBuffer[bands[iband]][icol]);
-            break;
-          case(crule::maxallbands):
-            if(storeBuffer[bands[iband]][icol].size())
-              writeBuffer[iband][icol]=stat.mymax(storeBuffer[bands[iband]][icol]);
-            break;
-          case(crule::stdev):
-            if(storeBuffer[bands[iband]][icol].size()>1)
-              writeBuffer[iband][icol]=sqrt(stat.var(storeBuffer[bands[iband]][icol]));
-            break;
-          default:
-            break;
-          }
+	  try{
+	    switch(cruleMap[crule_opt[0]]){
+	    case(crule::mean):
+	      // writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
+	      writeBuffer[iband][icol]=stat.mean(storeBuffer[iband][icol]);
+	      break;
+	    case(crule::median):
+	      // writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
+	      writeBuffer[iband][icol]=stat.median(storeBuffer[iband][icol]);
+	      break;
+	    case(crule::sum):
+	      // writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
+	      writeBuffer[iband][icol]=stat.sum(storeBuffer[iband][icol]);
+	      break;
+	    case(crule::minallbands):
+	      // writeBuffer[iband][icol]=stat.mymin(storeBuffer[bands[iband]][icol]);
+	      writeBuffer[iband][icol]=stat.mymin(storeBuffer[iband][icol]);
+	      break;
+	    case(crule::maxallbands):
+	      // writeBuffer[iband][icol]=stat.mymax(storeBuffer[bands[iband]][icol]);
+	      writeBuffer[iband][icol]=stat.mymax(storeBuffer[iband][icol]);
+	      break;
+	    case(crule::stdev):
+	      // writeBuffer[iband][icol]=sqrt(stat.var(storeBuffer[bands[iband]][icol]));
+	      writeBuffer[iband][icol]=sqrt(stat.var(storeBuffer[iband][icol]));
+	      break;
+	    default:
+	      break;
+	    }
+	  }
+	  catch(string error){
+	    if(verbose_opt[0])
+	      cerr << error << endl;
+	    writeBuffer[iband][icol]=dstnodata_opt[0];
+	    continue;
+	  }
         }
         try{
           imgWriter.writeData(writeBuffer[iband],GDT_Float64,irow,iband);
         }
         catch(string error){
-          cerr << "error writing image file " << output_opt[0] << ": " << error << endl;
+          cerr << error << " in " << output_opt[0] << endl;
           throw;
         }
       }
@@ -998,7 +1006,7 @@ int main(int argc, char *argv[])
           imgWriter.writeData(fileBuffer,GDT_Int16,irow,bands.size());
         }
         catch(string error){
-          cerr << "error writing image file " << output_opt[0] << ": " << error << endl;
+          cerr << error << " in " << output_opt[0] << endl;
           throw;
         }
       }
