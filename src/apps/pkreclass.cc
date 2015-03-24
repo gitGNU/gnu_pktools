@@ -68,9 +68,13 @@ int main(int argc, char *argv[])
     exit(0);
   }
   if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkreclass -i input [-c from -r to]* -o output" << endl;
+    cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
   if(input_opt.empty()){
     std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
     exit(0);
