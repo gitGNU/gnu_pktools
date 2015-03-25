@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
 	}
       }
     }
-    if(reg_opt[0]){
+    if(reg_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
 	continue;
       imgreg.setDown(down_opt[0]);
@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
       double r2=imgreg.getR2(imgReader,band_opt[0],band_opt[1],c0,c1,verbose_opt[0]);
       std::cout << "-c0 " << c0 << " -c1 " << c1 << " -r2 " << r2 << std::endl;
     }
-    if(regerr_opt[0]){
+    if(regerr_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
 	continue;
       imgreg.setDown(down_opt[0]);
@@ -463,7 +463,7 @@ int main(int argc, char *argv[])
       double err=imgreg.getRMSE(imgReader,band_opt[0],band_opt[1],c0,c1,verbose_opt[0]);
       std::cout << "-c0 " << c0 << " -c1 " << c1 << " -rmse " << err << std::endl;
     }
-    if(rmse_opt[0]){
+    if(rmse_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
 	continue;
       imgreg.setDown(down_opt[0]);
@@ -473,7 +473,7 @@ int main(int argc, char *argv[])
       double err=imgreg.getRMSE(imgReader,band_opt[0],band_opt[1],c0,c1,verbose_opt[0]);
       std::cout << " -rmse " << err << std::endl;
     }
-    if(preg_opt[0]){
+    if(preg_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
 	continue;
       imgreg.setDown(down_opt[0]);
