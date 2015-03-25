@@ -97,7 +97,7 @@ public:
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=NEAR) const;
   void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
-  void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=false) const;
+  void getMinMax(double& minValue, double& maxValue, int band=0, bool exhaustiveSearch=true) const;
   double getMin(int& col, int& row, int band=0) const;
   double getHistogram(std::vector<double>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0, bool kde=false);
   double getMax(int& col, int& row, int band=0) const;

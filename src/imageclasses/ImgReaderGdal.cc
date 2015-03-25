@@ -425,18 +425,18 @@ double ImgReaderGdal::getMax(int& x, int& y, int band) const{
 
 void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const
 {
-  GDALRasterBand  *poBand;
-  int             bGotMin, bGotMax;
-  double          adfMinMax[2];
+  // GDALRasterBand  *poBand;
+  // int             bGotMin, bGotMax;
+  // double          adfMinMax[2];
         
-  poBand = m_gds->GetRasterBand(band+1);
-  adfMinMax[0] = poBand->GetMinimum( &bGotMin );
-  adfMinMax[1] = poBand->GetMaximum( &bGotMax );
-  if( ! (bGotMin && bGotMax) )
-    GDALComputeRasterMinMax((GDALRasterBandH)poBand, FALSE, adfMinMax);
-    // GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
-  minValue=adfMinMax[0];
-  maxValue=adfMinMax[1];
+  // poBand = m_gds->GetRasterBand(band+1);
+  // adfMinMax[0] = poBand->GetMinimum( &bGotMin );
+  // adfMinMax[1] = poBand->GetMaximum( &bGotMax );
+  // if( ! (bGotMin && bGotMax) )
+  //   GDALComputeRasterMinMax((GDALRasterBandH)poBand, FALSE, adfMinMax);
+  //   // GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
+  // minValue=adfMinMax[0];
+  // maxValue=adfMinMax[1];
 
   std::vector<double> lineBuffer(endCol-startCol+1);
   bool init=false;
@@ -444,8 +444,6 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
   for(int irow=startCol;irow<endRow+1;++irow){
     readData(lineBuffer,GDT_Float64,startCol,endCol,irow,band);
     for(int icol=0;icol<lineBuffer.size();++icol){
-      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
-      // if(valid){
       if(!isNoData(lineBuffer[icol])){
 	if(!init){
 	  minValue=lineBuffer[icol];
@@ -467,18 +465,6 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
 
 void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool exhaustiveSearch) const
 {
-  GDALRasterBand  *poBand;
-  int             bGotMin, bGotMax;
-  double          adfMinMax[2];
-        
-  poBand = m_gds->GetRasterBand(band+1);
-  adfMinMax[0] = poBand->GetMinimum( &bGotMin );
-  adfMinMax[1] = poBand->GetMaximum( &bGotMax );
-  if( ! (bGotMin && bGotMax) )
-    GDALComputeRasterMinMax((GDALRasterBandH)poBand, FALSE, adfMinMax);
-    // GDALComputeRasterMinMax((GDALRasterBandH)poBand, TRUE, adfMinMax);
-  minValue=adfMinMax[0];
-  maxValue=adfMinMax[1];
   if(exhaustiveSearch){//force exhaustive search
     std::vector<double> lineBuffer(nrOfCol());
     bool init=false;
@@ -505,35 +491,64 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band, bool
     if(!init)
       throw(static_cast<std::string>("Warning: not initialized"));
   }
+  else{
+    GDALRasterBand  *poBand;
+    int             bGotMin, bGotMax;
+    double          adfMinMax[2];
+        
+    poBand = m_gds->GetRasterBand(band+1);
+    adfMinMax[0] = poBand->GetMinimum( &bGotMin );
+    adfMinMax[1] = poBand->GetMaximum( &bGotMax );
+    if( ! (bGotMin && bGotMax) )
+      GDALComputeRasterMinMax((GDALRasterBandH)poBand, FALSE, adfMinMax);
+    minValue=adfMinMax[0];
+    maxValue=adfMinMax[1];
+    if(m_scale.size()>band){
+      minValue*=m_scale[band];
+      maxValue*=m_scale[band];
+    }
+    if(m_offset.size()>band){
+      minValue+=m_offset[band];
+      maxValue+=m_offset[band];
+    }
+  }
 }
 
 double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
   double minValue=0;
   double maxValue=0;
-  double meanValue=0;
-  double stdDev=0;
-  GDALProgressFunc pfnProgress;
-  void* pProgressData;
-  GDALRasterBand* rasterBand;
-  rasterBand=getRasterBand(theBand);
-  rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
-
+      
   if(min>=max)
     getMinMax(minValue,maxValue,theBand);
   else{
     minValue=min;
     maxValue=max;
   }
-  // if(min<max&&min>minValue)
-  //   minValue=min;
-  // if(min<max&&max<maxValue)
-  //   maxValue=max;
+  if(min<max&&min>minValue)
+    minValue=min;
+  if(min<max&&max<maxValue)
+    maxValue=max;
   min=minValue;
   max=maxValue;
 
   double sigma=0;
-  if(kde)
+  if(kde){
+    double meanValue=0;
+    double stdDev=0;
+    GDALProgressFunc pfnProgress;
+    void* pProgressData;
+    GDALRasterBand* rasterBand;
+    rasterBand=getRasterBand(theBand);
+    rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+    //rest minvalue and MaxValue as ComputeStatistics does not account for nodata, scale and offset
+    minValue=min;
+    maxValue=max;
+
+    if(m_scale.size()>theBand){
+      stdDev*=m_scale[theBand];
+    }
     sigma=1.06*stdDev*pow(getNvalid(theBand),-0.2);
+  }
 
   double scale=0;
   if(maxValue>minValue){

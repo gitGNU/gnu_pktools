@@ -38,6 +38,8 @@ int main(int argc, char *argv[])
   Optionpk<double> nodata_opt("nodata","nodata","Set nodata value(s)");
   Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
   Optionpk<unsigned int> random_opt("rnd", "rnd", "generate random numbers", 0);
+  Optionpk<double>  scale_opt("scale", "scale", "Scale(s) for reading input image(s)");
+  Optionpk<double>  offset_opt("offset", "offset", "Offset(s) for reading input image(s)");
 
   // Optionpk<bool> transpose_opt("t","transpose","transpose output",false);
   // Optionpk<std::string> randdist_opt("dist", "dist", "distribution for generating random numbers, see http://www.gn/software/gsl/manual/gsl-ref_toc.html#TOC320 (only uniform and Gaussian supported yet)", "gaussian");
@@ -73,6 +75,8 @@ int main(int argc, char *argv[])
   lry_opt.setHide(1);
   down_opt.setHide(1);
   random_opt.setHide(1);
+  scale_opt.setHide(1);
+  offset_opt.setHide(1);
   src_min_opt.setHide(1);
   src_max_opt.setHide(1);
   kde_opt.setHide(1);
@@ -113,6 +117,8 @@ int main(int argc, char *argv[])
     lry_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
     src_min_opt.retrieveOption(argc,argv);
     src_max_opt.retrieveOption(argc,argv);
     kde_opt.retrieveOption(argc,argv);
@@ -159,6 +165,15 @@ int main(int argc, char *argv[])
   imgregression::ImgRegression imgreg;
 
   ImgReaderGdal imgReader;
+
+  if(scale_opt.size()){
+    while(scale_opt.size()<input_opt.size())
+      scale_opt.push_back(scale_opt[0]);
+  }
+  if(offset_opt.size()){
+    while(offset_opt.size()<input_opt.size())
+      offset_opt.push_back(offset_opt[0]);
+  }
   if(input_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
       exit(0);
@@ -171,43 +186,56 @@ int main(int argc, char *argv[])
       std::cout << errorstring << std::endl;
       exit(0);
     }
-    for(int inodata=0;inodata<nodata_opt.size();++inodata){
-      if(!inodata)
-        imgReader.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
-      imgReader.pushNoDataValue(nodata_opt[inodata]);
-    }
+
     if(filename_opt[0])
       std::cout << " --input " << input_opt[ifile] << " ";
+
+    for(int inodata=0;inodata<nodata_opt.size();++inodata)
+      imgReader.pushNoDataValue(nodata_opt[inodata]);
+
     int nband=band_opt.size();
     for(int iband=0;iband<nband;++iband){
-      if(stat_opt[0]||mean_opt[0]||var_opt[0]||stdev_opt[0]){
-	assert(band_opt[iband]<imgReader.nrOfBand());
-	GDALProgressFunc pfnProgress;
-	void* pProgressData;
-	GDALRasterBand* rasterBand;
-	
-	rasterBand=imgReader.getRasterBand(band_opt[iband]);
-	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
-	if(mean_opt[0])
-	  std::cout << "--mean " << meanValue << " ";
-	if(stdev_opt[0])
-	  std::cout << "--stdDev " << stdDev << " ";
-	if(var_opt[0])
-	  std::cout << "--var " << stdDev*stdDev << " ";
-	if(stat_opt[0])
-	  std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
+
+      for(int inodata=0;inodata<nodata_opt.size();++inodata){
+	if(!inodata)
+	  imgReader.GDALSetNoDataValue(nodata_opt[0],iband);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
       }
+
+      if(offset_opt.size()>ifile)
+        imgReader.setOffset(offset_opt[ifile],band_opt[iband]);
+      if(scale_opt.size()>ifile)
+        imgReader.setScale(scale_opt[ifile],band_opt[iband]);
+
+      // if(stat_opt[0]||mean_opt[0]||var_opt[0]||stdev_opt[0]){
+      // 	assert(band_opt[iband]<imgReader.nrOfBand());
+	// GDALProgressFunc pfnProgress;
+	// void* pProgressData;
+	// GDALRasterBand* rasterBand;
+      // 	rasterBand=imgReader.getRasterBand(band_opt[iband]);
+      // 	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+
+      // 	if(mean_opt[0])
+      // 	  std::cout << "--mean " << meanValue << " ";
+      // 	if(stdev_opt[0])
+      // 	  std::cout << "--stdDev " << stdDev << " ";
+      // 	if(var_opt[0])
+      // 	  std::cout << "--var " << stdDev*stdDev << " ";
+      // 	if(stat_opt[0])
+      // 	  std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
+      // }
 
       if(minmax_opt[0]||min_opt[0]||max_opt[0]){
 	assert(band_opt[iband]<imgReader.nrOfBand());
+
 	if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
 	  double uli,ulj,lri,lrj;
 	  imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
 	  imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
 	  imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),band_opt[iband],minValue,maxValue);
 	}
-	else
+	else{
 	  imgReader.getMinMax(minValue,maxValue,band_opt[iband],true);
+	}
 	if(minmax_opt[0])
 	  std::cout << "-min " << minValue << " -max " << maxValue << " ";
 	else{
@@ -249,9 +277,8 @@ int main(int argc, char *argv[])
 	  std::cout << static_cast<double>(output[bin]) << std::endl;
       }
     }
-    if(histogram2d_opt[0]){
-      if(band_opt.size()<2)
-	continue;
+    if(histogram2d_opt[0]&&input_opt.size()<2){
+      assert(band_opt.size()>1);
       imgReader.getMinMax(minX,maxX,band_opt[0]);
       imgReader.getMinMax(minY,maxY,band_opt[1]);
       if(src_min_opt.size()){
@@ -459,64 +486,12 @@ int main(int argc, char *argv[])
     imgReader.close();
   }
   if(reg_opt[0]&&(input_opt.size()>1)){
-    while(band_opt.size()<input_opt.size())
-      band_opt.push_back(band_opt[0]);
     imgreg.setDown(down_opt[0]);
     imgreg.setThreshold(random_opt[0]);
     double c0=0;//offset
     double c1=1;//scale
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
-    double r2=imgreg.getR2(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
-    std::cout << "-c0 " << c0 << " -c1 " << c1 << " -r2 " << r2 << std::endl;
-    imgReader1.close();
-    imgReader2.close();
-  }
-  if(preg_opt[0]&&(input_opt.size()>1)){
     while(band_opt.size()<input_opt.size())
       band_opt.push_back(band_opt[0]);
-    imgreg.setDown(down_opt[0]);
-    imgreg.setThreshold(random_opt[0]);
-    double c0=0;//offset
-    double c1=1;//scale
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
-    double r2=imgreg.pgetR2(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
-    std::cout << "-c0 " << c0 << " -c1 " << c1 << " -r2 " << r2 << std::endl;
-    imgReader1.close();
-    imgReader2.close();
-  }
-  if(regerr_opt[0]&&(input_opt.size()>1)){
-    while(band_opt.size()<input_opt.size())
-      band_opt.push_back(band_opt[0]);
-    imgreg.setDown(down_opt[0]);
-    imgreg.setThreshold(random_opt[0]);
-    double c0=0;//offset
-    double c1=1;//scale
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
-    double err=imgreg.getRMSE(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
-    std::cout << "-c0 " << c0 << " -c1 " << c1 << " -rmse " << err << std::endl;
-    imgReader1.close();
-    imgReader2.close();
-  }
-  if(rmse_opt[0]&&(input_opt.size()>1)){
-    while(band_opt.size()<input_opt.size())
-      band_opt.push_back(band_opt[0]);
-    imgreg.setDown(down_opt[0]);
-    imgreg.setThreshold(random_opt[0]);
-    double c0=0;//offset
-    double c1=1;//scale
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
-    double err=imgreg.getRMSE(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
-    std::cout << "-rmse " << err << std::endl;
-    imgReader1.close();
-    imgReader2.close();
-  }
-  if(histogram2d_opt[0]&&(input_opt.size()>1)){
-    imgReader.getMinMax(minX,maxX,band_opt[0]);
-    imgReader.getMinMax(minY,maxY,band_opt[1]);
     if(src_min_opt.size()){
       while(src_min_opt.size()<input_opt.size())
 	src_min_opt.push_back(src_min_opt[0]);
@@ -525,6 +500,197 @@ int main(int argc, char *argv[])
       while(src_max_opt.size()<input_opt.size())
 	src_max_opt.push_back(src_max_opt[0]);
     }
+    ImgReaderGdal imgReader1(input_opt[0]);
+    ImgReaderGdal imgReader2(input_opt[1]);
+
+    if(offset_opt.size())
+      imgReader1.setOffset(offset_opt[0],band_opt[0]);
+    if(scale_opt.size())
+      imgReader1.setScale(scale_opt[0],band_opt[0]);
+    if(offset_opt.size()>1)
+      imgReader2.setOffset(offset_opt[1],band_opt[1]);
+    if(scale_opt.size()>1)
+      imgReader2.setScale(scale_opt[1],band_opt[1]);
+
+    for(int inodata=0;inodata<nodata_opt.size();++inodata){
+      if(!inodata){
+        imgReader1.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+        imgReader2.GDALSetNoDataValue(nodata_opt[0]),band_opt[1];//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+      }
+      imgReader1.pushNoDataValue(nodata_opt[inodata]);
+      imgReader2.pushNoDataValue(nodata_opt[inodata]);
+    }
+
+    double r2=imgreg.getR2(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
+    std::cout << "-c0 " << c0 << " -c1 " << c1 << " -r2 " << r2 << std::endl;
+    imgReader1.close();
+    imgReader2.close();
+  }
+  if(preg_opt[0]&&(input_opt.size()>1)){
+    imgreg.setDown(down_opt[0]);
+    imgreg.setThreshold(random_opt[0]);
+    double c0=0;//offset
+    double c1=1;//scale
+    while(band_opt.size()<input_opt.size())
+      band_opt.push_back(band_opt[0]);
+    if(src_min_opt.size()){
+      while(src_min_opt.size()<input_opt.size())
+	src_min_opt.push_back(src_min_opt[0]);
+    }
+    if(src_max_opt.size()){
+      while(src_max_opt.size()<input_opt.size())
+	src_max_opt.push_back(src_max_opt[0]);
+    }
+    ImgReaderGdal imgReader1(input_opt[0]);
+    ImgReaderGdal imgReader2(input_opt[1]);
+
+    if(offset_opt.size())
+      imgReader1.setOffset(offset_opt[0],band_opt[0]);
+    if(scale_opt.size())
+      imgReader1.setScale(scale_opt[0],band_opt[0]);
+    if(offset_opt.size()>1)
+      imgReader2.setOffset(offset_opt[1],band_opt[1]);
+    if(scale_opt.size()>1)
+      imgReader2.setScale(scale_opt[1],band_opt[1]);
+
+    for(int inodata=0;inodata<nodata_opt.size();++inodata){
+      if(!inodata){
+        imgReader1.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+        imgReader2.GDALSetNoDataValue(nodata_opt[0]),band_opt[1];//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+      }
+      imgReader1.pushNoDataValue(nodata_opt[inodata]);
+      imgReader2.pushNoDataValue(nodata_opt[inodata]);
+    }
+
+    double r2=imgreg.pgetR2(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
+    std::cout << "-c0 " << c0 << " -c1 " << c1 << " -r2 " << r2 << std::endl;
+    imgReader1.close();
+    imgReader2.close();
+  }
+  if(regerr_opt[0]&&(input_opt.size()>1)){
+    imgreg.setDown(down_opt[0]);
+    imgreg.setThreshold(random_opt[0]);
+    double c0=0;//offset
+    double c1=1;//scale
+    while(band_opt.size()<input_opt.size())
+      band_opt.push_back(band_opt[0]);
+    if(src_min_opt.size()){
+      while(src_min_opt.size()<input_opt.size())
+	src_min_opt.push_back(src_min_opt[0]);
+    }
+    if(src_max_opt.size()){
+      while(src_max_opt.size()<input_opt.size())
+	src_max_opt.push_back(src_max_opt[0]);
+    }
+    ImgReaderGdal imgReader1(input_opt[0]);
+    ImgReaderGdal imgReader2(input_opt[1]);
+
+    if(offset_opt.size())
+      imgReader1.setOffset(offset_opt[0],band_opt[0]);
+    if(scale_opt.size())
+      imgReader1.setScale(scale_opt[0],band_opt[0]);
+    if(offset_opt.size()>1)
+      imgReader2.setOffset(offset_opt[1],band_opt[1]);
+    if(scale_opt.size()>1)
+      imgReader2.setScale(scale_opt[1],band_opt[1]);
+
+    for(int inodata=0;inodata<nodata_opt.size();++inodata){
+      if(!inodata){
+        imgReader1.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+        imgReader2.GDALSetNoDataValue(nodata_opt[0]),band_opt[1];//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+      }
+      imgReader1.pushNoDataValue(nodata_opt[inodata]);
+      imgReader2.pushNoDataValue(nodata_opt[inodata]);
+    }
+
+    double err=imgreg.getRMSE(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
+    std::cout << "-c0 " << c0 << " -c1 " << c1 << " -rmse " << err << std::endl;
+    imgReader1.close();
+    imgReader2.close();
+  }
+  if(rmse_opt[0]&&(input_opt.size()>1)){
+    imgreg.setDown(down_opt[0]);
+    imgreg.setThreshold(random_opt[0]);
+    double c0=0;//offset
+    double c1=1;//scale
+    while(band_opt.size()<input_opt.size())
+      band_opt.push_back(band_opt[0]);
+    if(src_min_opt.size()){
+      while(src_min_opt.size()<input_opt.size())
+	src_min_opt.push_back(src_min_opt[0]);
+    }
+    if(src_max_opt.size()){
+      while(src_max_opt.size()<input_opt.size())
+	src_max_opt.push_back(src_max_opt[0]);
+    }
+    ImgReaderGdal imgReader1(input_opt[0]);
+    ImgReaderGdal imgReader2(input_opt[1]);
+
+    if(offset_opt.size())
+      imgReader1.setOffset(offset_opt[0],band_opt[0]);
+    if(scale_opt.size())
+      imgReader1.setScale(scale_opt[0],band_opt[0]);
+    if(offset_opt.size()>1)
+      imgReader2.setOffset(offset_opt[1],band_opt[1]);
+    if(scale_opt.size()>1)
+      imgReader2.setScale(scale_opt[1],band_opt[1]);
+
+    for(int inodata=0;inodata<nodata_opt.size();++inodata){
+      if(!inodata){
+        imgReader1.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+        imgReader2.GDALSetNoDataValue(nodata_opt[0]),band_opt[1];//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+      }
+      imgReader1.pushNoDataValue(nodata_opt[inodata]);
+      imgReader2.pushNoDataValue(nodata_opt[inodata]);
+    }
+
+    double err=imgreg.getRMSE(imgReader1,imgReader2,c0,c1,band_opt[0],band_opt[1],verbose_opt[0]);
+    std::cout << "-rmse " << err << std::endl;
+    imgReader1.close();
+    imgReader2.close();
+  }
+  if(histogram2d_opt[0]&&(input_opt.size()>1)){
+    while(band_opt.size()<input_opt.size())
+      band_opt.push_back(band_opt[0]);
+    if(src_min_opt.size()){
+      while(src_min_opt.size()<input_opt.size())
+	src_min_opt.push_back(src_min_opt[0]);
+    }
+    if(src_max_opt.size()){
+      while(src_max_opt.size()<input_opt.size())
+	src_max_opt.push_back(src_max_opt[0]);
+    }
+    ImgReaderGdal imgReader1(input_opt[0]);
+    ImgReaderGdal imgReader2(input_opt[1]);
+
+    if(offset_opt.size())
+      imgReader1.setOffset(offset_opt[0],band_opt[0]);
+    if(scale_opt.size())
+      imgReader1.setScale(scale_opt[0],band_opt[0]);
+    if(offset_opt.size()>1)
+      imgReader2.setOffset(offset_opt[1],band_opt[1]);
+    if(scale_opt.size()>1)
+      imgReader2.setScale(scale_opt[1],band_opt[1]);
+
+    for(int inodata=0;inodata<nodata_opt.size();++inodata){
+      if(!inodata){
+        imgReader1.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+        imgReader2.GDALSetNoDataValue(nodata_opt[0]),band_opt[1];//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+      }
+      imgReader1.pushNoDataValue(nodata_opt[inodata]);
+      imgReader2.pushNoDataValue(nodata_opt[inodata]);
+    }
+
+    imgReader1.getMinMax(minX,maxX,band_opt[0]);
+    imgReader2.getMinMax(minY,maxY,band_opt[1]);
+
+    if(verbose_opt[0]){
+      cout << "minX: " << minX << endl;
+      cout << "maxX: " << maxX << endl;
+      cout << "minY: " << minY << endl;
+      cout << "maxY: " << maxY << endl;
+    }
+      
     if(src_min_opt.size()){
       minX=src_min_opt[0];
       minY=src_min_opt[1];
@@ -533,17 +699,8 @@ int main(int argc, char *argv[])
       maxX=src_max_opt[0];
       maxY=src_max_opt[1];
     }
+
     nbin=(nbin_opt.size())? nbin_opt[0]:0;
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
-    for(int inodata=0;inodata<nodata_opt.size();++inodata){
-      if(!inodata){
-        imgReader1.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
-        imgReader2.GDALSetNoDataValue(nodata_opt[0],band_opt[0]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
-      }
-      imgReader1.pushNoDataValue(nodata_opt[inodata]);
-      imgReader2.pushNoDataValue(nodata_opt[inodata]);
-    }
     if(nbin<=1){
       std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
       // imgReader1.getMinMax(minX,maxX,band_opt[0]);
@@ -593,7 +750,7 @@ int main(int argc, char *argv[])
     if(maxX<=minX)
       imgReader1.getMinMax(minX,maxX,band_opt[0]);
     if(maxY<=minY)
-      imgReader2.getMinMax(minY,maxY,band_opt[0]);
+      imgReader2.getMinMax(minY,maxY,band_opt[1]);
 
     if(maxX<=minX){
       std::ostringstream s;
@@ -636,7 +793,7 @@ int main(int argc, char *argv[])
       imgReader2.geo2image(geoX,geoY,icol2,irow2);
       irow2=static_cast<int>(irow2);
       imgReader1.readData(inputX,GDT_Float64,irow1,band_opt[0]);
-      imgReader2.readData(inputY,GDT_Float64,irow2,band_opt[0]);
+      imgReader2.readData(inputY,GDT_Float64,irow2,band_opt[1]);
       for(int icol=0;icol<imgReader.nrOfCol();++icol){
 	if(icol%down_opt[0])
 	  continue;
