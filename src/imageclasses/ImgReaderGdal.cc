@@ -625,7 +625,7 @@ unsigned long int ImgReaderGdal::getNvalid(int band) const
 {
   unsigned long int nvalid=0;
   if(m_noDataValues.size()){
-    std::vector<short> lineBuffer(nrOfCol());
+    std::vector<double> lineBuffer(nrOfCol());
     for(int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,GDT_Float64,irow,band);
       for(int icol=0;icol<nrOfCol();++icol){

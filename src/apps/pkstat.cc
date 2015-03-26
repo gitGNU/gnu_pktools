@@ -67,7 +67,6 @@ int main(int argc, char *argv[])
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression between two raster datasets and get correlation coefficient",false);
   Optionpk<bool> regerr_opt("regerr","regerr","calculate linear regression between two raster datasets and get root mean square error",false);
   Optionpk<bool> preg_opt("preg","preg","calculate perpendicular regression between two raster datasets and get correlation coefficient",false);
-  Optionpk<bool> pregerr_opt("pregerr","pregerr","calculate perpendicular regression between two raster datasets and get root mean square error",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0,2);
   ulx_opt.setHide(1);
   uly_opt.setHide(1);
@@ -109,7 +108,6 @@ int main(int argc, char *argv[])
     reg_opt.retrieveOption(argc,argv);
     regerr_opt.retrieveOption(argc,argv);
     preg_opt.retrieveOption(argc,argv);
-    pregerr_opt.retrieveOption(argc,argv);
     //advanced options
     ulx_opt.retrieveOption(argc,argv);
     uly_opt.retrieveOption(argc,argv);
@@ -729,7 +727,7 @@ int main(int argc, char *argv[])
       rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev1,pfnProgress,pProgressData);
       rasterBand=imgReader2.getRasterBand(band_opt[0]);
       rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev2,pfnProgress,pProgressData);
-
+      
       //todo: think of smarter way how to estimate size (nodata!)
       double estimatedSize=1.0*imgReader.getNvalid(band_opt[0])/down_opt[0]/down_opt[0];
       if(random_opt[0]>0)
