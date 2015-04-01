@@ -31,6 +31,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "fileclasses/FileReaderAscii.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
+//test
+#include "algorithms/StatFactory.h"
 
 using namespace std;
 /*------------------
@@ -151,7 +153,7 @@ int main(int argc,char **argv) {
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkfilter -i input -o ouptut [-f filter | -srf file [-srf file]* | -fwhm value [-fwhm value]*]" << endl;
+    cout << "Usage: pkfilter -i input -o ouptut [-f filter | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
@@ -367,7 +369,6 @@ int main(int argc,char **argv) {
       progress=(1.0+y)/output.nrOfRow();
       pfnProgress(progress,pszMessage,pProgressArg);
     }
-    // filter1d.applyFwhm(wavelengthIn_opt,input,wavelengthOut_opt,fwhm_opt,interpolationType_opt[0],output,verbose_opt[0]);
   }
   else if(srf_opt.size()){
     if(verbose_opt[0])
@@ -412,10 +413,10 @@ int main(int argc,char **argv) {
       for(int iband=0;iband<input.nrOfBand();++iband)
         input.readData(lineInput[iband],GDT_Float64,y,iband);
       for(int isrf=0;isrf<srf.size();++isrf){
-        vector<double> lineOutput(input.nrOfCol());
+        vector<double> lineOutput(output.nrOfCol());
         double delta=1.0;
         bool normalize=true;
-        centreWavelength=filter1d.applySrf<double>(wavelengthIn_opt,lineInput,srf[isrf], interpolationType_opt[0], lineOutput, delta, normalize, verbose_opt[0]);
+	centreWavelength=filter1d.applySrf<double>(wavelengthIn_opt,lineInput,srf[isrf], interpolationType_opt[0], lineOutput, delta, normalize);
         if(verbose_opt[0])
           std::cout << "centre wavelength srf " << isrf << ": " << centreWavelength << std::endl;
         try{
@@ -430,7 +431,6 @@ int main(int argc,char **argv) {
       pfnProgress(progress,pszMessage,pProgressArg);
     }
 
-    // filter1d.applySrf(wavelengthIn_opt,input,srf,interpolationType_opt[0],output,verbose_opt[0]);
   }
   else{
     switch(filter2d::Filter2d::getFilterType(method_opt[0])){
@@ -468,11 +468,8 @@ int main(int argc,char **argv) {
 	exit(1);
       }
 
-      // ostringstream tmps;
-      // tmps << tmpdir_opt[0] << "/dilation_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
       tmpout.open("/vsimem/dilation",input);
-      // tmpout.open(tmps.str(),input);
       try{
         if(dimZ_opt.size()){
           filter1d.morphology(input,tmpout,"dilate",dimZ_opt[0]);
@@ -485,10 +482,8 @@ int main(int argc,char **argv) {
 	std::cout<< errorString;
 	exit(1);
       }
-      // tmpout.close();
       ImgReaderGdal tmpin;
       tmpin.open("/vsimem/dilation");
-      // tmpin.open(tmps.str());
       if(dimZ_opt.size()){
         filter1d.morphology(tmpin,output,"erode",dimZ_opt[0]);
       }
@@ -497,9 +492,6 @@ int main(int argc,char **argv) {
       }
       tmpin.close();
       tmpout.close();
-      // if(remove(tmps.str().c_str( )) !=0){
-      //   cerr << "could not remove " << tmps.str() << std::endl;
-      // }
       break;
     }
     case(filter2d::open):{//opening
@@ -507,11 +499,8 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for morphological operator" << std::endl;
 	exit(1);
       }
-      // ostringstream tmps;
-      // tmps << tmpdir_opt[0] << "/erosion_" << getpid() << ".tif";
       ImgWriterGdal tmpout;
       tmpout.open("/vsimem/erosion",input);
-      // tmpout.open(tmps.str(),input);
       try{
 	if(dimZ_opt.size()){
 	  filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
@@ -524,10 +513,8 @@ int main(int argc,char **argv) {
 	std::cout<< errorString;
 	exit(1);
       }
-      // tmpout.close();
       ImgReaderGdal tmpin;
       tmpin.open("/vsimem/erosion");
-      // tmpin.open(tmps.str());
       if(dimZ_opt.size()){
         filter1d.morphology(tmpin,output,"dilate",dimZ_opt[0]);
       }
@@ -536,14 +523,10 @@ int main(int argc,char **argv) {
       }
       tmpin.close();
       tmpout.close();
-      // if(remove(tmps.str().c_str( )) !=0){
-      //   cerr << "could not remove " << tmps.str() << std::endl;
-      // }
       break;
     }
     case(filter2d::homog):{//spatially homogeneous
       filter2d.doit(input,output,"homog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
-      // filter2d.homogeneousSpatial(input,output,dimX_opt[0],disc_opt[0]);
       break;
     }
     case(filter2d::heterog):{//spatially heterogeneous

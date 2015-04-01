@@ -16,13 +16,17 @@ pkfilter -i input.tif -o filter.tif -dx 3 -dy 3 -class 255 -f dilate -circ
 
 \subsection examples_pkfilter_spectral Filtering in spectral/temporal domain
 
-Filtering in spectral/temporal domain. Calculate the median value for each pixel, calculated on a moving window of width 3 (-dz 3) over all input bands. The output raster dataset will contain as many bands as the input raster dataset.
+\subsubsection examples_pkfilter_spectral_moving_window Applications with moving window
+
+Calculate the median value for each pixel, calculated on a moving window of width 3 (-dz 3) over all input bands. The output raster dataset will contain as many bands as the input raster dataset.
 
 \code
 pkfilter -i input.tif -o filter_stdev.tif -dz 3 -f median
 \endcode
 
-"Filtering" in spectral/temporal domain. No moving window (-dz 1). Calculate the standard deviation for each pixel, calculated on all input bands. The output raster dataset will contain a single band only.
+\subsubsection examples_pkfilter_spectral_no_moving_window Applications without moving window
+
+Calculate the standard deviation for each pixel, calculated on all input bands. The output raster dataset will contain a single band only, no moving window is used (-dz 1). 
 
 \code
 pkfilter -i input.tif -o filter_stdev.tif -dz 1 -f stdev
@@ -34,3 +38,24 @@ pkfilter -i input.tif -o filter_stdev.tif -dz 1 -f stdev
 pkfilter -i input.tif -o input_smoothed.tif -dz 1 -f smoothnodata -interp linear
 \endcode
 
+\subsubsection examples_pkfilter_srf Filter with spectral response functions
+
+The following two examples show how to use pkfilter for spectral filtering a high dimensional input (hyperspectral image) to a lower dimensional output (multi-spectral image). Notice that the input wavelenghts must be provided as -win value1 -win value2 -win value3 ... To save typing, we assume the input wavelengths are listed in a text file wavelengths.txt (single column ASCII file with all wavelenghts listed in nanometer). 
+
+\code
+cat wavelengths.txt | while read W;do echo " -win $W";done
+\endcode
+
+In the first example, the hyperspectral image is filtered with a spectral response function. For each spectral response function provided, a separate output band is created. The spectral response function(s) must be listed in two column ASCII file(s) with the wavelengths and response listed in the first and second column respectively. The response functions can but must not be normalized (this is taken care of by the filter utility).
+
+In this example, the input is a hyperspectral image with N>>1 spectral wavelengths (bands). The output is a multispectral image with 3 bands, where a spectral response function is provided for each output band.
+
+\code
+pkfilter -i hyperspectral.tif -o multispectral.tif -srf srf1.txt -srf srf2.txt -srf srf3.txt $(cat wavelengths.txt | while read W;do echo " -win $W";done)
+\endcode
+
+The next example is similar to the previous. Instead of providing a spectral response function for each output band, you can also provide the center wavelengths and full width half max values. Here, a three band (red, green, blue) output image is produced. 
+
+\code
+pkfilter -i hyperspectral.tif -o multispectral.tif -wout 650 -wout 510 -wout 475 -fwhm 50 -fwhm 50  -fwhm 50 $(cat wavelengths.txt | while read W;do echo " -win $W";done)
+\endcode
