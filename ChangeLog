@@ -361,6 +361,7 @@ version 2.6.3
  - pkstat
 	New utility for calculating statistics on raster datasets (regression, histograms, etc.)
 	minor documentation fixes (ticket #44486)
+	support histogram with multiple inputs (sum the values in each bin)
  - pkinfo
 	Removed hist from pkinfo (now in pkstat)
  - pkdiff

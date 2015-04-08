@@ -559,12 +559,14 @@ double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min,
   else
     nbin=1;
   assert(nbin>0);
-  histvector.resize(nbin);
-  double nvalid=0;
+  if(histvector.size()!=nbin){
+    histvector.resize(nbin);
+    for(int i=0;i<nbin;histvector[i++]=0);
+  }
+  double nvalid=histvector.size();
   unsigned long int nsample=0;
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());
-  for(int i=0;i<nbin;histvector[i++]=0);
   for(int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,GDT_Float64,irow,theBand);
     for(int icol=0;icol<nrOfCol();++icol){

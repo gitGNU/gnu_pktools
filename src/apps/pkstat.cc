@@ -161,6 +161,7 @@ int main(int argc, char *argv[])
 
   statfactory::StatFactory stat;
   imgregression::ImgRegression imgreg;
+  std::vector<double> histogramOutput;
 
   ImgReaderGdal imgReader;
 
@@ -244,7 +245,7 @@ int main(int argc, char *argv[])
 	}
       }
     }
-    if(histogram_opt[0]){//only for first selected band
+    if(histogram_opt[0]){//aggregate results from multiple inputs, but only calculate for first selected band
       assert(band_opt[0]<imgReader.nrOfBand());
       nbin=(nbin_opt.size())? nbin_opt[0]:0;
       
@@ -258,21 +259,24 @@ int main(int argc, char *argv[])
 
       if(verbose_opt[0])
 	cout << "number of valid pixels in image: " << imgReader.getNvalid(band_opt[0]) << endl;
-      std::vector<double> output;
-      double nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
 
-      std::cout.precision(10);
-      for(int bin=0;bin<nbin;++bin){
-	double binValue=0;
-	if(nbin==maxValue-minValue+1)
-	  binValue=minValue+bin;
-	else
-	  binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
-	std::cout << binValue << " ";
-	if(relative_opt[0]||kde_opt[0])
-	  std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
-	else
-	  std::cout << static_cast<double>(output[bin]) << std::endl;
+      double nsample=imgReader.getHistogram(histogramOutput,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
+
+      //only output for last input file
+      if(ifile==input_opt.size()-1){
+	std::cout.precision(10);
+	for(int bin=0;bin<nbin;++bin){
+	  double binValue=0;
+	  if(nbin==maxValue-minValue+1)
+	    binValue=minValue+bin;
+	  else
+	    binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
+	  std::cout << binValue << " ";
+	  if(relative_opt[0]||kde_opt[0])
+	    std::cout << 100.0*static_cast<double>(histogramOutput[bin])/static_cast<double>(nsample) << std::endl;
+	  else
+	    std::cout << static_cast<double>(histogramOutput[bin]) << std::endl;
+	}
       }
     }
     if(histogram2d_opt[0]&&input_opt.size()<2){
