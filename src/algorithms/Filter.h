@@ -33,7 +33,7 @@ extern "C" {
 namespace filter
 {
   
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29, savgolay=30};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29, savgolay=30, percentile=31};
 
    enum PADDING { symmetric=0, replicate=1, circular=2, zero=3};
 
@@ -66,6 +66,8 @@ public:
   void pushClass(short theClass=1){m_class.push_back(theClass);};
   void pushMask(short theMask=0){m_mask.push_back(theMask);};
   int pushNoDataValue(double noDataValue=0);//{m_mask.push_back(theMask);};
+  void pushThreshold(double theThreshold){m_threshold.push_back(theThreshold);};
+  void setThresholds(const std::vector<double>& theThresholds){m_threshold=theThresholds;};
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output);
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim);
   template<class T> void smooth(const std::vector<T>& input, std::vector<T>& output, short dim);
@@ -133,6 +135,7 @@ private:
     m_filterMap["order"]=filter::order;
     m_filterMap["median"]=filter::median;
     m_filterMap["savgolay"]=filter::savgolay;
+    m_filterMap["percentile"]=filter::percentile;
   }
 
 
@@ -150,6 +153,7 @@ private:
   std::vector<short> m_mask;
   std::string m_padding;
   std::vector<double> m_noDataValues;
+  std::vector<double> m_threshold;
 };
 
 
@@ -596,8 +600,15 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
     case(filter::var):
       output[i]=stat.var(statBuffer);
       break;
+    case(filter::stdev):
+      output[i]=sqrt(stat.var(statBuffer));
+      break;
     case(filter::mean):
       output[i]=stat.mean(statBuffer);
+      break;
+    case(filter::percentile):
+      assert(m_threshold.size());
+      output[i]=stat.percentile(statBuffer,statBuffer.begin(),statBuffer.end(),m_threshold[0]);
       break;
     default:
       std::string errorString="method not supported";

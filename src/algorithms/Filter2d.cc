@@ -534,6 +534,11 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
           outBuffer[x/down]=stat.sum(windowBuffer);
           break;
         }
+	case(filter2d::percentile):{
+	  assert(m_threshold.size());
+	  outBuffer[x/down]=stat.percentile(windowBuffer,windowBuffer.begin(),windowBuffer.end(),m_threshold[0]);
+	  break;
+	}
         case(filter2d::homog):
 	  if(occurrence.size()==1)//all values in window are the same
 	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
@@ -646,8 +651,12 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	    outBuffer[x/down]=inBuffer[indexJ][indexI];
           break;
         }
-        default:
+        default:{
+	  std::ostringstream ess;
+	  ess << "Error: filter method " << method << " not supported" << std::endl;
+	  throw(ess.str());
           break;
+	}
         }
       }
       progress=(1.0+y/down);

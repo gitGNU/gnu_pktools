@@ -44,7 +44,7 @@ int main(int argc,char **argv) {
   // Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, heterogeneous (central pixel must be different than all other pixels within window), order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, linearfeature, savgolay)", "median");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile)");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, better use odd value to avoid image shift", 3);
   Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, better use odd value to avoid image shift", 3);
@@ -72,16 +72,17 @@ int main(int argc,char **argv) {
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling). Use value n>1 for downsampling (aggregation)", 1);
   Optionpk<string> beta_opt("beta", "beta", "ASCII file with beta for each class transition in Markov Random Field");
-  Optionpk<double> eps_opt("eps","eps", "error marging for linear feature",0);
-  Optionpk<bool> l1_opt("l1","l1", "obtain longest object length for linear feature",false);
-  Optionpk<bool> l2_opt("l2","l2", "obtain shortest object length for linear feature",false,2);
-  Optionpk<bool> a1_opt("a1","a1", "obtain angle found for longest object length for linear feature",false);
-  Optionpk<bool> a2_opt("a2","a2", "obtain angle found for shortest object length for linear feature",false);
+  // Optionpk<double> eps_opt("eps","eps", "error marging for linear feature",0);
+  // Optionpk<bool> l1_opt("l1","l1", "obtain longest object length for linear feature",false);
+  // Optionpk<bool> l2_opt("l2","l2", "obtain shortest object length for linear feature",false,2);
+  // Optionpk<bool> a1_opt("a1","a1", "obtain angle found for longest object length for linear feature",false);
+  // Optionpk<bool> a2_opt("a2","a2", "obtain angle found for shortest object length for linear feature",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   resample_opt.setHide(1);
   option_opt.setHide(1);
   wavelet_type_opt.setHide(1);
+  family_opt.setHide(1);
   savgolay_nl_opt.setHide(1);
   savgolay_nr_opt.setHide(1);
   savgolay_ld_opt.setHide(1);
@@ -95,11 +96,11 @@ int main(int argc,char **argv) {
   wavelengthOut_opt.setHide(1);
   down_opt.setHide(1);
   beta_opt.setHide(1);
-  eps_opt.setHide(1);
-  l1_opt.setHide(1);
-  l2_opt.setHide(1);
-  a1_opt.setHide(1);
-  a2_opt.setHide(1);
+  // eps_opt.setHide(1);
+  // l1_opt.setHide(1);
+  // l2_opt.setHide(1);
+  // a1_opt.setHide(1);
+  // a2_opt.setHide(1);
   interpolationType_opt.setHide(1);
   otype_opt.setHide(1);
   oformat_opt.setHide(1);
@@ -122,6 +123,7 @@ int main(int argc,char **argv) {
     resample_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     wavelet_type_opt.retrieveOption(argc,argv);
+    family_opt.retrieveOption(argc,argv);
     savgolay_nl_opt.retrieveOption(argc,argv);
     savgolay_nr_opt.retrieveOption(argc,argv);
     savgolay_ld_opt.retrieveOption(argc,argv);
@@ -135,11 +137,11 @@ int main(int argc,char **argv) {
     wavelengthOut_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     beta_opt.retrieveOption(argc,argv);
-    eps_opt.retrieveOption(argc,argv);
-    l1_opt.retrieveOption(argc,argv);
-    l2_opt.retrieveOption(argc,argv);
-    a1_opt.retrieveOption(argc,argv);
-    a2_opt.retrieveOption(argc,argv);
+    // eps_opt.retrieveOption(argc,argv);
+    // l1_opt.retrieveOption(argc,argv);
+    // l2_opt.retrieveOption(argc,argv);
+    // a1_opt.retrieveOption(argc,argv);
+    // a2_opt.retrieveOption(argc,argv);
     interpolationType_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -153,7 +155,7 @@ int main(int argc,char **argv) {
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkfilter -i input -o ouptut [-f filter | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]" << endl;
+    cout << "Usage: pkfilter -i input -o ouptut [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
@@ -170,10 +172,6 @@ int main(int argc,char **argv) {
   }
   if(output_opt.empty()){
     cerr << "Error: no output file selected, use option -o" << endl;
-    exit(1);
-  }
-  if(method_opt.empty()){
-    cerr << "Error: no filter selected, use option -f" << endl;
     exit(1);
   }
   input.open(input_opt[0]);
@@ -204,48 +202,111 @@ int main(int argc,char **argv) {
     option_opt.push_back(theInterleave);
   }
   try{
-    if(filter2d::Filter2d::getFilterType(method_opt[0])==filter2d::mrf){
-      assert(class_opt.size()>1);
-      if(verbose_opt[0])
-	std::cout << "opening output image " << output_opt[0] << std::endl;
-      output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],class_opt.size(),theType,imageType,option_opt);
-    }
-    else if(filter2d::Filter2d::getFilterType(method_opt[0])==filter2d::linearfeature){
-      if(verbose_opt[0])
-	std::cout << "opening output image " << output_opt[0] << std::endl;
-      int nband=0;
-      if(l1_opt[0])
-	++nband;
-      if(a1_opt[0])
-	++nband;
-      if(l2_opt[0])
-	++nband;
-      if(a2_opt[0])
-	++nband;
-      output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),nband,theType,imageType,option_opt);
-    }
-    else if(fwhm_opt.size()||srf_opt.size()){
-      //todo: support down and offset
-      int nband=fwhm_opt.size()? fwhm_opt.size():srf_opt.size();
-      output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
-    }
+    int nband=input.nrOfBand();
+
+    if(fwhm_opt.size())
+      nband=fwhm_opt.size();
+    else if(srf_opt.size())
+      nband=srf_opt.size();
+    else if(tapz_opt.size())
+      nband=input.nrOfBand();
     else{
-      int nband=input.nrOfBand();
-      if(dimZ_opt.size()){
-	if(filter2d::Filter2d::getFilterType(method_opt[0])==filter2d::smoothnodata)
-	  dimZ_opt[0]=nband;
-	if(dimZ_opt[0]==1){
-	  nband=1;
-	  if(verbose_opt[0])
-	    std::cout << "opening single band output image " << output_opt[0] << std::endl;
-	}
-	else if(verbose_opt[0])
-	  std::cout << "opening multi-band output image " << output_opt[0] << std::endl;
+      if(method_opt.empty()){
+	cerr << "Error: no filter selected, use option -f" << endl;
+	exit(1);
       }
-      else
-	std::cout << "opening output image " << output_opt[0] << std::endl;
-      output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
+      switch(filter2d::Filter2d::getFilterType(method_opt[0])){
+      case(filter2d::dilate):
+      case(filter2d::erode):
+      case(filter2d::close):
+      case(filter2d::open):
+      case(filter2d::smooth):
+	//implemented in spectral/temporal domain (dimZ>1) and spatial domain
+	if(dimZ_opt.size())
+	  assert(dimZ_opt[0]>1);
+      nband=input.nrOfBand();
+      break;
+      case(filter2d::dwt):
+      case(filter2d::dwti):
+      case(filter2d::dwt_cut):
+      case(filter2d::smoothnodata):
+	//implemented in spectral/temporal/spatial domain and nband always input.nrOfBand()
+	nband=input.nrOfBand();
+	break;
+      case(filter2d::savgolay):
+	nband=input.nrOfBand();
+	if(dimZ_opt.empty())
+	  dimZ_opt.push_back(1);
+      case(filter2d::dwt_cut_from):
+	//only implemented in spectral/temporal domain
+	if(dimZ_opt.size()){
+	  nband=input.nrOfBand();
+	  assert(threshold_opt.size());
+	}
+	else{
+	  cerr << "filter not implemented in spectral/temporal domain" << endl;
+	  exit(1);
+	}
+	break;
+      case(filter2d::mrf)://deliberate fall through
+	assert(class_opt.size()>1);
+	if(verbose_opt[0])
+	  std::cout << "opening output image " << output_opt[0] << std::endl;
+	nband=class_opt.size();
+      case(filter2d::ismin):
+      case(filter2d::ismax):
+      case(filter2d::shift):
+      case(filter2d::scramble):
+      case(filter2d::mode):
+      case(filter2d::sobelx):
+      case(filter2d::sobely):
+      case(filter2d::sobelxy):
+      case(filter2d::countid):
+      case(filter2d::order):
+      case(filter2d::density):
+      case(filter2d::homog):
+      case(filter2d::heterog):
+	//only implemented in spatial domain
+	if(dimZ_opt.size()){
+	  cerr << "filter not implemented in spectral/temporal domain" << endl;
+	  exit(1);
+	}
+	break;
+      case(filter2d::percentile):
+	//implemented in spectral/temporal/spatial domain and nband 1 if dimZ>0
+	if(dimZ_opt.size()){
+	  dimZ_opt[0]=1;
+	  nband=1;
+	}
+	else
+	  nband=input.nrOfBand();
+	break;
+      case(filter2d::sum):
+      case(filter2d::mean):
+      case(filter2d::min):
+      case(filter2d::max):
+      case(filter2d::var):
+      case(filter2d::stdev):
+      case(filter2d::median):
+	//implemented in spectral/temporal/spatial domain and nband 1 if dimZ==1
+	if(dimZ_opt.size()==1)
+	  if(dimZ_opt[0]==1)
+	    nband=1;
+	else
+	  nband=input.nrOfBand();
+	break;
+      default:
+	cerr << "filter not implemented" << endl;
+	exit(1);
+	// if(dimZ_opt.size())
+	//   nband=dimZ_opt[0];
+	// else
+	//   nband=input.nrOfBand();
+	break;
+      }
     }
+    std::cout << "opening output image " << output_opt[0] << " with " << nband << " bands" << std::endl;
+    output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
   }
   catch(string errorstring){
     cout << errorstring << endl;
@@ -325,8 +386,13 @@ int main(int argc,char **argv) {
         std::cout<< std::endl;
       }
     }
-    filter2d.setTaps(taps);    
-    filter2d.filter(input,output);
+    filter2d.setTaps(taps);
+    try{
+      filter2d.filter(input,output);
+    }
+    catch(string errorstring){
+      cerr << errorstring << endl;
+    }
     tapfile.close();
   }
   else if(tapz_opt.size()){
@@ -439,13 +505,17 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for morphological operator" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size()){
-        if(verbose_opt[0])
+      try{
+	if(dimZ_opt.size()){
+	  if(verbose_opt[0])
           std::cout<< "1-D filtering: dilate" << std::endl;
-        filter1d.morphology(input,output,"dilate",dimZ_opt[0],verbose_opt[0]);
+	  filter1d.morphology(input,output,"dilate",dimZ_opt[0],verbose_opt[0]);
+	}
+	else
+	  filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
       }
-      else{
-	filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
       }
       break;
     case(filter2d::erode):
@@ -453,15 +523,20 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for morphological operator" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size()>0){
-        if(verbose_opt[0])
-          std::cout<< "1-D filtering: dilate" << std::endl;
-        filter1d.morphology(input,output,"erode",dimZ_opt[0]);
+      try{
+	if(dimZ_opt.size()>0){
+	  if(verbose_opt[0])
+	    std::cout<< "1-D filtering: dilate" << std::endl;
+	  filter1d.morphology(input,output,"erode",dimZ_opt[0]);
+	}
+	else{
+	  filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	}
       }
-      else{
-	filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
       }
-      break;
+    break;
     case(filter2d::close):{//closing
       if(down_opt[0]!=1){
 	std::cerr << "Error: down option not supported for morphological operator" << std::endl;
@@ -469,7 +544,7 @@ int main(int argc,char **argv) {
       }
 
       ImgWriterGdal tmpout;
-      tmpout.open("/vsimem/dilation",input);
+      tmpout.open("/vsimem/dilation.tif",input);
       try{
         if(dimZ_opt.size()){
           filter1d.morphology(input,tmpout,"dilate",dimZ_opt[0]);
@@ -483,12 +558,17 @@ int main(int argc,char **argv) {
 	exit(1);
       }
       ImgReaderGdal tmpin;
-      tmpin.open("/vsimem/dilation");
-      if(dimZ_opt.size()){
-        filter1d.morphology(tmpin,output,"erode",dimZ_opt[0]);
+      tmpin.open("/vsimem/dilation.tif");
+      try{
+	if(dimZ_opt.size()){
+	  filter1d.morphology(tmpin,output,"erode",dimZ_opt[0]);
+	}
+	else{
+	  filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	}
       }
-      else{
-	filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
       }
       tmpin.close();
       tmpout.close();
@@ -500,7 +580,7 @@ int main(int argc,char **argv) {
 	exit(1);
       }
       ImgWriterGdal tmpout;
-      tmpout.open("/vsimem/erosion",input);
+      tmpout.open("/vsimem/erosion.tif",input);
       try{
 	if(dimZ_opt.size()){
 	  filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
@@ -514,23 +594,38 @@ int main(int argc,char **argv) {
 	exit(1);
       }
       ImgReaderGdal tmpin;
-      tmpin.open("/vsimem/erosion");
-      if(dimZ_opt.size()){
-        filter1d.morphology(tmpin,output,"dilate",dimZ_opt[0]);
+      try{
+	tmpin.open("/vsimem/erosion.tif");
+	if(dimZ_opt.size()){
+	  filter1d.morphology(tmpin,output,"dilate",dimZ_opt[0]);
+	}
+	else{
+	  filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	}
+	tmpin.close();
+	tmpout.close();
       }
-      else{
-	filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
       }
-      tmpin.close();
-      tmpout.close();
       break;
     }
     case(filter2d::homog):{//spatially homogeneous
-      filter2d.doit(input,output,"homog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
-      break;
+      try{
+	filter2d.doit(input,output,"homog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      }
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
+	break;
     }
     case(filter2d::heterog):{//spatially heterogeneous
-      filter2d.doit(input,output,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      try{
+	filter2d.doit(input,output,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      }
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::shift):{//shift
@@ -549,56 +644,61 @@ int main(int argc,char **argv) {
       }
       break;
     }
-    case(filter2d::linearfeature):{
-      if(down_opt[0]!=1){
-	std::cerr << "Error: down option not supported for linear feature" << std::endl;
-	exit(1);
-      }
-      assert(input.nrOfBand());
-      assert(input.nrOfCol());
-      assert(input.nrOfRow());
-      float theAngle=361;
-      if(angle_opt.size())
-	theAngle=angle_opt[0];
-      if(verbose_opt[0])
-	std::cout << "using angle " << theAngle << std::endl;
-      try{
-	//using an angle step of 5 degrees and no maximum distance
-        filter2d.linearFeature(input,output,theAngle,5,0,eps_opt[0],l1_opt[0],a1_opt[0],l2_opt[0],a2_opt[0],0,verbose_opt[0]);
-      }
-      catch(string errorstring){
-        cerr << errorstring << endl;
-      }
-      break;
-    }
+    // case(filter2d::linearfeature):{
+    //   if(down_opt[0]!=1){
+    // 	std::cerr << "Error: down option not supported for linear feature" << std::endl;
+    // 	exit(1);
+    //   }
+    //   assert(input.nrOfBand());
+    //   assert(input.nrOfCol());
+    //   assert(input.nrOfRow());
+    //   float theAngle=361;
+    //   if(angle_opt.size())
+    // 	theAngle=angle_opt[0];
+    //   if(verbose_opt[0])
+    // 	std::cout << "using angle " << theAngle << std::endl;
+    //   try{
+    // 	//using an angle step of 5 degrees and no maximum distance
+    //     filter2d.linearFeature(input,output,theAngle,5,0,eps_opt[0],l1_opt[0],a1_opt[0],l2_opt[0],a2_opt[0],0,verbose_opt[0]);
+    //   }
+    //   catch(string errorstring){
+    //     cerr << errorstring << endl;
+    //   }
+    //   break;
+    // }
     case(filter2d::mrf):{//Markov Random Field
       if(verbose_opt[0])
 	std::cout << "Markov Random Field filtering" << std::endl;
-      if(beta_opt.size()){
-	//in file: classFrom classTo
-	//in variable: beta[classTo][classFrom]
-	FileReaderAscii betaReader(beta_opt[0]);
-	Vector2d<double> beta(class_opt.size(),class_opt.size());
-	vector<int> cols(class_opt.size());
-	for(int iclass=0;iclass<class_opt.size();++iclass)
-	  cols[iclass]=iclass;
-	betaReader.readData(beta,cols);
-	if(verbose_opt[0]){
-	  std::cout << "using values for beta:" << std::endl;
-	  for(int iclass1=0;iclass1<class_opt.size();++iclass1)
-	    std::cout << "      " << iclass1 << " (" << class_opt[iclass1] << ")";
-	  std::cout << std::endl;
-	  for(int iclass1=0;iclass1<class_opt.size();++iclass1){
-	    std::cout << iclass1 << " (" << class_opt[iclass1] << ")";
-	    for(int iclass2=0;iclass2<class_opt.size();++iclass2)
-	      std::cout << " " << beta[iclass2][iclass1] << " (" << class_opt[iclass2] << ")";
+      try{
+	if(beta_opt.size()){
+	  //in file: classFrom classTo
+	  //in variable: beta[classTo][classFrom]
+	  FileReaderAscii betaReader(beta_opt[0]);
+	  Vector2d<double> beta(class_opt.size(),class_opt.size());
+	  vector<int> cols(class_opt.size());
+	  for(int iclass=0;iclass<class_opt.size();++iclass)
+	    cols[iclass]=iclass;
+	  betaReader.readData(beta,cols);
+	  if(verbose_opt[0]){
+	    std::cout << "using values for beta:" << std::endl;
+	    for(int iclass1=0;iclass1<class_opt.size();++iclass1)
+	      std::cout << "      " << iclass1 << " (" << class_opt[iclass1] << ")";
 	    std::cout << std::endl;
+	    for(int iclass1=0;iclass1<class_opt.size();++iclass1){
+	      std::cout << iclass1 << " (" << class_opt[iclass1] << ")";
+	      for(int iclass2=0;iclass2<class_opt.size();++iclass2)
+		std::cout << " " << beta[iclass2][iclass1] << " (" << class_opt[iclass2] << ")";
+	      std::cout << std::endl;
+	    }
 	  }
+	  filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta, true, down_opt[0], verbose_opt[0]);
 	}
-	filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta, true, down_opt[0], verbose_opt[0]);
+	else
+	  filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], 1, true, down_opt[0], verbose_opt[0]);
       }
-      else
-	filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], 1, true, down_opt[0], verbose_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::sobelx):{//Sobel edge detection in X
@@ -617,7 +717,12 @@ int main(int argc,char **argv) {
       theTaps[2][1]=0.0;
       theTaps[2][2]=1.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true,true);//absolute and normalize
+      try{
+	filter2d.filter(input,output,true,true);//absolute and normalize
+      }
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::sobely):{//Sobel edge detection in Y
@@ -636,7 +741,12 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-2.0;
       theTaps[2][2]=-1.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true,true);//absolute and normalize
+      try{
+	filter2d.filter(input,output,true,true);//absolute and normalize
+      }
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::sobelxy):{//Sobel edge detection in XY
@@ -655,7 +765,12 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-1.0;
       theTaps[2][2]=0.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true,true);//absolute and normalize
+      try{
+	filter2d.filter(input,output,true,true);//absolute and normalize
+      }
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::sobelyx):{//Sobel edge detection in XY
@@ -674,7 +789,12 @@ int main(int argc,char **argv) {
       theTaps[2][1]=-1.0;
       theTaps[2][2]=-2.0;
       filter2d.setTaps(theTaps);
-      filter2d.filter(input,output,true,true);//absolute and normalize
+      try{
+	filter2d.filter(input,output,true,true);//absolute and normalize
+      }
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::smooth):{//Smoothing filter
@@ -682,13 +802,18 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size()){
-        if(verbose_opt[0])
-          std::cout<< "1-D filtering: smooth" << std::endl;
-        filter1d.smooth(input,output,dimZ_opt[0]);
+      try{
+	if(dimZ_opt.size()){
+	  if(verbose_opt[0])
+	    std::cout<< "1-D filtering: smooth" << std::endl;
+	  filter1d.smooth(input,output,dimZ_opt[0]);
+	}
+	else{
+	  filter2d.smooth(input,output,dimX_opt[0],dimY_opt[0]);
+	}
       }
-      else{
-	filter2d.smooth(input,output,dimX_opt[0],dimY_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
       }
       break;
     }
@@ -697,13 +822,21 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size()){
-        if(verbose_opt[0])
-          std::cout<< "1-D filtering: smooth" << std::endl;
-        filter1d.smoothNoData(input,interpolationType_opt[0],output);
+      try{
+	if(dimZ_opt.size()){
+	  if(verbose_opt[0])
+	    std::cout<< "1-D filtering: smooth" << std::endl;
+	  filter1d.smoothNoData(input,interpolationType_opt[0],output);
+	}
+	else{
+	  if(verbose_opt[0])
+	    std::cout<< "2-D filtering: smooth" << std::endl;
+	  filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
+	}
       }
-      else
-	filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
     case(filter2d::dwt):
@@ -711,26 +844,36 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size()){
-        if(verbose_opt[0])
-          std::cout<< "DWT in spectral domain" << std::endl;
-	filter1d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+      try{
+	if(dimZ_opt.size()){
+	  if(verbose_opt[0])
+	    std::cout<< "DWT in spectral domain" << std::endl;
+	  filter1d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+	}
+	else
+	  filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
       }
-      else
-	filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     case(filter2d::dwti):
       if(down_opt[0]!=1){
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size()){
-        if(verbose_opt[0])
-          std::cout<< "inverse DWT in spectral domain" << std::endl;
-	filter1d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+      try{
+	if(dimZ_opt.size()){
+	  if(verbose_opt[0])
+	    std::cout<< "inverse DWT in spectral domain" << std::endl;
+	  filter1d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+	}
+	else
+	  filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
       }
-      else
-	filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     case(filter2d::dwt_cut):
       if(down_opt[0]!=1){
@@ -750,14 +893,19 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for this filter" << std::endl;
 	exit(1);
       }
-      if(dimZ_opt.size()){
-        if(verbose_opt[0])
-          std::cout<< "DWT approximation in spectral domain" << std::endl;
-	filter1d.dwtCutFrom(input, output, wavelet_type_opt[0], family_opt[0], static_cast<int>(threshold_opt[0]));
+      try{
+	if(dimZ_opt.size()){
+	  if(verbose_opt[0])
+	    std::cout<< "DWT approximation in spectral domain" << std::endl;
+	  filter1d.dwtCutFrom(input, output, wavelet_type_opt[0], family_opt[0], static_cast<int>(threshold_opt[0]));
+	}
+	else{
+	  string errorString="Error: this filter is not supported in 2D";
+	  throw(errorString);
+	}
       }
-      else{
-	std::cerr << "Error: this filter is not supported in 2D" << std::endl;
-	exit(1);
+      catch(string errorstring){
+	cerr << errorstring << endl;
       }
       break;
     case(filter2d::savgolay):{
@@ -778,23 +926,33 @@ int main(int argc,char **argv) {
       filter1d.filter(input,output);
       break;
     }
-    case(filter2d::threshold):
-      filter2d.setThresholds(threshold_opt);//deliberate fall through
-    case(filter2d::density):
-      filter2d.setClasses(class_opt);//deliberate fall through
+    case(filter2d::percentile)://deliberate fall through
+    case(filter2d::threshold)://deliberate fall through
+      assert(threshold_opt.size());
+      if(dimZ_opt.size())
+	filter1d.setThresholds(threshold_opt);
+      else
+	filter2d.setThresholds(threshold_opt);
+    case(filter2d::density)://deliberate fall through
+      filter2d.setClasses(class_opt);
       if(verbose_opt[0])
 	std::cout << "classes set" << std::endl;
     default:
-      if(dimZ_opt.size()){
-	if(dimZ_opt[0]==1)
-	  filter1d.stat(input,output,method_opt[0]);
-	else{
-	  assert(down_opt[0]==1);//not implemented yet...
-	  filter1d.filter(input,output,method_opt[0],dimZ_opt[0]);
+      try{
+	if(dimZ_opt.size()){
+	  if(dimZ_opt[0]==1)
+	    filter1d.stat(input,output,method_opt[0]);
+	  else{
+	    assert(down_opt[0]==1);//not implemented yet...
+	    filter1d.filter(input,output,method_opt[0],dimZ_opt[0]);
+	  }
 	}
+	else
+	  filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       }
-      else
-	filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
       break;
     }
   }

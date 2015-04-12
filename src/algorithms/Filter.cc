@@ -403,6 +403,10 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
       case(filter::mean):
 	lineOutput[x]=stat.mean(pixelInput);
 	break;
+      case(filter::percentile):
+	assert(m_threshold.size());
+	lineOutput[x]=stat.percentile(pixelInput,pixelInput.begin(),pixelInput.end(),m_threshold[0]);
+	break;
       default:
 	std::string errorString="method not supported";
 	throw(errorString);

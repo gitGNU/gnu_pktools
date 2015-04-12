@@ -374,6 +374,7 @@ version 2.6.3
 	support for percentile composite rule
  - pkfilter
 	solved bug in spectral response filtering
+	family_opt was not processed for command line argument
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
