@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.", 0);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
-  Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false,2);
+  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   file_opt.setHide(1);
   weight_opt.setHide(1);

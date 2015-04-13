@@ -58,7 +58,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135, savgolay=136};
+  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135, savgolay=136, percentile=137};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
@@ -168,6 +168,7 @@ private:
     m_filterMap["linearfeature"]=filter2d::linearfeature;
     m_filterMap["countid"]=filter2d::countid;
     m_filterMap["savgolay"]=filter2d::savgolay;
+    m_filterMap["percentile"]=filter2d::percentile;
   }
 
   Vector2d<double> m_taps;
@@ -425,6 +426,11 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         outBuffer[x/down]=stat.sum(windowBuffer);
         break;
       }
+      case(filter2d::percentile):{
+	assert(m_threshold.size());
+        outBuffer[x/down]=stat.percentile(windowBuffer,windowBuffer.begin(),windowBuffer.end(),m_threshold[0]);
+        break;
+      }
       case(filter2d::homog):
         if(occurrence.size()==1)//all values in window must be the same
           outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
@@ -454,6 +460,13 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
           outBuffer[x/down]=noDataValue;
         break;
       }
+      case(filter2d::countid):{
+	if(windowBuffer.size())
+	  outBuffer[x/down]=occurrence.size();
+	else
+	  outBuffer[x/down]=noDataValue;
+	break;
+      }
       case(filter2d::mode):{
         if(occurrence.size()){
           std::map<int,int>::const_iterator maxit=occurrence.begin();
@@ -482,6 +495,15 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         else
           outBuffer[x/down]=noDataValue;
         break;
+      }
+      case(filter2d::scramble):{//could be done more efficiently window by window with random shuffling entire buffer and assigning entire buffer at once to output image...
+	if(windowBuffer.size()){
+	  int randomIndex=std::rand()%windowBuffer.size();
+	  outBuffer[x/down]=windowBuffer[randomIndex];
+	}
+	else
+	  outBuffer[x/down]=noDataValue;
+	break;
       }
       case(filter2d::mixed):{
         enum MixType { BF=11, CF=12, MF=13, NF=20, W=30 };
