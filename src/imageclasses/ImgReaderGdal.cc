@@ -563,7 +563,7 @@ double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min,
     histvector.resize(nbin);
     for(int i=0;i<nbin;histvector[i++]=0);
   }
-  double nvalid=histvector.size();
+  double nvalid=0;
   unsigned long int nsample=0;
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());

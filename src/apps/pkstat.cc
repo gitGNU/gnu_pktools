@@ -162,6 +162,7 @@ int main(int argc, char *argv[])
   statfactory::StatFactory stat;
   imgregression::ImgRegression imgreg;
   std::vector<double> histogramOutput;
+  double nsample=0;
 
   ImgReaderGdal imgReader;
 
@@ -260,7 +261,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0])
 	cout << "number of valid pixels in image: " << imgReader.getNvalid(band_opt[0]) << endl;
 
-      double nsample=imgReader.getHistogram(histogramOutput,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
+      nsample+=imgReader.getHistogram(histogramOutput,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
 
       //only output for last input file
       if(ifile==input_opt.size()-1){
