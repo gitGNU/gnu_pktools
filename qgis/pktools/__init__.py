@@ -27,3 +27,5 @@ __revision__ = '$Format:%H$'
 def classFactory(iface):
     from pktools.ProcessingPktoolsPlugin import ProcessingPktoolsPlugin
     return ProcessingPktoolsPlugin()
+    #of beter met ifacer argument?
+    #return ProcessingPktoolsPlugin(iface)

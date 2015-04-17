@@ -24,8 +24,9 @@ __copyright__ = '(C) 2015, Pieter Kempeneers'
 __revision__ = '$Format:%H$'
 
 
-from pktools.ExampleAlgorithm import ExampleAlgorithm
+#from pktools.ExampleAlgorithm import ExampleAlgorithm
 from pktools.pkinfo import pkinfo
+from pktools.pkcomposite import pkcomposite
 
 from processing.core.AlgorithmProvider import AlgorithmProvider
 from processing.core.ProcessingConfig import Setting, ProcessingConfig
@@ -43,11 +44,11 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         # deactivate provider by default
         self.activate = False
         # load algorithms
-        self.alglist = [ExampleAlgorithm()]
-        pktools = [pkinfo()]
-        for alg in pktools:
-            alg.group = "pktools"
-            self.alglist.extend(pktools)
+        self.alglist = [pkinfo(),pkcomposite()]
+        # pktools = [pkinfo()]
+        # for alg in pktools:
+        #     alg.group = "pktools"
+        #     self.alglist.extend(pktools)
         for alg in self.alglist:
             alg.provider = self
 

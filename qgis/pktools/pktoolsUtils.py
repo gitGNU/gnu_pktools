@@ -25,6 +25,7 @@ __revision__ = '$Format:%H$'
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+import os
 import subprocess
 from processing.core.ProcessingLog import ProcessingLog
 from processing.core.ProcessingConfig import ProcessingConfig
@@ -43,6 +44,7 @@ class pktoolsUtils():
 
     @staticmethod
     def runpktools(commands, progress):
+        settings = QSettings()#from gdal
         loglines = []
         loglines.append("pktools execution console output")
         commandline = " ".join(commands)
@@ -50,3 +52,8 @@ class pktoolsUtils():
         for line in iter(proc.readline, ""):
             loglines.append(line)
         ProcessingLog.addToLog(ProcessingLog.LOG_INFO, loglines)
+#        pktoolslUtils.consoleOutput = loglines
+
+#    @staticmethod
+#    def getConsoleOutput():
+#        return pktoolsUtils.consoleOutput
