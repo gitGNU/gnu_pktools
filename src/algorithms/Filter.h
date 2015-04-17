@@ -610,10 +610,12 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
       assert(m_threshold.size());
       output[i]=stat.percentile(statBuffer,statBuffer.begin(),statBuffer.end(),m_threshold[0]);
       break;
-    default:
-      std::string errorString="method not supported";
-      throw(errorString);
+    default:{
+      std::ostringstream ess;
+      ess << "method " << method << " (" << getFilterType(method) << ") not supported";
+      throw(ess.str());
       break;
+    }
     }
   }
   //main
@@ -652,6 +654,10 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
       break;
     case(filter::mean):
       output[i]=stat.mean(statBuffer);
+      break;
+    case(filter::percentile):
+      assert(m_threshold.size());
+      output[i]=stat.percentile(statBuffer,statBuffer.begin(),statBuffer.end(),m_threshold[0]);
       break;
     default:
       std::string errorString="method not supported";
@@ -736,6 +742,10 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
       break;
     case(filter::mean):
       output[i]=stat.mean(statBuffer);
+      break;
+    case(filter::percentile):
+      assert(m_threshold.size());
+      output[i]=stat.percentile(statBuffer,statBuffer.begin(),statBuffer.end(),m_threshold[0]);
       break;
     default:
       std::string errorString="method not supported";

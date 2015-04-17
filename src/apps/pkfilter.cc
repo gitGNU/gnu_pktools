@@ -272,15 +272,15 @@ int main(int argc,char **argv) {
 	  exit(1);
 	}
 	break;
-      case(filter2d::percentile):
-	//implemented in spectral/temporal/spatial domain and nband 1 if dimZ>0
-	if(dimZ_opt.size()){
-	  dimZ_opt[0]=1;
-	  nband=1;
-	}
-	else
-	  nband=input.nrOfBand();
-	break;
+      // case(filter2d::percentile):
+      // 	//implemented in spectral/temporal/spatial domain and nband 1 if dimZ>0
+      // 	if(dimZ_opt.size()){
+      // 	  dimZ_opt[0]=1;
+      // 	  nband=1;
+      // 	}
+      // 	else
+      // 	  nband=input.nrOfBand();
+      // 	break;
       case(filter2d::sum):
       case(filter2d::mean):
       case(filter2d::min):
@@ -288,6 +288,7 @@ int main(int argc,char **argv) {
       case(filter2d::var):
       case(filter2d::stdev):
       case(filter2d::median):
+      case(filter2d::percentile):
 	//implemented in spectral/temporal/spatial domain and nband 1 if dimZ==1
 	if(dimZ_opt.size()==1)
 	  if(dimZ_opt[0]==1)

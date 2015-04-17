@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value(s) where image has nodata. Use one value for each mask, or multiple values for a single mask.", 1);
+  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed). Provide band for each mask.", 0);
   Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each msknodata option", '=');
   Optionpk<int> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
@@ -44,12 +45,14 @@ int main(int argc, char *argv[])
   oformat_opt.setHide(1);
   option_opt.setHide(1);
   colorTable_opt.setHide(1);
+  mskband_opt.setHide(1);
   
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     msknodata_opt.retrieveOption(argc,argv);
+    mskband_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     operator_opt.retrieveOption(argc,argv);
@@ -73,6 +76,11 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0])
      cout << "number of mask images: " << mask_opt.size() << endl;
+
+  //duplicate band used for mask if not explicitly provided
+  while(mskband_opt.size()<mask_opt.size())
+    mskband_opt.push_back(mskband_opt[0]);
+
   vector<ImgReaderGdal> maskReader(mask_opt.size()); 
   for(int imask=0;imask<mask_opt.size();++imask){
     if(verbose_opt[0])
@@ -197,7 +205,7 @@ int main(int argc, char *argv[])
 	      assert(rowMask>=0&&rowMask<maskReader[imask].nrOfRow());
 	      try{
 		// maskReader[imask].readData(lineMask[imask],GDT_Int32,static_cast<int>(rowMask));
-		maskReader[imask].readData(lineMask[imask],GDT_Float64,static_cast<int>(rowMask));
+		maskReader[imask].readData(lineMask[imask],GDT_Float64,static_cast<int>(rowMask),mskband_opt[imask]);
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;
@@ -258,7 +266,7 @@ int main(int argc, char *argv[])
             assert(rowMask>=0&&rowMask<maskReader[0].nrOfRow());
             try{
               // maskReader[0].readData(lineMask[0],GDT_Int32,static_cast<int>(rowMask));
-              maskReader[0].readData(lineMask[0],GDT_Float64,static_cast<int>(rowMask));
+              maskReader[0].readData(lineMask[0],GDT_Float64,static_cast<int>(rowMask),mskband_opt[0]);
 	    }
             catch(string errorstring){
               cerr << errorstring << endl;

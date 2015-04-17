@@ -1,0 +1,19 @@
+[general]
+name=pktools
+description=A plugin that adds pktools utilities to Processing.
+category=Raster
+version=1.0.1
+qgisMinimumVersion=2.0
+
+author=Pieter Kempeneers
+email=kempenep@gmail.com
+
+tags=remote sensing, image processing, raster, vector
+
+homepage=http://pktools.nongnu.org
+tracker=https://savannah.nongnu.org/bugs/?func=additem&group=pktools
+repository=
+icon=icons/pktools.png
+
+experimental=False
+deprecated=False
