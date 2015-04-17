@@ -24,7 +24,7 @@ __copyright__ = '(C) 2015, Pieter Kempeneers'
 __revision__ = '$Format:%H$'
 
 from processing.core.GeoAlgorithm import GeoAlgorithm
-from processing.parameters.ParameterBoolean import ParameterBoolean
+
 import os
 from PyQt4 import QtGui
 from pktools.pktoolsUtils import pktoolsUtils
