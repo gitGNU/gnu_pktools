@@ -44,6 +44,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         # deactivate provider by default
         self.activate = False
         # load algorithms
+#        self.alglist = [pkinfo()]
         self.alglist = [pkinfo(),pkcomposite()]
         # pktools = [pkinfo()]
         # for alg in pktools:

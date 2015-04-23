@@ -29,6 +29,15 @@ import os
 from PyQt4 import QtGui
 from pktools.pktoolsUtils import pktoolsUtils
 
+from processing.core.parameters import ParameterFile
+from processing.core.parameters import ParameterBoolean
+from processing.core.parameters import ParameterNumber
+from processing.core.parameters import ParameterString
+from processing.core.parameters import ParameterSelection
+from processing.core.outputs import OutputFile
+from processing.core.outputs import OutputRaster
+from processing.core.outputs import OutputVector
+
 class pktoolsAlgorithm(GeoAlgorithm):
 
     def getIcon(self):

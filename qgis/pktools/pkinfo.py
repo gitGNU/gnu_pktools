@@ -26,7 +26,8 @@ __revision__ = '$Format:%H$'
 import os
 from pktoolsUtils import pktoolsUtils
 from pktoolsAlgorithm import pktoolsAlgorithm
-from processing.parameters.ParameterFile import ParameterFile
+#from processing.parameters.ParameterFile import ParameterFile
+from processing.core.parameters import ParameterFile
 
 class pkinfo(pktoolsAlgorithm):
 
@@ -39,8 +40,11 @@ class pkinfo(pktoolsAlgorithm):
         self.addParameter(ParameterFile(pkinfo.INPUT, "Input raster data set"))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkinfo")]
+        # commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkinfo")]
+        # commands.append("-i")
+        commands = [" echo pkinfo "]
         commands.append("-i")
         commands.append(self.getParameterValue(pkinfo.INPUT))
-
+        commands.append(" -mm")
+        commands.append(" |tee /tmp/a")
         pktoolsUtils.runpktools(commands, progress)
