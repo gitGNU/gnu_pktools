@@ -100,13 +100,12 @@ class pkcomposite(pktoolsAlgorithm):
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
-            commands.append(self.getParameterValue(self.OUTPUT))
+            commands.append(self.getOutputValue(self.OUTPUT))
         commands.append("-cr")
         commands.append(self.CRULE_OPTIONS[self.getParameterValue(self.CRULE)])
         if self.getParameterValue(self.DX) != "none":
             commands.append("-dx")
             commands.append(str(self.getParameterValue(self.DX)))
-        dy = self.getParameterValue(self.DY)
         if self.getParameterValue(self.DY) != "none":
             commands.append("-dy")
             commands.append(str(self.getParameterValue(self.DY)))
