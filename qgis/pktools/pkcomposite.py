@@ -59,12 +59,9 @@ class pkcomposite(pktoolsAlgorithm):
     TYPE = ['none', 'Byte','Int16','UInt16','UInt32','Int32','Float32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
-    VERBOSE = "VERBOSE"
-
     def defineCharacteristics(self):
         self.name = "pkcomposite"
         self.group = "Tools"
-        self.addParameter(ParameterBoolean(self.VERBOSE, "verbose", False))
         self.addParameter(ParameterMultipleInput(self.INPUT, 'Input layer raster data set',ParameterMultipleInput.TYPE_RASTER))
         self.addParameter(ParameterSelection(self.CRULE,"composite rule",self.CRULE_OPTIONS, 0))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
@@ -87,16 +84,17 @@ class pkcomposite(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        # commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkcomposite")]
-        commands = [" echo pkcomposite "]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkcomposite")]
+#        commands = [" echo pkcomposite "]
         input=self.getParameterValue(self.INPUT)
         inputFiles = input.split(';')
         for inputFile in inputFiles:
             commands.append('-i')
             commands.append(inputFile)
 
-        commands.append('-ot')
-        commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])
+        if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
+            commands.append('-ot')
+            commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
@@ -138,13 +136,13 @@ class pkcomposite(pktoolsAlgorithm):
             commands.append(dstnodataValue)
 
         minGUI=self.getParameterValue(self.MINGUI)
-        if minGUI != "":
+        if minGUI != "none":
             minValues = minGUI.split(';')
             for minValue in minValues:
                 commands.append('-min')
                 commands.append(minValue)
         maxGUI=self.getParameterValue(self.MAXGUI)
-        if maxGUI != "":
+        if maxGUI != "none":
             maxValues = maxGUI.split(';')
             for maxValue in maxValues:
                 commands.append('-max')
@@ -155,8 +153,5 @@ class pkcomposite(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-        if self.getParameterValue(self.VERBOSE):
-            commands.append("-v 1")
-
-        commands.append(" |tee /tmp/a")
+#        commands.append(" |tee /tmp/a")
         pktoolsUtils.runpktools(commands, progress)
