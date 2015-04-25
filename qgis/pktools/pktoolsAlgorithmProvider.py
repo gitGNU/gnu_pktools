@@ -25,8 +25,8 @@ __revision__ = '$Format:%H$'
 
 
 #from pktools.ExampleAlgorithm import ExampleAlgorithm
-from pktools.pkinfo import pkinfo
 from pktools.pkcomposite import pkcomposite
+from pktools.pkextract import pkextract
 
 from processing.core.AlgorithmProvider import AlgorithmProvider
 from processing.core.ProcessingConfig import Setting, ProcessingConfig
@@ -45,7 +45,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         self.activate = False
         # load algorithms
 #        self.alglist = [pkinfo()]
-        self.alglist = [pkinfo(),pkcomposite()]
+        self.alglist = [pkcomposite(),pkextract()]
         # pktools = [pkinfo()]
         # for alg in pktools:
         #     alg.group = "pktools"

@@ -33,6 +33,7 @@ from processing.core.parameters import ParameterSelection
 from processing.core.parameters import ParameterNumber
 from processing.core.parameters import ParameterString
 from processing.core.parameters import ParameterBoolean
+from processing.core.parameters import ParameterExtent
 
 class pkcomposite(pktoolsAlgorithm):
 
@@ -42,11 +43,7 @@ class pkcomposite(pktoolsAlgorithm):
     CRULE = "CRULE"
     DX = "DX"
     DY = "DY"
-    BB = "BB"
-    ULX = "ULX"
-    ULY = "ULY"
-    LRX = "LRX"
-    LRY = "LRY"
+    PROJWIN = 'PROJWIN'
     CB = "CB"
     SRCNODATA = "SRCNODATA"
     BNDNODATA = "BNDNODATA"
@@ -61,22 +58,19 @@ class pkcomposite(pktoolsAlgorithm):
 
     def defineCharacteristics(self):
         self.name = "pkcomposite"
-        self.group = "Tools"
+        self.group = "[pktools] raster"
         self.addParameter(ParameterMultipleInput(self.INPUT, 'Input layer raster data set',ParameterMultipleInput.TYPE_RASTER))
         self.addParameter(ParameterSelection(self.CRULE,"composite rule",self.CRULE_OPTIONS, 0))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterSelection(self.RTYPE, 'Output raster type (leave as none to keep original type)', self.TYPE, 0))
-        self.addParameter(ParameterString(self.DX, "Output resolution in x (leave as none to keep original resolution)","none"))
-        self.addParameter(ParameterString(self.DY, "Output resolution in y (leave as none to keep original resolution)","none"))
-        self.addParameter(ParameterBoolean(self.BB, "user bounding box (do not select to keep original bounding box)", False))
-        self.addParameter(ParameterString(self.ULX, "Upper left x value bounding box (select user bounding box)"))
-        self.addParameter(ParameterString(self.ULY, "Upper left y value bounding box (select user bounding box)"))
-        self.addParameter(ParameterString(self.LRX, "Lower right x value bounding box (select user bounding box)"))
-        self.addParameter(ParameterString(self.LRY, "Lower right y value bounding box (select user bounding box)"))
+        self.addParameter(ParameterNumber(self.DX, "Output resolution in x (leave 0 for no change)",0.0,None,0.0))
+        self.addParameter(ParameterNumber(self.DY, "Output resolution in y (leave 0 for no change)",0.0,None,0.0))
+        self.addParameter(ParameterExtent(self.PROJWIN,
+                          'Georeferenced boundingbox (ulx,uly,lrx,lry)'))
         self.addParameter(ParameterString(self.CB, "band index(es) used for the composite rule","0"))
-        self.addParameter(ParameterString(self.SRCNODATA, "invalid value for input raster dataset","none"))
-        self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid","0"))
-        self.addParameter(ParameterString(self.DSTNODATA, "nodata value(s) to put in output raster dataset if not valid or out of bounds","0"))
+        self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
+        self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
+        self.addParameter(ParameterString(self.DSTNODATA, "nodata value to put in output raster dataset if not valid or out of bounds","0"))
         self.addParameter(ParameterString(self.MINGUI, "flag values smaller or equal to this value as invalid","none"))
         self.addParameter(ParameterString(self.MAXGUI, "flag values smaller or equal to this value as invalid","none"))
         self.addParameter(ParameterSelection(self.RESAMPLE,"resampling method",self.RESAMPLE_OPTIONS, 0))
@@ -84,6 +78,7 @@ class pkcomposite(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
+        projwin = str(self.getParameterValue(self.PROJWIN))
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkcomposite")]
 #        commands = [" echo pkcomposite "]
         input=self.getParameterValue(self.INPUT)
@@ -101,21 +96,21 @@ class pkcomposite(pktoolsAlgorithm):
             commands.append(self.getOutputValue(self.OUTPUT))
         commands.append("-cr")
         commands.append(self.CRULE_OPTIONS[self.getParameterValue(self.CRULE)])
-        if self.getParameterValue(self.DX) != "none":
+        if self.getParameterValue(self.DX) != 0:
             commands.append("-dx")
             commands.append(str(self.getParameterValue(self.DX)))
-        if self.getParameterValue(self.DY) != "none":
+        if self.getParameterValue(self.DY) != 0:
             commands.append("-dy")
             commands.append(str(self.getParameterValue(self.DY)))
-        if self.getParameterValue(self.BB):
-            commands.append("-ulx")
-            commands.append(str(self.getParameterValue(self.ULX)))
-            commands.append("-uly")
-            commands.append(str(self.getParameterValue(self.ULY)))
-            commands.append("-lrx")
-            commands.append(str(self.getParameterValue(self.LRX)))
-            commands.append("-lry")
-            commands.append(str(self.getParameterValue(self.LRY)))
+        regionCoords = projwin.split(',')
+        commands.append('-ulx')
+        commands.append(regionCoords[0])
+        commands.append('-uly')
+        commands.append(regionCoords[1])
+        commands.append('-lrx')
+        commands.append(regionCoords[2])
+        commands.append('-lry')
+        commands.append(regionCoords[2])
         commands.append("-cb")
         commands.append(str(self.getParameterValue(self.CB)))
         srcnodata=self.getParameterValue(self.SRCNODATA)
