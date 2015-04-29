@@ -27,7 +27,7 @@ endif
 if USE_LAS
 bin_PROGRAMS += pklas2img
 pklas2img_SOURCES = pklas2img.cc
-pklas2img_LDADD = $(top_srcdir)/src/lasclasses/liblasClasses.la -llas $(AM_LDFLAGS)
+pklas2img_LDADD = -lgsl $(top_srcdir)/src/lasclasses/liblasClasses.la -llas $(AM_LDFLAGS)
 endif
 if USE_NLOPT
 bin_PROGRAMS += pkoptsvm
@@ -56,6 +56,7 @@ pkstatogr_LDADD = -lgsl
 pkegcs_SOURCES = pkegcs.cc
 pkegcs_LDADD = $(AM_LDFLAGS) -lgsl -lgdal
 pkextract_SOURCES = pkextract.cc
+pkextract_LDADD = $(AM_LDFLAGS) -lgsl -lgdal
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
 pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl -lgdal
