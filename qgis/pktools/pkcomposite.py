@@ -78,7 +78,7 @@ class pkcomposite(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkcomposite")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkcomposite")]
 #        commands = [" echo pkcomposite "]
         input=self.getParameterValue(self.INPUT)
         inputFiles = input.split(';')

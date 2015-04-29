@@ -2,7 +2,7 @@
 
 """
 ***************************************************************************
-    pkextract.py
+    pkextract_grid.py
     ---------------------
     Date                 : April 2015
     Copyright            : (C) 2015 by Pieter Kempeneers
@@ -84,7 +84,7 @@ EXTS = [
     '.pdf',
 ]
 
-class pkextract(pktoolsAlgorithm):
+class pkextract_grid(pktoolsAlgorithm):
 
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
@@ -118,7 +118,7 @@ class pkextract(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
 
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkextract")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkextract")]
 #        commands = [" echo pkextract "]
 
         input=self.getParameterValue(self.INPUT)
@@ -131,8 +131,7 @@ class pkextract(pktoolsAlgorithm):
         output = self.getOutputFromName(self.OUTPUT)
         outFile = output.value
         formatIdx = self.getParameterValue(self.FORMAT)
-        outFormat = FORMATS[formatIdx]
-        #todo: put outFormat between double quotes: "ESRI Shapefile"
+        outFormat = FORMATS[formatIdx].replace(' ','\ ')
         commands.append('-f')
         commands.append(outFormat)
         ext = EXTS[formatIdx]

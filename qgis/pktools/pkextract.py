@@ -117,8 +117,8 @@ class pkextract(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
 
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkextract")]
-#        commands = [" echo pkextract "]
+#        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkextract")]
+        commands = [" echo pkextract "]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
@@ -134,8 +134,7 @@ class pkextract(pktoolsAlgorithm):
         output = self.getOutputFromName(self.OUTPUT)
         outFile = output.value
         formatIdx = self.getParameterValue(self.FORMAT)
-        outFormat = FORMATS[formatIdx]
-        #todo: put outFormat between double quotes: "ESRI Shapefile"
+        outFormat = FORMATS[formatIdx].replace(' ','\\ ')
         commands.append('-f')
         commands.append(outFormat)
         ext = EXTS[formatIdx]
@@ -161,5 +160,5 @@ class pkextract(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-#        commands.append(" |tee /tmp/a")
+        commands.append(" |tee /tmp/a")
         pktoolsUtils.runpktools(commands, progress)
