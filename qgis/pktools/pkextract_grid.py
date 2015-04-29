@@ -87,12 +87,12 @@ EXTS = [
 class pkextract(pktoolsAlgorithm):
 
     INPUT = "INPUT"
-    SAMPLE = "SAMPLE"
     OUTPUT = "OUTPUT"
     
     RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'custom', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
 
     RULE = "RULE"
+    GRID = "GRID"
     SRCNODATA = "SRCNODATA"
     BNDNODATA = "BNDNODATA"
     EXTRA = 'EXTRA'
@@ -100,15 +100,16 @@ class pkextract(pktoolsAlgorithm):
     FORMAT = "FORMAT"
 
     def defineCharacteristics(self):
-        self.name = "pkextract"
+        self.name = "pkextract -grid"
         self.group = "[pktools] raster/vector"
         self.addParameter(ParameterRaster(self.INPUT, 'Input raster data set'))
-        self.addParameter(ParameterVector(self.SAMPLE, 'Sample vector data set'))
         self.addParameter(ParameterSelection(self.RULE,"composite rule",self.RULE_OPTIONS, 0))
 
         self.addOutput(OutputVector(self.OUTPUT, 'Output vector data set'))
         self.addParameter(ParameterSelection(self.FORMAT,
                           'Destination Format', FORMATS))
+
+        self.addParameter(ParameterNumber(self.GRID, "Cell grid size (in projected units, e.g,. m)"))
 
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
@@ -123,10 +124,6 @@ class pkextract(pktoolsAlgorithm):
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
         commands.append(input)
-
-        sample=self.getParameterValue(self.SAMPLE)
-        commands.append('-s')
-        commands.append(sample)
 
         commands.append("-r")
         commands.append(self.RULE_OPTIONS[self.getParameterValue(self.RULE)])
@@ -144,6 +141,10 @@ class pkextract(pktoolsAlgorithm):
             output.value = outFile
         commands.append('-o')
         commands.append(outFile)
+
+        if self.getParameterValue(self.GRID) > 0:
+            commands.append("-grid")
+            commands.append(str(self.getParameterValue(self.GRID)))
 
         srcnodata=self.getParameterValue(self.SRCNODATA)
         if srcnodata != "none":

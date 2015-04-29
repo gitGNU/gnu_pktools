@@ -54,7 +54,7 @@ pkextract -i landcover.tif -s polygons.sqlite -r maxvote -o majority.sqlite -pol
 Extract 100 sample units following a simple random sampling design. For each sample unit, the median value is extracted from the input raster dataset in a window of 3 by 3 pixels and written to an attribute of the output vector dataset. The output vector dataset contains polygon features defined by the windows centered at the random selected sample units.
 
 \code
-pkextract -i input.tif -o random.sqlite -rand 100 -median -buf 3 -polygon
+pkextract -i input.tif -o random.sqlite -rand 100 -r median -buf 3 -polygon
 \endcode
 
 Extract points following a systematic grid with grid cell size of 100 m. Discard pixels that have a value 0 in the input raster dataset.

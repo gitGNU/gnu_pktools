@@ -66,7 +66,7 @@ class pkcomposite(pktoolsAlgorithm):
         self.addParameter(ParameterNumber(self.DX, "Output resolution in x (leave 0 for no change)",0.0,None,0.0))
         self.addParameter(ParameterNumber(self.DY, "Output resolution in y (leave 0 for no change)",0.0,None,0.0))
         self.addParameter(ParameterExtent(self.PROJWIN,
-                          'Georeferenced boundingbox (ulx,uly,lrx,lry)'))
+                          'Georeferenced boundingbox'))
         self.addParameter(ParameterString(self.CB, "band index(es) used for the composite rule","0"))
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
@@ -78,7 +78,6 @@ class pkcomposite(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        projwin = str(self.getParameterValue(self.PROJWIN))
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), "bin", "pkcomposite")]
 #        commands = [" echo pkcomposite "]
         input=self.getParameterValue(self.INPUT)
@@ -102,13 +101,14 @@ class pkcomposite(pktoolsAlgorithm):
         if self.getParameterValue(self.DY) != 0:
             commands.append("-dy")
             commands.append(str(self.getParameterValue(self.DY)))
+        projwin = str(self.getParameterValue(self.PROJWIN))
         regionCoords = projwin.split(',')
         commands.append('-ulx')
         commands.append(regionCoords[0])
         commands.append('-uly')
-        commands.append(regionCoords[1])
+        commands.append(regionCoords[3])
         commands.append('-lrx')
-        commands.append(regionCoords[2])
+        commands.append(regionCoords[1])
         commands.append('-lry')
         commands.append(regionCoords[2])
         commands.append("-cb")
