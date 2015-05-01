@@ -161,5 +161,8 @@ class pkextract_grid(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-#        commands.append(" |tee /tmp/a")
+        # f=open('/tmp/a','w')
+        # for item in commands:
+        #     print >> f, item
+        # f.close()
         pktoolsUtils.runpktools(commands, progress)

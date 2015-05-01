@@ -117,16 +117,16 @@ class pkextract(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
 
-#        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkextract")]
-        commands = [" echo pkextract "]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkextract")]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
         commands.append(input)
 
         sample=self.getParameterValue(self.SAMPLE)
+        samplename=str(sample).replace("|layername"," -ln")
         commands.append('-s')
-        commands.append(sample)
+        commands.append(samplename)
 
         commands.append("-r")
         commands.append(self.RULE_OPTIONS[self.getParameterValue(self.RULE)])
@@ -160,5 +160,8 @@ class pkextract(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-        commands.append(" |tee /tmp/a")
+        f=open('/tmp/a','w')
+        for item in commands:
+            print >> f, item
+        f.close()
         pktoolsUtils.runpktools(commands, progress)

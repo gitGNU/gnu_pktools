@@ -119,7 +119,6 @@ class pkextract_random(pktoolsAlgorithm):
     def processAlgorithm(self, progress):
 
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkextract")]
-#        commands = [" echo pkextract "]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
@@ -161,5 +160,4 @@ class pkextract_random(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-#        commands.append(" |tee /tmp/a")
         pktoolsUtils.runpktools(commands, progress)
