@@ -29,6 +29,7 @@ from pktools.pkcomposite import pkcomposite
 from pktools.pkextract import pkextract
 from pktools.pkextract_grid import pkextract_grid
 from pktools.pkextract_random import pkextract_random
+from pktools.pksvm import pksvm
 
 from processing.core.AlgorithmProvider import AlgorithmProvider
 from processing.core.ProcessingConfig import Setting, ProcessingConfig
@@ -47,7 +48,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         self.activate = False
         # load algorithms
 #        self.alglist = [pkinfo()]
-        self.alglist = [pkcomposite(),pkextract(),pkextract_grid(),pkextract_random()]
+        self.alglist = [pkcomposite(),pkextract(),pkextract_grid(),pkextract_random(),pksvm()]
         # pktools = [pkinfo()]
         # for alg in pktools:
         #     alg.group = "pktools"

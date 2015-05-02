@@ -93,14 +93,17 @@ class pkextract(pktoolsAlgorithm):
     RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'custom', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
 
     RULE = "RULE"
+    POLYGON = "POLYGON"
+    BUFFER = "BUFFER"
     SRCNODATA = "SRCNODATA"
     BNDNODATA = "BNDNODATA"
+
     EXTRA = 'EXTRA'
     
     FORMAT = "FORMAT"
 
     def defineCharacteristics(self):
-        self.name = "pkextract"
+        self.name = "extract vector sample from raster"
         self.group = "[pktools] raster/vector"
         self.addParameter(ParameterRaster(self.INPUT, 'Input raster data set'))
         self.addParameter(ParameterVector(self.SAMPLE, 'Sample vector data set'))
@@ -110,8 +113,11 @@ class pkextract(pktoolsAlgorithm):
         self.addParameter(ParameterSelection(self.FORMAT,
                           'Destination Format', FORMATS))
 
+        self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
+        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features"))
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
+
         self.addParameter(ParameterString(self.EXTRA,
                           'Additional parameters', '', optional=True))
 
@@ -143,6 +149,13 @@ class pkextract(pktoolsAlgorithm):
             output.value = outFile
         commands.append('-o')
         commands.append(outFile)
+
+        if self.getParameterValue(self.POLYGON):
+            commands.append("-polygon")
+        buffer=self.getParameterValue(self.BUFFER)
+        if buffer > 1:
+            commands.append("-buf")
+            commands.append(str(buffer))
 
         srcnodata=self.getParameterValue(self.SRCNODATA)
         if srcnodata != "none":

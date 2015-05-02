@@ -57,7 +57,7 @@ class pkcomposite(pktoolsAlgorithm):
     EXTRA = 'EXTRA'
 
     def defineCharacteristics(self):
-        self.name = "pkcomposite"
+        self.name = "composite/mosaic raster datasets"
         self.group = "[pktools] raster"
         self.addParameter(ParameterMultipleInput(self.INPUT, 'Input layer raster data set',ParameterMultipleInput.TYPE_RASTER))
         self.addParameter(ParameterSelection(self.CRULE,"composite rule",self.CRULE_OPTIONS, 0))
@@ -124,11 +124,8 @@ class pkcomposite(pktoolsAlgorithm):
         for bndnodataValue in bndnodataValues:
             commands.append('-bndnodata')
             commands.append(bndnodataValue)
-        dstnodata=self.getParameterValue(self.DSTNODATA)
-        dstnodataValues = dstnodata.split(';')
-        for dstnodataValue in dstnodataValues:
-            commands.append('-dstnodata')
-            commands.append(dstnodataValue)
+        commands.append('-dstnodata')
+        commands.append(self.getParameterValue(self.DSTNODATA))
 
         minGUI=self.getParameterValue(self.MINGUI)
         if minGUI != "none":

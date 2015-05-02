@@ -92,6 +92,8 @@ class pkextract_grid(pktoolsAlgorithm):
     RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'custom', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
 
     RULE = "RULE"
+    POLYGON = "POLYGON"
+    BUFFER = "BUFFER"
     GRID = "GRID"
     SRCNODATA = "SRCNODATA"
     BNDNODATA = "BNDNODATA"
@@ -100,7 +102,7 @@ class pkextract_grid(pktoolsAlgorithm):
     FORMAT = "FORMAT"
 
     def defineCharacteristics(self):
-        self.name = "pkextract -grid"
+        self.name = "extract regular grid"
         self.group = "[pktools] raster/vector"
         self.addParameter(ParameterRaster(self.INPUT, 'Input raster data set'))
         self.addParameter(ParameterSelection(self.RULE,"composite rule",self.RULE_OPTIONS, 0))
@@ -108,6 +110,8 @@ class pkextract_grid(pktoolsAlgorithm):
         self.addOutput(OutputVector(self.OUTPUT, 'Output vector data set'))
         self.addParameter(ParameterSelection(self.FORMAT,
                           'Destination Format', FORMATS))
+        self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
+        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features"))
 
         self.addParameter(ParameterNumber(self.GRID, "Cell grid size (in projected units, e.g,. m)"))
 
@@ -140,6 +144,13 @@ class pkextract_grid(pktoolsAlgorithm):
             output.value = outFile
         commands.append('-o')
         commands.append(outFile)
+
+        if self.getParameterValue(self.POLYGON):
+            commands.append("-polygon")
+        buffer=self.getParameterValue(self.BUFFER)
+        if buffer > 1:
+            commands.append("-buf")
+            commands.append(str(buffer))
 
         if self.getParameterValue(self.GRID) > 0:
             commands.append("-grid")
