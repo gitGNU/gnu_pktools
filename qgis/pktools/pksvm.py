@@ -41,13 +41,13 @@ class pksvm(pktoolsAlgorithm):
     INPUT = "INPUT"
     TRAINING = "TRAINING"
     LABEL = "LABEL"
-    CV = "CV"
+#    CV = "CV"
     GAMMA = "GAMMA"
     COST = "COST"
     OUTPUT = "OUTPUT"
     MASK = "MASK"
     MSKNODATA = "MSKNODATA"
-    NODATA = "NODATA"
+#    NODATA = "NODATA"
 
 #    SVM_TYPE_OPTIONS = ["C_SVC", "nu_SVC,one_class", "epsilon_SVR", "nu_SVR"]
 #    KERNEL_TYPE_OPTIONS = ["linear", "polynomial", "radial", "sigmoid"]
@@ -57,15 +57,16 @@ class pksvm(pktoolsAlgorithm):
         self.name = "Support vector machine"
         self.group = "[pktools] supervised classification"
         self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster,""))
-        self.addParameter(ParameterVector(self.TRAINING, 'Training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file'))
+        self.addParameter(ParameterVector(self.TRAINING, 'Training vector file.'))
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))
-        self.addParameter(ParameterBoolean(self.CV, "Two-fold cross validation mode",False))
+#        self.addParameter(ParameterBoolean(self.CV, "Two-fold cross validation mode",False))
         self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",1.0))
         self.addParameter(ParameterNumber(self.COST, "The parameter C of C_SVC",1000.0))
-        self.addParameter(ParameterRaster(self.MASK, "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.",""))
-        self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image (e.g., 0;255)","0"))
+        self.addParameter(ParameterRaster(self.MASK, "Mask raster dataset",optional=True))
+#todo: make mask optional
+        self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (e.g., 0;255)","0"))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
-        self.addParameter(ParameterString(self.NODATA, "Nodata value to put where image is masked as nodata","0"))
+#        self.addParameter(ParameterString(self.NODATA, "Destination nodata value","0"))
         self.addParameter(ParameterString(self.EXTRA,
                           'Additional parameters', '', optional=True))
 
@@ -74,24 +75,27 @@ class pksvm(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pksvm")]
-#        commands = [" echo pksvm "]
+
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')
             commands.append(input)
+
+        training=self.getParameterValue(self.TRAINING)
+        trainingname=str(training).replace("|layername"," -ln")
         commands.append('-t')
-        commands.append(self.getParameterValue(self.TRAINING))
+        commands.append(trainingname)
         commands.append('-label')
         commands.append(self.getParameterValue(self.LABEL))
-        if self.getParameterValue(self.CV):
-            commands.append("-cv 2")
+        # if self.getParameterValue(self.CV):
+        #     commands.append("-cv 2")
         commands.append('-g')
         commands.append(self.getParameterValue(self.GAMMA))
         commands.append('-cc')
         commands.append(self.getParameterValue(self.COST))
 
         mask = str(self.getParameterValue(self.MASK))
-        if len(mask) > 0:
+        if mask != "None":
             commands.append('-m')
             commands.append(mask)
             msknodata=self.getParameterValue(self.MSKNODATA)
@@ -99,8 +103,8 @@ class pksvm(pktoolsAlgorithm):
             for msknodataValue in msknodataValues:
                 commands.append('-msknodata')
                 commands.append(msknodataValue)
-        commands.append('-nodata')
-        commands.append(self.getParameterValue(self.NODATA))
+#        commands.append('-nodata')
+#        commands.append(self.getParameterValue(self.NODATA))
 
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
@@ -110,5 +114,8 @@ class pksvm(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-#        commands.append(" |tee /tmp/a")
+        f=open('/tmp/a','w')
+        for item in commands:
+            print >> f, item
+        f.close()
         pktoolsUtils.runpktools(commands, progress)
