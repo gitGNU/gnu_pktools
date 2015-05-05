@@ -913,7 +913,7 @@ int main(int argc,char **argv) {
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	vector<double> obsLineBuffer;
 	vector<double> estWriteBuffer(ncol);
-o	vector<double> uncertWriteBuffer(ncol);
+	vector<double> uncertWriteBuffer(ncol);
 	vector<double> uncertObsLineBuffer;
 	// vector<double> lineMask;
 	// imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
