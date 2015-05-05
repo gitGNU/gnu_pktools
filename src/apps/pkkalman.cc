@@ -350,33 +350,6 @@ int main(int argc,char **argv) {
 	  // double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	  for(int icol=0;icol<ncol;++icol){
 	    imgWriterEst.image2geo(icol,irow,geox,geoy);
-	    // bool masked=false;
-	    // if(mask_opt.size()){
-	    //   //read mask
-	    //   maskReader.geo2image(geox,geoy,colMask,rowMask);
-	    //   colMask=static_cast<int>(colMask);
-	    //   rowMask=static_cast<int>(rowMask);
-	    //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	    // 	if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-	    // 	  try{
-	    // 	    maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
-	    // 	  }
-	    // 	  catch(string errorstring){
-	    // 	    cerr << errorstring << endl;
-	    // 	    exit(1);
-	    // 	  }
-	    // 	  catch(...){
-	    // 	    cerr << "error catched" << std::endl;
-	    // 	    exit(3);
-	    // 	  }
-	    // 	  oldRowMask=rowMask;
-	    // 	}
-	    // 	masked=(maskReader.isNoData(lineMask[colMask]));
-	    //   }
-	    //   estWriteBuffer[icol]=msknodata_opt[0];
-	    //   uncertWriteBuffer[icol]=msknodata_opt[0];
-	    //   continue;//next column
-	    // }
 	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    double modValue=estReadBuffer[modCol];
 	    if(imgReaderModel1.isNoData(modValue)){
@@ -399,7 +372,7 @@ int main(int argc,char **argv) {
 	}
       }
     }
-    else{//we have an observation at time 0
+    else{//we have a measurement at time 0
       if(verbose_opt[0])
 	cout << "we have an observation at time 0" << endl;
       imgReaderObs.open(observation_opt[0]);
@@ -439,33 +412,6 @@ int main(int argc,char **argv) {
 	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<ncol;++icol){
 	  imgWriterEst.image2geo(icol,irow,geox,geoy);
-	  // bool masked=false;
-	  // if(mask_opt.size()){
-	  //   //read mask
-	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
-	  //   colMask=static_cast<int>(colMask);
-	  //   rowMask=static_cast<int>(rowMask);
-	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-	  // 	try{
-	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
-	  // 	}
-	  // 	catch(string errorstring){
-	  // 	  cerr << errorstring << endl;
-	  // 	  exit(1);
-	  // 	}
-	  // 	catch(...){
-	  // 	  cerr << "error catched" << std::endl;
-	  // 	  exit(3);
-	  // 	}
-	  // 	oldRowMask=rowMask;
-	  //     }
-	  //     masked=(maskReader.isNoData(lineMask[colMask]));
-	  //   }
-	  //   estWriteBuffer[icol]=msknodata_opt[0];
-	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
-	  //   continue;//next column
-	  // }
 	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	  double modValue=estReadBuffer[modCol];
@@ -499,10 +445,8 @@ int main(int argc,char **argv) {
 	    }
 	    uncertWriteBuffer[icol]=totalUncertainty;//in case observation is not valid
 	  }
-	  //todo: check with Fernando? (here uncertainty only relates to modeled estimate. In case of observation update, we include uncertainty of observation
-	  // uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
-	  //observation update if observation is valid
-
+	  // uncertWriteBuffer[icol]+=uncertReadBuffer[icol];
+	  //measurement update
 	  if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
 	    double uncertObs=uncertObs_opt[0];
@@ -697,34 +641,6 @@ int main(int argc,char **argv) {
 	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  imgReaderEst.image2geo(icol,irow,geox,geoy);
-	  // bool masked=false;
-	  // if(mask_opt.size()){
-	  //   //read mask
-	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
-	  //   colMask=static_cast<int>(colMask);
-	  //   rowMask=static_cast<int>(rowMask);
-	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-	  // 	try{
-	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
-	  // 	}
-	  // 	catch(string errorstring){
-	  // 	  cerr << errorstring << endl;
-	  // 	  exit(1);
-	  // 	}
-	  // 	catch(...){
-	  // 	  cerr << "error catched" << std::endl;
-	  // 	  exit(3);
-	  // 	}
-	  // 	oldRowMask=rowMask;
-	  //     }
-	  //     masked=(maskReader.isNoData(lineMask[colMask]));
-	  //   }
-	  //   estWriteBuffer[icol]=msknodata_opt[0];
-	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
-	  //   continue;//next column
-	  // }
-
 	  int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 	  int maxCol=(icol+down_opt[0]/2<imgReaderEst.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderEst.nrOfCol()-1;
 	  int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
@@ -825,10 +741,9 @@ int main(int argc,char **argv) {
 	      totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
 	      totalUncertainty=sqrt(1.0/totalUncertainty);
 	    }
-	    // uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
-	    uncertWriteBuffer[icol]=totalUncertainty;
+	    uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
 	  }
-	  //observation update
+	  //measurement update
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
 	    double uncertObs=uncertObs_opt[0];
@@ -947,36 +862,16 @@ int main(int argc,char **argv) {
 	  // double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	  for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	    imgWriterEst.image2geo(icol,irow,geox,geoy);	    
-	    // bool masked=false;
-	    // if(mask_opt.size()){
-	    //   //read mask
-	    //   maskReader.geo2image(geox,geoy,colMask,rowMask);
-	    //   colMask=static_cast<int>(colMask);
-	    //   rowMask=static_cast<int>(rowMask);
-	    //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	    // 	if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-	    // 	  try{
-	    // 	    maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
-	    // 	  }
-	    // 	  catch(string errorstring){
-	    // 	    cerr << errorstring << endl;
-	    // 	    exit(1);
-	    // 	  }
-	    // 	  catch(...){
-	    // 	    cerr << "error catched" << std::endl;
-	    // 	    exit(3);
-	    // 	  }
-	    // 	  oldRowMask=rowMask;
-	    // 	}
-	    // 	masked=(maskReader.isNoData(lineMask[colMask]));
-	    //   }
-	    //   estWriteBuffer[icol]=msknodata_opt[0];
-	    //   uncertWriteBuffer[icol]=msknodata_opt[0];
-	    //   continue;//next column
-	    // }
 	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	    estWriteBuffer[icol]=estReadBuffer[modCol];
-	    uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	    double modValue=estReadBuffer[modCol];
+	    if(imgReaderModel1.isNoData(modValue)){
+	      estWriteBuffer[icol]=obsnodata_opt[0];
+	      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+	    }
+	    else{
+	      estWriteBuffer[icol]=modValue;
+	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	    }
 	  }
 	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	  imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
@@ -1018,7 +913,7 @@ int main(int argc,char **argv) {
 	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	vector<double> obsLineBuffer;
 	vector<double> estWriteBuffer(ncol);
-	vector<double> uncertWriteBuffer(ncol);
+o	vector<double> uncertWriteBuffer(ncol);
 	vector<double> uncertObsLineBuffer;
 	// vector<double> lineMask;
 	// imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
@@ -1029,33 +924,6 @@ int main(int argc,char **argv) {
 	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  imgWriterEst.image2geo(icol,irow,geox,geoy);
-	  // bool masked=false;
-	  // if(mask_opt.size()){
-	  //   //read mask
-	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
-	  //   colMask=static_cast<int>(colMask);
-	  //   rowMask=static_cast<int>(rowMask);
-	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-	  // 	try{
-	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
-	  // 	}
-	  // 	catch(string errorstring){
-	  // 	  cerr << errorstring << endl;
-	  // 	  exit(1);
-	  // 	}
-	  // 	catch(...){
-	  // 	  cerr << "error catched" << std::endl;
-	  // 	  exit(3);
-	  // 	}
-	  // 	oldRowMask=rowMask;
-	  //     }
-	  //     masked=(maskReader.isNoData(lineMask[colMask]));
-	  //   }
-	  //   estWriteBuffer[icol]=msknodata_opt[0];
-	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
-	  //   continue;//next column
-	  // }
 	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	  double modValue=estReadBuffer[modCol];
@@ -1089,10 +957,7 @@ int main(int argc,char **argv) {
 	    }
 	    uncertWriteBuffer[icol]=totalUncertainty;//in case observation is not valid
 	  }
-	  //todo: check with Fernando? (here uncertainty only relates to modeled estimate. In case of observation update, we include uncertainty of observation
-	  // uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
-	  //observation update if observation is valid
-
+	  //measurement update
 	  if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
 	    double uncertObs=uncertObs_opt[0];
@@ -1287,33 +1152,6 @@ int main(int argc,char **argv) {
 	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  imgReaderEst.image2geo(icol,irow,geox,geoy);
-	  // bool masked=false;
-	  // if(mask_opt.size()){
-	  //   //read mask
-	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
-	  //   colMask=static_cast<int>(colMask);
-	  //   rowMask=static_cast<int>(rowMask);
-	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-	  // 	try{
-	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
-	  // 	}
-	  // 	catch(string errorstring){
-	  // 	  cerr << errorstring << endl;
-	  // 	  exit(1);
-	  // 	}
-	  // 	catch(...){
-	  // 	  cerr << "error catched" << std::endl;
-	  // 	  exit(3);
-	  // 	}
-	  // 	oldRowMask=rowMask;
-	  //     }
-	  //     masked=(maskReader.isNoData(lineMask[colMask]));
-	  //   }
-	  //   estWriteBuffer[icol]=msknodata_opt[0];
-	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
-	  //   continue;//next column
-	  // }
 	  int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 	  int maxCol=(icol+down_opt[0]/2<imgReaderEst.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderEst.nrOfCol()-1;
 	  int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
@@ -1414,10 +1252,9 @@ int main(int argc,char **argv) {
 	      totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
 	      totalUncertainty=sqrt(1.0/totalUncertainty);
 	    }
-	    // uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
-	    uncertWriteBuffer[icol]=totalUncertainty;
+	    uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
 	  }
-	  //observation update
+	  //measurement update
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 	    double kalmanGain=1;
 	    double uncertObs=uncertObs_opt[0];
@@ -1571,33 +1408,6 @@ int main(int argc,char **argv) {
 	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  imgWriterEst.image2geo(icol,irow,geox,geoy);
-	  // bool masked=false;
-	  // if(mask_opt.size()){
-	  //   //read mask
-	  //   maskReader.geo2image(geox,geoy,colMask,rowMask);
-	  //   colMask=static_cast<int>(colMask);
-	  //   rowMask=static_cast<int>(rowMask);
-	  //   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	  //     if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-	  // 	try{
-	  // 	  maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
-	  // 	}
-	  // 	catch(string errorstring){
-	  // 	  cerr << errorstring << endl;
-	  // 	  exit(1);
-	  // 	}
-	  // 	catch(...){
-	  // 	  cerr << "error catched" << std::endl;
-	  // 	  exit(3);
-	  // 	}
-	  // 	oldRowMask=rowMask;
-	  //     }
-	  //     masked=(maskReader.isNoData(lineMask[colMask]));
-	  //   }
-	  //   estWriteBuffer[icol]=msknodata_opt[0];
-	  //   uncertWriteBuffer[icol]=msknodata_opt[0];
-	  //   continue;//next column
-	  // }
 	  double A=estForwardBuffer[icol];
 	  double B=estBackwardBuffer[icol];
 	  double C=uncertForwardBuffer[icol]*uncertForwardBuffer[icol];
