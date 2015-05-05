@@ -40,6 +40,7 @@ class pksvm(pktoolsAlgorithm):
 
     INPUT = "INPUT"
     TRAINING = "TRAINING"
+    ITERATE = "ITERATE"
     LABEL = "LABEL"
 #    CV = "CV"
     GAMMA = "GAMMA"
@@ -58,6 +59,7 @@ class pksvm(pktoolsAlgorithm):
         self.group = "[pktools] supervised classification"
         self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster,""))
         self.addParameter(ParameterVector(self.TRAINING, 'Training vector file.'))
+        self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))
 #        self.addParameter(ParameterBoolean(self.CV, "Two-fold cross validation mode",False))
         self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",1.0))
@@ -81,8 +83,10 @@ class pksvm(pktoolsAlgorithm):
             commands.append('-i')
             commands.append(input)
 
-        training=self.getParameterValue(self.TRAINING)
-        trainingname=str(training).replace("|layername"," -ln")
+        if self.getParameterValue(self.ITERATE):
+            trainingname=str(training)[:str(training).find('|')]
+        else:
+            trainingname=str(training).replace("|layername"," -ln")
         commands.append('-t')
         commands.append(trainingname)
         commands.append('-label')
