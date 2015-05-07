@@ -384,6 +384,10 @@ template<class T> inline typename std::vector<T>::iterator StatFactory::mymax(co
 template<class T> inline T StatFactory::mymin(const std::vector<T>& v) const
 {
   bool isValid=false;
+  if(v.empty()){
+    std::string errorString="Error: vector is empty";
+    throw(errorString);
+  }
   T minValue=*(v.begin());
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(isNoData(*it))
@@ -426,6 +430,10 @@ template<class T> inline T StatFactory::mymin(const std::vector<T>& v) const
 template<class T> inline T StatFactory::mymax(const std::vector<T>& v) const
 {
   bool isValid=false;
+  if(v.empty()){
+    std::string errorString="Error: vector is empty";
+    throw(errorString);
+  }
   T maxValue=*(v.begin());
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(isNoData(*it))
@@ -547,7 +555,6 @@ template<class T> inline T StatFactory::sum(const std::vector<T>& v) const
 
 template<class T> inline double StatFactory::mean(const std::vector<T>& v) const
 {
-  assert(v.size());
   typename std::vector<T>::const_iterator it;
   T tmpSum=0;
   unsigned int validSize=0;
@@ -627,7 +634,6 @@ template<class T> double StatFactory::var(const std::vector<T>& v) const
 
 template<class T> double StatFactory::moment(const std::vector<T>& v, int n) const
 {
-  assert(v.size());
   unsigned int validSize=0;
   typename std::vector<T>::const_iterator it;
   double m=0;
@@ -651,7 +657,6 @@ template<class T> double StatFactory::moment(const std::vector<T>& v, int n) con
   //central moment
 template<class T> double StatFactory::cmoment(const std::vector<T>& v, int n) const
 {
-  assert(v.size());
   unsigned int validSize=0;
   typename std::vector<T>::const_iterator it;
   double m=0;
@@ -720,7 +725,10 @@ template<class T1, class T2> void StatFactory::scale2byte(const std::vector<T1>&
   output.resize(input.size());
   T1 minimum=mymin(input);
   T1 maximum=mymax(input);
-  assert(maximum>minimum);
+  if(minimum>=maximum){
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
   double scale=(ubound-lbound)/(maximum-minimum);
   //todo: what if nodata value?
   for (int i=0;i<input.size();++i){
@@ -747,7 +755,10 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
     s<<"Error: could not calculate distribution (min>=max)";
     throw(s.str());
   }
-  assert(nbin);
+  if(!nbin){
+    std::string errorString="Error: nbin not defined";
+    throw(errorString);
+  }
   if(!input.size()){
     std::string errorString="Error: no valid data found";
     throw(errorString);
@@ -811,8 +822,16 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
 
 template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX, const std::vector<T>& inputY, std::vector< std::vector<double> >& output, int nbin, T& minX, T& maxX, T& minY, T& maxY, double sigma, const std::string& filename) const
 {
-  assert(inputX.size());
-  assert(inputX.size()==inputY.size());
+  if(inputX.empty()){
+    std::ostringstream s;
+    s<<"Error: inputX is empty";
+    throw(s.str());
+  }
+  if(inputX.size()!=inputY.size()){
+    std::ostringstream s;
+    s<<"Error: inputX is empty";
+    throw(s.str());
+  }
   unsigned long int npoint=inputX.size();
   if(maxX<=minX)
     minmax(inputX,inputX.begin(),inputX.end(),minX,maxX);
@@ -828,7 +847,11 @@ template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX
     s<<"Error: could not calculate distribution (minY>=maxY)";
     throw(s.str());
   }
-  assert(nbin>1);
+  if(nbin<=1){
+    std::ostringstream s;
+    s<<"Error: nbin must be larger than 1";
+    throw(s.str());
+  }
   output.resize(nbin);
   for(int i=0;i<nbin;++i){
     output[i].resize(nbin);
@@ -846,10 +869,26 @@ template<class T> void  StatFactory::distribution2d(const std::vector<T>& inputX
        binY=nbin-1;
     else
       binY=static_cast<int>(static_cast<double>(inputY[ipoint]-minY)/(maxY-minY)*nbin);
-    assert(binX>=0);
-    assert(binX<output.size());
-    assert(binY>=0);
-    assert(binY<output[binX].size());
+    if(binX<0){
+      std::ostringstream s;
+      s<<"Error: binX is smaller than 0";
+      throw(s.str());
+    }
+    if(output.size()<=binX){
+      std::ostringstream s;
+      s<<"Error: output size must be larger than binX";
+      throw(s.str());
+    }
+    if(binY<0){
+      std::ostringstream s;
+      s<<"Error: binY is smaller than 0";
+      throw(s.str());
+    }
+    if(output.size()<=binY){
+      std::ostringstream s;
+      s<<"Error: output size must be larger than binY";
+      throw(s.str());
+    }
     if(sigma>0){
       // minX-=2*sigma;
       // maxX+=2*sigma;
@@ -908,9 +947,21 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
 {
   if(maximum<=minimum)
     minmax(input,begin,end,minimum,maximum);
-  assert(maximum>minimum);
-  assert(nbin>1);
-  assert(input.size());
+  if(maximum<=minimum){
+    std::ostringstream s;
+    s<<"Error: maximum must be at least minimum";
+    throw(s.str());
+  }
+  if(nbin<=1){
+    std::ostringstream s;
+    s<<"Error: nbin must be larger than 1";
+    throw(s.str());
+  }
+  if(input.empty()){
+    std::ostringstream s;
+    s<<"Error: input is empty";
+    throw(s.str());
+  }
   output.resize(nbin);
   std::vector<T> inputSort;
   inputSort.assign(begin,end);
@@ -951,7 +1002,11 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
 //todo: what with nodata values?
 template<class T> T  StatFactory::percentile(const std::vector<T>& input, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, double percent, T minimum, T maximum) const
 {
-  assert(input.size());
+  if(input.empty()){
+    std::ostringstream s;
+    s<<"Error: input is empty";
+    throw(s.str());
+  }
   std::vector<T> inputSort;
   inputSort.assign(begin,end);
   typename std::vector<T>::iterator vit=inputSort.begin();
@@ -997,8 +1052,16 @@ template<class T> void StatFactory::normalize_pct(std::vector<T>& input) const{
 }
  
 template<class T> double StatFactory::rmse(const std::vector<T>& x, const std::vector<T>& y) const{
-  assert(x.size()==y.size());
-  assert(x.size());
+  if(x.size()!=y.size()){
+    std::ostringstream s;
+    s<<"Error: x and y not equal in size";
+    throw(s.str());
+  }
+  if(x.empty()){
+    std::ostringstream s;
+    s<<"Error: x is empty";
+    throw(s.str());
+  }
   double mse=0;
   for(int isample=0;isample<x.size();++isample){
     if(isNoData(x[isample])||isNoData(y[isample]))
@@ -1039,8 +1102,26 @@ template<class T> double StatFactory::correlation(const std::vector<T>& x, const
 	continue;
       else{
 	isValid=true;
-        assert(i>=0&&i<x.size());
-        assert(j>=0&&j<y.size());
+	if(i<0){
+	  std::ostringstream s;
+	  s<<"Error: i must be positive";
+	  throw(s.str());
+	}
+	if(i>=x.size()){
+	  std::ostringstream s;
+	  s<<"Error: i must be smaller than x.size()";
+	  throw(s.str());
+	}
+	if(j<0){
+	  std::ostringstream s;
+	  s<<"Error: j must be positive";
+	  throw(s.str());
+	}
+	if(j>=y.size()){
+	  std::ostringstream s;
+	  s<<"Error: j must be smaller than y.size()";
+	  throw(s.str());
+	}
         sXY += (x[i] - meanX) * (y[j] - meanY);
       }
     }
@@ -1072,8 +1153,16 @@ template<class T> double StatFactory::cross_correlation(const std::vector<T>& x,
 
 //todo: nodata?
 template<class T> double StatFactory::linear_regression(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
-  assert(x.size()==y.size());
-  assert(x.size());
+  if(x.size()!=y.size()){
+    std::ostringstream s;
+    s<<"Error: x and y not equal in size";
+    throw(s.str());
+  }
+  if(x.empty()){
+    std::ostringstream s;
+    s<<"Error: x is empty";
+    throw(s.str());
+  }
   double cov00;
   double cov01;
   double  cov11;
@@ -1084,8 +1173,16 @@ template<class T> double StatFactory::linear_regression(const std::vector<T>& x,
 
 //todo: nodata?
 template<class T> double StatFactory::linear_regression_err(const std::vector<T>& x, const std::vector<T>& y, double &c0, double &c1) const{
-  assert(x.size()==y.size());
-  assert(x.size());
+  if(x.size()!=y.size()){
+    std::ostringstream s;
+    s<<"Error: x and y not equal in size";
+    throw(s.str());
+  }
+  if(x.empty()){
+    std::ostringstream s;
+    s<<"Error: x is empty";
+    throw(s.str());
+  }
   double cov00;
   double cov01;
   double  cov11;
@@ -1098,10 +1195,18 @@ template<class T> double StatFactory::linear_regression_err(const std::vector<T>
 // gsl_stats_correlation (const double data1[], const size_t stride1, const double data2[], const size_t stride2, const size_t n)
 
 template<class T> void StatFactory::interpolateNoData(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::string& type, std::vector<T>& output, bool verbose) const{
-  assert(wavelengthIn.size());
+  if(wavelengthIn.empty()){
+    std::ostringstream s;
+    s<<"Error: wavelengthIn is empty";
+    throw(s.str());
+  }
   std::vector<double> wavelengthOut=wavelengthIn;
   std::vector<T> validIn=input;
-  assert(input.size()==wavelengthIn.size());
+  if(input.size()!=wavelengthIn.size()){
+    std::ostringstream s;
+    s<<"Error: x and y not equal in size";
+    throw(s.str());
+  }
   int nband=wavelengthIn.size();
   output.clear();
   //remove nodata from input and corresponding wavelengthIn
@@ -1134,9 +1239,21 @@ template<class T> void StatFactory::interpolateNoData(const std::vector<double>&
 }
 
 template<class T> void StatFactory::interpolateUp(const std::vector<double>& wavelengthIn, const std::vector<T>& input, const std::vector<double>& wavelengthOut, const std::string& type, std::vector<T>& output, bool verbose) const{
-  assert(wavelengthIn.size());
-  assert(input.size()==wavelengthIn.size());
-  assert(wavelengthOut.size());
+  if(wavelengthIn.empty()){
+    std::ostringstream s;
+    s<<"Error: wavelengthIn is empty";
+    throw(s.str());
+  }
+  if(input.size()!=wavelengthIn.size()){
+    std::ostringstream s;
+    s<<"Error: input and wavelengthIn not equal in size";
+    throw(s.str());
+  }
+  if(wavelengthOut.empty()){
+    std::ostringstream s;
+    s<<"Error: wavelengthOut is empty";
+    throw(s.str());
+  }
   int nband=wavelengthIn.size();
   output.clear();
   gsl_interp_accel *acc;
@@ -1201,8 +1318,16 @@ template<class T> void StatFactory::interpolateUp(const std::vector<double>& wav
 //todo: nodata?
 template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, std::vector<T>& output, int nbin) const
 {
-  assert(input.size());
-  assert(nbin);
+  if(input.empty()){
+    std::ostringstream s;
+    s<<"Error: input is empty";
+    throw(s.str());
+  }
+  if(!nbin){
+    std::ostringstream s;
+    s<<"Error: nbin must be larger than 0";
+    throw(s.str());
+  }
   output.clear();
   int dim=input.size();
   for(int i=0;i<dim;++i){
@@ -1223,15 +1348,27 @@ template<class T> void StatFactory::interpolateUp(const std::vector<T>& input, s
 //todo: nodata?
 template<class T> void StatFactory::nearUp(const std::vector<T>& input, std::vector<T>& output) const
 {
-  assert(input.size());
-  assert(output.size()>=input.size());
+  if(input.empty()){
+    std::ostringstream s;
+    s<<"Error: input is empty";
+    throw(s.str());
+  }
+  if(output.size()<input.size()){
+    std::ostringstream s;
+    s<<"Error: output size is smaller than input size";
+    throw(s.str());
+  }
   int dimInput=input.size();
   int dimOutput=output.size();
   
   for(int iin=0;iin<dimInput;++iin){
     for(int iout=0;iout<dimOutput/dimInput;++iout){
       int indexOutput=iin*dimOutput/dimInput+iout;
-      assert(indexOutput<output.size());
+      if(indexOutput>=output.size()){
+	std::ostringstream s;
+	s<<"Error: indexOutput must be smaller than output.size()";
+	throw(s.str());
+      }
       output[indexOutput]=input[iin];
     }
   }
@@ -1240,7 +1377,11 @@ template<class T> void StatFactory::nearUp(const std::vector<T>& input, std::vec
 //todo: nodata?
 template<class T> void StatFactory::interpolateUp(double* input, int dim, std::vector<T>& output, int nbin)
 {
-  assert(nbin);
+  if(!nbin){
+    std::ostringstream s;
+    s<<"Error: nbin must be larger than 0";
+    throw(s.str());
+  }
   output.clear();
   for(int i=0;i<dim;++i){
     double deltaX=0;
@@ -1260,8 +1401,16 @@ template<class T> void StatFactory::interpolateUp(double* input, int dim, std::v
 //todo: nodata?
 template<class T> void StatFactory::interpolateDown(const std::vector<T>& input, std::vector<T>& output, int nbin) const
 {
-  assert(input.size());
-  assert(nbin);
+  if(input.empty()){
+    std::ostringstream s;
+    s<<"Error: input is empty";
+    throw(s.str());
+  }
+  if(!nbin){
+    std::ostringstream s;
+    s<<"Error: nbin must be larger than 0";
+    throw(s.str());
+  }
   output.clear();
   int dim=input.size();
   int x=0;
@@ -1279,7 +1428,11 @@ template<class T> void StatFactory::interpolateDown(const std::vector<T>& input,
 //todo: nodata?
 template<class T> void StatFactory::interpolateDown(double* input, int dim, std::vector<T>& output, int nbin)
 {
-  assert(nbin);
+  if(!nbin){
+    std::ostringstream s;
+    s<<"Error: nbin must be larger than 0";
+    throw(s.str());
+  }
   output.clear();
   int x=0;
   output.push_back(input[0]);

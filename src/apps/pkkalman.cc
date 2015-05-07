@@ -50,7 +50,7 @@ int main(int argc,char **argv) {
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
   Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model",2);
   Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",0);
-  Optionpk<double> weight_opt("w", "weight", "Set observation uncertainty as weighted difference between observation and model (use -w 0 to use a constant observation uncertainty, use -w value >> 1 to penalize low observation values with respect to model, use -w value << 0 to penalize a high observation values with respect to model)");
+  Optionpk<double> weight_opt("w", "weight", "Penalize outliers in measurement via weights. Use first weight to penalize small measurements wrt model and second weight to penalize large measurements wrt model");
   Optionpk<double> deltaObs_opt("dobs", "deltaobs", "Lower and upper thresholds for relative pixel differences (in percentage): (observation-model)/model. For instance to force the observation within a +/- 10 % interval, use: -dobs -10 -dobs 10 (equivalent to -dobs 10). Leave empty to always update on observation");
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   // Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
@@ -119,6 +119,9 @@ int main(int argc,char **argv) {
       deltaObs_opt.push_back(-deltaObs_opt[0]);
     else
       deltaObs_opt.insert(deltaObs_opt.begin(),-deltaObs_opt[0]);
+  }
+  if(weight_opt.size()==1){
+    weight_opt.push_back(weight_opt[0]);
   }
 
   try{
@@ -464,14 +467,23 @@ int main(int argc,char **argv) {
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=(statobs.mean(obsWindowBuffer)-c0obs)/c1obs;
 	      double difference=obsMeanValue-modValue;
-	      if(modValue&&deltaObs_opt.size()){
-		double relativeDifference=100.0*difference/modValue;
-		if(relativeDifference<deltaObs_opt[0])//lower bound
-		  kalmanGain=0;
-		else if(relativeDifference>deltaObs_opt[1])//upper bound
-		  kalmanGain=0;
-	      }		  
-	      uncertObs=-weight_opt[0]*difference;
+	      if(modValue){
+		double relativeDifference=difference/modValue;
+		if(deltaObs_opt.size()){
+		  assert(deltaObs_opt.size()>1);
+		  if(100*relativeDifference<deltaObs_opt[0])//lower bound
+		    kalmanGain=0;
+		  else if(100*relativeDifference>deltaObs_opt[1])//upper bound
+		    kalmanGain=0;
+		}
+		else if(weight_opt.size()){
+		  assert(weight_opt.size()>1);
+		  if(obsMeanValue<modValue)
+		    uncertObs=weight_opt[0]*relativeDifference;
+		  else if(obsMeanValue>modValue)
+		    uncertObs=weight_opt[1]*relativeDifference;
+		}
+	      }
 	      if(uncertObs<=0)
 		uncertObs=0;
 	      if(verbose_opt[0]>1)
@@ -749,21 +761,32 @@ int main(int argc,char **argv) {
 	    double uncertObs=uncertObs_opt[0];
 	    if(uncertObsLineBuffer.size()>icol)
 	      uncertObs=uncertObsLineBuffer[icol];
-	    else if(weight_opt.size()||deltaObs_opt.size()){
+	    else if(weight_opt.size()>1||deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
 	      statobs.setNoDataValues(obsnodata_opt);
-	      double obsMeanValue=statobs.mean(obsWindowBuffer);
-	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
-	      if(modValue&&deltaObs_opt.size()){
-		double relativeDifference=100.0*difference/modValue;
-		if(relativeDifference<deltaObs_opt[0])//lower bound
-		  kalmanGain=0;
-		else if(relativeDifference>deltaObs_opt[1])//upper bound
-		  kalmanGain=0;
-	      }		  
-	      uncertObs=-weight_opt[0]*difference;
+	      double obsMeanValue=(statobs.mean(obsWindowBuffer)-c0obs)/c1obs;
+	      double difference=obsMeanValue-modValue;
+	      if(modValue){
+		double relativeDifference=difference/modValue;
+		if(deltaObs_opt.size()){
+		  assert(deltaObs_opt.size()>1);
+		  if(100*relativeDifference<deltaObs_opt[0])//lower bound
+		    kalmanGain=0;
+		  else if(100*relativeDifference>deltaObs_opt[1])//upper bound
+		    kalmanGain=0;
+		}
+		else if(weight_opt.size()){
+		  assert(weight_opt.size()>1);
+		  if(obsMeanValue<modValue)
+		    uncertObs=weight_opt[0]*relativeDifference;
+		  else if(obsMeanValue>modValue)
+		    uncertObs=weight_opt[1]*relativeDifference;
+		}
+	      }
 	      if(uncertObs<=0)
 		uncertObs=0;
+	      if(verbose_opt[0]>1)
+		cout << "obsMeanValue:" << obsMeanValue << ", modValue: " << modValue << endl;
 	    }
 	    if(kalmanGain>0){
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
@@ -963,7 +986,7 @@ int main(int argc,char **argv) {
 	    double uncertObs=uncertObs_opt[0];
 	    if(uncertObsLineBuffer.size()>icol)
 	      uncertObs=uncertObsLineBuffer[icol];
-	    else if(weight_opt.size()||deltaObs_opt.size()){
+	    else if(weight_opt.size()>1||deltaObs_opt.size()){
 	      vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	      int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 	      int maxCol=(icol+down_opt[0]/2<imgReaderObs.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderObs.nrOfCol()-1;
@@ -975,14 +998,23 @@ int main(int argc,char **argv) {
 	      statobs.setNoDataValues(obsnodata_opt);
 	      double obsMeanValue=(statobs.mean(obsWindowBuffer)-c0obs)/c1obs;
 	      double difference=obsMeanValue-modValue;
-	      if(modValue&&deltaObs_opt.size()){
-		double relativeDifference=100.0*difference/modValue;
-		if(relativeDifference<deltaObs_opt[0])//lower bound
-		  kalmanGain=0;
-		else if(relativeDifference>deltaObs_opt[1])//upper bound
-		  kalmanGain=0;
-	      }		  
-	      uncertObs=-weight_opt[0]*difference;
+	      if(modValue){
+		double relativeDifference=difference/modValue;
+		if(deltaObs_opt.size()){
+		  assert(deltaObs_opt.size()>1);
+		  if(100*relativeDifference<deltaObs_opt[0])//lower bound
+		    kalmanGain=0;
+		  else if(100*relativeDifference>deltaObs_opt[1])//upper bound
+		    kalmanGain=0;
+		}
+		else if(weight_opt.size()){
+		  assert(weight_opt.size()>1);
+		  if(obsMeanValue<modValue)
+		    uncertObs=weight_opt[0]*relativeDifference;
+		  else if(obsMeanValue>modValue)
+		    uncertObs=weight_opt[1]*relativeDifference;
+		}
+	      }
 	      if(uncertObs<=0)
 		uncertObs=0;
 	      if(verbose_opt[0]>1)
@@ -1260,21 +1292,32 @@ int main(int argc,char **argv) {
 	    double uncertObs=uncertObs_opt[0];
 	    if(uncertObsLineBuffer.size()>icol)
 	      uncertObs=uncertObsLineBuffer[icol];
-	    else if(weight_opt.size()||deltaObs_opt.size()){
+	    else if(weight_opt.size()>1||deltaObs_opt.size()){
 	      statfactory::StatFactory statobs;
 	      statobs.setNoDataValues(obsnodata_opt);
-	      double obsMeanValue=statobs.mean(obsWindowBuffer);
-	      double difference=(obsMeanValue-c0obs)/c1obs-modValue;
-	      if(modValue&&deltaObs_opt.size()){
-		double relativeDifference=100.0*difference/modValue;
-		if(relativeDifference<deltaObs_opt[0])//lower bound
-		  kalmanGain=0;
-		else if(relativeDifference>deltaObs_opt[1])//upper bound
-		  kalmanGain=0;
-	      }		  
-	      uncertObs=-weight_opt[0]*difference;
+	      double obsMeanValue=(statobs.mean(obsWindowBuffer)-c0obs)/c1obs;
+	      double difference=obsMeanValue-modValue;
+	      if(modValue){
+		double relativeDifference=difference/modValue;
+		if(deltaObs_opt.size()){
+		  assert(deltaObs_opt.size()>1);
+		  if(100*relativeDifference<deltaObs_opt[0])//lower bound
+		    kalmanGain=0;
+		  else if(100*relativeDifference>deltaObs_opt[1])//upper bound
+		    kalmanGain=0;
+		}
+		else if(weight_opt.size()){
+		  assert(weight_opt.size()>1);
+		  if(obsMeanValue<modValue)
+		    uncertObs=weight_opt[0]*relativeDifference;
+		  else if(obsMeanValue>modValue)
+		    uncertObs=weight_opt[1]*relativeDifference;
+		}
+	      }
 	      if(uncertObs<=0)
 		uncertObs=0;
+	      if(verbose_opt[0]>1)
+		cout << "obsMeanValue:" << obsMeanValue << ", modValue: " << modValue << endl;
 	    }
 	    if(kalmanGain>0){
 	      if((uncertWriteBuffer[icol]+uncertObs)>eps_opt[0])
