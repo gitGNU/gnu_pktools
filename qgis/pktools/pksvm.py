@@ -62,8 +62,8 @@ class pksvm(pktoolsAlgorithm):
         self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))
 #        self.addParameter(ParameterBoolean(self.CV, "Two-fold cross validation mode",False))
-        self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",1.0))
-        self.addParameter(ParameterNumber(self.COST, "The parameter C of C_SVC",1000.0))
+        self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",0,100,1.0))
+        self.addParameter(ParameterNumber(self.COST, "The parameter C of C_SVC",0,100000,1000.0))
         self.addParameter(ParameterRaster(self.MASK, "Mask raster dataset",optional=True))
 #todo: make mask optional
         self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (e.g., 0;255)","0"))

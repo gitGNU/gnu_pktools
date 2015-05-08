@@ -111,9 +111,181 @@ class pkextract_grid(pktoolsAlgorithm):
         self.addParameter(ParameterSelection(self.FORMAT,
                           'Destination Format', FORMATS))
         self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
-        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features"))
+from processing.core.parameters import ParameterNumber
+from processing.core.parameters import ParameterString
+from processing.core.parameters import ParameterBoolean
+from processing.core.parameters import ParameterExtent
 
-        self.addParameter(ParameterNumber(self.GRID, "Cell grid size (in projected units, e.g,. m)"))
+FORMATS = [
+    'ESRI Shapefile',
+    'GeoJSON',
+    'GeoRSS',
+    'SQLite',
+    'GMT',
+    'MapInfo File',
+    'INTERLIS 1',
+    'INTERLIS 2',
+    'GML',
+    'Geoconcept',
+    'DXF',
+    'DGN',
+    'CSV',
+    'BNA',
+    'S57',
+    'KML',
+    'GPX',
+    'PGDump',
+    'GPSTrackMaker',
+    'ODS',
+    'XLSX',
+    'PDF',
+]
+EXTS = [
+    '.shp',
+    '.geojson',
+    '.xml',
+    '.sqlite',
+    '.gmt',
+    '.tab',
+    '.ili',
+    '.ili',
+    '.gml',
+    '.txt',
+    '.dxf',
+    '.dgn',
+    '.csv',
+    '.bna',
+    '.000',
+    '.kml',
+    '.gpx',
+    '.pgdump',
+    '.gtm',
+    '.ods',
+    '.xlsx',
+    '.pdf',
+]
+
+class pkextract(pktoolsAlgorithm):
+
+    INPUT = "INPUT"
+    SAMPLE = "SAMPLE"
+    ITERATE = "ITERATE"
+    OUTPUT = "OUTPUT"
+    
+    RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
+
+    RULE = "RULE"
+    POLYGON = "POLYGON"
+    BUFFER = "BUFFER"
+    SRCNODATA = "SRCNODATA"
+    BNDNODATA = "BNDNODATA"
+
+    EXTRA = 'EXTRA'
+    
+    FORMAT = "FORMAT"
+
+    def defineCharacteristics(self):
+        self.name = "extract vector sample from raster"
+        self.group = "[pktools] raster/vector"
+        self.addParameter(ParameterRaster(self.INPUT, 'Input raster data set'))
+        self.addParameter(ParameterVector(self.SAMPLE, 'Sample vector data set'))
+        self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
+        self.addParameter(ParameterSelection(self.RULE,"composite rule",self.RULE_OPTIONS, 0))
+
+        self.addOutput(OutputVector(self.OUTPUT, 'Output vector data set'))
+        self.addParameter(ParameterSelection(self.FORMAT,
+                          'Destination Format', FORMATS))
+
+        self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
+        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features",1,25,1))
+from processing.core.parameters import ParameterNumber
+from processing.core.parameters import ParameterString
+from processing.core.parameters import ParameterBoolean
+from processing.core.parameters import ParameterExtent
+
+FORMATS = [
+    'ESRI Shapefile',
+    'GeoJSON',
+    'GeoRSS',
+    'SQLite',
+    'GMT',
+    'MapInfo File',
+    'INTERLIS 1',
+    'INTERLIS 2',
+    'GML',
+    'Geoconcept',
+    'DXF',
+    'DGN',
+    'CSV',
+    'BNA',
+    'S57',
+    'KML',
+    'GPX',
+    'PGDump',
+    'GPSTrackMaker',
+    'ODS',
+    'XLSX',
+    'PDF',
+]
+EXTS = [
+    '.shp',
+    '.geojson',
+    '.xml',
+    '.sqlite',
+    '.gmt',
+    '.tab',
+    '.ili',
+    '.ili',
+    '.gml',
+    '.txt',
+    '.dxf',
+    '.dgn',
+    '.csv',
+    '.bna',
+    '.000',
+    '.kml',
+    '.gpx',
+    '.pgdump',
+    '.gtm',
+    '.ods',
+    '.xlsx',
+    '.pdf',
+]
+
+class pkextract(pktoolsAlgorithm):
+
+    INPUT = "INPUT"
+    SAMPLE = "SAMPLE"
+    ITERATE = "ITERATE"
+    OUTPUT = "OUTPUT"
+    
+    RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
+
+    RULE = "RULE"
+    POLYGON = "POLYGON"
+    BUFFER = "BUFFER"
+    SRCNODATA = "SRCNODATA"
+    BNDNODATA = "BNDNODATA"
+
+    EXTRA = 'EXTRA'
+    
+    FORMAT = "FORMAT"
+
+    def defineCharacteristics(self):
+        self.name = "extract vector sample from raster"
+        self.group = "[pktools] raster/vector"
+        self.addParameter(ParameterRaster(self.INPUT, 'Input raster data set'))
+        self.addParameter(ParameterVector(self.SAMPLE, 'Sample vector data set'))
+        self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
+        self.addParameter(ParameterSelection(self.RULE,"composite rule",self.RULE_OPTIONS, 0))
+
+        self.addOutput(OutputVector(self.OUTPUT, 'Output vector data set'))
+        self.addParameter(ParameterSelection(self.FORMAT,
+                          'Destination Format', FORMATS))
+
+        self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
+        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features",1,25,1))
+        self.addParameter(ParameterNumber(self.GRID, "Cell grid size (in projected units, e.g,. m)",0,1000000,1))
 
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
