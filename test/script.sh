@@ -1,4 +1,5 @@
 #!/bin/bash
+mkdir -p data/output
 pkcrop -i data/lena.tif -o data/output/lena_10.tif --ulx 256 -uly 256 -lrx 512 -lry 0
 pkcrop -i data/lena.tif -o data/output/lena_00.tif --ulx 0 -uly 256 -lrx 256 -lry 0
 pkcrop -i data/lena.tif -o data/output/lena_11.tif --ulx 256 -uly 512 -lrx 512 -lry 256

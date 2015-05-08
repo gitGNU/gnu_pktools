@@ -54,7 +54,7 @@ int main(int argc,char **argv) {
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)", 1.0);
   Optionpk<short> nbin_opt("nbin", "nbin", "Number of percentile bins for calculating percentile height value profile (=number of output bands)", 10.0);
   Optionpk<double> percentile_opt("perc","perc","Percentile value used for rule percentile",95);
-  Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
+  Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image", 0);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode", 0,2);
