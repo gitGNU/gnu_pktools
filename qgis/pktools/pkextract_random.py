@@ -168,8 +168,6 @@ EXTS = [
 class pkextract(pktoolsAlgorithm):
 
     INPUT = "INPUT"
-    SAMPLE = "SAMPLE"
-    ITERATE = "ITERATE"
     OUTPUT = "OUTPUT"
     
     RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
@@ -185,11 +183,9 @@ class pkextract(pktoolsAlgorithm):
     FORMAT = "FORMAT"
 
     def defineCharacteristics(self):
-        self.name = "extract vector sample from raster"
+        self.name = "extract random points from raster"
         self.group = "[pktools] raster/vector"
         self.addParameter(ParameterRaster(self.INPUT, 'Input raster data set'))
-        self.addParameter(ParameterVector(self.SAMPLE, 'Sample vector data set'))
-        self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
         self.addParameter(ParameterSelection(self.RULE,"composite rule",self.RULE_OPTIONS, 0))
 
         self.addOutput(OutputVector(self.OUTPUT, 'Output vector data set'))
