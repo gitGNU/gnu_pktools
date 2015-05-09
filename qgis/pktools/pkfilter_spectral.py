@@ -69,8 +69,10 @@ class pkfilter_spectral(pktoolsAlgorithm):
         if input != "":
             commands.append('-i')
             commands.append(input)
-        commands.append("-f")
-        commands.append(self.METHOD_OPTIONS[self.getParameterValue(self.METHOD)])
+        method=self.METHOD_OPTIONS[self.getParameterValue(self.METHOD)]
+        if method != "none":
+            commands.append("-f")
+            commands.append(method)
         commands.append("-pad")
         commands.append(self.PADDING_OPTIONS[self.getParameterValue(self.PADDING)])
 

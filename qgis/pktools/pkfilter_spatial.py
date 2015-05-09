@@ -39,7 +39,7 @@ class pkfilter_spatial(pktoolsAlgorithm):
 
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
-    METHOD_OPTIONS = ["none", "median", "var", "min", "max", "sum", "mean", "dilate", "erode", "close", "open", "homog ", "heterog ", "sobelx ", "sobely ", "sobelxy ", "sobelyx" , "smooth", "density", "countid", "mode ", "smoothnodata  values", "threshold local filtering", "ismin", "ismax", "order ", "stdev", "mrf", "dwt", "dwti", "dwt_cut", "dwt_cut_from", "scramble", "shift", "savgolay", "percentile"]
+    METHOD_OPTIONS = ["none", "median", "var", "min", "max", "sum", "mean", "dilate", "erode", "close", "open", "homog ", "heterog ", "sobelx ", "sobely ", "sobelxy ", "sobelyx" , "smooth", "countid", "smoothnodata  values", "threshold local filtering", "ismin", "ismax", "order ", "stdev", "mrf", "dwt", "dwti", "dwt_cut", "dwt_cut_from", "scramble", "shift", "savgolay", "percentile"]
     METHOD = "METHOD"
 #    RESAMPLE_OPTIONS = ['near', 'bilinear']
 #    RESAMPLE = "RESAMPLE"
@@ -52,7 +52,7 @@ class pkfilter_spatial(pktoolsAlgorithm):
     EXTRA = 'EXTRA'
 
     def defineCharacteristics(self):
-        self.name = "filter raster datasets"
+        self.name = "spatial filter"
         self.group = "[pktools] filter"
         self.addParameter(ParameterMultipleInput(self.INPUT, 'Input layer raster data set',ParameterMultipleInput.TYPE_RASTER))
         self.addParameter(ParameterSelection(self.METHOD,"filter rule",self.METHOD_OPTIONS, 0))
@@ -72,8 +72,10 @@ class pkfilter_spatial(pktoolsAlgorithm):
         if input != "":
             commands.append('-i')
             commands.append(input)
-        commands.append("-f")
-        commands.append(self.METHOD_OPTIONS[self.getParameterValue(self.METHOD)])
+        method=self.METHOD_OPTIONS[self.getParameterValue(self.METHOD)]
+        if method != "none":
+            commands.append("-f")
+            commands.append(method)
         commands.append("-pad")
         commands.append(self.PADDING_OPTIONS[self.getParameterValue(self.PADDING)])
 
@@ -87,7 +89,6 @@ class pkfilter_spatial(pktoolsAlgorithm):
         if self.getParameterValue(self.DIM) != 0:
             commands.append("-dx")
             commands.append(str(self.getParameterValue(self.DIM)))
-        if self.getParameterValue(self.DY) != 0:
             commands.append("-dy")
             commands.append(str(self.getParameterValue(self.DIM)))
         nodata=self.getParameterValue(self.NODATA)
