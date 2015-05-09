@@ -48,7 +48,7 @@ int main(int argc,char **argv) {
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, better use odd value to avoid image shift", 3);
   Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, better use odd value to avoid image shift", 3);
-  Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
+  Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (spectral/temporal dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
   Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
   Optionpk<int> savgolay_nl_opt("nl", "nl", "Number of leftward (past) data points used in Savitzky-Golay filter)", 2);

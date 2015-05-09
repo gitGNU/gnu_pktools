@@ -25,12 +25,20 @@ __revision__ = '$Format:%H$'
 
 
 #from pktools.ExampleAlgorithm import ExampleAlgorithm
+#raster utilities
 from pktools.pkcomposite import pkcomposite
-from pktools.pklas2img import pklas2img
+#raster/vector utilities
 from pktools.pkextract import pkextract
 from pktools.pkextract_grid import pkextract_grid
 from pktools.pkextract_random import pkextract_random
+#Supervised classification utilities
 from pktools.pksvm import pksvm
+#LiDAR utilities
+from pktools.pklas2img import pklas2img
+from pktools.pkfilterdem import pkfilterdem
+#filter utilities
+from pktools.pkfilter_spectral import pkfilter_spectral
+from pktools.pkfilter_spatial import pkfilter_spatial
 
 from processing.core.AlgorithmProvider import AlgorithmProvider
 from processing.core.ProcessingConfig import Setting, ProcessingConfig
@@ -49,7 +57,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         self.activate = False
         # load algorithms
 #        self.alglist = [pkinfo()]
-        self.alglist = [pkcomposite(),pkextract(),pkextract_grid(),pkextract_random(),pksvm(),pklas2img()]
+        self.alglist = [pkcomposite(),pkextract(),pkextract_grid(),pkextract_random(),pksvm(),pklas2img(),pkfilterdem(),pkfilter_spectral(),pkfilter_spatial()]
         # pktools = [pkinfo()]
         # for alg in pktools:
         #     alg.group = "pktools"

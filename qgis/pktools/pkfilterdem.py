@@ -2,7 +2,7 @@
 
 """
 ***************************************************************************
-    pklas2img.py
+    pkfilterdem.py
     ---------------------
     Date                 : April 2015
     Copyright            : (C) 2015 by Pieter Kempeneers
@@ -36,56 +36,39 @@ from processing.core.parameters import ParameterString
 from processing.core.parameters import ParameterBoolean
 from processing.core.parameters import ParameterExtent
 
-class pklas2img(pktoolsAlgorithm):
+class pkfilterdem(pktoolsAlgorithm):
 
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
-    ATTRIBUTE_OPTIONS = ["z","intensity", "return", "nreturn"]
-    COMPOSITE_OPTIONS = ["last", "min", "max", "median", "mean", "sum", "first", "profile" "percentile", "height", "values", "percentile", "number"]
-    FILTER_OPTIONS = ["all","first","last","single","multiple"]
-
-    ATTRIBUTE = "ATTRIBUTE"
-    COMPOSITE = "COMPOSITE"
-    FILTER = "FILTER"
-
-    PERCENTILE = "PERCENTILE"
-    DX = "DX"
-    DY = "DY"
-    PROJWIN = 'PROJWIN'
-    CB = "CB"
-    NODATA = "NODATA"
+    DIM = "DIM"
     RTYPE = 'RTYPE'
     TYPE = ['Float32','Byte','Int16','UInt16','UInt32','Int32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
     def defineCharacteristics(self):
-        self.name = "Create raster dataset from LAS(Z) data point cloud(s)"
+        self.name = "Create DTM from DEM raster dataset)"
         self.group = "[pktools] LiDAR"
 
-        self.addParameter(ParameterFile(self.INPUT, "Input LAS(Z) data set(s)", False, False))
+        self.addParameter(ParameterFile(self.INPUT, "Input LAS(Z) data set", False, False))
+        self.addParameter(ParameterNumber(self.DIM, "maximum filter kernel size",3,None,17))
 
-        self.addParameter(ParameterSelection(self.ATTRIBUTE,"composite for multiple points in cell",self.ATTRIBUTE_OPTIONS, 0))
-        self.addParameter(ParameterSelection(self.COMPOSITE,"composite for multiple points in cell",self.COMPOSITE_OPTIONS, 0))
-        self.addParameter(ParameterSelection(self.FILTER,"filter las points",self.FILTER_OPTIONS, 0))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterSelection(self.RTYPE, 'Output raster type', self.TYPE, 0))
-        self.addParameter(ParameterNumber(self.PERCENTILE, "Percentile value used for rule percentile",0.0,100.0,95))
-        self.addParameter(ParameterNumber(self.DX, "Output resolution in x",0.0,None,1.0))
-        self.addParameter(ParameterNumber(self.DY, "Output resolution in y",0.0,None,1.0))
-        self.addParameter(ParameterExtent(self.PROJWIN,
-                          'Georeferenced boundingbox'))
-        self.addParameter(ParameterNumber(self.NODATA, "nodata value to put in image",0,None,0))
         self.addParameter(ParameterString(self.EXTRA,
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pklas2img")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkfilterdem")]
 
         input=self.getParameterValue(self.INPUT)
         inputFiles = input.split(';')
         for inputFile in inputFiles:
             commands.append('-i')
             commands.append(inputFile)
+
+        if self.getParameterValue(self.DIM) != 0:
+            commands.append("-dim")
+            commands.append(str(self.getParameterValue(self.DIM)))
 
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
@@ -94,32 +77,6 @@ class pklas2img(pktoolsAlgorithm):
         if output != "":
             commands.append("-o")
             commands.append(self.getOutputValue(self.OUTPUT))
-        commands.append("-n")
-        commands.append(self.ATTRIBUTE_OPTIONS[self.getParameterValue(self.ATTRIBUTE)])
-        commands.append("-comp")
-        commands.append(self.COMPOSITE_OPTIONS[self.getParameterValue(self.COMPOSITE)])
-        commands.append("-fir")
-        if self.getParameterValue(self.DX) != 0:
-            commands.append("-dx")
-            commands.append(str(self.getParameterValue(self.DX)))
-        if self.getParameterValue(self.DY) != 0:
-            commands.append("-dy")
-            commands.append(str(self.getParameterValue(self.DY)))
-        projwin = str(self.getParameterValue(self.PROJWIN))
-        regionCoords = projwin.split(',')
-        commands.append('-ulx')
-        commands.append(regionCoords[0])
-        commands.append('-uly')
-        commands.append(regionCoords[3])
-        commands.append('-lrx')
-        commands.append(regionCoords[1])
-        commands.append('-lry')
-        commands.append(regionCoords[2])
-        commands.append("-cb")
-        commands.append(str(self.getParameterValue(self.CB)))
-        nodata=self.getParameterValue(self.NODATA)
-        commands.append('-nodata')
-        commands.append(nodata)
 
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:
