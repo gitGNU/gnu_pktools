@@ -111,8 +111,11 @@ class pkcomposite(pktoolsAlgorithm):
         commands.append(regionCoords[1])
         commands.append('-lry')
         commands.append(regionCoords[2])
-        commands.append("-cb")
-        commands.append(str(self.getParameterValue(self.CB)))
+        cb=self.getParameterValue(self.CB)
+        cbValues = cb.split(';')
+        for cbValue in cbValues:
+                commands.append('-cb')
+                commands.append(cbValue)
         srcnodata=self.getParameterValue(self.SRCNODATA)
         if srcnodata != "none":
             srcnodataValues = srcnodata.split(';')
