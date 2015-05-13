@@ -208,7 +208,7 @@ int main(int argc,char **argv) {
       nband=fwhm_opt.size();
     else if(srf_opt.size())
       nband=srf_opt.size();
-    else if(tapz_opt.size())
+    else if(tap_opt.size()||tapz_opt.size())
       nband=input.nrOfBand();
     else{
       if(method_opt.empty()){
