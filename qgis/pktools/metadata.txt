@@ -3,7 +3,7 @@ name=pktools
 description=A plugin that adds pktools utilities to Processing.
 category=Raster
 version=1.0.1
-qgisMinimumVersion=2.0
+qgisMinimumVersion=2.6
 
 author=Pieter Kempeneers
 email=kempenep@gmail.com
