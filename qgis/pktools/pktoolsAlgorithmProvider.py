@@ -100,7 +100,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         return "Utilities for remote sensing image processing"
 
     def getIcon(self):
-        filepath = os.path.dirname(__file__) + "/icons/pktools.png"
+        filepath = os.path.dirname(__file__) + "/logo.png"
         return QtGui.QIcon(filepath)
 
     def _loadAlgorithms(self):

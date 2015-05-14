@@ -13,7 +13,7 @@ tags=remote sensing, image processing, raster, vector
 homepage=http://pktools.nongnu.org
 tracker=https://savannah.nongnu.org/bugs/?func=additem&group=pktools
 repository=
-icon=icons/pktools.png
+icon=logo.png
 
 experimental=False
 deprecated=False

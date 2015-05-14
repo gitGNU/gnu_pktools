@@ -41,7 +41,7 @@ from processing.core.outputs import OutputVector
 class pktoolsAlgorithm(GeoAlgorithm):
 
     def getIcon(self):
-        filepath = os.path.dirname(__file__) + "/icons/pktools.png"
+        filepath = os.path.dirname(__file__) + "/logo.png"
         return QtGui.QIcon(filepath)
 
     def checkBeforeOpeningParametersDialog(self):

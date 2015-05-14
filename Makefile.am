@@ -32,11 +32,13 @@ nodist_pktools_libinclude_HEADERS = config.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pktools.pc
 
+
 ########################################################################
 #       Additional installation for QGIS processing plugin files       #
 ########################################################################
 qgisdir = $(HOME)/.qgis2/python/plugins/$(PACKAGE)
 qgis_DATA = \
+	qgis/pktools/logo.png \
 	qgis/pktools/__init__.py \
 	qgis/pktools/metadata.txt \
 	qgis/pktools/ProcessingPktoolsPlugin.py \
@@ -55,14 +57,11 @@ qgis_DATA = \
 	qgis/pktools/pksetmask.py \
 	qgis/pktools/pksvm.py
 
-iconsdir = $(HOME)/.qgis2/python/plugins/$(PACKAGE)/icons
-icons_DATA = qgis/pktools/icons/pktools.png
-
 ########################################################################
 #             Additional files to be included in tarball               #
 ########################################################################
 
 # Here we need include all files that are not mentioned in other Makefiles
 
-EXTRA_DIST = doc
+EXTRA_DIST = doc $(qgis_DATA)
 #bin_SCRIPTS = pktools-config
