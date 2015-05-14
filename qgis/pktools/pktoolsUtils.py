@@ -38,9 +38,8 @@ class pktoolsUtils():
     def pktoolsPath():
         folder = ProcessingConfig.getSetting(pktoolsUtils.PKTOOLS_FOLDER)
         if folder == None:
-            folder =""
-
-        return folder
+            folder = unicode('/usr/local/bin')
+        return os.path.abspath(folder)
 
     @staticmethod
     def runpktools(commands, progress):

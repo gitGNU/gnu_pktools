@@ -33,6 +33,32 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pktools.pc
 
 ########################################################################
+#       Additional installation for QGIS processing plugin files       #
+########################################################################
+qgisdir = $(HOME)/.qgis2/python/plugins/$(PACKAGE)
+qgis_DATA = \
+	qgis/pktools/__init__.py \
+	qgis/pktools/metadata.txt \
+	qgis/pktools/ProcessingPktoolsPlugin.py \
+	qgis/pktools/pktoolsAlgorithmProvider.py \
+	qgis/pktools/pktoolsAlgorithm.py \
+	qgis/pktools/pktoolsUtils.py \
+	qgis/pktools/pkcomposite.py \
+	qgis/pktools/pkextract_grid.py \
+	qgis/pktools/pkextract.py \
+	qgis/pktools/pkextract_random.py \
+	qgis/pktools/pkfilterdem.py \
+	qgis/pktools/pkfilter_spatial.py \
+	qgis/pktools/pkfilter_spectral.py \
+	qgis/pktools/pkgetmask.py \
+	qgis/pktools/pklas2img.py \
+	qgis/pktools/pksetmask.py \
+	qgis/pktools/pksvm.py
+
+iconsdir = $(HOME)/.qgis2/python/plugins/$(PACKAGE)/icons
+icons_DATA = qgis/pktools/icons/pktools.png
+
+########################################################################
 #             Additional files to be included in tarball               #
 ########################################################################
 

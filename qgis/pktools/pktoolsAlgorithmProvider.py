@@ -56,7 +56,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
     def __init__(self):
         AlgorithmProvider.__init__(self)
         # deactivate provider by default
-        self.activate = False
+        self.activate = True
         # load algorithms
 #        self.alglist = [pkinfo()]
         self.alglist = [pkcomposite(),pkgetmask(),pksetmask(),pkextract(),pkextract_grid(),pkextract_random(),pksvm(),pklas2img(),pkfilterdem(),pkfilter_spectral(),pkfilter_spatial()]
