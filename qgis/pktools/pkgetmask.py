@@ -53,7 +53,7 @@ class pkgetmask(pktoolsAlgorithm):
     def defineCharacteristics(self):
         self.name = "create mask from raster dataset"
         self.group = "[pktools] raster"
-        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster,""))
+        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster))
         self.addParameter(ParameterString(self.BAND, "Band(s) used for mask (e.g., 0;1)","0"))
         self.addParameter(ParameterString(self.MIN, "Minimum valid value (one value per band)","none"))
         self.addParameter(ParameterString(self.MAX, "Maximum valid value (one value per band)","none"))

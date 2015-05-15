@@ -57,7 +57,7 @@ class pksvm(pktoolsAlgorithm):
     def defineCharacteristics(self):
         self.name = "Support vector machine"
         self.group = "[pktools] supervised classification"
-        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster,""))
+        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster))
         self.addParameter(ParameterVector(self.TRAINING, 'Training vector file.'))
         self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))

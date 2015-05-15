@@ -52,7 +52,7 @@ class pksetmask(pktoolsAlgorithm):
     def defineCharacteristics(self):
         self.name = "apply mask to raster dataset"
         self.group = "[pktools] raster"
-        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster,""))
+        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster))
         self.addParameter(ParameterMultipleInput(self.MASK, 'Mask(s) to apply',ParameterMultipleInput.TYPE_RASTER))
         self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s), provide value for each mask (e.g., 250;255)","1"))
         self.addParameter(ParameterString(self.MSKBAND, "Mask band(s) to read, provide band for each mask (e.g., 0;1)","0"))
