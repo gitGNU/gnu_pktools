@@ -350,6 +350,7 @@ version 2.6.2
 version 2.6.3
  - configuration of autotools
 	add doc directory in release tarballs (ticket #44484)
+	add qgis directory and installation in ~/.qgis2
  - pksvm
 	solved bug in mask handling
  - pkann
@@ -377,6 +378,7 @@ version 2.6.3
 	family_opt was not processed for command line argument
  - pksetmask
 	option mskband
+ - added GUI processing in QGIS
 
 Todo:
  - todo for API
