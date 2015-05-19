@@ -94,7 +94,7 @@ if [ "${LAS}" -eq 1 ];then
 
     #install liblas
 
-    PPA_GTIFF=$(apt-cache search 'libgeotiff-dev-dev')
+    PPA_GTIFF=$(apt-cache search 'libgeotiff-dev')
 
     if [ -z "$PPA_GTIFF" ];then
 	add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
