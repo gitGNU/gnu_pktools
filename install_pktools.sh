@@ -57,8 +57,7 @@ apt-get -y install software-properties-common
 apt-get update
 
 
-PPA_GDAL = $(apt-cache search 'libgdal-dev')
-PPA_GTIFF = $(apt-cache search 'libgdal-dev')
+PPA_GDAL=$(apt-cache search 'libgdal-dev')
 
 if [ -z "$PPA_GDAL" ];then
     add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
@@ -95,7 +94,7 @@ if [ "${LAS}" -eq 1 ];then
 
     #install liblas
 
-    PPA_GTIFF = $(apt-cache search 'libgeotiff-dev-dev')
+    PPA_GTIFF=$(apt-cache search 'libgeotiff-dev-dev')
 
     if [ -z "$PPA_GTIFF" ];then
 	add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
