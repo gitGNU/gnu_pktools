@@ -56,10 +56,16 @@ apt-get -y install software-properties-common
 #get up to date
 apt-get update
 
-add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
-#get up to date with new repository
-apt-get update
 
+PPA_GDAL = $(apt-cache search 'libgdal-dev')
+PPA_GTIFF = $(apt-cache search 'libgdal-dev')
+
+if [ -z "$PPA_GDAL" ];then
+    add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
+    #get up to date with new repository
+    apt-get update
+fi
+    
 #Install required pre-requisites for pktools
 apt-get -y install g++ make gdal-bin libgdal-dev libgsl0-dev libarmadillo-dev
 
@@ -88,8 +94,17 @@ if [ "${LAS}" -eq 1 ];then
     for file in ../laszip*.hpp ../lasunzip*.hpp;do sudo ln -s $file $(basename $file);done
 
     #install liblas
-    #The following packages need to be installed to support LASZIP within liblas
-    apt-get install -y cmake libgeotiff-dev libboost-program-options-dev libboost-dev libboost-thread-dev libboost-iostreams-dev libboost-filesystem-dev
+
+    PPA_GTIFF = $(apt-cache search 'libgeotiff-dev-dev')
+
+    if [ -z "$PPA_GTIFF" ];then
+	add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
+	#get up to date with new repository
+	apt-get update
+    fi
+
+    #The following packages need to be installed to support LASZIP within liblas 
+   apt-get install -y cmake libgeotiff-dev libboost-program-options-dev libboost-dev libboost-thread-dev libboost-iostreams-dev libboost-filesystem-dev
 
     #get liblas 1.8.0 and install using cmake
     cd /tmp
@@ -128,6 +143,8 @@ if [ "${NLOPT}" -eq 1 ];then
 # make install
     CONFIGURE="$CONFIGURE --enable-nlopt"
 fi
+
+ldconfig
 
 #Install pktools
 cd /tmp
