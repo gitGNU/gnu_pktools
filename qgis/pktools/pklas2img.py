@@ -51,8 +51,7 @@ class pklas2img(pktoolsAlgorithm):
     PERCENTILE = "PERCENTILE"
     DX = "DX"
     DY = "DY"
-    PROJWIN = 'PROJWIN'
-    CB = "CB"
+#    PROJWIN = 'PROJWIN'
     NODATA = "NODATA"
     RTYPE = 'RTYPE'
     TYPE = ['Float32','Byte','Int16','UInt16','UInt32','Int32','Float64','CInt16','CInt32','CFloat32','CFloat64']
@@ -72,8 +71,8 @@ class pklas2img(pktoolsAlgorithm):
         self.addParameter(ParameterNumber(self.PERCENTILE, "Percentile value used for rule percentile",0.0,100.0,95))
         self.addParameter(ParameterNumber(self.DX, "Output resolution in x",0.0,None,1.0))
         self.addParameter(ParameterNumber(self.DY, "Output resolution in y",0.0,None,1.0))
-        self.addParameter(ParameterExtent(self.PROJWIN,
-                          'Georeferenced boundingbox'))
+        # self.addParameter(ParameterExtent(self.PROJWIN,
+        #                   'Georeferenced boundingbox'))
         self.addParameter(ParameterNumber(self.NODATA, "nodata value to put in image",0,None,0))
         self.addParameter(ParameterString(self.EXTRA,
                           'Additional parameters', '', optional=True))
@@ -99,27 +98,25 @@ class pklas2img(pktoolsAlgorithm):
         commands.append("-comp")
         commands.append(self.COMPOSITE_OPTIONS[self.getParameterValue(self.COMPOSITE)])
         commands.append("-fir")
+        commands.append(self.FILTER_OPTIONS[self.getParameterValue(self.FILTER)])
         if self.getParameterValue(self.DX) != 0:
             commands.append("-dx")
             commands.append(str(self.getParameterValue(self.DX)))
         if self.getParameterValue(self.DY) != 0:
             commands.append("-dy")
             commands.append(str(self.getParameterValue(self.DY)))
-        projwin = str(self.getParameterValue(self.PROJWIN))
-        regionCoords = projwin.split(',')
-        commands.append('-ulx')
-        commands.append(regionCoords[0])
-        commands.append('-uly')
-        commands.append(regionCoords[3])
-        commands.append('-lrx')
-        commands.append(regionCoords[1])
-        commands.append('-lry')
-        commands.append(regionCoords[2])
-        commands.append("-cb")
-        commands.append(str(self.getParameterValue(self.CB)))
-        nodata=self.getParameterValue(self.NODATA)
+        #projwin = str(self.getParameterValue(self.PROJWIN))
+        # regionCoords = projwin.split(',')
+        # commands.append('-ulx')
+        # commands.append(regionCoords[0])
+        # commands.append('-uly')
+        # commands.append(regionCoords[3])
+        # commands.append('-lrx')
+        # commands.append(regionCoords[1])
+        # commands.append('-lry')
+        # commands.append(regionCoords[2])
         commands.append('-nodata')
-        commands.append(nodata)
+        commands.append(str(self.getParameterValue(self.NODATA)))
 
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:

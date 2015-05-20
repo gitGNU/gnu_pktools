@@ -43,13 +43,16 @@ class pkfilterdem(pktoolsAlgorithm):
     DIM = "DIM"
     RTYPE = 'RTYPE'
     TYPE = ['Float32','Byte','Int16','UInt16','UInt32','Int32','Float64','CInt16','CInt32','CFloat32','CFloat64']
+    FILTER_OPTIONS = ["promorph"]
+    FILTER = "FILTER"
     EXTRA = 'EXTRA'
 
     def defineCharacteristics(self):
         self.name = "Create DTM from DEM raster dataset)"
         self.group = "[pktools] LiDAR"
 
-        self.addParameter(ParameterFile(self.INPUT, "Input LAS(Z) data set", False, False))
+        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster))
+        self.addParameter(ParameterSelection(self.FILTER,"filter",self.FILTER_OPTIONS, 0))
         self.addParameter(ParameterNumber(self.DIM, "maximum filter kernel size",3,None,17))
 
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
@@ -61,11 +64,14 @@ class pkfilterdem(pktoolsAlgorithm):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkfilterdem")]
 
         input=self.getParameterValue(self.INPUT)
-        inputFiles = input.split(';')
-        for inputFile in inputFiles:
+        if input != "":
             commands.append('-i')
-            commands.append(inputFile)
+            commands.append(input)
 
+        filter=self.FILTER_OPTIONS[self.getParameterValue(self.FILTER)]
+        if filter != "none":
+            commands.append("-f")
+            commands.append(filter)
         if self.getParameterValue(self.DIM) != 0:
             commands.append("-dim")
             commands.append(str(self.getParameterValue(self.DIM)))

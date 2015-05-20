@@ -152,7 +152,7 @@ class pkextract_random(pktoolsAlgorithm):
             commands.append(str(buffer))
 
         if self.getParameterValue(self.RANDOM) > 0:
-            commands.append("-random")
+            commands.append("-rand")
             commands.append(str(self.getParameterValue(self.RANDOM)))
 
         srcnodata=self.getParameterValue(self.SRCNODATA)

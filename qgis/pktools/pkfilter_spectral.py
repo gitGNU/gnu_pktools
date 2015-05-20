@@ -52,7 +52,7 @@ class pkfilter_spectral(pktoolsAlgorithm):
     def defineCharacteristics(self):
         self.name = "spectral/temporal filter"
         self.group = "[pktools] filter"
-        self.addParameter(ParameterMultipleInput(self.INPUT, 'Input layer raster data set',ParameterMultipleInput.TYPE_RASTER))
+        self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster))
         self.addParameter(ParameterSelection(self.METHOD,"filter rule",self.METHOD_OPTIONS, 0))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterSelection(self.RTYPE, 'Output raster type (leave as none to keep original type)', self.TYPE, 0))
