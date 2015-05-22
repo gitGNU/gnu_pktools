@@ -61,16 +61,12 @@ class pksvm(pktoolsAlgorithm):
         self.addParameter(ParameterVector(self.TRAINING, 'Training vector file.'))
         self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))
-#        self.addParameter(ParameterBoolean(self.CV, "Two-fold cross validation mode",False))
         self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",0,100,1.0))
         self.addParameter(ParameterNumber(self.COST, "The parameter C of C_SVC",0,100000,1000.0))
         self.addParameter(ParameterRaster(self.MASK, "Mask raster dataset",optional=True))
-#todo: make mask optional
         self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (e.g., 0;255)","0"))
-        self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
-#        self.addParameter(ParameterString(self.NODATA, "Destination nodata value","0"))
-        self.addParameter(ParameterString(self.EXTRA,
-                          'Additional parameters', '', optional=True))
+        self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set",ParameterRaster))
+        self.addParameter(ParameterString(self.EXTRA,'Additional parameters', '', optional=True))
 
 #        self.addParameter(ParameterSelection(self.KERNEL_TYPE,"Type of kernel function (linear,polynomial,radial,sigmoid)",self.KERNEL_TYPE_OPTIONS, 2))
 #        self.addParameter(ParameterSelection(self.SVM_TYPE,"Type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)",self.SVM_TYPE_OPTIONS, 0))
@@ -83,40 +79,46 @@ class pksvm(pktoolsAlgorithm):
             commands.append('-i')
             commands.append(input)
 
-        if self.getParameterValue(self.ITERATE):
-            trainingname=str(training)[:str(training).find('|')]
-        else:
-            trainingname=str(training).replace("|layername"," -ln")
         commands.append('-t')
-        commands.append(trainingname)
+        training=self.getParameterValue(self.TRAINING)
+
+        if(str(training).find('|')>0):
+            if self.getParameterValue(self.ITERATE):
+                trainingname=str(training)
+                commands.append(trainingname[:trainingname.find('|')])
+            else:
+                trainingname=str(training).replace("|layername"," -ln")
+                commands.append(trainingname)
+        else:
+            commands.append(training)
+
         commands.append('-label')
-        commands.append(self.getParameterValue(self.LABEL))
+        commands.append(str(self.getParameterValue(self.LABEL)))
         # if self.getParameterValue(self.CV):
         #     commands.append("-cv 2")
         commands.append('-g')
-        commands.append(self.getParameterValue(self.GAMMA))
+        commands.append(str(self.getParameterValue(self.GAMMA)))
         commands.append('-cc')
-        commands.append(self.getParameterValue(self.COST))
+        commands.append(str(self.getParameterValue(self.COST)))
 
         mask = str(self.getParameterValue(self.MASK))
         if mask != "None":
             commands.append('-m')
             commands.append(mask)
-            msknodata=self.getParameterValue(self.MSKNODATA)
+            msknodata=str(self.getParameterValue(self.MSKNODATA))
             msknodataValues = msknodata.split(';')
             for msknodataValue in msknodataValues:
                 commands.append('-msknodata')
                 commands.append(msknodataValue)
-#        commands.append('-nodata')
-#        commands.append(self.getParameterValue(self.NODATA))
-
-        output=self.getParameterValue(self.OUTPUT)
-        if output != "":
-            commands.append("-o")
-            commands.append(self.getOutputValue(self.OUTPUT))
+                
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:
             commands.append(extra)
+
+        output=self.getParameterValue(self.OUTPUT)
+        if output != "":
+            commands.append('-o')
+            commands.append(output)
 
         f=open('/tmp/a','w')
         for item in commands:

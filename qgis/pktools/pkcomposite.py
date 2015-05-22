@@ -67,7 +67,7 @@ class pkcomposite(pktoolsAlgorithm):
         self.addParameter(ParameterNumber(self.DY, "Output resolution in y (leave 0 for no change)",0.0,None,0.0))
         self.addParameter(ParameterExtent(self.PROJWIN,
                           'Georeferenced boundingbox'))
-        self.addParameter(ParameterString(self.CB, "band index(es) used for the composite rule","0"))
+        self.addParameter(ParameterString(self.CB, "band index(es) used for the composite rule (0 based)","0"))
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
         self.addParameter(ParameterString(self.DSTNODATA, "nodata value to put in output raster dataset if not valid or out of bounds","0"))
@@ -79,7 +79,7 @@ class pkcomposite(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkcomposite")]
-#        commands = [" echo pkcomposite "]
+
         input=self.getParameterValue(self.INPUT)
         inputFiles = input.split(';')
         for inputFile in inputFiles:
@@ -148,5 +148,9 @@ class pkcomposite(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-#        commands.append(" |tee /tmp/a")
+        f=open('/tmp/a','w')
+        for item in commands:
+            print >> f, item
+        f.close()
+
         pktoolsUtils.runpktools(commands, progress)
