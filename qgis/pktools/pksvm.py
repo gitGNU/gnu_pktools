@@ -65,7 +65,7 @@ class pksvm(pktoolsAlgorithm):
         self.addParameter(ParameterNumber(self.COST, "The parameter C of C_SVC",0,100000,1000.0))
         self.addParameter(ParameterRaster(self.MASK, "Mask raster dataset",optional=True))
         self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (e.g., 0;255)","0"))
-        self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set",ParameterRaster))
+        self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterString(self.EXTRA,'Additional parameters', '', optional=True))
 
 #        self.addParameter(ParameterSelection(self.KERNEL_TYPE,"Type of kernel function (linear,polynomial,radial,sigmoid)",self.KERNEL_TYPE_OPTIONS, 2))
@@ -115,10 +115,10 @@ class pksvm(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-        output=self.getParameterValue(self.OUTPUT)
+        output=str(self.getParameterValue(self.OUTPUT))
         if output != "":
             commands.append('-o')
-            commands.append(output)
+            commands.append(self.getOutputValue(self.OUTPUT))
 
         f=open('/tmp/a','w')
         for item in commands:

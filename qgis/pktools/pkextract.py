@@ -139,7 +139,8 @@ class pkextract(pktoolsAlgorithm):
         commands.append('-s')
         commands.append(samplename)
 
-        commands.append("-polygon")
+        if self.getParameterValue(self.POLYGON):
+            commands.append("-polygon")
 
         commands.append("-r")
         commands.append(self.RULE_OPTIONS[self.getParameterValue(self.RULE)])
