@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   Optionpk<string> type_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string> code_opt("code", "code", "Recode text file (2 colums: from to)");
   Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)");
-  Optionpk<string> reclass_opt("r", "reclass", "list of recoded class(es) (in combination with class option)");
+  Optionpk<string> reclass_opt("r", "reclass", "list of recoded classes (in combination with class option)");
   Optionpk<string> fieldname_opt("n", "fname", "field name of the shape file to be replaced", "label");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> description_opt("d", "description", "Set image description");

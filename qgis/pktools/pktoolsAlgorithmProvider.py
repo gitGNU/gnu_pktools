@@ -28,6 +28,7 @@ __revision__ = '$Format:%H$'
 #raster utilities
 from pktools.pkcomposite import pkcomposite
 from pktools.pkcrop import pkcrop
+from pktools.pkreclass import pkreclass
 from pktools.pkgetmask import pkgetmask
 from pktools.pksetmask import pksetmask
 #raster/vector utilities
@@ -60,7 +61,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         self.activate = True
         # load algorithms
 #        self.alglist = [pkinfo()]
-        self.alglist = [pkcrop(),pkcomposite(),pkgetmask(),pksetmask(),pkextract(),pkextract_grid(),pkextract_random(),pksvm(),pklas2img(),pkfilterdem(),pkfilter_spectral(),pkfilter_spatial()]
+        self.alglist = [pkreclass(),pkcrop(),pkcomposite(),pkgetmask(),pksetmask(),pkextract(),pkextract_grid(),pkextract_random(),pksvm(),pklas2img(),pkfilterdem(),pkfilter_spectral(),pkfilter_spatial()]
         # pktools = [pkinfo()]
         # for alg in pktools:
         #     alg.group = "pktools"
