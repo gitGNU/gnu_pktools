@@ -46,6 +46,8 @@ qgis_DATA = \
 	qgis/pktools/pktoolsAlgorithm.py \
 	qgis/pktools/pktoolsUtils.py \
 	qgis/pktools/pkcomposite.py \
+	qgis/pktools/pkcrop.py \
+	qgis/pktools/pkreclass.py \
 	qgis/pktools/pkextract_grid.py \
 	qgis/pktools/pkextract.py \
 	qgis/pktools/pkextract_random.py \

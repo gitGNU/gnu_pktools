@@ -48,3 +48,7 @@ class pktoolsAlgorithm(GeoAlgorithm):
             path = pktoolsUtils.pktoolsPath()
             if path == "":
                 return "pktools folder is not configured.\nPlease configure it before running pktools algorithms."
+    
+    def help(self):
+        helpUrl = 'http://pktools.nongnu.org/'
+        return False, helpUrl        
