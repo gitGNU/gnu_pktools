@@ -49,6 +49,9 @@ class pkfilter_spectral(pktoolsAlgorithm):
     TYPE = ['none', 'Byte','Int16','UInt16','UInt32','Int32','Float32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pkfilter"
+
     def defineCharacteristics(self):
         self.name = "spectral/temporal filter"
         self.group = "[pktools] filter"
@@ -64,7 +67,7 @@ class pkfilter_spectral(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkfilter")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')

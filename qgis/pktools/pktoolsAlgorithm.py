@@ -50,5 +50,8 @@ class pktoolsAlgorithm(GeoAlgorithm):
                 return "pktools folder is not configured.\nPlease configure it before running pktools algorithms."
     
     def help(self):
-        helpUrl = 'http://pktools.nongnu.org/'
+
+        #utilityName=self.__class__.__name__
+
+        helpUrl = 'http://pktools.nongnu.org/html/md_{}.html'.format(self.cliName())
         return False, helpUrl        

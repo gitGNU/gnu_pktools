@@ -49,6 +49,9 @@ class pkreclass(pktoolsAlgorithm):
     TYPE = ['none', 'Byte','Int16','UInt16','UInt32','Int32','Float32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pkreclass"
+
     def defineCharacteristics(self):
         self.name = "reclass raster datasets"
         self.group = "[pktools] raster"
@@ -66,7 +69,7 @@ class pkreclass(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkreclass")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
 
         commands.append('-i')
         commands.append(self.getParameterValue(self.INPUT))

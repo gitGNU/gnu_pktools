@@ -51,9 +51,13 @@ class pkfilter_spatial(pktoolsAlgorithm):
     TYPE = ['none', 'Byte','Int16','UInt16','UInt32','Int32','Float32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pkfilter"
+
     def defineCharacteristics(self):
         self.name = "spatial filter"
         self.group = "[pktools] filter"
+
         self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster))
         self.addParameter(ParameterSelection(self.METHOD,"filter rule",self.METHOD_OPTIONS, 0))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
@@ -67,7 +71,7 @@ class pkfilter_spatial(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkfilter")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')

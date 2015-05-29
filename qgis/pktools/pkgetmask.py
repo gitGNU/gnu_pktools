@@ -50,6 +50,9 @@ class pkgetmask(pktoolsAlgorithm):
     TYPE = ['none', 'Byte','Int16','UInt16','UInt32','Int32','Float32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pkgetmask"
+
     def defineCharacteristics(self):
         self.name = "create mask from raster dataset"
         self.group = "[pktools] raster"
@@ -66,7 +69,7 @@ class pkgetmask(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkgetmask")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
         commands.append(input)

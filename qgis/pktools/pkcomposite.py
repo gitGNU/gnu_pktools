@@ -56,6 +56,9 @@ class pkcomposite(pktoolsAlgorithm):
     TYPE = ['none', 'Byte','Int16','UInt16','UInt32','Int32','Float32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pkcomposite"
+
     def defineCharacteristics(self):
         self.name = "composite/mosaic raster datasets"
         self.group = "[pktools] raster"
@@ -78,7 +81,7 @@ class pkcomposite(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkcomposite")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
 
         input=self.getParameterValue(self.INPUT)
         inputFiles = input.split(';')

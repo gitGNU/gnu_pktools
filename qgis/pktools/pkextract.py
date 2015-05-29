@@ -103,6 +103,9 @@ class pkextract(pktoolsAlgorithm):
     
     FORMAT = "FORMAT"
 
+    def cliName(self):
+        return "pkextract"
+
     def defineCharacteristics(self):
         self.name = "extract vector sample from raster"
         self.group = "[pktools] raster/vector"
@@ -125,7 +128,7 @@ class pkextract(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
 
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkextract")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')

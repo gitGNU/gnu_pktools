@@ -54,6 +54,9 @@ class pksvm(pktoolsAlgorithm):
 #    KERNEL_TYPE_OPTIONS = ["linear", "polynomial", "radial", "sigmoid"]
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pksvm"
+
     def defineCharacteristics(self):
         self.name = "Support vector machine"
         self.group = "[pktools] supervised classification"
@@ -72,7 +75,7 @@ class pksvm(pktoolsAlgorithm):
 #        self.addParameter(ParameterSelection(self.SVM_TYPE,"Type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)",self.SVM_TYPE_OPTIONS, 0))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pksvm")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
 
         input=self.getParameterValue(self.INPUT)
         if input != "":

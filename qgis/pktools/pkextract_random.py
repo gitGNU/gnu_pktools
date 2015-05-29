@@ -101,6 +101,9 @@ class pkextract_random(pktoolsAlgorithm):
     
     FORMAT = "FORMAT"
 
+    def cliName(self):
+        return "pkextract"
+
     def defineCharacteristics(self):
         self.name = "extract random points"
         self.group = "[pktools] raster/vector"
@@ -122,7 +125,7 @@ class pkextract_random(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
 
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkextract")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')

@@ -47,6 +47,9 @@ class pkfilterdem(pktoolsAlgorithm):
     FILTER = "FILTER"
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pkfilterdem"
+
     def defineCharacteristics(self):
         self.name = "Create DTM from DEM raster dataset)"
         self.group = "[pktools] LiDAR"
@@ -61,7 +64,7 @@ class pkfilterdem(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pkfilterdem")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
 
         input=self.getParameterValue(self.INPUT)
         if input != "":

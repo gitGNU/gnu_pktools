@@ -57,6 +57,9 @@ class pklas2img(pktoolsAlgorithm):
     TYPE = ['Float32','Byte','Int16','UInt16','UInt32','Int32','Float64','CInt16','CInt32','CFloat32','CFloat64']
     EXTRA = 'EXTRA'
 
+    def cliName(self):
+        return "pklas2img"
+
     def defineCharacteristics(self):
         self.name = "Create raster dataset from LAS(Z) data point cloud(s)"
         self.group = "[pktools] LiDAR"
@@ -78,7 +81,7 @@ class pklas2img(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), "pklas2img")]
+        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
 
         input=self.getParameterValue(self.INPUT)
         inputFiles = input.split(';')
