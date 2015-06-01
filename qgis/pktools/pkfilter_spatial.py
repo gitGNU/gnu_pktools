@@ -68,7 +68,7 @@ class pkfilter_spatial(pktoolsAlgorithm):
         self.addParameter(ParameterSelection(self.PADDING,"Padding (edge effects)",self.PADDING_OPTIONS, 0))
 #        self.addParameter(ParameterSelection(self.RESAMPLE,"resampling method",self.RESAMPLE_OPTIONS, 0))
         self.addParameter(ParameterString(self.EXTRA,
-                          'Additional parameters', '', optional=True))
+                          'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]

@@ -69,7 +69,8 @@ class pksvm(pktoolsAlgorithm):
         self.addParameter(ParameterRaster(self.MASK, "Mask raster dataset",optional=True))
         self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (e.g., 0;255)","0"))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
-        self.addParameter(ParameterString(self.EXTRA,'Additional parameters', '', optional=True))
+        self.addParameter(ParameterString(self.EXTRA,
+                          'Additional parameters', '-of GTiff', optional=True))
 
 #        self.addParameter(ParameterSelection(self.KERNEL_TYPE,"Type of kernel function (linear,polynomial,radial,sigmoid)",self.KERNEL_TYPE_OPTIONS, 2))
 #        self.addParameter(ParameterSelection(self.SVM_TYPE,"Type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)",self.SVM_TYPE_OPTIONS, 0))

@@ -78,7 +78,7 @@ class pklas2img(pktoolsAlgorithm):
         #                   'Georeferenced boundingbox'))
         self.addParameter(ParameterNumber(self.NODATA, "nodata value to put in image",0,None,0))
         self.addParameter(ParameterString(self.EXTRA,
-                          'Additional parameters', '', optional=True))
+                          'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]

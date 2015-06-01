@@ -61,7 +61,7 @@ class pkfilterdem(pktoolsAlgorithm):
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterSelection(self.RTYPE, 'Output raster type', self.TYPE, 0))
         self.addParameter(ParameterString(self.EXTRA,
-                          'Additional parameters', '', optional=True))
+                          'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]

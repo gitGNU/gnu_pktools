@@ -263,7 +263,12 @@ int main(int argc, char *argv[])
     }
   }
   else{
-    sampleWriterOgr.open("/vsimem/sample",ogrformat_opt[0]);
+    try{
+      sampleWriterOgr.open("/vsimem/virtual",ogrformat_opt[0]);
+    }
+    catch(string errorString){
+      cerr << errorString << endl;
+    }
     char     **papszOptions=NULL;
     sampleWriterOgr.createLayer("points", imgReader.getProjection(), wkbPoint, papszOptions);
     sampleIsVirtual=true;
@@ -320,7 +325,13 @@ int main(int argc, char *argv[])
       std::cerr << "No sample dataset provided (use option -s). Use --help for help information";
       exit(0);
     }
-    sampleReaderOgr.open("/vsimem/sample");
+    try{
+      sampleWriterOgr.close();
+      sampleReaderOgr.open("/vsimem/virtual");
+    }
+    catch(string errorString){
+      cerr << errorString << endl;
+    }
   }
 
   if(sampleIsRaster){
@@ -735,9 +746,13 @@ int main(int argc, char *argv[])
     if(test_opt.size()){
       if(verbose_opt[0]>1)
 	std::cout << "creating image test writer " << test_opt[0] << std::endl;
-      ogrTestWriter.open(test_opt[0],ogrformat_opt[0]);
+      try{
+	ogrTestWriter.open(test_opt[0],ogrformat_opt[0]);
+      }
+      catch(string errorString){
+	cerr << errorString << endl;
+      }
     }
-      
     //support multiple layers
     int nlayerRead=sampleReaderOgr.getDataSource()->GetLayerCount();
     int ilayerWrite=0;
@@ -2410,8 +2425,6 @@ int main(int argc, char *argv[])
       ++ilayerWrite;
     }//for ilayer
     ogrWriter.close();
-    if(sampleIsVirtual)
-      sampleWriterOgr.close();
     if(test_opt.size())
       ogrTestWriter.close();
   }//else (vector)

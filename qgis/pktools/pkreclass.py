@@ -66,7 +66,7 @@ class pkreclass(pktoolsAlgorithm):
 
         self.addParameter(ParameterSelection(self.RTYPE, 'Output raster type (leave as none to keep original type)', self.TYPE, 0))
         self.addParameter(ParameterString(self.EXTRA,
-                          'Additional parameters', '', optional=True))
+                          'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]

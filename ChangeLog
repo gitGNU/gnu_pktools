@@ -350,7 +350,6 @@ version 2.6.2
 version 2.6.3
  - configuration of autotools
 	add doc directory in release tarballs (ticket #44484)
-	add qgis directory and installation in ~/.qgis2
  - pksvm
 	solved bug in mask handling
  - pkann
@@ -371,6 +370,7 @@ version 2.6.3
 	minor documentation fixes (ticket #44486)
  - pkextract
 	support for percentile rule (ticket #108771)
+	close virtual vector writer dataset before opening reader dataset (random and grid sampling)
  - pklas2img
 	support for percentile composite rule
  - pkfilter

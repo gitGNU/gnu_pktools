@@ -67,7 +67,7 @@ class pkcrop(pktoolsAlgorithm):
         self.addParameter(ParameterString(self.BAND, "Band(s) in input image to crop, e.g., 0;1;2 (leave empty to retain all bands)",'', optional=True))
         self.addParameter(ParameterSelection(self.RESAMPLE,"resampling method",self.RESAMPLE_OPTIONS, 0))
         self.addParameter(ParameterString(self.EXTRA,
-                          'Additional parameters', '', optional=True))
+                          'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]

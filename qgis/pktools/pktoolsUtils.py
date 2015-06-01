@@ -46,12 +46,37 @@ class pktoolsUtils():
         settings = QSettings()#from gdal
         loglines = []
         loglines.append("pktools execution console output")
+        loglines.append(commands)
+        progress.setInfo('pktools command:')
         commandline = " ".join(commands)
-        proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE,stderr=subprocess.STDOUT, universal_newlines=False).stdout
+        progress.setCommand(commandline)
+        proc = subprocess.Popen(
+            commandline,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stdin=open(os.devnull),
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+        ).stdout
+        progress.setInfo('pktools command output:')
+
+        #original
+        #proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE,stderr=subprocess.STDOUT, universal_newlines=True).stdout
+        #1
+        #proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE,stderr=subprocess.PIPE, universal_newlines=True).stdout
+        #from gdal
+        
         for line in iter(proc.readline, ""):
+            progress.setConsoleInfo(line)
             loglines.append(line)
         ProcessingLog.addToLog(ProcessingLog.LOG_INFO, loglines)
-#        pktoolslUtils.consoleOutput = loglines
+#        except Exception, e:
+#            ProcessingLog.addToLog(ProcessingLog.LOG_ERROR,
+#                self.tr('Error in pktools algorithm: %s\n%s' % (descriptionFile, str(e))))
+
+
+        ProcessingLog.addToLog(ProcessingLog.LOG_INFO, commandline)
+        pktoolsUtils.consoleOutput = loglines
 
 #    @staticmethod
 #    def getConsoleOutput():
