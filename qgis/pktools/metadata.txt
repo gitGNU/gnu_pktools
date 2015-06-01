@@ -1,8 +1,26 @@
 [general]
 name=pktools
-description=A plugin that adds pktools utilities to Processing.
-category=Raster
-version=1.0.1
+description=Processing kernel for geospatial data
+
+about =
+      pktools is a collection of programs written in C++ for image processing with a focus on remote sensing applications. This plugin provides support of utilities in pktools via the QGIS processing toolbox.
+
+      Among the utilities, you can find:
+
+      raster dataset compositing (median, mean, max ndvi, etc. compositing rules);
+
+      spectral/temporal and spatial filtering of raster datasets;
+
+      extract information from raster datasets (random sampling, regular grid or via overlaid vector sample);
+
+      supervised classification (support vector machine);
+      
+
+      To install the executables, please follow the procedure explained on the homepage
+
+
+category=Raster,Vector
+version=1.0.2
 qgisMinimumVersion=2.6
 
 author=Pieter Kempeneers
@@ -12,8 +30,8 @@ tags=remote sensing, image processing, raster, vector
 
 homepage=http://pktools.nongnu.org
 tracker=https://savannah.nongnu.org/bugs/?func=additem&group=pktools
-repository=
+repository=https://savannah.nongnu.org/git/?group=pktools
 icon=logo.png
 
-experimental=False
+experimental=True
 deprecated=False
