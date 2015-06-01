@@ -30,7 +30,7 @@ tags=remote sensing, image processing, raster, vector
 
 homepage=http://pktools.nongnu.org
 tracker=https://savannah.nongnu.org/bugs/?func=additem&group=pktools
-repository=https://savannah.nongnu.org/git/?group=pktools
+repository=http://git.savannah.gnu.org/cgit/pktools.git/tree/qgis
 icon=logo.png
 
 experimental=True
