@@ -42,10 +42,11 @@ class pktoolsUtils():
             if isMac():
                 folder = "could not determine path to pktools (is it installed?)"
             elif isWindows():
-                testfolder = os.path.join(os.path.dirname(QgsApplication.prefixPath()), 'pktools')
-                testfolder = os.path.join(testfolder, 'bin')
-                if os.path.exists(os.path.join(testfolder, 'pkinfo')):
-                    folder = testfolder
+                testfolder = os.path.dirname(QgsApplication.prefixPath())
+                # testfolder = os.path.join(os.path.dirname(QgsApplication.prefixPath()), 'pktools')
+                # testfolder = os.path.join(testfolder, 'bin')
+                # if os.path.exists(os.path.join(testfolder, 'pkinfo')):
+                #     folder = testfolder
             else:
                 testfolder = "/usr/bin"
                 if os.path.exists(os.path.join(testfolder, "pkinfo")):
