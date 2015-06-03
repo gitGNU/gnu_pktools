@@ -36,10 +36,10 @@ from processing.core.parameters import ParameterBoolean
 from processing.core.parameters import ParameterExtent
 
 FORMATS = [
-    'SQLite',
     'ESRI Shapefile',
     'GeoJSON',
     'GeoRSS',
+    'SQLite',
     'GMT',
     'MapInfo File',
     'INTERLIS 1',
@@ -60,10 +60,10 @@ FORMATS = [
     'PDF',
 ]
 EXTS = [
-    '.sqlite',
     '.shp',
     '.geojson',
     '.xml',
+    '.sqlite',
     '.gmt',
     '.tab',
     '.ili',
@@ -124,7 +124,7 @@ class pkextract_random(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        cliPath = '"' + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + '"'
         commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)
@@ -137,7 +137,7 @@ class pkextract_random(pktoolsAlgorithm):
         output = self.getOutputFromName(self.OUTPUT)
         outFile = output.value
         formatIdx = self.getParameterValue(self.FORMAT)
-        outFormat = FORMATS[formatIdx].replace(' ','\\ ')
+        outFormat = '"' + FORMATS[formatIdx] + '"'
         commands.append('-f')
         commands.append(outFormat)
         ext = EXTS[formatIdx]

@@ -71,7 +71,7 @@ class pkfilter_spatial(pktoolsAlgorithm):
                           'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
-        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        cliPath = '"' + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + '"'
         commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)

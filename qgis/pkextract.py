@@ -36,10 +36,10 @@ from processing.core.parameters import ParameterBoolean
 from processing.core.parameters import ParameterExtent
 
 FORMATS = [
-    'SQLite',
     'ESRI Shapefile',
     'GeoJSON',
     'GeoRSS',
+    'SQLite',
     'GMT',
     'MapInfo File',
     'INTERLIS 1',
@@ -60,10 +60,10 @@ FORMATS = [
     'PDF',
 ]
 EXTS = [
-    '.sqlite',
     '.shp',
     '.geojson',
     '.xml',
+    '.sqlite',
     '.gmt',
     '.tab',
     '.ili',
@@ -154,7 +154,7 @@ class pkextract(pktoolsAlgorithm):
         output = self.getOutputFromName(self.OUTPUT)
         outFile = output.value
         formatIdx = self.getParameterValue(self.FORMAT)
-        outFormat = FORMATS[formatIdx].replace(' ','\\ ')
+        outFormat = '"' + FORMATS[formatIdx] + '"'
         commands.append('-f')
         commands.append(outFormat)
         ext = EXTS[formatIdx]
