@@ -129,6 +129,7 @@ class pkextract(pktoolsAlgorithm):
     def processAlgorithm(self, progress):
 
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
+        commands =  "\"" + commands + "\""
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')

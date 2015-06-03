@@ -68,6 +68,8 @@ class pkfilter_spectral(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
+        commands =  "\"" + commands + "\""
+
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')

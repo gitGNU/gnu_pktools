@@ -70,6 +70,7 @@ class pkreclass(pktoolsAlgorithm):
 
     def processAlgorithm(self, progress):
         commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
+        commands =  "\"" + commands + "\""
 
         commands.append('-i')
         commands.append(self.getParameterValue(self.INPUT))
