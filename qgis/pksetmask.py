@@ -72,7 +72,7 @@ class pksetmask(pktoolsAlgorithm):
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
-        commands.append(input)
+        commands.append('"' + input + '"')
 
         mask=self.getParameterValue(self.MASK)
         maskFiles = mask.split(';')
@@ -105,7 +105,8 @@ class pksetmask(pktoolsAlgorithm):
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
-            commands.append(self.getOutputValue(self.OUTPUT))
+            commands.append('"' + output + '"')
+
         data=self.getParameterValue(self.DATA)
 
         extra = str(self.getParameterValue(self.EXTRA))

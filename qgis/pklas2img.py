@@ -88,15 +88,17 @@ class pklas2img(pktoolsAlgorithm):
         inputFiles = input.split(';')
         for inputFile in inputFiles:
             commands.append('-i')
-            commands.append(inputFile)
+            commands.append('"' + inputFile + '"')
 
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
             commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])
+
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
-            commands.append(self.getOutputValue(self.OUTPUT))
+            commands.append('"' + output + '"')
+
         commands.append("-n")
         commands.append(self.ATTRIBUTE_OPTIONS[self.getParameterValue(self.ATTRIBUTE)])
         commands.append("-comp")

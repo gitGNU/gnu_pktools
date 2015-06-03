@@ -77,7 +77,8 @@ class pkfilter_spatial(pktoolsAlgorithm):
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')
-            commands.append(input)
+            commands.append('"' + input + '"')
+
         method=self.METHOD_OPTIONS[self.getParameterValue(self.METHOD)]
         if method != "none":
             commands.append("-f")
@@ -91,7 +92,8 @@ class pkfilter_spatial(pktoolsAlgorithm):
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
-            commands.append(self.getOutputValue(self.OUTPUT))
+            commands.append('"' + output + '"')
+
         if self.getParameterValue(self.DIM) != 0:
             commands.append("-dx")
             commands.append(str(self.getParameterValue(self.DIM)))

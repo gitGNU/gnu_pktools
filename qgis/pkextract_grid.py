@@ -121,12 +121,12 @@ class pkextract_grid(pktoolsAlgorithm):
         self.addParameter(ParameterString(self.EXTRA, 'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        cliPath = '"' + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + '"'
         commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
-        commands.append(input)
+        commands.append('"' + input + '"')
 
         commands.append("-r")
         commands.append(self.RULE_OPTIONS[self.getParameterValue(self.RULE)])
@@ -134,7 +134,7 @@ class pkextract_grid(pktoolsAlgorithm):
         output = self.getOutputFromName(self.OUTPUT)
         outFile = output.value
         formatIdx = self.getParameterValue(self.FORMAT)
-        outFormat = FORMATS[formatIdx].replace(' ','\\ ')
+        outFormat = '"' + FORMATS[formatIdx] + '"'
         commands.append('-f')
         commands.append(outFormat)
         ext = EXTS[formatIdx]
@@ -142,7 +142,7 @@ class pkextract_grid(pktoolsAlgorithm):
             outFile += ext
             output.value = outFile
         commands.append('-o')
-        commands.append(outFile)
+        commands.append('"' + outFile + '"')
 
         if self.getParameterValue(self.POLYGON):
             commands.append("-polygon")

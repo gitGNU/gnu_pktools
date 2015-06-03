@@ -72,15 +72,17 @@ class pkreclass(pktoolsAlgorithm):
         cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
         commands = [cliPath]
 
+        input=self.getParameterValue(self.INPUT)
         commands.append('-i')
-        commands.append(self.getParameterValue(self.INPUT))
+        commands.append('"' + input + '"')
 
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
             commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])
 
+        output=self.getParameterValue(self.OUTPUT)
         commands.append("-o")
-        commands.append(self.getOutputValue(self.OUTPUT))
+        commands.append('"' + output + '"')
 
         commands.append('-nodata')
         commands.append(str(self.getParameterValue(self.NODATA)))

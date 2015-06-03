@@ -81,14 +81,14 @@ class pkcomposite(pktoolsAlgorithm):
                           'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
-        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        cliPath = '"' + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + '"'
         commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)
         inputFiles = input.split(';')
         for inputFile in inputFiles:
             commands.append('-i')
-            commands.append(inputFile)
+            commands.append('"' + inputFile + '"')
 
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
@@ -96,7 +96,7 @@ class pkcomposite(pktoolsAlgorithm):
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
-            commands.append(self.getOutputValue(self.OUTPUT))
+            commands.append('"' + output + '"')
         commands.append("-cr")
         commands.append(self.CRULE_OPTIONS[self.getParameterValue(self.CRULE)])
         if self.getParameterValue(self.DX) != 0:

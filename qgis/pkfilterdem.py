@@ -70,7 +70,7 @@ class pkfilterdem(pktoolsAlgorithm):
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')
-            commands.append(input)
+            commands.append('"' + input + '"')
 
         filter=self.FILTER_OPTIONS[self.getParameterValue(self.FILTER)]
         if filter != "none":
@@ -86,7 +86,7 @@ class pkfilterdem(pktoolsAlgorithm):
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
-            commands.append(self.getOutputValue(self.OUTPUT))
+            commands.append('"' + output + '"')
 
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:

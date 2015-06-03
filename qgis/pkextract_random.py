@@ -129,7 +129,7 @@ class pkextract_random(pktoolsAlgorithm):
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
-        commands.append(input)
+        commands.append('"' + input + '"')
 
         commands.append("-r")
         commands.append(self.RULE_OPTIONS[self.getParameterValue(self.RULE)])
@@ -145,7 +145,7 @@ class pkextract_random(pktoolsAlgorithm):
             outFile += ext
             output.value = outFile
         commands.append('-o')
-        commands.append(outFile)
+        commands.append('"' + outFile + '"')
 
         if self.getParameterValue(self.POLYGON):
             commands.append("-polygon")

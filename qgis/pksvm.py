@@ -82,7 +82,7 @@ class pksvm(pktoolsAlgorithm):
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')
-            commands.append(input)
+            commands.append('"' + input + '"')
 
         commands.append('-t')
         training=self.getParameterValue(self.TRAINING)
@@ -123,6 +123,6 @@ class pksvm(pktoolsAlgorithm):
         output=str(self.getParameterValue(self.OUTPUT))
         if output != "":
             commands.append('-o')
-            commands.append(self.getOutputValue(self.OUTPUT))
+            commands.append('"' + output + '"')
 
         pktoolsUtils.runpktools(commands, progress)

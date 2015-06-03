@@ -127,12 +127,12 @@ class pkextract(pktoolsAlgorithm):
                           'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        cliPath = '"' + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + '"'
         commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')
-        commands.append(input)
+        commands.append('"' + input + '"')
 
         sample=self.getParameterValue(self.SAMPLE)
         if self.getParameterValue(self.ITERATE):
@@ -162,7 +162,7 @@ class pkextract(pktoolsAlgorithm):
             outFile += ext
             output.value = outFile
         commands.append('-o')
-        commands.append(outFile)
+        commands.append('"' + outFile + '"')
 
         if self.getParameterValue(self.POLYGON):
             commands.append("-polygon")

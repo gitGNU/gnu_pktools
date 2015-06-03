@@ -73,7 +73,8 @@ class pkfilter_spectral(pktoolsAlgorithm):
         input=self.getParameterValue(self.INPUT)
         if input != "":
             commands.append('-i')
-            commands.append(input)
+            commands.append('"' + input + '"')
+
         method=self.METHOD_OPTIONS[self.getParameterValue(self.METHOD)]
         if method != "none":
             commands.append("-f")
@@ -87,7 +88,8 @@ class pkfilter_spectral(pktoolsAlgorithm):
         output=self.getParameterValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
-            commands.append(self.getOutputValue(self.OUTPUT))
+            commands.append('"' + output + '"')
+
         if self.getParameterValue(self.DZ) != 0:
             commands.append("-dz")
             commands.append(str(self.getParameterValue(self.DZ)))
