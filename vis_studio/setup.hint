@@ -2,4 +2,4 @@ sdesc: "The pktools command line utilities"
 ldesc: "pktools contains utilities for geospatial data processing"
 category: Commandline_Utilities
 maintainer: Pieter Kempeneers
-requires: las nlopt fann gdal gsl armadillo geotiff boost
+requires: las nlopt fann gdal gsl-libs armadillo geotiff boost

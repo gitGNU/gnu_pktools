@@ -83,7 +83,7 @@ class pkfilterdem(pktoolsAlgorithm):
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
             commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])
-        output=self.getParameterValue(self.OUTPUT)
+        output=self.getOutputValue(self.OUTPUT)
         if output != "":
             commands.append("-o")
             commands.append('"' + output + '"')

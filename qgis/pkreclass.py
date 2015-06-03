@@ -80,7 +80,7 @@ class pkreclass(pktoolsAlgorithm):
             commands.append('-ot')
             commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])
 
-        output=self.getParameterValue(self.OUTPUT)
+        output=self.getOutputValue(self.OUTPUT)
         commands.append("-o")
         commands.append('"' + output + '"')
 
