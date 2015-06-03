@@ -67,8 +67,8 @@ class pkfilter_spectral(pktoolsAlgorithm):
                           'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
-        commands =  "\"" + commands + "\""
+        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)
         if input != "":

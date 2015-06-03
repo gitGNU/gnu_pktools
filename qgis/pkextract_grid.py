@@ -121,9 +121,8 @@ class pkextract_grid(pktoolsAlgorithm):
         self.addParameter(ParameterString(self.EXTRA, 'Additional parameters', '', optional=True))
 
     def processAlgorithm(self, progress):
-
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
-        commands =  "\"" + commands + "\""
+        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)
         commands.append('-i')

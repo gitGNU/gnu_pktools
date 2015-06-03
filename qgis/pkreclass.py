@@ -69,8 +69,8 @@ class pkreclass(pktoolsAlgorithm):
                           'Additional parameters', '-of GTiff', optional=True))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
-        commands =  "\"" + commands + "\""
+        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        commands = [cliPath]
 
         commands.append('-i')
         commands.append(self.getParameterValue(self.INPUT))

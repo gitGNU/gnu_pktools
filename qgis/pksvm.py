@@ -76,8 +76,8 @@ class pksvm(pktoolsAlgorithm):
 #        self.addParameter(ParameterSelection(self.SVM_TYPE,"Type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)",self.SVM_TYPE_OPTIONS, 0))
 
     def processAlgorithm(self, progress):
-        commands = [os.path.join(pktoolsUtils.pktoolsPath(), self.cliName())]
-        commands =  "\"" + commands + "\""
+        cliPath = "\"" + os.path.join(pktoolsUtils.pktoolsPath(), self.cliName()) + "\""
+        commands = [cliPath]
 
         input=self.getParameterValue(self.INPUT)
         if input != "":
