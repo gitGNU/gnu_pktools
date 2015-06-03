@@ -27,6 +27,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import os
 import subprocess
+from qgis.core import QgsApplication
 from processing.core.ProcessingLog import ProcessingLog
 from processing.core.ProcessingConfig import ProcessingConfig
 from processing.tools.system import isWindows, isMac, userFolder
@@ -39,14 +40,14 @@ class pktoolsUtils():
     def pktoolsPath():
         folder = ProcessingConfig.getSetting(pktoolsUtils.PKTOOLS_FOLDER)
         if folder == None:
+            folder = "could not determine path to pktools (is it installed?)"
             if isMac():
-                folder = "could not determine path to pktools (is it installed?)"
+                folder = "pktools not ready for Mac yet"
             elif isWindows():
-                testfolder = os.path.dirname(QgsApplication.prefixPath())
-                # testfolder = os.path.join(os.path.dirname(QgsApplication.prefixPath()), 'pktools')
-                # testfolder = os.path.join(testfolder, 'bin')
-                # if os.path.exists(os.path.join(testfolder, 'pkinfo')):
-                #     folder = testfolder
+                testfolder = os.path.join(os.path.dirname(QgsApplication.prefixPath()), 'pktools')
+                testfolder = os.path.join(testfolder, 'bin')
+                if os.path.exists(os.path.join(testfolder, 'pkinfo')):
+                    folder = testfolder
             else:
                 testfolder = "/usr/bin"
                 if os.path.exists(os.path.join(testfolder, "pkinfo")):
