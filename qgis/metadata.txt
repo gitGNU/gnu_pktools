@@ -20,7 +20,7 @@ about =
 
 
 category=Raster,Vector
-version=1.0.3
+version=1.0.4
 qgisMinimumVersion=2.6
 
 author=Pieter Kempeneers
