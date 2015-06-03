@@ -120,7 +120,7 @@ class pksvm(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-        output=self.getOutputValue(self.OUTPUT))
+        output=self.getOutputValue(self.OUTPUT)
         if output != "":
             commands.append('-o')
             commands.append('"' + output + '"')
