@@ -124,9 +124,4 @@ class pkcrop(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-        f=open('/tmp/a','w')
-        for item in commands:
-            print >> f, item
-        f.close()
-
         pktoolsUtils.runpktools(commands, progress)

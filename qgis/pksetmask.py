@@ -110,5 +110,4 @@ class pksetmask(pktoolsAlgorithm):
         if len(extra) > 0:
             commands.append(extra)
 
-#        commands.append(" |tee /tmp/a")
         pktoolsUtils.runpktools(commands, progress)

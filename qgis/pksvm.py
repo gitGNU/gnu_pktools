@@ -124,8 +124,4 @@ class pksvm(pktoolsAlgorithm):
             commands.append('-o')
             commands.append(self.getOutputValue(self.OUTPUT))
 
-        f=open('/tmp/a','w')
-        for item in commands:
-            print >> f, item
-        f.close()
         pktoolsUtils.runpktools(commands, progress)
