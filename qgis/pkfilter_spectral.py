@@ -95,7 +95,6 @@ class pkfilter_spectral(pktoolsAlgorithm):
             for nodataValue in nodataValues:
                 commands.append('-nodata')
                 commands.append(nodataValue)
-        commands.append("-r")
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:
             commands.append(extra)

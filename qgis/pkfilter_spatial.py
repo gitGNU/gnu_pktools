@@ -101,8 +101,6 @@ class pkfilter_spatial(pktoolsAlgorithm):
             for nodataValue in nodataValues:
                 commands.append('-nodata')
                 commands.append(nodataValue)
-#        commands.append("-r")
-#        commands.append(self.RESAMPLE_OPTIONS[self.getParameterValue(self.RESAMPLE)])
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:
             commands.append(extra)

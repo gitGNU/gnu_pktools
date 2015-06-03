@@ -29,6 +29,7 @@ import os
 import subprocess
 from processing.core.ProcessingLog import ProcessingLog
 from processing.core.ProcessingConfig import ProcessingConfig
+from processing.tools.system import isWindows, isMac, userFolder
 
 class pktoolsUtils():
 
@@ -38,8 +39,29 @@ class pktoolsUtils():
     def pktoolsPath():
         folder = ProcessingConfig.getSetting(pktoolsUtils.PKTOOLS_FOLDER)
         if folder == None:
-            folder = unicode('/usr/local/bin')
-        return os.path.abspath(folder)
+            folder = "could not determine path to pktools (is it installed?)"
+            if isMac():
+                testfolder = os.path.join(str(QgsApplication.prefixPath()), "bin")
+                if os.path.exists(os.path.join(testfolder, "pkinfo")):
+                    folder = testfolder
+                else:
+                    testfolder = "/usr/local/bin"
+                    if os.path.exists(os.path.join(testfolder, "pkinfo")):
+                        folder = testfolder
+            elif isWindows():
+                testfolder = os.path.join(os.path.dirname(QgsApplication.prefixPath()),
+                                          os.pardir, "bin")
+                if os.path.exists(os.path.join(testfolder, "pkinfo")):
+                    folder = testfolder
+            else:
+                testfolder = "/usr/bin"
+                if os.path.exists(os.path.join(testfolder, "pkinfo")):
+                    folder = testfolder
+                else:
+                    testfolder = "/usr/local/bin"
+                    if os.path.exists(os.path.join(testfolder, "pkinfo")):
+                        folder = testfolder
+        return folder
 
     @staticmethod
     def runpktools(commands, progress):
@@ -60,20 +82,10 @@ class pktoolsUtils():
         ).stdout
         progress.setInfo('pktools command output:')
 
-        #original
-        #proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE,stderr=subprocess.STDOUT, universal_newlines=True).stdout
-        #1
-        #proc = subprocess.Popen(commandline, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE,stderr=subprocess.PIPE, universal_newlines=True).stdout
-        #from gdal
-        
         for line in iter(proc.readline, ""):
             progress.setConsoleInfo(line)
             loglines.append(line)
         ProcessingLog.addToLog(ProcessingLog.LOG_INFO, loglines)
-#        except Exception, e:
-#            ProcessingLog.addToLog(ProcessingLog.LOG_ERROR,
-#                self.tr('Error in pktools algorithm: %s\n%s' % (descriptionFile, str(e))))
-
 
         ProcessingLog.addToLog(ProcessingLog.LOG_INFO, commandline)
         pktoolsUtils.consoleOutput = loglines
