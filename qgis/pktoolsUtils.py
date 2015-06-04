@@ -39,12 +39,14 @@ class pktoolsUtils():
     @staticmethod
     def pktoolsPath():
         folder = ProcessingConfig.getSetting(pktoolsUtils.PKTOOLS_FOLDER)
-        if folder == None:
+
+        if folder is None or folder == '':
             if isWindows():
                 testfolder = os.path.join(os.path.dirname(QgsApplication.prefixPath()), 'pktools')
                 testfolder = os.path.join(testfolder, 'bin')
                 if os.path.exists(os.path.join(testfolder, 'pkinfo')):
                     folder = testfolder
+                folder = testfolder
             else:
                 testfolder = "/usr/bin"
                 if os.path.exists(os.path.join(testfolder, "pkinfo")):
@@ -53,6 +55,7 @@ class pktoolsUtils():
                     testfolder = "/usr/local/bin"
                     if os.path.exists(os.path.join(testfolder, "pkinfo")):
                         folder = testfolder
+                    folder = testfolder
         return folder
 
     @staticmethod

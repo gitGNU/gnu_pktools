@@ -61,7 +61,7 @@ class pklas2img(pktoolsAlgorithm):
         return "pklas2img"
 
     def defineCharacteristics(self):
-        self.name = "Create raster dataset from LAS(Z) data point cloud(s)"
+        self.name = "(Linux only) Create raster dataset from LAS(Z) data point cloud(s)"
         self.group = "[pktools] LiDAR"
 
         self.addParameter(ParameterFile(self.INPUT, "Input LAS(Z) data set(s)", False, False))
