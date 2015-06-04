@@ -104,154 +104,6 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
 
   kappa=costfactory.getCost(*tf);
   return(kappa);
-
-  // std::map<std::string, svm::SVM_TYPE> svmMap;
-
-  // svmMap["C_SVC"]=svm::C_SVC;
-  // svmMap["nu_SVC"]=svm::nu_SVC;
-  // svmMap["one_class"]=svm::one_class;
-  // svmMap["epsilon_SVR"]=svm::epsilon_SVR;
-  // svmMap["nu_SVR"]=svm::nu_SVR;
-
-  // std::map<std::string, svm::KERNEL_TYPE> kernelMap;
-
-  // kernelMap["linear"]=svm::linear;
-  // kernelMap["polynomial"]=svm::polynomial;
-  // kernelMap["radial"]=svm::radial;
-  // kernelMap["sigmoid;"]=svm::sigmoid;
-
-  // unsigned short nclass=tf->size();
-  // unsigned int ntraining=0;
-  // unsigned int ntest=0;
-  // for(int iclass=0;iclass<nclass;++iclass){
-  //   ntraining+=nctraining[iclass];
-  //   ntest+=nctest[iclass];
-  // }
-  // if(ntest)
-  //   cv_opt[0]=0;
-  // if(!cv_opt[0])
-  //   assert(ntest);
-
-  // unsigned short nFeatures=(*tf)[0][0].size();
-  // struct svm_parameter param;
-  // param.svm_type = svmMap[svm_type_opt[0]];
-  // param.kernel_type = kernelMap[kernel_type_opt[0]];
-  // param.degree = kernel_degree_opt[0];
-  // param.gamma = gamma;
-  // param.coef0 = coef0_opt[0];
-  // param.nu = nu_opt[0];
-  // param.cache_size = cache_opt[0];
-  // param.C = ccost;
-  // param.eps = epsilon_tol_opt[0];
-  // param.p = epsilon_loss_opt[0];
-  // param.shrinking = (shrinking_opt[0])? 1 : 0;
-  // param.probability = (prob_est_opt[0])? 1 : 0;
-  // param.nr_weight = 0;//not used: I use priors and balancing
-  // param.weight_label = NULL;
-  // param.weight = NULL;
-  // param.verbose=(verbose_opt[0]>2)? true:false;
-  // struct svm_model* svm;
-  // struct svm_problem prob;
-  // struct svm_node* x_space;
-
-  // prob.l=ntraining;
-  // prob.y = Malloc(double,prob.l);
-  // prob.x = Malloc(struct svm_node *,prob.l);
-  // x_space = Malloc(struct svm_node,(nFeatures+1)*ntraining);
-  // unsigned long int spaceIndex=0;
-  // int lIndex=0;
-  // for(int iclass=0;iclass<nclass;++iclass){
-  //   // for(int isample=0;isample<(*tf)[iclass].size();++isample){
-  //   for(int isample=0;isample<nctraining[iclass];++isample){
-  //     prob.x[lIndex]=&(x_space[spaceIndex]);
-  //     for(int ifeature=0;ifeature<nFeatures;++ifeature){
-  //       x_space[spaceIndex].index=ifeature+1;
-  //       x_space[spaceIndex].value=(*tf)[iclass][isample][ifeature];
-  //       ++spaceIndex;
-  //     }
-  //     x_space[spaceIndex++].index=-1;
-  //     prob.y[lIndex]=iclass;
-  //     ++lIndex;
-  //   }
-  // }
-
-  // assert(lIndex==prob.l);
-  // if(verbose_opt[0]>2)
-  //   std::cout << "checking parameters" << std::endl;
-  // svm_check_parameter(&prob,&param);
-  // if(verbose_opt[0]>2)
-  //   std::cout << "parameters ok, training" << std::endl;
-  // svm=svm_train(&prob,&param);
-  // if(verbose_opt[0]>2)
-  //   std::cout << "SVM is now trained" << std::endl;
-
-  // ConfusionMatrix cm;
-  // //set names in confusion matrix using nameVector
-  // for(int iname=0;iname<nameVector.size();++iname){
-  //   if(classValueMap.empty())
-  //     cm.pushBackClassName(nameVector[iname]);
-  //   else if(cm.getClassIndex(type2string<short>(classValueMap[nameVector[iname]]))<0)
-  //     cm.pushBackClassName(type2string<short>(classValueMap[nameVector[iname]]));
-  // }
-  // if(cv_opt[0]>1){
-  //   double *target = Malloc(double,prob.l);
-  //   svm_cross_validation(&prob,&param,cv_opt[0],target);
-  //   assert(param.svm_type != EPSILON_SVR&&param.svm_type != NU_SVR);//only for regression
-  //   for(int i=0;i<prob.l;i++){
-  //     string refClassName=nameVector[prob.y[i]];
-  //     string className=nameVector[target[i]];
-  //     if(classValueMap.size())
-  // 	cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
-  //     else
-  // 	cm.incrementResult(cm.getClass(prob.y[i]),cm.getClass(target[i]),1.0);
-  //   }
-  //   free(target);
-  // }
-  // else{
-  //   struct svm_node *x_test;
-  //   x_test = Malloc(struct svm_node,(nFeatures+1));
-  //   for(int iclass=0;iclass<nclass;++iclass){
-  //     for(int isample=0;isample<nctest[iclass];++isample){
-  // 	for(int ifeature=0;ifeature<nFeatures;++ifeature){
-  // 	  x_test[ifeature].index=ifeature+1;
-  // 	  x_test[ifeature].value=(*tf)[iclass][nctraining[iclass]+isample][ifeature];
-  // 	}
-  // 	x_test[nFeatures].index=-1;
-  // 	double predict_label=0;
-  // 	//todo: make distinction between svm_predict and svm_predict_probability?
-  // 	predict_label = svm_predict(svm,x_test);
-  // 	string refClassName=nameVector[iclass];
-  // 	string className=nameVector[static_cast<short>(predict_label)];
-  // 	if(classValueMap.size())
-  // 	  cm.incrementResult(type2string<short>(classValueMap[refClassName]),type2string<short>(classValueMap[className]),1.0);
-  // 	else
-  // 	  cm.incrementResult(refClassName,className,1.0);
-  //     }
-  //   }
-  //   free(x_test);
-  // }
-  // if(verbose_opt[0]>1)
-  //   std::cout << cm << std::endl;
-  // assert(cm.nReference());
-  // free(prob.y);
-  // free(prob.x);
-  // free(x_space);
-  // svm_free_and_destroy_model(&(svm));
-  // if(verbose_opt[0]>2)
-  //   std::cout << cm << std::endl;
-  // kappa=cm.kappa();
-  // oa=cm.oa();
-  // if(verbose_opt[0]>1){
-  //   std::cout << " --ccost " << x[0];
-  //   std::cout << " --gamma " << x[1];
-  //   std::cout << std::endl;
-  //   std::cout << "oa: " << oa << std::endl;
-  //   std::cout << "kappa: " << kappa << std::endl;
-  // }
-  // double cost=(costfunction_opt[0])? oa : kappa;
-  // if(cost>0)
-  //   error=1.0/cost;
-  // return(error);
 }
 
 int main(int argc, char *argv[])
@@ -276,7 +128,7 @@ int main(int argc, char *argv[])
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
-  Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
+//Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
 
   input_opt.setHide(1);
@@ -304,7 +156,7 @@ int main(int argc, char *argv[])
   costfunction_opt.setHide(1);
   maxit_opt.setHide(1);
   tolerance_opt.setHide(1);
-  algorithm_opt.setHide(1);
+//  algorithm_opt.setHide(1);
   classname_opt.setHide(1);
   classvalue_opt.setHide(1);
   
@@ -340,7 +192,7 @@ int main(int argc, char *argv[])
     costfunction_opt.retrieveOption(argc,argv);
     maxit_opt.retrieveOption(argc,argv);
     tolerance_opt.retrieveOption(argc,argv);
-    algorithm_opt.retrieveOption(argc,argv);
+//    algorithm_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
@@ -657,7 +509,8 @@ int main(int argc, char *argv[])
   assert(ccost_opt[2]<ccost_opt[1]);
 
   std::vector<double> x(2);
-  if(algorithm_opt[0]=="GRID"){
+//  if(algorithm_opt[0]=="GRID"){
+  if (1){
     // double minError=1000;
     // double minCost=0;
     // double minGamma=0;
@@ -697,53 +550,53 @@ int main(int argc, char *argv[])
     x[0]=maxCost;
     x[1]=maxGamma;
   }
-  else{
-    nlopt::opt optimizer=OptFactory::getOptimizer(algorithm_opt[0],2);
-    if(verbose_opt[0]>1)
-      std::cout << "optimization algorithm: " << optimizer.get_algorithm_name() << "..." << std::endl;
-    std::vector<double> lb(2);
-    std::vector<double> init(2);
-    std::vector<double> ub(2);
+  //else{
+  //  nlopt::opt optimizer=OptFactory::getOptimizer(algorithm_opt[0],2);
+  //  if(verbose_opt[0]>1)
+  //    std::cout << "optimization algorithm: " << optimizer.get_algorithm_name() << "..." << std::endl;
+  //  std::vector<double> lb(2);
+  //  std::vector<double> init(2);
+  //  std::vector<double> ub(2);
 
-    lb[0]=ccost_opt[0];
-    lb[1]=(gamma_opt[0]>0)? gamma_opt[0] : 1.0/trainingFeatures[0][0].size();
-    init[0]=ccost_opt[2];
-    init[1]=(gamma_opt[2]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
-    ub[0]=ccost_opt[1];
-    ub[1]=(gamma_opt[1]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
-    // optimizer.set_min_objective(objFunction, &trainingFeatures);
-    optimizer.set_max_objective(objFunction, &trainingFeatures);
-    optimizer.set_lower_bounds(lb);
-    optimizer.set_upper_bounds(ub);
-    if(verbose_opt[0]>1)
-      std::cout << "set stopping criteria" << std::endl;
-    //set stopping criteria
-    if(maxit_opt[0])
-      optimizer.set_maxeval(maxit_opt[0]);
-    else
-      optimizer.set_xtol_rel(tolerance_opt[0]);
-    double minf=0;
-    x=init;
-    try{
-      optimizer.optimize(x, minf);
-    }
-    catch(string error){
-      cerr << error << std::endl;
-      exit(1);
-    }
-    catch (exception& e){
-      cout << e.what() << endl;
-    }
-    catch(...){
-      cerr << "error catched" << std::endl;
-      exit(1);
-    }
+  //  lb[0]=ccost_opt[0];
+  //  lb[1]=(gamma_opt[0]>0)? gamma_opt[0] : 1.0/trainingFeatures[0][0].size();
+  //  init[0]=ccost_opt[2];
+  //  init[1]=(gamma_opt[2]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
+  //  ub[0]=ccost_opt[1];
+  //  ub[1]=(gamma_opt[1]>0)? gamma_opt[1] : 1.0/trainingFeatures[0][0].size();
+  //  // optimizer.set_min_objective(objFunction, &trainingFeatures);
+  //  optimizer.set_max_objective(objFunction, &trainingFeatures);
+  //  optimizer.set_lower_bounds(lb);
+  //  optimizer.set_upper_bounds(ub);
+  //  if(verbose_opt[0]>1)
+  //    std::cout << "set stopping criteria" << std::endl;
+  //  //set stopping criteria
+  //  if(maxit_opt[0])
+  //    optimizer.set_maxeval(maxit_opt[0]);
+  //  else
+  //    optimizer.set_xtol_rel(tolerance_opt[0]);
+  //  double minf=0;
+  //  x=init;
+  //  try{
+  //    optimizer.optimize(x, minf);
+  //  }
+  //  catch(string error){
+  //    cerr << error << std::endl;
+  //    exit(1);
+  //  }
+  //  catch (exception& e){
+  //    cout << e.what() << endl;
+  //  }
+  //  catch(...){
+  //    cerr << "error catched" << std::endl;
+  //    exit(1);
+  //  }
 
-    double ccost=x[0];
-    double gamma=x[1];
-    if(verbose_opt[0])
-      std::cout << "optimized with " << optimizer.get_algorithm_name() << "..." << std::endl;
-  }
+  //  double ccost=x[0];
+  //  double gamma=x[1];
+  //  if(verbose_opt[0])
+  //    std::cout << "optimized with " << optimizer.get_algorithm_name() << "..." << std::endl;
+  //}
   std::cout << " --ccost " << x[0];
   std::cout << " --gamma " << x[1];
   std::cout << std::endl;

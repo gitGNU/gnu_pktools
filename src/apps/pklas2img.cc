@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <iostream>
-#include "Optionpk.h"
+#include "base/Optionpk.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
