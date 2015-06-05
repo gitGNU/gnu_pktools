@@ -108,11 +108,13 @@ void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& outpu
     for(int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
-	inBuffer.erase(inBuffer.begin());
+	if(dimY>1)
+	  inBuffer.erase(inBuffer.begin());
 	//read extra line and push back to inBuffer if not out of bounds
 	if(y+dimY/2<input.nrOfRow()){
 	  //allocate buffer
-	  inBuffer.push_back(inBuffer.back());
+	  if(dimY>1)
+	    inBuffer.push_back(inBuffer.back());
 	  try{
             input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
 	  }
@@ -249,11 +251,13 @@ void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std
   for(int y=0;y<input.nrOfRow();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
-      inBuffer.erase(inBuffer.begin());
+      if(dimY>1)
+	inBuffer.erase(inBuffer.begin());
       //read extra line and push back to inBuffer if not out of bounds
       if(y+dimY/2<input.nrOfRow()){
 	//allocate buffer
-	inBuffer.push_back(inBuffer.back());
+	if(dimY>1)
+	  inBuffer.push_back(inBuffer.back());
 	try{
           input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2);
 	}
@@ -380,11 +384,13 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
     for(int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
-	inBuffer.erase(inBuffer.begin());
+	if(dimY>1)
+	  inBuffer.erase(inBuffer.begin());
 	//read extra line and push back to inBuffer if not out of bounds
 	if(y+dimY/2<input.nrOfRow()){
           //allocate buffer
-          inBuffer.push_back(inBuffer.back());
+	  if(dimY>1)
+	    inBuffer.push_back(inBuffer.back());
 	  try{
             input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
 	  }
@@ -618,7 +624,12 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
         case(filter2d::scramble):{//could be done more efficiently window by window with random shuffling entire buffer and assigning entire buffer at once to output image...
 	  if(windowBuffer.size()){
             int randomIndex=std::rand()%windowBuffer.size();
-            outBuffer[x/down]=windowBuffer[randomIndex];
+	    if(randomIndex>=windowBuffer.size())
+	      outBuffer[x/down]=windowBuffer.back();
+	    else if(randomIndex<0)
+	      outBuffer[x/down]=windowBuffer[0];
+	    else
+	      outBuffer[x/down]=windowBuffer[randomIndex];
           }
           else
 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
@@ -717,11 +728,13 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
   for(int y=0;y<input.nrOfRow();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
-      inBuffer.erase(inBuffer.begin());
+      if(dimY>1)
+	inBuffer.erase(inBuffer.begin());
       //read extra line and push back to inBuffer if not out of bounds
       if(y+dimY/2<input.nrOfRow()){
         //allocate buffer
-        inBuffer.push_back(inBuffer.back());
+	if(dimY>1)
+	  inBuffer.push_back(inBuffer.back());
         try{
           input.readData(inBuffer[inBuffer.size()-1],GDT_Int16,y+dimY/2);
         }
@@ -972,11 +985,13 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
     for(int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
-	inBuffer.erase(inBuffer.begin());
+	if(dimY>1)
+	  inBuffer.erase(inBuffer.begin());
 	//read extra line and push back to inBuffer if not out of bounds
 	if(y+dimY/2<input.nrOfRow()){
 	  //allocate buffer
-	  inBuffer.push_back(inBuffer.back());
+	  if(dimY>1)
+	    inBuffer.push_back(inBuffer.back());
 	  try{
             input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
 	  }

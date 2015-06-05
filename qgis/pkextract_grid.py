@@ -114,6 +114,7 @@ class pkextract_grid(pktoolsAlgorithm):
         self.addParameter(ParameterSelection(self.FORMAT,
                           'Destination Format', FORMATS))
         self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
+        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features",1,25,1))
         self.addParameter(ParameterNumber(self.GRID, "Cell grid size (in projected units, e.g,. m)",0,1000000,1))
 
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))

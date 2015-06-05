@@ -916,10 +916,6 @@ int main(int argc, char *argv[])
 	    double ulj=j_centre-buffer_opt[0]/2;
 	    double lri=i_centre+buffer_opt[0]/2;
 	    double lrj=j_centre+buffer_opt[0]/2;
-	    // double uli=i_centre-buffer_opt[0]/2-0.5;
-	    // double ulj=j_centre-buffer_opt[0]/2-0.5;
-	    // double lri=i_centre+buffer_opt[0]/2+0.5;
-	    // double lrj=j_centre+buffer_opt[0]/2+0.5;
 
 	    //nearest neighbour
 	    ulj=static_cast<int>(ulj);
@@ -927,12 +923,12 @@ int main(int argc, char *argv[])
 	    lrj=static_cast<int>(lrj);
 	    lri=static_cast<int>(lri);
 
-	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
-	      uli=i_centre;
-	      ulj=j_centre;
-	      lri=i_centre;
-	      lrj=j_centre;
-	    }
+	    // if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
+	    //   uli=i_centre;
+	    //   ulj=j_centre;
+	    //   lri=i_centre;
+	    //   lrj=j_centre;
+	    // }
 
 	    //check if j is out of bounds
 	    if(static_cast<int>(ulj)<0||static_cast<int>(ulj)>=imgReader.nrOfRow())
@@ -952,8 +948,8 @@ int main(int argc, char *argv[])
 		unsigned short nstep = 25;
 		for(int i=0;i<nstep;++i){
 		  OGRPoint aPoint;
-		  aPoint.setX(x+radius*cos(2*PI*i/nstep));
-		  aPoint.setY(y+radius*sin(2*PI*i/nstep));
+		  aPoint.setX(x+imgReader.getDeltaX()/2.0+radius*cos(2*PI*i/nstep));
+		  aPoint.setY(y-imgReader.getDeltaY()/2.0+radius*sin(2*PI*i/nstep));
 		  writeRing.addPoint(&aPoint);
 		}
 		writePolygon.addRing(&writeRing);
@@ -980,6 +976,13 @@ int main(int argc, char *argv[])
 		writePolygon.addRing(&writeRing);
 		writePolygon.closeRings();
 	      }
+	    }
+
+	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
+	      uli=i_centre;
+	      ulj=j_centre;
+	      lri=i_centre;
+	      lrj=j_centre;
 	    }
 
 	    int nPointWindow=0;//similar to nPointPolygon for polygons

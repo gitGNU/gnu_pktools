@@ -499,7 +499,12 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       case(filter2d::scramble):{//could be done more efficiently window by window with random shuffling entire buffer and assigning entire buffer at once to output image...
 	if(windowBuffer.size()){
 	  int randomIndex=std::rand()%windowBuffer.size();
-	  outBuffer[x/down]=windowBuffer[randomIndex];
+	  if(randomIndex>=windowBuffer.size())
+	    outBuffer[x/down]=windowBuffer.back();
+	  else if(randomIndex<0)
+	    outBuffer[x/down]=windowBuffer[0];
+	  else
+	    outBuffer[x/down]=windowBuffer[randomIndex];
 	}
 	else
 	  outBuffer[x/down]=noDataValue;
