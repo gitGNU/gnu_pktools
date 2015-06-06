@@ -15,7 +15,7 @@ pkcomposite -i input1.tif -i input2.tif -srcnodata 255 -bndnodata 1 -dstnodata 0
 Create a maximum NDVI (normalized difference vegetation index) composit. Values of 255 in band 0 are masked as invalid and flagged as 0 if no other valid coverage. Typically used for (e.g., MODIS) images where red and near infrared spectral bands are stored in bands 0 and 1 respectively. In this particular case, a value of 255 in the first input band indicates a nodata value (e.g., cloud mask is coded within the data values).
 
 \code
-pkcomposite -i input1.tif -i input2.tif -cr maxndvi -rb 0 -rb 1 -srcnodata 255 -bndnodata 0 -dstnodata 0 -o output.tif
+pkcomposite -i input1.tif -i input2.tif -cr maxndvi -cb 0 -cb 1 -srcnodata 255 -bndnodata 0 -dstnodata 0 -o output.tif
 \endcode
 
 Create a composite image using weighted mean: output=(3/4*input1+6/4*input2+3/4*input2)/3.0

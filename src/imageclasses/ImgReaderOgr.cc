@@ -24,6 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "cpl_string.h"
 //---------------------------------------------------------------------------
 ImgReaderOgr::ImgReaderOgr(void)
+  : m_fs(' ')
 {}
 
 ImgReaderOgr::ImgReaderOgr(const std::string& filename)
@@ -39,6 +40,7 @@ ImgReaderOgr::~ImgReaderOgr(void)
 
 void ImgReaderOgr::open(const std::string& filename)
 {
+  m_fs=' ';
   m_filename = filename;
   setCodec();
 }
@@ -163,11 +165,10 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
 
   theOstream << "#";
   int iField=0;
-  // theOstream << "X" << " " << "Y" << " ";
   for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
       std::string fieldname=poFieldDefn->GetNameRef();
-      theOstream << fieldname << " ";
+      theOstream << fieldname << theImageReader.getFieldSeparator();
   }
   theOstream << std::endl;
 
@@ -194,9 +195,9 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
     }
     theOstream.precision(12);
     if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint)
-      theOstream << x << " " << y;
+      theOstream << x << theImageReader.getFieldSeparator() << y;
     for(fit=vfields.begin();fit!=vfields.end();++fit)
-      theOstream << " " << *fit;
+      theOstream << theImageReader.getFieldSeparator() << *fit;
     theOstream << std::endl;
     ++ifeature;
   }

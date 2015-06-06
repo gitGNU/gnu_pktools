@@ -81,6 +81,8 @@ public:
   template<typename T> int readSql(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer=0, bool pos=false, bool verbose=false);
   bool getExtent(double& ulx, double& uly, double& lrx, double& lry, int layer=0);
 
+  void setFieldSeparator(const char fs){ m_fs=fs;};
+  char getFieldSeparator() const { return m_fs;};
   friend std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader);
   
 protected:
@@ -88,6 +90,7 @@ protected:
 
   std::string m_filename;
   OGRDataSource *m_datasource;
+  char m_fs;
 };
 
 //read data from all features in a map, organized by classes

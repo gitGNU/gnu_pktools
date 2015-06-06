@@ -122,8 +122,9 @@ int main(int argc, char *argv[])
   entropy_opt.setHide(1);
   active_opt.setHide(1);
   nactive_opt.setHide(1);
-  verbose_opt.setHide(1);
   random_opt.setHide(1);
+
+  verbose_opt.setHide(2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{

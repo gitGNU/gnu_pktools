@@ -381,11 +381,13 @@ version 2.6.3
  - added GUI processing in QGIS
 
 version 2.6.4
+ - Filter.cc
+	do not remove line from buffer stack if dimY==1
  - pkextract
 	circ option half pixel shift
 	polygon buffer was not created with point or centroid
- - Filter.cc
-	do not remove line from buffer stack if dimY==1
+ - pkdumpogr
+	support field separator as option (feature request #108834)
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
