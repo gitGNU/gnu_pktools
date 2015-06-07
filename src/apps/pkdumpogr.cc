@@ -63,9 +63,9 @@ int main(int argc, char *argv[])
   }
 
   assert(input_opt.size());
-  ImgReaderOgr imgReader;
+  ImgReaderOgr inputReader;
   try{
-    imgReader.open(input_opt[0]);
+    inputReader.open(input_opt[0]);
   }
   catch(string errorstring){
     cerr << errorstring << endl;
@@ -74,7 +74,6 @@ int main(int argc, char *argv[])
   if(output_opt.size())
     outputFile.open(output_opt[0].c_str(),ios::out);
 
-  ImgReaderOgr inputReader(input_opt[0]);
   inputReader.setFieldSeparator(fs_opt[0]);
 
   //support multiple layers
@@ -90,10 +89,19 @@ int main(int argc, char *argv[])
 	continue;
     if(verbose_opt[0])
       cout << "processing layer " << currentLayername << endl;
-    if(layer_opt.size())
-      cout << " --lname " << currentLayername;
+    // if(layer_opt.size())
+    //   cout << " --lname " << currentLayername << endl;
       
-    if(attribute_opt[0]!="ALL"){
+    if(attribute_opt[0]=="ALL"){
+      attribute_opt.clear();
+      OGRFeatureDefn *poFDefn = readLayer->GetLayerDefn();
+      for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
+	OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
+	std::string fieldname=poFieldDefn->GetNameRef();
+	attribute_opt.push_back(fieldname);
+      }
+    }
+    // if(attribute_opt[0]!="ALL"){
       vector<double> xvector;
       vector<double> yvector;
       if(inputReader.getGeometryType()==wkbPoint)
@@ -201,18 +209,17 @@ int main(int argc, char *argv[])
       }
       if(output_opt.size())
 	outputFile.close();
-    }
-    else{
-      if(output_opt.size()){
-	ofstream outputFile(output_opt[0].c_str(),ios::out);
-	outputFile << imgReader;
-	outputFile.close();
-      }
-      else
-	std::cout << imgReader;
-    }
+    // }
+    // else{
+    //   if(output_opt.size()){
+    // 	ofstream outputFile(output_opt[0].c_str(),ios::out);
+    // 	outputFile << inputReader;
+    // 	outputFile.close();
+    //   }
+    //   else
+    // 	std::cout << inputReader;
+    // }
   }
   inputReader.close();
-  imgReader.close();
 }
 

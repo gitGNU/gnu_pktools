@@ -157,49 +157,51 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
   //An OGRDataSource can potentially have many layers associated with it. The number of layers available can be queried with OGRDataSource::GetLayerCount() and individual layers fetched by index using OGRDataSource::GetLayer(). However, we wil just fetch the layer by name.
   //todo: try to open and catch if failure...
   // ofstream fpoints(filename.c_str(),ios::out);
-  OGRLayer  *poLayer;
-  poLayer = theImageReader.getDataSource()->GetLayer(0);
-  OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
 
-  poLayer->ResetReading();
+  int nlayerRead=theImageReader.getDataSource()->GetLayerCount();
+      
+  for(int ilayer=0;ilayer<nlayerRead;++ilayer){
+    OGRLayer *readLayer=theImageReader.getLayer(ilayer);
+    OGRFeatureDefn *poFDefn = readLayer->GetLayerDefn();
 
-  theOstream << "#";
-  int iField=0;
-  for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
+    theOstream << "#";
+    int iField=0;
+    for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
       std::string fieldname=poFieldDefn->GetNameRef();
       theOstream << fieldname << theImageReader.getFieldSeparator();
-  }
-  theOstream << std::endl;
-
-  poLayer->ResetReading();
-  
-  //start reading features from the layer
-  OGRFeature *poFeature;
-  unsigned long int ifeature=0;
-  while( (poFeature = poLayer->GetNextFeature()) != NULL ){
-    OGRGeometry *poGeometry;
-    poGeometry = poFeature->GetGeometryRef();
-    assert(poGeometry != NULL);
-    double x,y;
-    if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
-      OGRPoint *poPoint = (OGRPoint *) poGeometry;
-      x=poPoint->getX();
-      y=poPoint->getY();
     }
-    std::vector<std::string> vfields(poFDefn->GetFieldCount());
-    std::string featurename;
-    std::vector<std::string>::iterator fit=vfields.begin();
-    for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
-      *(fit++)=poFeature->GetFieldAsString(iField);
-    }
-    theOstream.precision(12);
-    if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint)
-      theOstream << x << theImageReader.getFieldSeparator() << y;
-    for(fit=vfields.begin();fit!=vfields.end();++fit)
-      theOstream << theImageReader.getFieldSeparator() << *fit;
     theOstream << std::endl;
-    ++ifeature;
+
+    readLayer->ResetReading();
+  
+    //start reading features from the layer
+    OGRFeature *poFeature;
+    unsigned long int ifeature=0;
+    while( (poFeature = readLayer->GetNextFeature()) != NULL ){
+      OGRGeometry *poGeometry;
+      poGeometry = poFeature->GetGeometryRef();
+      assert(poGeometry != NULL);
+      double x,y;
+      if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
+	OGRPoint *poPoint = (OGRPoint *) poGeometry;
+	x=poPoint->getX();
+	y=poPoint->getY();
+      }
+      std::vector<std::string> vfields(poFDefn->GetFieldCount());
+      std::string featurename;
+      std::vector<std::string>::iterator fit=vfields.begin();
+      for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
+	*(fit++)=poFeature->GetFieldAsString(iField);
+      }
+      theOstream.precision(12);
+      if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint)
+	theOstream << x << theImageReader.getFieldSeparator() << y;
+      for(fit=vfields.begin();fit!=vfields.end();++fit)
+	theOstream << theImageReader.getFieldSeparator() << *fit;
+      theOstream << std::endl;
+      ++ifeature;
+    }
   }
   return(theOstream);
 }
