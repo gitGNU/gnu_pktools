@@ -37,6 +37,7 @@ from pktools.pkextract_grid import pkextract_grid
 from pktools.pkextract_random import pkextract_random
 #Supervised classification utilities
 from pktools.pksvm import pksvm
+from pktools.pkdiff_accuracy import pkdiff_accuracy
 #LiDAR utilities
 from pktools.pklas2img import pklas2img
 from pktools.pkfilterdem import pkfilterdem
@@ -61,7 +62,7 @@ class pktoolsAlgorithmProvider(AlgorithmProvider):
         self.activate = True
         # load algorithms
 #        self.alglist = [pkinfo()]
-        self.alglist = [pkreclass(),pkcrop(),pkcomposite(),pkgetmask(),pksetmask(),pkextract(),pkextract_grid(),pkextract_random(),pksvm(),pklas2img(),pkfilterdem(),pkfilter_spectral(),pkfilter_spatial()]
+        self.alglist = [pkreclass(),pkcrop(),pkcomposite(),pkgetmask(),pksetmask(),pkextract(),pkextract_grid(),pkextract_random(),pksvm(),pkdiff_accuracy(),pklas2img(),pkfilterdem(),pkfilter_spectral(),pkfilter_spatial()]
         # pktools = [pkinfo()]
         # for alg in pktools:
         #     alg.group = "pktools"
