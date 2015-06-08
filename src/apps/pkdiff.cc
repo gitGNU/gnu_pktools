@@ -39,6 +39,9 @@ int main(int argc, char *argv[])
   Optionpk<bool> rmse_opt("rmse", "rmse", "Report root mean squared error", false);
   Optionpk<bool> regression_opt("reg", "reg", "Report linear regression (Input = c0+c1*Reference)", false);
   Optionpk<bool> confusion_opt("cm", "confusion", "Create confusion matrix (to std out)", false);
+  Optionpk<string> cmformat_opt("cmf","cmf","Format for confusion matrix (ascii or latex)","ascii");
+  Optionpk<string> cmoutput_opt("cmo","cmo","Output file for confusion matrix");
+  Optionpk<bool> se95_opt("se95","se95","Report standard error for 95 confidence interval",false);
   Optionpk<string> labelref_opt("lr", "lref", "Attribute name of the reference label (for vector reference datasets only)", "label");
   Optionpk<string> classname_opt("c", "class", "List of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in classname option)."); 
@@ -82,6 +85,9 @@ int main(int argc, char *argv[])
     output_opt.retrieveOption(argc,argv);
     ogrformat_opt.retrieveOption(argc,argv);
     labelclass_opt.retrieveOption(argc,argv);
+    cmformat_opt.retrieveOption(argc,argv);
+    cmoutput_opt.retrieveOption(argc,argv);
+    se95_opt.retrieveOption(argc,argv);
     boundary_opt.retrieveOption(argc,argv);
     homogeneous_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
@@ -134,7 +140,7 @@ int main(int argc, char *argv[])
       mask_opt.push_back(mask_opt[0]);
   vector<short> inputRange;
   vector<short> referenceRange;
-  ConfusionMatrix cm;
+  confusionmatrix::ConfusionMatrix cm;
   int nclass=0;
   map<string,short> classValueMap;
   vector<std::string> nameVector(255);//the inverse of the classValueMap
@@ -856,23 +862,29 @@ int main(int argc, char *argv[])
   }//raster dataset
 
   if(confusion_opt[0]){
-    
-    // assert(cm.nReference());
-    cout << cm << endl;
-    cout << "class #samples userAcc prodAcc" << endl;
-    double se95_ua=0;
-    double se95_pa=0;
-    double se95_oa=0;
-    double dua=0;
-    double dpa=0;
-    double doa=0;
-    for(int iclass=0;iclass<cm.nClasses();++iclass){
-      dua=cm.ua_pct(classNames[iclass],&se95_ua);
-      dpa=cm.pa_pct(classNames[iclass],&se95_pa);
-      cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+    cm.setFormat(cmformat_opt[0]);
+    cm.reportSE95(se95_opt[0]);
+    ofstream outputFile;
+    if(cmoutput_opt.size()){
+      outputFile.open(cmoutput_opt[0].c_str(),ios::out);
+      outputFile << cm << endl;
     }
-    doa=cm.oa(&se95_oa);
-    cout << "Kappa: " << cm.kappa() << endl;
-    cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << endl;
+    else
+      cout << cm << endl;
+    // cout << "class #samples userAcc prodAcc" << endl;
+    // double se95_ua=0;
+    // double se95_pa=0;
+    // double se95_oa=0;
+    // double dua=0;
+    // double dpa=0;
+    // double doa=0;
+    // for(int iclass=0;iclass<cm.nClasses();++iclass){
+    //   dua=cm.ua_pct(classNames[iclass],&se95_ua);
+    //   dpa=cm.pa_pct(classNames[iclass],&se95_pa);
+    //   cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+    // }
+    // doa=cm.oa(&se95_oa);
+    // cout << "Kappa: " << cm.kappa() << endl;
+    // cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << endl;
   }
 }

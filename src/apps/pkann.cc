@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
   Optionpk<double> priors_opt("prior", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
   Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class","",2); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",0);
+  Optionpk<string> cmformat_opt("cmf","cmf","Format for confusion matrix (ascii or latex)","ascii");
   Optionpk<unsigned int> nneuron_opt("nn", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
   Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
   Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
@@ -118,6 +119,7 @@ int main(int argc, char *argv[])
     priors_opt.retrieveOption(argc,argv);
     priorimg_opt.retrieveOption(argc,argv);
     cv_opt.retrieveOption(argc,argv);
+    cmformat_opt.retrieveOption(argc,argv);
     nneuron_opt.retrieveOption(argc,argv);
     connection_opt.retrieveOption(argc,argv);
     weights_opt.retrieveOption(argc,argv);
@@ -227,7 +229,7 @@ int main(int argc, char *argv[])
       classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
   }
   //----------------------------------- Training -------------------------------
-  ConfusionMatrix cm;
+  confusionmatrix::ConfusionMatrix cm;
   vector< vector<double> > offset(nbag);
   vector< vector<double> > scale(nbag);
   map<string,Vector2d<float> > trainingMap;
@@ -582,6 +584,8 @@ int main(int argc, char *argv[])
   }//for ibag
   if(cv_opt[0]>1){
     assert(cm.nReference());
+    cm.setFormat(cmformat_opt[0]);
+    cm.reportSE95(false);
     std::cout << cm << std::endl;
     cout << "class #samples userAcc prodAcc" << endl;
     double se95_ua=0;
@@ -1161,21 +1165,21 @@ int main(int argc, char *argv[])
     }
     if(cm.nReference()){
       std::cout << cm << std::endl;
-      cout << "class #samples userAcc prodAcc" << endl;
-      double se95_ua=0;
-      double se95_pa=0;
-      double se95_oa=0;
-      double dua=0;
-      double dpa=0;
-      double doa=0;
-      for(short iclass=0;iclass<cm.nClasses();++iclass){
-	dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
-	dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
-	cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
-      }
-      std::cout << "Kappa: " << cm.kappa() << std::endl;
-      doa=cm.oa_pct(&se95_oa);
-      std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
+      // cout << "class #samples userAcc prodAcc" << endl;
+      // double se95_ua=0;
+      // double se95_pa=0;
+      // double se95_oa=0;
+      // double dua=0;
+      // double dpa=0;
+      // double doa=0;
+      // for(short iclass=0;iclass<cm.nClasses();++iclass){
+      // 	dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
+      // 	dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
+      // 	cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+      // }
+      // std::cout << "Kappa: " << cm.kappa() << std::endl;
+      // doa=cm.oa_pct(&se95_oa);
+      // std::cout << "Overall Accuracy: " << doa << " (" << se95_oa << ")"  << std::endl;
     }
   }
   try{

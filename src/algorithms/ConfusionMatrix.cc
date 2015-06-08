@@ -21,6 +21,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <numeric>
 
+using namespace confusionmatrix;
+
 bool compareClass(const std::string& string1, const std::string& string2){
   int int1=string2type<int>(string1);
   int int2=string2type<int>(string2);
@@ -28,7 +30,7 @@ bool compareClass(const std::string& string1, const std::string& string2){
 };
 
 ConfusionMatrix::ConfusionMatrix()
-  : m_classes(),m_results()
+  : m_classes(),m_results(),m_se95(true),m_format(ASCII)
 {
 }
 

@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
   Optionpk<double> priors_opt("prior", "prior", "Prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation)", 0.0); 
   Optionpk<string> priorimg_opt("pim", "priorimg", "Prior probability image (multi-band img with band for each class","",2); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "N-fold cross validation mode",0);
+  Optionpk<string> cmformat_opt("cmf","cmf","Format for confusion matrix (ascii or latex)","ascii");
   Optionpk<std::string> svm_type_opt("svmt", "svmtype", "Type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR)","C_SVC");
   Optionpk<std::string> kernel_type_opt("kt", "kerneltype", "Type of kernel function (linear,polynomial,radial,sigmoid) ","radial");
   Optionpk<unsigned short> kernel_degree_opt("kd", "kd", "Degree in kernel function",3);
@@ -132,6 +133,7 @@ int main(int argc, char *argv[])
     input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     cv_opt.retrieveOption(argc,argv);
+    cmformat_opt.retrieveOption(argc,argv);
     tlayer_opt.retrieveOption(argc,argv);
     classname_opt.retrieveOption(argc,argv);
     classvalue_opt.retrieveOption(argc,argv);
@@ -277,7 +279,7 @@ int main(int argc, char *argv[])
   }
 
   //----------------------------------- Training -------------------------------
-  ConfusionMatrix cm;
+  confusionmatrix::ConfusionMatrix cm;
   vector< vector<double> > offset(nbag);
   vector< vector<double> > scale(nbag);
   map<string,Vector2d<float> > trainingMap;
@@ -588,22 +590,24 @@ int main(int argc, char *argv[])
   }//for ibag
   if(cv_opt[0]>1){
     assert(cm.nReference());
+    cm.setFormat(cmformat_opt[0]);
+    cm.reportSE95(false);
     std::cout << cm << std::endl;
-    cout << "class #samples userAcc prodAcc" << endl;
-    double se95_ua=0;
-    double se95_pa=0;
-    double se95_oa=0;
-    double dua=0;
-    double dpa=0;
-    double doa=0;
-    for(short iclass=0;iclass<cm.nClasses();++iclass){
-      dua=cm.ua(cm.getClass(iclass),&se95_ua);
-      dpa=cm.pa(cm.getClass(iclass),&se95_pa);
-      cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
-    }
-    std::cout << "Kappa: " << cm.kappa() << std::endl;
-    doa=cm.oa(&se95_oa);
-    std::cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << std::endl;
+    // cout << "class #samples userAcc prodAcc" << endl;
+    // double se95_ua=0;
+    // double se95_pa=0;
+    // double se95_oa=0;
+    // double dua=0;
+    // double dpa=0;
+    // double doa=0;
+    // for(short iclass=0;iclass<cm.nClasses();++iclass){
+    //   dua=cm.ua(cm.getClass(iclass),&se95_ua);
+    //   dpa=cm.pa(cm.getClass(iclass),&se95_pa);
+    //   cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
+    // }
+    // std::cout << "Kappa: " << cm.kappa() << std::endl;
+    // doa=cm.oa(&se95_oa);
+    // std::cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << std::endl;
   }
 
   //--------------------------------- end of training -----------------------------------

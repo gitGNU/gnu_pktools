@@ -49,7 +49,7 @@ public:
   virtual double getCost(const std::vector<Vector2d<float> > &trainingFeatures)=0;
   
 protected:
-  ConfusionMatrix m_cm;
+  confusionmatrix::ConfusionMatrix m_cm;
   std::map<std::string,short> m_classValueMap;
   std::vector<std::string> m_nameVector;
   std::vector<unsigned int> m_nctraining;
