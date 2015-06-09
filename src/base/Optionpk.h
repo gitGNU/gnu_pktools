@@ -116,20 +116,30 @@ public:
   ~Optionpk();
   ///set help information
   void setHelp(const std::string& helpInfo){m_help=helpInfo;};
+  ///hide option from short help -h (1) or make invisible to short and long help --help (2)
   void setHide(short hide){m_hide=hide;};
+  ///read option from command line (use for all options!)
   bool retrieveOption(int argc, char ** argv);
+  ///print values for this option
   template<class T1> friend std::ostream& operator<<(std::ostream & os, const Optionpk<T1>& theOption);
-
+  ///set all attributes of the option, except default and hide 
   void setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo);
+  ///set all attributes of the option
   void setAll(const std::string& shortName, const std::string& longName, const std::string& helpInfo,const T& defaultValue, short hide);
+  ///set a default value for the option
   void setDefault(const T& defaultValue);
   std::string getDefaultValue() const {return m_defaultValue;};
+  ///set the short name to be used as -shortName
   void setShortName(const std::string& shortName);
+  ///set the long name to be used as --longName
   void setLongName(const std::string& longName);
+  ///get the short name to be used as -shortName
   std::string getShortName() const {return m_shortName;};
+  ///get the long name to be used as --longName
   std::string getLongName() const {return m_longName;};
-
+  ///get help info stored in m_help
   std::string getHelp() const {return m_help;};
+  ///get license info
   static std::string getGPLv3License(){
     return static_cast<std::string>("\n\
     This program is free software: you can redistribute it and/or modify\n\
@@ -145,22 +155,34 @@ public:
     You should have received a copy of the GNU General Public License\n\
     along with this program.  If not, see <http://www.gnu.org/licenses/>.\n");};
 
-  //this function only makes sense for T=std::string (will need a specialization)
+  ///find substring in options of type string (e.g., -co INTERLEAVE=BAND)
+  ///this template function only makes sense for T=std::string (implemented via a specialization)
   typename std::vector<T>::const_iterator findSubstring(const T& argument) const {std::string errorString="Error: findSubstring only defined for options of type std::string"; throw(errorString);};
 
  private:
-  bool hasArgument() const {return m_hasArgument;};//all options except bools should have arguments
+  ///all options except bools should have arguments
+  bool hasArgument() const {return m_hasArgument;};
+  ///true unless option was defined with \0 as short option
   bool hasShortOption() const {return m_shortName.compare("\0");};
+  ///true unless option was defined with \0 as long option
   bool hasLongOption() const {return m_longName.compare("\0");};
+  ///report the use of the option (called when utility is run with -h or --help)
   std::string usage() const;
+  ///used to generate help with in Doxygen style (used for web documentation)
   std::string usageDoxygen() const;
-
+  ///short name to be used as -shortName
   std::string m_shortName;
+  ///long name to be used as --longName
   std::string m_longName;
+  ///string with help information
   std::string m_help;
+  ///all options except bools should have arguments
   bool m_hasArgument;
+  ///default value of the option
   T m_defaultValue;
+  ///has the default been defined
   bool m_hasDefault;
+  ///0: always show; 1: only show with --help; 2: invisible option
   short m_hide;
 };
 

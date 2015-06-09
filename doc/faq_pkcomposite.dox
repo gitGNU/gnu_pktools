@@ -1,11 +1,12 @@
 \section faq_pkcomposite Frequently asked questions about pkcomposite
 
- Q1. First question
- A1. For individual invalid value(s) in input image, use -srcnodata
+ - How to use different nodata values in input images?
 
- Usage: use unique value for each invalid bands set in -vb (--bndnodata) or use a single value that will be applied to all invalid bands
+   For individual invalid value(s) in input image, use -srcnodata
 
- Example:
+   Usage: use unique value for each invalid bands set in -vb (--bndnodata) or use a single value that will be applied to all invalid bands
+
+   Example:
 
 \code
 pkcomposite -i input1.tif -i input2.tif -o output.tif -srcnodata 0 -srcnodata 255 -bndnodat 0 -bndnodata 1
@@ -17,13 +18,16 @@ pkcomposite -i input1.tif -i input2.tif -o output.tif -srcnodata 0 -bndnodata 0 
 \endcode
 will consider 0 in both bands 0 and 1 of input images as no value
 
-For range(s) of invalid values in input images: use -min (--min) and -max (--max) Usage: use unique range set for each invalid bands set in -bndnodata
+ - How to use a range of nodata values in input images?
 
-Example: 
+   For range(s) of invalid values in input images: use -min (--min) and -max (--max) Usage: use unique range set for each invalid bands set in -bndnodata
+
+   Example: 
 \code
 pkcomposite -i input1.tif -i input2.tif -o output.tif -min 0 -max 200 -min 0 -max 2 -bndnodata 0 -bndnodata 1
 \endcode
 will consider all negative values in band 0 and 1 of input images as invalid. Values larger or equal to 200 in band 0 will be invalid, as well as values larger or equal to 2 in band 1
 
- Q2. If I take the mean value as composit rule for multi-band input images, will the output image contain the mean value of overlapping images in each band?
- A2. Yes
+ - If I take the mean value as composit rule for multi-band input images, will the output image contain the mean value of overlapping images in each band?
+
+   Yes

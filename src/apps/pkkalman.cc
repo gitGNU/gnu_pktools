@@ -288,15 +288,27 @@ int main(int argc,char **argv) {
     obsindex=0;
     //initialization
     string output;
-    if(outputfw_opt.size()==model_opt.size())
+    //test
+    cout << "debug-1" << endl;
+    if(outputfw_opt.size()==model_opt.size()){
+      //test
+      cout << "debug0" << endl;
       output=outputfw_opt[0];
+      //test
+      cout << "debug1" << endl;
+    }
     else{
+      //test
+      cout << "debug2" << endl;
       ostringstream outputstream;
       outputstream << outputfw_opt[0] << "_" << tmodel_opt[0] << ".tif";
       output=outputstream.str();
+      //test
+      cout << "debug3" << endl;
     }
     if(verbose_opt[0])
       cout << "Opening image " << output << " for writing " << endl;
+
     imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
     imgWriterEst.setProjectionProj4(projection_opt[0]);
     imgWriterEst.setGeoTransform(geotransform);

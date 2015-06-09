@@ -28,6 +28,86 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
 
+/******************************************************************************/
+/*! \page pkcomposite pkcomposite
+
+ program to mosaic and composite geo-referenced images
+## SYNOPSIS
+
+<code>
+  Usage: pkcomposite -i input [-i input]* -o output
+</code>
+
+<code>
+
+  Options: [-b band]* [-dx xres] [-dy yres] [-e vector] [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-cr rule] [-cb band] [-srcnodata value] [-bndnodata band] [-min value] [-max value] [-dstnodata value] [-r resampling_method] [-ot {Byte / Int16 / UInt16 / UInt32 / Int32 / Float32 / Float64 / CInt16 / CInt32 / CFloat32 / CFloat64}] [-of format] [-co NAME=VALUE]* [-a_srs epsg:number]
+
+  Advanced options:
+       [-file] [-w weight]* [-c class]* [-ct colortable] [-d description]
+</code>
+
+\section pkcomposite_description Description
+
+The utility pkcomposite can be used to \em mosaic and \em composite multiple (georeferenced) raster datasets. A mosaic can merge images with different geographical extents into a single larger image. Compositing resolves the overlapping pixels according to some rule (e.g, the median of all overlapping pixels). This utility is complementary to GDAL, which currently does not support a composite step. Input datasets can have different bounding boxes and spatial resolutionsresolution.
+
+\anchor pkcomposite_rules 
+composite rule | composite output
+------------- | -------------
+overwrite | Overwrite overlapping pixels: the latter input image on the command line overrules the previous image
+maxndvi | Create a maximum NDVI (normalized difference vegetation index) composite from multi-band input images. Use option -cb  to set the indexes of the red and near infrared bands respectively (e.g., -cb 0 -cb 1)
+maxband | Select the pixel with a maximum value in the band specified by option -cb
+minband | Select the pixel with a minimum value in the band specified by option -cb
+mean | Calculate the mean (average) of overlapping pixels
+stdev | Calculate the standard deviation of overlapping pixels
+median | Calculate the median of overlapping pixels
+mode | Select the mode of overlapping pixels (maximum voting): use for Byte images only
+sum | Calculate the arithmetic sum of overlapping pixels
+maxallbands | For each individual band, assign the maximum value found in all overlapping pixels. Unlike maxband, output band values cannot be attributed to a single (date) pixel in the input time series
+minallbands | For each individual band, assign the minimum value found in all overlapping pixels. Unlike minband, output band values cannot be attributed to a single (date) pixel in the input time series
+
+\section pkcomposite_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input image file(s). If input contains multiple images, a multi-band output is created | 
+ | o      | output               | std::string |       |Output image file | 
+ | b      | band                 | int  |       |band index(es) to crop (leave empty if all bands must be retained) | 
+ | dx     | dx                   | double |       |Output resolution in x (in meter) (empty: keep original resolution) | 
+ | dy     | dy                   | double |       |Output resolution in y (in meter) (empty: keep original resolution) | 
+ | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
+ | ulx    | ulx                  | double | 0     |Upper left x value bounding box | 
+ | uly    | uly                  | double | 0     |Upper left y value bounding box | 
+ | lrx    | lrx                  | double | 0     |Lower right x value bounding box | 
+ | lry    | lry                  | double | 0     |Lower right y value bounding box | 
+ | cr     | crule                | std::string | overwrite |Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev | 
+ | cb     | cband                | int  | 0     |band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively | 
+ | srcnodata | srcnodata            | double |       |invalid value(s) for input raster dataset | 
+ | bndnodata | bndnodata            | int  | 0     |Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options) | 
+ | min    | min                  | double |       |flag values smaller or equal to this value as invalid. | 
+ | max    | max                  | double |       |flag values larger or equal to this value as invalid. | 
+ | dstnodata | dstnodata            | double | 0     |nodata value to put in output raster dataset if not valid or out of bounds. | 
+ | r      | resampling-method    | std::string | near  |Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation). | 
+ | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | a_srs  | a_srs                | std::string |       |Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid | 
+ | file   | file                 | short | 0     |write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite | 
+ | w      | weight               | short | 1     |Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights. | 
+ | c      | class                | short | 0     |classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image. | 
+ | ct     | ct                   | std::string |       |color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | d      | description          | std::string |       |Set image description | 
+
+Examples
+========
+Some examples how to use pkcomposite can be found \ref examples_pkcomposite "here"
+
+FAQ
+===
+Frequently asked questions on pkcomposite can be found \ref faq_pkcomposite "here
+**/
+
 namespace crule{
   enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
 }
@@ -70,7 +150,6 @@ int main(int argc, char *argv[])
   class_opt.setHide(1);
   colorTable_opt.setHide(1);
   description_opt.setHide(1);
-  verbose_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
