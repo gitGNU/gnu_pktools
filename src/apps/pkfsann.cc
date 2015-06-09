@@ -35,6 +35,62 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <config.h>
 #endif
 
+/******************************************************************************/
+/*! \page pkfsann pkfsann
+ feature selection for artificial neural network classifier pkann
+## SYNOPSIS
+
+<code>
+  Usage: pkfsann -t training -n number
+</code>
+
+<code>
+
+  Options:
+
+  Advanced options:
+</code>
+
+\section pkfsann_description Description
+
+Classification problems dealing with high dimensional input data can be challenging due to the Hughes phenomenon. Hyperspectral data, for instance, can have hundreds of spectral bands and require special attention when being classified. In particular when limited training data are available, the classification of such data can be problematic without reducing the dimension.
+
+The utility pkfsann implements a number of feature selection techniques, among which a sequential floating forward search (SFFS). Also consider the SVM classifier implemented in pksvm, which has been shown to be more robust to this type of problem than others.
+\section pkfsann_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input test set (leave empty to perform a cross validation based on training only) | 
+ | t      | training             | std::string |       |training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file) | 
+ | n      | nf                   | unsigned short | 0     |number of features to select (0 to select optimal number, see also ecost option) | 
+ | tln    | tln                  | std::string |       |training layer name(s) | 
+ | label  | label                | std::string | label |identifier for class label in training vector file. | 
+ |        | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
+ | random | random               | bool | true  |in case of balance, randomize input data | 
+ | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account | 
+ | b      | band                 | short |       |band index (starting from 0, either use band option or use start to end) | 
+ | s      | start                | double | 0     |start band sequence number | 
+ | e      | end                  | double | 0     |end band sequence number (set to 0 to include all bands) | 
+ |        | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
+ |        | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ | a      | aggreg               | unsigned short | 0     |how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule). | 
+ | sm     | sm                   | std::string | sffs  |feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search) | 
+ | ecost  | ecost                | float | 0.001 |epsilon for stopping criterion in cost function to determine optimal number of features | 
+ | cv     | cv                   | unsigned short | 2     |n-fold cross validation mode | 
+ | c      | class                | std::string |       |list of class names. | 
+ | r      | reclass              | short |       |list of class values (use same order as in classname opt. | 
+ | n      | nneuron              | unsigned int | 5     |number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons) | 
+ |        | connection           | float | 1     |connection reate (default: 1.0 for a fully connected network) | 
+ | w      | weights              | float | 0     |weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer) | 
+ | l      | learning             | float | 0.7   |learning rate (default: 0.7) | 
+ |        | maxit                | unsigned int | 500   |number of maximum iterations (epoch) (default: 500) | 
+
+Usage: pkfsann -t training -n number
+
+
+**/
+
 using namespace std;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))

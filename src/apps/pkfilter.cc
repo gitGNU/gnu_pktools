@@ -34,6 +34,67 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 //test
 #include "algorithms/StatFactory.h"
 
+/******************************************************************************/
+/*! \page pkfilter pkfilter
+ program to filter raster images
+## SYNOPSIS
+
+<code>
+  Usage: pkfilter -i input -o ouptut [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]
+</code>
+
+<code>
+  Options: [-dx value [-dy value] | -dz value] [-nodata value]
+
+  Advanced options: check table
+</code>
+
+This utility implements spatial and spectral filtering for raster data. In the spatial domain (X, Y), the filter typically involves a rectangular convolution kernel (moving window). To avoid image shifting, the size of the window should be odd (3, 5, 7, ...). You can set the window sizes in X and Y directions separately with the options -dx and -dy. A circular kernel (disc) is applied if option -circ is set. An overview of the supported filters (option -f|--filter) is given below. You can create customized filters by defining your own filter taps (multiplicative elements of the filter kernel) via an ascii file (option -tap). In the spectral/temporal domain (Z) you can filter multi-band raster inputs. The kernel filter size can be set with the option -dz (use odd values only).
+\section pkfilter_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input image file | 
+ | o      | output               | std::string |       |Output image file | 
+ | f      | filter               | std::string |       |filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile) | 
+ | srf    | srf                  | std::string |       |list of ASCII files containing spectral response functions (two columns: wavelength response) | 
+ | fwhm   | fwhm                 | double |       |list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...) | 
+ | dx     | dx                   | double | 3     |filter kernel size in x, better use odd value to avoid image shift | 
+ | dy     | dy                   | double | 3     |filter kernel size in y, better use odd value to avoid image shift | 
+ | dz     | dz                   | int  |       |filter kernel size in z (spectral/temporal dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain | 
+ | nodata | nodata               | double |       |nodata value(s) (used for smoothnodata filter) | 
+ | r      | resampling-method    | std::string | near  |Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation). | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | wt     | wavelet              | std::string | daubechies |wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered | 
+ | wf     | family               | int  | 4     |wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html) | 
+ | nl     | nl                   | int  | 2     |Number of leftward (past) data points used in Savitzky-Golay filter) | 
+ | nr     | nr                   | int  | 2     |Number of rightward (future) data points used in Savitzky-Golay filter) | 
+ | ld     | ld                   | int  | 0     |order of the derivative desired in Savitzky-Golay filter (e.g., ld=0 for smoothed function) | 
+ | m      | m                    | int  | 2     |order of the smoothing polynomial in Savitzky-Golay filter, also equal to the highest conserved moment; usual values are m = 2 or m = 4) | 
+ | class  | class                | short |       |class value(s) to use for density, erosion, dilation, openening and closing, thresholding | 
+ | t      | threshold            | double | 0     |threshold value(s) to use for threshold filter (one for each class), or threshold to cut for dwt_cut (use 0 to keep all) or dwt_cut_from, or sigma for shift | 
+ | tap    | tap                  | std::string |       |text file containing taps used for spatial filtering (from ul to lr). Use dimX and dimY to specify tap dimensions in x and y. Leave empty for not using taps | 
+ | tapz   | tapz                 | double |       |taps used for spectral filtering | 
+ | pad    | pad                  | std::string | symmetric |Padding method for filtering (how to handle edge effects). Choose between: symmetric, replicate, circular, zero (pad with 0). | 
+ | win    | wavelengthIn         | double |       |list of wavelengths in input spectrum (-win band1 -win band2 ...) | 
+ | wout   | wavelengthOut        | double |       |list of wavelengths in output spectrum (-wout band1 -wout band2 ...) | 
+ | d      | down                 | short | 1     |down sampling factor. Use value 1 for no downsampling). Use value n>1 for downsampling (aggregation) | 
+ | beta   | beta                 | std::string |       |ASCII file with beta for each class transition in Markov Random Field | 
+ | interp | interp               | std::string | akima |type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html) | 
+ | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table | 
+ | circ   | circular             | bool | false |circular disc kernel for dilation and erosion | 
+
+Usage: pkfilter -i input -o ouptut [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]
+
+
+Examples
+========
+Some examples how to use pkfilter can be found \ref examples_pkfilter "here"
+**/
+
 using namespace std;
 /*------------------
   Main procedure

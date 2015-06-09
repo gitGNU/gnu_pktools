@@ -33,6 +33,51 @@ extern "C" {
 #include <gsl/gsl_sort.h>
 }
 
+/******************************************************************************/
+/*! \page pkfilterascii pkfilterascii
+ program to filter data in an ASCII file
+## SYNOPSIS
+
+<code>
+  Usage: pkfilterascii -i input.txt [-ic column]*
+</code>
+
+<code>
+  
+  Options: [-f filter] [-dz value] [-t]
+
+  Advanced options: [-tapz value]* [-fwhm value]* [-srf filename]* [-win col] [-wout value]* [-interp type] [-wt type] [-wf family] [-cut threshold] 
+
+</code>
+
+\section pkfilterascii_description Description
+
+The utility pkfilterascii filters the columns defined by the option -ic. A varietey of filters can be selected from with the option -f. The kernel size is defined with the option -dz. Alternatively, you can define your own filter tap values (use the option -tapz for each tap). In case of spectral filtering, define the full width half max values (-fwhm value) or spectral response functions in ASCII files (-srf filename).\section pkfilterascii_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input ASCII file | 
+ | o      | output               | std::string |       |Output ASCII file | 
+ | ic     | inputCols            | int  |       |input columns (e.g., for three dimensional input data in first three columns use: -ic 0 -ic 1 -ic 2 | 
+ | f      | filter               | std::string |       |filter function (to be implemented: dwt, dwti,dwt_cut) | 
+ | dz     | dz                   | int  |       |filter kernel size in z (band or spectral dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain | 
+ | tapz   | tapz                 | double |       |taps used for spectral filtering | 
+ | fwhm   | fwhm                 | double |       |list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...) | 
+ | srf    | srf                  | std::string |       |list of ASCII files containing spectral response functions (two columns: wavelength response) | 
+ | win    | wavelengthIn         | int  |       |column number of input ASCII file containing wavelengths | 
+ | wout   | wavelengthOut        | double |       |list of wavelengths in output spectrum (-wout band1 -wout band2 ...) | 
+ | interp | interp               | std::string | akima |type of interpolation for spectral filtering (see http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html) | 
+ | t      | transpose            | bool | false |transpose output with samples in rows and wavelengths in cols | 
+ | wt     | wavelet              | std::string | daubechies |wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered | 
+ | wf     | family               | int  | 4     |wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html) | 
+ | cut    | cut                  | double | 0     |threshold to cut dwt coefficients. Use 0 to keep all. | 
+
+Usage: pkfilterascii -i input.txt [-ic column]*
+
+
+**/
+
 using namespace std;
 
 /*------------------

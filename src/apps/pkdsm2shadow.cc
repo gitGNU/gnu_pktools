@@ -30,6 +30,52 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
+/******************************************************************************/
+/*! \page pkdsm2shadow pkdsm2shadow
+ program to calculate sun shadow based on digital surface model and sun angles
+## SYNOPSIS
+
+<code>
+  Usage: pkdsm2shadow -i input.txt -o output [-sza angle] [-saa angle]
+</code>
+
+<code>
+
+  
+  Options: [-f value] [-ot type] [-of GDALformat] [-ct filename] [-co option]* 
+
+  Advanced options: [--scale value] [--offset value]
+</code>
+
+\section pkdsm2shadow_description Description
+
+Utility to create a binary shadow mask from a digital surface model, based on Sun zenith (-sza) and azimuth angles (-saa).
+
+\section pkdsm2shadow_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input image file | 
+ | o      | output               | std::string |       |Output image file | 
+ | sza    | sza                  | double |       |Sun zenith angle. | 
+ | saa    | saa                  | double |       |Sun azimuth angle (N=0 E=90 S=180 W=270). | 
+ | f      | flag                 | int  | 0     |Flag to put in image if pixel shadow | 
+ | s      | scale                | double |       |scale used for input dsm: height=scale*input+offset | 
+ | off    | offset               | double |       |offset used for input dsm: height=scale*input+offset | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+
+Usage: pkdsm2shadow -i input.txt -o output [-sza angle] [-saa angle]
+
+
+Examples
+========
+Some examples how to use pkdsm2shadow can be found \ref examples_pkdsm2shadow "here"
+**/
+
 using namespace std;
 
 /*------------------

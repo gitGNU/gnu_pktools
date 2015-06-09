@@ -29,6 +29,45 @@ extern "C" {
 #include "gdal_alg.h"
 #include "ogr_api.h"
 }
+/******************************************************************************/
+/*! \page pksieve pksieve
+ program to sieve filter raster image
+## SYNOPSIS
+
+<code>
+  Usage: pksieve -i input [-s size] -o output
+</code>
+
+<code>
+  
+  Options: [-c 4|8] [-b band] [-m mask] [-ot type] [-of format] [-co option]* [-ct table] 
+
+</code>
+
+\section pksieve_description Description
+
+The utility pksieve filters small objects (maximum size defined with the option -s) in a raster by replacing them to the largest neighbor object. In this context, objects are defined as pixels of the same value that are also connected. The connection can be defined in four directions (N-S and W-E: set option -c 4) or eight directions (N-S, W-E and diagonals NW-SE, NE-SW: set option -c 8).\section pksieve_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input image file | 
+ | s      | size                 | int  | 0     |raster polygons with sizes smaller than this will be merged into their largest neighbour. No sieve is performed if size = 0 | 
+ | o      | output               | std::string |       |Output image file | 
+ | c      | connect              | int  | 8     |the connectedness: 4 directions or 8 directions | 
+ | b      | band                 | int  | 0     |the band to be used from input file | 
+ | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (zero is invalid, non-zero is valid). | 
+ | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+
+Usage: pksieve -i input [-s size] -o output
+
+
+Examples
+========
+Some examples how to use pksieve can be found \ref examples_pksieve "here"
+**/
 
 using namespace std;
 

@@ -24,6 +24,53 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "algorithms/StatFactory.h"
+/******************************************************************************/
+/*! \page pkstatogr pkstatogr
+ program to calculate basic statistics from vector file
+## SYNOPSIS
+
+<code>
+  Usage: pkstatogr -i input [-n attribute]*
+</code>
+
+<code>
+
+  Options: [-ln layer]* [-n attribute]* [srcnodata]* [src_min] [src_max] [-s] [-mm] [-min] [-max] [-mean] [-median] [-stdev] [-hist] [-nbin] [-rel] [-kde]
+</code>
+
+\section pkstatogr_description Description
+
+The utility pkstatogr calculates basic statistics on attributes of a vector file. Examples of the basic statistics include: minimum, maximum, median, mean and standard deviation. Histograms (in percentage or absolute values) can also be calculated. The attribute of interest can be selected using the option -n|--fname. Values defined by the -nodata option, or not withing the limits set by the options -src_min and -src_max are ignored for the statistics.
+\section pkstatogr_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input OGR vector file | 
+ | n      | fname                | std::string |       |Fields on which to calculate statistics | 
+ | ln     | lname                | std::string |       |Layer name(s) in sample (leave empty to select all) | 
+ | nodata | nodata               | double |       |Set nodata value(s) | 
+ | src_min | src_min              | double |       |Set minimum value for histogram | 
+ | src_max | src_max              | double |       |Set maximum value for histogram | 
+ | s      | size                 | bool | false |Sample size (number of points) | 
+ | mm     | minmax               | bool | false |Calculate minimum and maximum value | 
+ | min    | min                  | bool | false |Calculate minimum value | 
+ | max    | max                  | bool | false |Calculate maximum value | 
+ | mean   | mean                 | bool | false |Calculate mean value | 
+ | median | median               | bool | false |Calculate median value | 
+ | stdev  | stdev                | bool | false |Calculate standard deviation | 
+ | hist   | hist                 | bool | false |Calculate histogram | 
+ | nbin   | nbin                 | unsigned int |       |Number of bins | 
+ | rel    | relative             | bool | false |Use percentiles for histogram to calculate histogram | 
+ | kde    | kde                  | bool | false |Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb | 
+
+Usage: pkstatogr -i input [-n attribute]*
+
+
+Examples
+========
+Some examples how to use pkstatogr can be found \ref examples_pkstatogr "here"
+**/
 
 using namespace std;
 

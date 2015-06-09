@@ -31,6 +31,56 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <config.h>
 #endif
 
+/******************************************************************************/
+/*! \page pkdumpimg pkdumpimg
+ program to dump image content to ascii or std out
+## SYNOPSIS
+
+<code>
+  Usage: pkdumpimg -i input.txt [-o output]
+</code>
+
+<code>
+
+  
+  Options: [-of matrix | line] [-b band] [-e vector | -ulx value -uly value -lrx value -lry value]
+
+  Advanced options: [-dx value -dy value] [-r resampling] -srcnodata value -dstnodata value
+
+</code>
+
+\section pkdumpimg_description Description
+
+The utility pkdumpimg dumps the content of a raster dataset to (standard) output (screen or filename). The default is to dump the output in matrix format. Use -of line to dump each pixel value on a separate line, preceded by its position (x and y value). You can specify a bounding box to dump with either the extent of an OGR vector dataset or via the options -ulx -uly -lrx and -lry.
+
+\section pkdumpimg_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input image file | 
+ | o      | output               | std::string |       |Output ascii file (Default is empty: use stdout | 
+ | of     | oformat              | std::string | matrix |Output format (matrix form or list (x,y,z) form. Default is matrix form | 
+ | b      | band                 | int  |       |band index to crop | 
+ | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
+ | ulx    | ulx                  | double | 0     |Upper left x value bounding box (in geocoordinates if georef is true) | 
+ | uly    | uly                  | double | 0     |Upper left y value bounding box (in geocoordinates if georef is true) | 
+ | lrx    | lrx                  | double | 0     |Lower left x value bounding box (in geocoordinates if georef is true) | 
+ | lry    | lry                  | double | 0     |Lower left y value bounding box (in geocoordinates if georef is true) | 
+ | dx     | dx                   | double | 0     |Output resolution in x (in meter) (0.0: keep original resolution) | 
+ | dy     | dy                   | double | 0     |Output resolution in y (in meter) (0.0: keep original resolution) | 
+ | r      | resampling-method    | std::string | near  |Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation). | 
+ | srcnodata | srcnodata            | double |       |set no data value(s) for input image | 
+ | dstnodata | dstnodata            | short | 0     |nodata value for output if out of bounds. | 
+
+Usage: pkdumpimg -i input.txt [-o output]
+
+
+Examples
+========
+Some examples how to use pkdumpimg can be found \ref examples_pkdumpimg "here"
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

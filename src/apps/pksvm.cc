@@ -33,6 +33,87 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+/******************************************************************************/
+/*! \page pksvm pksvm
+ classify raster image using Support Vector Machine
+## SYNOPSIS
+
+<code>
+  Usage: pksvm -t training [-i input -o output] [-cv value]
+</code>
+
+<code>
+
+  Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-g gamma] [-cc cost] [-m filename [-msknodata value]*] [-nodata value]
+
+  Advanced options:
+       [-b band] [-s band] [-e band] [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [-svmt type] [-kt type] [-kd value]  [-c0 value] [-nu value] [-eloss value] [-cache value] [-etol value] [-shrink]
+</code>
+
+\section pksvm_description Description
+
+The utility pksvm implements a support vector machine (SVM) to solve a supervised classification problem. The implementation is based on the open source C++ library libSVM (http://www.csie.ntu.edu.tw/~cjlin/libsvm). 
+Both raster and vector files are supported as input. The output will contain the classification result, either in raster or vector format, corresponding to the format of the input. A training sample must be provided as an OGR vector dataset that contains the class labels and the features for each training point. The point locations are not considered in the training step. You can use the same training sample for classifying different images, provided the number of bands of the images are identical. Use the utility \ref pkextract "pkextract" to create a suitable training sample, based on a sample of points or polygons. For raster output maps you can attach a color table using the option -ct.
+
+\section pksvm_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | t      | training             | std::string |       |Training vector file. A single vector file contains all training features (must be set as: b0, b1, b2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file) | 
+ | i      | input                | std::string |       |input image | 
+ | o      | output               | std::string |       |Output classification image | 
+ | cv     | cv                   | unsigned short | 0     |N-fold cross validation mode | 
+ | cmf    | cmf                  | std::string | ascii |Format for confusion matrix (ascii or latex) | 
+ | tln    | tln                  | std::string |       |Training layer name(s) | 
+ | c      | class                | std::string |       |List of class names. | 
+ | r      | reclass              | short |       |List of class values (use same order as in class opt). | 
+ | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | f      | f                    | std::string | SQLite |Output ogr format for active training sample | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | ct     | ct                   | std::string |       |Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | label  | label                | std::string | label |Attribute name for class label in training vector file. | 
+ | prior  | prior                | double | 0     |Prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation) | 
+ | g      | gamma                | float | 1     |Gamma in kernel function | 
+ | cc     | ccost                | float | 1000  |The parameter C of C_SVC, epsilon_SVR, and nu_SVR | 
+ | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata. | 
+ | msknodata | msknodata            | short | 0     |Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. | 
+ | nodata | nodata               | unsigned short | 0     |Nodata value to put where image is masked as nodata | 
+ | b      | band                 | short |       |Band index (starting from 0, either use band option or use start to end) | 
+ | s      | start                | double | 0     |Start band sequence number | 
+ | e      | end                  | double | 0     |End band sequence number (set to 0 to include all bands) | 
+ | bal    | balance              | unsigned int | 0     |Balance the input data to this number of samples for each class | 
+ | min    | min                  | int  | 0     |If number of training pixels is less then min, do not take this class into account (0: consider all classes) | 
+ | bag    | bag                  | unsigned short | 1     |Number of bootstrap aggregations | 
+ | bagsize | bagsize              | int  | 100   |Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively | 
+ | comb   | comb                 | unsigned short | 0     |How to combine bootstrap aggregation classifiers (0: sum rule, 1: product rule, 2: max rule). Also used to aggregate classes with rc option. | 
+ | cb     | classbag             | std::string |       |Output for each individual bootstrap aggregation | 
+ | prob   | prob                 | std::string |       |Probability image. | 
+ | pim    | priorimg             | std::string |       |Prior probability image (multi-band img with band for each class | 
+ |        | offset               | double | 0     |Offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
+ |        | scale                | double | 0     |Scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ | svmt   | svmtype              | std::string | C_SVC |Type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR) | 
+ | kt     | kerneltype           | std::string | radial |Type of kernel function (linear,polynomial,radial,sigmoid)  | 
+ | kd     | kd                   | unsigned short | 3     |Degree in kernel function | 
+ | c0     | coef0                | float | 0     |Coef0 in kernel function | 
+ | nu     | nu                   | float | 0.5   |The parameter nu of nu_SVC, one_class SVM, and nu_SVR | 
+ | eloss  | eloss                | float | 0.1   |The epsilon in loss function of epsilon_SVR | 
+ | cache  | cache                | int  | 100   |Cache memory size in MB | 
+ | etol   | etol                 | float | 0.001 |The tolerance of termination criterion | 
+ | shrink | shrink               | bool | false |Whether to use the shrinking heuristics | 
+ | pe     | probest              | bool | true  |Whether to train a SVC or SVR model for probability estimates | 
+ | entropy | entropy              | std::string |       |Entropy image (measure for uncertainty of classifier output | 
+ | active | active               | std::string |       |Ogr output for active training sample. | 
+ | na     | nactive              | unsigned int | 1     |Number of active training points | 
+ | random | random               | bool | true  |Randomize training data for balancing and bagging | 
+
+Usage: pksvm -t training [-i input -o output] [-cv value]
+
+
+Examples
+========
+Some examples how to use pksvm can be found \ref examples_pksvm "here"
+**/
 
 namespace svm{
   enum SVM_TYPE {C_SVC=0, nu_SVC=1,one_class=2, epsilon_SVR=3, nu_SVR=4};

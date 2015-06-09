@@ -23,6 +23,52 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "imageclasses/ImgWriterGdal.h"
 
+/******************************************************************************/
+/*! \page pkascii2img pkascii2img
+ program to create raster image based on ascii file
+## SYNOPSIS
+
+<code>
+  Usage: pkascii2img -i input.txt -o output
+</code>
+
+<code>
+
+  
+  Options: [-ot type] [-of GDALformat] [-co NAME=VALUE]* [-dx value] [-dy value] [-ulx value] [-uly value] [-ct filename] [-a_srs EPSG:number] [-d description]
+
+</code>
+
+\section pkascii2img_description Description
+
+The utility pkascii2img creates a raster dataset from an ASCII textfile. The textfile is in matrix format (rows and columns). The dimensions in x and y are defined by the number of columns and rows respectively. The georeferencing can be defined by providing the options for cell size (-dx -dy), upper left position (-ulx -uly) and the projection (-a_srs). Some dataset formats can also store a description (-d) and a color table (-ct).
+
+\section pkascii2img_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input ASCII file | 
+ | o      | output               | std::string |       |Output image file | 
+ | ot     | otype                | std::string | Byte  |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string | GTiff |image type string (see also gdal_translate) | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | ulx    | ulx                  | double | 0     |Upper left x value bounding box (in geocoordinates if georef is true) | 
+ | uly    | uly                  | double | 0     |Upper left y value bounding box (in geocoordinates if georef is true) | 
+ | dx     | dx                   | double |       |Output resolution in x (in meter) | 
+ | dy     | dy                   | double |       |Output resolution in y (in meter) | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | a_srs  | a_srs                | std::string |       |Override the projection for the output file | 
+ | d      | description          | std::string |       |Set image description | 
+
+Usage: pkascii2img -i input.txt -o output
+
+
+Examples
+========
+Some examples how to use pkascii2img can be found \ref examples_pkascii2img "here"
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

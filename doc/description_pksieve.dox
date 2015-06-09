@@ -1,9 +1,0 @@
-<code>
-  
-  Options: [-c 4|8] [-b band] [-m mask] [-ot type] [-of format] [-co option]* [-ct table] 
-
-</code>
-
-\section pksieve_description Description
-
-The utility pksieve filters small objects (maximum size defined with the option -s) in a raster by replacing them to the largest neighbor object. In this context, objects are defined as pixels of the same value that are also connected. The connection can be defined in four directions (N-S and W-E: set option -c 4) or eight directions (N-S, W-E and diagonals NW-SE, NE-SW: set option -c 8).

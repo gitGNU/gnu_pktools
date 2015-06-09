@@ -24,6 +24,69 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 
+/******************************************************************************/
+/*! \page pkinfo pkinfo
+ Report basic information from raster datasets (similar to gdalinfo)
+## SYNOPSIS
+
+<code>
+  Usage: pkinfo -i input [options]
+</code>
+
+<code>
+
+</code>
+
+\section pkinfo_description Description
+
+The utility pkinfo retrieves basic information about a raster data set. An important difference with gdalinfo is that pkinfo only reports the information that is requested via the corresponding command line option, whereas gdalinfo provides all basic information at once. The reported information is in a format that can be used as input for other pktools utilities. This mechanism facilitates command substitution in the bash scripting language. Some examples are given in later in this section.\section pkinfo_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input image file | 
+ | bb     | bbox                 | bool | false |Shows bounding box  | 
+ | te     | te                   | bool | false |Shows bounding box in GDAL format: xmin ymin xmax ymax  | 
+ | c      | center               | bool | false |Image center in projected X,Y coordinates  | 
+ | ct     | colortable           | bool | false |Shows colour table  | 
+ | ns     | nsample              | bool | false |Number of samples in image  | 
+ | nl     | nline                | bool | false |Number of lines in image  | 
+ | nb     | nband                | bool | false |Show number of bands in image | 
+ | b      | band                 | short | 0     |Band specific information | 
+ | dx     | dx                   | bool | false |Gets resolution in x (in m) | 
+ | dy     | dy                   | bool | false |Gets resolution in y (in m) | 
+ | mm     | minmax               | bool | false |Shows min and max value of the image  | 
+ | min    | minimum              | bool | false |Shows min value of the image  | 
+ | max    | maximum              | bool | false |Shows max value of the image  | 
+ | stats  | statistics           | bool | false |Shows statistics (min,max, mean and stdDev of the image) | 
+ | a_srs  | a_srs                | bool | false |Shows projection of the image  | 
+ | geo    | geo                  | bool | false |Gets geotransform   | 
+ | il     | interleave           | bool | false |Shows interleave  | 
+ | f      | filename             | bool | false |Shows image filename  | 
+ | cover  | cover                | bool | false |Print filename to stdout if current image covers the provided coordinates via bounding box, (x y) coordinates or extent of vector file | 
+ | x      | xpos                 | double |       |x pos | 
+ | y      | ypos                 | double |       |y pos | 
+ | r      | read                 | bool | false |Reads row y (in projected coordinates if geo option is set, otherwise in image coordinates, 0 based) | 
+ | ref    | reference            | bool | false |Gets reference pixel (lower left corner of center of gravity pixel) | 
+ | of     | oformat              | bool | false |Gets driver description  | 
+ | e      | extent               | std::string |       |Gets boundary from vector file | 
+ | ulx    | ulx                  | double |       |Upper left x value bounding box | 
+ | uly    | uly                  | double |       |Upper left y value bounding box | 
+ | lrx    | lrx                  | double |       |Lower right x value bounding box | 
+ | lry    | lry                  | double |       |Lower right y value bounding box | 
+ | ot     | otype                | bool | false |Returns data type | 
+ | d      | description          | bool | false |Returns image description | 
+ | meta   | meta                 | bool | false |Shows meta data  | 
+ | nodata | nodata               | double |       |Sets no data value(s) for calculations (nodata values in input image) | 
+
+Usage: pkinfo -i input [options]
+
+
+Examples
+========
+Some examples how to use pkinfo can be found \ref examples_pkinfo "here"
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

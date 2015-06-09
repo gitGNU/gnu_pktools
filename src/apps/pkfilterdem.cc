@@ -26,6 +26,49 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 
+/******************************************************************************/
+/*! \page pkfilterdem pkfilterdem
+ Filter digital elevation model raster datasets
+## SYNOPSIS
+
+<code>
+  Usage: pkfilterdem -i input.txt -o output
+</code>
+
+<code>
+  
+  Options: [-f filter] [-dim maxsize]
+
+  Advanced options: [-ot type] [-of format] [-ct colortable] [-nodata value] [-circ] [-st threshold] [-ht threshold] [-minchange value]
+
+</code>
+
+\section pkfilterdem_description Description
+
+The utility pkfilterdem can be used to filter digital elevation models. It is typically used after the utility \ref pklas2img "pklas2img" to create a digital terrain model. The default filter operation is the <a href="http://ieeexplore.ieee.org/xpl/login.jsp?tp=&arnumber=1202973&url=http%3A%2F%2Fieeexplore.ieee.org%2Fxpls%2Fabs_all.jsp%3Farnumber%3D1202973">progressive morphological filter</a>. 
+\section pkfilterdem_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input image file | 
+ | o      | output               | std::string |       |Output image file | 
+ | f      | filter               | std::string |       |post processing filter: vito, etew_min, promorph (progressive morphological filter),open,close). | 
+ | dim    | dim                  | double | 17    |maximum filter kernel size | 
+ | circ   | circular             | bool | false |circular disc kernel for dilation and erosion | 
+ | st     | st                   | double | 0     |slope threshold used for morphological filtering. Use a low values to remove more height objects in flat terrains | 
+ | ht     | ht                   | double | 0.2   |initial height threshold for progressive morphological filtering. Use low values to remove more height objects. Optionally, a maximum height threshold can be set via a second argument (e.g., -ht 0.2 -ht 2.5 sets an initial threshold at 0.2 m and caps the threshold at 2.5 m). | 
+ | minchange | minchange            | short | 0     |Stop iterations when no more pixels are changed than this threshold. | 
+ | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table | 
+ | nodata | nodata               | short |       |nodata value | 
+
+Usage: pkfilterdem -i input.txt -o output
+
+
+**/
+
 using namespace std;
 /*------------------
   Main procedure

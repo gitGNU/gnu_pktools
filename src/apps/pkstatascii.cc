@@ -24,6 +24,69 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "fileclasses/FileReaderAscii.h"
 #include "algorithms/StatFactory.h"
+/******************************************************************************/
+/*! \page pkstatascii pkstatascii
+ program to calculate basic statistics from text file
+## SYNOPSIS
+
+<code>
+  Usage: pkstatascii -i input [-c column]*
+</code>
+
+<code>
+  
+  Options: [-size] [-rnd number [-dist function] [-rnda value -rndb value]] [-mean] [-median] [-var] [-skew] [-stdev] [-sum] [-mm] [-min] [-max] [-hist [-nbin value] [-rel] [-kde]] [-hist2d [-nbin value] [-rel] [-kde]] [-cor] [-rmse] [-reg] [-regerr]
+
+  Advanced options: [-srcmin value] [-srcmax value] [-fs separator] [-r startrow [-r endrow]] [-o [-t]] [--comment character]
+
+</code>
+
+\section pkstatascii_description Description
+
+The utility pkstatascii calculates basic statistics of a data series in a text file.\section pkstatascii_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |name of the input text file | 
+ | c      | column               | int  | 0     |column nr, starting from 0 | 
+ | size   | size                 | bool | false |sample size | 
+ | rnd    | rnd                  | unsigned int | 0     |generate random numbers | 
+ | dist   | dist                 | std::string | gaussian |distribution for generating random numbers, see http://www.gn/software/gsl/manual/gsl-ref_toc.html#TOC320 (only uniform and Gaussian supported yet) | 
+ | rnda   | rnda                 | double | 0     |first parameter for random distribution (mean value in case of Gaussian) | 
+ | rndb   | rndb                 | double | 1     |second parameter for random distribution (standard deviation in case of Gaussian) | 
+ | mean   | mean                 | bool | false |calculate median | 
+ | median | median               | bool | false |calculate median | 
+ | var    | var                  | bool | false |calculate variance | 
+ | stdev  | stdev                | bool | false |calculate standard deviation | 
+ | skew   | skewness             | bool | false |calculate skewness | 
+ | kurt   | kurtosis             | bool | false |calculate kurtosis | 
+ | sum    | sum                  | bool | false |calculate sum of column | 
+ | mm     | minmax               | bool | false |calculate minimum and maximum value | 
+ | min    | min                  | bool | false |calculate minimum value | 
+ | max    | max                  | bool | false |calculate maximum value | 
+ | hist   | hist                 | bool | false |calculate histogram | 
+ | nbin   | nbin                 | short |       |number of bins to calculate histogram | 
+ | rel    | relative             | bool | false |use percentiles for histogram to calculate histogram | 
+ | kde    | kde                  | bool | false |Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb | 
+ | hist2d | hist2d               | bool | false |calculate 2-dimensional histogram based on two columns | 
+ | cor    | correlation          | bool | false |calculate Pearson produc-moment correlation coefficient between two columns (defined by -c <col1> -c <col2> | 
+ | rmse   | rmse                 | bool | false |calculate root mean square error between two columns (defined by -c <col1> -c <col2> | 
+ | reg    | regression           | bool | false |calculate linear regression between two columns and get correlation coefficient (defined by -c <col1> -c <col2> | 
+ | regerr | regerr               | bool | false |calculate linear regression between two columns and get root mean square error (defined by -c <col1> -c <col2> | 
+ | src_min | src_min              | double |       |start reading source from this minimum value | 
+ | src_max | src_max              | double |       |stop reading source from this maximum value | 
+ | fs     | fs                   | char |       |field separator. | 
+ | r      | range                | int  | 0     |rows to start/end reading. Use -r 1 -r 10 to read first 10 rows where first row is header. Use 0 to read all rows with no header. | 
+ | o      | output               | bool | false |output the selected columns | 
+ | t      | transpose            | bool | false |transpose input ascii vector (use in combination with --output) | 
+ | comment | comment              | char | #     |comment character | 
+
+Usage: pkstatascii -i input [-c column]*
+
+
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

@@ -22,6 +22,52 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
+/******************************************************************************/
+/*! \page pksetmask pksetmask
+ program to apply mask image (set invalid values) to raster image
+## SYNOPSIS
+
+<code>
+  Usage: pksetmask -i input -m mask [-msknodata value] -o output
+</code>
+
+<code>
+  
+  Options: [-min value]* [-max value]* [-data value]* [-nodata value]*
+ 
+  Advanced options: [-b band]* [--operator '<'|'='|'<'] [-ot type] [-of format] [-co option]* [-ct table] 
+
+</code>
+
+\section pksetmask_description Description
+
+The utility pksetmask sets a mask provided with option -m to an input raster dataset. The default operator is '='. Values in the input raster data where the mask has a nodata value (set with the option -msknodata) will then be set to nodata (set with -nodata). Other operators are less than (--operator '<') and larger than (--operator '>').\section pksetmask_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input image | 
+ | m      | mask                 | std::string |       |Mask image(s) | 
+ | msknodata | msknodata            | int  | 1     |Mask value(s) where image has nodata. Use one value for each mask, or multiple values for a single mask. | 
+ | mskband | mskband              | short | 0     |Mask band to read (0 indexed). Provide band for each mask. | 
+ | o      | output               | std::string |       |Output mask file | 
+ | nodata | nodata               | int  | 0     |nodata value to put in image if not valid | 
+ | p      | operator             | char | =     |Operator: < = > !. Use operator for each msknodata option | 
+ | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+
+Usage: pksetmask -i input -m mask [-msknodata value] -o output
+
+
+Examples
+========
+Some examples how to use pksetmask can be found \ref examples_pksetmask "here"
+FAQ
+========
+Frequently asked questions on pksetmask can be found \ref faq_pksetmask "here"
+**/
 
 using namespace std;
 

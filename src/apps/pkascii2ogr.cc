@@ -23,6 +23,50 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgWriterOgr.h"
 
+/******************************************************************************/
+/*! \page pkascii2ogr pkascii2ogr
+ program to create vector points or polygons from text file
+## SYNOPSIS
+
+<code>
+  Usage: pkascii2ogr -i input.txt -o output
+</code>
+
+<code>
+
+  
+  Options: [-f OGRformat] [-x col] [-y col] [--line] [-n fieldname -ot type]* [-fs separator]
+
+</code>
+
+\section pkascii2ogr_description Description
+
+Poor man's utility to create a vector dataset (points or single polygon) from an ASCII textfile. A better alternative is to use <a href="http://www.gdal.org/drv_vrt.html">virtual vector datasets</a>. Specify the position of the vertices (x and y) in the columns defined by the options (-x -y), starting from 0. The default is to use the first (-dx 0) and second (-dx 1) columns for x and y respectvely. Specify the names and types of the remaining columns in your input file via the option pairs -n and -ot respectively. The default field separator is space.
+
+\section pkascii2ogr_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input ASCII file | 
+ | o      | output               | std::string |       |Output file | 
+ | f      | f                    | std::string | ESRI Shapefile |Output sample file format | 
+ | x      | x                    | short | 0     |column number of x (0) | 
+ | y      | y                    | short | 1     |column number of y (1) | 
+ | l      | line                 | bool | false |create OGRPolygon as geometry instead of points.  Fields are taken from first point and polygon is automatically closed (no need to repeat first point at last line). (false: use OGRPoint) | 
+ | n      | name                 | std::string |       |Field names for the columns in the input ascii file | 
+ | ot     | ot                   | std::string | Real  |Field type (Real, Integer, String) for each of the fields as defined by name | 
+ | a_srs  | a_srs                | std::string | epsg:4326 |Override the projection for the output file, use epsg:<code> or Wkt string | 
+ | fs     | fs                   | char |       |field separator. | 
+
+Usage: pkascii2ogr -i input.txt -o output
+
+
+Examples
+========
+Some examples how to use pkascii2ogr can be found \ref examples_pkascii2ogr "here"
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

@@ -34,6 +34,70 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define PI 3.1415926535897932384626433832795
 #endif
 
+/******************************************************************************/
+/*! \page pkextract pkextract
+ extract pixel values from raster image from a (vector or raster) sample
+## SYNOPSIS
+
+<code>
+  Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output
+</code>
+
+<code>
+
+  Options: [-ln layer]* [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-polygon] [-b band]* [-r rule]
+
+  Advanced options:
+       [-bndnodata band -srcnodata value]* [-tp threshold] [-test testSample] [-bn attribute] [-cn attribute] [-geo value] [-down value] [-buf value [-circ]]
+</code>
+
+\section pkextract_description Description
+
+The utility pkextract extracts pixel values from an input raster dataset, based on the locations you provide via a sample file. Alternatively, a random sample or systematic grid of points can also be extracted. The sample can be a vector file with points or polygons. In the case of polygons, you can either extract the values for all raster pixels that are covered by the polygons, or extract a single value for each polygon such as the centroid, mean, median, etc. As output, a new copy of the vector file is created with an extra attribute for the extracted pixel value. For each raster band in the input image, a separate attribute is created. For instance, if the raster dataset contains three bands, three attributes are created (b0, b1 and b2). 
+
+Instead of a vector dataset, the sample can also be a raster dataset with categorical values. The typical use case is a land cover map that overlaps the input raster dataset. The utility then extracts pixels from the input raster for the respective land cover classes. To select a random subset of the sample raster dataset you can set the threshold option -t with a percentage value. 
+
+A typical usage of pkextract is to prepare a training sample for one of the classifiers implemented in pktools.
+
+\section pkextract_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Raster input dataset containing band information | 
+ | s      | sample               | std::string |       |OGR vector dataset with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset. | 
+ | ln     | ln                   | std::string |       |Layer name(s) in sample (leave empty to select all) | 
+ | rand   | random               | unsigned int |       |Create simple random sample of points. Provide number of points to generate | 
+ | grid   | grid                 | double |       |Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m) | 
+ | o      | output               | std::string |       |Output sample dataset | 
+ | c      | class                | int  |       |Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode or proportion | 
+ | t      | threshold            | float | 100   |Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es) | 
+ | perc   | perc                 | double | 95    |Percentile value used for rule percentile | 
+ | f      | f                    | std::string | SQLite |Output sample dataset format | 
+ | ft     | ftype                | std::string | Real  |Field type (only Real or Integer) | 
+ | lt     | ltype                | std::string | Integer |Label type: In16 or String | 
+ | polygon | polygon              | bool | false |Create OGRPolygon as geometry instead of OGRPoint. | 
+ | b      | band                 | int  |       |Band index(es) to extract (0 based). Leave empty to use all bands | 
+ | r      | rule                 | std::string | centroid |Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum, percentile. | 
+ | bndnodata | bndnodata            | int  | 0     |Band(s) in input image to check if pixel is valid (used for srcnodata) | 
+ | srcnodata | srcnodata            | double |       |Invalid value(s) for input image | 
+ | tp     | thresholdPolygon     | float |       |(absolute) threshold for selecting samples in each polygon | 
+ | test   | test                 | std::string |       |Test sample dataset (use this option in combination with threshold<100 to create a training (output) and test set | 
+ | bn     | bname                | std::string | b     |For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.) | 
+ | cn     | cname                | std::string | label |Name of the class label in the output vector dataset | 
+ | geo    | geo                  | short | 1     |Use geo coordinates (set to 0 to use image coordinates) | 
+ | down   | down                 | short | 1     |Down sampling factor (for raster sample datasets only). Can be used to create grid points | 
+ | buf    | buffer               | short |       |Buffer for calculating statistics for point features  | 
+ | circ   | circular             | bool | false |Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option) | 
+
+Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output
+
+
+Examples
+========
+Some examples how to use pkextract can be found \ref examples_pkextract "here"
+**/
+
 namespace rule{
   enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, mode=6, centroid=7, sum=8, median=9, stdev=10, percentile=11};
 }

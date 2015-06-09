@@ -26,6 +26,43 @@ extern "C" {
 #include <string>
 #include "base/Optionpk.h"
 
+/******************************************************************************/
+/*! \page pkfillnodata pkfillnodata
+ program to fill holes in raster image
+## SYNOPSIS
+
+<code>
+  Usage: pkfillnodata -i input.txt -m mask -o output
+</code>
+
+<code>
+  
+  Options: [-b band]*
+
+  Advanced options: [-d distance] [-it iterations]
+
+</code>
+
+\section pkfillnodata_description Description
+
+The utility pkfillnodata fills nodata values in a raster dataset. Nodata values are defined as 0 values in the mask raster dataset. You can use the input file as the mask image if 0 values in the input raster have to be filled. Per default, all bands are filled. Use the option -b to fill individual band(s) in a multiband raster input image.
+\section pkfillnodata_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input raster dataset | 
+ | b      | band                 | int  |       |band(s) to process (Default is -1: process all bands) | 
+ | o      | output               | std::string |       |Output image file | 
+ | m      | mask                 | std::string |       |Mask raster dataset indicating pixels to be interpolated (zero valued)  | 
+ | d      | distance             | double | 0     |Maximum number of pixels to search in all directions to find values to interpolate from | 
+ | it     | iteration            | int  | 0     |Number of 3x3 smoothing filter passes to run (default 0) | 
+
+Usage: pkfillnodata -i input.txt -m mask -o output
+
+
+**/
+
 using namespace std;
 
 int main(int argc,char **argv) {

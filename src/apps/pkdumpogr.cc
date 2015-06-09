@@ -25,6 +25,50 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderOgr.h"
 #include "pkdumpogr.h"
 
+/******************************************************************************/
+/*! \page pkdumpogr pkdumpogr
+ dump ogr file to text file or standard output
+## SYNOPSIS
+
+<code>
+  Usage: pkdumpogr -i input.txt [-o output]
+</code>
+
+<code>
+
+  Options: [-ln layername] [-n attribute]* [-pos] [-transpose]
+
+  Advanced options:
+
+</code>
+
+\section pkdumpogr_description Description
+
+The utility pkdumpogr dumps the content of a vector dataset to (standard) output (screen or filename). The default is to dump all the attributes. Individual attributes can be selected with the option -n. The X and Y positions can be printed with the option -pos. Use the option -transpose to transpose the output (only in combination with the option -n attribute).
+
+\section pkdumpogr_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input shape file | 
+ | ln     | lname                | std::string |       |Layer name(s) in sample (leave empty to select all) | 
+ | o      | output               | std::string |       |Output ASCII file | 
+ | n      | name                 | std::string | ALL   |names of the attributes to select. Each attribute is stored in a separate band. Default is ALL: write all attributes | 
+ | pos    | pos                  | bool | false |include position (x and y) | 
+ | t      | transpose            | bool | false |transpose output (does not work for -n ALL  | 
+ | fs     | fs                   | char |       |field separator. | 
+
+Usage: pkdumpogr -i input.txt [-o output]
+
+
+Examples
+========
+Some examples how to use pkdumpogr can be found \ref examples_pkdumpogr "here"
+**/
+
+using namespace std;
+
 int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i", "input", "Input shape file");

@@ -22,6 +22,52 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
+/******************************************************************************/
+/*! \page pkcreatect pkcreatect
+ program to create and import colour table to GTiff image
+## SYNOPSIS
+
+<code>
+  Usage: pkcreatect -i input.txt -o output [-ct colortable | -min value -max value]
+</code>
+
+<code>
+
+  
+  Options: [--grey] [-of GDALformat] [-co option]* [-d description]
+
+  Advanced options: [--legend filename [--dim cols --dim rows]] 
+</code>
+
+\section pkascii2ogr_description Description
+
+Utility to include a color table to a raster dataset. You can either define an existing color table (ASCII text file) with the option -ct or define a minimum (-min) and maximum (-max) value.
+
+\section pkcreatect_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input image file | 
+ | o      | output               | std::string |       |Output image file | 
+ | l      | legend               | std::string |       |Create legend as png file | 
+ | dim    | dim                  | short | 100   |number of columns and rows in legend. | 
+ | min    | min                  | double | 0     |minimum value | 
+ | max    | max                  | double | 100   |maximum value | 
+ | g      | grey                 | bool | false |grey scale | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | d      | description          | std::string |       |Set image description | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+
+Usage: pkcreatect -i input.txt -o output [-ct colortable | -min value -max value]
+
+
+Examples
+========
+Some examples how to use pkcreatect can be found \ref examples_pkcreatect "here"
+**/
+
 using namespace std;
 
 int main(int argc,char **argv) {

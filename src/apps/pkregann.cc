@@ -23,6 +23,50 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "fileclasses/FileReaderAscii.h"
 #include "floatfann.h"
 #include "algorithms/myfann_cpp.h"
+/******************************************************************************/
+/*! \page pkregann pkregann
+ regression with artificial neural network (multi-layer perceptron)
+## SYNOPSIS
+
+<code>
+  Usage: pkregann -i input -t training [-ic col]* [-oc col]* -o output
+</code>
+
+<code>
+  
+  Options: [-from row] [-to row] [-cv size] [-nn number]
+
+  Advanced options: [--offset value] [--scale value] [--connection rate] [--learning rate] [--maxit number]
+</code>
+
+\section pkregann_description Description
+
+The utility pkregann performs a regression based on an artificial neural network. The regression is trained from the input (-ic) and output (-oc) columns in a training text file. Each row in the training file represents one sampling unit. Multi-dimensional input features can be defined with multiple input options (e.g., -ic 0 -ic 1 -ic 2 for three dimensional features).
+\section pkregann_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input ASCII file | 
+ | t      | training             | std::string |       |training ASCII file (each row represents one sampling unit. Input features should be provided as columns, followed by output) | 
+ | ic     | inputCols            | int  |       |input columns (e.g., for three dimensional input data in first three columns use: -ic 0 -ic 1 -ic 2 | 
+ | oc     | outputCols           | int  |       |output columns (e.g., for two dimensional output in columns 3 and 4 (starting from 0) use: -oc 3 -oc 4 | 
+ | o      | output               | std::string |       |output ASCII file for result | 
+ | from   | from                 | double | 0     |start from this row in training file (start from 0) | 
+ | to     | to                   | double | 0     |read until this row in training file (start from 0 or set leave 0 as default to read until end of file) | 
+ | cv     | cv                   | unsigned short | 0     |n-fold cross validation mode | 
+ | nn     | nneuron              | unsigned int | 5     |number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons) | 
+ |        | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
+ |        | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ |        | connection           | float | 1     |connection reate (default: 1.0 for a fully connected network) | 
+ | l      | learning             | float | 0.7   |learning rate (default: 0.7) | 
+ |        | maxit                | unsigned int | 500   |number of maximum iterations (epoch) (default: 500) | 
+
+Usage: pkregann -i input -t training [-ic col]* [-oc col]* -o output
+
+
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

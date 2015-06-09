@@ -1,5 +1,5 @@
 /**********************************************************************
-pkkalman.cc: program to kalman raster images: median, min/max, morphological, kalmaning
+pkkalman.cc: produce kalman filtered raster time series
 Copyright (C) 2008-2014 Pieter Kempeneers
 
 This file is part of pktools
@@ -26,6 +26,51 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "algorithms/StatFactory.h"
 #include "algorithms/ImgRegression.h"
+
+/******************************************************************************/
+/*! \page pkkalman pkkalman
+produce kalman filtered raster time series
+## SYNOPSIS
+
+<code>
+  
+</code>
+
+\section pkkalman_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | dir    | direction            | std::string | forward |direction to run model (forward\|backward\|smooth) | 
+ | mod    | model                | std::string |       |model input datasets, e.g., MODIS (use: -mod model1 -mod model2 etc. | 
+ | obs    | observation          | std::string |       |observation input datasets, e.g., landsat (use: -obs obs1 -obs obs2 etc. | 
+ | tmod   | tmodel               | int  |       |time sequence of model input. Sequence must have exact same length as model input. Leave empty to have default sequence 0,1,2,etc. | 
+ | tobs   | tobservation         | int  |       |time sequence of observation input. Sequence must have exact same length as observation input) | 
+ | a_srs  | a_srs                | std::string |       |Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid | 
+ | ofw    | outputfw             | std::string |       |Output raster dataset for forward model | 
+ | obw    | outputbw             | std::string |       |Output raster dataset for backward model | 
+ | ofb    | outputfb             | std::string |       |Output raster dataset for smooth model | 
+ | modnodata | modnodata            | double | 0     |invalid value for model input | 
+ | obsnodata | obsnodata            | double | 0     |invalid value for observation input | 
+ | modoffset | modoffset            | double |       |offset used to read model input dataset (value=offset+scale*readValue | 
+ | modscale | modscale             | double |       |scale used to read model input dataset (value=offset+scale*readValue | 
+ | obsoffset | obsoffset            | double |       |offset used to read observation input dataset (value=offset+scale*readValue | 
+ | obsscale | obsscale             | double |       |scale used to read observation input dataset (value=offset+scale*readValue | 
+ | eps    | eps                  | double | 1e-05 |epsilon for non zero division | 
+ | um     | uncertmodel          | double | 2     |Multiply this value with std dev of first model image to obtain uncertainty of model | 
+ | uo     | uncertobs            | double | 0     |Uncertainty of valid observations | 
+ | w      | weight               | double |       |Set observation uncertainty as weighted difference between observation and model (use -w 0 to use a constant observation uncertainty, use -w value >> 1 to penalize low observation values with respect to model, use -w value << 0 to penalize a high observation values with respect to model | 
+ | dobs   | deltaobs             | double |       |Lower and upper thresholds for relative pixel differences (in percentage): (observation-model)/model. For instance to force the observation within a +/- 10 % interval, use: -dobs -10 -dobs 10 (equivalent to -dobs 10). Leave empty to always update on observation | 
+ | unodata | uncertnodata         | double | 10000 |Uncertainty in case of no-data values in observation | 
+ | rs     | regsensor            | bool | false |Set optional regression for sensor difference (model - observation). | 
+ | down   | down                 | int  |       |Downsampling factor for reading model data to calculate regression | 
+ | th     | threshold            | float | 0     |threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). | 
+ | win    | window               | unsigned short | 0     |window size for calculating regression (use 0 for global) | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | v      | verbose              | short | 0     |verbose mode when positive | 
+
+**/
 
 using namespace std;
 /*------------------

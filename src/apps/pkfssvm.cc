@@ -33,6 +33,68 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <config.h>
 #endif
 
+/******************************************************************************/
+/*! \page pkfssvm pkfssvm
+ feature selection for support vector machine classifier pksvm
+## SYNOPSIS
+
+<code>
+  Usage: pkfssvm -t training -n number
+</code>
+
+<code>
+
+  Options:
+
+  Advanced options:
+</code>
+
+\section pkfssvm_description Description
+
+Classification problems dealing with high dimensional input data can be challenging due to the Hughes phenomenon. Hyperspectral data, for instance, can have hundreds of spectral bands and require special attention when being classified. In particular when limited training data are available, the classification of such data can be problematic without reducing the dimension.
+
+The SVM classifier has been shown to be more robust to this type of problem than others. Nevertheless, classification accuracy can often be improved with feature selection methods. The utility pkfssvm implements a number of feature selection techniques, among which a sequential floating forward search (SFFS).
+\section pkfssvm_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |input test set (leave empty to perform a cross validation based on training only) | 
+ | t      | training             | std::string |       |training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). | 
+ | n      | nf                   | unsigned short | 0     |number of features to select (0 to select optimal number, see also ecost option) | 
+ | tln    | tln                  | std::string |       |training layer name(s) | 
+ | label  | label                | std::string | label |identifier for class label in training vector file. | 
+ | bal    | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
+ | random | random               | bool | true  |in case of balance, randomize input data | 
+ | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account | 
+ | b      | band                 | short |       |band index (starting from 0, either use band option or use start to end) | 
+ | s      | start                | double | 0     |start band sequence number | 
+ | e      | end                  | double | 0     |end band sequence number (set to 0 to include all bands) | 
+ |        | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
+ |        | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ | svmt   | svmtype              | std::string | C_SVC |type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR) | 
+ | kt     | kerneltype           | std::string | radial |type of kernel function (linear,polynomial,radial,sigmoid)  | 
+ | kd     | kd                   | unsigned short | 3     |degree in kernel function | 
+ | g      | gamma                | float | 1     |gamma in kernel function | 
+ | c0     | coef0                | float | 0     |coef0 in kernel function | 
+ | cc     | ccost                | float | 1000  |the parameter C of C-SVC, epsilon-SVR, and nu-SVR | 
+ | nu     | nu                   | float | 0.5   |the parameter nu of nu-SVC, one-class SVM, and nu-SVR | 
+ | eloss  | eloss                | float | 0.1   |the epsilon in loss function of epsilon-SVR | 
+ | cache  | cache                | int  | 100   |cache memory size in MB | 
+ | etol   | etol                 | float | 0.001 |the tolerance of termination criterion | 
+ | shrink | shrink               | bool | false |whether to use the shrinking heuristics | 
+ | pe     | probest              | bool | true  |whether to train a SVC or SVR model for probability estimates | 
+ | sm     | sm                   | std::string | sffs  |feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search) | 
+ | ecost  | ecost                | float | 0.001 |epsilon for stopping criterion in cost function to determine optimal number of features | 
+ | cv     | cv                   | unsigned short | 2     |n-fold cross validation mode | 
+ | c      | class                | std::string |       |list of class names. | 
+ | r      | reclass              | short |       |list of class values (use same order as in classname opt. | 
+
+Usage: pkfssvm -t training -n number
+
+
+**/
+
 using namespace std;
 
 enum SelectorValue  { NA=0, SFFS=1, SFS=2, SBS=3, BFS=4};

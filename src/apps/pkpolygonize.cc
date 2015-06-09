@@ -34,6 +34,45 @@ extern "C" {
 #include <config.h>
 #endif
 
+/******************************************************************************/
+/*! \page pkpolygonize pkpolygonize
+ program to make vector file from raster image
+## SYNOPSIS
+
+<code>
+  Usage: pkpolygonize -i input [-m mask] -o output
+</code>
+
+<code>
+  
+  Options: [-f format] [-b band] [-n fieldname] [-nodata value]
+
+</code>
+
+\section pkpolygonize_description Description
+
+The utility pkpolygonize converts a raster to a vector dataset. All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use the same input file as mask to remove the background polygon (recommended).
+\section pkpolygonize_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input image file | 
+ | m      | mask                 | std::string |       |All pixels in the mask band with a value other than zero will be considered suitable for collection as polygons. Use input file as mask to remove background polygon!  | 
+ | o      | output               | std::string |       |Output vector file | 
+ | f      | f                    | std::string | SQLite |Output OGR file format | 
+ | b      | band                 | int  | 0     |the band to be used from input file | 
+ | nodata | nodata               | double |       |Disgard this nodata value when creating polygons. | 
+ | n      | name                 | std::string | DN    |the field name of the output layer | 
+
+Usage: pkpolygonize -i input [-m mask] -o output
+
+
+Examples
+========
+Some examples how to use pkpolygonize can be found \ref examples_pkpolygonize "here"
+**/
+
 using namespace std;
 
 int main(int argc,char **argv) {

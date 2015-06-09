@@ -23,6 +23,51 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgWriterGdal.h"
 #include "base/Optionpk.h"
 
+/******************************************************************************/
+/*! \page pkgetmask pkgetmask
+ program to create mask image based on values in input raster image
+## SYNOPSIS
+
+<code>
+  Usage: pkgetmask -i input -o output
+</code>
+
+<code>
+  
+  Options: [-min value]* [-max value]* [-data value]* [-nodata value]*
+ 
+  Advanced options: [-b band]* [--operator AND|OR] [-ot type] [-of format] [-co option]* [-ct table] 
+
+</code>
+
+\section pkgetmask_description Description
+
+The utility pkgetmask creates a mask raster dataset from an input raster dataset. Values smaller than the minimum value (-min) or larger than the maximum value (-max) will result in a -nodata value in the mask.\section pkgetmask_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input image file | 
+ | o      | output               | std::string |       |Output mask file | 
+ | min    | min                  | double |       |Values smaller than min threshold(s) are masked as invalid. Use one threshold for each band | 
+ | max    | max                  | double |       |Values greater than max threshold(s) are masked as invalid. Use one threshold for each band | 
+ | data   | data                 | unsigned short | 1     |value(s) for valid pixels: between min and max | 
+ | nodata | nodata               | unsigned short | 0     |value(s) for invalid pixels: not between min and max | 
+ | b      | band                 | short | 0     |band(s) used for mask | 
+ | p      | operator             | std::string | OR    |Operator: [AND,OR]. | 
+ | ot     | otype                | std::string | Byte  |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+
+Usage: pkgetmask -i input -o output
+
+
+Examples
+========
+Some examples how to use pkgetmask can be found \ref examples_pkgetmask "here"
+**/
+
 using namespace std;
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input image file");

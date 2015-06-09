@@ -21,6 +21,34 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "imageclasses/ImgReaderGdal.h"
 #include "algorithms/Egcs.h"
 
+/******************************************************************************/
+/*! \page pkegcs pkegcs
+ Utility for raster files in European Grid Coordinate System
+## SYNOPSIS
+
+<code>
+  
+</code>
+
+\section pkegcs_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | image                | std::string |       |input image to analyse | 
+ | b      | band                 | unsigned short | 0     |Band specific information | 
+ | c2b    | cell2bb              | std::string |       |convert cell code to geo coordinates of boundingbox (e.g. 32-AB) | 
+ | c2m    | cell2mid             | std::string |       |convert cell code to centre in geo coordinates (e.g. 32-AB) | 
+ | g2c    | geo2cell             | bool | false |get cell code for coordinates in x_opt and y_opt given the resolution in dx_opt | 
+ | ref    | ref                  | bool | false |get reference pixel (lower left corner of centre of gravity pixel) | 
+ | m      | mask                 | double | 0     |mask value(s) for no data to calculate reference pixel in image | 
+ | dx     | dx                   | int  | 250   |resolution | 
+ | x      | x                    | double | 0     |x coordinate in epsg:3035 | 
+ | y      | y                    | double | 0     |y coordinate in epsg:3035 | 
+
+**/
+
+using namespace std;
 int main(int argc, char *argv[])
 {
   Optionpk<std::string> image_opt("i","image","input image to analyse","");

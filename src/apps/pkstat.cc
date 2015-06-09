@@ -23,6 +23,58 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
 #include "algorithms/ImgRegression.h"
+/******************************************************************************/
+/*! \page pkstat pkstat
+ program to calculate basic statistics from raster dataset
+## SYNOPSIS
+
+<code>
+  Usage: pkstat -i input
+</code>
+
+\section pkstat_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |name of the input raster dataset | 
+ | b      | band                 | unsigned short | 0     |band(s) on which to calculate statistics | 
+ | f      | filename             | bool | false |Shows image filename  | 
+ | stats  | statistics           | bool | false |Shows basic statistics (min,max, mean and stdDev of the raster datasets) | 
+ | nodata | nodata               | double |       |Set nodata value(s) | 
+ | mean   | mean                 | bool | false |calculate mean | 
+ | median | median               | bool | false |calculate median | 
+ | var    | var                  | bool | false |calculate variance | 
+ | stdev  | stdev                | bool | false |calculate standard deviation | 
+ | mm     | minmax               | bool | false |calculate minimum and maximum value | 
+ | min    | min                  | bool | false |calculate minimum value | 
+ | max    | max                  | bool | false |calculate maximum value | 
+ | hist   | hist                 | bool | false |calculate histogram | 
+ | nbin   | nbin                 | short |       |number of bins to calculate histogram | 
+ | rel    | relative             | bool | false |use percentiles for histogram to calculate histogram | 
+ | hist2d | hist2d               | bool | false |calculate 2-dimensional histogram based on two images | 
+ | cor    | correlation          | bool | false |calculate Pearson produc-moment correlation coefficient between two raster datasets (defined by -c <col1> -c <col2>) | 
+ | rmse   | rmse                 | bool | false |calculate root mean square error between two raster datasets | 
+ | reg    | regression           | bool | false |calculate linear regression between two raster datasets and get correlation coefficient | 
+ | regerr | regerr               | bool | false |calculate linear regression between two raster datasets and get root mean square error | 
+ | preg   | preg                 | bool | false |calculate perpendicular regression between two raster datasets and get correlation coefficient | 
+ | ulx    | ulx                  | double |       |Upper left x value bounding box | 
+ | uly    | uly                  | double |       |Upper left y value bounding box | 
+ | lrx    | lrx                  | double |       |Lower right x value bounding box | 
+ | lry    | lry                  | double |       |Lower right y value bounding box | 
+ | down   | down                 | short | 1     |Down sampling factor (for raster sample datasets only). Can be used to create grid points | 
+ | rnd    | rnd                  | unsigned int | 0     |generate random numbers | 
+ | scale  | scale                | double |       |Scale(s) for reading input image(s) | 
+ | offset | offset               | double |       |Offset(s) for reading input image(s) | 
+ | src_min | src_min              | double |       |start reading source from this minimum value | 
+ | src_max | src_max              | double |       |stop reading source from this maximum value | 
+ | kde    | kde                  | bool | false |Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb | 
+
+Usage: pkstat -i input
+
+
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

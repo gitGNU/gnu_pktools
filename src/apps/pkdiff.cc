@@ -25,6 +25,70 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/ConfusionMatrix.h"
 
+/******************************************************************************/
+/*! \page pkdiff pkdiff
+ program to compare two raster image files
+## SYNOPSIS
+
+<code>
+  Usage: pkdiff -i input -ref reference
+</code>
+
+<code>
+
+  Options: [-ln layer] [-b band] [-cm] [-lr attribute] [-c name -r value]* [-nodata value]* [-m mask] [-msknodata value]*
+
+  Advanced options:
+       [-o output] [-f OGR format] [-lc attribute] [-bnd value [-hom] [-circ]] [-ct colortable] [-co NAME=VALUE]* 
+
+</code>
+
+\section pkdiff_description Description
+
+The utility pkdiff compares two datasets. The reference can either be a raster or a vector, but the input must be a raster dataset.  
+In case the reference is a raster dataset, a pixel by pixel comparison is performed. With no further options, the utility reports if the rasters are identical or different. If required, an output raster dataset can be written with a qualitative information per pixel: 0 (input=reference), 1 (input>reference) or 2 (input<reference). 
+If, however, the reference is a vector dataset, it must consist of point features. Polygon features are automatically converted to the centroid points before analyzing. 
+
+A typical use of the utility is to assess the accuracy of an input raster land cover map, based on a reference vector dataset. The reference dataset must contain an attribute (label) for each class. A confusion matrix is produced if the option -cm|--confusion is set. Here too, an output dataset can be written, which will be a vector dataset in this case. It contains the reference feature points with the extracted data value of the raster input dataset as a new attribute.
+\section pkdiff_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input raster dataset. | 
+ | ref    | reference            | std::string |       |Reference (raster or vector) dataset | 
+ | ln     | ln                   | std::string |       |Layer name(s) in sample. Leave empty to select all (for vector reference datasets only) | 
+ | b      | band                 | short | 0     |Input (reference) raster band. Optionally, you can define different bands for input and reference bands respectively: -b 1 -b 0. | 
+ | rmse   | rmse                 | bool | false |Report root mean squared error | 
+ | reg    | reg                  | bool | false |Report linear regression (Input = c0+c1*Reference) | 
+ | cm     | confusion            | bool | false |Create confusion matrix (to std out) | 
+ | lr     | lref                 | std::string | label |Attribute name of the reference label (for vector reference datasets only) | 
+ | c      | class                | std::string |       |List of class names. | 
+ | r      | reclass              | short |       |List of class values (use same order as in classname option). | 
+ | nodata | nodata               | double |       |No data value(s) in input or reference dataset are ignored | 
+ | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata. | 
+ | msknodata | msknodata            | double | 0     |Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value) | 
+ | o      | output               | std::string |       |Output dataset (optional) | 
+ | f      | f                    | std::string | SQLite |OGR format for output vector (for vector reference datasets only) | 
+ | lc     | lclass               | std::string | class |Attribute name of the classified label (for vector reference datasets only) | 
+ | cmf    | cmf                  | std::string | ascii |Format for confusion matrix (ascii or latex) | 
+ | cmo    | cmo                  | std::string |       |Output file for confusion matrix | 
+ | se95   | se95                 | bool | false |Report standard error for 95 confidence interval | 
+ | bnd    | boundary             | short | 1     |Boundary for selecting the sample (for vector reference datasets only) | 
+ | hom    | homogeneous          | bool | false |Only take regions with homogeneous boundary into account (for reference datasets only) | 
+ | circ   | circular             | bool | false |Use circular boundary (for vector reference datasets only) | 
+ | ct     | ct                   | std::string |       |Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid). | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ |        | commission           | short | 2     |Value for commission errors: input label < reference label | 
+
+Usage: pkdiff -i input -ref reference
+
+
+Examples
+========
+Some examples how to use pkdiff can be found \ref examples_pkdiff "here"
+**/
+
 using namespace std;
 
 int main(int argc, char *argv[])

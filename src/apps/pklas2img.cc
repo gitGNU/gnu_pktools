@@ -26,6 +26,58 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/StatFactory.h"
 #include "algorithms/Filter2d.h"
 
+/******************************************************************************/
+/*! \page pklas2img pklas2img
+ Rasterize LAS/LAZ point clouds with filtering/compositing options
+## SYNOPSIS
+
+<code>
+  
+</code>
+
+<code>
+  
+  Options: [-n attribute] [-comp method] [-fir type] [-a_srs] [-ulx value -uly value -lrx value -lry value] [-dx value -dy value] [-ot type] [-of format] [-ret value]* [-class number]* 
+
+  Advanced options: [-nbin value] [-nodata value] [-co option]* [-ct colortable] 
+
+</code>
+
+\section pklas2img_description Description
+
+The utility pklas2img converts a las/laz point cloud into a gridded raster dataset. The implementation is based on <a href="www.liblas.org">liblas</a> API. You can define the bounding box, grid cell size and spatial reference set. The composite rule for multiple returns within a single grid cell can be set with the option -comp. The default attribute is z (heiht), but can also be intensity (if available), the return number (-n return) or the total number of returns in that grid cell (-n nreturn). To select specific returns only, set the option -fir (first, last, single, multiple, or all).
+\section pklas2img_options Options
+ - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+ - short option `-h` shows basic options only, long option `--help` shows all options
+|short|long|type|default|description|
+|-----|----|----|-------|-----------|
+ | i      | input                | std::string |       |Input las file | 
+ | n      | name                 | std::string | z     |names of the attribute to select: intensity, return, nreturn, z | 
+ | ret    | ret                  | unsigned short |       |number(s) of returns to include | 
+ | class  | class                | unsigned short |       |classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap) | 
+ | comp   | comp                 | std::string | last  |composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point | 
+ | fir    | filter               | std::string | all   |filter las points (first,last,single,multiple,all). | 
+ | o      | output               | std::string |       |Output image file | 
+ | a_srs  | a_srs                | std::string |       |assign the projection for the output file in epsg code, e.g., epsg:3035 for European LAEA projection | 
+ | ulx    | ulx                  | double | 0     |Upper left x value bounding box (in geocoordinates if georef is true). 0 is read from input file | 
+ | uly    | uly                  | double | 0     |Upper left y value bounding box (in geocoordinates if georef is true). 0 is read from input file | 
+ | lrx    | lrx                  | double | 0     |Lower right x value bounding box (in geocoordinates if georef is true). 0 is read from input file | 
+ | lry    | lry                  | double | 0     |Lower right y value bounding box (in geocoordinates if georef is true). 0 is read from input file | 
+ | ot     | otype                | std::string | Byte  |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | dx     | dx                   | double | 1     |Output resolution in x (in meter) | 
+ | dy     | dy                   | double | 1     |Output resolution in y (in meter) | 
+ | nbin   | nbin                 | short | 10    |Number of percentile bins for calculating percentile height value profile (=number of output bands) | 
+ | perc   | perc                 | double | 95    |Percentile value used for rule percentile | 
+ | nodata | nodata               | short | 0     |nodata value to put in image | 
+ | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+
+pklas2img -i lasfile -o output
+
+
+**/
+
 using namespace std;
 
 int main(int argc,char **argv) {
