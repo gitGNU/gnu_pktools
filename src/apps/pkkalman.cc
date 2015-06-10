@@ -324,6 +324,8 @@ int main(int argc,char **argv) {
     //   cout << "tobservation_opt[tindex] " << tobservation_opt[tindex] << " " << relobsindex.back() << endl;
   }
 
+  int ndigit=log(1.0*tmodel_opt.back())/log(10.0)+1;
+
   double geox=0;
   double geoy=0;
 
@@ -333,23 +335,17 @@ int main(int argc,char **argv) {
     obsindex=0;
     //initialization
     string output;
-    //test
-    cout << "debug-1" << endl;
     if(outputfw_opt.size()==model_opt.size()){
-      //test
-      cout << "debug0" << endl;
       output=outputfw_opt[0];
-      //test
-      cout << "debug1" << endl;
     }
     else{
-      //test
-      cout << "debug2" << endl;
       ostringstream outputstream;
+      // outputstream << outputfw_opt[0] << "_";
+      // outputstream << setfill('0') << setw(ndigit) << tmodel_opt[0];
+      // outputstream << ".tif";
+      //test
       outputstream << outputfw_opt[0] << "_" << tmodel_opt[0] << ".tif";
       output=outputstream.str();
-      //test
-      cout << "debug3" << endl;
     }
     if(verbose_opt[0])
       cout << "Opening image " << output << " for writing " << endl;
@@ -417,6 +413,7 @@ int main(int argc,char **argv) {
 	      uncertWriteBuffer[icol]=uncertNodata_opt[0];
 	    }
 	    else{
+	      //todo: should take into account regression model-obs...
 	      estWriteBuffer[icol]=modValue;
 	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
 	    }
@@ -577,8 +574,10 @@ int main(int argc,char **argv) {
 	output=outputfw_opt[modindex];
       else{
 	ostringstream outputstream;
+	// outputstream << outputfw_opt[0] << "_";
+	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	// outputstream << ".tif";
 	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
-	// outputstream << output_opt[0] << "_" << modindex+1 << ".tif";
 	output=outputstream.str();
       }
     
@@ -649,9 +648,14 @@ int main(int argc,char **argv) {
 	input=outputfw_opt[modindex-1];
       else{
 	ostringstream outputstream;
+	// outputstream << outputfw_opt[0] << "_";
+	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex-1];
+	// outputstream << ".tif";
 	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex-1] << ".tif";
 	input=outputstream.str();
       }
+      if(verbose_opt[0])
+	cout << "opening " << input << endl;
       ImgReaderGdal imgReaderEst(input);
       imgReaderEst.setNoData(obsnodata_opt);
       if(obsoffset_opt.size())
@@ -674,16 +678,19 @@ int main(int argc,char **argv) {
       vector<double> uncertWriteBuffer(ncol);
       // vector<double> lineMask;
 
-      //initialize obsLineVector
-      assert(down_opt[0]%2);//window size must be odd 
-      for(int iline=-down_opt[0]/2+1;iline<down_opt[0]/2+1;++iline){
-	if(iline<0)//replicate line 0
-	  imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,0);
-	else
-	  imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,0);
+      //initialize obsLineVector if update
+      if(update){
+	if(verbose_opt[0])
+	  cout << "initialize obsLineVector" << endl;
+	assert(down_opt[0]%2);//window size must be odd 
+	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+	  if(iline<0)//replicate line 0
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,0);
+	  else
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,0);
+	}
       }
       for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
-	assert(irow<imgReaderEst.nrOfRow());
 	//do not read from imgReaderObs, because we read entire window for each pixel...
 	imgReaderEst.readData(estReadBuffer,GDT_Float64,irow,0);
 	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
@@ -881,6 +888,9 @@ int main(int argc,char **argv) {
       output=outputbw_opt.back();
     else{
       ostringstream outputstream;
+      // outputstream << outputbw_opt[0] << "_";
+      // outputstream << setfill('0') << setw(ndigit) << tmodel_opt.back();
+      // outputstream << ".tif";
       outputstream << outputbw_opt[0] << "_" << tmodel_opt.back() << ".tif";
       output=outputstream.str();
     }
@@ -1108,8 +1118,10 @@ int main(int argc,char **argv) {
 	output=outputbw_opt[modindex];
       else{
 	ostringstream outputstream;
-	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
-	// outputstream << output_opt[0] << "_" << modindex+1 << ".tif";
+	// outputstream << outputbw_opt[0] << "_";
+	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex+1];
+	// outputstream << ".tif";
+	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
 	output=outputstream.str();
       }
 
@@ -1180,6 +1192,9 @@ int main(int argc,char **argv) {
 	input=outputbw_opt[modindex+1];
       else{
 	ostringstream outputstream;
+	// outputstream << outputbw_opt[0] << "_";
+	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex+1];
+	// outputstream << ".tif";
 	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
 	input=outputstream.str();
       }
@@ -1206,12 +1221,14 @@ int main(int argc,char **argv) {
       // vector<double> lineMask;
 
       //initialize obsLineVector
-      assert(down_opt[0]%2);//window size must be odd 
-      for(int iline=-down_opt[0]/2+1;iline<down_opt[0]/2+1;++iline){
-	if(iline<0)//replicate line 0
-	  imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,0);
-	else
-	  imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,0);
+      if(update){
+	assert(down_opt[0]%2);//window size must be odd 
+	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+	  if(iline<0)//replicate line 0
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,0);
+	  else
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,0);
+	}
       }
       for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
 	assert(irow<imgReaderEst.nrOfRow());
@@ -1419,6 +1436,9 @@ int main(int argc,char **argv) {
 	output=outputfb_opt[modindex];
       else{
 	ostringstream outputstream;
+	// outputstream << outputfb_opt[0] << "_";
+	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	// outputstream << ".tif";
 	outputstream << outputfb_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	output=outputstream.str();
       }
@@ -1438,6 +1458,9 @@ int main(int argc,char **argv) {
 	inputfw=outputfw_opt[modindex];
       else{
 	ostringstream outputstream;
+	// outputstream << outputfw_opt[0] << "_";
+	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	// outputstream << ".tif";
 	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	inputfw=outputstream.str();
       }
@@ -1445,6 +1468,9 @@ int main(int argc,char **argv) {
 	inputbw=outputbw_opt[modindex];
       else{
 	ostringstream outputstream;
+	// outputstream << outputbw_opt[0] << "_";
+	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	// outputstream << ".tif";
 	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	inputbw=outputstream.str();
       }
