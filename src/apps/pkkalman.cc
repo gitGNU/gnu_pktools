@@ -98,7 +98,7 @@ int main(int argc,char **argv) {
   Optionpk<double> weight_opt("w", "weight", "Penalize outliers in measurement via weights. Use first weight to penalize small measurements wrt model and second weight to penalize large measurements wrt model");
   Optionpk<double> deltaObs_opt("dobs", "deltaobs", "Lower and upper thresholds for relative pixel differences (in percentage): (observation-model)/model. For instance to force the observation within a +/- 10 % interval, use: -dobs -10 -dobs 10 (equivalent to -dobs 10). Leave empty to always update on observation");
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
-  // Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
+  Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
   Optionpk<bool> regSensor_opt("rs", "regsensor", "Set optional regression for sensor difference (model - observation).", false);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
   Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
@@ -136,7 +136,7 @@ int main(int argc,char **argv) {
     weight_opt.retrieveOption(argc,argv);
     deltaObs_opt.retrieveOption(argc,argv);
     uncertNodata_opt.retrieveOption(argc,argv);
-    // regTime_opt.retrieveOption(argc,argv);
+    regTime_opt.retrieveOption(argc,argv);
     regSensor_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
@@ -314,9 +314,8 @@ int main(int argc,char **argv) {
   for(int tindex=0;tindex<tobservation_opt.size();++tindex){
     vector<int>::iterator modit;
     modit=lower_bound(tmodel_opt.begin(),tmodel_opt.end(),tobservation_opt[tindex]);
-    int relpos=modit-tmodel_opt.begin();
-    // if(relpos<0)
-    //   relpos=0;
+    int relpos=modit-tmodel_opt.begin()-1;
+    assert(relpos>=0);//todo: for now, we assume model is available at time before first measurement
     relobsindex.push_back(relpos);
     if(verbose_opt[0])
       cout << "tobservation_opt[tindex] " << tobservation_opt[tindex] << " " << relobsindex.back() << " " << observation_opt[tindex] << " " << model_opt[relpos] << endl;
@@ -429,9 +428,9 @@ int main(int argc,char **argv) {
 	}
       }
     }
-    else{//we have a measurement at time 0
+    else{//we have a measurement
       if(verbose_opt[0])
-	cout << "we have an observation at time 0" << endl;
+	cout << "we have a measurement at initial time" << endl;
       imgReaderObs.open(observation_opt[0]);
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
@@ -485,21 +484,23 @@ int main(int argc,char **argv) {
 	  }
 	  else{//model is valid: calculate estimate from model
 	    double errMod=uncertModel_opt[0]*stdDev;
-	    double certNorm=(errMod*errMod+errObs*errObs);
-	    double certMod=errObs*errObs/certNorm;
-	    double certObs=errMod*errMod/certNorm;
-	    double regTime=0;
-	    double regSensor=(c0obs+c1obs*modValue)*certObs;
-	    estWriteBuffer[icol]=regTime+regSensor;
-	    double totalUncertainty=0;
-	    if(errMod<eps_opt[0])
-	      totalUncertainty=errObs;
-	    else if(errObs<eps_opt[0])
-	      totalUncertainty=errMod;
-	    else{
-	      totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
-	      totalUncertainty=sqrt(1.0/totalUncertainty);
-	    }
+	    errMod*=regTime_opt[0];
+	    // double certNorm=(errMod*errMod+errObs*errObs);
+	    // double certMod=errObs*errObs/certNorm;
+	    // double certObs=errMod*errMod/certNorm;
+	    // double regTime=0;
+	    // double regSensor=(c0obs+c1obs*modValue)*certMod;
+	    // estWriteBuffer[icol]=regTime+regSensor;
+	    estWriteBuffer[icol]=modValue;
+	    double totalUncertainty=errMod;
+	    // if(errMod<eps_opt[0])
+	    //   totalUncertainty=errObs;
+	    // else if(errObs<eps_opt[0])
+	    //   totalUncertainty=errMod;
+	    // else{
+	    //   totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
+	    //   totalUncertainty=sqrt(1.0/totalUncertainty);
+	    // }
 	    uncertWriteBuffer[icol]=totalUncertainty;//in case observation is not valid
 	  }
 	  // uncertWriteBuffer[icol]+=uncertReadBuffer[icol];
@@ -610,6 +611,8 @@ int main(int argc,char **argv) {
 	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
       
       double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,0,0);
+      errMod*=regTime_opt[0];
+
       // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,verbose_opt[0]);
       if(verbose_opt[0])
 	cout << "c0modGlobal, c1modGlobal: " << c0modGlobal << ", " << c1modGlobal << endl;
@@ -789,8 +792,10 @@ int main(int argc,char **argv) {
 		  ++it2;
 		}
 	      }
-	      if(model1buffer.size()>minreg_opt[0]&&model2buffer.size()>minreg_opt[0])
+	      if(model1buffer.size()>minreg_opt[0]&&model2buffer.size()>minreg_opt[0]){
 		errMod=stat.linear_regression_err(model1buffer,model2buffer,c0mod,c1mod);
+		errMod*=regTime_opt[0];
+	      }
 	      else{//use global regression...
 		c0mod=c0modGlobal;
 		c1mod=c1modGlobal;
@@ -803,11 +808,18 @@ int main(int argc,char **argv) {
 	    double certNorm=(errMod*errMod+errObs*errObs);
 	    double certMod=errObs*errObs/certNorm;
 	    double certObs=errMod*errMod/certNorm;
-	    double regTime=(c0mod+c1mod*estValue)*certMod;
-
+	    double regTime=(c0mod+c1mod*estValue)*certObs;
+	    double regSensor=(c0obs+c1obs*modValue)*certMod;
 	    // double regSensor=(c0obs+c1obs*estValue)*certObs;
-	    double regSensor=(c0obs+c1obs*modValue)*certObs;
 	    estWriteBuffer[icol]=regTime+regSensor;
+	    //test
+	    // if(regTime<regSensor){
+	    //   cout << "regTime = (" << c0mod << "+" << c1mod << "*" << estValue << ")*" << certObs << " = " << regTime << endl;
+	    //   cout << "regSensor = (" << c0obs << "+" << c1obs << "*" << modValue << ")*" << certMod << " = " << regSensor << endl;
+	    //   assert(regTime+regSensor>0);
+	    //   assert(regTime+regSensor<=1);
+	    // }
+
 	    double totalUncertainty=0;
 	    if(errMod<eps_opt[0])
 	      totalUncertainty=errObs;
@@ -974,9 +986,9 @@ int main(int argc,char **argv) {
 	}
       }
     }
-    else{//we have an observation at end time
+    else{//we have an measurement at end time
       if(verbose_opt[0])
-	cout << "we have an observation at end time" << endl;
+	cout << "we have an measurement at end time" << endl;
       imgReaderObs.open(observation_opt.back());
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
@@ -1030,21 +1042,23 @@ int main(int argc,char **argv) {
 	  }
 	  else{//model is valid: calculate estimate from model
 	    double errMod=uncertModel_opt[0]*stdDev;
-	    double certNorm=(errMod*errMod+errObs*errObs);
-	    double certMod=errObs*errObs/certNorm;
-	    double certObs=errMod*errMod/certNorm;
-	    double regTime=0;
-	    double regSensor=(c0obs+c1obs*modValue)*certObs;
-	    estWriteBuffer[icol]=regTime+regSensor;
-	    double totalUncertainty=0;
-	    if(errMod<eps_opt[0])
-	      totalUncertainty=errObs;
-	    else if(errObs<eps_opt[0])
-	      totalUncertainty=errMod;
-	    else{
-	      totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
-	      totalUncertainty=sqrt(1.0/totalUncertainty);
-	    }
+	    errMod*=regTime_opt[0];
+	    // double certNorm=(errMod*errMod+errObs*errObs);
+	    // double certMod=errObs*errObs/certNorm;
+	    // double certObs=errMod*errMod/certNorm;
+	    // double regTime=0;
+	    // double regSensor=(c0obs+c1obs*modValue)*certMod;
+	    // estWriteBuffer[icol]=regTime+regSensor;
+	    estWriteBuffer[icol]=modValue;
+	    double totalUncertainty=errMod;
+	    // if(errMod<eps_opt[0])
+	    //   totalUncertainty=errObs;
+	    // else if(errObs<eps_opt[0])
+	    //   totalUncertainty=errMod;
+	    // else{
+	    //   totalUncertainty=1.0/errMod/errMod+1/errObs/errObs;
+	    //   totalUncertainty=sqrt(1.0/totalUncertainty);
+	    // }
 	    uncertWriteBuffer[icol]=totalUncertainty;//in case observation is not valid
 	  }
 	  //measurement update
@@ -1154,6 +1168,8 @@ int main(int argc,char **argv) {
 	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
 
       double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,0,0);
+      errMod*=regTime_opt[0];
+
       // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,verbose_opt[0]);
       if(verbose_opt[0])
 	cout << "c0modGlobal, c1modGlobal: " << c0modGlobal << ", " << c1modGlobal << endl;
@@ -1330,8 +1346,10 @@ int main(int argc,char **argv) {
 		  ++it2;
 		}
 	      }
-	      if(model1buffer.size()>minreg_opt[0]&&model2buffer.size()>minreg_opt[0])
+	      if(model1buffer.size()>minreg_opt[0]&&model2buffer.size()>minreg_opt[0]){
 		errMod=stat.linear_regression_err(model1buffer,model2buffer,c0mod,c1mod);
+		errMod*=regTime_opt[0];
+	      }
 	      else{//use global regression...
 		c0mod=c0modGlobal;
 		c1mod=c1modGlobal;
@@ -1344,10 +1362,10 @@ int main(int argc,char **argv) {
 	    double certNorm=(errMod*errMod+errObs*errObs);
 	    double certMod=errObs*errObs/certNorm;
 	    double certObs=errMod*errMod/certNorm;
-	    double regTime=(c0mod+c1mod*estValue)*certMod;
+	    double regTime=(c0mod+c1mod*estValue)*certObs;
 
 	    // double regSensor=(c0obs+c1obs*estValue)*certObs;
-	    double regSensor=(c0obs+c1obs*modValue)*certObs;
+	    double regSensor=(c0obs+c1obs*modValue)*certMod;
 	    estWriteBuffer[icol]=regTime+regSensor;
 	    double totalUncertainty=0;
 	    if(errMod<eps_opt[0])

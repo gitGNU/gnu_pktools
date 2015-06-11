@@ -82,7 +82,7 @@ using namespace std;
 
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input las file");
-  Optionpk<string> attribute_opt("n", "name", "names of the attribute to select: intensity, return, nreturn, z", "z");
+  Optionpk<string> attribute_opt("n", "name", "names of the point attribute to select: intensity, return, nreturn, z", "z");
   // Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering", 0.0);
   // Optionpk<double> hThreshold_opt("ht", "maxHeight", "initial and maximum height threshold for progressive morphological filtering (e.g., -ht 0.2 -ht 2.5)", 0.2);

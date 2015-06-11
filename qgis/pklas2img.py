@@ -66,7 +66,7 @@ class pklas2img(pktoolsAlgorithm):
 
         self.addParameter(ParameterFile(self.INPUT, "Input LAS(Z) data set(s)", False, False))
 
-        self.addParameter(ParameterSelection(self.ATTRIBUTE,"composite for multiple points in cell",self.ATTRIBUTE_OPTIONS, 0))
+        self.addParameter(ParameterSelection(self.ATTRIBUTE,"name of the point attribute to select",self.ATTRIBUTE_OPTIONS, 0))
         self.addParameter(ParameterSelection(self.COMPOSITE,"composite for multiple points in cell",self.COMPOSITE_OPTIONS, 0))
         self.addParameter(ParameterSelection(self.FILTER,"filter las points",self.FILTER_OPTIONS, 0))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
