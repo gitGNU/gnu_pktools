@@ -245,6 +245,10 @@ int main(int argc, char *argv[])
     exit(1);
   }
   
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
   int nband=0;
   int nwriteBand=0;
   int writeBand=0;

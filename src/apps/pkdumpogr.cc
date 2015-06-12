@@ -31,7 +31,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ## SYNOPSIS
 
 <code>
-  Usage: pkdumpogr -i input.txt [-o output]
+  Usage: pkdumpogr -i input [-o output]
 </code>
 
 <code>
@@ -59,7 +59,7 @@ The utility pkdumpogr dumps the content of a vector dataset to (standard) output
  | t      | transpose            | bool | false |transpose output (does not work for -n ALL  | 
  | fs     | fs                   | char |       |field separator. | 
 
-Usage: pkdumpogr -i input.txt [-o output]
+Usage: pkdumpogr -i input. [-o output]
 
 
 Examples
@@ -100,13 +100,17 @@ int main(int argc, char *argv[])
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkdumpogr -i input.txt [-o output]" << endl;
+    cout << "Usage: pkdumpogr -i input [-o output]" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
 
-  assert(input_opt.size());
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
+
   ImgReaderOgr inputReader;
   try{
     inputReader.open(input_opt[0]);

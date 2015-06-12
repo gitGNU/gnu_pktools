@@ -391,6 +391,9 @@ version 2.6.4
 	polygon buffer was not created with point or centroid
  - pkdumpogr
 	support field separator as option (feature request #108834)
+	check for empty input (feature request #108836)
+ - pkcomposite
+	check for empty input
  - pkdiff
 	support ascii and latex output for confusion matrix
 Todo:
