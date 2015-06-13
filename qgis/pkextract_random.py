@@ -108,7 +108,7 @@ class pkextract_random(pktoolsAlgorithm):
         self.name = "extract random points"
         self.group = "[pktools] raster/vector"
         self.addParameter(ParameterRaster(self.INPUT, 'Input raster data set'))
-        self.addParameter(ParameterSelection(self.RULE,"composite rule",self.RULE_OPTIONS, 0))
+        self.addParameter(ParameterSelection(self.RULE,"extraction rule",self.RULE_OPTIONS, 0))
 
         self.addOutput(OutputVector(self.OUTPUT, 'Output vector data set'))
         self.addParameter(ParameterSelection(self.FORMAT,
