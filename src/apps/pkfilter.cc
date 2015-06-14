@@ -49,7 +49,26 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Advanced options: check table
 </code>
 
+\section pkfilter_description Description
+
 This utility implements spatial and spectral filtering for raster data. In the spatial domain (X, Y), the filter typically involves a rectangular convolution kernel (moving window). To avoid image shifting, the size of the window should be odd (3, 5, 7, ...). You can set the window sizes in X and Y directions separately with the options -dx and -dy. A circular kernel (disc) is applied if option -circ is set. An overview of the supported filters (option -f|--filter) is given below. You can create customized filters by defining your own filter taps (multiplicative elements of the filter kernel) via an ascii file (option -tap). In the spectral/temporal domain (Z) you can filter multi-band raster inputs. The kernel filter size can be set with the option -dz (use odd values only).
+
+\anchor pkfilter_functions
+//hiero
+composite rule | composite output
+------------- | -------------
+overwrite | Overwrite overlapping pixels: the latter input image on the command line overrules the previous image
+maxndvi | Create a maximum NDVI (normalized difference vegetation index) composite from multi-band input images. Use option -cb  to set the indexes of the red and near infrared bands respectively (e.g., -cb 0 -cb 1)
+maxband | Select the pixel with a maximum value in the band specified by option -cb
+minband | Select the pixel with a minimum value in the band specified by option -cb
+mean | Calculate the mean (average) of overlapping pixels
+stdev | Calculate the standard deviation of overlapping pixels
+median | Calculate the median of overlapping pixels
+mode | Select the mode of overlapping pixels (maximum voting): use for Byte images only
+sum | Calculate the arithmetic sum of overlapping pixels
+maxallbands | For each individual band, assign the maximum value found in all overlapping pixels. Unlike maxband, output band values cannot be attributed to a single (date) pixel in the input time series
+minallbands | For each individual band, assign the minimum value found in all overlapping pixels. Unlike minband, output band values cannot be attributed to a single (date) pixel in the input time series
+
 \section pkfilter_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
@@ -606,7 +625,7 @@ int main(int argc,char **argv) {
       }
 
       ImgWriterGdal tmpout;
-      tmpout.open("/vsimem/dilation.tif",input);
+      tmpout.open("/vsimem/dilation.tif",input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),input.getDataType(),input.getImageType());
       try{
         if(dimZ_opt.size()){
           filter1d.morphology(input,tmpout,"dilate",dimZ_opt[0]);
@@ -619,6 +638,7 @@ int main(int argc,char **argv) {
 	std::cout<< errorString;
 	exit(1);
       }
+      tmpout.close();
       ImgReaderGdal tmpin;
       tmpin.open("/vsimem/dilation.tif");
       try{
@@ -633,7 +653,6 @@ int main(int argc,char **argv) {
 	cerr << errorstring << endl;
       }
       tmpin.close();
-      tmpout.close();
       break;
     }
     case(filter2d::open):{//opening
@@ -642,7 +661,7 @@ int main(int argc,char **argv) {
 	exit(1);
       }
       ImgWriterGdal tmpout;
-      tmpout.open("/vsimem/erosion.tif",input);
+      tmpout.open("/vsimem/erosion.tif",input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),input.getDataType(),input.getImageType());
       try{
 	if(dimZ_opt.size()){
 	  filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
@@ -655,6 +674,7 @@ int main(int argc,char **argv) {
 	std::cout<< errorString;
 	exit(1);
       }
+      tmpout.close();
       ImgReaderGdal tmpin;
       try{
 	tmpin.open("/vsimem/erosion.tif");
