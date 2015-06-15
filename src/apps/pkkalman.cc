@@ -63,7 +63,8 @@ produce kalman filtered raster time series
  | w      | weight               | double |       |Set observation uncertainty as weighted difference between observation and model (use -w 0 to use a constant observation uncertainty, use -w value >> 1 to penalize low observation values with respect to model, use -w value << 0 to penalize a high observation values with respect to model | 
  | dobs   | deltaobs             | double |       |Lower and upper thresholds for relative pixel differences (in percentage): (observation-model)/model. For instance to force the observation within a +/- 10 % interval, use: -dobs -10 -dobs 10 (equivalent to -dobs 10). Leave empty to always update on observation | 
  | unodata | uncertnodata         | double | 10000 |Uncertainty in case of no-data values in observation | 
- | rs     | regsensor            | bool | false |Set optional regression for sensor difference (model - observation). | 
+ | rt     | regtime             | double | 1 |Set optional regression for sensor difference (model - observation). | 
+ | rs     | regsensor            | double | 1 |Set optional regression for sensor difference (model - observation). | 
  | down   | down                 | int  |       |Downsampling factor for reading model data to calculate regression | 
  | th     | threshold            | float | 0     |threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). | 
  | win    | window               | unsigned short | 0     |window size for calculating regression (use 0 for global) | 
@@ -98,8 +99,8 @@ int main(int argc,char **argv) {
   Optionpk<double> weight_opt("w", "weight", "Penalize outliers in measurement via weights. Use first weight to penalize small measurements wrt model and second weight to penalize large measurements wrt model");
   Optionpk<double> deltaObs_opt("dobs", "deltaobs", "Lower and upper thresholds for relative pixel differences (in percentage): (observation-model)/model. For instance to force the observation within a +/- 10 % interval, use: -dobs -10 -dobs 10 (equivalent to -dobs 10). Leave empty to always update on observation");
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
-  Optionpk<double> regTime_opt("rt", "regtime", "Relative Weight for regression in time series", 1.0);
-  Optionpk<bool> regSensor_opt("rs", "regsensor", "Set optional regression for sensor difference (model - observation).", false);
+  Optionpk<double> regTime_opt("rt", "regtime", "Weight for regression in time series", 1.0);
+  Optionpk<double> regSensor_opt("rs", "regsensor", "Weight for regression model - measurement (model - observation).");
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
   Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
   Optionpk<int> minreg_opt("minreg", "minreg", "Minimum number of pixels to take into account for regression", 5, 2);
@@ -155,7 +156,7 @@ int main(int argc,char **argv) {
     exit(0);
   }
   if(!doProcess){
-    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    std::cerr << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
 
@@ -169,6 +170,10 @@ int main(int argc,char **argv) {
     weight_opt.push_back(weight_opt[0]);
   }
 
+  if(down_opt.empty()){
+    std::cerr << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
+  }
   try{
     ostringstream errorStream;
     if(model_opt.size()<2){
@@ -267,6 +272,9 @@ int main(int argc,char **argv) {
   }
   imgReaderObs.close();
 
+  if(regSensor_opt.empty())
+    regSensor_opt.push_back(1.0/down_opt[0]);
+  //hiero
   // ImgReaderGdal maskReader;
   // double colMask=0;
   // double rowMask=0;
@@ -313,12 +321,12 @@ int main(int argc,char **argv) {
 
   for(int tindex=0;tindex<tobservation_opt.size();++tindex){
     vector<int>::iterator modit;
-    modit=lower_bound(tmodel_opt.begin(),tmodel_opt.end(),tobservation_opt[tindex]);
+    modit=upper_bound(tmodel_opt.begin(),tmodel_opt.end(),tobservation_opt[tindex]);
     int relpos=modit-tmodel_opt.begin()-1;
     assert(relpos>=0);//todo: for now, we assume model is available at time before first measurement
     relobsindex.push_back(relpos);
     if(verbose_opt[0])
-      cout << "tobservation_opt[tindex] " << tobservation_opt[tindex] << " " << relobsindex.back() << " " << observation_opt[tindex] << " " << model_opt[relpos] << endl;
+      cout << "observation " << tindex << ": " << "relative position in model time series is " << relpos << ", date of observation is (tobservation_opt[tindex]): " << tobservation_opt[tindex] << ", relobsindex.back(): " << relobsindex.back() << ", filename observation: " << observation_opt[tindex] << ", filename of corresponding model: " << model_opt[relpos] << endl;
     // if(verbose_opt[0])
     //   cout << "tobservation_opt[tindex] " << tobservation_opt[tindex] << " " << relobsindex.back() << endl;
   }
@@ -339,11 +347,11 @@ int main(int argc,char **argv) {
     }
     else{
       ostringstream outputstream;
-      // outputstream << outputfw_opt[0] << "_";
-      // outputstream << setfill('0') << setw(ndigit) << tmodel_opt[0];
-      // outputstream << ".tif";
+      outputstream << outputfw_opt[0] << "_";
+      outputstream << setfill('0') << setw(ndigit) << tmodel_opt[0];
+      outputstream << ".tif";
       //test
-      outputstream << outputfw_opt[0] << "_" << tmodel_opt[0] << ".tif";
+      // outputstream << outputfw_opt[0] << "_" << tmodel_opt[0] << ".tif";
       output=outputstream.str();
     }
     if(verbose_opt[0])
@@ -396,7 +404,10 @@ int main(int argc,char **argv) {
 	// vector<double> lineMask;
 	imgWriterEst.image2geo(0,irow,geox,geoy);
 	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	if(modRow<0||modRow>=imgReaderModel1.nrOfRow()){
+	  cerr << "Error: geo coordinates (" << geox << "," << geoy << ") not covered in model image " << imgReaderModel1.getFileName() << endl;
+	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	}
 	try{
 	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  //simple nearest neighbor
@@ -439,8 +450,8 @@ int main(int argc,char **argv) {
       if(obsscale_opt.size())
 	imgReaderObs.setScale(obsscale_opt[0]);
 
-      if(regSensor_opt[0])
-	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+      if(regSensor_opt[0]>0)
+	errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
       else{
 	c0obs=0;
 	c1obs=1;
@@ -575,10 +586,10 @@ int main(int argc,char **argv) {
 	output=outputfw_opt[modindex];
       else{
 	ostringstream outputstream;
-	// outputstream << outputfw_opt[0] << "_";
-	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-	// outputstream << ".tif";
-	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	outputstream << outputfw_opt[0] << "_";
+	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	outputstream << ".tif";
+	// outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	output=outputstream.str();
       }
     
@@ -635,8 +646,8 @@ int main(int argc,char **argv) {
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
-	if(regSensor_opt[0])
-	  errObs=imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+	if(regSensor_opt[0]>0)
+	  errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
 	else{
 	  c0obs=0;
 	  c1obs=1;
@@ -651,10 +662,10 @@ int main(int argc,char **argv) {
 	input=outputfw_opt[modindex-1];
       else{
 	ostringstream outputstream;
-	// outputstream << outputfw_opt[0] << "_";
-	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex-1];
-	// outputstream << ".tif";
-	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex-1] << ".tif";
+	outputstream << outputfw_opt[0] << "_";
+	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex-1];
+	outputstream << ".tif";
+	// outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex-1] << ".tif";
 	input=outputstream.str();
       }
       if(verbose_opt[0])
@@ -900,10 +911,10 @@ int main(int argc,char **argv) {
       output=outputbw_opt.back();
     else{
       ostringstream outputstream;
-      // outputstream << outputbw_opt[0] << "_";
-      // outputstream << setfill('0') << setw(ndigit) << tmodel_opt.back();
-      // outputstream << ".tif";
-      outputstream << outputbw_opt[0] << "_" << tmodel_opt.back() << ".tif";
+      outputstream << outputbw_opt[0] << "_";
+      outputstream << setfill('0') << setw(ndigit) << tmodel_opt.back();
+      outputstream << ".tif";
+      // outputstream << outputbw_opt[0] << "_" << tmodel_opt.back() << ".tif";
       output=outputstream.str();
     }
     if(verbose_opt[0])
@@ -997,8 +1008,8 @@ int main(int argc,char **argv) {
       if(obsscale_opt.size())
 	imgReaderObs.setScale(obsscale_opt[0]);
       
-      if(regSensor_opt[0])
-	errObs=imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+      if(regSensor_opt[0]>0)
+	errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
       else{
 	c0obs=0;
 	c1obs=1;
@@ -1132,10 +1143,10 @@ int main(int argc,char **argv) {
 	output=outputbw_opt[modindex];
       else{
 	ostringstream outputstream;
-	// outputstream << outputbw_opt[0] << "_";
-	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex+1];
-	// outputstream << ".tif";
-	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
+	outputstream << outputbw_opt[0] << "_";
+	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	outputstream << ".tif";
+	// outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	output=outputstream.str();
       }
 
@@ -1192,8 +1203,8 @@ int main(int argc,char **argv) {
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
-	if(regSensor_opt[0])
-	  errObs=imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+	if(regSensor_opt[0]>0)
+	  errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
 	else{
 	  c0obs=0;
 	  c1obs=1;
@@ -1208,10 +1219,10 @@ int main(int argc,char **argv) {
 	input=outputbw_opt[modindex+1];
       else{
 	ostringstream outputstream;
-	// outputstream << outputbw_opt[0] << "_";
-	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex+1];
-	// outputstream << ".tif";
-	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
+	outputstream << outputbw_opt[0] << "_";
+	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex+1];
+	outputstream << ".tif";
+	// outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
 	input=outputstream.str();
       }
       ImgReaderGdal imgReaderEst(input);
@@ -1454,10 +1465,10 @@ int main(int argc,char **argv) {
 	output=outputfb_opt[modindex];
       else{
 	ostringstream outputstream;
-	// outputstream << outputfb_opt[0] << "_";
-	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-	// outputstream << ".tif";
-	outputstream << outputfb_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	outputstream << outputfb_opt[0] << "_";
+	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	outputstream << ".tif";
+	// outputstream << outputfb_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	output=outputstream.str();
       }
     
@@ -1476,20 +1487,20 @@ int main(int argc,char **argv) {
 	inputfw=outputfw_opt[modindex];
       else{
 	ostringstream outputstream;
-	// outputstream << outputfw_opt[0] << "_";
-	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-	// outputstream << ".tif";
-	outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	outputstream << outputfw_opt[0] << "_";
+	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	outputstream << ".tif";
+	// outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	inputfw=outputstream.str();
       }
       if(outputbw_opt.size()==model_opt.size())
 	inputbw=outputbw_opt[modindex];
       else{
 	ostringstream outputstream;
-	// outputstream << outputbw_opt[0] << "_";
-	// outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-	// outputstream << ".tif";
-	outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
+	outputstream << outputbw_opt[0] << "_";
+	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
+	outputstream << ".tif";
+	// outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
 	inputbw=outputstream.str();
       }
       ImgReaderGdal imgReaderForward(inputfw);
