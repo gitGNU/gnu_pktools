@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  output_opt("o", "output", "Output image file");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
-  Optionpk<bool> mask_opt("m","mask","mask values out of polygon in extent file to flag option (tip: for better performance, use gdal_rasterize -i -burn 0 -l extent extent.shp output (with output the result of pkcrop)",false);
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask.");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -232,6 +232,8 @@ int main(int argc, char *argv[])
     imgReader.open(input_opt[iimg]);
     if(!isGeoRef)
       isGeoRef=imgReader.isGeoRef();
+    if(imgReader.isGeoRef()&&projection_opt.empty())
+      projection_opt.push_back(imgReader.getProjection());
     if(dx_opt.empty()){
       if(!iimg||imgReader.getDeltaX()<dx)
         dx=imgReader.getDeltaX();
@@ -276,6 +278,8 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
+
+
   if(extent_opt.size()){
     for(int iextent=0;iextent<extent_opt.size();++iextent){
       extentReader.open(extent_opt[iextent]);
@@ -285,7 +289,7 @@ int main(int argc, char *argv[])
       }
       extentReader.close();
     }
-    if(mask_opt[0])
+    if(mask_opt.size())
       extentReader.open(extent_opt[0]);
   }
   else if(cx_opt.size()&&cy_opt.size()&&nx_opt.size()&&ny_opt.size()){
@@ -313,6 +317,52 @@ int main(int argc, char *argv[])
     croplrx=lrx_opt[0];
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
+
+
+
+  ImgWriterGdal maskWriter;
+  if(extent_opt.size()){
+    try{
+      string imageType=imgReader.getImageType();
+      if(oformat_opt.size())//default
+        imageType=oformat_opt[0];
+      maskWriter.open("/vsimem/mask.tif",imgWriter.nrOfCol(),imgWriter.nrOfRow(),1,GDT_Float32,imageType,option_opt);
+      maskWriter.GDALSetNoDataValue(nodata_opt[0]);
+      // maskWriter.copyGeoTransform(imgWriter);
+      if(projection_opt.size())
+	maskWriter.setProjection(projection_opt[0]);
+      //todo: handle multiple extent options
+      maskWriter.rasterizeOgr(extentReader);
+      maskWriter.close();
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(2);
+    }
+    catch(...){
+      cerr << "error catched" << std::endl;
+      exit(1);
+    }
+    mask_opt.clear();
+    mask_opt.push_back("/vsimem/mask.tif");
+  }
+  ImgReaderGdal maskReader;
+  if(mask_opt.size()){
+    try{
+      if(verbose_opt[0]>=1)
+	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
+      maskReader.open(mask_opt[0]);
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(2);
+    }
+    catch(...){
+      cerr << "error catched" << std::endl;
+      exit(1);
+    }
+  }
+
   //determine number of output bands
   int writeBand=0;//write band
 
@@ -485,6 +535,7 @@ int main(int argc, char *argv[])
 	  imgWriter.setColorTable(imgReader.getColorTable());
       }
     }
+
     double startCol=uli;
     double endCol=lri;
     if(uli<0)
@@ -505,6 +556,8 @@ int main(int argc, char *argv[])
       endRow=0;
     else if(lrj>=imgReader.nrOfRow())
       endRow=imgReader.nrOfRow()-1;
+
+
 
     int readncol=endCol-startCol+1;
     vector<double> readBuffer(readncol+1);
@@ -551,6 +604,7 @@ int main(int argc, char *argv[])
       double lowerCol=0;
       double upperCol=0;
       for(int irow=0;irow<imgWriter.nrOfRow();++irow){
+	vector<double> lineMask;
 	double x=0;
 	double y=0;
 	//convert irow to geo
@@ -581,6 +635,7 @@ int main(int argc, char *argv[])
             else
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,readBand,theResample);
 	    // for(int ib=0;ib<ncropcol;++ib){
+	    double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	    for(int ib=0;ib<imgWriter.nrOfCol();++ib){
 	      imgWriter.image2geo(ib,irow,x,y);
 	      //lookup corresponding row for irow in this file
@@ -595,30 +650,61 @@ int main(int argc, char *argv[])
 	      }
 	      else{
                 bool valid=true;
-                if(mask_opt[0]&&extent_opt.size()){
-                  valid=false;
-                  OGRPoint thePoint;
-                  thePoint.setX(x);
-                  thePoint.setY(y);
-                  OGRLayer  *readLayer;
-                  readLayer = extentReader.getDataSource()->GetLayer(0);
-                  readLayer->ResetReading();
-                  OGRFeature *readFeature;
-                  while( (readFeature = readLayer->GetNextFeature()) != NULL ){
-                    OGRGeometry *poGeometry;
-                    poGeometry = readFeature->GetGeometryRef();
-                    assert(poGeometry!=NULL);
-                    //check if point is on surface
-                    OGRPolygon readPolygon = *((OGRPolygon *) poGeometry);
-                    readPolygon.closeRings();
-                    if(readPolygon.Contains(&thePoint)){
-                      valid=true;
-                      break;
-                    }
-                    else
-                      continue;
-                  }
-                }
+		double geox=0;
+		double geoy=0;
+                if(mask_opt.size()){
+		  //read mask
+		  double colMask=0;
+		  double rowMask=0;
+
+		  imgWriter.image2geo(ib,irow,geox,geoy);
+		  maskReader.geo2image(geox,geoy,colMask,rowMask);
+		  colMask=static_cast<int>(colMask);
+		  rowMask=static_cast<int>(rowMask);
+		  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+		    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
+		      try{
+			maskReader.readData(lineMask,GDT_Float32,static_cast<int>(rowMask));
+		      }
+		      catch(string errorstring){
+			cerr << errorstring << endl;
+			exit(1);
+		      }
+		      catch(...){
+			cerr << "error catched" << std::endl;
+			exit(3);
+		      }
+		      oldRowMask=rowMask;
+		    }
+		  }
+		  if(lineMask[colMask]==nodataValue)
+		    valid=false;
+		}
+
+                //   valid=false;
+                //   OGRPoint thePoint;
+                //   thePoint.setX(x);
+                //   thePoint.setY(y);
+                //   OGRLayer  *readLayer;
+                //   readLayer = extentReader.getDataSource()->GetLayer(0);
+                //   readLayer->ResetReading();
+                //   OGRFeature *readFeature;
+                //   while( (readFeature = readLayer->GetNextFeature()) != NULL ){
+                //     OGRGeometry *poGeometry;
+                //     poGeometry = readFeature->GetGeometryRef();
+                //     assert(poGeometry!=NULL);
+                //     //check if point is on surface
+                //     OGRPolygon readPolygon = *((OGRPolygon *) poGeometry);
+                //     readPolygon.closeRings();
+                //     if(readPolygon.Contains(&thePoint)){
+                //       valid=true;
+                //       break;
+                //     }
+                //     else
+                //       continue;
+                //   }
+		// }
                 if(!valid)
                   writeBuffer.push_back(nodataValue);
                 else{
@@ -689,7 +775,7 @@ int main(int argc, char *argv[])
     }
     imgReader.close();
   }
-  if(extent_opt.size()&&mask_opt[0]){
+  if(extent_opt.size()&&mask_opt.size()){
     extentReader.close();
   }
   imgWriter.close();

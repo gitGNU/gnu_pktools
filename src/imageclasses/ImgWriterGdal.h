@@ -26,7 +26,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include "gdal_priv.h"
 #include "ImgReaderGdal.h"
-
+#include "ImgReaderOgr.h"
 
 //--------------------------------------------------------------------------
 class ImgWriterGdal
@@ -77,6 +77,7 @@ public:
   void setColorTable(const std::string& filename, int band=0);
   void setColorTable(GDALColorTable* colorTable, int band=0);
   void setMetadata(char** metadata);
+  void rasterizeOgr(ImgReaderOgr& ogrReader,const std::vector<std::string> layernames=std::vector<std::string>());
 
 protected:
   void setCodec(const std::string& imageType);

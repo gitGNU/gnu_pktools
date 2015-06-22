@@ -20,7 +20,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <iomanip>
 #include <time.h>
+#include <algorithm>
 #include "ogr_spatialref.h"
+extern "C" {
+#include "gdal_alg.h"
+}
 #include "ImgWriterGdal.h"
 
 #ifdef HAVE_CONFIG_H
@@ -605,3 +609,38 @@ bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int ban
   poBand->RasterIO(GF_Write,0,0,nrOfCol(),nrOfRow(),pdata,nrOfCol(),nrOfRow(),dataType,0,0);
   return true;
 }  
+
+void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader,const std::vector<std::string> layernames ){
+  std::vector<int> bands;
+  for(int iband=0;iband<nrOfBand();++iband)
+    bands.push_back(iband+1);
+  std::vector<OGRLayerH> layers;
+  int nlayer=0;
+  std::vector<double> burnValues;//todo: replace hard coded 1 with arg
+  for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
+    std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
+    if(layernames.size())
+      if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
+	continue;
+    std::cout << "processing layer " << currentLayername << std::endl;
+    layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
+    ++nlayer;
+    for(int iband=0;iband<nrOfBand();++iband)
+      burnValues.push_back(1);
+  }
+  void *pTransformArg;
+  char **papszOptions;
+  double dfComplete=0.0;
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  pfnProgress(dfComplete,pszMessage,pProgressArg);
+  if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnValues[0]),papszOptions,pfnProgress,pProgressArg)!=CE_None){
+    std::cerr << CPLGetLastErrorMsg() << std::endl;
+    exit(1);
+  }
+  else{
+    dfComplete=1.0;
+    pfnProgress(dfComplete,pszMessage,pProgressArg);
+  }
+}

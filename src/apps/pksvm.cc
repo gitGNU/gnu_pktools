@@ -106,6 +106,7 @@ Both raster and vector files are supported as input. The output will contain the
  | active | active               | std::string |       |Ogr output for active training sample. | 
  | na     | nactive              | unsigned int | 1     |Number of active training points | 
  | random | random               | bool | true  |Randomize training data for balancing and bagging | 
+ | e      | extent               | std::string |       |get boundary to classify from extent from polygons in vector file | 
 
 Usage: pksvm -t training [-i input -o output] [-cv value]
 
@@ -176,6 +177,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nactive_opt("na", "nactive", "Number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "List of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in class opt)."); 
+  Optionpk<string>  extent_opt("extent", "extent", "get boundary to classify from extent from polygons in vector file");
   Optionpk<short> verbose_opt("v", "verbose", "Verbose level",0,2);
 
   band_opt.setHide(1);
@@ -205,6 +207,7 @@ int main(int argc, char *argv[])
   active_opt.setHide(1);
   nactive_opt.setHide(1);
   random_opt.setHide(1);
+  extent_opt.setHide(1);
 
   verbose_opt.setHide(2);
 
@@ -258,6 +261,7 @@ int main(int argc, char *argv[])
     nactive_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
+    extent_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -309,6 +313,24 @@ int main(int argc, char *argv[])
   unsigned short nbag=(training_opt.size()>1)?training_opt.size():bag_opt[0];
   if(verbose_opt[0]>=1)
     std::cout << "number of bootstrap aggregations: " << nbag << std::endl;
+
+  ImgReaderOgr extentReader;
+  OGRLayer  *readLayer;
+  OGRFeature *readFeature;
+  OGRPoint thePoint;
+
+  double ulx=0;
+  double uly=0;
+  double lrx=0;
+  double lry=0;
+  if(extent_opt.size()){
+    extentReader.open(extent_opt[0]);
+    readLayer = extentReader.getDataSource()->GetLayer(0);
+      if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
+      cerr << "Error: could not get extent from " << extent_opt[0] << endl;
+      exit(1);
+    }
+  }
 
   ImgWriterOgr activeWriter;
   if(active_opt.size()){
@@ -722,22 +744,6 @@ int main(int argc, char *argv[])
       cerr << error << std::endl;
       exit(2);
     }
-    ImgReaderGdal maskReader;
-    if(mask_opt.size()){
-      try{
-        if(verbose_opt[0]>=1)
-          std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-        maskReader.open(mask_opt[0]);
-      }
-      catch(string error){
-        cerr << error << std::endl;
-        exit(2);
-      }
-      catch(...){
-        cerr << "error catched" << std::endl;
-        exit(1);
-      }
-    }
     ImgReaderGdal priorReader;
     if(priorimg_opt.size()){
       try{
@@ -808,6 +814,44 @@ int main(int argc, char *argv[])
       cerr << error << std::endl;
     }
   
+    ImgWriterGdal maskWriter;
+    if(extent_opt.size()){
+      try{
+	maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,imageType,option_opt);
+	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
+        maskWriter.copyGeoTransform(testImage);
+        maskWriter.setProjection(testImage.getProjection());
+	maskWriter.rasterizeOgr(extentReader);
+	maskWriter.close();
+      }
+      catch(string error){
+        cerr << error << std::endl;
+        exit(2);
+      }
+      catch(...){
+        cerr << "error catched" << std::endl;
+        exit(1);
+      }
+      mask_opt.clear();
+      mask_opt.push_back("/vsimem/mask.tif");
+    }
+    ImgReaderGdal maskReader;
+    if(mask_opt.size()){
+      try{
+        if(verbose_opt[0]>=1)
+          std::cout << "opening mask image file " << mask_opt[0] << std::endl;
+        maskReader.open(mask_opt[0]);
+      }
+      catch(string error){
+        cerr << error << std::endl;
+        exit(2);
+      }
+      catch(...){
+        cerr << "error catched" << std::endl;
+        exit(1);
+      }
+    }
+
     for(int iline=0;iline<nrow;++iline){
       vector<float> buffer(ncol);
       vector<short> lineMask;
@@ -877,13 +921,37 @@ int main(int argc, char *argv[])
       //process per pixel
       for(int icol=0;icol<ncol;++icol){
         assert(hpixel[icol].size()==nband);
+	bool doClassify=true;
         bool masked=false;
+	double geox=0;
+	double geoy=0;
+        if(extent_opt.size()){
+	  doClassify=false;
+	  testImage.image2geo(icol,iline,geox,geoy);
+	  //check enveloppe first
+	  if(uly>=geoy&&lry<=geoy&&ulx<=geox&&lrx>=geox){
+	    doClassify=true;
+	  }
+	  // if(doClassify){
+	  //   thePoint.setX(geox);
+	  //   thePoint.setY(geoy);
+	  //   readLayer->ResetReading();
+	  //   while( (readFeature = readLayer->GetNextFeature()) != NULL ){
+	  //     OGRGeometry *poGeometry;
+	  //     poGeometry = readFeature->GetGeometryRef();
+	  //     assert(poGeometry!=NULL);
+	  //     //check if point is on surface
+	  //     if(thePoint.Within(poGeometry)){
+	  //   	 doClassify=true;
+	  //   	 break;
+	  //     }
+	  //   }
+	  // }
+	}
         if(mask_opt.size()){
 	  //read mask
 	  double colMask=0;
 	  double rowMask=0;
-	  double geox=0;
-	  double geoy=0;
 
 	  testImage.image2geo(icol,iline,geox,geoy);
 	  maskReader.geo2image(geox,geoy,colMask,rowMask);
@@ -941,16 +1009,18 @@ int main(int argc, char *argv[])
 	      break;
 	    }
 	  }
-	  if(!valid){
-	    if(classBag_opt.size())
-	      for(int ibag=0;ibag<nbag;++ibag)
-		classBag[ibag][icol]=nodata_opt[0];
-	    classOut[icol]=nodata_opt[0];
-	    continue;//next column
-	  }
+	  if(!valid)
+	    doClassify=false;
 	}
         for(short iclass=0;iclass<nclass;++iclass)
           probOut[iclass][icol]=0;
+	if(!doClassify){
+	  if(classBag_opt.size())
+	    for(int ibag=0;ibag<nbag;++ibag)
+	      classBag[ibag][icol]=nodata_opt[0];
+	  classOut[icol]=nodata_opt[0];
+	  continue;//next column
+	}
 	if(verbose_opt[0]>1)
 	  std::cout << "begin classification " << std::endl;
         //----------------------------------- classification -------------------
@@ -1307,6 +1377,8 @@ int main(int argc, char *argv[])
   try{
     if(active_opt.size())
       activeWriter.close();
+    if(extent_opt.size())
+      extentReader.close();
   }
   catch(string errorString){
     std::cerr << "Error: errorString" << std::endl;
