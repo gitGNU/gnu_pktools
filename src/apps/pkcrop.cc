@@ -97,7 +97,9 @@ int main(int argc, char *argv[])
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
   Optionpk<string>  output_opt("o", "output", "Output image file");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
+  //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
+  Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask.");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
@@ -125,6 +127,7 @@ int main(int argc, char *argv[])
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
+  cut_opt.setHide(1);
   mask_opt.setHide(1);
   option_opt.setHide(1);
   cx_opt.setHide(1);
@@ -156,6 +159,7 @@ int main(int argc, char *argv[])
     dy_opt.retrieveOption(argc,argv);
     resample_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);
+    cut_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     cx_opt.retrieveOption(argc,argv);
@@ -289,7 +293,7 @@ int main(int argc, char *argv[])
       }
       extentReader.close();
     }
-    if(mask_opt.size())
+    if(cut_opt.size())
       extentReader.open(extent_opt[0]);
   }
   else if(cx_opt.size()&&cy_opt.size()&&nx_opt.size()&&ny_opt.size()){
@@ -319,16 +323,47 @@ int main(int argc, char *argv[])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
 
+  int ncropcol=0;
+  int ncroprow=0;
 
   ImgWriterGdal maskWriter;
-  if(extent_opt.size()){
+  if(extent_opt.size()&&cut_opt[0]){
     try{
-      string imageType=imgReader.getImageType();
-      if(oformat_opt.size())//default
-        imageType=oformat_opt[0];
-      maskWriter.open("/vsimem/mask.tif",imgWriter.nrOfCol(),imgWriter.nrOfRow(),1,GDT_Float32,imageType,option_opt);
-      maskWriter.GDALSetNoDataValue(nodata_opt[0]);
+      //test
+      cout << "debug0" << endl;
+      // string imageType=imgReader.getImageType();
+      // if(oformat_opt.size())//default
+      //   imageType=oformat_opt[0];
+      //test
+      ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
+      ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
+      cout << "ncropcol: " << ncropcol << endl;
+      cout << "ncroprow: " << ncroprow << endl;
+      cout << "cropulx: " << cropulx << endl;
+      cout << "croplrx: " << croplrx << endl;
+      cout << "cropuly: " << cropuly << endl;
+      cout << "croplry: " << croplry << endl;
+      cout << "ncroprow: " << ncroprow << endl;
+      cout << "dx: " << dx << endl;
+      cout << "dy: " << dy << endl;
+      //test
+      // maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
+      maskWriter.open("/tmp/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
+      //test
+      cout << "debug2" << endl;
+      if(nodata_opt.size())
+	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
       // maskWriter.copyGeoTransform(imgWriter);
+      //test
+      cout << "debug3" << endl;
+      double gt[6];
+      gt[0]=cropulx;
+      gt[1]=dx;
+      gt[2]=0;
+      gt[3]=cropuly;
+      gt[4]=0;
+      gt[5]=-dy;
+      maskWriter.setGeoTransform(gt);
       if(projection_opt.size())
 	maskWriter.setProjection(projection_opt[0]);
       //todo: handle multiple extent options
@@ -343,8 +378,10 @@ int main(int argc, char *argv[])
       cerr << "error catched" << std::endl;
       exit(1);
     }
-    mask_opt.clear();
-    mask_opt.push_back("/vsimem/mask.tif");
+    // mask_opt.clear();
+    //test
+    // mask_opt.push_back("/vsimem/mask.tif");
+    mask_opt.push_back("/tmp/mask.tif");
   }
   ImgReaderGdal maskReader;
   if(mask_opt.size()){
@@ -399,8 +436,6 @@ int main(int argc, char *argv[])
     }
     int nrow=imgReader.nrOfRow();
     int ncol=imgReader.nrOfCol();
-    int ncropcol=0;
-    int ncroprow=0;
     // if(!dx||!dy){
     //   dx=imgReader.getDeltaX();
     //   dy=imgReader.getDeltaY();
@@ -737,8 +772,8 @@ int main(int argc, char *argv[])
                     // writeBuffer.push_back(readBuffer[readCol]*theScale+theOffset);
                     writeBuffer.push_back(readBuffer[readCol]);
                     break;
-                  }
-                }
+		  }
+		}
 	      }
 	    }
 	  }
@@ -775,7 +810,7 @@ int main(int argc, char *argv[])
     }
     imgReader.close();
   }
-  if(extent_opt.size()&&mask_opt.size()){
+  if(extent_opt.size()&&cut_opt.size()){
     extentReader.close();
   }
   imgWriter.close();
