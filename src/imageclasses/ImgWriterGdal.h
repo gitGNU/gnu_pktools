@@ -77,7 +77,7 @@ public:
   void setColorTable(const std::string& filename, int band=0);
   void setColorTable(GDALColorTable* colorTable, int band=0);
   void setMetadata(char** metadata);
-  void rasterizeOgr(ImgReaderOgr& ogrReader,const std::vector<std::string> layernames=std::vector<std::string>());
+  void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues=std::vector<double>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
 protected:
   void setCodec(const std::string& imageType);

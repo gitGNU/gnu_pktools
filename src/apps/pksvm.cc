@@ -821,7 +821,8 @@ int main(int argc, char *argv[])
 	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
         maskWriter.copyGeoTransform(testImage);
         maskWriter.setProjection(testImage.getProjection());
-	maskWriter.rasterizeOgr(extentReader);
+	vector<double> burnValues(1,1);//burn value is 1 (single band)
+	maskWriter.rasterizeOgr(extentReader,burnValues);
 	maskWriter.close();
       }
       catch(string error){
@@ -980,7 +981,7 @@ int main(int argc, char *argv[])
 		if(lineMask[colMask]==msknodata_opt[ivalue]){
 		  theMask=lineMask[colMask];
 		  masked=true;
-		break;
+		  break;
 		}
 	      }
 	      else{//only values set in msknodata_opt are valid

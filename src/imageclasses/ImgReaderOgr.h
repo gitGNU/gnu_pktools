@@ -79,7 +79,8 @@ public:
 //   OGRLayer *executeSql(const std::string& output,const std::string& sqlStatement, OGRGeometry* spatialFilter=NULL);
   template<typename T> int readSql(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& sqlStatement, OGRGeometry* spatialFilter=NULL, int layer=0, bool pos=false, bool verbose=false);
   template<typename T> int readSql(std::map<int,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, const std::string& sqlStatement, OGRGeometry* spatialFilter, int layer=0, bool pos=false, bool verbose=false);
-  bool getExtent(double& ulx, double& uly, double& lrx, double& lry, int layer=0);
+  bool getExtent(double& ulx, double& uly, double& lrx, double& lry, int layer);
+  bool getExtent(double& ulx, double& uly, double& lrx, double& lry);
 
   void setFieldSeparator(const char fs){ m_fs=fs;};
   char getFieldSeparator() const { return m_fs;};

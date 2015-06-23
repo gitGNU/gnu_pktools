@@ -610,13 +610,21 @@ bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int ban
   return true;
 }  
 
-void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader,const std::vector<std::string> layernames ){
+void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& layernames ){
   std::vector<int> bands;
+  std::vector<double> burnBands;//burn values for all bands in a single layer
+  std::vector<double> burnLayers;//burn values for all bands and all layers
+  if(burnValues.empty()){
+    std::string errorString="Error: burn values not provided";
+    throw(errorString);
+  }
+  burnBands=burnValues;
+  while(burnBands.size()<nrOfBand())
+    burnBands.push_back(burnValues[0]);
   for(int iband=0;iband<nrOfBand();++iband)
     bands.push_back(iband+1);
   std::vector<OGRLayerH> layers;
   int nlayer=0;
-  std::vector<double> burnValues;//todo: replace hard coded 1 with arg
   for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
     std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
     if(layernames.size())
@@ -626,7 +634,7 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader,const std::vector<std::
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
     for(int iband=0;iband<nrOfBand();++iband)
-      burnValues.push_back(1);
+      burnLayers.insert(burnLayers.end(),burnBands.begin(),burnBands.end());
   }
   void *pTransformArg;
   char **papszOptions;
@@ -635,7 +643,7 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader,const std::vector<std::
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
   pfnProgress(dfComplete,pszMessage,pProgressArg);
-  if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnValues[0]),papszOptions,pfnProgress,pProgressArg)!=CE_None){
+  if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),papszOptions,pfnProgress,pProgressArg)!=CE_None){
     std::cerr << CPLGetLastErrorMsg() << std::endl;
     exit(1);
   }

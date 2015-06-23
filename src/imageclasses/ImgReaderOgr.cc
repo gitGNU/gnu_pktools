@@ -77,6 +77,36 @@ bool ImgReaderOgr::getExtent(double& ulx, double& uly, double& lrx, double& lry,
     return false;
 }
 
+bool ImgReaderOgr::getExtent(double& ulx, double& uly, double& lrx, double& lry)
+{
+  bool success=false;
+  OGREnvelope oExt;
+  for(int ilayer=0;ilayer<getLayerCount();++ilayer){
+    if(getLayer(ilayer)->GetExtent(&oExt,TRUE)==OGRERR_NONE){
+      if(!ilayer){
+	ulx=oExt.MinX;
+	uly=oExt.MaxY;
+	lrx=oExt.MaxX;
+	lry=oExt.MinY;
+      }
+      else{
+	if(ulx>oExt.MinX)
+	  ulx=oExt.MinX;
+	if(uly<oExt.MaxY)
+	  uly=oExt.MaxY;
+	if(lrx<oExt.MaxX)
+	  lrx=oExt.MaxX;
+	if(lry>oExt.MinY)
+	  lry=oExt.MinY;
+      }
+      success=true;
+    }
+    else
+      success=false;
+  }
+  return success;
+}
+
 unsigned long int ImgReaderOgr::getFeatureCount(int layer) const
 {
   return(m_datasource->GetLayer(layer)->GetFeatureCount());

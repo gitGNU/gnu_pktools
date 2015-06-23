@@ -40,7 +40,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 <code>
 
-  Options: [-of out_format] [-ot {Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}] [-b band]* [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-dx xres] [-dy yres] [-r resampling_method] [-a_srs epsg:number] [-dstnodata value] 
+  Options: [-of out_format] [-ot {Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}] [-b band]* [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-dx xres] [-dy yres] [-r resampling_method] [-a_srs epsg:number] [-nodata value] 
 
   Advanced options:
   	   [-e vector [-m]] [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-s scale]* [-off offset]* [-ct colortable] [-d description] 
@@ -69,7 +69,8 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | dy     | dy                   | double |       |Output resolution in y (in meter) (empty: keep original resolution) | 
  | r      | resampling-method    | std::string | near  |Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation). | 
  | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
- | m      | mask                 | bool | false |mask values out of polygon in extent file to flag option (tip: for better performance, use gdal_rasterize -i -burn 0 -l extent extent.shp output (with output the result of pkcrop) | 
+ | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
+ | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (0 is nodata) | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | x      | x                    | double |       |x-coordinate of image center to crop (in meter) | 
  | y      | y                    | double |       |y-coordinate of image center to crop (in meter) | 
@@ -79,7 +80,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | nl     | nl                   | int  |       |number of lines to crop (in pixels) | 
  | s      | scale                | double |       |output=scale*input+offset | 
  | off    | offset               | double |       |output=scale*input+offset | 
- | nodata | nodata               | double |       |Nodata value to put in image if out of bounds. | 
+ | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
  | d      | description          | std::string |       |Set image description | 
 
 Usage: pkcrop -i input -o output
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
   //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
-  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask.");
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
+  Optionpk<float>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
@@ -178,7 +179,6 @@ int main(int argc, char *argv[])
     std::cout << predefinedString << std::endl;
     exit(0);
   }
-  //test
   if(verbose_opt[0])
     cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  double nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
+  float nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
   RESAMPLE theResample;
   if(resample_opt[0]=="near"){
     theResample=NEAR;
@@ -232,12 +232,13 @@ int main(int argc, char *argv[])
     dy=dy_opt[0];
 
   bool isGeoRef=false;
+  string projectionString;
   for(int iimg=0;iimg<input_opt.size();++iimg){
     imgReader.open(input_opt[iimg]);
     if(!isGeoRef)
       isGeoRef=imgReader.isGeoRef();
     if(imgReader.isGeoRef()&&projection_opt.empty())
-      projection_opt.push_back(imgReader.getProjection());
+      projectionString=imgReader.getProjection();
     if(dx_opt.empty()){
       if(!iimg||imgReader.getDeltaX()<dx)
         dx=imgReader.getDeltaX();
@@ -278,18 +279,33 @@ int main(int argc, char *argv[])
   double croplry=lry_opt[0];
   //get bounding box from extentReader if defined
   ImgReaderOgr extentReader;
-  //test
-  if(verbose_opt[0])
-    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
-
-
 
   if(extent_opt.size()){
+    double e_ulx;
+    double e_uly;
+    double e_lrx;
+    double e_lry;
     for(int iextent=0;iextent<extent_opt.size();++iextent){
       extentReader.open(extent_opt[iextent]);
-      if(!(extentReader.getExtent(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
+      if(!(extentReader.getExtent(e_ulx,e_uly,e_lrx,e_lry))){
         cerr << "Error: could not get extent from " << extent_opt[0] << endl;
         exit(1);
+      }
+      if(!iextent){
+	ulx_opt[0]=e_ulx;
+	uly_opt[0]=e_uly;
+	lrx_opt[0]=e_lrx;
+	lry_opt[0]=e_lry;
+      }
+      else{
+	if(e_ulx<ulx_opt[0])
+	  ulx_opt[0]=e_ulx;
+	if(e_uly>uly_opt[0])
+	  uly_opt[0]=e_uly;
+	if(e_lrx>lrx_opt[0])
+	  lrx_opt[0]=e_lrx;
+	if(e_lry<lry_opt[0])
+	  lry_opt[0]=e_lry;
       }
       extentReader.close();
     }
@@ -301,27 +317,32 @@ int main(int argc, char *argv[])
     uly_opt[0]=(isGeoRef) ? cy_opt[0]+ny_opt[0]/2.0 : cy_opt[0]-ny_opt[0]/2.0;
     lrx_opt[0]=cx_opt[0]+nx_opt[0]/2.0;
     lry_opt[0]=(isGeoRef) ? cy_opt[0]-ny_opt[0]/2.0 : cy_opt[0]+ny_opt[0]/2.0;
+    // if(cropulx<ulx_opt[0])
+    //   cropulx=ulx_opt[0];
+    // if(cropuly>uly_opt[0])
+    //   cropuly=uly_opt[0];
+    // if(croplrx>lrx_opt[0])
+    //   croplrx=lrx_opt[0];
+    // if(croplry<lry_opt[0])
+    //   croplry=lry_opt[0];
   }
   else if(cx_opt.size()&&cy_opt.size()&&ns_opt.size()&&nl_opt.size()){
     ulx_opt[0]=cx_opt[0]-ns_opt[0]*dx/2.0;
     uly_opt[0]=(isGeoRef) ? cy_opt[0]+nl_opt[0]*dy/2.0 : cy_opt[0]-nl_opt[0]*dy/2.0;
     lrx_opt[0]=cx_opt[0]+ns_opt[0]*dx/2.0;
     lry_opt[0]=(isGeoRef) ? cy_opt[0]-nl_opt[0]*dy/2.0 : cy_opt[0]+nl_opt[0]*dy/2.0;
+    // if(cropulx<ulx_opt[0])
+    //   cropulx=ulx_opt[0];
+    // if(cropuly>uly_opt[0])
+    //   cropuly=uly_opt[0];
+    // if(croplrx>lrx_opt[0])
+    //   croplrx=lrx_opt[0];
+    // if(croplry<lry_opt[0])
+    //   croplry=lry_opt[0];
   }
-  //test
-  if(verbose_opt[0])
-    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
-  if(ulx_opt[0]<cropulx)
-    cropulx=ulx_opt[0];
-  if(uly_opt[0]>cropuly)
-    cropuly=uly_opt[0];
-  if(lry_opt[0]<croplry)
-    croplry=lry_opt[0];
-  if(lrx_opt[0]>croplrx)
-    croplrx=lrx_opt[0];
-  if(verbose_opt[0])
-    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
+  if(verbose_opt[0])
+    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
   int ncropcol=0;
   int ncroprow=0;
@@ -329,45 +350,25 @@ int main(int argc, char *argv[])
   ImgWriterGdal maskWriter;
   if(extent_opt.size()&&cut_opt[0]){
     try{
-      //test
-      cout << "debug0" << endl;
-      // string imageType=imgReader.getImageType();
-      // if(oformat_opt.size())//default
-      //   imageType=oformat_opt[0];
-      //test
       ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
       ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
-      cout << "ncropcol: " << ncropcol << endl;
-      cout << "ncroprow: " << ncroprow << endl;
-      cout << "cropulx: " << cropulx << endl;
-      cout << "croplrx: " << croplrx << endl;
-      cout << "cropuly: " << cropuly << endl;
-      cout << "croplry: " << croplry << endl;
-      cout << "ncroprow: " << ncroprow << endl;
-      cout << "dx: " << dx << endl;
-      cout << "dy: " << dy << endl;
-      //test
-      // maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
-      maskWriter.open("/tmp/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
-      //test
-      cout << "debug2" << endl;
-      if(nodata_opt.size())
-	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
-      // maskWriter.copyGeoTransform(imgWriter);
-      //test
-      cout << "debug3" << endl;
+      maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
       double gt[6];
-      gt[0]=cropulx;
+      gt[0]=ulx_opt[0];
       gt[1]=dx;
       gt[2]=0;
-      gt[3]=cropuly;
+      gt[3]=uly_opt[0];
       gt[4]=0;
       gt[5]=-dy;
       maskWriter.setGeoTransform(gt);
       if(projection_opt.size())
-	maskWriter.setProjection(projection_opt[0]);
+	maskWriter.setProjectionProj4(projection_opt[0]);
+      else if(projectionString.size())
+	maskWriter.setProjection(projectionString);
+	
       //todo: handle multiple extent options
-      maskWriter.rasterizeOgr(extentReader);
+      vector<double> burnValues(1,1);//burn value is 1 (single band)
+      maskWriter.rasterizeOgr(extentReader,burnValues);
       maskWriter.close();
     }
     catch(string error){
@@ -378,10 +379,9 @@ int main(int argc, char *argv[])
       cerr << "error catched" << std::endl;
       exit(1);
     }
-    // mask_opt.clear();
-    //test
-    // mask_opt.push_back("/vsimem/mask.tif");
-    mask_opt.push_back("/tmp/mask.tif");
+    //todo: support multiple masks
+    mask_opt.clear();
+    mask_opt.push_back("/vsimem/mask.tif");
   }
   ImgReaderGdal maskReader;
   if(mask_opt.size()){
@@ -639,19 +639,13 @@ int main(int argc, char *argv[])
       double lowerCol=0;
       double upperCol=0;
       for(int irow=0;irow<imgWriter.nrOfRow();++irow){
-	vector<double> lineMask;
+	vector<float> lineMask;
 	double x=0;
 	double y=0;
 	//convert irow to geo
 	imgWriter.image2geo(0,irow,x,y);
 	//lookup corresponding row for irow in this file
-	  //test
-	  // cout << "x: " << x << ", y: " << y << endl;
 	imgReader.geo2image(x,y,readCol,readRow);
-	//test
-	// cout << "readRow: " << readRow << ", readCol: " << readCol << flush << endl;
-	// double lowerCol=0;
-	// double upperCol=0;
 	vector<double> writeBuffer;
 	if(readRow<0||readRow>=imgReader.nrOfRow()){
 	  //if(readRow<0)
@@ -698,6 +692,7 @@ int main(int argc, char *argv[])
 		  rowMask=static_cast<int>(rowMask);
 		  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
 		    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+
 		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 		      try{
 			maskReader.readData(lineMask,GDT_Float32,static_cast<int>(rowMask));
@@ -712,47 +707,14 @@ int main(int argc, char *argv[])
 		      }
 		      oldRowMask=rowMask;
 		    }
+		    if(lineMask[colMask]==0)
+		      valid=false;
 		  }
-		  if(lineMask[colMask]==nodataValue)
-		    valid=false;
 		}
 
-                //   valid=false;
-                //   OGRPoint thePoint;
-                //   thePoint.setX(x);
-                //   thePoint.setY(y);
-                //   OGRLayer  *readLayer;
-                //   readLayer = extentReader.getDataSource()->GetLayer(0);
-                //   readLayer->ResetReading();
-                //   OGRFeature *readFeature;
-                //   while( (readFeature = readLayer->GetNextFeature()) != NULL ){
-                //     OGRGeometry *poGeometry;
-                //     poGeometry = readFeature->GetGeometryRef();
-                //     assert(poGeometry!=NULL);
-                //     //check if point is on surface
-                //     OGRPolygon readPolygon = *((OGRPolygon *) poGeometry);
-                //     readPolygon.closeRings();
-                //     if(readPolygon.Contains(&thePoint)){
-                //       valid=true;
-                //       break;
-                //     }
-                //     else
-                //       continue;
-                //   }
-		// }
                 if(!valid)
                   writeBuffer.push_back(nodataValue);
                 else{
-                  // double theScale=1;
-                  // double theOffset=0;
-		  // if(autoscale_opt.size()){
-		  //   theScale=(autoscale_opt[1]-autoscale_opt[0])/(theMax-theMin);
-		  //   theOffset=autoscale_opt[0]-theScale*theMin;
-		  // }
-		  // else{
-		  //   theScale=(scale_opt.size()>1)?scale_opt[iband]:scale_opt[0];
-		  //   theOffset=(offset_opt.size()>1)?offset_opt[iband]:offset_opt[0];
-		  // }
                   switch(theResample){
                   case(BILINEAR):
                     lowerCol=readCol-0.5;
