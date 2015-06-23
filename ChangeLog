@@ -398,6 +398,11 @@ version 2.6.4
 	support ascii and latex output for confusion matrix
  - pkfilter
 	bug in close and open vsimem virtual driver does not support metadata
+ - pkcrop
+	support mask
+	support extent to cutline
+ - pksvm
+	support extent to cutline (change request #108835)
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)

@@ -43,7 +43,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-of out_format] [-ot {Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}] [-b band]* [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-dx xres] [-dy yres] [-r resampling_method] [-a_srs epsg:number] [-nodata value] 
 
   Advanced options:
-  	   [-e vector [-m]] [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-s scale]* [-off offset]* [-ct colortable] [-d description] 
+  	   [-e vector [-cut]] [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-s scale]* [-off offset]* [-ct colortable] [-d description] 
 </code>
 
 \section pkcrop_description Description
