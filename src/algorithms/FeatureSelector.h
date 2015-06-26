@@ -37,7 +37,7 @@ class FeatureSelector
  public:
   FeatureSelector(){};
   ~FeatureSelector(){};
-  template<class T> double forward(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures, short verbose=0);
+  template<class T> double forward(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, short verbose=0);
   template<class T> double backward(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int minFeatures, short verbose=0);
   template<class T> double floating(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, double epsilon=0.001, short verbose=0);
   template<class T> double bruteForce(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, short verbose=0);
@@ -45,11 +45,11 @@ class FeatureSelector
   private:
     template<class T> double addFeature(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, short verbose=0);
   template<class T> double removeFeature(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int& r, short verbose=0);  
-  template<class T> double forwardUnivariate(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures, short verbose=0);
+  template<class T> double forwardUnivariate(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, short verbose=0);
 };
 
 //sequential forward selection Univariate (N single best features)
-template<class T> double FeatureSelector::forwardUnivariate(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, short verbose){
+template<class T> double FeatureSelector::forwardUnivariate(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures, short verbose){
   int maxLevels=v[0][0].size();
   if(!maxFeatures)
     maxFeatures=maxLevels;
@@ -108,7 +108,7 @@ template<class T> double FeatureSelector::forwardUnivariate(std::vector< Vector2
 }
 
 //sequential forward selection Multivariate (Combination of N best features)
-template<class T> double FeatureSelector::forward(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures=0, short verbose){
+template<class T> double FeatureSelector::forward(std::vector< Vector2d<T> >& v, CostFactory& theCostFactory, std::list<int>& subset, int maxFeatures, short verbose){
   //Select feature with the best value (get maximal cost for 1 feature)
   double maxCost=0;
   int maxLevels=v[0][0].size();

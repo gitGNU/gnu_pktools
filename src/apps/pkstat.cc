@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 
       for(int inodata=0;inodata<nodata_opt.size();++inodata){
 	if(!inodata)
-	  imgReader.GDALSetNoDataValue(nodata_opt[0],iband);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+	  imgReader.GDALSetNoDataValue(nodata_opt[0],band_opt[iband]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
       }
 
       if(offset_opt.size()>ifile)

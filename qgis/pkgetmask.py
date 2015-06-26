@@ -95,6 +95,7 @@ class pkgetmask(pktoolsAlgorithm):
                 commands.append(maxValue)
         commands.append("-p")
         commands.append(self.OPERATOR_OPTIONS[self.getParameterValue(self.OPERATOR)])
+        data=self.getParameterValue(self.DATA)
         if data != "none":
             dataValues = data.split(';')
             for dataValue in dataValues:

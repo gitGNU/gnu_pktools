@@ -450,8 +450,13 @@ int main(int argc,char **argv) {
       if(obsscale_opt.size())
 	imgReaderObs.setScale(obsscale_opt[0]);
 
-      if(regSensor_opt[0]>0)
+      if(regSensor_opt[0]>0){
 	errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+	if(errObs<0){
+	  c0obs=0;
+	  c1obs=1;
+	}
+      }
       else{
 	c0obs=0;
 	c1obs=1;
@@ -646,15 +651,20 @@ int main(int argc,char **argv) {
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
-	if(regSensor_opt[0]>0)
+	if(regSensor_opt[0]>0){
 	  errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+	  if(errObs<0){
+	    c0obs=0;
+	    c1obs=1;
+	  }
+	}
 	else{
 	  c0obs=0;
 	  c1obs=1;
 	  errObs=0;
 	}
 	if(verbose_opt[0])
-	  cout << "c0obs, c1obs: " << c0obs << ", " << c1obs << endl;
+	  cout << "c0obs, c1obs, errObs: " << c0obs << ", " << c1obs << ", " << errObs << endl;
       }
       //prediction (also to fill cloudy pixels in update mode)
       string input;
@@ -1008,8 +1018,13 @@ int main(int argc,char **argv) {
       if(obsscale_opt.size())
 	imgReaderObs.setScale(obsscale_opt[0]);
       
-      if(regSensor_opt[0]>0)
+      if(regSensor_opt[0]>0){
 	errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+	if(errObs<0){
+	  c0obs=0;
+	  c1obs=1;
+	}
+      }
       else{
 	c0obs=0;
 	c1obs=1;
@@ -1203,8 +1218,13 @@ int main(int argc,char **argv) {
 	//calculate regression between model and observation
 	if(verbose_opt[0])
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
-	if(regSensor_opt[0]>0)
+	if(regSensor_opt[0]>0){
 	  errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
+	  if(errObs<0){
+	    c0obs=0;
+	    c1obs=1;
+	  }
+	}
 	else{
 	  c0obs=0;
 	  c1obs=1;

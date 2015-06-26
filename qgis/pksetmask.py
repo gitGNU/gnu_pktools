@@ -93,12 +93,11 @@ class pksetmask(pktoolsAlgorithm):
                 commands.append('-msknodata')
                 commands.append(msknodataValue)
 
-        band=self.getParameterValue(self.BAND)
         commands.append("-p")
         commands.append(self.OPERATOR_OPTIONS[self.getParameterValue(self.OPERATOR)])
         nodata=self.getParameterValue(self.NODATA)
         commands.append('-nodata')
-        commands.append(nodataValue)
+        commands.append(nodata)
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
             commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])
@@ -106,8 +105,6 @@ class pksetmask(pktoolsAlgorithm):
         if output != "":
             commands.append("-o")
             commands.append('"' + output + '"')
-
-        data=self.getParameterValue(self.DATA)
 
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:
