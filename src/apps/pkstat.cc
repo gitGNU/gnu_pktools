@@ -114,7 +114,6 @@ int main(int argc, char *argv[])
   Optionpk<short> nbin_opt("nbin","nbin","number of bins to calculate histogram");
   Optionpk<bool> relative_opt("rel","relative","use percentiles for histogram to calculate histogram",false);
   Optionpk<bool> kde_opt("kde","kde","Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb",false);
-  Optionpk<bool> correlation_opt("cor","correlation","calculate Pearson produc-moment correlation coefficient between two raster datasets (defined by -c <col1> -c <col2>)",false);
   Optionpk<bool> rmse_opt("rmse","rmse","calculate root mean square error between two raster datasets",false);
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression between two raster datasets and get correlation coefficient",false);
   Optionpk<bool> regerr_opt("regerr","regerr","calculate linear regression between two raster datasets and get root mean square error",false);
@@ -155,7 +154,6 @@ int main(int argc, char *argv[])
     nbin_opt.retrieveOption(argc,argv);
     relative_opt.retrieveOption(argc,argv);
     histogram2d_opt.retrieveOption(argc,argv);
-    correlation_opt.retrieveOption(argc,argv);
     rmse_opt.retrieveOption(argc,argv);
     reg_opt.retrieveOption(argc,argv);
     regerr_opt.retrieveOption(argc,argv);

@@ -652,7 +652,7 @@ int main(int argc, char *argv[])
 	  //readRow=0;
 	  //else if(readRow>=imgReader.nrOfRow())
 	  //readRow=imgReader.nrOfRow()-1;
-	  for(int ib=0;ib<imgWriter.nrOfCol();++ib)
+	  for(int icol=0;icol<imgWriter.nrOfCol();++icol)
 	    writeBuffer.push_back(nodataValue);
 	}
 	else{
@@ -663,10 +663,10 @@ int main(int argc, char *argv[])
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol+1,readRow,readBand,theResample);
             else
               imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,readBand,theResample);
-	    // for(int ib=0;ib<ncropcol;++ib){
+	    // for(int icol=0;icol<ncropcol;++icol){
 	    double oldRowMask=-1;//keep track of row mask to optimize number of line readings
-	    for(int ib=0;ib<imgWriter.nrOfCol();++ib){
-	      imgWriter.image2geo(ib,irow,x,y);
+	    for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+	      imgWriter.image2geo(icol,irow,x,y);
 	      //lookup corresponding row for irow in this file
 	      imgReader.geo2image(x,y,readCol,readRow);
 	      if(readCol<0||readCol>=imgReader.nrOfCol()){
@@ -686,7 +686,7 @@ int main(int argc, char *argv[])
 		  double colMask=0;
 		  double rowMask=0;
 
-		  imgWriter.image2geo(ib,irow,geox,geoy);
+		  imgWriter.image2geo(icol,irow,geox,geoy);
 		  maskReader.geo2image(geox,geoy,colMask,rowMask);
 		  colMask=static_cast<int>(colMask);
 		  rowMask=static_cast<int>(rowMask);

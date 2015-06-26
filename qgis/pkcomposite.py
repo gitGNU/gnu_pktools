@@ -75,7 +75,7 @@ class pkcomposite(pktoolsAlgorithm):
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
         self.addParameter(ParameterString(self.DSTNODATA, "nodata value to put in output raster dataset if not valid or out of bounds","0"))
         self.addParameter(ParameterString(self.MINGUI, "flag values smaller or equal to this value as invalid","none"))
-        self.addParameter(ParameterString(self.MAXGUI, "flag values smaller or equal to this value as invalid","none"))
+        self.addParameter(ParameterString(self.MAXGUI, "flag values larger or equal to this value as invalid","none"))
         self.addParameter(ParameterSelection(self.RESAMPLE,"resampling method",self.RESAMPLE_OPTIONS, 0))
         self.addParameter(ParameterString(self.EXTRA,
                           'Additional parameters', '-of GTiff', optional=True))
