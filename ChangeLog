@@ -394,6 +394,7 @@ version 2.6.4
 	check for empty input (feature request #108836)
  - pkcomposite
 	check for empty input
+	image2geo was in assert (did not work in Win Release mode)
  - pkdiff
 	support ascii and latex output for confusion matrix
  - pkfilter

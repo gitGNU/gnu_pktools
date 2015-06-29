@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
       }
         
       for(int ib=0;ib<ncol;++ib){
-        assert(imgWriter.image2geo(ib,irow,x,y));
+        imgWriter.image2geo(ib,irow,x,y);
         //lookup corresponding row for irow in this file
         imgReader.geo2image(x,y,readCol,readRow);
         if(readCol<0||readCol>=imgReader.nrOfCol())
