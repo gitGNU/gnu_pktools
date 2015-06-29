@@ -316,8 +316,6 @@ int main(int argc, char *argv[])
 
   ImgReaderOgr extentReader;
   OGRLayer  *readLayer;
-  OGRFeature *readFeature;
-  OGRPoint thePoint;
 
   double ulx=0;
   double uly=0;
@@ -933,21 +931,6 @@ int main(int argc, char *argv[])
 	  if(uly>=geoy&&lry<=geoy&&ulx<=geox&&lrx>=geox){
 	    doClassify=true;
 	  }
-	  // if(doClassify){
-	  //   thePoint.setX(geox);
-	  //   thePoint.setY(geoy);
-	  //   readLayer->ResetReading();
-	  //   while( (readFeature = readLayer->GetNextFeature()) != NULL ){
-	  //     OGRGeometry *poGeometry;
-	  //     poGeometry = readFeature->GetGeometryRef();
-	  //     assert(poGeometry!=NULL);
-	  //     //check if point is on surface
-	  //     if(thePoint.Within(poGeometry)){
-	  //   	 doClassify=true;
-	  //   	 break;
-	  //     }
-	  //   }
-	  // }
 	}
         if(mask_opt.size()){
 	  //read mask

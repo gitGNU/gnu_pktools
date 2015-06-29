@@ -77,6 +77,9 @@ minallbands | For each individual band, assign the minimum value found in all ov
  | dx     | dx                   | double |       |Output resolution in x (in meter) (empty: keep original resolution) | 
  | dy     | dy                   | double |       |Output resolution in y (in meter) (empty: keep original resolution) | 
  | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
+ | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
+ | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (0 is nodata) | 
+ | msknodata | msknodata            | float | 0     |Mask value not to consider for composite
  | ulx    | ulx                  | double | 0     |Upper left x value bounding box | 
  | uly    | uly                  | double | 0     |Upper left y value bounding box | 
  | lrx    | lrx                  | double | 0     |Lower right x value bounding box | 
@@ -122,6 +125,9 @@ int main(int argc, char *argv[])
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
+  Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
+  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -145,6 +151,11 @@ int main(int argc, char *argv[])
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
+  extent_opt.setHide(1);
+  cut_opt.setHide(1);
+  mask_opt.setHide(1);
+  msknodata_opt.setHide(1);
+  option_opt.setHide(1);
   file_opt.setHide(1);
   weight_opt.setHide(1);
   class_opt.setHide(1);
@@ -159,6 +170,9 @@ int main(int argc, char *argv[])
     dx_opt.retrieveOption(argc,argv);
     dy_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);
+    cut_opt.retrieveOption(argc,argv);
+    mask_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
     ulx_opt.retrieveOption(argc,argv);
     uly_opt.retrieveOption(argc,argv);
     lrx_opt.retrieveOption(argc,argv);
@@ -285,14 +299,40 @@ int main(int argc, char *argv[])
   //get bounding box from extentReader if defined
   ImgReaderOgr extentReader;
   if(extent_opt.size()){
-    extentReader.open(extent_opt[0]);
-    if(!(extentReader.getExtent(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
-       cerr << "Error: could not get extent from " << extent_opt[0] << endl;
-       exit(1);
+    double e_ulx;
+    double e_uly;
+    double e_lrx;
+    double e_lry;
+    for(int iextent=0;iextent<extent_opt.size();++iextent){
+      extentReader.open(extent_opt[iextent]);
+      if(!(extentReader.getExtent(e_ulx,e_uly,e_lrx,e_lry))){
+        cerr << "Error: could not get extent from " << extent_opt[0] << endl;
+        exit(1);
       }
-    else if(verbose_opt[0])
-      cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
+      if(!iextent){
+	ulx_opt[0]=e_ulx;
+	uly_opt[0]=e_uly;
+	lrx_opt[0]=e_lrx;
+	lry_opt[0]=e_lry;
+      }
+      else{
+	if(e_ulx<ulx_opt[0])
+	  ulx_opt[0]=e_ulx;
+	if(e_uly>uly_opt[0])
+	  uly_opt[0]=e_uly;
+	if(e_lrx>lrx_opt[0])
+	  lrx_opt[0]=e_lrx;
+	if(e_lry<lry_opt[0])
+	  lry_opt[0]=e_lry;
+      }
+      extentReader.close();
+    }
+    if(cut_opt.size())
+      extentReader.open(extent_opt[0]);
   }
+
+  if(verbose_opt[0])
+    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
   ImgReaderGdal imgReader;
   string theProjection="";
@@ -537,6 +577,61 @@ int main(int argc, char *argv[])
     else if(theColorTable)
       imgWriter.setColorTable(theColorTable);
   }
+
+  ImgWriterGdal maskWriter;
+  if(extent_opt.size()&&cut_opt[0]){
+    try{
+      maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,"GTiff",option_opt);
+      double gt[6];
+      gt[0]=minULX;
+      gt[1]=dx;
+      gt[2]=0;
+      gt[3]=maxULY;
+      gt[4]=0;
+      gt[5]=-dy;
+      maskWriter.setGeoTransform(gt);
+      if(projection_opt.size())
+	maskWriter.setProjectionProj4(projection_opt[0]);
+      else if(theProjection!=""){
+	if(verbose_opt[0])
+	  cout << "projection: " << theProjection << endl;
+	maskWriter.setProjection(theProjection);
+      }
+	
+      //todo: handle multiple extent options
+      vector<double> burnValues(1,1);//burn value is 1 (single band)
+      maskWriter.rasterizeOgr(extentReader,burnValues);
+      maskWriter.close();
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(2);
+    }
+    catch(...){
+      cerr << "error catched" << std::endl;
+      exit(1);
+    }
+    //todo: support multiple masks
+    mask_opt.clear();
+    mask_opt.push_back("/vsimem/mask.tif");
+  }
+  ImgReaderGdal maskReader;
+  if(mask_opt.size()){
+    try{
+      if(verbose_opt[0]>=1)
+	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
+      maskReader.open(mask_opt[0]);
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(2);
+    }
+    catch(...){
+      cerr << "error catched" << std::endl;
+      exit(1);
+    }
+  }
+
   //create composite image
   if(verbose_opt[0])
      cout << "creating composite image" << endl;
@@ -563,8 +658,15 @@ int main(int argc, char *argv[])
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int irow=0;irow<imgWriter.nrOfRow();++irow){
+    vector<float> lineMask;
     Vector2d< vector<double> > storeBuffer;
     vector<bool> writeValid(ncol);
+
+    //convert irow to geo
+    double x=0;
+    double y=0;
+    imgWriter.image2geo(0,irow,x,y);
+
 
     if(cruleMap[crule_opt[0]]==crule::mean ||
        cruleMap[crule_opt[0]]==crule::median ||
@@ -585,6 +687,9 @@ int main(int argc, char *argv[])
           writeBuffer[iband][icol]=dstnodata_opt[0];
       }
     }
+
+    double oldRowMask=-1;//keep track of row mask to optimize number of line readings
+
     for(int ifile=0;ifile<input_opt.size();++ifile){
       try{
         imgReader.open(input_opt[ifile]);
@@ -618,10 +723,6 @@ int main(int argc, char *argv[])
         endCol=imgReader.nrOfCol()-1;
       int readncol=endCol-startCol+1;
 
-      //convert irow to geo
-      double x=0;
-      double y=0;
-      imgWriter.image2geo(0,irow,x,y);
       //lookup corresponding row for irow in this file
       imgReader.geo2image(x,y,readCol,readRow);
       if(readRow<0||readRow>=imgReader.nrOfRow()){
@@ -643,6 +744,41 @@ int main(int argc, char *argv[])
         
       for(int ib=0;ib<ncol;++ib){
         imgWriter.image2geo(ib,irow,x,y);
+	//check mask first
+	bool valid=true;
+	if(mask_opt.size()){
+	  //read mask
+	  double colMask=0;
+	  double rowMask=0;
+
+	  maskReader.geo2image(x,y,colMask,rowMask);
+	  colMask=static_cast<int>(colMask);
+	  rowMask=static_cast<int>(rowMask);
+	  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+	    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+
+	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
+	      try{
+		maskReader.readData(lineMask,GDT_Float32,static_cast<int>(rowMask));
+	      }
+	      catch(string errorstring){
+		cerr << errorstring << endl;
+		exit(1);
+	      }
+	      catch(...){
+		cerr << "error catched" << std::endl;
+		exit(3);
+	      }
+	      oldRowMask=rowMask;
+	    }
+	    if(lineMask[colMask]==msknodata_opt[0])
+	      valid=false;
+	  }
+	}
+
+	if(!valid)
+	  continue;
+
         //lookup corresponding row for irow in this file
         imgReader.geo2image(x,y,readCol,readRow);
         if(readCol<0||readCol>=imgReader.nrOfCol())
@@ -1097,6 +1233,11 @@ int main(int argc, char *argv[])
     progress=static_cast<float>(irow+1.0)/imgWriter.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
   }
+  if(extent_opt.size()&&cut_opt.size()){
+    extentReader.close();
+  }
+  if(mask_opt.size())
+    maskReader.close();
   imgWriter.close();
 }
   

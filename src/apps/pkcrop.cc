@@ -71,6 +71,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
  | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
  | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (0 is nodata) | 
+ | msknodata | msknodata            | float | 0     |Mask value not to consider for composite
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | x      | x                    | double |       |x-coordinate of image center to crop (in meter) | 
  | y      | y                    | double |       |y-coordinate of image center to crop (in meter) | 
@@ -102,6 +103,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
+  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -130,6 +132,7 @@ int main(int argc, char *argv[])
   extent_opt.setHide(1);
   cut_opt.setHide(1);
   mask_opt.setHide(1);
+  msknodata_opt.setHide(1);
   option_opt.setHide(1);
   cx_opt.setHide(1);
   cy_opt.setHide(1);
@@ -162,6 +165,7 @@ int main(int argc, char *argv[])
     extent_opt.retrieveOption(argc,argv);
     cut_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
+    msknodata_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     cx_opt.retrieveOption(argc,argv);
     cy_opt.retrieveOption(argc,argv);
@@ -707,7 +711,7 @@ int main(int argc, char *argv[])
 		      }
 		      oldRowMask=rowMask;
 		    }
-		    if(lineMask[colMask]==0)
+		    if(lineMask[colMask]==msknodata_opt[0])
 		      valid=false;
 		  }
 		}
@@ -775,5 +779,7 @@ int main(int argc, char *argv[])
   if(extent_opt.size()&&cut_opt.size()){
     extentReader.close();
   }
+  if(mask_opt.size())
+    maskReader.close();
   imgWriter.close();
 }

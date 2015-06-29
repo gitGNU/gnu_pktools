@@ -46,7 +46,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-nn number]* [-m filename [-msknodata value]*] [-nodata value]
 
   Advanced options:
-       [-b band] [-s band] [-e band] [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [--connection 0|1] [-w weights]* [--learning rate] [--maxit number] 
+       [-b band] [-s band] [-e band] [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [--connection 0|1] [-w weights]* [--learning rate] [--maxit number] [-extent vector] 
 </code>
 
 \section pkann_description Description
@@ -96,6 +96,7 @@ The utility pkann implements an artificial neural network (ANN) to solve a super
  | na     | nactive              | unsigned int | 1     |number of active training points | 
  | c      | class                | std::string |       |list of class names. | 
  | r      | reclass              | short |       |list of class values (use same order as in class opt). | 
+ | e      | extent               | std::string |       |get boundary to classify from extent from polygons in vector file | 
 
 Usage: pkann -t training [-i input -o output] [-cv value]
 
@@ -153,6 +154,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
+  Optionpk<string>  extent_opt("extent", "extent", "get boundary to classify from extent from polygons in vector file");
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
 
   band_opt.setHide(1);
@@ -174,6 +176,9 @@ int main(int argc, char *argv[])
   weights_opt.setHide(1);
   maxit_opt.setHide(1);
   learning_opt.setHide(1);
+  extent_opt.setHide(1);
+
+  verbose_opt.setHide(2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -257,6 +262,22 @@ int main(int argc, char *argv[])
   if(verbose_opt[0]>=1)
     cout << "number of bootstrap aggregations: " << nbag << endl;
   
+  ImgReaderOgr extentReader;
+  OGRLayer  *readLayer;
+
+  double ulx=0;
+  double uly=0;
+  double lrx=0;
+  double lry=0;
+  if(extent_opt.size()){
+    extentReader.open(extent_opt[0]);
+    readLayer = extentReader.getDataSource()->GetLayer(0);
+      if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
+      cerr << "Error: could not get extent from " << extent_opt[0] << endl;
+      exit(1);
+    }
+  }
+
   ImgWriterOgr activeWriter;
   if(active_opt.size()){
     ImgReaderOgr trainingReader(training_opt[0]);
@@ -707,22 +728,6 @@ int main(int argc, char *argv[])
       cerr << error << endl;
       exit(2);
     }
-    ImgReaderGdal maskReader;
-    if(mask_opt.size()){
-      try{
-        if(verbose_opt[0]>=1)
-          std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-        maskReader.open(mask_opt[0]);
-      }
-      catch(string error){
-        cerr << error << endl;
-        exit(2);
-      }
-      catch(...){
-        cerr << "error catched" << endl;
-        exit(1);
-      }
-    }
     ImgReaderGdal priorReader;
     if(priorimg_opt.size()){
       try{
@@ -793,6 +798,45 @@ int main(int argc, char *argv[])
       cerr << error << endl;
     }
   
+    ImgWriterGdal maskWriter;
+    if(extent_opt.size()){
+      try{
+	maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,imageType,option_opt);
+	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
+        maskWriter.copyGeoTransform(testImage);
+        maskWriter.setProjection(testImage.getProjection());
+	vector<double> burnValues(1,1);//burn value is 1 (single band)
+	maskWriter.rasterizeOgr(extentReader,burnValues);
+	maskWriter.close();
+      }
+      catch(string error){
+        cerr << error << std::endl;
+        exit(2);
+      }
+      catch(...){
+        cerr << "error catched" << std::endl;
+        exit(1);
+      }
+      mask_opt.clear();
+      mask_opt.push_back("/vsimem/mask.tif");
+    }
+    ImgReaderGdal maskReader;
+    if(mask_opt.size()){
+      try{
+        if(verbose_opt[0]>=1)
+          std::cout << "opening mask image file " << mask_opt[0] << std::endl;
+        maskReader.open(mask_opt[0]);
+      }
+      catch(string error){
+        cerr << error << std::endl;
+        exit(2);
+      }
+      catch(...){
+        cerr << "error catched" << std::endl;
+        exit(1);
+      }
+    }
+
     for(int iline=0;iline<nrow;++iline){
       vector<float> buffer(ncol);
       vector<short> lineMask;
@@ -866,13 +910,22 @@ int main(int argc, char *argv[])
       //process per pixel
       for(int icol=0;icol<ncol;++icol){
         assert(hpixel[icol].size()==nband);
+	bool doClassify=true;
         bool masked=false;
+	double geox=0;
+	double geoy=0;
+        if(extent_opt.size()){
+	  doClassify=false;
+	  testImage.image2geo(icol,iline,geox,geoy);
+	  //check enveloppe first
+	  if(uly>=geoy&&lry<=geoy&&ulx<=geox&&lrx>=geox){
+	    doClassify=true;
+	  }
+	}
         if(mask_opt.size()){
 	  //read mask
 	  double colMask=0;
 	  double rowMask=0;
-	  double geox=0;
-	  double geoy=0;
 
 	  testImage.image2geo(icol,iline,geox,geoy);
 	  maskReader.geo2image(geox,geoy,colMask,rowMask);
@@ -924,22 +977,25 @@ int main(int argc, char *argv[])
 	    }
 	  }
 	  bool valid=false;
-	  for(int iband=0;iband<nband;++iband){
+	  for(int iband=0;iband<hpixel[icol].size();++iband){
 	    if(hpixel[icol][iband]){
 	      valid=true;
 	      break;
 	    }
 	  }
-	  if(!valid){
-	    if(classBag_opt.size())
-	      for(int ibag=0;ibag<nbag;++ibag)
-		classBag[ibag][icol]=nodata_opt[0];
-	    classOut[icol]=nodata_opt[0];
-	    continue;//next column
-	  }
+	  if(!valid)
+	    doClassify=false;
+
 	}
-        for(int iclass=0;iclass<nclass;++iclass)
+        for(short iclass=0;iclass<nclass;++iclass)
           probOut[iclass][icol]=0;
+	if(!doClassify){
+	  if(classBag_opt.size())
+	    for(int ibag=0;ibag<nbag;++ibag)
+	      classBag[ibag][icol]=nodata_opt[0];
+	  classOut[icol]=nodata_opt[0];
+	  continue;//next column
+	}
 	if(verbose_opt[0]>1)
 	  std::cout << "begin classification " << std::endl;
         //----------------------------------- classification -------------------
