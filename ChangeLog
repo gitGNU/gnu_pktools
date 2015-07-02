@@ -395,6 +395,8 @@ version 2.6.4
  - pkcomposite
 	check for empty input
 	image2geo was in assert (did not work in Win Release mode)
+	support mask
+	support extent to cutline
  - pkdiff
 	support ascii and latex output for confusion matrix
  - pkfilter

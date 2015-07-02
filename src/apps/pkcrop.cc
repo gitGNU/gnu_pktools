@@ -71,7 +71,9 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
  | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
  | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (0 is nodata) | 
- | msknodata | msknodata            | float | 0     |Mask value not to consider for composite
+ | msknodata | msknodata            | float | 0     |Mask value not to consider for crop
+ | msknodata | msknodata            | float | 0     |Mask value not to consider for crop
+ | mskband | mskband              | short | 0     |Mask band to read (0 indexed). Provide band for each mask. | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | x      | x                    | double |       |x-coordinate of image center to crop (in meter) | 
  | y      | y                    | double |       |y-coordinate of image center to crop (in meter) | 
@@ -103,7 +105,8 @@ int main(int argc, char *argv[])
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
-  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
+  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
+  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed). Provide band for each mask.", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -133,6 +136,7 @@ int main(int argc, char *argv[])
   cut_opt.setHide(1);
   mask_opt.setHide(1);
   msknodata_opt.setHide(1);
+  mskband_opt.setHide(1);
   option_opt.setHide(1);
   cx_opt.setHide(1);
   cy_opt.setHide(1);
@@ -166,6 +170,7 @@ int main(int argc, char *argv[])
     cut_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     msknodata_opt.retrieveOption(argc,argv);
+    mskband_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     cx_opt.retrieveOption(argc,argv);
     cy_opt.retrieveOption(argc,argv);
@@ -393,6 +398,10 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
       maskReader.open(mask_opt[0]);
+      if(mskband_opt[0]>=maskReader.nrOfBand()){
+	string errorString="Error: illegal mask band";
+	throw(errorString);
+      }
     }
     catch(string error){
       cerr << error << std::endl;
@@ -699,7 +708,7 @@ int main(int argc, char *argv[])
 
 		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 		      try{
-			maskReader.readData(lineMask,GDT_Float32,static_cast<int>(rowMask));
+			maskReader.readData(lineMask,GDT_Float32,static_cast<int>(rowMask),mskband_opt[0]);
 		      }
 		      catch(string errorstring){
 			cerr << errorstring << endl;
