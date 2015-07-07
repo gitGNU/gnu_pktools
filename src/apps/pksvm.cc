@@ -47,7 +47,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-g gamma] [-cc cost] [-m filename [-msknodata value]*] [-nodata value]
 
   Advanced options:
-       [-b band] [-s band] [-e band] [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [-svmt type] [-kt type] [-kd value]  [-c0 value] [-nu value] [-eloss value] [-cache value] [-etol value] [-shrink] [-extent vector]
+       [-b band] [-sband band -eband band]* [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [-svmt type] [-kt type] [-kd value]  [-c0 value] [-nu value] [-eloss value] [-cache value] [-etol value] [-shrink] [-extent vector]
 </code>
 
 \section pksvm_description Description
@@ -80,8 +80,8 @@ Both raster and vector files are supported as input. The output will contain the
  | msknodata | msknodata            | short | 0     |Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. | 
  | nodata | nodata               | unsigned short | 0     |Nodata value to put where image is masked as nodata | 
  | b      | band                 | short |       |Band index (starting from 0, either use band option or use start to end) | 
- | s      | start                | double | 0     |Start band sequence number | 
- | e      | end                  | double | 0     |End band sequence number (set to 0 to include all bands) | 
+ | sband  | startband            | unsigned short |      |Start band sequence number | 
+ | eband  | endband              | unsigned short |      |End band sequence number   | 
  | bal    | balance              | unsigned int | 0     |Balance the input data to this number of samples for each class | 
  | min    | min                  | int  | 0     |If number of training pixels is less then min, do not take this class into account (0: consider all classes) | 
  | bag    | bag                  | unsigned short | 1     |Number of bootstrap aggregations | 
@@ -90,8 +90,8 @@ Both raster and vector files are supported as input. The output will contain the
  | cb     | classbag             | std::string |       |Output for each individual bootstrap aggregation | 
  | prob   | prob                 | std::string |       |Probability image. | 
  | pim    | priorimg             | std::string |       |Prior probability image (multi-band img with band for each class | 
- |        | offset               | double | 0     |Offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
- |        | scale                | double | 0     |Scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ | offset | offset               | double | 0     |Offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
+ | scale  | scale                | double | 0     |Scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
  | svmt   | svmtype              | std::string | C_SVC |Type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR) | 
  | kt     | kerneltype           | std::string | radial |Type of kernel function (linear,polynomial,radial,sigmoid)  | 
  | kd     | kd                   | unsigned short | 3     |Degree in kernel function | 
@@ -137,11 +137,11 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("bal", "balance", "Balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "Randomize training data for balancing and bagging", true, 2);
   Optionpk<int> minSize_opt("min", "min", "If number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
-  Optionpk<short> band_opt("b", "band", "Band index (starting from 0, either use band option or use start to end)");
-  Optionpk<double> bstart_opt("s", "start", "Start band sequence number",0); 
-  Optionpk<double> bend_opt("e", "end", "End band sequence number (set to 0 to include all bands)", 0); 
-  Optionpk<double> offset_opt("\0", "offset", "Offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
-  Optionpk<double> scale_opt("\0", "scale", "Scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
+  Optionpk<unsigned short> band_opt("b", "band", "Band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<double> offset_opt("offset", "offset", "Offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
+  Optionpk<double> scale_opt("scale", "scale", "Scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<double> priors_opt("prior", "prior", "Prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation)", 0.0); 
   Optionpk<string> priorimg_opt("pim", "priorimg", "Prior probability image (multi-band img with band for each class","",2); 
   Optionpk<unsigned short> cv_opt("cv", "cv", "N-fold cross validation mode",0);
@@ -367,6 +367,28 @@ int main(int argc, char *argv[])
       priors[iclass]/=normPrior;
   }
 
+  //convert start and end band options to vector of band indexes
+  try{
+    if(bstart_opt.size()){
+      if(bend_opt.size()!=bstart_opt.size()){
+	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+	throw(errorstring);
+      }
+      band_opt.clear();
+      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+	if(bend_opt[ipair]<=bstart_opt[ipair]){
+	  string errorstring="Error: index for end band must be smaller then start band";
+	  throw(errorstring);
+	}
+	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	  band_opt.push_back(iband);
+      }
+    }
+  }
+  catch(string error){
+    cerr << error << std::endl;
+    exit(1);
+  }
   //sort bands
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
@@ -402,7 +424,7 @@ int main(int argc, char *argv[])
         if(band_opt.size())
           totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
         else
-          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);
@@ -876,7 +898,7 @@ int main(int argc, char *argv[])
           }
         }
         else{
-          for(int iband=bstart_opt[0];iband<bstart_opt[0]+nband;++iband){
+          for(int iband=0;iband<nband;++iband){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);

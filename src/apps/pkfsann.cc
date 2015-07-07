@@ -69,11 +69,11 @@ The utility pkfsann implements a number of feature selection techniques, among w
  |        | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
  | random | random               | bool | true  |in case of balance, randomize input data | 
  | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account | 
- | b      | band                 | short |       |band index (starting from 0, either use band option or use start to end) | 
- | s      | start                | double | 0     |start band sequence number | 
- | e      | end                  | double | 0     |end band sequence number (set to 0 to include all bands) | 
- |        | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
- |        | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ | b      | band                 | unsigned short |      |band index (starting from 0, either use band option or use start to end) | 
+ | sband  | startband            | unsigned short |      |Start band sequence number | 
+ | eband  | endband              | unsigned short |      |End band sequence number   | 
+ | offset | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
+ | scale  | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
  | a      | aggreg               | unsigned short | 0     |how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule). | 
  | sm     | sm                   | std::string | sffs  |feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search) | 
  | ecost  | ecost                | float | 0.001 |epsilon for stopping criterion in cost function to determine optimal number of features | 
@@ -235,9 +235,9 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
-  Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<double> bstart_opt("s", "start", "start band sequence number",0); 
-  Optionpk<double> bend_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
+  Optionpk<unsigned short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",0);
@@ -364,6 +364,28 @@ int main(int argc, char *argv[])
   //     priors[iclass]/=normPrior;
   // }
 
+  //convert start and end band options to vector of band indexes
+  try{
+    if(bstart_opt.size()){
+      if(bend_opt.size()!=bstart_opt.size()){
+	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+	throw(errorstring);
+      }
+      band_opt.clear();
+      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+	if(bend_opt[ipair]<=bstart_opt[ipair]){
+	  string errorstring="Error: index for end band must be smaller then start band";
+	  throw(errorstring);
+	}
+	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	  band_opt.push_back(iband);
+      }
+    }
+  }
+  catch(string error){
+    cerr << error << std::endl;
+    exit(1);
+  }
   //sort bands
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
@@ -398,10 +420,10 @@ int main(int argc, char *argv[])
       }
     }
     else{
-      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }

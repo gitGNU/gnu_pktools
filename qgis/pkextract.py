@@ -119,7 +119,7 @@ class pkextract(pktoolsAlgorithm):
                           'Destination Format', FORMATS))
 
         self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
-        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features",1,25,1))
+        self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features",0,19,0))
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
 
@@ -164,8 +164,6 @@ class pkextract(pktoolsAlgorithm):
         commands.append('-o')
         commands.append('"' + outFile + '"')
 
-        if self.getParameterValue(self.POLYGON):
-            commands.append("-polygon")
         buffer=self.getParameterValue(self.BUFFER)
         if buffer > 1:
             commands.append("-buf")

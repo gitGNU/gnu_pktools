@@ -74,11 +74,11 @@ The optimization routine uses a grid search. The initial and final values of the
  | bal    | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
  | random | random               | bool | true  |in case of balance, randomize input data | 
  | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account | 
- | b      | band                 | short |       |band index (starting from 0, either use band option or use start to end) | 
- | s      | start                | double | 0     |start band sequence number | 
- | e      | end                  | double | 0     |end band sequence number (set to 0 to include all bands) | 
- |        | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
- |        | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ | b      | band                 | unsigned short |      |band index (starting from 0, either use band option or use start to end) | 
+ | sband  | startband            | unsigned short |      |Start band sequence number | 
+ | eband  | endband              | unsigned short |      |End band sequence number   | 
+ | offset | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
+ | scale  | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
  | svmt   | svmtype              | std::string | C_SVC |type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR) | 
  | kt     | kerneltype           | std::string | radial |type of kernel function (linear,polynomial,radial,sigmoid)  | 
  | kd     | kd                   | unsigned short | 3     |degree in kernel function | 
@@ -187,11 +187,11 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
-  Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<double> bstart_opt("s", "start", "start band sequence number",0); 
-  Optionpk<double> bend_opt("e", "end", "end band sequence number (set to 0 to include all bands)", 0); 
-  Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
-  Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
+  Optionpk<unsigned short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<double> offset_opt("offset", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
+  Optionpk<double> scale_opt("scale", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
 //Optionpk<string> algorithm_opt("a", "algorithm", "GRID, or any optimization algorithm from http://ab-initio.mit.edu/wiki/index.php/NLopt_Algorithms","GRID"); 
   Optionpk<double> tolerance_opt("tol","tolerance","relative tolerance for stopping criterion",0.0001);
@@ -311,6 +311,28 @@ int main(int argc, char *argv[])
   //     priors[iclass]/=normPrior;
   // }
 
+  //convert start and end band options to vector of band indexes
+  try{
+    if(bstart_opt.size()){
+      if(bend_opt.size()!=bstart_opt.size()){
+	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+	throw(errorstring);
+      }
+      band_opt.clear();
+      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+	if(bend_opt[ipair]<=bstart_opt[ipair]){
+	  string errorstring="Error: index for end band must be smaller then start band";
+	  throw(errorstring);
+	}
+	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	  band_opt.push_back(iband);
+      }
+    }
+  }
+  catch(string error){
+    cerr << error << std::endl;
+    exit(1);
+  }
   //sort bands
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
@@ -343,10 +365,10 @@ int main(int argc, char *argv[])
       }
     }
     else{
-      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+      totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=inputReader.readDataImageOgr(testMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+	totalTestSamples=inputReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
       trainingReader.close();

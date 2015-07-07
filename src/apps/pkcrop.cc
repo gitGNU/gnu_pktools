@@ -43,7 +43,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-of out_format] [-ot {Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}] [-b band]* [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-dx xres] [-dy yres] [-r resampling_method] [-a_srs epsg:number] [-nodata value] 
 
   Advanced options:
-  	   [-e vector [-cut]] [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-s scale]* [-off offset]* [-ct colortable] [-d description] 
+  	   [-e vector [-cut]] [-sband band -eband band]* [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-scale value]* [-off offset]* [-ct colortable] [-d description] 
 </code>
 
 \section pkcrop_description Description
@@ -60,7 +60,9 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | uly    | uly                  | double | 0     |Upper left y value bounding box | 
  | lrx    | lrx                  | double | 0     |Lower right x value bounding box | 
  | lry    | lry                  | double | 0     |Lower right y value bounding box | 
- | b      | band                 | int  |       |band index to crop (leave empty to retain all bands) | 
+ | b      | band                 | unsigned short |       |band index to crop (leave empty to retain all bands) | 
+ | sband  | startband            | unsigned short |      |Start band sequence number | 
+ | eband  | endband              | unsigned short |      |End band sequence number   | 
  | as     | autoscale            | double |       |scale output to min and max, e.g., --autoscale 0 --autoscale 255 | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
  | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
@@ -81,7 +83,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | ny     | ny                   | double |       |image size in y to crop (in meter) | 
  | ns     | ns                   | int  |       |number of samples  to crop (in pixels) | 
  | nl     | nl                   | int  |       |number of lines to crop (in pixels) | 
- | s      | scale                | double |       |output=scale*input+offset | 
+ | scale  | scale                | double |       |output=scale*input+offset | 
  | off    | offset               | double |       |output=scale*input+offset | 
  | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
  | d      | description          | std::string |       |Set image description | 
@@ -119,10 +121,12 @@ int main(int argc, char *argv[])
   Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
   Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
   Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
-  Optionpk<int>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
+  Optionpk<unsigned short>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
+  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> autoscale_opt("as", "autoscale", "scale output to min and max, e.g., --autoscale 0 --autoscale 255");
-  Optionpk<double> scale_opt("s", "scale", "output=scale*input+offset");
-  Optionpk<double> offset_opt("off", "offset", "output=scale*input+offset");
+  Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
+  Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -134,6 +138,8 @@ int main(int argc, char *argv[])
 
   extent_opt.setHide(1);
   cut_opt.setHide(1);
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
   mask_opt.setHide(1);
   msknodata_opt.setHide(1);
   mskband_opt.setHide(1);
@@ -159,6 +165,8 @@ int main(int argc, char *argv[])
     lrx_opt.retrieveOption(argc,argv);
     lry_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    bstart_opt.retrieveOption(argc,argv);
+    bend_opt.retrieveOption(argc,argv);
     autoscale_opt.retrieveOption(argc,argv);
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -239,6 +247,29 @@ int main(int argc, char *argv[])
     dx=dx_opt[0];
   if(dy_opt.size())
     dy=dy_opt[0];
+
+  //convert start and end band options to vector of band indexes
+  try{
+    if(bstart_opt.size()){
+      if(bend_opt.size()!=bstart_opt.size()){
+	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+	throw(errorstring);
+      }
+      band_opt.clear();
+      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+	if(bend_opt[ipair]<=bstart_opt[ipair]){
+	  string errorstring="Error: index for end band must be smaller then start band";
+	  throw(errorstring);
+	}
+	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	  band_opt.push_back(iband);
+      }
+    }
+  }
+  catch(string error){
+    cerr << error << std::endl;
+    exit(1);
+  }
 
   bool isGeoRef=false;
   string projectionString;

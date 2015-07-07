@@ -1076,15 +1076,6 @@ int main(int argc, char *argv[])
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
 	      int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-	      //test
-	      assert(uli>=0);
-	      assert(uli<imgReader.nrOfCol());	      
-	      assert(lri>=0);
-	      assert(lri<imgReader.nrOfCol());	      
-	      assert(ulj>=0);
-	      assert(ulj<imgReader.nrOfRow());	      
-	      assert(lrj>=0);
-	      assert(lrj<imgReader.nrOfRow());	      
 	      imgReader.readDataBlock(readValues[iband],GDT_Float64,uli,lri,ulj,lrj,theBand);
 	    }
 
@@ -1488,9 +1479,10 @@ int main(int argc, char *argv[])
 	      std::cout << "get point on polygon" << std::endl;
 	    if(ruleMap[rule_opt[0]]==rule::centroid)
 	      readPolygon.Centroid(&writeCentroidPoint);
-	    else
-	      readPolygon.PointOnSurface(&writeCentroidPoint);
-
+	    else if(readPolygon.PointOnSurface(&writeCentroidPoint)!=OGRERR_NONE){
+	      cerr << "function PointOnSurface failed, trying centroid instead" << endl;
+	      readPolygon.Centroid(&writeCentroidPoint);
+	    }
 	    double ulx,uly,lrx,lry;
 	    double uli,ulj,lri,lrj;
 	    if((polygon_opt[0]&&ruleMap[rule_opt[0]]==rule::point)||(ruleMap[rule_opt[0]]==rule::centroid)){
@@ -1579,15 +1571,6 @@ int main(int argc, char *argv[])
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
 	      int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-	      //test
-	      assert(uli>=0);
-	      assert(uli<imgReader.nrOfCol());	      
-	      assert(lri>=0);
-	      assert(lri<imgReader.nrOfCol());	      
-	      assert(ulj>=0);
-	      assert(ulj<imgReader.nrOfRow());	      
-	      assert(lrj>=0);
-	      assert(lrj<imgReader.nrOfRow());	      
 	      imgReader.readDataBlock(readValues[iband],GDT_Float64,uli,lri,ulj,lrj,theBand);
 	    }
 
@@ -1605,7 +1588,6 @@ int main(int argc, char *argv[])
 		imgReader.image2geo(i,j,theX,theY);
 		thePoint.setX(theX);
 		thePoint.setY(theY);
-		
 		if(ruleMap[rule_opt[0]]!=rule::centroid&&!readPolygon.Contains(&thePoint))
 		  continue;
 
@@ -1654,7 +1636,6 @@ int main(int argc, char *argv[])
 		    //test
 		    writePointFeature->SetGeometry(&thePoint);
 		    assert(wkbFlatten(writePointFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
-		    //test
 		    // OGRGeometry *updateGeometry;
 		    // updateGeometry = writePointFeature->GetGeometryRef();
 		    // OGRPoint *poPoint = (OGRPoint *) updateGeometry;
@@ -1671,13 +1652,7 @@ int main(int argc, char *argv[])
 		}
 		else{
 		  for(int iband=0;iband<nband;++iband){
-		    int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-		    assert(j-ulj>=0);
-		    assert(j-ulj<readValues[iband].size());
-		    assert(i-uli>=0);
-		    assert(i-uli<((readValues[iband])[j-ulj]).size());
 		    double value=((readValues[iband])[j-ulj])[i-uli];
-		    // imgReader.readData(value,GDT_Float64,i,j,theBand);
 		    if(verbose_opt[0]>1)
 		      std::cout << ": " << value << std::endl;
 		    if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point)
@@ -1753,16 +1728,10 @@ int main(int argc, char *argv[])
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
-		//test
-		//writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
-		//test
 		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		assert(wkbFlatten(writeCentroidFeature->GetGeometryRef()->getGeometryType()) == wkbPoint );
-		// OGRGeometry *updateGeometry;
-		// updateGeometry = writeCentroidFeature->GetGeometryRef();
-		// assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }
@@ -1977,7 +1946,6 @@ int main(int argc, char *argv[])
 
 	    if(verbose_opt[0]>1)
 	      std::cout << "get centroid point from polygon" << std::endl;
-
 	    readPolygon.Centroid(&writeCentroidPoint);
 
 	    double ulx,uly,lrx,lry;
@@ -2066,15 +2034,6 @@ int main(int argc, char *argv[])
 	    vector< Vector2d<double> > readValues(nband);
 	    for(int iband=0;iband<nband;++iband){
 	      int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-	      //test
-	      assert(uli>=0);
-	      assert(uli<imgReader.nrOfCol());	      
-	      assert(lri>=0);
-	      assert(lri<imgReader.nrOfCol());	      
-	      assert(ulj>=0);
-	      assert(ulj<imgReader.nrOfRow());	      
-	      assert(lrj>=0);
-	      assert(lrj<imgReader.nrOfRow());	      
 	      imgReader.readDataBlock(readValues[iband],GDT_Float64,uli,lri,ulj,lrj,theBand);
 	    }
 
@@ -2134,10 +2093,10 @@ int main(int argc, char *argv[])
 			writePointFeature = OGRFeature::CreateFeature(writeLayer->GetLayerDefn());
 		      if(verbose_opt[0]>1)
 			std::cout << "copying fields from polygons " << std::endl;
-		      //test
-		      // writePointFeature->SetGeometry(&thePoint);
 		      if(writePointFeature->SetFrom(readFeature)!= OGRERR_NONE)
 			cerr << "writing feature failed" << std::endl;
+		      if(verbose_opt[0]>1)
+			std::cout << "set geometry as point " << std::endl;
 		      //test
 		      writePointFeature->SetGeometry(&thePoint);
 		      assert(wkbFlatten(writePointFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
@@ -2157,13 +2116,7 @@ int main(int argc, char *argv[])
 		  }
 		  else{
 		    for(int iband=0;iband<nband;++iband){
-		      //test
-		      assert(j-ulj>=0);
-		      assert(j-ulj<readValues[iband].size());
-		      assert(i-uli>=0);
-		      assert(i-uli<((readValues[iband])[j-ulj]).size());
 		      double value=((readValues[iband])[j-ulj])[i-uli];
-		      // imgReader.readData(value,GDT_Float64,i,j,theBand);
 		      if(verbose_opt[0]>1)
 			std::cout << ": " << value << std::endl;
 		      if(polygon_opt[0]||ruleMap[rule_opt[0]]!=rule::point)
@@ -2179,17 +2132,6 @@ int main(int argc, char *argv[])
 			case OFTString:
 			  writePointFeature->SetField(fieldname_opt[iband].c_str(),type2string<double>(value).c_str());
 			  break;
-			  // case OFTRealList:{
-			  //   int fieldIndex=writePointFeature->GetFieldIndex(fieldname_opt[iband].c_str());
-			  //   int nCount;
-			  //   const double *theList;
-			  //   theList=writePointFeature->GetFieldAsDoubleList(fieldIndex,&nCount);
-			  //   vector<double> vectorList(nCount+1);
-			  //   for(int index=0;index<nCount;++index)
-			  // 	vectorList[nCount]=value;
-			  //   writePointFeature->SetField(fieldIndex,vectorList.size(),&(vectorList[0]));
-			  //   break;
-			  // }
 			default://not supported
 			  assert(0);
 			  break;
@@ -2251,16 +2193,10 @@ int main(int argc, char *argv[])
 		//create feature
 		if(verbose_opt[0]>1)
 		  std::cout << "copying fields from polygons " << std::endl;
-		//test
-		// writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		if(writeCentroidFeature->SetFrom(readFeature)!= OGRERR_NONE)
 		  cerr << "writing feature failed" << std::endl;
 		writeCentroidFeature->SetGeometry(&writeCentroidPoint);
 		assert(wkbFlatten(writeCentroidFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
-		//test
-		// OGRGeometry *updateGeometry;
-		// updateGeometry = writeCentroidFeature->GetGeometryRef();
-		// assert(wkbFlatten(updateGeometry->getGeometryType()) == wkbPoint );
 		if(verbose_opt[0]>1)
 		  std::cout << "write feature has " << writeCentroidFeature->GetFieldCount() << " fields" << std::endl;
 	      }

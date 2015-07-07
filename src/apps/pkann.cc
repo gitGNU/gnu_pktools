@@ -46,7 +46,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-nn number]* [-m filename [-msknodata value]*] [-nodata value]
 
   Advanced options:
-       [-b band] [-s band] [-e band] [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [--connection 0|1] [-w weights]* [--learning rate] [--maxit number] [-extent vector] 
+       [-b band] [-sband band -eband band]* [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [--connection 0|1] [-w weights]* [--learning rate] [--maxit number] [-extent vector] 
 </code>
 
 \section pkann_description Description
@@ -65,10 +65,10 @@ The utility pkann implements an artificial neural network (ANN) to solve a super
  | bal    | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
  | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account (0: consider all classes) | 
  | b      | band                 | short |       |band index (starting from 0, either use band option or use start to end) | 
- | s      | start                | double | 0     |start band sequence number | 
- | e      | end                  | double | 0     |end band sequence number (set to 0 to include bands) | 
+ | sband  | startband            | unsigned short |      |Start band sequence number | 
+ | eband  | endband              | unsigned short |      |End band sequence number   | 
  |        | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
- |        | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
+ | scale  | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
  | a      | aggreg               | unsigned short | 1     |how to combine aggregated classifiers, see also rc option (1: sum rule, 2: max rule). | 
  | prior  | prior                | double | 0     |prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ) | 
  | pim    | priorimg             | std::string |       |prior probability image (multi-band img with band for each class | 
@@ -120,11 +120,11 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true,2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
-  Optionpk<short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<double> bstart_opt("s", "start", "start band sequence number",0); 
-  Optionpk<double> bend_opt("e", "end", "end band sequence number (set to 0 to include bands)", 0); 
-  Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
-  Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
+  Optionpk<unsigned short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<double> offset_opt("offset", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
+  Optionpk<double> scale_opt("scale", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (1: sum rule, 2: max rule).",1);
   Optionpk<double> priors_opt("prior", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0); 
   Optionpk<string> priorimg_opt("pim", "priorimg", "prior probability image (multi-band img with band for each class","",2); 
@@ -312,6 +312,28 @@ int main(int argc, char *argv[])
       priors[iclass]/=normPrior;
   }
 
+  //convert start and end band options to vector of band indexes
+  try{
+    if(bstart_opt.size()){
+      if(bend_opt.size()!=bstart_opt.size()){
+	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+	throw(errorstring);
+      }
+      band_opt.clear();
+      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+	if(bend_opt[ipair]<=bstart_opt[ipair]){
+	  string errorstring="Error: index for end band must be smaller then start band";
+	  throw(errorstring);
+	}
+	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	  band_opt.push_back(iband);
+      }
+    }
+  }
+  catch(string error){
+    cerr << error << std::endl;
+    exit(1);
+  }
   //sort bands
   if(band_opt.size())
     std::sort(band_opt.begin(),band_opt.end());
@@ -342,7 +364,7 @@ int main(int argc, char *argv[])
         if(band_opt.size())
           totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
         else
-          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,bstart_opt[0],bend_opt[0],label_opt[0],tlayer_opt,verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);
@@ -866,7 +888,7 @@ int main(int argc, char *argv[])
           }
         }
         else{
-          for(int iband=bstart_opt[0];iband<bstart_opt[0]+nband;++iband){
+          for(int iband=0;iband<nband;++iband){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);
