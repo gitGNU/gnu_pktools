@@ -31,6 +31,7 @@ from processing.core.parameters import ParameterVector
 from processing.core.parameters import ParameterRaster
 from processing.core.outputs import OutputRaster
 from processing.core.parameters import ParameterSelection
+from processing.core.parameters import ParameterFile
 from processing.core.parameters import ParameterNumber
 from processing.core.parameters import ParameterString
 from processing.core.parameters import ParameterBoolean
@@ -66,8 +67,8 @@ class pksvm(pktoolsAlgorithm):
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))
         self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",0,100,1.0))
         self.addParameter(ParameterNumber(self.COST, "The parameter C of C_SVC",0,100000,1000.0))
-        self.addParameter(ParameterRaster(self.MASK, "Mask raster dataset",optional=True))
-        self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (e.g., 0;255)","0"))
+        self.addParameter(ParameterFile(self.MASK, "Mask vector/raster dataset",optional=True))
+        self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (in case of raster mask, e.g., 0;255)","0"))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterString(self.EXTRA,
                           'Additional parameters', '-of GTiff', optional=True))

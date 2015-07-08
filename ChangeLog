@@ -406,10 +406,10 @@ version 2.6.4
 	support extent to cutline
 	support start and end band sequence
  - pksvm
-	support extent to cutline (change request #108835)
+	support vector mask to cutline (change request #108835)
 	support start and end band sequence
  - pkann
-	support extent to cutline (change request #108835)
+	support vector mask to cutline (change request #108835)
 	support start and end band sequence
  - FeatureSelector.h
 	compilation error due to redeclaration with default arguments

@@ -46,7 +46,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-nn number]* [-m filename [-msknodata value]*] [-nodata value]
 
   Advanced options:
-       [-b band] [-sband band -eband band]* [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [--connection 0|1] [-w weights]* [--learning rate] [--maxit number] [-extent vector] 
+       [-b band] [-sband band -eband band]* [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [--connection 0|1] [-w weights]* [--learning rate] [--maxit number]
 </code>
 
 \section pkann_description Description
@@ -83,7 +83,7 @@ The utility pkann implements an artificial neural network (ANN) to solve a super
  | bag    | bag                  | unsigned short | 1     |Number of bootstrap aggregations (default is no bagging: 1) | 
  | bs     | bsize                | int  | 100   |Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively | 
  | cb     | classbag             | std::string |       |output for each individual bootstrap aggregation (default is blank) | 
- | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata. | 
+ | m      | mask                 | std::string |       |Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata. | 
  | msknodata | msknodata            | short | 0     |mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0 | 
  | nodata | nodata               | unsigned short | 0     |nodata value to put where image is masked as nodata | 
  | o      | output               | std::string |       |output classification image | 
@@ -96,7 +96,6 @@ The utility pkann implements an artificial neural network (ANN) to solve a super
  | na     | nactive              | unsigned int | 1     |number of active training points | 
  | c      | class                | std::string |       |list of class names. | 
  | r      | reclass              | short |       |list of class values (use same order as in class opt). | 
- | e      | extent               | std::string |       |get boundary to classify from extent from polygons in vector file | 
 
 Usage: pkann -t training [-i input -o output] [-cv value]
 
@@ -139,7 +138,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations (default is no bagging: 1)", 1);
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
-  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
+  Optionpk<string> mask_opt("m", "mask", "Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata.");
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
@@ -154,7 +153,6 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nactive_opt("na", "nactive", "number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "list of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
-  Optionpk<string>  extent_opt("extent", "extent", "get boundary to classify from extent from polygons in vector file");
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
 
   band_opt.setHide(1);
@@ -176,7 +174,6 @@ int main(int argc, char *argv[])
   weights_opt.setHide(1);
   maxit_opt.setHide(1);
   learning_opt.setHide(1);
-  extent_opt.setHide(1);
 
   verbose_opt.setHide(2);
 
@@ -269,12 +266,20 @@ int main(int argc, char *argv[])
   double uly=0;
   double lrx=0;
   double lry=0;
-  if(extent_opt.size()){
-    extentReader.open(extent_opt[0]);
-    readLayer = extentReader.getDataSource()->GetLayer(0);
+
+  bool maskIsVector=false;
+  if(mask_opt.size()){
+    try{
+      extentReader.open(mask_opt[0]);
+      maskIsVector=true;
+      readLayer = extentReader.getDataSource()->GetLayer(0);
       if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
-      cerr << "Error: could not get extent from " << extent_opt[0] << endl;
-      exit(1);
+	cerr << "Error: could not get extent from " << mask_opt[0] << endl;
+	exit(1);
+      }
+    }
+    catch(string errorString){
+      maskIsVector=false;
     }
   }
 
@@ -821,7 +826,8 @@ int main(int argc, char *argv[])
     }
   
     ImgWriterGdal maskWriter;
-    if(extent_opt.size()){
+
+    if(maskIsVector){
       try{
 	maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,imageType,option_opt);
 	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
@@ -829,6 +835,7 @@ int main(int argc, char *argv[])
         maskWriter.setProjection(testImage.getProjection());
 	vector<double> burnValues(1,1);//burn value is 1 (single band)
 	maskWriter.rasterizeOgr(extentReader,burnValues);
+	extentReader.close();
 	maskWriter.close();
       }
       catch(string error){
@@ -936,7 +943,7 @@ int main(int argc, char *argv[])
         bool masked=false;
 	double geox=0;
 	double geoy=0;
-        if(extent_opt.size()){
+        if(maskIsVector){
 	  doClassify=false;
 	  testImage.image2geo(icol,iline,geox,geoy);
 	  //check enveloppe first

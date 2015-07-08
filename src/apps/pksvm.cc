@@ -47,7 +47,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-tln layer]* [-c name -r value]* [-of GDALformat|-f OGRformat] [-co NAME=VALUE]* [-ct filename] [-label attribute] [-prior value]* [-g gamma] [-cc cost] [-m filename [-msknodata value]*] [-nodata value]
 
   Advanced options:
-       [-b band] [-sband band -eband band]* [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [-svmt type] [-kt type] [-kd value]  [-c0 value] [-nu value] [-eloss value] [-cache value] [-etol value] [-shrink] [-extent vector]
+       [-b band] [-sband band -eband band]* [-bal size]* [-min] [-bag value] [-bs value] [-comb rule] [-cb filename] [-prob filename] [-pim priorimage] [--offset value] [--scale value] [-svmt type] [-kt type] [-kd value]  [-c0 value] [-nu value] [-eloss value] [-cache value] [-etol value] [-shrink]
 </code>
 
 \section pksvm_description Description
@@ -76,7 +76,7 @@ Both raster and vector files are supported as input. The output will contain the
  | prior  | prior                | double | 0     |Prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation) | 
  | g      | gamma                | float | 1     |Gamma in kernel function | 
  | cc     | ccost                | float | 1000  |The parameter C of C_SVC, epsilon_SVR, and nu_SVR | 
- | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata. | 
+ | m      | mask                 | std::string |       |Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata. | 
  | msknodata | msknodata            | short | 0     |Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. | 
  | nodata | nodata               | unsigned short | 0     |Nodata value to put where image is masked as nodata | 
  | b      | band                 | short |       |Band index (starting from 0, either use band option or use start to end) | 
@@ -106,7 +106,6 @@ Both raster and vector files are supported as input. The output will contain the
  | active | active               | std::string |       |Ogr output for active training sample. | 
  | na     | nactive              | unsigned int | 1     |Number of active training points | 
  | random | random               | bool | true  |Randomize training data for balancing and bagging | 
- | e      | extent               | std::string |       |get boundary to classify from extent from polygons in vector file | 
 
 Usage: pksvm -t training [-i input -o output] [-cv value]
 
@@ -163,7 +162,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations", 1);
   Optionpk<int> bagSize_opt("bagsize", "bagsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "Output for each individual bootstrap aggregation");
-  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
+  Optionpk<string> mask_opt("m", "mask", "Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata.");
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "Nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "Output classification image"); 
@@ -177,7 +176,6 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nactive_opt("na", "nactive", "Number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "List of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in class opt)."); 
-  Optionpk<string>  extent_opt("extent", "extent", "get boundary to classify from extent from polygons in vector file");
   Optionpk<short> verbose_opt("v", "verbose", "Verbose level",0,2);
 
   band_opt.setHide(1);
@@ -207,7 +205,6 @@ int main(int argc, char *argv[])
   active_opt.setHide(1);
   nactive_opt.setHide(1);
   random_opt.setHide(1);
-  extent_opt.setHide(1);
 
   verbose_opt.setHide(2);
 
@@ -261,7 +258,6 @@ int main(int argc, char *argv[])
     nactive_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
-    extent_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -321,12 +317,20 @@ int main(int argc, char *argv[])
   double uly=0;
   double lrx=0;
   double lry=0;
-  if(extent_opt.size()){
-    extentReader.open(extent_opt[0]);
-    readLayer = extentReader.getDataSource()->GetLayer(0);
+
+  bool maskIsVector=false;
+  if(mask_opt.size()){
+    try{
+      extentReader.open(mask_opt[0]);
+      maskIsVector=true;
+      readLayer = extentReader.getDataSource()->GetLayer(0);
       if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
-      cerr << "Error: could not get extent from " << extent_opt[0] << endl;
-      exit(1);
+	cerr << "Error: could not get extent from " << mask_opt[0] << endl;
+	exit(1);
+      }
+    }
+    catch(string errorString){
+      maskIsVector=false;
     }
   }
 
@@ -835,7 +839,8 @@ int main(int argc, char *argv[])
     }
   
     ImgWriterGdal maskWriter;
-    if(extent_opt.size()){
+
+    if(maskIsVector){
       try{
 	maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,imageType,option_opt);
 	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
@@ -843,6 +848,7 @@ int main(int argc, char *argv[])
         maskWriter.setProjection(testImage.getProjection());
 	vector<double> burnValues(1,1);//burn value is 1 (single band)
 	maskWriter.rasterizeOgr(extentReader,burnValues);
+	extentReader.close();
 	maskWriter.close();
       }
       catch(string error){
@@ -946,7 +952,7 @@ int main(int argc, char *argv[])
         bool masked=false;
 	double geox=0;
 	double geoy=0;
-        if(extent_opt.size()){
+        if(maskIsVector){
 	  doClassify=false;
 	  testImage.image2geo(icol,iline,geox,geoy);
 	  //check enveloppe first
@@ -1383,8 +1389,6 @@ int main(int argc, char *argv[])
   try{
     if(active_opt.size())
       activeWriter.close();
-    if(extent_opt.size())
-      extentReader.close();
   }
   catch(string errorString){
     std::cerr << "Error: errorString" << std::endl;

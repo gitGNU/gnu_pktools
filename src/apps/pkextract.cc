@@ -59,6 +59,24 @@ Instead of a vector dataset, the sample can also be a raster dataset with catego
 
 A typical usage of pkextract is to prepare a training sample for one of the classifiers implemented in pktools.
 
+\anchor pkextract_rules 
+
+Overview of the possible extraction rules:
+
+extraction rule | output features
+--------------- | ---------------
+point | Extract all pixel values covered by the polygon (option -polygon not set) or extract a pixel on the surface option (-polygon set).
+centroid | Extract pixel value at the centroid of the polygon.
+mean | Extract average of all pixel values within the polygon.
+stdev | Extract standard deviation of all pixel values within the polygon.
+median | Extract median of all pixel values within the polygon.
+min | Extract minimum value of all pixels within the polygon.
+max | Extract maximum value of all pixels within the polygon.
+sum | Extract sum of the values of all pixels within the polygon.
+mode | Extract the mode of classes within the polygon (classes must be set with the option class).
+proportion | Extract proportion of class(es) within the polygon (classes must be set with the option class).
+percentile | Extract percentile as defined by option perc (e.g, 95th percentile of values covered by polygon).
+
 \section pkextract_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
@@ -2427,6 +2445,7 @@ int main(int argc, char *argv[])
       pfnProgress(progress,pszMessage,pProgressArg);
       ++ilayerWrite;
     }//for ilayer
+    sampleReaderOgr.close();
     ogrWriter.close();
     if(test_opt.size())
       ogrTestWriter.close();
