@@ -72,7 +72,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | r      | resampling-method    | std::string | near  |Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation). | 
  | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
  | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
- | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (0 is nodata) | 
+ | m      | mask                 | std::string |       |Use the specified file as a validity mask (0 is nodata) | 
  | msknodata | msknodata            | float | 0     |Mask value not to consider for crop
  | msknodata | msknodata            | float | 0     |Mask value not to consider for crop
  | mskband | mskband              | short | 0     |Mask band to read (0 indexed). Provide band for each mask. | 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
   //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
-  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
+  Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
   Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed). Provide band for each mask.", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
