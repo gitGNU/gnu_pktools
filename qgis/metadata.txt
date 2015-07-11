@@ -20,7 +20,7 @@ about =
 
 
 category=Raster,Vector
-version=1.0.4
+version=1.0.5
 qgisMinimumVersion=2.6
 
 author=Pieter Kempeneers
@@ -33,5 +33,5 @@ tracker=https://savannah.nongnu.org/bugs/?func=additem&group=pktools
 repository=http://git.savannah.gnu.org/cgit/pktools.git/tree/qgis
 icon=logo.png
 
-experimental=True
+experimental=False
 deprecated=False

@@ -48,7 +48,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-ln layer]* [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-polygon] [-b band]* [-r rule]
 
   Advanced options:
-       [-bndnodata band -srcnodata value]* [-tp threshold] [-test testSample] [-bn attribute] [-cn attribute] [-geo value] [-down value] [-buf value [-circ]]
+  [-sband band -eband band]* [-bndnodata band -srcnodata value]* [-tp threshold] [-test testSample] [-bn attribute] [-cn attribute] [-geo value] [-down value] [-buf value [-circ]]
 </code>
 
 \section pkextract_description Description
@@ -96,6 +96,8 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | lt     | ltype                | std::string | Integer |Label type: In16 or String | 
  | polygon | polygon              | bool | false |Create OGRPolygon as geometry instead of OGRPoint. | 
  | b      | band                 | int  |       |Band index(es) to extract (0 based). Leave empty to use all bands | 
+ | sband  | startband            | unsigned short |      |Start band sequence number | 
+ | eband  | endband              | unsigned short |      |End band sequence number   | 
  | r      | rule                 | std::string | centroid |Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum, percentile. | 
  | bndnodata | bndnodata            | int  | 0     |Band(s) in input image to check if pixel is valid (used for srcnodata) | 
  | srcnodata | srcnodata            | double |       |Invalid value(s) for input image | 
@@ -138,6 +140,8 @@ int main(int argc, char *argv[])
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
   Optionpk<bool> polygon_opt("polygon", "polygon", "Create OGRPolygon as geometry instead of OGRPoint.", false);
   Optionpk<int> band_opt("b", "band", "Band index(es) to extract (0 based). Leave empty to use all bands");
+  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum, percentile.", "centroid");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
@@ -151,6 +155,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> disc_opt("circ", "circular", "Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option)", false);
   Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0,2);
 
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
   bndnodata_opt.setHide(1);
   srcnodata_opt.setHide(1);
   polythreshold_opt.setHide(1);
@@ -179,6 +185,8 @@ int main(int argc, char *argv[])
     ltype_opt.retrieveOption(argc,argv);
     polygon_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
+    bstart_opt.retrieveOption(argc,argv);
+    bend_opt.retrieveOption(argc,argv);
     rule_opt.retrieveOption(argc,argv);
     bndnodata_opt.retrieveOption(argc,argv);
     srcnodata_opt.retrieveOption(argc,argv);
@@ -258,6 +266,29 @@ int main(int argc, char *argv[])
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;
     exit(0);
+  }
+
+  //convert start and end band options to vector of band indexes
+  try{
+    if(bstart_opt.size()){
+      if(bend_opt.size()!=bstart_opt.size()){
+	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+	throw(errorstring);
+      }
+      band_opt.clear();
+      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+	if(bend_opt[ipair]<=bstart_opt[ipair]){
+	  string errorstring="Error: index for end band must be smaller then start band";
+	  throw(errorstring);
+	}
+	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	  band_opt.push_back(iband);
+      }
+    }
+  }
+  catch(string error){
+    cerr << error << std::endl;
+    exit(1);
   }
   
   int nband=(band_opt.size()) ? band_opt.size() : imgReader.nrOfBand();
