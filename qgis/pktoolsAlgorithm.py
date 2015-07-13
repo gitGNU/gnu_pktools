@@ -52,6 +52,5 @@ class pktoolsAlgorithm(GeoAlgorithm):
     def help(self):
 
         #utilityName=self.__class__.__name__
-
-        helpUrl = 'http://pktools.nongnu.org/html/md_{}.html'.format(self.cliName())
+        helpUrl = 'http://pktools.nongnu.org/html/{}.html'.format(self.cliName())
         return False, helpUrl        

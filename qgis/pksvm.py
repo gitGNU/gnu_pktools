@@ -67,7 +67,7 @@ class pksvm(pktoolsAlgorithm):
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))
         self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",0,100,1.0))
         self.addParameter(ParameterNumber(self.COST, "The parameter C of C_SVC",0,100000,1000.0))
-        self.addParameter(ParameterFile(self.MASK, "Mask vector/raster dataset",optional=True))
+        self.addParameter(ParameterFile(self.MASK, "Mask vector/raster dataset used for classification","None",optional=True))
         self.addParameter(ParameterString(self.MSKNODATA, "Mask value(s) not to consider for classification (in case of raster mask, e.g., 0;255)","0"))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterString(self.EXTRA,
@@ -108,7 +108,7 @@ class pksvm(pktoolsAlgorithm):
         commands.append(str(self.getParameterValue(self.COST)))
 
         mask = str(self.getParameterValue(self.MASK))
-        if mask != "None":
+        if mask != "":
             commands.append('-m')
             commands.append(mask)
             msknodata=str(self.getParameterValue(self.MSKNODATA))
