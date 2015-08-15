@@ -5,6 +5,7 @@
    - \ref pktools_download "Download"
    - \ref pktools_refer "How to refer"
    - \ref pktools_installation "Installation"
+   - \ref pktools_plugins "Plugins"
    - \ref available_tools "Available Tools"
    - \ref pktools_bugs "Found a bug or need a change?"
 
@@ -48,6 +49,10 @@ contact: kempenep at gmail.com
 Installation for \ref installation_linux "Linux"
 
 Installation for \ref installation_windows "Windows"
+
+\section pktools_plugins Plugins
+
+pktools in QGIS via \ref qgis_plugin "plugin"
 
 \section pktools_bugs Bug reports and change requests
 Please write a <a href="https://savannah.nongnu.org/bugs/?func=additem&group=pktools">ticket</a> in savannah to report bugs and request changes. You will automatically be informed about the ticket status and this helps me to keep track of the bugs/changes.

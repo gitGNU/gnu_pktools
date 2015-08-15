@@ -14,11 +14,5 @@ Unzip the archives to your local hard drive.
 
 The pktools utilities can be run from the command line using a command prompt window (from the Start button, click All Programs, Accessories, and then Command Prompt). First add the bin directory extracted from the pktools zip archive to the environment variable PATH (from the Start button, click on  control panel, then System, Advanced system settings, select Environment Variables and edit PATH)
 
-\subsection Installation_windows_qgis QGIS plugin
-
-A selection of the pktools utiltities can be run from within QGIS, via the Processing Toolbox. First install the pktools plugin via Plugins, Manage and Install Plugins... 
-
-Currently, the pktools <a href="http://plugins.qgis.org/plugins/pktools/">plugin</a> is experimental, so do tick the experimental plugins under Settings. Then set the appropriate path of the pktools bin folder via Processing Options, Providers, pktools, pktools folder. Click OK and open the Processing Toolbox. The pktools utilities should appear when the Advanced interface is selected. 
-
 \subsection Uninstall_windows Older versions of pktools
 Please make sure the latest version of pktools is always installed. Changes with respect to the previous versions can be checked in the text file <a href="http://git.savannah.gnu.org/cgit/pktools.git/tree/ChangeLog">Changelog</a>. Older versions of pktools were installed with a setup exe file. They should be uninstalled first via Programs and Features in Control Panel.

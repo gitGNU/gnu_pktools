@@ -509,13 +509,13 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
             if(eGType==wkbPoint)
               pointFeature->SetField(fieldId,atoi(value.c_str()));
             else if(firstPoint.IsEmpty())
-              polyFeature->SetField(fieldId,atof(value.c_str()));
+              polyFeature->SetField(fieldId,atoi(value.c_str()));
             break;
           case(OFTString):
             if(eGType==wkbPoint)
               pointFeature->SetField(fieldId,value.c_str());
             else if(firstPoint.IsEmpty())
-              polyFeature->SetField(fieldId,atof(value.c_str()));
+              polyFeature->SetField(fieldId,value.c_str());
             break;
           default:
             break;
@@ -573,13 +573,13 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
             if(eGType==wkbPoint)
               pointFeature->SetField(fieldId,atoi(value.c_str()));
             else if(firstPoint.IsEmpty())
-              polyFeature->SetField(fieldId,atof(value.c_str()));
+              polyFeature->SetField(fieldId,atoi(value.c_str()));
             break;
           case(OFTString):
             if(eGType==wkbPoint)
               pointFeature->SetField(fieldId,value.c_str());
             else if(firstPoint.IsEmpty())
-              polyFeature->SetField(fieldId,atof(value.c_str()));
+              polyFeature->SetField(fieldId,value.c_str());
             break;
           default:
             break;
