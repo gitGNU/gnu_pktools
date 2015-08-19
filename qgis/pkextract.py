@@ -91,7 +91,7 @@ class pkextract(pktoolsAlgorithm):
     ITERATE = "ITERATE"
     OUTPUT = "OUTPUT"
     
-    RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
+    RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'count', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
 
     RULE = "RULE"
     POLYGON = "POLYGON"

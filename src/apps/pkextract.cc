@@ -75,6 +75,7 @@ max | Extract maximum value of all pixels within the polygon.
 sum | Extract sum of the values of all pixels within the polygon.
 mode | Extract the mode of classes within the polygon (classes must be set with the option class).
 proportion | Extract proportion of class(es) within the polygon (classes must be set with the option class).
+count | Extract count of class(es) within the polygon (classes must be set with the option class).
 percentile | Extract percentile as defined by option perc (e.g, 95th percentile of values covered by polygon).
 
 \section pkextract_options Options
@@ -88,7 +89,7 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | rand   | random               | unsigned int |       |Create simple random sample of points. Provide number of points to generate | 
  | grid   | grid                 | double |       |Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m) | 
  | o      | output               | std::string |       |Output sample dataset | 
- | c      | class                | int  |       |Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode or proportion | 
+ | c      | class                | int  |       |Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count | 
  | t      | threshold            | float | 100   |Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es) | 
  | perc   | perc                 | double | 95    |Percentile value used for rule percentile | 
  | f      | f                    | std::string | SQLite |Output sample dataset format | 
@@ -98,7 +99,7 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | b      | band                 | int  |       |Band index(es) to extract (0 based). Leave empty to use all bands | 
  | sband  | startband            | unsigned short |      |Start band sequence number | 
  | eband  | endband              | unsigned short |      |End band sequence number   | 
- | r      | rule                 | std::string | centroid |Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum, percentile. | 
+ | r      | rule                 | std::string | centroid |Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, count, min, max, mode, sum, percentile. | 
  | bndnodata | bndnodata            | int  | 0     |Band(s) in input image to check if pixel is valid (used for srcnodata) | 
  | srcnodata | srcnodata            | double |       |Invalid value(s) for input image | 
  | tp     | thresholdPolygon     | float |       |(absolute) threshold for selecting samples in each polygon | 
@@ -119,7 +120,7 @@ Some examples how to use pkextract can be found \ref examples_pkextract "here"
 **/
 
 namespace rule{
-  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, mode=6, centroid=7, sum=8, median=9, stdev=10, percentile=11};
+  enum RULE_TYPE {point=0, mean=1, proportion=2, custom=3, min=4, max=5, mode=6, centroid=7, sum=8, median=9, stdev=10, percentile=11, count=12};
 }
 
 using namespace std;
@@ -132,7 +133,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> random_opt("rand", "random", "Create simple random sample of points. Provide number of points to generate");
   Optionpk<double> grid_opt("grid", "grid", "Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m)");
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode or proportion");
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count");
   Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
   Optionpk<double> percentile_opt("perc","perc","Percentile value used for rule percentile",95);
   Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
@@ -142,7 +143,7 @@ int main(int argc, char *argv[])
   Optionpk<int> band_opt("b", "band", "Band index(es) to extract (0 based). Leave empty to use all bands");
   Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
   Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
-  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, min, max, mode, sum, percentile.", "centroid");
+  Optionpk<string> rule_opt("r", "rule", "Rule how to report image information per feature (only for vector sample). point (value at each point or at centroid if polygon), centroid, mean, stdev, median, proportion, count, min, max, mode, sum, percentile.", "centroid");
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
   Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
@@ -222,6 +223,7 @@ int main(int argc, char *argv[])
   ruleMap["stdev"]=rule::stdev;
   ruleMap["median"]=rule::median;
   ruleMap["proportion"]=rule::proportion;
+  ruleMap["count"]=rule::count;
   ruleMap["min"]=rule::min;
   ruleMap["max"]=rule::max;
   ruleMap["custom"]=rule::custom;
@@ -855,17 +857,44 @@ int main(int argc, char *argv[])
       std::cout << "creating image sample writer " << output_opt[0] << std::endl;
     ImgWriterOgr ogrWriter;
     ImgWriterOgr ogrTestWriter;
-    ogrWriter.open(output_opt[0],ogrformat_opt[0]);
-    if(test_opt.size()){
-      if(verbose_opt[0]>1)
-	std::cout << "creating image test writer " << test_opt[0] << std::endl;
-      try{
+    try{
+      ogrWriter.open(output_opt[0],ogrformat_opt[0]);
+      if(test_opt.size()){
+	if(verbose_opt[0]>1)
+	  std::cout << "creating image test writer " << test_opt[0] << std::endl;
 	ogrTestWriter.open(test_opt[0],ogrformat_opt[0]);
       }
-      catch(string errorString){
-	cerr << errorString << endl;
+
+      //if class_opt not set, get number of classes from input image for these rules
+      switch(ruleMap[rule_opt[0]]){
+      case(rule::proportion):
+      case(rule::count):
+      case(rule::custom):
+      case(rule::mode):{
+	if(class_opt.empty()){
+	  int theBand=0;
+	  double minValue=0;
+	  double maxValue=0;
+	  if(band_opt.size())
+	    theBand=band_opt[0];
+	  imgReader.getMinMax(minValue,maxValue,theBand);
+	  int nclass=maxValue-minValue+1;
+	  if(nclass<0&&nclass<256){
+	    string errorString="Could not automatically define classes, please set class option";
+	    throw(errorString);
+	  }
+	  for(int iclass=minValue;iclass<=maxValue;++iclass)
+	    class_opt.push_back(iclass);
+	}
+	break;
+      }
       }
     }
+    catch(string errorString){
+      cerr << errorString << endl;
+      exit(1);
+    }
+    
     //support multiple layers
     int nlayerRead=sampleReaderOgr.getDataSource()->GetLayerCount();
     int ilayerWrite=0;
@@ -921,7 +950,8 @@ int main(int argc, char *argv[])
 
       if(class_opt.size()){
 	switch(ruleMap[rule_opt[0]]){
-	case(rule::proportion):{//proportion for each class
+	case(rule::proportion)://proportion for each class
+	case(rule::count):{//count for each class
 	  for(int iclass=0;iclass<class_opt.size();++iclass){
 	    ostringstream cs;
 	    cs << class_opt[iclass];
@@ -1413,10 +1443,11 @@ int main(int argc, char *argv[])
 		}
 	      }
 	      else{//class_opt is set
-		if(ruleMap[rule_opt[0]]==rule::proportion){
+		if(ruleMap[rule_opt[0]]==rule::proportion||ruleMap[rule_opt[0]]==rule::count){
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointWindow << std::endl;
-		  stat.normalize_pct(windowClassValues);
+		  if(ruleMap[rule_opt[0]]==rule::proportion)
+		    stat.normalize_pct(windowClassValues);
 		  for(int index=0;index<windowClassValues.size();++index){
 		    double theValue=windowClassValues[index];
 		    ostringstream fs;
@@ -1529,7 +1560,7 @@ int main(int argc, char *argv[])
 	    if(ruleMap[rule_opt[0]]==rule::centroid)
 	      readPolygon.Centroid(&writeCentroidPoint);
 	    else if(readPolygon.PointOnSurface(&writeCentroidPoint)!=OGRERR_NONE){
-	      cerr << "function PointOnSurface failed, trying centroid instead" << endl;
+	      // cerr << "function PointOnSurface failed, trying centroid instead" << endl;
 	      readPolygon.Centroid(&writeCentroidPoint);
 	    }
 	    double ulx,uly,lrx,lry;
@@ -1883,10 +1914,11 @@ int main(int argc, char *argv[])
 		}
 	      }
 	      else{//class_opt is set
-		if(ruleMap[rule_opt[0]]==rule::proportion){
+		if(ruleMap[rule_opt[0]]==rule::proportion||ruleMap[rule_opt[0]]==rule::count){
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		  stat.normalize_pct(polyClassValues);
+		  if(ruleMap[rule_opt[0]]==rule::proportion)
+		    stat.normalize_pct(polyClassValues);
 		  for(int index=0;index<polyClassValues.size();++index){
 		    double theValue=polyClassValues[index];
 		    ostringstream fs;
@@ -2348,10 +2380,11 @@ int main(int argc, char *argv[])
 		}
 	      }
 	      else{//class_opt is set
-		if(ruleMap[rule_opt[0]]==rule::proportion){
+		if(ruleMap[rule_opt[0]]==rule::proportion||ruleMap[rule_opt[0]]==rule::count){
 		  if(verbose_opt[0])
 		    std::cout << "number of points in polygon: " << nPointPolygon << std::endl;
-		  stat.normalize_pct(polyClassValues);
+		  if(ruleMap[rule_opt[0]]==rule::proportion)
+		    stat.normalize_pct(polyClassValues);
 		  for(int index=0;index<polyClassValues.size();++index){
 		    double theValue=polyClassValues[index];
 		    ostringstream fs;

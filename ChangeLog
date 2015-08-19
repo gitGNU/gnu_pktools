@@ -414,6 +414,11 @@ version 2.6.4
  - FeatureSelector.h
 	compilation error due to redeclaration with default arguments
 	patch from Bas Couwenberg (ticket #45416)
+
+version 2.6.5
+ - pkextract
+	support automatically retrieval of classes in case of mode, proportion and count rule
+	support count extraction rule similar to proportion (change request #)
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
