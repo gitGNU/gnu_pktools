@@ -2,7 +2,9 @@
 
 A selection of the pktools utiltities can be run from within QGIS, via the Processing Toolbox. 
 
-First install the pktools plugin via Plugins, Manage and Install Plugins... 
+Make sure pktools is installed on your system first. Then, you can install the pktools Plugin via the QGIS menu:
+
+Plugins, Manage and Install Plugins... 
 
 Then set the appropriate path of the pktools bin folder via Processing Options, Providers, pktools, pktools folder. 
 

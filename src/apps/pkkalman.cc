@@ -87,8 +87,12 @@ int main(int argc,char **argv) {
   Optionpk<string> outputfw_opt("ofw", "outputfw", "Output raster dataset for forward model");
   Optionpk<string> outputbw_opt("obw", "outputbw", "Output raster dataset for backward model");
   Optionpk<string> outputfb_opt("ofb", "outputfb", "Output raster dataset for smooth model");
+  Optionpk<string> gain_opt("gain", "gain", "Output raster dataset for gain");
+  
   Optionpk<double> modnodata_opt("modnodata", "modnodata", "invalid value for model input", 0);
   Optionpk<double> obsnodata_opt("obsnodata", "obsnodata", "invalid value for observation input", 0);
+  Optionpk<double> obsmin_opt("obsmin", "obsmin", "Minimum value for observation data");
+  Optionpk<double> obsmax_opt("obsmax", "obsmax", "Maximum value for observation data");
   Optionpk<double> modoffset_opt("modoffset", "modoffset", "offset used to read model input dataset (value=offset+scale*readValue)");
   Optionpk<double> obsoffset_opt("obsoffset", "obsoffset", "offset used to read observation input dataset (value=offset+scale*readValue)");
   Optionpk<double> modscale_opt("modscale", "modscale", "scale used to read model input dataset (value=offset+scale*readValue)");
@@ -104,6 +108,10 @@ int main(int argc,char **argv) {
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
   Optionpk<float> threshold_opt("th", "threshold", "threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0).", 0);
   Optionpk<int> minreg_opt("minreg", "minreg", "Minimum number of pixels to take into account for regression", 5, 2);
+  Optionpk<float> c0modGlobalMin_opt("c0modmin", "c0modmin", "Minimum value for c0 in model regression", -65, 2);
+  Optionpk<float> c0modGlobalMax_opt("c0modmax", "c0modmax", "Maximum value for c0 in model regression", 65, 2);
+  Optionpk<float> c1modGlobalMin_opt("c1modmin", "c1modmin", "Minimum value for c1 in model regression", 0.7, 2);
+  Optionpk<float> c1modGlobalMax_opt("c1modmax", "c1modmax", "Maximum value for c1 in model regression", 1.3, 2);
   // Optionpk<bool> regObs_opt("regobs", "regobs", "Perform regression between modeled and observed value",false);
   // Optionpk<double> checkDiff_opt("diff", "diff", "Flag observation as invalid if difference with model is above uncertainty",false);
   Optionpk<unsigned short> window_opt("win", "window", "window size for calculating regression (use 0 for global)", 0);
@@ -125,8 +133,11 @@ int main(int argc,char **argv) {
     outputfw_opt.retrieveOption(argc,argv);
     outputbw_opt.retrieveOption(argc,argv);
     outputfb_opt.retrieveOption(argc,argv);
+    gain_opt.retrieveOption(argc,argv);
     modnodata_opt.retrieveOption(argc,argv);
     obsnodata_opt.retrieveOption(argc,argv);
+    obsmin_opt.retrieveOption(argc,argv);
+    obsmax_opt.retrieveOption(argc,argv);
     modoffset_opt.retrieveOption(argc,argv);
     modscale_opt.retrieveOption(argc,argv);
     obsoffset_opt.retrieveOption(argc,argv);
@@ -142,6 +153,10 @@ int main(int argc,char **argv) {
     down_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
     minreg_opt.retrieveOption(argc,argv);
+    c0modGlobalMin_opt.retrieveOption(argc,argv);
+    c0modGlobalMax_opt.retrieveOption(argc,argv);
+    c1modGlobalMin_opt.retrieveOption(argc,argv);
+    c1modGlobalMax_opt.retrieveOption(argc,argv);
     // regObs_opt.retrieveOption(argc,argv);
     // checkDiff_opt.retrieveOption(argc,argv);
     window_opt.retrieveOption(argc,argv);
@@ -241,6 +256,8 @@ int main(int argc,char **argv) {
   ImgReaderGdal imgReaderModel2;
   ImgReaderGdal imgReaderObs;
   ImgWriterGdal imgWriterEst;
+  //test
+  ImgWriterGdal imgWriterGain;
 
   imgReaderObs.open(observation_opt[0]);
 
@@ -308,11 +325,15 @@ int main(int argc,char **argv) {
 
   double c0modGlobal=0;//time regression coefficient c0 (offset) calculated on entire image 
   double c1modGlobal=1;//time regression coefficient c1 (scale) calculated on entire image 
+  double c0modGlobal_prev=0;//previous time regression coefficient c0 (offset) calculated on entire image to fall back
+  double c1modGlobal_prev=1;//previous time regression coefficient c1 (scale) calculated on entire image to fall back
   double c0mod=0;//time regression coefficient c0 (offset) calculated on local window
   double c1mod=1;//time regression coefficient c1 (scale) calculated on local window
 
   double c0obs=0;//offset
   double c1obs=1;//scale
+  double c0obs_prev=0;//previous offset to fall back
+  double c1obs_prev=1;//previous scale to fall back
   double errObs=uncertNodata_opt[0];//start with high initial value in case we do not have first observation at time 0
 
   vector<int> relobsindex;
@@ -357,10 +378,18 @@ int main(int argc,char **argv) {
     if(verbose_opt[0])
       cout << "Opening image " << output << " for writing " << endl;
 
-    imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+    imgWriterEst.open(output,ncol,nrow,2,GDT_Float64,imageType,option_opt);
     imgWriterEst.setProjectionProj4(projection_opt[0]);
     imgWriterEst.setGeoTransform(geotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
+
+    //test
+    if(gain_opt.size()){
+      imgWriterGain.open(gain_opt[0],ncol,nrow,model_opt.size(),GDT_Float64,imageType,option_opt);
+      imgWriterGain.setProjectionProj4(projection_opt[0]);
+      imgWriterGain.setGeoTransform(geotransform);
+      imgWriterGain.GDALSetNoDataValue(obsnodata_opt[0]);
+    }
 
     if(verbose_opt[0]){
       cout << "processing time " << tmodel_opt[0] << endl;
@@ -372,7 +401,9 @@ int main(int argc,char **argv) {
 
     try{
       imgReaderModel1.open(model_opt[0]);
-      imgReaderModel1.setNoData(modnodata_opt);
+      for(int inodata=0;inodata<modnodata_opt.size();++inodata)
+	imgReaderModel1.pushNoDataValue(modnodata_opt[inodata]);
+      // imgReaderModel1.setNoData(modnodata_opt);
       if(modoffset_opt.size())
 	imgReaderModel1.setOffset(modoffset_opt[0]);
       if(modscale_opt.size())
@@ -401,6 +432,8 @@ int main(int argc,char **argv) {
 	vector<double> estReadBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
+	//test
+	vector<double> gainWriteBuffer(ncol);
 	// vector<double> lineMask;
 	imgWriterEst.image2geo(0,irow,geox,geoy);
 	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
@@ -421,15 +454,19 @@ int main(int argc,char **argv) {
 	    if(imgReaderModel1.isNoData(modValue)){
 	      estWriteBuffer[icol]=obsnodata_opt[0];
 	      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+	      gainWriteBuffer[icol]=obsnodata_opt[0];
 	    }
 	    else{
 	      //todo: should take into account regression model-obs...
 	      estWriteBuffer[icol]=modValue;
 	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	      gainWriteBuffer[icol]=0;
 	    }
 	  }
 	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	  imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
+	  if(gain_opt.size())
+	     imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,0);
 	}
 	catch(string errorString){
 	  cerr << errorString << endl;
@@ -453,8 +490,14 @@ int main(int argc,char **argv) {
       if(regSensor_opt[0]>0){
 	errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
 	if(errObs<0){
-	  c0obs=0;
-	  c1obs=1;
+	  // c0obs=0;
+	  // c1obs=1;
+	  c0obs=c0obs_prev;
+	  c1obs=c1obs_prev;
+	}
+	else{
+	  c0obs_prev=c0obs;
+	  c1obs_prev=c1obs;
 	}
       }
       else{
@@ -475,6 +518,8 @@ int main(int argc,char **argv) {
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
 	vector<double> uncertObsLineBuffer;
+	//test
+	vector<double> gainWriteBuffer(ncol);
 	// vector<double> lineMask;
 	// imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,0);
 	imgReaderObs.readData(obsLineBuffer,GDT_Float64,irow,0);
@@ -492,11 +537,23 @@ int main(int argc,char **argv) {
 	    if(imgReaderObs.isNoData(obsLineBuffer[icol])){
 	      estWriteBuffer[icol]=obsnodata_opt[0];
 	      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+	      gainWriteBuffer[icol]=obsnodata_opt[0];
 	    }
 	    else if(uncertObsLineBuffer.size()>icol)
 	      uncertWriteBuffer[icol]=uncertObsLineBuffer[icol];
 	    else
 	      uncertWriteBuffer[icol]=uncertObs_opt[0];
+	    //test
+	    if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	      if(obsmin_opt.size())
+		assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	      if(obsmax_opt.size()){
+		if(estWriteBuffer[icol]>obsmax_opt[0]){
+		  cout << "estWriteBuffer[icol], obsLineBuffer[icol], irow, icol: " << estWriteBuffer[icol] << ", " << obsLineBuffer[icol] << ", " << irow << ", " << icol << endl;
+		  assert(estWriteBuffer[icol]<=obsmax_opt[0]);
+		}
+	      }
+	    }
 	  }
 	  else{//model is valid: calculate estimate from model
 	    double errMod=uncertModel_opt[0]*stdDev;
@@ -518,6 +575,18 @@ int main(int argc,char **argv) {
 	    //   totalUncertainty=sqrt(1.0/totalUncertainty);
 	    // }
 	    uncertWriteBuffer[icol]=totalUncertainty;//in case observation is not valid
+	    gainWriteBuffer[icol]=0;
+	    //test
+	    if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	      if(obsmin_opt.size())
+		assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	      if(obsmax_opt.size()){
+		if(estWriteBuffer[icol]>obsmax_opt[0]){
+		  cout << "estWriteBuffer[icol], irow, icol: " << estWriteBuffer[icol] << ", " << irow << ", " << icol << endl;
+		  assert(estWriteBuffer[icol]<=obsmax_opt[0]);
+		}
+	      }
+	    }
 	  }
 	  // uncertWriteBuffer[icol]+=uncertReadBuffer[icol];
 	  //measurement update
@@ -550,7 +619,7 @@ int main(int argc,char **argv) {
 		else if(weight_opt.size()){
 		  assert(weight_opt.size()>1);
 		  if(obsMeanValue<modValue)
-		    uncertObs=weight_opt[0]*relativeDifference;
+		    uncertObs=-weight_opt[0]*relativeDifference;
 		  else if(obsMeanValue>modValue)
 		    uncertObs=weight_opt[1]*relativeDifference;
 		}
@@ -566,11 +635,45 @@ int main(int argc,char **argv) {
 	    }
 	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
+	    if(obsmin_opt.size()){
+	      if(estWriteBuffer[icol]<obsmin_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+	    if(obsmax_opt.size()){
+	      if(estWriteBuffer[icol]>obsmax_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
+	    //test
+	    gainWriteBuffer[icol]=kalmanGain;
+	    //test
+	    if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	      if(obsmin_opt.size())
+		assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	      if(obsmax_opt.size()){
+		if(estWriteBuffer[icol]>obsmax_opt[0]){
+		  cout << "estWriteBuffer[icol], irow, icol: " << estWriteBuffer[icol] << ", " << irow << ", " << icol << endl;
+		  assert(estWriteBuffer[icol]<=obsmax_opt[0]);
+		}
+	      }
+	    }
+	  }
+	  //test
+	  if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	    if(obsmin_opt.size())
+	      assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	    if(obsmax_opt.size()){
+	      if(estWriteBuffer[icol]>obsmax_opt[0]){
+		cout << "estWriteBuffer[icol], irow, icol: " << estWriteBuffer[icol] << ", " << irow << ", " << icol << endl;
+	      assert(estWriteBuffer[icol]<=obsmax_opt[0]);
+	      }
+	    }
 	  }
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
+	if(gain_opt.size())
+	  imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,0);
       }
       imgReaderObs.close();
       ++obsindex;
@@ -599,7 +702,7 @@ int main(int argc,char **argv) {
       }
     
       //two band output band0=estimation, band1=uncertainty
-      imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+      imgWriterEst.open(output,ncol,nrow,2,GDT_Float64,imageType,option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
       imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
@@ -612,7 +715,9 @@ int main(int argc,char **argv) {
       if(modscale_opt.size())
 	imgReaderModel1.setScale(modscale_opt[0]);
       imgReaderModel2.open(model_opt[modindex]);
-      imgReaderModel2.setNoData(modnodata_opt);
+      for(int inodata=0;inodata<modnodata_opt.size();++inodata)
+	imgReaderModel2.pushNoDataValue(modnodata_opt[inodata]);
+      // imgReaderModel2.setNoData(modnodata_opt);
       if(modoffset_opt.size())
 	imgReaderModel2.setOffset(modoffset_opt[0]);
       if(modscale_opt.size())
@@ -627,11 +732,22 @@ int main(int argc,char **argv) {
 	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
       
       double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,0,0);
-      errMod*=regTime_opt[0];
+      if(verbose_opt[0])
+	cout << "c0modGlobal, c1modGlobal, errMod: " << c0modGlobal << ", " << c1modGlobal << ", " << errMod << endl;
+      if(c0modGlobal>c0modGlobalMax_opt[0]||c0modGlobal<c0modGlobalMin_opt[0]||c1modGlobal>c1modGlobalMax_opt[0]||c1modGlobal<c1modGlobalMin_opt[0]||errMod!=errMod){
+	c0modGlobal=c0modGlobal_prev;
+	c1modGlobal=c1modGlobal_prev;
+	errMod=uncertModel_opt[0]*stdDev;
+      }
+      else{
+	c0modGlobal_prev=c0modGlobal;
+	c1modGlobal_prev=c1modGlobal;
+	errMod*=regTime_opt[0];
+      }
 
       // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,verbose_opt[0]);
       if(verbose_opt[0])
-	cout << "c0modGlobal, c1modGlobal: " << c0modGlobal << ", " << c1modGlobal << endl;
+	cout << "c0modGlobal, c1modGlobal, errMod: " << c0modGlobal << ", " << c1modGlobal << ", " << errMod << endl;
 
       bool update=false;
       if(obsindex<relobsindex.size()){
@@ -653,9 +769,15 @@ int main(int argc,char **argv) {
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
 	if(regSensor_opt[0]>0){
 	  errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
-	  if(errObs<0){
-	    c0obs=0;
-	    c1obs=1;
+	  if(errObs<0||errObs!=errObs){
+	    // c0obs=0;
+	    // c1obs=1;
+	    c0obs=c0obs_prev;
+	    c1obs=c1obs_prev;
+	  }
+	  else{
+	    c0obs_prev=c0obs;
+	    c1obs_prev=c1obs;
 	  }
 	}
 	else{
@@ -700,6 +822,7 @@ int main(int argc,char **argv) {
       vector<double> uncertReadBuffer;
       vector<double> estWriteBuffer(ncol);
       vector<double> uncertWriteBuffer(ncol);
+      vector<double> gainWriteBuffer(ncol);
       // vector<double> lineMask;
 
       //initialize obsLineVector if update
@@ -768,12 +891,27 @@ int main(int argc,char **argv) {
 	    if(imgReaderModel2.isNoData(modValue)){//if both estimate and model are no-data, set obs to nodata
 	      estWriteBuffer[icol]=obsnodata_opt[0];
 	      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+	      gainWriteBuffer[icol]=0;
 	    }
 	    else{
 	      estWriteBuffer[icol]=modValue;
 	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+	      gainWriteBuffer[icol]=0;
 	    }
-	  }	  
+	    //test
+	    if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	      if(obsmin_opt.size()){
+		if(estWriteBuffer[icol]<obsmin_opt[0])
+		  cout << "estWriteBuffer[icol], icol, irow" << estWriteBuffer[icol] << ", " << icol << ", " << irow << endl;
+		assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	      }
+	      if(obsmax_opt.size()){
+		assert(estWriteBuffer[icol]<=obsmax_opt[0]);
+		if(estWriteBuffer[icol]<obsmin_opt[0])
+		  cout << "estWriteBuffer[icol], modValue, icol, irow" << estWriteBuffer[icol] << ", " << modValue << ", " << icol << ", " << irow << endl;
+	      }
+	    }
+	  }
 	  else{
 	    if(window_opt[0]>0){
 	      try{
@@ -826,13 +964,25 @@ int main(int argc,char **argv) {
 	      c0mod=c0modGlobal;
 	      c1mod=c1modGlobal;
 	    }
-	    double certNorm=(errMod*errMod+errObs*errObs);
-	    double certMod=errObs*errObs/certNorm;
-	    double certObs=errMod*errMod/certNorm;
-	    double regTime=(c0mod+c1mod*estValue)*certObs;
-	    double regSensor=(c0obs+c1obs*modValue)*certMod;
-	    // double regSensor=(c0obs+c1obs*estValue)*certObs;
-	    estWriteBuffer[icol]=regTime+regSensor;
+	    double regTime=c0mod+c1mod*estValue;
+	    double regSensor=c0obs+c1obs*modValue;
+
+	    if(regSensor_opt[0]<=0)
+	      estWriteBuffer[icol]=regTime;
+	    else{
+	      double certMod=1;
+	      double certObs=1;
+	      double certNorm=(errMod*errMod+errObs*errObs);
+	      if(certNorm>eps_opt[0]){
+		certMod=errObs*errObs/certNorm;
+		certObs=errMod*errMod/certNorm;
+	      }
+	      else{
+		certMod=0.5;
+		certObs=0.5;
+	      }
+	      estWriteBuffer[icol]=regTime*certObs+regSensor*certMod;
+	    }	      
 	    //test
 	    // if(regTime<regSensor){
 	    //   cout << "regTime = (" << c0mod << "+" << c1mod << "*" << estValue << ")*" << certObs << " = " << regTime << endl;
@@ -841,6 +991,15 @@ int main(int argc,char **argv) {
 	    //   assert(regTime+regSensor<=1);
 	    // }
 
+	    if(obsmin_opt.size()){
+	      if(estWriteBuffer[icol]<obsmin_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+	    if(obsmax_opt.size()){
+	      if(estWriteBuffer[icol]>obsmax_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+	    
 	    double totalUncertainty=0;
 	    if(errMod<eps_opt[0])
 	      totalUncertainty=errObs;
@@ -851,6 +1010,8 @@ int main(int argc,char **argv) {
 	      totalUncertainty=sqrt(1.0/totalUncertainty);
 	    }
 	    uncertWriteBuffer[icol]=totalUncertainty+uncertReadBuffer[icol];
+	    //test
+	    gainWriteBuffer[icol]=0;
 	  }
 	  //measurement update
 	  if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
@@ -875,7 +1036,7 @@ int main(int argc,char **argv) {
 		else if(weight_opt.size()){
 		  assert(weight_opt.size()>1);
 		  if(obsMeanValue<modValue)
-		    uncertObs=weight_opt[0]*relativeDifference;
+		    uncertObs=-weight_opt[0]*relativeDifference;
 		  else if(obsMeanValue>modValue)
 		    uncertObs=weight_opt[1]*relativeDifference;
 		}
@@ -891,8 +1052,29 @@ int main(int argc,char **argv) {
 	    }
 	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
+	    if(obsmin_opt.size()){
+	      if(estWriteBuffer[icol]<obsmin_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+	    if(obsmax_opt.size()){
+	      if(estWriteBuffer[icol]>obsmax_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
+	    //test
+	    gainWriteBuffer[icol]=kalmanGain;
 	  }
+	  //test
+	  if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	    if(obsmin_opt.size())
+	      assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	    if(obsmax_opt.size())
+	      assert(estWriteBuffer[icol]<=obsmax_opt[0]);
+	  }
+	}
+	//test
+	if(gain_opt.size()){
+	  imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,modindex);
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
@@ -910,6 +1092,8 @@ int main(int argc,char **argv) {
       imgReaderModel1.close();
       imgReaderModel2.close();
     }
+    if(gain_opt.size())
+      imgWriterGain.close();
   }
   if(find(direction_opt.begin(),direction_opt.end(),"backward")!=direction_opt.end()){
     ///////////////////////////// backward model /////////////////////////
@@ -929,7 +1113,7 @@ int main(int argc,char **argv) {
     }
     if(verbose_opt[0])
       cout << "Opening image " << output << " for writing " << endl;
-    imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+    imgWriterEst.open(output,ncol,nrow,2,GDT_Float64,imageType,option_opt);
     imgWriterEst.setProjectionProj4(projection_opt[0]);
     imgWriterEst.setGeoTransform(geotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
@@ -995,6 +1179,13 @@ int main(int argc,char **argv) {
 	      estWriteBuffer[icol]=modValue;
 	      uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
 	    }
+	    //test
+	    if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	      if(obsmin_opt.size())
+		assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	      if(obsmax_opt.size())
+		assert(estWriteBuffer[icol]<=obsmax_opt[0]);
+	    }
 	  }
 	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	  imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
@@ -1020,9 +1211,15 @@ int main(int argc,char **argv) {
       
       if(regSensor_opt[0]>0){
 	errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel1,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
-	if(errObs<0){
-	  c0obs=0;
-	  c1obs=1;
+	if(errObs<0||errObs!=errObs){
+	  // c0obs=0;
+	  // c1obs=1;
+	  c0obs=c0obs_prev;
+	  c1obs=c1obs_prev;
+	}
+	else{
+	  c0obs_prev=c0obs;
+	  c1obs_prev=c1obs;
 	}
       }
       else{
@@ -1117,7 +1314,7 @@ int main(int argc,char **argv) {
 		else if(weight_opt.size()){
 		  assert(weight_opt.size()>1);
 		  if(obsMeanValue<modValue)
-		    uncertObs=weight_opt[0]*relativeDifference;
+		    uncertObs=-weight_opt[0]*relativeDifference;
 		  else if(obsMeanValue>modValue)
 		    uncertObs=weight_opt[1]*relativeDifference;
 		}
@@ -1133,7 +1330,22 @@ int main(int argc,char **argv) {
 	    }
 	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
+	    if(obsmin_opt.size()){
+	      if(estWriteBuffer[icol]<obsmin_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+	    if(obsmax_opt.size()){
+	      if(estWriteBuffer[icol]>obsmax_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
+	  }
+	  //test
+	  if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	    if(obsmin_opt.size())
+	      assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	    if(obsmax_opt.size())
+	      assert(estWriteBuffer[icol]<=obsmax_opt[0]);
 	  }
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
@@ -1166,7 +1378,7 @@ int main(int argc,char **argv) {
       }
 
       //two band output band0=estimation, band1=uncertainty
-      imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+      imgWriterEst.open(output,ncol,nrow,2,GDT_Float64,imageType,option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
       imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
@@ -1194,8 +1406,16 @@ int main(int argc,char **argv) {
 	cout << "Calculating regression for " << imgReaderModel1.getFileName() << " " << imgReaderModel2.getFileName() << endl;
 
       double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,0,0);
-      errMod*=regTime_opt[0];
-
+      if(c0modGlobal>c0modGlobalMax_opt[0]||c0modGlobal<c0modGlobalMin_opt[0]||c1modGlobal>c1modGlobalMax_opt[0]||c1modGlobal<c1modGlobalMin_opt[0]||errMod!=errMod){
+	c0modGlobal=c0modGlobal_prev;
+	c1modGlobal=c1modGlobal_prev;
+	errMod=uncertModel_opt[0]*stdDev;
+      }
+      else{
+	c0modGlobal_prev=c0modGlobal;
+	c1modGlobal_prev=c1modGlobal;
+	errMod*=regTime_opt[0];
+      }
       // double errMod=imgreg.getRMSE(imgReaderModel1,imgReaderModel2,c0modGlobal,c1modGlobal,verbose_opt[0]);
       if(verbose_opt[0])
 	cout << "c0modGlobal, c1modGlobal: " << c0modGlobal << ", " << c1modGlobal << endl;
@@ -1220,9 +1440,15 @@ int main(int argc,char **argv) {
 	  cout << "Calculating regression for " << imgReaderModel2.getFileName() << " " << imgReaderObs.getFileName() << endl;
 	if(regSensor_opt[0]>0){
 	  errObs=regSensor_opt[0]*imgreg.getRMSE(imgReaderModel2,imgReaderObs,c0obs,c1obs,0,0,verbose_opt[0]);
-	  if(errObs<0){
-	    c0obs=0;
-	    c1obs=1;
+	  if(errObs<0||errObs!=errObs){
+	    // c0obs=0;
+	    // c1obs=1;
+	    c0obs=c0obs_prev;
+	    c1obs=c1obs_prev;
+	  }
+	  else{
+	    c0obs_prev=c0obs;
+	    c1obs_prev=c1obs;
 	  }
 	}
 	else{
@@ -1390,14 +1616,35 @@ int main(int argc,char **argv) {
 	      c0mod=c0modGlobal;
 	      c1mod=c1modGlobal;
 	    }
-	    double certNorm=(errMod*errMod+errObs*errObs);
-	    double certMod=errObs*errObs/certNorm;
-	    double certObs=errMod*errMod/certNorm;
-	    double regTime=(c0mod+c1mod*estValue)*certObs;
+	    double regTime=c0mod+c1mod*estValue;
+	    double regSensor=c0obs+c1obs*modValue;
 
-	    // double regSensor=(c0obs+c1obs*estValue)*certObs;
-	    double regSensor=(c0obs+c1obs*modValue)*certMod;
-	    estWriteBuffer[icol]=regTime+regSensor;
+	    if(regSensor_opt[0]<=0)
+	      estWriteBuffer[icol]=regTime;
+	    else{
+	      double certMod=1;
+	      double certObs=1;
+	      double certNorm=(errMod*errMod+errObs*errObs);
+	      if(certNorm>eps_opt[0]){
+		certMod=errObs*errObs/certNorm;
+		certObs=errMod*errMod/certNorm;
+	      }
+	      else{
+		certMod=0.5;
+		certObs=0.5;
+	      }
+	      estWriteBuffer[icol]=regTime*certObs+regSensor*certMod;
+	    }	      
+
+	    if(obsmin_opt.size()){
+	      if(estWriteBuffer[icol]<obsmin_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+	    if(obsmax_opt.size()){
+	      if(estWriteBuffer[icol]>obsmax_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+
 	    double totalUncertainty=0;
 	    if(errMod<eps_opt[0])
 	      totalUncertainty=errObs;
@@ -1432,7 +1679,7 @@ int main(int argc,char **argv) {
 		else if(weight_opt.size()){
 		  assert(weight_opt.size()>1);
 		  if(obsMeanValue<modValue)
-		    uncertObs=weight_opt[0]*relativeDifference;
+		    uncertObs=-weight_opt[0]*relativeDifference;
 		  else if(obsMeanValue>modValue)
 		    uncertObs=weight_opt[1]*relativeDifference;
 		}
@@ -1448,7 +1695,22 @@ int main(int argc,char **argv) {
 	    }
 	    assert(kalmanGain<=1);
 	    estWriteBuffer[icol]+=kalmanGain*(obsLineBuffer[icol]-estWriteBuffer[icol]);
+	    if(obsmin_opt.size()){
+	      if(estWriteBuffer[icol]<obsmin_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
+	    if(obsmax_opt.size()){
+	      if(estWriteBuffer[icol]>obsmax_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	    }
 	    uncertWriteBuffer[icol]*=(1-kalmanGain);
+	  }
+	  //test
+	  if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	    if(obsmin_opt.size())
+	      assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	    if(obsmax_opt.size())
+	      assert(estWriteBuffer[icol]<=obsmax_opt[0]);
 	  }
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
@@ -1493,7 +1755,7 @@ int main(int argc,char **argv) {
       }
     
       //two band output band0=estimation, band1=uncertainty
-      imgWriterEst.open(output,ncol,nrow,2,GDT_Float32,imageType,option_opt);
+      imgWriterEst.open(output,ncol,nrow,2,GDT_Float64,imageType,option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
       imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
@@ -1617,6 +1879,14 @@ int main(int argc,char **argv) {
 	    }
 	    else{
 	      estWriteBuffer[icol]=(A*D+B*C)/noemer;
+	      if(obsmin_opt.size()){
+		if(estWriteBuffer[icol]<obsmin_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	      }
+	      if(obsmax_opt.size()){
+		if(estWriteBuffer[icol]>obsmax_opt[0])
+		estWriteBuffer[icol]=obsnodata_opt[0];
+	      }
 	      double P=0;
 	      if(C>eps_opt[0])
 		P+=1.0/C;
@@ -1630,6 +1900,13 @@ int main(int argc,char **argv) {
 		P=0;
 	      uncertWriteBuffer[icol]=P;
 	    }
+	  }
+	  //test
+	  if(!imgReaderObs.isNoData(estWriteBuffer[icol])){
+	    if(obsmin_opt.size())
+	      assert(estWriteBuffer[icol]>=obsmin_opt[0]);
+	    if(obsmax_opt.size())
+	      assert(estWriteBuffer[icol]<=obsmax_opt[0]);
 	  }
 	}
 	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
