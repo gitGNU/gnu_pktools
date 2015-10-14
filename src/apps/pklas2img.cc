@@ -45,14 +45,14 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 \section pklas2img_description Description
 
-The utility pklas2img converts a las/laz point cloud into a gridded raster dataset. The implementation is based on <a href="www.liblas.org">liblas</a> API. You can define the bounding box, grid cell size and spatial reference set. The composite rule for multiple returns within a single grid cell can be set with the option -comp. The default attribute is z (heiht), but can also be intensity (if available), the return number (-n return) or the total number of returns in that grid cell (-n nreturn). To select specific returns only, set the option -fir (first, last, single, multiple, or all).
+The utility pklas2img converts a las/laz point cloud into a gridded raster dataset. The implementation is based on <a href="www.liblas.org">liblas</a> API. You can define the bounding box, grid cell size and spatial reference set. The composite rule for multiple returns within a single grid cell can be set with the option -comp. The default attribute is z (heiht), but can also be intensity (if available), scan angle rank (-n angle), the return number (-n return) or the total number of returns in that grid cell (-n nreturn). To select specific returns only, set the option -fir (first, last, single, multiple, or all).
 \section pklas2img_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
 |short|long|type|default|description|
 |-----|----|----|-------|-----------|
  | i      | input                | std::string |       |Input las file | 
- | n      | name                 | std::string | z     |names of the attribute to select: intensity, return, nreturn, z | 
+ | n      | name                 | std::string | z     |names of the attribute to select: intensity, angle, return, nreturn, z | 
  | ret    | ret                  | unsigned short |       |number(s) of returns to include | 
  | class  | class                | unsigned short |       |classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap) | 
  | comp   | comp                 | std::string | last  |composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point | 
@@ -82,7 +82,7 @@ using namespace std;
 
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input las file");
-  Optionpk<string> attribute_opt("n", "name", "names of the point attribute to select: intensity, return, nreturn, z", "z");
+  Optionpk<string> attribute_opt("n", "name", "names of the point attribute to select: intensity, angle, return, nreturn, angle, z", "z");
   // Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering", 0.0);
   // Optionpk<double> hThreshold_opt("ht", "maxHeight", "initial and maximum height threshold for progressive morphological filtering (e.g., -ht 0.2 -ht 2.5)", 0.2);
@@ -324,6 +324,11 @@ int main(int argc,char **argv) {
             std::cout << "writing intensity" << std::endl;
           ++ait;
         }
+        if(*ait=="angle"){
+          if(verbose_opt[0])
+            std::cout << "writing angle" << std::endl;
+          ++ait;
+        }
         else if(*ait=="return"){
           if(verbose_opt[0])
             std::cout << "writing return number" << std::endl;
@@ -378,6 +383,8 @@ int main(int argc,char **argv) {
         inputData[irow][icol].push_back(thePoint.GetZ());
       else if(attribute_opt[0]=="intensity")
         inputData[irow][icol].push_back(thePoint.GetIntensity());
+      else if(attribute_opt[0]=="angle")
+        inputData[irow][icol].push_back(thePoint.GetScanAngleRank());
       else if(attribute_opt[0]=="return")
         inputData[irow][icol].push_back(thePoint.GetReturnNumber());
       else if(attribute_opt[0]=="nreturn")

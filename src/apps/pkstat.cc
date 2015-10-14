@@ -82,7 +82,8 @@ int main(int argc, char *argv[])
   Optionpk<string> input_opt("i","input","name of the input raster dataset");
   Optionpk<unsigned short> band_opt("b","band","band(s) on which to calculate statistics",0);
   Optionpk<bool>  filename_opt("f", "filename", "Shows image filename ", false);
-  Optionpk<bool>  stat_opt("stats", "statistics", "Shows basic statistics (min,max, mean and stdDev of the raster datasets)", false);
+  Optionpk<bool>  stat_opt("stats", "statistics", "Shows basic statistics (calculate in memory) (min,max, mean and stdDev of the raster datasets)", false);
+  Optionpk<bool>  fstat_opt("fstats", "fstatistics", "Shows basic statistics using GDAL computeStatistics  (min,max, mean and stdDev of the raster datasets)", false);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box");
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box");
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box");
@@ -142,6 +143,7 @@ int main(int argc, char *argv[])
     band_opt.retrieveOption(argc,argv);
     filename_opt.retrieveOption(argc,argv);
     stat_opt.retrieveOption(argc,argv);
+    fstat_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     mean_opt.retrieveOption(argc,argv);
     median_opt.retrieveOption(argc,argv);
@@ -256,23 +258,34 @@ int main(int argc, char *argv[])
       if(scale_opt.size()>ifile)
         imgReader.setScale(scale_opt[ifile],band_opt[iband]);
 
-      // if(stat_opt[0]||mean_opt[0]||var_opt[0]||stdev_opt[0]){
-      // 	assert(band_opt[iband]<imgReader.nrOfBand());
-	// GDALProgressFunc pfnProgress;
-	// void* pProgressData;
-	// GDALRasterBand* rasterBand;
-      // 	rasterBand=imgReader.getRasterBand(band_opt[iband]);
-      // 	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+      if(stat_opt[0]||mean_opt[0]||var_opt[0]||stdev_opt[0]){//the hard way (in memory)
+	statfactory::StatFactory stat;
+	vector<double> readBuffer;
+	imgReader.readDataBlock(readBuffer, GDT_Float64, 0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
+	double meanValue;
+	double varValue;
+	stat.setNoDataValues(nodata_opt);
+	stat.meanVar(readBuffer,meanValue,varValue);
+      	if(mean_opt[0])
+      	  std::cout << "--mean " << meanValue << " ";
+      	if(stdev_opt[0])
+      	  std::cout << "--stdDev " << sqrt(varValue) << " ";
+      	if(var_opt[0])
+      	  std::cout << "--var " << varValue << " ";
+      	if(stat_opt[0])
+      	  std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << sqrt(varValue) << " ";
+      }
 
-      // 	if(mean_opt[0])
-      // 	  std::cout << "--mean " << meanValue << " ";
-      // 	if(stdev_opt[0])
-      // 	  std::cout << "--stdDev " << stdDev << " ";
-      // 	if(var_opt[0])
-      // 	  std::cout << "--var " << stdDev*stdDev << " ";
-      // 	if(stat_opt[0])
-      // 	  std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
-      // }
+      if(fstat_opt[0]){//the fast way
+      	assert(band_opt[iband]<imgReader.nrOfBand());
+	GDALProgressFunc pfnProgress;
+	void* pProgressData;
+	GDALRasterBand* rasterBand;
+      	rasterBand=imgReader.getRasterBand(band_opt[iband]);
+      	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+
+	std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
+      }
 
       if(minmax_opt[0]||min_opt[0]||max_opt[0]){
 	assert(band_opt[iband]<imgReader.nrOfBand());

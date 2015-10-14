@@ -545,6 +545,18 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	  outBuffer[x/down]=stat.percentile(windowBuffer,windowBuffer.begin(),windowBuffer.end(),m_threshold[0]);
 	  break;
 	}
+        case(filter2d::proportion):{
+	  if(windowBuffer.size()){
+	    double sum=stat.sum(windowBuffer);
+	    if(sum)
+	      outBuffer[x/down]=100.0*windowBuffer[centre]/stat.sum(windowBuffer);
+	    else
+	      outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+	  }
+	  else
+	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+          break;
+	}
         case(filter2d::homog):
 	  if(occurrence.size()==1)//all values in window are the same
 	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];

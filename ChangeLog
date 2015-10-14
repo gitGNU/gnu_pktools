@@ -418,7 +418,9 @@ version 2.6.4
 version 2.6.5
  - pkextract
 	support automatically retrieval of classes in case of mode, proportion and count rule
-	support count extraction rule similar to proportion (change request #)
+	support count (-r count) extraction rule similar to proportion (change request #108902)
+ - pklas2img
+	support for scan angle rank (change request #108901)
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
