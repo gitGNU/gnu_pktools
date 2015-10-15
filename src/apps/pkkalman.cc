@@ -57,6 +57,7 @@ produce kalman filtered raster time series
  | eps    | eps                  | double | 1e-05 |epsilon for non zero division | 
  | um     | uncertmodel          | double | 2     |Multiply this value with std dev of first model image to obtain uncertainty of model | 
  | uo     | uncertobs            | double | 0     |Uncertainty of valid observations | 
+ | unodata | uncertnodata         | double | 10000 |Uncertainty in case of no-data values in observation | 
  | q      | q                    | double | 1     |Process noise: expresses instability (variance) of proportions of fine res pixels within a moderate resolution pixel | 
  | down   | down                 | int  |       |Downsampling factor for reading model data to calculate regression | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
@@ -85,9 +86,10 @@ int main(int argc,char **argv) {
   Optionpk<double> obsmin_opt("obsmin", "obsmin", "Minimum value for observation data");
   Optionpk<double> obsmax_opt("obsmax", "obsmax", "Maximum value for observation data");
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
-  Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiply this value with std dev of first model image to obtain uncertainty of model",2);
-  Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations");
+  Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiplication factor for uncertainty of model",1,1);
+  Optionpk<double> uncertObs_opt("uo", "uncertobs", "Multiplication factor for uncertainty of valid observations",1,1);
   Optionpk<double> processNoise_opt("q", "q", "Process noise: expresses instability (variance) of proportions of fine res pixels within a moderate resolution pixel",1);
+  Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -113,7 +115,6 @@ int main(int argc,char **argv) {
     uncertModel_opt.retrieveOption(argc,argv);
     uncertObs_opt.retrieveOption(argc,argv);
     processNoise_opt.retrieveOption(argc,argv);
-    deltaObs_opt.retrieveOption(argc,argv);
     uncertNodata_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
@@ -129,12 +130,6 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
-  if(deltaObs_opt.size()==1){
-    if(deltaObs_opt[0]<=0)
-      deltaObs_opt.push_back(-deltaObs_opt[0]);
-    else
-      deltaObs_opt.insert(deltaObs_opt.begin(),-deltaObs_opt[0]);
-  }
   if(down_opt.empty()){
     std::cerr << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
@@ -360,7 +355,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
 		  gainWriteBuffer[icol]=0;
 		}
 	      }
@@ -385,10 +380,6 @@ int main(int argc,char **argv) {
       imgReaderObs.open(observation_opt[0]);
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
-      if(obsoffset_opt.size())
-	imgReaderObs.setOffset(obsoffset_opt[0]);
-      if(obsscale_opt.size())
-	imgReaderObs.setScale(obsscale_opt[0]);
 
       vector< vector<double> > obsLineVector(down_opt[0]);
       vector<double> obsLineBuffer;
@@ -429,7 +420,7 @@ int main(int argc,char **argv) {
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	      double modValue=estReadBuffer[modCol];
-	      double errMod=uncertModel_opt[0]*stdDev;
+	      double errMod=uncertModel_opt[0]*stdDev*stdDev;
 	      if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
 		if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
 		  estWriteBuffer[icol]=obsnodata_opt[0];
@@ -448,12 +439,8 @@ int main(int argc,char **argv) {
 		  }
 		  if(uncertObsLineBuffer.size()>icol)
 		    uncertWriteBuffer[icol]=uncertObsLineBuffer[icol];
-		  else{
-		    if(uncertObs_opt.size())
-		       uncertWriteBuffer[icol]=uncertObs_opt[0];
-		    else
-		       uncertWriteBuffer[icol]=0;
-		  }
+		  else
+		    uncertWriteBuffer[icol]=uncertObs_opt[0];
 		}
 	      }
 	      else{//model is valid: calculate estimate from model
@@ -477,16 +464,12 @@ int main(int argc,char **argv) {
 		  }
 		}
 		if(!imgReaderModel1.isNoData(modValue)){//model is valid
-		  if(uncertObs_opt.size())
-		    errObs=uncertObs_opt[0];
-		  else{
-		    statfactory::StatFactory statobs;
-		    statobs.setNoDataValues(obsnodata_opt);
-		    double obsMeanValue=statobs.mean(obsWindowBuffer);
-		    double difference=0;
-		    difference=obsMeanValue-modValue;
-		    errObs=sqrt(difference*difference);//uncertainty of the observation (R in Kalman equations)
-		  }
+		  statfactory::StatFactory statobs;
+		  statobs.setNoDataValues(obsnodata_opt);
+		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double difference=0;
+		  difference=obsMeanValue-modValue;
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
 		  double errorCovariance=errMod;//assumed initial errorCovariance (P in Kalman equations)
 		  if(errorCovariance+errObs>eps_opt[0])
 		    kalmanGain=errorCovariance/(errorCovariance+errObs);
@@ -567,10 +550,6 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
-	if(obsoffset_opt.size())
-	  imgReaderObs.setOffset(obsoffset_opt[0]);
-	if(obsscale_opt.size())
-	  imgReaderObs.setScale(obsscale_opt[0]);
       }
       //prediction (also to fill cloudy pixels in measurement update mode)
       string input;
@@ -588,11 +567,7 @@ int main(int argc,char **argv) {
 	cout << "opening " << input << endl;
       ImgReaderGdal imgReaderEst(input);
       imgReaderEst.setNoData(obsnodata_opt);
-      if(obsoffset_opt.size())
-	imgReaderEst.setOffset(obsoffset_opt[0]);
-      if(obsscale_opt.size())
-	imgReaderEst.setScale(obsscale_opt[0]);
-      
+
       vector< vector<double> > obsLineVector(down_opt[0]);
       vector<double> obsLineBuffer;
       vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
@@ -710,7 +685,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
 		  gainWriteBuffer[icol]=0;
 		}
 	      }
@@ -744,16 +719,12 @@ int main(int argc,char **argv) {
 	      if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 		double kalmanGain=1;
 		if(!imgReaderModel2.isNoData(modValue2)){//model is valid
-		  if(uncertObs_opt.size())
-		    errObs=uncertObs_opt[0];
-		  else{
-		    statfactory::StatFactory statobs;
-		    statobs.setNoDataValues(obsnodata_opt);
-		    double obsMeanValue=statobs.mean(obsWindowBuffer);
-		    double difference=0;
-		    difference=obsMeanValue-modValue2;
-		    errObs=sqrt(difference*difference);//uncertainty of the observation (R in Kalman equations)
-		  }
+		  statfactory::StatFactory statobs;
+		  statobs.setNoDataValues(obsnodata_opt);
+		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double difference=0;
+		  difference=obsMeanValue-modValue2;
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
 
 		  if(errObs<eps_opt[0])
 		    errObs=eps_opt[0];
@@ -886,7 +857,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
 		}
 	      }
 	    }
@@ -908,10 +879,6 @@ int main(int argc,char **argv) {
       imgReaderObs.open(observation_opt.back());
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
-      if(obsoffset_opt.size())
-	imgReaderObs.setOffset(obsoffset_opt[0]);
-      if(obsscale_opt.size())
-	imgReaderObs.setScale(obsscale_opt[0]);
       
       vector< vector<double> > obsLineVector(down_opt[0]);
       vector<double> obsLineBuffer;
@@ -951,7 +918,7 @@ int main(int argc,char **argv) {
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	      double modValue=estReadBuffer[modCol];
-	      double errMod=uncertModel_opt[0]*stdDev;
+	      double errMod=uncertModel_opt[0]*stdDev*stdDev;
 	      if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
 		if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
 		  estWriteBuffer[icol]=obsnodata_opt[0];
@@ -969,12 +936,8 @@ int main(int argc,char **argv) {
 		  }
 		  if(uncertObsLineBuffer.size()>icol)
 		    uncertWriteBuffer[icol]=uncertObsLineBuffer[icol];
-		  else{
-		    if(uncertObs_opt.size())
-		       uncertWriteBuffer[icol]=uncertObs_opt[0];
-		    else
-		       uncertWriteBuffer[icol]=0;
-		  }
+		  else
+		    uncertWriteBuffer[icol]=uncertObs_opt[0];
 		}
 	      }
 	      else{//model is valid: calculate estimate from model
@@ -997,16 +960,12 @@ int main(int argc,char **argv) {
 		  }
 		}
 		if(!imgReaderModel1.isNoData(modValue)){//model is valid
-		  if(uncertObs_opt.size())
-		    errObs=uncertObs_opt[0];
-		  else{
-		    statfactory::StatFactory statobs;
-		    statobs.setNoDataValues(obsnodata_opt);
-		    double obsMeanValue=statobs.mean(obsWindowBuffer);
-		    double difference=0;
-		    difference=obsMeanValue-modValue;
-		    errObs=sqrt(difference*difference);//uncertainty of the observation (R in Kalman equations)
-		  }
+		  statfactory::StatFactory statobs;
+		  statobs.setNoDataValues(obsnodata_opt);
+		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double difference=0;
+		  difference=obsMeanValue-modValue;
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
 		  double errorCovariance=errMod;//assumed initial errorCovariance (P in Kalman equations)
 		  if(errorCovariance+errObs>eps_opt[0])
 		    kalmanGain=errorCovariance/(errorCovariance+errObs);
@@ -1085,10 +1044,6 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
-	if(obsoffset_opt.size())
-	  imgReaderObs.setOffset(obsoffset_opt[0]);
-	if(obsscale_opt.size())
-	  imgReaderObs.setScale(obsscale_opt[0]);
       }
       //prediction (also to fill cloudy pixels in update mode)
       string input;
@@ -1106,10 +1061,6 @@ int main(int argc,char **argv) {
 	cout << "opening " << input << endl;
       ImgReaderGdal imgReaderEst(input);
       imgReaderEst.setNoData(obsnodata_opt);
-      if(obsoffset_opt.size())
-	imgReaderEst.setOffset(obsoffset_opt[0]);
-      if(obsscale_opt.size())
-	imgReaderEst.setScale(obsscale_opt[0]);
       
       vector< vector<double> > obsLineVector(down_opt[0]);
       vector<double> obsLineBuffer;
@@ -1226,7 +1177,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
 		}
 	      }
 	      else{//previous estimate is valid
@@ -1259,16 +1210,13 @@ int main(int argc,char **argv) {
 	      if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
 		double kalmanGain=1;
 		if(!imgReaderModel2.isNoData(modValue2)){//model is valid
-		  if(uncertObs_opt.size())
-		    errObs=uncertObs_opt[0];
-		  else{
-		    statfactory::StatFactory statobs;
-		    statobs.setNoDataValues(obsnodata_opt);
-		    double obsMeanValue=statobs.mean(obsWindowBuffer);
-		    double difference=0;
-		    difference=obsMeanValue-modValue2;
-		    errObs=sqrt(difference*difference);//uncertainty of the observation (R in Kalman equations)
-		  }
+		  statfactory::StatFactory statobs;
+		  statobs.setNoDataValues(obsnodata_opt);
+		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double difference=0;
+		  difference=obsMeanValue-modValue2;
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+
 		  double errorCovariance=uncertWriteBuffer[icol];//P in Kalman equations
 
 		  if(errorCovariance+errObs>eps_opt[0])
@@ -1365,15 +1313,7 @@ int main(int argc,char **argv) {
       ImgReaderGdal imgReaderForward(inputfw);
       ImgReaderGdal imgReaderBackward(inputbw);
       imgReaderForward.setNoData(obsnodata_opt);
-      if(obsoffset_opt.size())
-	imgReaderForward.setOffset(obsoffset_opt[0]);
-      if(obsscale_opt.size())
-	imgReaderForward.setScale(obsscale_opt[0]);
       imgReaderBackward.setNoData(obsnodata_opt);
-      if(obsoffset_opt.size())
-	imgReaderBackward.setOffset(obsoffset_opt[0]);
-      if(obsscale_opt.size())
-	imgReaderBackward.setScale(obsscale_opt[0]);
       
       vector<double> estForwardBuffer;
       vector<double> estBackwardBuffer;
@@ -1396,10 +1336,6 @@ int main(int argc,char **argv) {
 	imgReaderObs.open(observation_opt[obsindex]);
 	imgReaderObs.getGeoTransform(geotransform);
 	imgReaderObs.setNoData(obsnodata_opt);
-	if(obsoffset_opt.size())
-	  imgReaderObs.setOffset(obsoffset_opt[0]);
-	if(obsscale_opt.size())
-	  imgReaderObs.setScale(obsscale_opt[0]);
 	//calculate regression between model and observation
       }
 
@@ -1426,9 +1362,7 @@ int main(int argc,char **argv) {
 	  double B=estBackwardBuffer[icol];
 	  double C=uncertForwardBuffer[icol]*uncertForwardBuffer[icol];
 	  double D=uncertBackwardBuffer[icol]*uncertBackwardBuffer[icol];
-	  double uncertObs=0;
-	  if(uncertObs_opt.size())
-	    uncertObs=uncertObs_opt[0];
+	  double uncertObs=uncertObs_opt[0];
 
 	  // if(update){//check for nodata in observation
 	  //   if(imgReaderObs.isNoData(estWriteBuffer[icol]))
@@ -1474,7 +1408,7 @@ int main(int argc,char **argv) {
 	      if(uncertObs*uncertObs>eps_opt[0])
 		P-=1.0/uncertObs/uncertObs;
 	      if(P>eps_opt[0])
-		P=sqrt(1.0/P);
+		P=1.0/P;
 	      else
 		P=0;
 	      uncertWriteBuffer[icol]=P;

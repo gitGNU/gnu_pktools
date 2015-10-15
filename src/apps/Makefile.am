@@ -7,7 +7,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 
 # the program to build and install (the names of the final binaries)
 #bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass
-bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman
+bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman pkkalman1
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS = pkkalman
@@ -64,6 +64,8 @@ pkfilter_SOURCES = pkfilter.cc
 pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl -lgdal
 pkkalman_SOURCES = pkkalman.cc $(top_srcdir)/src/algorithms/ImgRegression.h $(top_srcdir)/src/algorithms/ImgRegression.cc
 pkkalman_LDADD = -lalgorithms -lgsl $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
+pkkalman1_SOURCES = pkkalman1.cc $(top_srcdir)/src/algorithms/ImgRegression.h $(top_srcdir)/src/algorithms/ImgRegression.cc
+pkkalman1_LDADD = -lalgorithms -lgsl $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
 pkfilterdem_SOURCES = pkfilterdem.cc
 pkfilterdem_LDADD = -lgsl
 pkfilterascii_SOURCES = pkfilterascii.cc

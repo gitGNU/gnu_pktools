@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> regerr_opt("regerr","regerr","calculate linear regression between two raster datasets and get root mean square error",false);
   Optionpk<bool> preg_opt("preg","preg","calculate perpendicular regression between two raster datasets and get correlation coefficient",false);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0,2);
+  fstat_opt.setHide(1);
   ulx_opt.setHide(1);
   uly_opt.setHide(1);
   lrx_opt.setHide(1);
@@ -261,11 +262,11 @@ int main(int argc, char *argv[])
       if(stat_opt[0]||mean_opt[0]||var_opt[0]||stdev_opt[0]){//the hard way (in memory)
 	statfactory::StatFactory stat;
 	vector<double> readBuffer;
-	imgReader.readDataBlock(readBuffer, GDT_Float64, 0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
-	double meanValue;
 	double varValue;
+	imgReader.readDataBlock(readBuffer, GDT_Float64, 0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
 	stat.setNoDataValues(nodata_opt);
 	stat.meanVar(readBuffer,meanValue,varValue);
+	stat.minmax(readBuffer,readBuffer.begin(),readBuffer.end(),minValue,maxValue);
       	if(mean_opt[0])
       	  std::cout << "--mean " << meanValue << " ";
       	if(stdev_opt[0])
