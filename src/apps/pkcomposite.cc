@@ -338,37 +338,39 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
-  ImgReaderGdal imgReader;
+  vector<ImgReaderGdal> imgReader(input_opt.size());
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
   string imageType;
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      imgReader.open(input_opt[ifile]);
+      imgReader[ifile].open(input_opt[ifile]);
     }
     catch(string errorstring){
       cerr << errorstring << " " << input_opt[ifile] << endl;
     }
+
+    //todo: must be in init part only?
     if(colorTable_opt.empty())
-      if(imgReader.getColorTable())
-        theColorTable=(imgReader.getColorTable()->Clone());
+      if(imgReader[ifile].getColorTable())
+	theColorTable=(imgReader[ifile].getColorTable()->Clone());
     if(projection_opt.empty())
-      theProjection=imgReader.getProjection();
+      theProjection=imgReader[ifile].getProjection();
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
       string theInterleave="INTERLEAVE=";
-      theInterleave+=imgReader.getInterleave();
+      theInterleave+=imgReader[ifile].getInterleave();
       option_opt.push_back(theInterleave);
     }
 
-    if((ulx_opt[0]||uly_opt[0]||lrx_opt[0]||lry_opt[0])&&(!imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
+    if((ulx_opt[0]||uly_opt[0]||lrx_opt[0]||lry_opt[0])&&(!imgReader[ifile].covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
       if(verbose_opt[0])
 	cout << input_opt[ifile] << " not within bounding box, skipping..." << endl;
-      imgReader.close();
+      // imgReader.close();
       continue;
     }
     double theULX, theULY, theLRX, theLRY;
-    imgReader.getBoundingBox(theULX,theULY,theLRX,theLRY);
+    imgReader[ifile].getBoundingBox(theULX,theULY,theLRX,theLRY);
     if(theLRY>theULY){
       cerr << "Error: " << input_opt[ifile] << " is not georeferenced, only referenced images are supported for pkcomposite " << endl;
       exit(1);
@@ -422,11 +424,11 @@ int main(int argc, char *argv[])
         bands.resize(band_opt.size());
         for(int iband=0;iband<band_opt.size();++iband){
           bands[iband]=band_opt[iband];
-          assert(bands[iband]<imgReader.nrOfBand());
+          assert(bands[iband]<imgReader[ifile].nrOfBand());
         }
       }
       else{
-	nband=imgReader.nrOfBand();
+	nband=imgReader[ifile].nrOfBand();
         bands.resize(nband);
         for(int iband=0;iband<nband;++iband)
           bands[iband]=iband;
@@ -436,7 +438,7 @@ int main(int argc, char *argv[])
       }
       //if output type not set, get type from input image
       if(theType==GDT_Unknown){
-        theType=imgReader.getDataType();
+        theType=imgReader[ifile].getDataType();
         if(verbose_opt[0])
           cout << "Using data type from input image: " << GDALGetDataTypeName(theType) << endl;
       }
@@ -444,7 +446,7 @@ int main(int argc, char *argv[])
       if(oformat_opt.size())//default
         imageType=oformat_opt[0];
       else
-        imageType=imgReader.getImageType();
+        imageType=imgReader[ifile].getImageType();
 
       // dataType=imgReader.getDataType(0);
       if(verbose_opt[0]){
@@ -459,11 +461,11 @@ int main(int argc, char *argv[])
       if(dx_opt.size())
 	dx=dx_opt[0];
       else
-        dx=imgReader.getDeltaX();
+        dx=imgReader[ifile].getDeltaX();
       if(dy_opt.size())
 	dy=dy_opt[0];
       else
-        dy=imgReader.getDeltaY();
+        dy=imgReader[ifile].getDeltaY();
       // imgReader.getMagicPixel(magic_x,magic_y);
       init=true;
     }
@@ -482,7 +484,7 @@ int main(int argc, char *argv[])
       minULX=(theULX<minULX)?theULX:minULX;
       minLRY=(theLRY<minLRY)?theLRY:minLRY;
     }
-    imgReader.close();
+    // imgReader.close();
   }
   if(verbose_opt[0])
     cout << "bounding box input images (ULX ULY LRX LRY): " << fixed << setprecision(6) << minULX << " " << maxULY << " " << maxLRX << " " << minLRY << endl;
@@ -646,7 +648,10 @@ int main(int argc, char *argv[])
   Vector2d<double> writeBuffer(nband,imgWriter.nrOfCol());
   vector<short> fileBuffer(ncol);//holds the number of used files
   Vector2d<short> maxBuffer;//buffer used for maximum voting
-  Vector2d<double> readBuffer(nband);
+  // Vector2d<double> readBuffer(nband);
+  vector<Vector2d<double> > readBuffer(input_opt.size());
+  for(int ifile=0;ifile<input_opt.size();++ifile)
+    readBuffer[ifile].resize(imgReader[ifile].nrOfBand());
   statfactory::StatFactory stat;
   if(cruleMap[crule_opt[0]]==crule::maxndvi)//ndvi
     assert(ruleBand_opt.size()==2);
@@ -699,21 +704,22 @@ int main(int argc, char *argv[])
     double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 
     for(int ifile=0;ifile<input_opt.size();++ifile){
-      try{
-        imgReader.open(input_opt[ifile]);
-      }
-      catch(string error){
-        cout << error << endl;
-      }
+      //imgReader already open...
+      // try{
+      //   imgReader.open(input_opt[ifile]);
+      // }
+      // catch(string error){
+      //   cout << error << endl;
+      // }
       // assert(imgReader.getDataType()==theType);
-      assert(imgReader.nrOfBand()>=nband);
-      if(!imgReader.covers(minULX,maxULY,maxLRX,minLRY)){
-        imgReader.close();
+      assert(imgReader[ifile].nrOfBand()>=nband);
+      if(!imgReader[ifile].covers(minULX,maxULY,maxLRX,minLRY)){
+        // imgReader.close();
         continue;
       }
       double uli,ulj,lri,lrj;
-      imgReader.geo2image(minULX+(magic_x-1.0)*imgReader.getDeltaX(),maxULY-(magic_y-1.0)*imgReader.getDeltaY(),uli,ulj);
-      imgReader.geo2image(maxLRX+(magic_x-2.0)*imgReader.getDeltaX(),minLRY-(magic_y-2.0)*imgReader.getDeltaY(),lri,lrj);
+      imgReader[ifile].geo2image(minULX+(magic_x-1.0)*imgReader[ifile].getDeltaX(),maxULY-(magic_y-1.0)*imgReader[ifile].getDeltaY(),uli,ulj);
+      imgReader[ifile].geo2image(maxLRX+(magic_x-2.0)*imgReader[ifile].getDeltaX(),minLRY-(magic_y-2.0)*imgReader[ifile].getDeltaY(),lri,lrj);
       uli=floor(uli);
       ulj=floor(ulj);
       lri=floor(lri);
@@ -723,26 +729,26 @@ int main(int argc, char *argv[])
       double endCol=lri;
       if(uli<0)
         startCol=0;
-      else if(uli>=imgReader.nrOfCol())
-        startCol=imgReader.nrOfCol()-1;
+      else if(uli>=imgReader[ifile].nrOfCol())
+        startCol=imgReader[ifile].nrOfCol()-1;
       if(lri<0)
         endCol=0;
-      else if(lri>=imgReader.nrOfCol())
-        endCol=imgReader.nrOfCol()-1;
+      else if(lri>=imgReader[ifile].nrOfCol())
+        endCol=imgReader[ifile].nrOfCol()-1;
       int readncol=endCol-startCol+1;
 
       //lookup corresponding row for irow in this file
-      imgReader.geo2image(x,y,readCol,readRow);
-      if(readRow<0||readRow>=imgReader.nrOfRow()){
-        imgReader.close();
+      imgReader[ifile].geo2image(x,y,readCol,readRow);
+      if(readRow<0||readRow>=imgReader[ifile].nrOfRow()){
+        // imgReader.close();
         continue;
       }
       // for(int iband=0;iband<imgReader.nrOfBand();++iband){
       for(int iband=0;iband<nband;++iband){
 	int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
-        readBuffer[iband].resize(readncol);
+        // readBuffer[iband].resize(readncol);
 	try{
-          imgReader.readData(readBuffer[iband],GDT_Float64,startCol,endCol,readRow,readBand,theResample);
+          imgReader[ifile].readData(readBuffer[ifile][iband],GDT_Float64,startCol,endCol,readRow,readBand,theResample);
 	}
 	catch(string error){
 	  cerr << "error reading image " << input_opt[ifile] << ": " << endl;
@@ -788,8 +794,8 @@ int main(int argc, char *argv[])
 	  continue;
 
         //lookup corresponding row for irow in this file
-        imgReader.geo2image(x,y,readCol,readRow);
-        if(readCol<0||readCol>=imgReader.nrOfCol())
+        imgReader[ifile].geo2image(x,y,readCol,readRow);
+        if(readCol<0||readCol>=imgReader[ifile].nrOfCol())
           continue;
         double val_current=0;
         double val_new=0;
@@ -802,10 +808,10 @@ int main(int argc, char *argv[])
           upperCol=static_cast<int>(upperCol);
           if(lowerCol<0)
             lowerCol=0;
-          if(upperCol>=imgReader.nrOfCol())
-            upperCol=imgReader.nrOfCol()-1;
+          if(upperCol>=imgReader[ifile].nrOfCol())
+            upperCol=imgReader[ifile].nrOfCol()-1;
           for(int vband=0;vband<bndnodata_opt.size();++vband){
-            val_new=(readCol-0.5-lowerCol)*readBuffer[bndnodata_opt[vband]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[bndnodata_opt[vband]][lowerCol-startCol];
+            val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][bndnodata_opt[vband]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][bndnodata_opt[vband]][lowerCol-startCol];
 	    if(minValue_opt.size()>vband){
 	      if(val_new<=minValue_opt[vband]){
 		readValid=false;
@@ -829,7 +835,7 @@ int main(int argc, char *argv[])
         default:
           readCol=static_cast<int>(readCol);
           for(int vband=0;vband<bndnodata_opt.size();++vband){
-            val_new=readBuffer[bndnodata_opt[vband]][readCol-startCol];
+            val_new=readBuffer[ifile][bndnodata_opt[vband]][readCol-startCol];
 	    if(minValue_opt.size()>vband){
 	      if(val_new<=minValue_opt[vband]){
 		readValid=false;
@@ -874,15 +880,15 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
-                red_new=(readCol-0.5-lowerCol)*readBuffer[ruleBand_opt[0]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ruleBand_opt[0]][lowerCol-startCol];
-                nir_new=(readCol-0.5-lowerCol)*readBuffer[ruleBand_opt[1]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ruleBand_opt[1]][lowerCol-startCol];
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
+                red_new=(readCol-0.5-lowerCol)*readBuffer[ifile][ruleBand_opt[0]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][ruleBand_opt[0]][lowerCol-startCol];
+                nir_new=(readCol-0.5-lowerCol)*readBuffer[ifile][ruleBand_opt[1]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][ruleBand_opt[1]][lowerCol-startCol];
                 if(red_new+nir_new>0&&red_new>=0&&nir_new>=0)
                   ndvi_new=(nir_new-red_new)/(nir_new+red_new);
                 if(ndvi_new>=ndvi_current){
                   for(iband=0;iband<nband;++iband){
-                    val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                    val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
                     writeBuffer[iband][ib]=val_new;
                   }
 		  if(file_opt[0]>1)
@@ -891,13 +897,13 @@ int main(int argc, char *argv[])
                 break;
               default:
                 readCol=static_cast<int>(readCol);
-                red_new=readBuffer[ruleBand_opt[0]][readCol-startCol];
-                nir_new=readBuffer[ruleBand_opt[1]][readCol-startCol];
+                red_new=readBuffer[ifile][ruleBand_opt[0]][readCol-startCol];
+                nir_new=readBuffer[ifile][ruleBand_opt[1]][readCol-startCol];
                 if(red_new+nir_new>0&&red_new>=0&&nir_new>=0)
                   ndvi_new=(nir_new-red_new)/(nir_new+red_new);
                 if(ndvi_new>=ndvi_current){
                   for(iband=0;iband<nband;++iband){
-                    val_new=readBuffer[iband][readCol-startCol];
+                    val_new=readBuffer[ifile][iband][readCol-startCol];
                     writeBuffer[iband][ib]=val_new;
                   }
 		  if(file_opt[0]>1)
@@ -919,13 +925,13 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
-                val_new=(readCol-0.5-lowerCol)*readBuffer[ruleBand_opt[0]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ruleBand_opt[0]][lowerCol-startCol];
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
+                val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][ruleBand_opt[0]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][ruleBand_opt[0]][lowerCol-startCol];
                 val_new*=weight_opt[ifile];
                 if((cruleMap[crule_opt[0]]==crule::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==crule::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==crule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
-                    val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                    val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
                     val_new*=weight_opt[ifile];
                     writeBuffer[iband][ib]=val_new;
                   }
@@ -935,11 +941,11 @@ int main(int argc, char *argv[])
                 break;
               default:
                 readCol=static_cast<int>(readCol);
-                val_new=readBuffer[ruleBand_opt[0]][readCol-startCol];
+                val_new=readBuffer[ifile][ruleBand_opt[0]][readCol-startCol];
                 val_new*=weight_opt[ifile];
                 if((cruleMap[crule_opt[0]]==crule::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==crule::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==crule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
-                    val_new=readBuffer[iband][readCol-startCol];
+                    val_new=readBuffer[ifile][iband][readCol-startCol];
                     val_new*=weight_opt[ifile];
                     writeBuffer[iband][ib]=val_new;
                   }
@@ -958,10 +964,10 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
                 for(iband=0;iband<nband;++iband){
-                  val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                  val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
                   // ++(maxBuffer[ib][val_new]);
                 }
@@ -969,7 +975,7 @@ int main(int argc, char *argv[])
               default:
                 readCol=static_cast<int>(readCol);
                 for(iband=0;iband<nband;++iband){
-                  val_new=readBuffer[iband][readCol-startCol];
+                  val_new=readBuffer[ifile][iband][readCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
 		}
                 break;
@@ -989,10 +995,10 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
                 for(iband=0;iband<nband;++iband){
-                  val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                  val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
                   val_new*=weight_opt[ifile];
                   storeBuffer[iband][ib].push_back(val_new);
                 }
@@ -1000,7 +1006,7 @@ int main(int argc, char *argv[])
               default:
                 readCol=static_cast<int>(readCol);
                 for(iband=0;iband<nband;++iband){
-                  val_new=readBuffer[iband][readCol-startCol];
+                  val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
                   storeBuffer[iband][ib].push_back(val_new);
                   assert(ifile>0);
@@ -1022,10 +1028,10 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
                 for(iband=0;iband<nband;++iband){
-                  val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                  val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
                   val_new*=weight_opt[ifile];
                   writeBuffer[iband][ib]=val_new;
                 }
@@ -1033,7 +1039,7 @@ int main(int argc, char *argv[])
               default:
                 readCol=static_cast<int>(readCol);
                 for(iband=0;iband<nband;++iband){
-                  val_new=readBuffer[iband][readCol-startCol];
+                  val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
                   writeBuffer[iband][ib]=val_new;
                 }
@@ -1062,10 +1068,10 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
                 for(iband=0;iband<nband;++iband){
-                  val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                  val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
                   val_new*=weight_opt[ifile];
                   storeBuffer[iband][ib].push_back(val_new);
                 }
@@ -1073,7 +1079,7 @@ int main(int argc, char *argv[])
               default:
                 readCol=static_cast<int>(readCol);
                 for(iband=0;iband<nband;++iband){
-                  val_new=readBuffer[iband][readCol-startCol];
+                  val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
                   storeBuffer[iband][ib].push_back(val_new);
                 }
@@ -1091,10 +1097,10 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
                 for(iband=0;iband<nband;++iband){
-                  val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                  val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
                   // ++(maxBuffer[ib][val_new]);
 		}
@@ -1102,7 +1108,7 @@ int main(int argc, char *argv[])
               default:
                 readCol=static_cast<int>(readCol);
                 for(iband=0;iband<nband;++iband){
-		  val_new=readBuffer[iband][readCol-startCol];
+		  val_new=readBuffer[ifile][iband][readCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
 		}
                   // ++(maxBuffer[ib][val_new]);
@@ -1118,10 +1124,10 @@ int main(int argc, char *argv[])
                 upperCol=static_cast<int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
-                if(upperCol>=imgReader.nrOfCol())
-                  upperCol=imgReader.nrOfCol()-1;
+                if(upperCol>=imgReader[ifile].nrOfCol())
+                  upperCol=imgReader[ifile].nrOfCol()-1;
                 for(iband=0;iband<nband;++iband){
-                  val_new=(readCol-0.5-lowerCol)*readBuffer[iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[iband][lowerCol-startCol];
+                  val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
                   val_new*=weight_opt[ifile];
                   writeBuffer[iband][ib]=val_new;
                 }
@@ -1129,7 +1135,7 @@ int main(int argc, char *argv[])
               default:
                 readCol=static_cast<int>(readCol);
                 for(iband=0;iband<nband;++iband){
-                  val_new=readBuffer[iband][readCol-startCol];
+                  val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
                   writeBuffer[iband][ib]=val_new;
                 }
@@ -1142,7 +1148,7 @@ int main(int argc, char *argv[])
           }
         }
       }
-      imgReader.close();
+      // imgReader.close();
     }
     if(cruleMap[crule_opt[0]]==crule::mode){
       vector<short> classBuffer(imgWriter.nrOfCol());
@@ -1244,6 +1250,8 @@ int main(int argc, char *argv[])
   if(extent_opt.size()&&cut_opt.size()){
     extentReader.close();
   }
+  for(int ifile=0;ifile<input_opt.size();++ifile)
+    imgReader[ifile].close();
   if(mask_opt.size())
     maskReader.close();
   imgWriter.close();

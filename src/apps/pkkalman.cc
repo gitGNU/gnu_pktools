@@ -316,6 +316,10 @@ int main(int argc,char **argv) {
     rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
     double modRow=0;
     double modCol=0;
+    double lowerCol=0;
+    double upperCol=0;
+    RESAMPLE theResample=BILINEAR;
+
     if(relobsindex[0]>0){//initialize output_opt[0] as model[0]
       //write first model as output
       if(verbose_opt[0])
@@ -326,20 +330,29 @@ int main(int argc,char **argv) {
 	vector<double> uncertWriteBuffer(ncol);
 	//test
 	vector<double> gainWriteBuffer(ncol);
-	imgWriterEst.image2geo(0,jrow,geox,geoy);
-	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	if(modRow<0||modRow>=imgReaderModel1.nrOfRow()){
-	  cerr << "Error: geo coordinates (" << geox << "," << geoy << ") not covered in model image " << imgReaderModel1.getFileName() << endl;
-	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	}
 	try{
-	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  for(int irow=jrow;irow<jrow+down_opt[0];++irow){
+	    imgWriterEst.image2geo(0,irow,geox,geoy);
+	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+	    if(modRow<0||modRow>=imgReaderModel1.nrOfRow()){
+	      cerr << "Error: geo coordinates (" << geox << "," << geoy << ") not covered in model image " << imgReaderModel1.getFileName() << endl;
+	      assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	    }
+	    imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
-	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      for(int icol=icol;icol<icol+down_opt[0];++icol){
 		imgWriterEst.image2geo(icol,irow,geox,geoy);
-		double modValue=estReadBuffer[modCol];
+		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		lowerCol=modCol-0.5;
+		lowerCol=static_cast<int>(lowerCol);
+		upperCol=modCol+0.5;
+		upperCol=static_cast<int>(upperCol);
+		if(lowerCol<0)
+		  lowerCol=0;
+		if(upperCol>=imgReaderModel1.nrOfCol())
+		  upperCol=imgReaderModel1.nrOfCol()-1;
+		double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
+		// double modValue=estReadBuffer[modCol];
 		if(imgReaderModel1.isNoData(modValue)){
 		  estWriteBuffer[icol]=obsnodata_opt[0];
 		  uncertWriteBuffer[icol]=uncertNodata_opt[0];
@@ -401,11 +414,11 @@ int main(int argc,char **argv) {
 	  imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,0);
       }
       for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
-	imgWriterEst.image2geo(0,jrow,geox,geoy);
-	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	for(int irow=jrow;irow<jrow+down_opt[0];++irow){
+	  imgWriterEst.image2geo(0,irow,geox,geoy);
+	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
 	  int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	  obsLineVector.erase(obsLineVector.begin());
 	  imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,0);
@@ -419,7 +432,16 @@ int main(int argc,char **argv) {
 	      imgWriterEst.image2geo(icol,irow,geox,geoy);
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	      double modValue=estReadBuffer[modCol];
+	      lowerCol=modCol-0.5;
+	      lowerCol=static_cast<int>(lowerCol);
+	      upperCol=modCol+0.5;
+	      upperCol=static_cast<int>(upperCol);
+	      if(lowerCol<0)
+		lowerCol=0;
+	      if(upperCol>=imgReaderModel1.nrOfCol())
+		upperCol=imgReaderModel1.nrOfCol()-1;
+	      double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
+	      // double modValue=estReadBuffer[modCol];
 	      double errMod=uncertModel_opt[0]*stdDev*stdDev;
 	      if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
 		if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
@@ -611,17 +633,17 @@ int main(int argc,char **argv) {
 
       for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	//todo: read entire window for uncertReadBuffer...
-	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,jrow,1);
-	imgReaderEst.image2geo(0,jrow,geox,geoy);
-	imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,0);
-
-	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,0);
-
 	for(int irow=jrow;irow<jrow+down_opt[0];++irow){
+	  imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
+	  imgReaderEst.image2geo(0,irow,geox,geoy);
+	  imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
+	  assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
+	  imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,0,theResample);
+
+	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	  imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,0,theResample);
+
 	  int maxRow=(irow+down_opt[0]/2<imgReaderEst.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderEst.nrOfRow()-1;
 	  estLineVector.erase(estLineVector.begin());
 	  imgReaderEst.readData(estLineBuffer,GDT_Float64,maxRow,0);
@@ -664,10 +686,28 @@ int main(int argc,char **argv) {
 	      double estValue=estLineBuffer[icol];
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	      double modValue1=model1LineBuffer[modCol];
+	      lowerCol=modCol-0.5;
+	      lowerCol=static_cast<int>(lowerCol);
+	      upperCol=modCol+0.5;
+	      upperCol=static_cast<int>(upperCol);
+	      if(lowerCol<0)
+		lowerCol=0;
+	      if(upperCol>=imgReaderModel1.nrOfCol())
+		upperCol=imgReaderModel1.nrOfCol()-1;
+	      double modValue1=(modCol-0.5-lowerCol)*model1LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model1LineBuffer[lowerCol];
+	      // double modValue1=model1LineBuffer[modCol];
 	      imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	      double modValue2=model2LineBuffer[modCol];
+	      lowerCol=modCol-0.5;
+	      lowerCol=static_cast<int>(lowerCol);
+	      upperCol=modCol+0.5;
+	      upperCol=static_cast<int>(upperCol);
+	      if(lowerCol<0)
+		lowerCol=0;
+	      if(upperCol>=imgReaderModel1.nrOfCol())
+		upperCol=imgReaderModel1.nrOfCol()-1;
+	      double modValue2=(modCol-0.5-lowerCol)*model2LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model2LineBuffer[lowerCol];
+	      // double modValue2=model2LineBuffer[modCol];
 	      if(imgReaderEst.isNoData(estValue)){
 		//we have not found any valid data yet, better here to take the current model value if valid
 		if(imgReaderModel2.isNoData(modValue2)){//if both estimate and model are no-data, set obs to nodata
@@ -824,6 +864,10 @@ int main(int argc,char **argv) {
     rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
     double modRow=0;
     double modCol=0;
+    double lowerCol=0;
+    double upperCol=0;
+    RESAMPLE theResample=BILINEAR;
+
     if(relobsindex.back()<model_opt.size()-1){//initialize output_opt.back() as model[0]
       //write last model as output
       if(verbose_opt[0])
@@ -832,17 +876,27 @@ int main(int argc,char **argv) {
 	vector<double> estReadBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
-	imgWriterEst.image2geo(0,jrow,geox,geoy);
-	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	try{
-	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	  for(int irow=jrow;irow<jrow+down_opt[0];++irow){
+	    imgWriterEst.image2geo(0,irow,geox,geoy);
+	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	    imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
-	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      for(int icol=icol;icol<icol+down_opt[0];++icol){
 		imgWriterEst.image2geo(icol,irow,geox,geoy);
-		double modValue=estReadBuffer[modCol];
+		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		lowerCol=modCol-0.5;
+		lowerCol=static_cast<int>(lowerCol);
+		upperCol=modCol+0.5;
+		upperCol=static_cast<int>(upperCol);
+		if(lowerCol<0)
+		  lowerCol=0;
+		if(upperCol>=imgReaderModel1.nrOfCol())
+		  upperCol=imgReaderModel1.nrOfCol()-1;
+		double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
+
+		// double modValue=estReadBuffer[modCol];
 		if(imgReaderModel1.isNoData(modValue)){
 		  estWriteBuffer[icol]=obsnodata_opt[0];
 		  uncertWriteBuffer[icol]=uncertNodata_opt[0];
@@ -873,9 +927,9 @@ int main(int argc,char **argv) {
 	}
       }
     }
-    else{//we have an measurement at end time
+    else{//we have a measurement at end time
       if(verbose_opt[0])
-	cout << "we have an measurement at end time" << endl;
+	cout << "we have a measurement at end time" << endl;
       imgReaderObs.open(observation_opt.back());
       imgReaderObs.getGeoTransform(geotransform);
       imgReaderObs.setNoData(obsnodata_opt);
@@ -897,13 +951,13 @@ int main(int argc,char **argv) {
 	else
 	  imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,0);
       }
-
       for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
-	imgWriterEst.image2geo(0,jrow,geox,geoy);
-	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow);
 	for(int irow=jrow;irow<jrow+down_opt[0];++irow){
+	  imgWriterEst.image2geo(0,irow,geox,geoy);
+	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	  RESAMPLE theResample=BILINEAR;
+	  imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
 	  int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	  obsLineVector.erase(obsLineVector.begin());
 	  imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,0);
@@ -917,7 +971,16 @@ int main(int argc,char **argv) {
 	      imgWriterEst.image2geo(icol,irow,geox,geoy);
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	      double modValue=estReadBuffer[modCol];
+	      lowerCol=modCol-0.5;
+	      lowerCol=static_cast<int>(lowerCol);
+	      upperCol=modCol+0.5;
+	      upperCol=static_cast<int>(upperCol);
+	      if(lowerCol<0)
+		lowerCol=0;
+	      if(upperCol>=imgReaderModel1.nrOfCol())
+		upperCol=imgReaderModel1.nrOfCol()-1;
+	      double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
+	      // double modValue=estReadBuffer[modCol];
 	      double errMod=uncertModel_opt[0]*stdDev*stdDev;
 	      if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
 		if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
@@ -985,7 +1048,6 @@ int main(int argc,char **argv) {
 	      }
 	    }
 	  }
-	  if(gain_opt.size())
 	  imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
 	  imgWriterEst.writeData(uncertWriteBuffer,GDT_Float64,irow,1);
 	}
@@ -993,6 +1055,7 @@ int main(int argc,char **argv) {
       imgReaderObs.close();
       --obsindex;
     }
+    
     imgReaderModel1.close();
     imgWriterEst.close();
 
@@ -1104,17 +1167,17 @@ int main(int argc,char **argv) {
 
       for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	//todo: read entire window for uncertReadBuffer...
-	imgReaderEst.readData(uncertReadBuffer,GDT_Float64,jrow,1);
-	imgReaderEst.image2geo(0,jrow,geox,geoy);
-	imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,0);
-
-	imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,0);
-
 	for(int irow=jrow;irow<jrow+down_opt[0];++irow){
+	  imgReaderEst.readData(uncertReadBuffer,GDT_Float64,irow,1);
+	  imgReaderEst.image2geo(0,irow,geox,geoy);
+	  imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
+	  assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
+	  imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,0,theResample);
+
+	  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+	  assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+	  imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,0,theResample);
+
 	  int maxRow=(irow+down_opt[0]/2<imgReaderEst.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderEst.nrOfRow()-1;
 	  estLineVector.erase(estLineVector.begin());
 	  imgReaderEst.readData(estLineBuffer,GDT_Float64,maxRow,0);
@@ -1157,10 +1220,28 @@ int main(int argc,char **argv) {
 	      double estValue=estLineBuffer[icol];
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	      double modValue1=model1LineBuffer[modCol];
+	      lowerCol=modCol-0.5;
+	      lowerCol=static_cast<int>(lowerCol);
+	      upperCol=modCol+0.5;
+	      upperCol=static_cast<int>(upperCol);
+	      if(lowerCol<0)
+		lowerCol=0;
+	      if(upperCol>=imgReaderModel1.nrOfCol())
+		upperCol=imgReaderModel1.nrOfCol()-1;
+	      double modValue1=(modCol-0.5-lowerCol)*model1LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model1LineBuffer[lowerCol];
+	      // double modValue1=model1LineBuffer[modCol];
 	      imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	      double modValue2=model2LineBuffer[modCol];
+	      lowerCol=modCol-0.5;
+	      lowerCol=static_cast<int>(lowerCol);
+	      upperCol=modCol+0.5;
+	      upperCol=static_cast<int>(upperCol);
+	      if(lowerCol<0)
+		lowerCol=0;
+	      if(upperCol>=imgReaderModel1.nrOfCol())
+		upperCol=imgReaderModel1.nrOfCol()-1;
+	      double modValue2=(modCol-0.5-lowerCol)*model2LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model2LineBuffer[lowerCol];
+	      // double modValue2=model2LineBuffer[modCol];
 	      if(imgReaderEst.isNoData(estValue)){
 		//we have not found any valid data yet, better here to take the current model value if valid
 		if(imgReaderModel2.isNoData(modValue2)){//if both estimate and model are no-data, set obs to nodata
