@@ -57,6 +57,8 @@ The utility pklas2img converts a las/laz point cloud into a gridded raster datas
  | class  | class                | unsigned short |       |classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap) | 
  | comp   | comp                 | std::string | last  |composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point | 
  | fir    | filter               | std::string | all   |filter las points (first,last,single,multiple,all). | 
+ | angle_min  | angle_min        | unsigned short |    |minimum scan angle to read points. | 
+ | angle_max  | angle_max        | unsigned short |    |maximum scan angle to read points. | 
  | o      | output               | std::string |       |Output image file | 
  | a_srs  | a_srs                | std::string |       |assign the projection for the output file in epsg code, e.g., epsg:3035 for European LAEA projection | 
  | ulx    | ulx                  | double | 0     |Upper left x value bounding box (in geocoordinates if georef is true). 0 is read from input file | 
@@ -91,6 +93,8 @@ int main(int argc,char **argv) {
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
   Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point", "last");
   Optionpk<string> filter_opt("fir", "filter", "filter las points (first,last,single,multiple,all).", "all");
+  Optionpk<unsigned short> angle_min_opt("angle_min", "angle_min", "Minimum scan angle to read points.");
+  Optionpk<unsigned short> angle_max_opt("angle_max", "angle_max", "Maximum scan angle to read points.");
   // Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none).", "none");
   // Optionpk<short> dimx_opt("dimx", "dimx", "Dimension X of postFilter", 3);
   // Optionpk<short> dimy_opt("dimy", "dimy", "Dimension Y of postFilter", 3);
@@ -125,6 +129,8 @@ int main(int argc,char **argv) {
     classes_opt.retrieveOption(argc,argv);
     composite_opt.retrieveOption(argc,argv);
     filter_opt.retrieveOption(argc,argv);
+    angle_min_opt.retrieveOption(argc,argv);
+    angle_max_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
     ulx_opt.retrieveOption(argc,argv);
@@ -249,6 +255,10 @@ int main(int argc,char **argv) {
     std::cout << setprecision(12) << "--ulx=" << minULX << " --uly=" << maxULY << " --lrx=" << maxLRX << " --lry=" << minLRY << std::endl;
     std::cout << "total number of points before filtering: " << totalPoints << std::endl;
     std::cout << "filter set to " << filter_opt[0] << std::endl;
+    if(angle_min_opt.size())
+      std::cout << "minimum scan angle: " << angle_min_opt[0] << std::endl;
+    if(angle_max_opt.size())
+      std::cout << "maximum scan angle: " << angle_max_opt[0] << std::endl;
     // std::cout << "postFilter set to " << postFilter_opt[0] << std::endl;
   }
   int ncol=ceil(maxLRX-minULX)/dx_opt[0];//number of columns in outputGrid
@@ -359,6 +369,14 @@ int main(int argc,char **argv) {
 	continue;
       if((filter_opt[0]=="first")&&(thePoint.GetReturnNumber()!=1))
 	continue;
+      if(angle_min_opt.size()){
+	if(angle_min_opt[0]>thePoint.GetScanAngleRank())
+	  continue;
+      }
+      if(angle_max_opt.size()){
+	if(angle_max_opt[0]<thePoint.GetScanAngleRank())
+	  continue;
+      }
       double dcol,drow;
       outputWriter.geo2image(thePoint.GetX(),thePoint.GetY(),dcol,drow);
       int icol=static_cast<int>(dcol);
