@@ -87,7 +87,7 @@ int main(int argc,char **argv) {
   Optionpk<double> obsmax_opt("obsmax", "obsmax", "Maximum value for observation data");
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
   Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiplication factor for uncertainty of model",1,1);
-  Optionpk<double> uncertObs_opt("uo", "uncertobs", "Multiplication factor for uncertainty of valid observations",1,1);
+  Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",1,1);
   Optionpk<double> processNoise_opt("q", "q", "Process noise: expresses instability (variance) of proportions of fine res pixels within a moderate resolution pixel",1);
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
@@ -491,7 +491,9 @@ int main(int argc,char **argv) {
 		  double obsMeanValue=statobs.mean(obsWindowBuffer);
 		  double difference=0;
 		  difference=obsMeanValue-modValue;
-		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  // errObs=(difference<0)? sqrt(difference*difference) : uncertObs_opt[0];
+		  //errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
 		  double errorCovariance=errMod;//assumed initial errorCovariance (P in Kalman equations)
 		  if(errorCovariance+errObs>eps_opt[0])
 		    kalmanGain=errorCovariance/(errorCovariance+errObs);
@@ -764,7 +766,9 @@ int main(int argc,char **argv) {
 		  double obsMeanValue=statobs.mean(obsWindowBuffer);
 		  double difference=0;
 		  difference=obsMeanValue-modValue2;
-		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  // errObs=(difference<0)? sqrt(difference*difference) : uncertObs_opt[0];
+		  //errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
 
 		  if(errObs<eps_opt[0])
 		    errObs=eps_opt[0];
@@ -1028,7 +1032,9 @@ int main(int argc,char **argv) {
 		  double obsMeanValue=statobs.mean(obsWindowBuffer);
 		  double difference=0;
 		  difference=obsMeanValue-modValue;
-		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  // errObs=(difference<0)? sqrt(difference*difference) : uncertObs_opt[0];
+		  //errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
 		  double errorCovariance=errMod;//assumed initial errorCovariance (P in Kalman equations)
 		  if(errorCovariance+errObs>eps_opt[0])
 		    kalmanGain=errorCovariance/(errorCovariance+errObs);
@@ -1296,7 +1302,9 @@ int main(int argc,char **argv) {
 		  double obsMeanValue=statobs.mean(obsWindowBuffer);
 		  double difference=0;
 		  difference=obsMeanValue-modValue2;
-		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  // errObs=(difference<0)? sqrt(difference*difference) : uncertObs_opt[0];
+		  //errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
 
 		  double errorCovariance=uncertWriteBuffer[icol];//P in Kalman equations
 
