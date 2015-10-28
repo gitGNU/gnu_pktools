@@ -28,14 +28,14 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ## SYNOPSIS
 
 <code>
-  Usage: pksetmask -i input -m mask [-msknodata value] -o output
+  Usage: pksetmask -i input -m mask [-m mask]* -o output
 </code>
 
 <code>
   
-  Options: [-min value]* [-max value]* [-data value]* [-nodata value]*
+  Options: [-mskband value]* [-msknodata value -nodata value]*
  
-  Advanced options: [-b band]* [--operator '<'|'='|'<'] [-ot type] [-of format] [-co option]* [-ct table] 
+  Advanced options: [--operator '<'|'='|'<'] [-ot type] [-of format] [-co option]* [-ct table] 
 
 </code>
 
@@ -58,8 +58,7 @@ The utility pksetmask sets a mask provided with option -m to an input raster dat
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
 
-Usage: pksetmask -i input -m mask [-msknodata value] -o output
-
+Usage: pksetmask -i input -m mask [-m mask]* [-msknodata value -nodata value]* -o output
 
 Examples
 ========
@@ -114,7 +113,7 @@ int main(int argc, char *argv[])
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pksetmask -i input -m mask [-msknodata value] -o output" << endl;
+    cout << "Usage: pksetmask -i input -m mask [-m mask]* [-msknodata value -nodata value]* -o output" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
