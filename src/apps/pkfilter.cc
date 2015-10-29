@@ -79,8 +79,8 @@ minallbands | For each individual band, assign the minimum value found in all ov
  | f      | filter               | std::string |       |filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion) | 
  | srf    | srf                  | std::string |       |list of ASCII files containing spectral response functions (two columns: wavelength response) | 
  | fwhm   | fwhm                 | double |       |list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...) | 
- | dx     | dx                   | double | 3     |filter kernel size in x, better use odd value to avoid image shift | 
- | dy     | dy                   | double | 3     |filter kernel size in y, better use odd value to avoid image shift | 
+ | dx     | dx                   | double | 3     |filter kernel size in x, use odd values only | 
+ | dy     | dy                   | double | 3     |filter kernel size in y, use odd values only | 
  | dz     | dz                   | int  |       |filter kernel size in z (spectral/temporal dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain | 
  | nodata | nodata               | double |       |nodata value(s) (used for smoothnodata filter) | 
  | r      | resampling-method    | std::string | near  |Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation). | 
@@ -126,8 +126,8 @@ int main(int argc,char **argv) {
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
   Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion)");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
-  Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, better use odd value to avoid image shift", 3);
-  Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, better use odd value to avoid image shift", 3);
+  Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, use odd values only", 3);
+  Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, use odd values only", 3);
   Optionpk<int> dimZ_opt("dz", "dz", "filter kernel size in z (spectral/temporal dimension), must be odd (example: 3).. Set dz>0 if 1-D filter must be used in band domain");
   Optionpk<std::string> wavelet_type_opt("wt", "wavelet", "wavelet type: daubechies,daubechies_centered, haar, haar_centered, bspline, bspline_centered", "daubechies");
   Optionpk<int> family_opt("wf", "family", "wavelet family (vanishing moment, see also http://www.gnu.org/software/gsl/manual/html_node/DWT-Initialization.html)", 4);
