@@ -65,6 +65,25 @@ sum | Calculate the arithmetic sum of overlapping pixels
 maxallbands | For each individual band, assign the maximum value found in all overlapping pixels. Unlike maxband, output band values cannot be attributed to a single (date) pixel in the input time series
 minallbands | For each individual band, assign the minimum value found in all overlapping pixels. Unlike minband, output band values cannot be attributed to a single (date) pixel in the input time series
 
+Example: Calculate the maximum NDVI composite of two multispectral input images (e.g., red is band 0 and near infrared is band 1)
+
+\code
+pkcomposite -i input1.tif -i input2.tif -o output.tif -cr maxndvi -cb 0 -cb 1
+\endcode
+
+Example: Calculate the minimum nadir composite of two input images, where the forth band (b=3) contains the view zenith angle
+
+\code
+pkcomposite -i input1.tif -i input2.tif -o minzenith.tif -cr minband -cb 3
+\endcode
+
+Example: Calculate the minimum of two input images in all bands
+
+\code
+pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
+\endcode
+
+
 \section pkcomposite_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options

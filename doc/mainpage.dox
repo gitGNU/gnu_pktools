@@ -2,7 +2,7 @@
 
    - \ref pktools_introduction "Introduction"
    - \ref pktools_license "License"
-   - \ref pktools_download "Download"
+   - \ref pktools_how_to_get "How te get pktools?"
    - \ref pktools_refer "How to refer"
    - \ref pktools_installation "Installation"
    - \ref pktools_plugins "Plugins"
@@ -26,15 +26,43 @@ pktools is written by Pieter Kempeneers and released under the GNU General Publi
     
 See http://www.gnu.org/licenses for more details
 
-\section pktools_download Download
+\section pktools_how_to_get How to get pktools?
 
-You can <a href="http://download.savannah.gnu.org/releases/pktools/">download</a> the latest release from <a href="https://savannah.nongnu.org/projects/pktools">Savannah</a>
+\subsection pktools_download Download
 
-Or you can get a copy from the Git repository
+You can <a href="http://download.savannah.gnu.org/releases/pktools/">download</a> the latest stable release from <a href="https://savannah.nongnu.org/projects/pktools">Savannah</a>
 
-~~~
+\subsection From the git repository
+
+Get the latest code in development (bleeding edge) from the Git repository:
+
+\code
 git clone git://git.savannah.nongnu.org/pktools.git
-~~~
+\endcode
+
+In a Linux environment, please perform the following actions before following the \ref install_manual "manual installation procedure"
+
+\code
+cd pktools
+\endcode
+
+Add libtool support to your package:
+
+\code
+libtoolize
+\endcode
+
+Remake the GNU Build System files by scanning 'configure.ac' and running 'autoconf', 'autoheader', 'aclocal', 'automake' and 'libtoolize':
+
+\code
+autoreconf
+\endcode
+
+Finalize package generation:
+
+\code
+automake --add-missing
+\endcode
 
 \section pktools_refer How to refer
 
