@@ -204,6 +204,7 @@ int main(int argc, char *argv[])
   double minValue=0;
   double maxValue=0;
   double meanValue=0;
+  double medianValue=0;
   double stdDev=0;
 
   const char* pszMessage;
@@ -259,16 +260,20 @@ int main(int argc, char *argv[])
       if(scale_opt.size()>ifile)
         imgReader.setScale(scale_opt[ifile],band_opt[iband]);
 
-      if(stat_opt[0]||mean_opt[0]||var_opt[0]||stdev_opt[0]){//the hard way (in memory)
+      if(stat_opt[0]||mean_opt[0]||median_opt[0]||var_opt[0]||stdev_opt[0]){//the hard way (in memory)
+	//todo: take src_min and src_max into account!
 	statfactory::StatFactory stat;
 	vector<double> readBuffer;
 	double varValue;
 	imgReader.readDataBlock(readBuffer, GDT_Float64, 0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
 	stat.setNoDataValues(nodata_opt);
 	stat.meanVar(readBuffer,meanValue,varValue);
+	medianValue=stat.median(readBuffer);
 	stat.minmax(readBuffer,readBuffer.begin(),readBuffer.end(),minValue,maxValue);
       	if(mean_opt[0])
       	  std::cout << "--mean " << meanValue << " ";
+      	if(median_opt[0])
+      	  std::cout << "--median " << medianValue << " ";
       	if(stdev_opt[0])
       	  std::cout << "--stdDev " << sqrt(varValue) << " ";
       	if(var_opt[0])

@@ -55,9 +55,9 @@ produce kalman filtered raster time series
  | obsmin | obsmin               | double |      |Minimum value for observation data | 
  | obsmax | obsmax               | double |      |Maximum value for observation data | 
  | eps    | eps                  | double | 1e-05 |epsilon for non zero division | 
- | um     | uncertmodel          | double | 2     |Multiply this value with std dev of first model image to obtain uncertainty of model | 
- | uo     | uncertobs            | double | 0     |Uncertainty of valid observations | 
- | unodata | uncertnodata         | double | 10000 |Uncertainty in case of no-data values in observation | 
+ | um     | uncertmodel          | double | 1     |Uncertainty of the model | 
+ | uo     | uncertobs            | double | 1     |Uncertainty of valid observations | 
+ | unodata | uncertnodata         | double | 100 |Uncertainty in case of no-data values in observation | 
  | q      | q                    | double | 1     |Process noise: expresses instability (variance) of proportions of fine res pixels within a moderate resolution pixel | 
  | down   | down                 | int  |       |Downsampling factor for reading model data to calculate regression | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
@@ -86,10 +86,10 @@ int main(int argc,char **argv) {
   Optionpk<double> obsmin_opt("obsmin", "obsmin", "Minimum value for observation data");
   Optionpk<double> obsmax_opt("obsmax", "obsmax", "Maximum value for observation data");
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
-  Optionpk<double> uncertModel_opt("um", "uncertmodel", "Multiplication factor for uncertainty of model",1,1);
+  Optionpk<double> uncertModel_opt("um", "uncertmodel", "Uncertainty of model",1,1);
   Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",1,1);
   Optionpk<double> processNoise_opt("q", "q", "Process noise: expresses instability (variance) of proportions of fine res pixels within a moderate resolution pixel",1);
-  Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 10000);
+  Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 100);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
@@ -309,11 +309,11 @@ int main(int argc,char **argv) {
     }
       
     //calculate standard deviation of image to serve as model uncertainty
-    GDALRasterBand* rasterBand;
-    rasterBand=imgReaderModel1.getRasterBand(0);
-    double minValue, maxValue, meanValue, stdDev;
-    void* pProgressData;
-    rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+    // GDALRasterBand* rasterBand;
+    // rasterBand=imgReaderModel1.getRasterBand(0);
+    // double minValue, maxValue, meanValue, stdDev;
+    // void* pProgressData;
+    // rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
     double modRow=0;
     double modCol=0;
     double lowerCol=0;
@@ -368,7 +368,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0];//*stdDev*stdDev;
 		  gainWriteBuffer[icol]=0;
 		}
 	      }
@@ -442,7 +442,7 @@ int main(int argc,char **argv) {
 		upperCol=imgReaderModel1.nrOfCol()-1;
 	      double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
 	      // double modValue=estReadBuffer[modCol];
-	      double errMod=uncertModel_opt[0]*stdDev*stdDev;
+	      double errMod=uncertModel_opt[0];//*stdDev*stdDev;
 	      if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
 		if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
 		  estWriteBuffer[icol]=obsnodata_opt[0];
@@ -727,7 +727,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0];//*stdDev*stdDev;
 		  gainWriteBuffer[icol]=0;
 		}
 	      }
@@ -861,11 +861,11 @@ int main(int argc,char **argv) {
     }
 
     //calculate standard deviation of image to serve as model uncertainty
-    GDALRasterBand* rasterBand;
-    rasterBand=imgReaderModel1.getRasterBand(0);
-    double minValue, maxValue, meanValue, stdDev;
-    void* pProgressData;
-    rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+    // GDALRasterBand* rasterBand;
+    // rasterBand=imgReaderModel1.getRasterBand(0);
+    // double minValue, maxValue, meanValue, stdDev;
+    // void* pProgressData;
+    // rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
     double modRow=0;
     double modCol=0;
     double lowerCol=0;
@@ -915,7 +915,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0];//*stdDev*stdDev;
 		}
 	      }
 	    }
@@ -985,7 +985,7 @@ int main(int argc,char **argv) {
 		upperCol=imgReaderModel1.nrOfCol()-1;
 	      double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
 	      // double modValue=estReadBuffer[modCol];
-	      double errMod=uncertModel_opt[0]*stdDev*stdDev;
+	      double errMod=uncertModel_opt[0];//*stdDev*stdDev;
 	      if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
 		if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
 		  estWriteBuffer[icol]=obsnodata_opt[0];
@@ -1264,7 +1264,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0]*stdDev*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0];//*stdDev*stdDev;
 		}
 	      }
 	      else{//previous estimate is valid
@@ -1449,8 +1449,8 @@ int main(int argc,char **argv) {
 	  imgWriterEst.image2geo(icol,irow,geox,geoy);
 	  double A=estForwardBuffer[icol];
 	  double B=estBackwardBuffer[icol];
-	  double C=uncertForwardBuffer[icol]*uncertForwardBuffer[icol];
-	  double D=uncertBackwardBuffer[icol]*uncertBackwardBuffer[icol];
+	  double C=uncertForwardBuffer[icol];
+	  double D=uncertBackwardBuffer[icol];
 	  double uncertObs=uncertObs_opt[0];
 
 	  // if(update){//check for nodata in observation
@@ -1494,8 +1494,9 @@ int main(int argc,char **argv) {
 		P+=1.0/C;
 	      if(D>eps_opt[0])
 		P+=1.0/D;
-	      if(uncertObs*uncertObs>eps_opt[0])
-		P-=1.0/uncertObs/uncertObs;
+	      //test
+	      // if(uncertObs>eps_opt[0])
+	      // 	P-=1.0/uncertObs;
 	      if(P>eps_opt[0])
 		P=1.0/P;
 	      else
