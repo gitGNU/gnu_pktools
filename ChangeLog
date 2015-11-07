@@ -416,9 +416,13 @@ version 2.6.4
 	patch from Bas Couwenberg (ticket #45416)
 
 version 2.6.5
-- StatFactory
+ - ImgReaderOgr.h patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - ImgReaderOgr.cc patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - ImgWriterOgr.h patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - ImgWriterOgr.cc patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - StatFactory
 	minimum and maximum values in case of nodata (initial value)
-- pkextract
+ - pkextract
 	support automatically retrieval of classes in case of mode, proportion and count rule
 	support count (-r count) extraction rule similar to proportion (change request #108902)
  - pklas2img
@@ -429,5 +433,4 @@ version 2.6.5
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
-	Img[Reader|Writer]Ogr replace OGRDataSource with GDALDataset conform to GDAL API 2.x
 
