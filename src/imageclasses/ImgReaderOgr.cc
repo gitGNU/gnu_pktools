@@ -48,15 +48,26 @@ void ImgReaderOgr::open(const std::string& filename)
 //---------------------------------------------------------------------------
 void ImgReaderOgr::close(void)
 {
+#if GDAL_VERSION_MAJOR < 2
   OGRDataSource::DestroyDataSource(m_datasource);
+#else
+  GDALClose(m_datasource);
+#endif
 }
 
 //---------------------------------------------------------------------------
 void ImgReaderOgr::setCodec(void){
+#if GDAL_VERSION_MAJOR < 2
   //register the drivers
   OGRRegisterAll();
   //open the input OGR datasource. Datasources can be files, RDBMSes, directories full of files, or even remote web services depending on the driver being used. However, the datasource name is always a single string.
   m_datasource = OGRSFDriverRegistrar::Open(m_filename.c_str(), FALSE);//FAlSE: do not update
+#else
+  //register the drivers
+  GDALAllRegister();
+  //open the input OGR datasource. Datasources can be files, RDBMSes, directories full of files, or even remote web services depending on the driver being used. However, the datasource name is always a single string.
+  m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY, NULL, NULL, NULL);
+#endif
   if( m_datasource == NULL ){
     std::string errorString="Open failed";
     throw(errorString);

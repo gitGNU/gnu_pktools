@@ -62,17 +62,30 @@ public:
   OGRErr createFeature(OGRFeature* theFeature, int layer=0);
   int getFieldCount(int layer=0) const;
   int getFeatureCount(int layer=0) const;
+#if GDAL_VERSION_MAJOR < 2
   OGRDataSource* getDataSource(void) {return m_datasource;};
   OGRSFDriver* getDriver(void) const {return m_datasource->GetDriver();};
+#else
+  GDALDataset* getDataSource(void) {return m_datasource;};
+  GDALDriver* getDriver(void) const {return m_datasource->GetDriver();};
+#endif
 
 protected:
   void setCodec(const std::string& imageType);
+#if GDAL_VERSION_MAJOR < 2
   void setCodec(OGRSFDriver *poDriver);
+#else
+  void setCodec(GDALDriver *poDriver);
+#endif
   
 //   OGRLayer* getLayer(int layer=0);
     
   std::string m_filename;
+#if GDAL_VERSION_MAJOR < 2
   OGRDataSource *m_datasource;
+#else
+  GDALDataset *m_datasource;
+#endif
 //   vector<OGRLayer*> m_layers;
 };
 
