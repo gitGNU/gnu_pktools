@@ -1477,7 +1477,7 @@ int main(int argc,char **argv) {
 	  else{
 	    if(noemer<eps_opt[0]){//simple average if both uncertainties are ~>0
 	      estWriteBuffer[icol]=0.5*(A+B);
-	      uncertWriteBuffer[icol]=uncertObs;
+	      uncertWriteBuffer[icol]=eps_opt[0];
 	    }
 	    else{
 	      estWriteBuffer[icol]=(A*D+B*C)/noemer;
@@ -1489,19 +1489,17 @@ int main(int argc,char **argv) {
 		if(estWriteBuffer[icol]>obsmax_opt[0])
 		estWriteBuffer[icol]=obsmax_opt[0];
 	      }
-	      double P=0;
-	      if(C>eps_opt[0])
-		P+=1.0/C;
-	      if(D>eps_opt[0])
-		P+=1.0/D;
-	      //test
-	      // if(uncertObs>eps_opt[0])
-	      // 	P-=1.0/uncertObs;
-	      if(P>eps_opt[0])
-		P=1.0/P;
-	      else
-		P=0;
-	      uncertWriteBuffer[icol]=P;
+	      uncertWriteBuffer[icol]=C*D/noemer;
+	      // double P=0;
+	      // if(C>eps_opt[0])
+	      // 	P+=1.0/C;
+	      // if(D>eps_opt[0])
+	      // 	P+=1.0/D;
+	      // if(P>eps_opt[0])
+	      // 	P=1.0/P;
+	      // else
+	      // 	P=0;
+	      // uncertWriteBuffer[icol]=P;
 	    }
 	  }
 	}

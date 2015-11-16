@@ -177,6 +177,8 @@ public:
   template<class T> void normalize(const std::vector<T>& input, std::vector<double>& output) const;
   template<class T> void normalize_pct(std::vector<T>& input) const;
   template<class T> double rmse(const std::vector<T>& x, const std::vector<T>& y) const;
+  template<class T> double nrmse(const std::vector<T>& x, const std::vector<T>& y) const;
+  template<class T> double cvrmse(const std::vector<T>& x, const std::vector<T>& y) const;
   template<class T> double correlation(const std::vector<T>& x, const std::vector<T>& y, int delay=0) const;
   //  template<class T> double gsl_correlation(const std::vector<T>& x, const std::vector<T>& y) const;
   template<class T> double gsl_covariance(const std::vector<T>& x, const std::vector<T>& y) const;
@@ -274,15 +276,17 @@ template<class T> inline  typename std::vector<T>::const_iterator StatFactory::m
     if(isNoData(*it))
       continue;
     if(isValid){
-      if((minConstraint<=*it)&&(*it<=minValue)){
+      if((minConstraint<=*it)&&(*it<minValue)){
 	tmpIt=it;
 	minValue=*it;
       }
     }
     else{
-      isValid=true;
+      if(*it<minValue)
+	continue;
       tmpIt=it;
       minValue=*it;
+      isValid=true;
     }    
   }
   if(isValid)
@@ -304,15 +308,17 @@ template<class T> inline typename std::vector<T>::iterator StatFactory::mymin(co
     if(isNoData(*it))
       continue;
     if(isValid){
-      if((minConstraint<=*it)&&(*it<=minValue)){
+      if((minConstraint<=*it)&&(*it<minValue)){
 	tmpIt=it;
 	minValue=*it;
       }
     }
     else{
-      isValid=true;
+      if(*it<minConstraint)
+	continue;
       tmpIt=it;
       minValue=*it;
+      isValid=true;
     }    
   }
   if(isValid)
@@ -382,15 +388,17 @@ template<class T> inline typename std::vector<T>::const_iterator StatFactory::my
     if(isNoData(*it))
       continue;
     if(isValid){
-      if((maxConstraint>=*it)&&(*it>=maxValue)){
+      if((maxConstraint>=*it)&&(*it>maxValue)){
 	tmpIt=it;
 	maxValue=*it;
       }
     }
     else{
-      isValid=true;
+      if(*it>maxConstraint)
+	continue;
       tmpIt=it;
       maxValue=*it;
+      isValid=true;
     }    
   }
   if(isValid)
@@ -408,15 +416,17 @@ template<class T> inline typename std::vector<T>::iterator StatFactory::mymax(co
     if(isNoData(*it))
       continue;
     if(isValid){
-      if((maxConstraint>=*it)&&(*it>=maxValue)){
+      if((maxConstraint>=*it)&&(*it>maxValue)){
 	tmpIt=it;
 	maxValue=*it;
       }
     }
     else{
-      isValid=true;
+      if(*it>maxValue)
+	continue;
       tmpIt=it;
       maxValue=*it;
+      isValid=true;
     }    
   }
   if(isValid)
@@ -462,9 +472,16 @@ template<class T> inline T StatFactory::mymin(const std::vector<T>& v) const
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(isNoData(*it))
       continue;
-    isValid=true;
-    if((minConstraint<=*it)&&(*it<=minValue))
+    if(isValid){
+      if((minConstraint<=*it)&&(*it<minValue))
+	minValue=*it;
+    }
+    else{
+      if(*it<minValue)
+	continue;
       minValue=*it;
+      isValid=true;
+    }    
   }
   if(isValid)
     return minValue;
@@ -513,8 +530,16 @@ template<class T> inline T StatFactory::mymax(const std::vector<T>& v, T maxCons
   for (typename std::vector<T>::const_iterator it = v.begin(); it!=v.end(); ++it){
     if(isNoData(*it))
       continue;
-    if((maxValue<=*it)&&(*it<=maxConstraint))
+    if(isValid){
+      if((*it<=maxConstraint)&&(*it>maxValue))
       maxValue=*it;
+    }
+    else{
+      if(*it>maxValue)
+	continue;
+      maxValue=*it;
+      isValid=true;
+    }
   }
   if(isValid)
     return maxValue;
@@ -572,17 +597,32 @@ template<class T> inline typename std::vector<T>::const_iterator StatFactory::ab
 
 template<class T> inline void StatFactory::minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const
 {
+  bool isConstraint=(theMax>theMin);
+  double minConstraint=theMin;
+  double maxConstraint=theMax;
   bool isValid=false;
   for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
     if(isNoData(*it))
       continue;
     if(isValid){
-      if(theMin>*it)
+      if(isConstraint){
+	if(*it<minConstraint)
+	  continue;
+	if(*it>maxConstraint)
+	  continue;
+      }
+      if(*it<theMin)
 	theMin=*it;
-      if(theMax<*it)
+      if(*it>theMax)
 	theMax=*it;
     }
     else{
+      if(isConstraint){
+	if(*it<minConstraint)
+	  continue;
+	if(*it>maxConstraint)
+	  continue;
+      }
       theMin=*it;
       theMax=*it;
       isValid=true;
@@ -808,11 +848,11 @@ template<class T> void  StatFactory::distribution(const std::vector<T>& input, t
 {
   double minValue=0;
   double maxValue=0;
-  minmax(input,begin,end,minValue,maxValue);
+  minmax(input,begin,end,minimum,maximum);
   if(minimum<maximum&&minimum>minValue)
-    minValue=minimum;
+  minValue=minimum;
   if(minimum<maximum&&maximum<maxValue)
-    maxValue=maximum;
+  maxValue=maximum;
 
   //todo: check...
   minimum=minValue;
@@ -1138,6 +1178,60 @@ template<class T> double StatFactory::rmse(const std::vector<T>& x, const std::v
     mse+=e*e/x.size();
   }
   return sqrt(mse);
+}
+
+//normalized root mean square error
+template<class T> double StatFactory::nrmse(const std::vector<T>& x, const std::vector<T>& y) const{
+  if(x.size()!=y.size()){
+    std::ostringstream s;
+    s<<"Error: x and y not equal in size";
+    throw(s.str());
+  }
+  if(x.empty()){
+    std::ostringstream s;
+    s<<"Error: x is empty";
+    throw(s.str());
+  }
+  std::vector<T> tmpX=x;
+  eraseNoData(tmpX);
+  std::vector<T> tmpY=y;
+  eraseNoData(tmpY);
+  double maxY=mymax(y);
+  double minY=mymin(y);
+  double rangeY=maxY-minY;
+  double mse=0;
+  for(int isample=0;isample<x.size();++isample){
+    double e=x[isample]-y[isample];
+    mse+=e*e/x.size();
+  }
+  return sqrt(mse)/rangeY;
+}
+
+// coefficient of variation root mean square error
+template<class T> double StatFactory::cvrmse(const std::vector<T>& x, const std::vector<T>& y) const{
+  if(x.size()!=y.size()){
+    std::ostringstream s;
+    s<<"Error: x and y not equal in size";
+    throw(s.str());
+  }
+  if(x.empty()){
+    std::ostringstream s;
+    s<<"Error: x is empty";
+    throw(s.str());
+  }
+  std::vector<T> tmpX=x;
+  eraseNoData(tmpX);
+  std::vector<T> tmpY=y;
+  eraseNoData(tmpY);
+  double maxY=mymax(tmpY);
+  double minY=mymin(tmpY);
+  double rangeY=maxY-minY;
+  double mse=0;
+  for(int isample=0;isample<x.size();++isample){
+    double e=x[isample]-y[isample];
+    mse+=e*e/x.size();
+  }
+  return sqrt(mse)/mean(tmpY);
 }
 
 // template<class T> double StatFactory::gsl_correlation(const std::vector<T>& x, const std::vector<T>& y) const{
