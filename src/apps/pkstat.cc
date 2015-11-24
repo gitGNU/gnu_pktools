@@ -580,73 +580,73 @@ int main(int argc, char *argv[])
     }
     imgReader.close();
   }
-  if(rmse_opt[0]&&(input_opt.size()>1)){
-    while(band_opt.size()<input_opt.size())
-      band_opt.push_back(band_opt[0]);
-    if(src_min_opt.size()){
-      while(src_min_opt.size()<input_opt.size())
-	src_min_opt.push_back(src_min_opt[0]);
-    }
-    if(src_max_opt.size()){
-      while(src_max_opt.size()<input_opt.size())
-	src_max_opt.push_back(src_max_opt[0]);
-    }
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
+  // if(rmse_opt[0]&&(input_opt.size()>1)){
+  //   while(band_opt.size()<input_opt.size())
+  //     band_opt.push_back(band_opt[0]);
+  //   if(src_min_opt.size()){
+  //     while(src_min_opt.size()<input_opt.size())
+  // 	src_min_opt.push_back(src_min_opt[0]);
+  //   }
+  //   if(src_max_opt.size()){
+  //     while(src_max_opt.size()<input_opt.size())
+  // 	src_max_opt.push_back(src_max_opt[0]);
+  //   }
+  //   ImgReaderGdal imgReader1(input_opt[0]);
+  //   ImgReaderGdal imgReader2(input_opt[1]);
 
-    if(offset_opt.size())
-      imgReader1.setOffset(offset_opt[0],band_opt[0]);
-    if(scale_opt.size())
-      imgReader1.setScale(scale_opt[0],band_opt[0]);
-    if(offset_opt.size()>1)
-      imgReader2.setOffset(offset_opt[1],band_opt[1]);
-    if(scale_opt.size()>1)
-      imgReader2.setScale(scale_opt[1],band_opt[1]);
+  //   if(offset_opt.size())
+  //     imgReader1.setOffset(offset_opt[0],band_opt[0]);
+  //   if(scale_opt.size())
+  //     imgReader1.setScale(scale_opt[0],band_opt[0]);
+  //   if(offset_opt.size()>1)
+  //     imgReader2.setOffset(offset_opt[1],band_opt[1]);
+  //   if(scale_opt.size()>1)
+  //     imgReader2.setScale(scale_opt[1],band_opt[1]);
 
-    for(int inodata=0;inodata<nodata_opt.size();++inodata){
-      imgReader1.pushNoDataValue(nodata_opt[inodata]);
-      imgReader2.pushNoDataValue(nodata_opt[inodata]);
-    }
-    vector<double> xBuffer(imgReader1.nrOfCol());
-    vector<double> yBuffer(imgReader2.nrOfCol());
-    double mse=0;
-    double nValid=0;
-    double nPixel=imgReader.nrOfCol()/imgReader.nrOfRow()/down_opt[0]/down_opt[0];
-    for(int irow;irow<imgReader1.nrOfRow();irow+=down_opt[0]){
-      double irow1=irow;
-      double irow2=0;
-      double icol1=0;
-      double icol2=0;
-      double geoX=0;
-      double geoY=0;
-      imgReader1.image2geo(icol1,irow1,geoX,geoY);
-      imgReader2.geo2image(geoX,geoY,icol2,irow2);
-      irow2=static_cast<int>(irow2);
-      imgReader1.readData(xBuffer,GDT_Float64,irow1,band_opt[0]);
-      imgReader2.readData(yBuffer,GDT_Float64,irow2,band_opt[1]);
-      for(int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
-	icol1=icol;
-	imgReader1.image2geo(icol1,irow1,geoX,geoY);
-	imgReader2.geo2image(geoX,geoY,icol2,irow2);
-	double xValue=xBuffer[icol1];
-	double yValue=yBuffer[icol2];
-	if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
-	  continue;
-	}
-	if(xValue<src_min_opt[0]||xValue>src_max_opt[0]||yValue<src_min_opt[1]||yValue>src_max_opt[1])
-	  continue;
-	++nValid;
-	double e=xValue-yValue;
-	if(relative_opt[0])
-	  e/=yValue;
-	mse+=e*e/nPixel;
-      }
-    }
-    double correctNorm=nValid;
-    correctNorm/=nPixel;
-    mse/=correctNorm;
-    std::cout << " -rmse " << sqrt(mse) << std::endl;
-  }
+  //   for(int inodata=0;inodata<nodata_opt.size();++inodata){
+  //     imgReader1.pushNoDataValue(nodata_opt[inodata]);
+  //     imgReader2.pushNoDataValue(nodata_opt[inodata]);
+  //   }
+  //   vector<double> xBuffer(imgReader1.nrOfCol());
+  //   vector<double> yBuffer(imgReader2.nrOfCol());
+  //   double mse=0;
+  //   double nValid=0;
+  //   double nPixel=imgReader.nrOfCol()/imgReader.nrOfRow()/down_opt[0]/down_opt[0];
+  //   for(int irow;irow<imgReader1.nrOfRow();irow+=down_opt[0]){
+  //     double irow1=irow;
+  //     double irow2=0;
+  //     double icol1=0;
+  //     double icol2=0;
+  //     double geoX=0;
+  //     double geoY=0;
+  //     imgReader1.image2geo(icol1,irow1,geoX,geoY);
+  //     imgReader2.geo2image(geoX,geoY,icol2,irow2);
+  //     irow2=static_cast<int>(irow2);
+  //     imgReader1.readData(xBuffer,GDT_Float64,irow1,band_opt[0]);
+  //     imgReader2.readData(yBuffer,GDT_Float64,irow2,band_opt[1]);
+  //     for(int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
+  // 	icol1=icol;
+  // 	imgReader1.image2geo(icol1,irow1,geoX,geoY);
+  // 	imgReader2.geo2image(geoX,geoY,icol2,irow2);
+  // 	double xValue=xBuffer[icol1];
+  // 	double yValue=yBuffer[icol2];
+  // 	if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
+  // 	  continue;
+  // 	}
+  // 	if(xValue<src_min_opt[0]||xValue>src_max_opt[0]||yValue<src_min_opt[1]||yValue>src_max_opt[1])
+  // 	  continue;
+  // 	++nValid;
+  // 	double e=xValue-yValue;
+  // 	if(relative_opt[0])
+  // 	  e/=yValue;
+  // 	mse+=e*e/nPixel;
+  //     }
+  //   }
+  //   double correctNorm=nValid;
+  //   correctNorm/=nPixel;
+  //   mse/=correctNorm;
+  //   std::cout << " -rmse " << sqrt(mse) << std::endl;
+  // }
   if(reg_opt[0]&&(input_opt.size()>1)){
     imgreg.setDown(down_opt[0]);
     imgreg.setThreshold(random_opt[0]);
