@@ -6,8 +6,8 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 ###############################################################################
 
 # the program to build and install (the names of the final binaries)
-#bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass
-bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman
+#bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatz pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass
+bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatz pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman
 
 # the program to build but not install (the names of the final binaries)
 noinst_PROGRAMS = pkkalman
@@ -51,6 +51,8 @@ pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
 pksieve_SOURCES = pksieve.cc
 pkstat_SOURCES = $(top_srcdir)/src/algorithms/StatFactory.h $(top_srcdir)/src/algorithms/ImgRegression.h $(top_srcdir)/src/algorithms/ImgRegression.cc pkstat.cc
 pkstat_LDADD = -lgsl -lgslcblas $(GSL_LIBS) $(AM_LDFLAGS)
+pkstatz_SOURCES = $(top_srcdir)/src/algorithms/StatFactory.h pkstatz.cc
+pkstatz_LDADD = -lgsl -lgslcblas $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatascii_SOURCES = $(top_srcdir)/src/algorithms/StatFactory.h pkstatascii.cc
 pkstatascii_LDADD = -lgsl -lgslcblas $(GSL_LIBS) $(AM_LDFLAGS)
 pkstatogr_SOURCES = pkstatogr.cc

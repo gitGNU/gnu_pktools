@@ -78,6 +78,7 @@ public:
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose=0);
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output);
   void stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method);
+  void stats(const ImgReaderGdal& input, ImgWriterGdal& output, const std::vector<std::string >& methods);
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim);
   void getSavGolayCoefficients(std::vector<double> &c, int np, int nl, int nr, int ld, int m);
   void ludcmp(std::vector<double> &a, std::vector<int> &indx, double &d);
