@@ -422,6 +422,7 @@ version 2.6.5
  - ImgWriterOgr.cc patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
  - StatFactory
 	minimum and maximum values in case of nodata (initial value)
+	erase nodata values when calculating percentiles
  - pkextract
 	support automatically retrieval of classes in case of mode, proportion and count rule
 	support count (-r count) extraction rule similar to proportion (change request #108902)

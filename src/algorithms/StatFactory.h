@@ -158,6 +158,7 @@ public:
   template<class T> T sum(const std::vector<T>& v) const;
   template<class T> double mean(const std::vector<T>& v) const;
   template<class T> void eraseNoData(std::vector<T>& v) const;
+  template<class T> unsigned int nvalid(const std::vector<T>& v) const;
   template<class T> T median(const std::vector<T>& v) const;
   template<class T> double var(const std::vector<T>& v) const;
   template<class T> double moment(const std::vector<T>& v, int n) const;
@@ -695,6 +696,12 @@ template<class T> inline void StatFactory::eraseNoData(std::vector<T>& v) const
   }
 }
 
+ template<class T> unsigned int StatFactory::nvalid(const std::vector<T>& v) const{
+  std::vector<T> tmpV=v;
+  eraseNoData(tmpV);
+  return(tmpV.size());
+ }
+
 template<class T> T StatFactory::median(const std::vector<T>& v) const
 {
   std::vector<T> tmpV=v;
@@ -1080,6 +1087,7 @@ template<class T> void  StatFactory::percentiles (const std::vector<T>& input, t
     else
       ++vit;
   }
+  eraseNoData(inputSort);
   std::sort(inputSort.begin(),inputSort.end());
   vit=inputSort.begin();
   std::vector<T> inputBin;
@@ -1126,6 +1134,7 @@ template<class T> T  StatFactory::percentile(const std::vector<T>& input, typena
     else
       ++vit;
   }
+  eraseNoData(inputSort);
   std::sort(inputSort.begin(),inputSort.end());
   return gsl_stats_quantile_from_sorted_data(&(inputSort[0]),1,inputSort.size(),percent/100.0);
 }

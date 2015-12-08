@@ -58,7 +58,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135, savgolay=136, percentile=137, proportion=138};
+  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135, savgolay=136, percentile=137, proportion=138, nvalid=139};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
@@ -132,6 +132,7 @@ private:
   static void initMap(std::map<std::string, FILTER_TYPE>& m_filterMap){
     //initialize selMap
     m_filterMap["median"]=filter2d::median;
+    m_filterMap["nvalid"]=filter2d::nvalid;
     m_filterMap["var"]=filter2d::var;
     m_filterMap["min"]=filter2d::min;
     m_filterMap["max"]=filter2d::max;
@@ -341,6 +342,9 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         }
       }
       switch(getFilterType(method)){
+      case(filter2d::nvalid):
+	outBuffer[x/down]=stat.nvalid(windowBuffer);
+        break;
       case(filter2d::median):
         if(windowBuffer.empty())
           outBuffer[x/down]=noDataValue;

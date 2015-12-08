@@ -51,12 +51,16 @@ void filter::Filter::setTaps(const vector<double> &taps, bool normalize)
   assert(m_taps.size()%2);
 }
 
-int filter::Filter::pushNoDataValue(double noDataValue)
-{
+unsigned int filter::Filter::pushNoDataValue(double noDataValue){
   if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
     m_noDataValues.push_back(noDataValue);
-  return(m_noDataValues.size());
-}
+  return m_noDataValues.size();
+};
+
+unsigned int filter::Filter::setNoDataValues(std::vector<double> vnodata){
+  m_noDataValues=vnodata;
+  return m_noDataValues.size();
+};
 
 void filter::Filter::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
   const char* pszMessage;
@@ -443,8 +447,12 @@ void filter::Filter::stats(const ImgReaderGdal& input, ImgWriterGdal& output, co
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
+      int ithreshold=0;//threshold to use for percentiles
       for(int imethod=0;imethod<methods.size();++imethod){
 	switch(getFilterType(methods[imethod])){
+	case(filter::nvalid):
+	  lineOutput[imethod][x]=stat.nvalid(pixelInput);
+	  break;
 	case(filter::median):
 	  lineOutput[imethod][x]=stat.median(pixelInput);
 	  break;
@@ -466,10 +474,13 @@ void filter::Filter::stats(const ImgReaderGdal& input, ImgWriterGdal& output, co
 	case(filter::mean):
 	  lineOutput[imethod][x]=stat.mean(pixelInput);
 	  break;
-	case(filter::percentile):
+	case(filter::percentile):{
 	  assert(m_threshold.size());
-	  lineOutput[imethod][x]=stat.percentile(pixelInput,pixelInput.begin(),pixelInput.end(),m_threshold[0]);
+	  double threshold=(ithreshold<m_threshold.size())? m_threshold[ithreshold] : m_threshold[0];
+	  lineOutput[imethod][x]=stat.percentile(pixelInput,pixelInput.begin(),pixelInput.end(),threshold);
+	  ++ithreshold;
 	  break;
+	}
 	default:
 	  std::string errorString="method not supported";
 	  throw(errorString);
