@@ -416,9 +416,14 @@ version 2.6.4
 	patch from Bas Couwenberg (ticket #45416)
 
 version 2.6.5
-- StatFactory
+ - ImgReaderOgr.h patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - ImgReaderOgr.cc patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - ImgWriterOgr.h patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - ImgWriterOgr.cc patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - StatFactory
 	minimum and maximum values in case of nodata (initial value)
-- pkextract
+	erase nodata values when calculating percentiles
+ - pkextract
 	support automatically retrieval of classes in case of mode, proportion and count rule
 	support count (-r count) extraction rule similar to proportion (change request #108902)
  - pklas2img
@@ -426,8 +431,10 @@ version 2.6.5
 	support for minimum and maximum scan angle rank (change request #108901)
  - pkcomposite
 	performace gain: keep all input images open and read line for all inputs at once. Warning for large number of input: 1) memory issues, 2) GDAL_MAX_DATASET_POOL_SIZE which defaults to 100 3) restriction in Linux: number of file handles that can be opened by a process is generally limited to 1024.
+ - pkstatprofile
+	Calculate statistical functions on temporal/spectral profile (multi-band rater dataset), replaces some functionality in pkfilter -dz 1. Supports multiple functions to produced multi-band output
+
 Todo:
  - todo for API
 	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
-	Img[Reader|Writer]Ogr replace OGRDataSource with GDALDataset conform to GDAL API 2.x
 

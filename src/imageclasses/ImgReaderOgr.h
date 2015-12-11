@@ -73,8 +73,13 @@ public:
   //  int getLayer(int layer=0) const;
   int getFields(std::vector<std::string>& fields, int layer=0) const;
   int getFields(std::vector<OGRFieldDefn*>& fields, int layer=0) const;
+#if GDAL_VERSION_MAJOR < 2
   OGRDataSource* getDataSource(void) {return m_datasource;};
   OGRSFDriver* getDriver(void) const {return m_datasource->GetDriver();};
+#else
+  GDALDataset* getDataSource(void) {return m_datasource;};
+  GDALDriver* getDriver(void) const {return m_datasource->GetDriver();};
+#endif
   int getLayerCount(void) const {return m_datasource->GetLayerCount();};
 //   OGRLayer *executeSql(const std::string& output,const std::string& sqlStatement, OGRGeometry* spatialFilter=NULL);
   template<typename T> int readSql(Vector2d<T>& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& sqlStatement, OGRGeometry* spatialFilter=NULL, int layer=0, bool pos=false, bool verbose=false);
@@ -90,7 +95,11 @@ protected:
   void setCodec(void);
 
   std::string m_filename;
+#if GDAL_VERSION_MAJOR < 2
   OGRDataSource *m_datasource;
+#else
+  GDALDataset *m_datasource;
+#endif
   char m_fs;
 };
 

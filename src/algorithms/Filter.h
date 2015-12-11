@@ -33,7 +33,7 @@ extern "C" {
 namespace filter
 {
   
-  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29, savgolay=30, percentile=31};
+  enum FILTER_TYPE { median=0, var=1 , min=2, max=3, sum=4, mean=5, minmax=6, dilate=7, erode=8, close=9, open=10, homog=11, sobelx=12, sobely=13, sobelxy=14, sobelyx=-14, smooth=15, density=16, mode=17, mixed=18, smoothnodata=19, threshold=20, ismin=21, ismax=22, heterog=23, order=24, stdev=25, dwt=26, dwti=27, dwt_cut=28, dwt_cut_from=29, savgolay=30, percentile=31, nvalid=32};
 
    enum PADDING { symmetric=0, replicate=1, circular=2, zero=3};
 
@@ -65,7 +65,8 @@ public:
   void setTaps(const std::vector<double> &taps, bool normalize=true);
   void pushClass(short theClass=1){m_class.push_back(theClass);};
   void pushMask(short theMask=0){m_mask.push_back(theMask);};
-  int pushNoDataValue(double noDataValue=0);//{m_mask.push_back(theMask);};
+  unsigned int pushNoDataValue(double noDataValue);
+  unsigned int setNoDataValues(std::vector<double> vnodata);
   void pushThreshold(double theThreshold){m_threshold.push_back(theThreshold);};
   void setThresholds(const std::vector<double>& theThresholds){m_threshold=theThresholds;};
   template<class T> void filter(const std::vector<T>& input, std::vector<T>& output);
@@ -78,6 +79,7 @@ public:
   void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose=0);
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output);
   void stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method);
+  void stats(const ImgReaderGdal& input, ImgWriterGdal& output, const std::vector<std::string >& methods);
   void filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim);
   void getSavGolayCoefficients(std::vector<double> &c, int np, int nl, int nr, int ld, int m);
   void ludcmp(std::vector<double> &a, std::vector<int> &indx, double &d);
@@ -133,6 +135,7 @@ private:
     m_filterMap["ismax"]=filter::ismax;
     m_filterMap["heterog"]=filter::heterog;
     m_filterMap["order"]=filter::order;
+    m_filterMap["nvalid"]=filter::nvalid;
     m_filterMap["median"]=filter::median;
     m_filterMap["savgolay"]=filter::savgolay;
     m_filterMap["percentile"]=filter::percentile;
@@ -583,6 +586,9 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
     }
 
     switch(getFilterType(method)){
+    case(filter::nvalid):
+      output[i]=stat.nvalid(statBuffer);
+      break;
     case(filter::median):
       output[i]=stat.median(statBuffer);
       break;
@@ -635,6 +641,9 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
         statBuffer.push_back(input[i-dim/2+t]);
     }
     switch(getFilterType(method)){
+    case(filter::nvalid):
+      output[i]=stat.nvalid(statBuffer);
+      break;
     case(filter::median):
       output[i]=stat.median(statBuffer);
       break;
@@ -723,6 +732,9 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
 	statBuffer.push_back(theValue);
     }
     switch(getFilterType(method)){
+    case(filter::nvalid):
+      output[i]=stat.nvalid(statBuffer);
+      break;
     case(filter::median):
       output[i]=stat.median(statBuffer);
       break;

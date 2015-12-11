@@ -54,20 +54,128 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 This utility implements spatial and spectral filtering for raster data. In the spatial domain (X, Y), the filter typically involves a rectangular convolution kernel (moving window). To avoid image shifting, the size of the window should be odd (3, 5, 7, ...). You can set the window sizes in X and Y directions separately with the options -dx and -dy. A circular kernel (disc) is applied if option -circ is set. An overview of the supported filters (option -f|--filter) is given below. You can create customized filters by defining your own filter taps (multiplicative elements of the filter kernel) via an ascii file (option -tap). In the spectral/temporal domain (Z) you can filter multi-band raster inputs. The kernel filter size can be set with the option -dz (use odd values only).
 
 \anchor pkfilter_functions
-//hiero
-composite rule | composite output
-------------- | -------------
-overwrite | Overwrite overlapping pixels: the latter input image on the command line overrules the previous image
-maxndvi | Create a maximum NDVI (normalized difference vegetation index) composite from multi-band input images. Use option -cb  to set the indexes of the red and near infrared bands respectively (e.g., -cb 0 -cb 1)
-maxband | Select the pixel with a maximum value in the band specified by option -cb
-minband | Select the pixel with a minimum value in the band specified by option -cb
-mean | Calculate the mean (average) of overlapping pixels
-stdev | Calculate the standard deviation of overlapping pixels
-median | Calculate the median of overlapping pixels
-mode | Select the mode of overlapping pixels (maximum voting): use for Byte images only
-sum | Calculate the arithmetic sum of overlapping pixels
-maxallbands | For each individual band, assign the maximum value found in all overlapping pixels. Unlike maxband, output band values cannot be attributed to a single (date) pixel in the input time series
-minallbands | For each individual band, assign the minimum value found in all overlapping pixels. Unlike minband, output band values cannot be attributed to a single (date) pixel in the input time series
+
+\subsection pkfilter_functions_1 Filters in spatial (dx, dy) and spectral/temporal (dz) domain
+
+\subsubsection pkfilter_functions_1_1 Implemented as moving window: choose dx, dy or dz > 1 and odd (3, 5, 7, etc.)
+
+The number of output bands equals number of input bands
+
+|filter|description|
+|-------------|-------------|
+dilate|morphological dilation|
+|erode|morphological erosion|
+|close|morpholigical closing (dilate+erode)|
+|open|morpholigical opening (erode+dilate)|
+|smoothnodata values|smooth nodata values (set nodata option!)|
+
+Example: "Smooth" (interpolate) nodata in spectral/temporal domain (-dz 1), using a linear interpolation
+\code
+pkfilter -i input.tif -o smoothed.tif -dz 1 -f smoothnodata -interp linear
+\endcode
+
+Example: Filter input.tif in spatial domain with morphological dilation filter with kernel size 3x3.
+
+\code
+pkfilter -i input.tif -o dilated.tif -dx 3 -dy 3 -f dilate
+\endcode
+
+\subsubsection pkfilter_functions_1_2 Implemented as either moving window or statistical function in spectral/temporal domain (choose dz=1). 
+
+In case of moving window, the number of output bands equals number of input bands. In case dz=1, the single output band is calculated as the result of the statistical function applied to all bands.
+
+|filter | description|
+|-------------|-------------|
+nvalid | report number of valid (not nodata) values in window
+median | perform a median filter in spatial (dx, dy) or spectral/temporal (dz) domain
+var | calculate variance in window
+min | calculate minimum in window
+max | calculate maximum in window
+sum | calculate sum in window
+mean | calculate mean in window
+stdev | calculate standard deviation in window
+savgolay | Savitzky-Golay filter (check examples page!)
+percentile | calculate percentile value in window
+proportion | calculate proportion in windoww
+
+Example: Median filter in spatial domain
+
+\code
+pkfilter -i input.tif -o median.tif -dx 3 -dy 3 -f median
+\endcode
+
+Example: Calculate statistical variance in spectral/temporal domain (single output band)
+
+\code
+pkfilter -i input.tif -o var.tif -dz 1 -f var
+\endcode
+
+\subsection pkfilter_functions_2 Wavelet filters 
+
+\subsubsection pkfilter_functions_2_1 Wavelet filter in in spatial or spectral/temporal (set dz = 1) domain. 
+
+The number of output bands equals number of input bands
+
+|filter | description|
+|-------------|-------------|
+dwt | discrete wavelet transform
+dwti | discrete inverse wavelet transform
+dwt_cut | discrete wavelet + inverse transform, using threshold option to cut percentile of coefficients 
+
+Example: Calculate discrete wavelet in spatial domain
+
+\code
+pkfilter -i lena.tif -o lena_dwt.tif -f dwt
+\endcode
+
+Example: Calculate discrete wavelet in spectral/temporal domain
+
+\code
+pkfilter -i timeseries.tif -o dwt.tif -f dwt -dz 1
+\endcode
+
+\subsubsection pkfilter_functions_2_2 Wavelet filter implemented in spectral/temporal domain only. 
+
+The number of output bands equals number of input bands
+
+|filter | description|
+|-------------|-------------|
+dwt_cut_from | discrete wavelet + inverse transform, setting all high frequence coefficients to zero (scale >= threshold)
+
+
+Example: Calculate low frequency time series based on discrete wavelet + inverse transform in spectral/temporal domain, retaining only coefficients until scale 3
+
+\code
+pkfilter -i timeseries.tif -o lowfrequency.tif -f dwt_cut_from -dz 1 -t 4
+\endcode
+
+\subsection pkfilter_functions_3 Filters in spatial domain only (dx, dy > 1 and odd). 
+
+The number of output bands equals number of input bands. 
+
+|filter | description|
+|-------------|-------------|
+mrf | Markov random field
+ismin | pixel is minimum?
+ismax | pixel is maximum?
+shift | perform a pixel shift in spatial window
+scramble | scramble pixels in a spatial window
+mode (majority voting | perform a majority voring (set class option)
+sobelx | horizontal edge detection
+sobely | vertical edge detection 
+sobelxy | diagonal edge detection (NE-SW)
+sobelyx | diagonal edge detection (NW-SE)
+countid | count digital numbers in window
+order | rank pixels in order
+density | calculated the density
+homog | central pixel must be identical to all other pixels within window
+heterog | central pixel must be different than all other pixels within window
+
+Example: Sobel edge detection in horizontal direction
+
+\code
+pkfilter -i lena.tif -o sobelx.tif -f sobelx -dx 5 -dy 5
+\endcode
 
 \section pkfilter_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
@@ -76,7 +184,7 @@ minallbands | For each individual band, assign the minimum value found in all ov
 |-----|----|----|-------|-----------|
  | i      | input                | std::string |       |input image file | 
  | o      | output               | std::string |       |Output image file | 
- | f      | filter               | std::string |       |filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion) | 
+ | f      | filter               | std::string |       |filter function (nvalid, median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion) | 
  | srf    | srf                  | std::string |       |list of ASCII files containing spectral response functions (two columns: wavelength response) | 
  | fwhm   | fwhm                 | double |       |list of full width half to apply spectral filtering (-fwhm band1 -fwhm band2 ...) | 
  | dx     | dx                   | double | 3     |filter kernel size in x, use odd values only | 
@@ -124,7 +232,7 @@ int main(int argc,char **argv) {
   // Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), smooth, density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, threshold local filtering, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion)");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (nvalid, median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), density, countid, mode (majority voting, only for classes), smoothnodata (smooth nodata values only) values, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion)");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, use odd values only", 3);
   Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, use odd values only", 3);
@@ -324,7 +432,7 @@ int main(int argc,char **argv) {
 	  assert(threshold_opt.size());
 	}
 	else{
-	  cerr << "filter not implemented in spectral/temporal domain" << endl;
+	  cerr << "filter not implemented in spatial domain" << endl;
 	  exit(1);
 	}
 	break;
@@ -367,6 +475,7 @@ int main(int argc,char **argv) {
       case(filter2d::max):
       case(filter2d::var):
       case(filter2d::stdev):
+      case(filter2d::nvalid):
       case(filter2d::median):
       case(filter2d::percentile):
       case(filter2d::proportion):

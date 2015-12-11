@@ -24,7 +24,7 @@ Calculate the median value for each pixel, calculated on a moving window of widt
 pkfilter -i input.tif -o filter_stdev.tif -dz 3 -f median
 \endcode
 
-\subsubsection examples_pkfilter_spectral_no_moving_window Applications without moving window
+\subsubsection examples_pkfilter_spectral_statistics Applications of statistical functions in spectral domain
 
 Calculate the standard deviation for each pixel, calculated on all input bands. The output raster dataset will contain a single band only, no moving window is used (-dz 1). 
 
@@ -35,7 +35,7 @@ pkfilter -i input.tif -o filter_stdev.tif -dz 1 -f stdev
 "Smooth" (interpolate) nodata in spectral/temporal domain (-dz 1), using a linear interpolation. The following interpolation types are supported: akima (default), linear, polynomial, cspline, cspline_periodic, akima_periodic (please check <a href="http://www.gnu.org/software/gsl/manual/html_node/Interpolation-Types.html">gsl</a> page for more information on the interpolation types).
 
 \code
-pkfilter -i input.tif -o input_smoothed.tif -dz 1 -f smoothnodata -interp linear
+pkfilter -i input.tif -o smoothed.tif -dz 1 -f smoothnodata -interp linear
 \endcode
 
 \subsubsection examples_pkfilter_srf Filter with spectral response functions
@@ -59,3 +59,40 @@ The next example is similar to the previous. Instead of providing a spectral res
 \code
 pkfilter -i hyperspectral.tif -o multispectral.tif -wout 650 -wout 510 -wout 475 -fwhm 50 -fwhm 50  -fwhm 50 $(cat wavelengths.txt | while read W;do echo " -win $W";done)
 \endcode
+
+\subsubsection examples_pkfilter_savgolay Applying the Savitzky-Golay filter to reconstruct a time-series data set
+The following example reconstructs a time-series data set based on the Savitzky--Golay filter, as suggested by <a href="http://www.sciencedirect.com/science/article/pii/S003442570400080X">J. Chen 2004</a>. 
+
+Input is a multi-band (Byte) raster dataset containing a noisy time series, e.g., a normalized difference vegetation index (NDVI) with cloud contaminated (low) NDVI values. Output is the reconstructed time-series data set, which approaches the upper NDVI enveloppe. Please refer to <a href="http://www.sciencedirect.com/science/article/pii/S003442570400080X">J. Chen 2004</a> for more details.
+
+\subsubsection savgolay_preparation Preparation
+
+Create a long-term change trend fitting (lta.tif) using the Savitzky-Golay filter. Choose the number of lefward (past) and rightward (future) data points (e.g., 7). The order of smoothing polynomial in the Savitzky-Golay filter is set to 2.
+\code
+pkfilter -i input.tif -o lta.tif -f savgolay -nl 7 -nr 7 -m 2 -pad replicate
+\endcode
+
+\subsubsection savgolay_initialization Initialization
+
+Decrease the number of lefward (past) and rightward (future) data points to 4. The order of smoothing polynomial in the Savitzky-Golay filter is set to 6. Valid data are from 0 to 250 (nodata is set to 250). 
+\code
+pkcomposite -i lta.tif -i input.tif -o iter1.tif -cr maxallbands -max 250 -dstnodata 250
+pkfilter -i iter1.tif -o savgolay1.tif -f savgolay -nl 4 -nr 4 -m 6 -pad replicate
+\endcode
+
+\subsubsection savgolay_iteration Iterative process (repeat, e.g., 5-10 times)
+
+\code
+pkcomposite -i input.tif -i savgolay1.tif -o iter2.tif -cr maxallbands -max 250 -dstnodata 
+pkfilter -i iter2.tif -o savgolay2.tif -f savgolay -nl 4 -nr 4 -m 6 -pad replicate
+\endcode
+
+\code
+pkcomposite -i input.tif -i savgolay2.tif -o iter3.tif -cr maxallbands -max 250 -dstnodata 
+pkfilter -i iter3.tif -o savgolay3.tif -f savgolay -nl 4 -nr 4 -m 6 -pad replicate
+\endcode
+\code
+etc.
+\endcode
+
+Output savgolay<n>.tif is the reconstructed time-series data set.

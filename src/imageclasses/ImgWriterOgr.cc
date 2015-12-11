@@ -125,31 +125,58 @@ void ImgWriterOgr::open(const std::string& filename, const std::string& imageTyp
 //---------------------------------------------------------------------------
 void ImgWriterOgr::close(void)
 {
+#if GDAL_VERSION_MAJOR < 2
   OGRDataSource::DestroyDataSource(m_datasource);
+#else
+  GDALClose(m_datasource);
+#endif
 }
 
 //---------------------------------------------------------------------------
 void ImgWriterOgr::setCodec(const std::string& imageType){
+#if GDAL_VERSION_MAJOR < 2
   //register the drivers
   OGRRegisterAll();
   //fetch the OGR file driver
   OGRSFDriver *poDriver;
   poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(imageType.c_str());
+#else
+  //register the drivers
+  GDALAllRegister();
+  GDALDriver *poDriver;
+  poDriver = GetGDALDriverManager()->GetDriverByName(imageType.c_str());
+#endif
   if( poDriver == NULL ){
     std::string errorString="FileOpenError";
     throw(errorString);
   }
+#if GDAL_VERSION_MAJOR < 2
   m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), TRUE );
+#else
+  m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE, NULL, NULL, NULL);
+#endif
   if( m_datasource == NULL ){
+#if GDAL_VERSION_MAJOR < 2
     m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), FALSE );
+#else
+    m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY, NULL, NULL, NULL);
+#endif
     if ( m_datasource != NULL){// we can only open in not update mode
       std::string errorString="Update mode not supported, delete output dataset first";
       throw(errorString);
+#if GDAL_VERSION_MAJOR < 2
       OGRDataSource::DestroyDataSource(m_datasource);
+#else
+      GDALClose(m_datasource);
+#endif
       m_datasource = NULL;
     }
     else //create the data source
+#if GDAL_VERSION_MAJOR < 2
       m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
+#else
+      m_datasource=poDriver->Create(m_filename.c_str(),0,0,0,GDT_Unknown,NULL);
+#endif
   }
   else{//datasets exists, always overwrite all layers (no update append for now)
     int nLayerCount = m_datasource->GetLayerCount();
@@ -166,23 +193,44 @@ void ImgWriterOgr::setCodec(const std::string& imageType){
   }
 }
 
+#if GDAL_VERSION_MAJOR < 2
 void ImgWriterOgr::setCodec(OGRSFDriver *poDriver){
   OGRRegisterAll();
+#else
+void ImgWriterOgr::setCodec(GDALDriver *poDriver){
+  GDALAllRegister();
+#endif
   if( poDriver == NULL ){
     std::string errorString="FileOpenError";
     throw(errorString);
   }
+#if GDAL_VERSION_MAJOR < 2
   m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), TRUE );
+#else
+  m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE, NULL, NULL, NULL);
+#endif
   if( m_datasource == NULL ){
+#if GDAL_VERSION_MAJOR < 2
     m_datasource = OGRSFDriverRegistrar::Open( m_filename.c_str(), FALSE );
+#else
+    m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY, NULL, NULL, NULL);
+#endif
     if ( m_datasource != NULL){// we can only open in not update mode
       std::string errorString="Update mode not supported, delete output dataset first";
       throw(errorString);
+#if GDAL_VERSION_MAJOR < 2
       OGRDataSource::DestroyDataSource(m_datasource);
+#else
+      GDALClose(m_datasource);
+#endif
       m_datasource = NULL;
     }
     else //create the data source
+#if GDAL_VERSION_MAJOR < 2
       m_datasource=poDriver->CreateDataSource(m_filename.c_str(),NULL);
+#else
+      m_datasource=poDriver->Create(m_filename.c_str(),0,0,0,GDT_Unknown,NULL);
+#endif
   }
   else{//datasets exists, always overwrite all layers (no update append for now)
     int nLayerCount = m_datasource->GetLayerCount();
