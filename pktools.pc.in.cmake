@@ -1,0 +1,11 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@\bin
+libdir=@CMAKE_INSTALL_PREFIX@\lib
+includedir=@CMAKE_INSTALL_PREFIX@\include
+
+Name: pktools
+Description: API library for pktools
+Requires: gdal gsl armadillo
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lbase -lalgorithms -limageClasses -lfileClasses -llasClasses
+Cflags: -I${includedir}/pktools
