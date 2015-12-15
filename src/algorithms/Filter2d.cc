@@ -454,6 +454,9 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 	  }
         }
         switch(getFilterType(method)){
+        case(filter2d::nvalid):
+	  outBuffer[x/down]=stat.nvalid(windowBuffer);
+          break;
         case(filter2d::median):
           if(windowBuffer.empty())
             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;

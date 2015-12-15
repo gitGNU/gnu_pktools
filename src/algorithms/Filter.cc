@@ -51,12 +51,16 @@ void filter::Filter::setTaps(const vector<double> &taps, bool normalize)
   assert(m_taps.size()%2);
 }
 
-int filter::Filter::pushNoDataValue(double noDataValue)
-{
+unsigned int filter::Filter::pushNoDataValue(double noDataValue){
   if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
     m_noDataValues.push_back(noDataValue);
-  return(m_noDataValues.size());
-}
+  return m_noDataValues.size();
+};
+
+unsigned int filter::Filter::setNoDataValues(std::vector<double> vnodata){
+  m_noDataValues=vnodata;
+  return m_noDataValues.size();
+};
 
 void filter::Filter::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
   const char* pszMessage;
@@ -418,6 +422,79 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
     }
     catch(string errorstring){
       cerr << errorstring << "in line " << y << endl;
+    }
+    progress=(1.0+y)/output.nrOfRow();
+    pfnProgress(progress,pszMessage,pProgressArg);
+  }
+}
+
+void filter::Filter::stats(const ImgReaderGdal& input, ImgWriterGdal& output, const vector<std::string>& methods)
+{
+  assert(output.nrOfBand()==methods.size());
+  Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
+  assert(output.nrOfCol()==input.nrOfCol());
+  Vector2d<double> lineOutput(methods.size(),output.nrOfCol());
+  statfactory::StatFactory stat;
+  stat.setNoDataValues(m_noDataValues);
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  for(int y=0;y<input.nrOfRow();++y){
+    for(int iband=0;iband<input.nrOfBand();++iband)
+      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    vector<double> pixelInput(input.nrOfBand());
+    for(int x=0;x<input.nrOfCol();++x){
+      pixelInput=lineInput.selectCol(x);
+      int ithreshold=0;//threshold to use for percentiles
+      for(int imethod=0;imethod<methods.size();++imethod){
+	switch(getFilterType(methods[imethod])){
+	case(filter::nvalid):
+	  lineOutput[imethod][x]=stat.nvalid(pixelInput);
+	  break;
+	case(filter::median):
+	  lineOutput[imethod][x]=stat.median(pixelInput);
+	  break;
+	case(filter::min):
+	  lineOutput[imethod][x]=stat.mymin(pixelInput);
+	  break;
+	case(filter::max):
+	  lineOutput[imethod][x]=stat.mymax(pixelInput);
+	  break;
+	case(filter::sum):
+	  lineOutput[imethod][x]=stat.sum(pixelInput);
+	  break;
+	case(filter::var):
+	  lineOutput[imethod][x]=stat.var(pixelInput);
+	  break;
+	case(filter::stdev):
+	  lineOutput[imethod][x]=sqrt(stat.var(pixelInput));
+	  break;
+	case(filter::mean):
+	  lineOutput[imethod][x]=stat.mean(pixelInput);
+	  break;
+	case(filter::percentile):{
+	  assert(m_threshold.size());
+	  double threshold=(ithreshold<m_threshold.size())? m_threshold[ithreshold] : m_threshold[0];
+	  lineOutput[imethod][x]=stat.percentile(pixelInput,pixelInput.begin(),pixelInput.end(),threshold);
+	  ++ithreshold;
+	  break;
+	}
+	default:
+	  std::string errorString="method not supported";
+	  throw(errorString);
+	  break;
+	}
+      }
+    }
+    for(int imethod=0;imethod<methods.size();++imethod){
+      try{
+	output.writeData(lineOutput[imethod],GDT_Float64,y,imethod);
+      }
+      catch(string errorstring){
+	cerr << errorstring << "in line " << y << endl;
+      }
     }
     progress=(1.0+y)/output.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);

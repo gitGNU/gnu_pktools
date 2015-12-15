@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
 	  imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),theBand,minValue,maxValue);
 	}
 	else
-	  imgReader.getMinMax(minValue,maxValue,theBand,true);
+	  imgReader.getMinMax(minValue,maxValue,theBand);
 	if(minmax_opt[0])
 	  std::cout << "-min " << minValue << " -max " << maxValue << " ";
 	else{

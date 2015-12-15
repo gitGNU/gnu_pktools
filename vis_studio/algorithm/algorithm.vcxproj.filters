@@ -175,6 +175,146 @@
     <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
     <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
     <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
+    <ClInclude Include="..\..\src\algorithms\ConfusionMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\algorithms\CostFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\CostFactorySVM.h" />
+    <ClInclude Include="..\..\src\algorithms\Egcs.h" />
+    <ClInclude Include="..\..\src\algorithms\FeatureSelector.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter.h" />
+    <ClInclude Include="..\..\src\algorithms\Filter2d.h" />
+    <ClInclude Include="..\..\src\algorithms\ImgRegression.h" />
+    <ClInclude Include="..\..\src\algorithms\myfann_cpp.h" />
+    <ClInclude Include="..\..\src\algorithms\OptFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\StatFactory.h" />
+    <ClInclude Include="..\..\src\algorithms\svm.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\algorithms\*.cc">
@@ -183,6 +323,38 @@
     <ClCompile Include="..\..\src\algorithms\*.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\algorithms\ConfusionMatrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\algorithms\CostFactorySVM.cc" />
+    <ClCompile Include="..\..\src\algorithms\Egcs.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter2d.cc" />
+    <ClCompile Include="..\..\src\algorithms\ImgRegression.cc" />
+    <ClCompile Include="..\..\src\algorithms\ConfusionMatrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\algorithms\CostFactorySVM.cc" />
+    <ClCompile Include="..\..\src\algorithms\Egcs.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter2d.cc" />
+    <ClCompile Include="..\..\src\algorithms\ImgRegression.cc" />
+    <ClCompile Include="..\..\src\algorithms\ConfusionMatrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\algorithms\CostFactorySVM.cc" />
+    <ClCompile Include="..\..\src\algorithms\Egcs.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter2d.cc" />
+    <ClCompile Include="..\..\src\algorithms\ImgRegression.cc" />
+    <ClCompile Include="..\..\src\algorithms\ConfusionMatrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\algorithms\CostFactorySVM.cc" />
+    <ClCompile Include="..\..\src\algorithms\Egcs.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter.cc" />
+    <ClCompile Include="..\..\src\algorithms\Filter2d.cc" />
+    <ClCompile Include="..\..\src\algorithms\ImgRegression.cc" />
     <ClCompile Include="..\..\src\algorithms\ConfusionMatrix.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
