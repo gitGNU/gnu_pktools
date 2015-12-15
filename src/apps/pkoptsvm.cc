@@ -24,7 +24,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #include <nlopt.hpp>
 #include "base/Optionpk.h"
-#include "base/Optionpk.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
 #include "algorithms/OptFactory.h"

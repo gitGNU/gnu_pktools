@@ -69,13 +69,13 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "2.6.3"
+#define PACKAGE_VERSION "2.6.5"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "2.6.3"
+#define VERSION "2.6.5"
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef size_t */
