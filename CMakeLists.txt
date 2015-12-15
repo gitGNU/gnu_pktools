@@ -17,7 +17,10 @@
 #if defined(_MSC_VER) && (_MSC_VER < 1900)
 #  define snprintf _snprintf
 #endif
-#set CMAKE_INSTALL_PREFIX to C:/OSGeo4W64;C:/Users/kempenep/Downloads/FANN-2.2.0-Source/FANN-2.2.0-Source/install;C:/Users/kempenep/Downloads/armadillo-6.200.4/install
+#set CMAKE_INSTALL_PREFIX to C:/OSGeo4W64;C:/Users/kempenep/Downloads/FANN-2.2.0-Source/FANN-2.2.0-Source/install;C:/Users/kempenep/Downloads/armadillo-6.200.4/install;C:\Users\kempenep\Downloads\nlopt-2.4.2-dll64
+#rename pktools.config.h.in cmake.config.h.in
+#rename pktools.config.in cmake.config.in
+#rename pktools.pc.in cmake.pc.in
 #
 ###############################################################################
 cmake_minimum_required(VERSION 3.0)
@@ -33,8 +36,8 @@ set (PROJECT_SOURCE_DIR src)
 
 # The version number.
 set (PKTOOLS_VERSION_MAJOR 2)
-set (PKTOOLS_VERSION_MINOR 5)
-set (PKTOOLS_VERSION_PATCH 4)
+set (PKTOOLS_VERSION_MINOR 6)
+set (PKTOOLS_VERSION_PATCH 5)
 set (PKTOOLS_VERSION "${PKTOOLS_VERSION_MAJOR}.${PKTOOLS_VERSION_MINOR}.${PKTOOLS_VERSION_PATCH}")
 set (PKTOOLS_PACKAGE_VERSION "${PKTOOLS_VERSION_MAJOR}.${PKTOOLS_VERSION_MINOR}.${PKTOOLS_VERSION_PATCH}")
 set (PKTOOLS_PACKAGE_STRING "PKTOOLS ${PKTOOLS_VERSION_MAJOR}.${PKTOOLS_VERSION_MINOR}.${PKTOOLS_VERSION_PATCH}")
@@ -102,13 +105,14 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 ###############################################################################
 # Setup configure file
-configure_file ( "pktools-config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/base/pktools-config.h" )
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+configure_file ( "cmake-config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/base/config.h" @ONLY)
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/base")
+add_definitions(-DHAVE_CONFIG_H)
 ###############################################################################
 
 ###############################################################################
 # Documentation
-file(READ "doc/index.txt" README )
+#file(READ "doc/index.txt" README )
 file(WRITE "README.txt" "${README}")
 ###############################################################################
 
@@ -242,8 +246,8 @@ add_subdirectory ("${PROJECT_SOURCE_DIR}")
 ###############################################################################
 # Build executables
 
-#configure_file ( "pktools-config.in" "${PROJECT_BINARY_DIR}/pktools-config" @ONLY )
-configure_file ( "pktools.pc.in" "pktools.pc"  @ONLY)
+#configure_file ( "cmake-config.in" "${PROJECT_BINARY_DIR}/pktools-config" @ONLY )
+configure_file ( "cmake.pc.in" "pktools.pc"  @ONLY)
 
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

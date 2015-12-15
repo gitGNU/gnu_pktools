@@ -13,7 +13,7 @@ set(BASE_H
 	${BASE_SRC_DIR}/PosValue.h
 	${BASE_SRC_DIR}/Vector2d.h
 	${BASE_SRC_DIR}/Vector2d.cc
-#	${BASE_SRC_DIR}/pktools-config.h
+#	${BASE_SRC_DIR}/config.h
 	)
 
 set(ALGOR_H
