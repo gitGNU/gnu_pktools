@@ -263,23 +263,26 @@ set(PKUTILITIES
 	pkcreatect 
 	pkdumpimg 
 	pkdumpogr 
+	pksieve 
+	pkstat
 	pkstatascii 
 	pkstatogr 
+	pkstatprofile
 	pkegcs 
-	pkextract 
+	pkextract
+	pkfillnodata 
 	pkfilter 
 	pkfilterdem 
 	pkfilterascii 
 	pkdsm2shadow 
 	pkcomposite 
+	pkpolygonize 
 	pkascii2img 
 	pksvm 
 	pkfssvm 
 	pkascii2ogr 
 	pkreclass 
-	pksieve 
-	pkfillnodata 
-	pkpolygonize 
+	pkkalman
 )
 
 set(PKLASUTILITIES
