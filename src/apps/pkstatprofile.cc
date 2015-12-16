@@ -1,5 +1,5 @@
 /**********************************************************************
-pkstatz.cc: program to calculate statistics in temporal or spectral profile
+pkstatprofile.cc: program to calculate statistics in temporal or spectral profile
 Copyright (C) 2008-2015 Pieter Kempeneers
 
 This file is part of pktools
@@ -33,12 +33,12 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/StatFactory.h"
 
 /******************************************************************************/
-/*! \page pkstatz pkstatz
+/*! \page pkstatprofile pkstatprofile
  program to calculate statistics in temporal or spectral profile
 ## SYNOPSIS
 
 <code>
-  Usage: pkstatz -i input -o output [-f function]*
+  Usage: pkstatprofile -i input -o output [-f function]*
 </code>
 
 <code>
@@ -47,11 +47,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Advanced options: check table
 </code>
 
-\section pkstatz_description Description
+\section pkstatprofile_description Description
 
 This utility calculates statistics for a temporal (time series) or spectral profile
 
-\anchor pkstatz_functions
+\anchor pkstatprofile_functions
 
 |function | description|
 |-------------|-------------|
@@ -72,7 +72,7 @@ nvalid | report number of valid observations
 Example: Calculate min and max NDVI in time series
 
 \code
-pkstatz -i modis_ndvi_2010.tif -o modis_stats_2010.tif -f min -f max
+pkstatprofile -i modis_ndvi_2010.tif -o modis_stats_2010.tif -f min -f max
 \endcode
 
 \section pkfilter_options Options
@@ -87,12 +87,8 @@ pkstatz -i modis_ndvi_2010.tif -o modis_stats_2010.tif -f min -f max
  |class | class | std::string | | class value(s) to use for mode, proportion |
  |nodata | nodata | double | | nodata value(s) |
 
-Usage: pkstatz -i input -o ouptut [-f function]*
+Usage: pkstatprofile -i input -o ouptut [-f function]*
 
-
-Examples
-========
-Some examples how to use pkstatz can be found \ref examples_pkstatz "here"
 **/
 
 using namespace std;
@@ -137,7 +133,7 @@ int main(int argc,char **argv) {
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkstatz -i input -o ouptut [-function]*" << endl;
+    cout << "Usage: pkstatprofile -i input -o ouptut [-function]*" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing

@@ -37,6 +37,32 @@ tar xzvf pktools-latest.tar.gz
 cd pktools-*
 \endcode
 
+You can install pktools via
+    - \ref installation_autotools "autotools" (linux only)
+    - \ref installation_cmake "cmake" (linux, windows, Mac OS)
+
+\subsection installation_autotools Installation via autotools
+
+Add libtool support to your package:
+
+If you obtained pktools from the git repository, please please perform the following actions first (assuming the current directory is pktools):
+
+\code
+libtoolize
+\endcode
+
+Remake the GNU Build System files by scanning 'configure.ac' and running 'autoconf', 'autoheader', 'aclocal', 'automake' and 'libtoolize':
+
+\code
+autoreconf
+\endcode
+
+Finalize package generation:
+
+\code
+automake --add-missing
+\endcode
+
 Basic installation (please refer to INSTALL file for more advanced configuration)
 \code
 ./configure
@@ -143,3 +169,22 @@ packages to install before pktools
    sudo make install
    sudo ldconfig
    \endcode
+
+\subsection installation_cmake Installation via cmake (or ccmake)
+Note that CMake version 3.0 or higher is required for building via cmake
+We will build out-of-source:
+
+\code
+mkdir build
+cd build
+ccmake ..
+\endcode
+
+Within ccmake, press "c" to configure. Make sure all paths are correctly set.
+Then press "g" to generate and exit ccmake.
+
+Compile and link via make:
+
+\code
+make
+\endcode
