@@ -81,7 +81,7 @@ public:
   int getNoDataValues(std::vector<double>& noDataValues) const;
   bool isNoData(double value) const{if(m_noDataValues.empty()) return false;else return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
   int pushNoDataValue(double noDataValue);
-  int setNoData(const std::vector<double> nodata){m_noDataValues=nodata;};
+  int setNoData(const std::vector<double> nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
   CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
   bool covers(double x, double y) const;
   bool covers(double ulx, double  uly, double lrx, double lry) const;
