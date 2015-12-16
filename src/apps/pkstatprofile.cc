@@ -107,7 +107,7 @@ int main(int argc,char **argv) {
   Optionpk<short> class_opt("class", "class", "class value(s) to use for mode, proportion");
   Optionpk<double> nodata_opt("nodata", "nodata", "nodata value(s)");
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate)","GTiff");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   // Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling). Use value n>1 for downsampling (aggregation)", 1);
@@ -190,7 +190,7 @@ int main(int argc,char **argv) {
   if(verbose_opt[0])
     std::cout << std::endl << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
 
-  string imageType=input.getImageType();
+  string imageType;//=input.getImageType();
   if(oformat_opt.size())
     imageType=oformat_opt[0];
 

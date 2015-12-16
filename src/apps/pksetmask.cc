@@ -54,7 +54,7 @@ The utility pksetmask sets a mask provided with option -m to an input raster dat
  | nodata | nodata               | int  | 0     |nodata value to put in image if not valid | 
  | p      | operator             | char | =     |Operator: < = > !. Use operator for each msknodata option | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
- | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate)| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
   Optionpk<string> mask_opt("m", "mask", "Mask image(s)");
   Optionpk<string> output_opt("o", "output", "Output mask file");
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate)","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<int> msknodata_opt("msknodata", "msknodata", "Mask value(s) where image has nodata. Use one value for each mask, or multiple values for a single mask.", 1);
   Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed). Provide band for each mask.", 0);
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
     cout << "opening input image file " << input_opt[0] << endl;
   ImgReaderGdal inputReader;
   inputReader.open(input_opt[0]);
-  string imageType=inputReader.getImageType();
+  string imageType;//=inputReader.getImageType();
   if(oformat_opt.size())//default
     imageType=oformat_opt[0];
   GDALDataType theType=GDT_Unknown;

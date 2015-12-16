@@ -70,6 +70,7 @@ A typical use of the utility is to assess the accuracy of an input raster land c
  | msknodata | msknodata            | double | 0     |Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value) | 
  | o      | output               | std::string |       |Output dataset (optional) | 
  | f      | f                    | std::string | SQLite |OGR format for output vector (for vector reference datasets only) | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | lc     | lclass               | std::string | class |Attribute name of the classified label (for vector reference datasets only) | 
  | cmf    | cmf                  | std::string | ascii |Format for confusion matrix (ascii or latex) | 
  | cmo    | cmo                  | std::string |       |Output file for confusion matrix | 
@@ -111,6 +112,7 @@ int main(int argc, char *argv[])
   Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in classname option)."); 
   Optionpk<string> output_opt("o", "output", "Output dataset (optional)");
   Optionpk<string> ogrformat_opt("f", "f", "OGR format for output vector (for vector reference datasets only)","SQLite");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> labelclass_opt("lc", "lclass", "Attribute name of the classified label (for vector reference datasets only)", "class");
   Optionpk<short> boundary_opt("bnd", "boundary", "Boundary for selecting the sample (for vector reference datasets only)", 1,1);
   Optionpk<bool> homogeneous_opt("hom", "homogeneous", "Only take regions with homogeneous boundary into account (for reference datasets only)", false,1);
@@ -124,6 +126,7 @@ int main(int argc, char *argv[])
 
   output_opt.setHide(1);
   ogrformat_opt.setHide(1);
+  oformat_opt.setHide(1);
   labelclass_opt.setHide(1);
   boundary_opt.setHide(1);
   homogeneous_opt.setHide(1);
@@ -675,7 +678,7 @@ int main(int argc, char *argv[])
           theInterleave+=inputReader.getInterleave();
           option_opt.push_back(theInterleave);
         }
-        gdalWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),inputReader.getImageType(),option_opt);
+        gdalWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),oformat_opt[0],option_opt);
 	if(nodata_opt.size())
 	  gdalWriter.GDALSetNoDataValue(nodata_opt[0]);
 	gdalWriter.copyGeoTransform(inputReader);

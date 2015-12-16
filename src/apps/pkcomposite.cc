@@ -113,7 +113,7 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | dstnodata | dstnodata            | double | 0     |nodata value to put in output raster dataset if not valid or out of bounds. | 
  | r      | resampling-method    | std::string | near  |Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation). | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
- | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | a_srs  | a_srs                | std::string |       |Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid | 
  | file   | file                 | short | 0     |write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite | 
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output raster dataset if not valid or out of bounds.", 0);
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<short> file_opt("file", "file", "write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite", 0);

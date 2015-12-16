@@ -65,7 +65,7 @@ Utility to create a binary shadow mask from a digital surface model, based on Su
  | off    | offset               | double |       |offset used for input dsm: height=scale*input+offset | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
- | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
 
 Usage: pkdsm2shadow -i input.txt -o output [-sza angle] [-saa angle]
@@ -88,7 +88,7 @@ int main(int argc,char **argv) {
   Optionpk<double> saa_opt("saa", "saa", "Sun azimuth angle (N=0 E=90 S=180 W=270).");
   Optionpk<int> flag_opt("f", "flag", "Flag to put in image if pixel shadow", 0);
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<double> scale_opt("s", "scale", "scale used for input dsm: height=scale*input+offset");
@@ -153,7 +153,7 @@ int main(int argc,char **argv) {
   if(verbose_opt[0])
     std::cout << std::endl << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
 
-  string imageType=input.getImageType();
+  string imageType;//=input.getImageType();
   if(oformat_opt.size())
     imageType=oformat_opt[0];
 

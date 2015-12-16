@@ -68,7 +68,7 @@ Both raster and vector files are supported as input. The output will contain the
  | tln    | tln                  | std::string |       |Training layer name(s) | 
  | c      | class                | std::string |       |List of class names. | 
  | r      | reclass              | short |       |List of class values (use same order as in class opt). | 
- | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | f      | f                    | std::string | SQLite |Output ogr format for active training sample | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
   Optionpk<short> msknodata_opt("msknodata", "msknodata", "Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "Nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "Output classification image"); 
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("prob", "prob", "Probability image."); 
@@ -178,6 +178,8 @@ int main(int argc, char *argv[])
   Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in class opt)."); 
   Optionpk<short> verbose_opt("v", "verbose", "Verbose level",0,2);
 
+  oformat_opt.setHide(1);
+  option_opt.setHide(1);
   band_opt.setHide(1);
   bstart_opt.setHide(1);
   bend_opt.setHide(1);

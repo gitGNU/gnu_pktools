@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "colour table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid)"); 
   Optionpk<string> prob_opt("\0", "prob", "probability image. Default is no probability image"); 
@@ -155,6 +155,8 @@ int main(int argc, char *argv[])
   Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in class opt)."); 
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
 
+  option_opt.setHide(1);
+  oformat_opt.setHide(1);
   band_opt.setHide(1);
   bstart_opt.setHide(1);
   bend_opt.setHide(1);
@@ -789,7 +791,7 @@ int main(int argc, char *argv[])
     ImgWriterGdal probImage;
     ImgWriterGdal entropyImage;
 
-    string imageType=testImage.getImageType();
+    string imageType;//testImage.getImageType();
     if(oformat_opt.size())//default
       imageType=oformat_opt[0];
     try{

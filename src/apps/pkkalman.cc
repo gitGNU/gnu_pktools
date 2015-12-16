@@ -61,7 +61,7 @@ produce kalman filtered raster time series
  | q      | q                    | double | 1     |Process noise: expresses instability (variance) of proportions of fine res pixels within a moderate resolution pixel | 
  | down   | down                 | int  |       |Downsampling factor for reading model data to calculate regression | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
- | of     | oformat              | std::string |       |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | v      | verbose              | short | 0     |verbose mode when positive | 
 
@@ -94,7 +94,7 @@ int main(int argc,char **argv) {
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 100);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image","GTiff",2);
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0);
 
@@ -228,7 +228,7 @@ int main(int argc,char **argv) {
   if(theType==GDT_Unknown)
     theType=imgReaderObs.getDataType();
 
-  string imageType=imgReaderObs.getImageType();
+  string imageType;//=imgReaderObs.getImageType();
   if(oformat_opt.size())//default
     imageType=oformat_opt[0];
   if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){

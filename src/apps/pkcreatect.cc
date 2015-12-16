@@ -57,7 +57,7 @@ Utility to include a color table to a raster dataset. You can either define an e
  | g      | grey                 | bool | false |grey scale | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
  | d      | description          | std::string |       |Set image description | 
- | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
 
 Usage: pkcreatect -i input.txt -o output [-ct colortable | -min value -max value]
@@ -84,7 +84,7 @@ int main(int argc,char **argv) {
   Optionpk<double>  max_opt("max", "max", "maximum value", 100);
   Optionpk<bool>  grey_opt("g", "grey", "grey scale", false);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
+  Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate).", "GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false,2);

@@ -66,7 +66,7 @@ The utility pklas2img converts a las/laz point cloud into a gridded raster datas
  | lrx    | lrx                  | double | 0     |Lower right x value bounding box (in geocoordinates if georef is true). 0 is read from input file | 
  | lry    | lry                  | double | 0     |Lower right y value bounding box (in geocoordinates if georef is true). 0 is read from input file | 
  | ot     | otype                | std::string | Byte  |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
- | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate). Empty string: inherit from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | dx     | dx                   | double | 1     |Output resolution in x (in meter) | 
  | dy     | dy                   | double | 1     |Output resolution in y (in meter) | 
  | nbin   | nbin                 | short | 10    |Number of percentile bins for calculating percentile height value profile (=number of output bands) | 
@@ -105,7 +105,7 @@ int main(int argc,char **argv) {
   Optionpk<double> lrx_opt("lrx", "lrx", "Lower right x value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<double> lry_opt("lry", "lry", "Lower right y value bounding box (in geocoordinates if georef is true). 0 is read from input file", 0.0);
   Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "Byte");
-  Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate). Empty string: inherit from input image", "GTiff");
+  Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate).", "GTiff");
   Optionpk<double> dx_opt("dx", "dx", "Output resolution in x (in meter)", 1.0);
   Optionpk<double> dy_opt("dy", "dy", "Output resolution in y (in meter)", 1.0);
   Optionpk<short> nbin_opt("nbin", "nbin", "Number of percentile bins for calculating percentile height value profile (=number of output bands)", 10.0);

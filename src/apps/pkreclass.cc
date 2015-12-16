@@ -49,6 +49,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
  | o      | output               | std::string |       |Output mask file | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
+ | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate)| 
  | b      | band                 | unsigned short | 0     |band index(es) to replace (other bands are copied to output) | 
  | n      | fname                | std::string | label |field name of the shape file to be replaced | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<unsigned short>  band_opt("b", "band", "band index(es) to replace (other bands are copied to output)", 0);
   Optionpk<string> type_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> code_opt("code", "code", "Recode text file (2 colums: from to)");
   Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)");
   Optionpk<string> reclass_opt("r", "reclass", "list of recoded classes (in combination with class option)");
@@ -95,6 +97,7 @@ int main(int argc, char *argv[])
     colorTable_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     type_opt.retrieveOption(argc,argv);
+    oformat_opt.retrieveOption(argc,argv);
     band_opt.retrieveOption(argc,argv);
     fieldname_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
@@ -252,7 +255,7 @@ int main(int argc, char *argv[])
       theInterleave+=inputReader.getInterleave();
       option_opt.push_back(theInterleave);
     }
-    outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,inputReader.getImageType(),option_opt);
+    outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,oformat_opt[0],option_opt);
     for(int iband=0;iband<inputReader.nrOfBand();++iband)
       outputWriter.GDALSetNoDataValue(nodata_opt[0],iband);
     if(description_opt.size())
