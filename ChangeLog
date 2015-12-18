@@ -418,7 +418,9 @@ version 2.6.4
 version 2.6.5
  - GTiff default output image format for all applications
  - ImgReaderOgr.h patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
- - ImgReaderOgr.cc patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+ - ImgReaderOgr.cc
+	patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
+	read features (bands) in readDataImageOgr should be [bB][0-9]
  - ImgWriterOgr.h patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
  - ImgWriterOgr.cc patch for gdal 2.0 (ticket #46270), thanks to Bas Couwenberg
  - cmake support, thanks to Peter Bunting and Kris Vanhoof

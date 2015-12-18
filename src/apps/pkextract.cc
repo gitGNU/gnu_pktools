@@ -2490,7 +2490,10 @@ int main(int argc, char *argv[])
 	    throw(oss.str());
 	  }
 	  ++ifeature;
-	  progress=static_cast<float>(ifeature+1)/nfeature;
+	  if(threshold_opt[0]>0)
+	    progress=(100.0/threshold_opt[0])*static_cast<float>(ifeature+1)/nfeature;
+	  else
+	    progress=static_cast<float>(ifeature+1)/(-threshold_opt[0]);
 	  pfnProgress(progress,pszMessage,pProgressArg);
 	}
 	catch(std::string e){

@@ -290,8 +290,15 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
 	  std::cout << *fit << " ";
       // size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
 	if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
-	  if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
-	    int theBand=atoi((*fit).substr(1).c_str());
+	  // if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
+	  std::size_t digits=(*fit).substr(1,1).find_first_of("0123456789");
+	  std::size_t digite=(*fit).substr(1).find_first_not_of("0123456789");
+	  if((*fit)=="B" || (*fit)=="b" || (*fit)=="Band")//B is only band
+	    ++fit;
+	  else if(digits!=std::string::npos&&digite==std::string::npos){
+	    std::string digitString=(*fit).substr(digits);
+	    // int theBand=atoi((*fit).substr(1).c_str());
+	    int theBand=atoi(digitString.c_str());
 	    if(bands.size()){
 	      bool validBand=false;
 	      for(int iband=0;iband<bands.size();++iband){
@@ -306,8 +313,8 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
 	    else
 	      ++fit;
 	  }
-	  else if((*fit)=="B" || (*fit)=="b" || (*fit)=="Band")//B is only band
-	    ++fit;
+	  else
+	    fields.erase(fit);
 	}
 	else
 	  fields.erase(fit);
@@ -372,17 +379,23 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
       while(fit!=fields.end()){
 	if(verbose)
 	  std::cout << *fit << " ";
-	// size_t pos=(*fit).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ");
 	if((*fit).substr(0,1)=="B"||(*fit).substr(0,1)=="b"){
-	  if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
-	    int iband=atoi((*fit).substr(1).c_str());
+	  // if((*fit).substr(1).find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_ ")!=std::string::npos){
+	  std::size_t digits=(*fit).substr(1,1).find_first_of("0123456789");
+	  std::size_t digite=(*fit).substr(1).find_first_not_of("0123456789");
+	  if(*fit=="B" || *fit=="b"|| *fit=="Band")
+	    ++fit;
+	  else if(digits!=std::string::npos&&digite==std::string::npos){
+	    std::string digitString=(*fit).substr(digits);
+	    int iband=atoi(digitString.c_str());
+	    // int iband=atoi((*fit).substr(1).c_str());
 	    if((start||end)&&(iband<start||iband>end))
 	      fields.erase(fit);
 	    else
 	      ++fit;
 	  }
-	  else if(*fit=="B" || *fit=="b"|| *fit=="Band")
-	    ++fit;
+	  else
+	    fields.erase(fit);
 	}
 	else
 	  fields.erase(fit);

@@ -77,7 +77,7 @@ Both raster and vector files are supported as input. The output will contain the
  | g      | gamma                | float | 1     |Gamma in kernel function | 
  | cc     | ccost                | float | 1000  |The parameter C of C_SVC, epsilon_SVR, and nu_SVR | 
  | m      | mask                 | std::string |       |Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata. | 
- | msknodata | msknodata            | short | 0     |Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. | 
+ | msknodata | msknodata            | short | 0     |Mask value(s) not to consider for classification. Values will be taken over in classification image. | 
  | nodata | nodata               | unsigned short | 0     |Nodata value to put where image is masked as nodata | 
  | b      | band                 | short |       |Band index (starting from 0, either use band option or use start to end) | 
  | sband  | startband            | unsigned short |      |Start band sequence number | 
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
   Optionpk<int> bagSize_opt("bagsize", "bagsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "Output for each individual bootstrap aggregation");
   Optionpk<string> mask_opt("m", "mask", "Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata.");
-  Optionpk<short> msknodata_opt("msknodata", "msknodata", "Mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image.", 0);
+  Optionpk<short> msknodata_opt("msknodata", "msknodata", "Mask value(s) not to consider for classification. Values will be taken over in classification image.", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "Nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "Output classification image"); 
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
@@ -990,23 +990,23 @@ int main(int argc, char *argv[])
 	    }
 	    short theMask=0;
 	    for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-	      if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
+	      // if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
 		if(lineMask[colMask]==msknodata_opt[ivalue]){
 		  theMask=lineMask[colMask];
 		  masked=true;
 		  break;
 		}
-	      }
-	      else{//only values set in msknodata_opt are valid
-		if(lineMask[colMask]!=-msknodata_opt[ivalue]){
-		  theMask=lineMask[colMask];
-		  masked=true;
-		}
-		else{
-		  masked=false;
-		  break;
-		}
-	      }
+	      // }
+	      // else{//only values set in msknodata_opt are valid
+	      // 	if(lineMask[colMask]!=-msknodata_opt[ivalue]){
+	      // 	  theMask=lineMask[colMask];
+	      // 	  masked=true;
+	      // 	}
+	      // 	else{
+	      // 	  masked=false;
+	      // 	  break;
+	      // 	}
+	      // }
 	    }
 	    if(masked){
 	      if(classBag_opt.size())

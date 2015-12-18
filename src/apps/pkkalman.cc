@@ -88,8 +88,8 @@ int main(int argc,char **argv) {
   Optionpk<double> obsmin_opt("obsmin", "obsmin", "Minimum value for observation data");
   Optionpk<double> obsmax_opt("obsmax", "obsmax", "Maximum value for observation data");
   Optionpk<double> eps_opt("eps", "eps", "epsilon for non zero division", 0.00001);
-  Optionpk<double> uncertModel_opt("um", "uncertmodel", "Uncertainty of model",1,1);
-  Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",1,1);
+  Optionpk<double> uncertModel_opt("um", "uncertmodel", "Uncertainty of model",1);
+  Optionpk<double> uncertObs_opt("uo", "uncertobs", "Uncertainty of valid observations",1);
   Optionpk<double> processNoise_opt("q", "q", "Process noise: expresses instability (variance) of proportions of fine res pixels within a moderate resolution pixel",1);
   Optionpk<double> uncertNodata_opt("unodata", "uncertnodata", "Uncertainty in case of no-data values in observation", 100);
   Optionpk<int> down_opt("down", "down", "Downsampling factor for reading model data to calculate regression");
@@ -386,7 +386,7 @@ int main(int argc,char **argv) {
 		    if(estWriteBuffer[icol]>obsmax_opt[0])
 		      estWriteBuffer[icol]=obsmax_opt[0];
 		  }
-		  uncertWriteBuffer[icol]=uncertModel_opt[0];//*stdDev*stdDev;
+		  uncertWriteBuffer[icol]=uncertModel_opt[0];
 		  gainWriteBuffer[icol]=0;
 		}
 	      }
@@ -506,12 +506,15 @@ int main(int argc,char **argv) {
 		if(!imgReaderModel1.isNoData(modValue)){//model is valid
 		  statfactory::StatFactory statobs;
 		  statobs.setNoDataValues(obsnodata_opt);
-		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double obsMeanValue=0;
+		  double obsVarValue=0;
+		  statobs.meanVar(obsWindowBuffer,obsMeanValue,obsVarValue);
 		  double difference=0;
 		  difference=obsMeanValue-modValue;
-		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
-		  // errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
-		  double errorCovariance=errMod;//assumed initial errorCovariance (P in Kalman equations)
+		  // errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  // double errorCovariance=errMod;
+		  double errorCovariance=processNoise_opt[0]*obsVarValue;//assumed initial errorCovariance (P in Kalman equations)
 		  if(errorCovariance+errObs>eps_opt[0])
 		    kalmanGain=errorCovariance/(errorCovariance+errObs);
 		  else 
@@ -753,16 +756,20 @@ int main(int argc,char **argv) {
 		}
 	      }
 	      else{//previous estimate is valid
-		double estMeanValue=statobs.mean(estWindowBuffer);
+		double estMeanValue=0;
+		double estVarValue=0;
+		statobs.meanVar(estWindowBuffer,estMeanValue,estVarValue);
 		double nvalid=0;
 		//time update
-		double processNoiseVariance=processNoise_opt[0];
+		double processNoiseVariance=processNoise_opt[0]*estVarValue;
 		//todo: estimate process noise variance expressing instability of weights over time
 		//estimate stability of weight distribution from model (low resolution) data in a window mod1 -> mod2 and assume distribution holds at fine spatial resolution. 
 
 		if(imgReaderModel1.isNoData(modValue1)||imgReaderModel2.isNoData(modValue2)){
 		  estWriteBuffer[icol]=estValue;
-		  uncertWriteBuffer[icol]=uncertReadBuffer[icol]+processNoiseVariance;
+		  // uncertWriteBuffer[icol]=uncertReadBuffer[icol]+processNoiseVariance;
+		  //todo: check following line if makes sense
+		  uncertWriteBuffer[icol]=uncertReadBuffer[icol]+uncertObs_opt[0];
 		}
 		else{//model is good
 		  double modRatio=modValue2/modValue1;//transition matrix A in Kalman equations
@@ -786,11 +793,13 @@ int main(int argc,char **argv) {
 		if(!imgReaderModel2.isNoData(modValue2)){//model is valid
 		  statfactory::StatFactory statobs;
 		  statobs.setNoDataValues(obsnodata_opt);
-		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double obsMeanValue=0;
+		  double obsVarValue=0;
 		  double difference=0;
+		  statobs.meanVar(obsWindowBuffer,obsMeanValue,obsVarValue);
 		  difference=obsMeanValue-modValue2;
-		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
-		  // errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  // errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
 
 		  if(errObs<eps_opt[0])
 		    errObs=eps_opt[0];
@@ -1057,12 +1066,15 @@ int main(int argc,char **argv) {
 		if(!imgReaderModel1.isNoData(modValue)){//model is valid
 		  statfactory::StatFactory statobs;
 		  statobs.setNoDataValues(obsnodata_opt);
-		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double obsMeanValue=0;
+		  double obsVarValue=0;
+		  statobs.meanVar(obsWindowBuffer,obsMeanValue,obsVarValue);
 		  double difference=0;
 		  difference=obsMeanValue-modValue;
-		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
-		  // errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
-		  double errorCovariance=errMod;//assumed initial errorCovariance (P in Kalman equations)
+		  // errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  // double errorCovariance=errMod;
+		  double errorCovariance=processNoise_opt[0]*obsVarValue;//assumed initial errorCovariance (P in Kalman equations)
 		  if(errorCovariance+errObs>eps_opt[0])
 		    kalmanGain=errorCovariance/(errorCovariance+errObs);
 		  else 
@@ -1299,16 +1311,20 @@ int main(int argc,char **argv) {
 		}
 	      }
 	      else{//previous estimate is valid
-		double estMeanValue=statobs.mean(estWindowBuffer);
+		double estMeanValue=0;
+		double estVarValue=0;
+		statobs.meanVar(estWindowBuffer,estMeanValue,estVarValue);
 		double nvalid=0;
 		//time update
-		double processNoiseVariance=processNoise_opt[0];
+		double processNoiseVariance=processNoise_opt[0]*estVarValue;
 		//todo: estimate process noise variance expressing instabilityof weights over time
 		//estimate stability of weight distribution from model (low resolution) data in a window mod1 -> mod2 and assume distribution holds at fine spatial resolution. 
 
 		if(imgReaderModel1.isNoData(modValue1)||imgReaderModel2.isNoData(modValue2)){
 		  estWriteBuffer[icol]=estValue;
-		  uncertWriteBuffer[icol]=uncertReadBuffer[icol]+processNoiseVariance;
+		  // uncertWriteBuffer[icol]=uncertReadBuffer[icol]+processNoiseVariance;
+		  //todo: check following line if makes sense
+		  uncertWriteBuffer[icol]=uncertReadBuffer[icol]+uncertObs_opt[0];
 		}
 		else{//model is good
 		  double modRatio=modValue2/modValue1;//transition matrix A in Kalman equations
@@ -1332,11 +1348,16 @@ int main(int argc,char **argv) {
 		if(!imgReaderModel2.isNoData(modValue2)){//model is valid
 		  statfactory::StatFactory statobs;
 		  statobs.setNoDataValues(obsnodata_opt);
-		  double obsMeanValue=statobs.mean(obsWindowBuffer);
+		  double obsMeanValue=0;
+		  double obsVarValue=0;
 		  double difference=0;
+		  statobs.meanVar(obsWindowBuffer,obsMeanValue,obsVarValue);
 		  difference=obsMeanValue-modValue2;
-		  errObs=uncertObs_opt[0]*sqrt(difference*difference);
-		  // errObs=uncertObs_opt[0];//*difference*difference;//uncertainty of the observation (R in Kalman equations)
+		  // errObs=uncertObs_opt[0]*sqrt(difference*difference);
+		  errObs=uncertObs_opt[0]*difference*difference;//uncertainty of the observation (R in Kalman equations)
+
+		  if(errObs<eps_opt[0])
+		    errObs=eps_opt[0];
 		  double errorCovariance=uncertWriteBuffer[icol];//P in Kalman equations
 
 		  if(errorCovariance+errObs>eps_opt[0])

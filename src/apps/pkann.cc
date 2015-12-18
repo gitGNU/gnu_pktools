@@ -84,7 +84,7 @@ The utility pkann implements an artificial neural network (ANN) to solve a super
  | bs     | bsize                | int  | 100   |Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively | 
  | cb     | classbag             | std::string |       |output for each individual bootstrap aggregation (default is blank) | 
  | m      | mask                 | std::string |       |Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata. | 
- | msknodata | msknodata            | short | 0     |mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0 | 
+ | msknodata | msknodata            | short | 0     |mask value(s) not to consider for classification. Values will be taken over in classification image. Default is 0 | 
  | nodata | nodata               | unsigned short | 0     |nodata value to put where image is masked as nodata | 
  | o      | output               | std::string |       |output classification image | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
   Optionpk<int> bagSize_opt("bs", "bsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "output for each individual bootstrap aggregation (default is blank)"); 
   Optionpk<string> mask_opt("m", "mask", "Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata.");
-  Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification (use negative values if only these values should be taken into account). Values will be taken over in classification image. Default is 0", 0);
+  Optionpk<short> msknodata_opt("msknodata", "msknodata", "mask value(s) not to consider for classification. Values will be taken over in classification image. Default is 0", 0);
   Optionpk<unsigned short> nodata_opt("nodata", "nodata", "nodata value to put where image is masked as nodata", 0);
   Optionpk<string> output_opt("o", "output", "output classification image"); 
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
@@ -369,9 +369,9 @@ int main(int argc, char *argv[])
       try{
 	ImgReaderOgr trainingReaderBag(training_opt[ibag]);
         if(band_opt.size())
-          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt);
         else
-          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
+          totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt);
         if(trainingMap.size()<2){
           string errorstring="Error: could not read at least two classes from training file, did you provide class labels in training sample (see option label)?";
           throw(errorstring);
@@ -981,23 +981,23 @@ int main(int argc, char *argv[])
 	    }
 	    short theMask=0;
 	    for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-	      if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
+	      // if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
 		if(lineMask[colMask]==msknodata_opt[ivalue]){
 		  theMask=lineMask[colMask];
 		  masked=true;
 		  break;
 		}
-	      }
-	      else{//only values set in msknodata_opt are valid
-		if(lineMask[colMask]!=-msknodata_opt[ivalue]){
-		  theMask=lineMask[colMask];
-		  masked=true;
-		}
-		else{
-		  masked=false;
-		  break;
-		}
-	      }
+	      // }
+	      // else{//only values set in msknodata_opt are valid
+	      // 	if(lineMask[colMask]!=-msknodata_opt[ivalue]){
+	      // 	  theMask=lineMask[colMask];
+	      // 	  masked=true;
+	      // 	}
+	      // 	else{
+	      // 	  masked=false;
+	      // 	  break;
+	      // 	}
+	      // }
 	    }
 	    if(masked){
 	      if(classBag_opt.size())
