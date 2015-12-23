@@ -428,6 +428,7 @@ int main(int argc, char *argv[])
       try{
 	ImgReaderOgr trainingReaderBag(training_opt[ibag]);
         if(band_opt.size())
+	  //todo: when tlayer_opt is provided, readDataImageOgr does not read any layer
           totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
         else
           totalSamples=trainingReaderBag.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
@@ -448,7 +449,7 @@ int main(int argc, char *argv[])
         exit(1);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
 
@@ -784,7 +785,7 @@ int main(int argc, char *argv[])
         exit(2);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
     }
@@ -858,7 +859,7 @@ int main(int argc, char *argv[])
         exit(2);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
       mask_opt.clear();
@@ -876,7 +877,7 @@ int main(int argc, char *argv[])
         exit(2);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
     }
@@ -922,7 +923,7 @@ int main(int argc, char *argv[])
         exit(3);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(3);
       }
       assert(nband==hpixel[0].size());
@@ -942,7 +943,7 @@ int main(int argc, char *argv[])
           exit(3);
         }
         catch(...){
-          cerr << "error catched" << std::endl;
+          cerr << "error caught" << std::endl;
           exit(3);
         }
       }
@@ -983,7 +984,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	      }
 	      catch(...){
-		cerr << "error catched" << std::endl;
+		cerr << "error caught" << std::endl;
 		exit(3);
 	      }
 	      oldRowMask=rowMask;

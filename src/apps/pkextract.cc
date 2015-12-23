@@ -898,15 +898,23 @@ int main(int argc, char *argv[])
     //support multiple layers
     int nlayerRead=sampleReaderOgr.getDataSource()->GetLayerCount();
     int ilayerWrite=0;
+    unsigned long int ntotalvalid=0;
+
     if(verbose_opt[0])
       std::cout << "number of layers: " << nlayerRead << endl;
       
     for(int ilayer=0;ilayer<nlayerRead;++ilayer){
       OGRLayer *readLayer=sampleReaderOgr.getLayer(ilayer);
       string currentLayername=readLayer->GetName();
-      if(layer_opt.size())
-	if(find(layer_opt.begin(),layer_opt.end(),currentLayername)==layer_opt.end())
+      int layerIndex=ilayer;
+      if(layer_opt.size()){
+	vector<string>::const_iterator it=find(layer_opt.begin(),layer_opt.end(),currentLayername);
+	if(it==layer_opt.end())
 	  continue;
+	else
+	  layerIndex=it-layer_opt.begin();
+      }
+      float theThreshold=(threshold_opt.size()==layer_opt.size())? threshold_opt[layerIndex]: threshold_opt[0];
       cout << "processing layer " << currentLayername << endl;
       
       readLayer->ResetReading();
@@ -982,7 +990,8 @@ int main(int argc, char *argv[])
       }
       OGRFeature *readFeature;
       unsigned long int ifeature=0;
-      unsigned long int nfeature=sampleReaderOgr.getFeatureCount();
+      unsigned long int nfeatureLayer=sampleReaderOgr.getFeatureCount(ilayer);
+      unsigned long int ntotalvalidLayer=0;
       progress=0;
       pfnProgress(progress,pszMessage,pProgressArg);
       while( (readFeature = readLayer->GetNextFeature()) != NULL ){
@@ -990,10 +999,12 @@ int main(int argc, char *argv[])
 	bool writeTest=false;//write this feature to test_opt[0] instead of output_opt
 	if(verbose_opt[0]>0)
 	  std::cout << "reading feature " << readFeature->GetFID() << std::endl;
-	if(threshold_opt[0]>0){//percentual value
+	if(theThreshold>0){//percentual value
+	  // if(!test_opt.size()&&ntotalvalid>threshold_opt[0]/100.0*nfeature)
+	  //   break;
 	  double p=static_cast<double>(rand())/(RAND_MAX);
 	  p*=100.0;
-	  if(p>threshold_opt[0]){
+	  if(p>theThreshold){
 	    if(test_opt.size())
 	      writeTest=true;
 	    else
@@ -1001,11 +1012,21 @@ int main(int argc, char *argv[])
 	  }
 	}
 	else{//absolute value
-	  if(ntotalvalid>=-threshold_opt[0]){
-	    if(test_opt.size())
-	      writeTest=true;
-	    else
-	      continue;//do not select any more pixels, go to next column feature
+	  if(threshold_opt.size()==layer_opt.size()){
+	    if(ntotalvalidLayer>=-theThreshold){
+	      if(test_opt.size())
+		writeTest=true;
+	      else
+		continue;//do not select any more pixels, go to next column feature
+	    }
+	  }
+	  else{
+	    if(ntotalvalid>=-theThreshold){
+	      if(test_opt.size())
+		writeTest=true;
+	      else
+		continue;//do not select any more pixels, go to next column feature
+	    }
 	  }
 	}
 	if(verbose_opt[0]>0)
@@ -1289,8 +1310,7 @@ int main(int argc, char *argv[])
  		    //destroy feature
 		    OGRFeature::DestroyFeature( writePointFeature );
 		    ++ntotalvalid;
-		    if(verbose_opt[0])
-		      std::cout << "ntotalvalid(2): " << ntotalvalid << std::endl;
+		    ++ntotalvalidLayer;
 		  }
 		}
 	      }
@@ -1517,8 +1537,7 @@ int main(int argc, char *argv[])
 		}
 		OGRFeature::DestroyFeature( writePolygonFeature );
 		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid(1): " << ntotalvalid << std::endl;
+		++ntotalvalidLayer;
 	      }
 	      else{
 		if(verbose_opt[0]>1)
@@ -1539,8 +1558,7 @@ int main(int argc, char *argv[])
 		}
 		OGRFeature::DestroyFeature( writeCentroidFeature );
 		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
+		++ntotalvalidLayer;
 	      }
 	    }
 	  }//if wkbPoint
@@ -1775,8 +1793,7 @@ int main(int argc, char *argv[])
 		    //destroy feature
 		    OGRFeature::DestroyFeature( writePointFeature );
 		    ++ntotalvalid;
-		    if(verbose_opt[0])
-		      std::cout << "ntotalvalid(2): " << ntotalvalid << std::endl;
+		    ++ntotalvalidLayer;
 		  }
 		}
 	      }
@@ -1988,8 +2005,7 @@ int main(int argc, char *argv[])
 		}
 		OGRFeature::DestroyFeature( writePolygonFeature );
 		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid(1): " << ntotalvalid << std::endl;
+		++ntotalvalidLayer;
 	      }
 	      else{
 		if(verbose_opt[0]>1)
@@ -2010,8 +2026,7 @@ int main(int argc, char *argv[])
 		}
 		OGRFeature::DestroyFeature( writeCentroidFeature );
 		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
+		++ntotalvalidLayer;
 	      }
 	    }
 	  }
@@ -2243,8 +2258,7 @@ int main(int argc, char *argv[])
 		  }
 		  // ++isample;
 		  ++ntotalvalid;
-		  if(verbose_opt[0])
-		    std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
+		  ++ntotalvalidLayer;
 	      }
 	    }
 	    if(!validFeature)
@@ -2455,8 +2469,7 @@ int main(int argc, char *argv[])
 		}
 		OGRFeature::DestroyFeature( writePolygonFeature );
 		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
+		++ntotalvalidLayer;
 	      }
 	      else{
 		if(verbose_opt[0]>1)
@@ -2477,8 +2490,7 @@ int main(int argc, char *argv[])
 		}
 		OGRFeature::DestroyFeature( writeCentroidFeature );
 		++ntotalvalid;
-		if(verbose_opt[0])
-		  std::cout << "ntotalvalid: " << ntotalvalid << std::endl;
+		++ntotalvalidLayer;
 	      }
 	    }
 	  }
@@ -2490,10 +2502,14 @@ int main(int argc, char *argv[])
 	    throw(oss.str());
 	  }
 	  ++ifeature;
-	  if(threshold_opt[0]>0)
-	    progress=(100.0/threshold_opt[0])*static_cast<float>(ifeature+1)/nfeature;
-	  else
-	    progress=static_cast<float>(ifeature+1)/(-threshold_opt[0]);
+	  if(theThreshold>0){
+	    if(threshold_opt.size()==layer_opt.size())
+	      progress=(100.0/theThreshold)*static_cast<float>(ntotalvalidLayer)/nfeatureLayer;
+	    else
+	      progress=static_cast<float>(ntotalvalidLayer)/nfeatureLayer;
+	  }
+ 	  else
+	    progress=static_cast<float>(ifeature+1)/(-theThreshold);
 	  pfnProgress(progress,pszMessage,pProgressArg);
 	}
 	catch(std::string e){

@@ -349,7 +349,7 @@ template<class T> double FeatureSelector::removeFeature(std::vector< Vector2d<T>
     }
     tmpset.push_front(last);
   }
-  if(maxCost<0){//all levels removed were catched
+  if(maxCost<0){//all levels removed were caught
     subset=catchset;
   }
   //test: assert list contains no duplicate elements

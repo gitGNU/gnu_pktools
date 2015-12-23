@@ -448,7 +448,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
   catch(...){
-    cerr << "error catched" << std::endl;
+    cerr << "error caught" << std::endl;
     exit(1);
   }
   //delete class 0 ?
@@ -695,7 +695,7 @@ int main(int argc, char *argv[])
     }
   }
   catch(...){
-    std::cout << "catched feature selection" << std::endl;
+    std::cout << "caught feature selection" << std::endl;
     exit(1);
   }
 

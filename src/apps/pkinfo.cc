@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
       // 	std::cout << "image description: " << imgReader.getImageDescription() << std::endl;
       // }
       // catch(...){
-      // 	std::cout << "catched" << std::endl;
+      // 	std::cout << "caught" << std::endl;
       // }
       std::list<std::string> metaData;
       imgReader.getMetadata(metaData);

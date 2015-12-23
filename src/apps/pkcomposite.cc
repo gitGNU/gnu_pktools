@@ -633,7 +633,7 @@ int main(int argc, char *argv[])
       exit(2);
     }
     catch(...){
-      cerr << "error catched" << std::endl;
+      cerr << "error caught" << std::endl;
       exit(1);
     }
     //todo: support multiple masks
@@ -656,7 +656,7 @@ int main(int argc, char *argv[])
       exit(2);
     }
     catch(...){
-      cerr << "error catched" << std::endl;
+      cerr << "error caught" << std::endl;
       exit(1);
     }
   }
@@ -799,7 +799,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	      }
 	      catch(...){
-		cerr << "error catched" << std::endl;
+		cerr << "error caught" << std::endl;
 		exit(3);
 	      }
 	      oldRowMask=rowMask;

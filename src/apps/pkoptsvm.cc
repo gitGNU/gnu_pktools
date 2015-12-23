@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
   catch(...){
-    cerr << "error catched" << std::endl;
+    cerr << "error caught" << std::endl;
     exit(1);
   }
   //todo delete class 0 ?
@@ -674,7 +674,7 @@ int main(int argc, char *argv[])
   //    cout << e.what() << endl;
   //  }
   //  catch(...){
-  //    cerr << "error catched" << std::endl;
+  //    cerr << "error caught" << std::endl;
   //    exit(1);
   //  }
 

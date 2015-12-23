@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
         exit(1);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
       //delete class 0 ?
@@ -771,7 +771,7 @@ int main(int argc, char *argv[])
         exit(2);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
     }
@@ -845,7 +845,7 @@ int main(int argc, char *argv[])
         exit(2);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
       mask_opt.clear();
@@ -863,7 +863,7 @@ int main(int argc, char *argv[])
         exit(2);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(1);
       }
     }
@@ -913,7 +913,7 @@ int main(int argc, char *argv[])
         exit(3);
       }
       catch(...){
-        cerr << "error catched" << std::endl;
+        cerr << "error caught" << std::endl;
         exit(3);
       }
       assert(nband==hpixel[0].size());
@@ -933,7 +933,7 @@ int main(int argc, char *argv[])
           exit(3);
         }
         catch(...){
-          cerr << "error catched" << std::endl;
+          cerr << "error caught" << std::endl;
           exit(3);
         }
       }
@@ -974,7 +974,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	      }
 	      catch(...){
-		cerr << "error catched" << std::endl;
+		cerr << "error caught" << std::endl;
 		exit(3);
 	      }
 	      oldRowMask=rowMask;
