@@ -43,7 +43,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-b band]* [-dx xres] [-dy yres] [-e vector] [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-cr rule] [-cb band] [-srcnodata value] [-bndnodata band] [-min value] [-max value] [-dstnodata value] [-r resampling_method] [-ot {Byte / Int16 / UInt16 / UInt32 / Int32 / Float32 / Float64 / CInt16 / CInt32 / CFloat32 / CFloat64}] [-of format] [-co NAME=VALUE]* [-a_srs epsg:number]
 
   Advanced options:
-       [-file] [-w weight]* [-c class]* [-ct colortable] [-d description]
+       [-file] [-w weight]* [-c class]* [-ct colortable] [-d description] [-align]
 </code>
 
 \section pkcomposite_description Description
@@ -120,6 +120,7 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | w      | weight               | short | 1     |Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights. | 
  | c      | class                | short | 0     |classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image. | 
  | ct     | ct                   | std::string |       |color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | align  | align                | bool  |       |Align output bounding box to first input image | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -170,6 +171,7 @@ int main(int argc, char *argv[])
   Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.", 0);
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
+  Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -217,6 +219,7 @@ int main(int argc, char *argv[])
     class_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
+    align_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -531,6 +534,24 @@ int main(int argc, char *argv[])
     maxLRX-=static_cast<int>(maxLRX)%(static_cast<int>(dx));
     minLRY=floor(minLRY);
     minLRY-=static_cast<int>(minLRY)%(static_cast<int>(dy));
+  }
+  else if(align_opt[0]){
+    if(minULX>imgReader[0].getUlx())
+      minULX-=fmod(minULX-imgReader[0].getUlx(),dx);
+    else if(minULX<imgReader[0].getUlx())
+      minULX+=fmod(imgReader[0].getUlx()-minULX,dx)-dx;
+    if(maxLRX<imgReader[0].getLrx())
+      maxLRX+=fmod(imgReader[0].getLrx()-maxLRX,dx);
+    else if(maxLRX>imgReader[0].getLrx())
+      maxLRX-=fmod(maxLRX-imgReader[0].getLrx(),dx)+dx;
+    if(minLRY>imgReader[0].getLry())
+      minLRY-=fmod(minLRY-imgReader[0].getLry(),dy);
+    else if(minLRY<imgReader[0].getLry())
+      minLRY+=fmod(imgReader[0].getLry()-minLRY,dy)-dy;
+    if(maxULY<imgReader[0].getUly())
+      maxULY+=fmod(imgReader[0].getUly()-maxULY,dy);
+    else if(maxULY>imgReader[0].getUly())
+      maxULY-=fmod(maxULY-imgReader[0].getUly(),dy)+dy;
   }
 
   if(verbose_opt[0])

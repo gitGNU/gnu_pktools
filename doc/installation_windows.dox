@@ -1,8 +1,10 @@
 \section installation_windows Installation on Windows machines
 
-\subsection installation_windows_dependencies Dependencies: OSGeo4W
+\subsection installation_windows_dependencies Dependencies: OSGeo4W and Visual Studio redistributables
 
-Download and install the ​<a href="http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86.exe">32bit</a> or ​<a href="http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86_64.exe">64bit</a> version of <a href="osgeo4w.osgeo.org">OSGeo4W</a>. The basic installation with GDAL contains most dependencies that are required for pktools.
+Download and install the ​<a href="http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86.exe">32bit</a> or ​<a href="http://download.osgeo.org/osgeo4w/osgeo4w-setup-x86_64.exe">64bit</a> (preferred) version of <a href="osgeo4w.osgeo.org">OSGeo4W</a>. The basic installation with GDAL contains most dependencies that are required for pktools.
+
+Download and install the ​<a href="http://www.microsoft.com/en-us/download/details.aspx?id=48145">redistributables</a> for Visual Studio 2015.
 
 Please make sure the latest version of pktools is always installed. Changes with respect to the previous versions can be checked in the text file <a href="http://git.savannah.gnu.org/cgit/pktools.git/tree/ChangeLog">Changelog</a>. Older versions of pktools were installed with a setup exe file. They should be uninstalled first via Programs and Features in Control Panel.
 
@@ -15,7 +17,7 @@ Unzip the archives to your local hard drive. Then copy the pktools folder in the
 
 \subsection Installation_windows_cmake Manual installation via cmake
 
-Install CMake on your machine (version 3.0 or higher). Some dependency packages must also be pre-installed <a href="http://arma.sourceforge.net/download.html">Armadillo</a> and <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt_on_Windows">NLOpt</a> (for the utility pkoptsvm only).
+If you prefer to compile pktools yourself, the easiest way is to use CMake. First, install CMake on your machine (version 3.0 or higher). These dependency packages must also be pre-installed: <a href="http://arma.sourceforge.net/download.html">Armadillo</a> and <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt_on_Windows">NLOpt</a> (for the utility pkoptsvm only).
 
 Set the source directory in CMake to the pktools directory. Build out-of-source by setting a "build" directory, where binaries will be created.
 
@@ -36,3 +38,4 @@ A Visual Studio project (PKTOOLS.sln) will be created in the build directory. Op
 The pktools utilities can be run from the command line using the OSGEo4W Shell. 
 A selection of them can also be run from within \ref qgis_plugin "QGIS", via the Processing Toolbox. 
 
+To run the pktools utilities from a simple Windows cmd shell, you first have to set some environment variables. This can be done by executing the batch file o4w_env.bat, located in OSGeo4W64\bin from within the cmd shell.

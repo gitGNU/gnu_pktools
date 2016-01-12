@@ -43,7 +43,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-of out_format] [-ot {Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}] [-b band]* [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-dx xres] [-dy yres] [-r resampling_method] [-a_srs epsg:number] [-nodata value] 
 
   Advanced options:
-  	   [-e vector [-cut]] [-sband band -eband band]* [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-scale value]* [-off offset]* [-ct colortable] [-d description] 
+  	   [-e vector [-cut]] [-sband band -eband band]* [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-scale value]* [-off offset]* [-ct colortable] [-d description] [-align]
 </code>
 
 \section pkcrop_description Description
@@ -86,6 +86,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | scale  | scale                | double |       |output=scale*input+offset | 
  | off    | offset               | double |       |output=scale*input+offset | 
  | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
+ | align  | align                | bool  |       |Align output bounding box to input image | 
  | d      | description          | std::string |       |Set image description | 
 
 Usage: pkcrop -i input -o output
@@ -134,6 +135,7 @@ int main(int argc, char *argv[])
   Optionpk<float>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
+  Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -190,6 +192,7 @@ int main(int argc, char *argv[])
     offset_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
+    align_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -526,8 +529,24 @@ int main(int argc, char *argv[])
 	Egcs egcs;
         egcs.setLevel(egcs.res2level(dx));
 	egcs.force2grid(cropulx,cropuly,croplrx,croplry);
-	imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
-	imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
+      }
+      else if(align_opt[0]){
+      	if(cropulx>imgReader.getUlx())
+      	  cropulx-=fmod(cropulx-imgReader.getUlx(),dx);
+      	else if(cropulx<imgReader.getUlx())
+      	  cropulx+=fmod(imgReader.getUlx()-cropulx,dx)-dx;
+      	if(croplrx<imgReader.getLrx())
+      	  croplrx+=fmod(imgReader.getLrx()-croplrx,dx);
+      	else if(croplrx>imgReader.getLrx())
+      	  croplrx-=fmod(croplrx-imgReader.getLrx(),dx)+dx;
+      	if(croplry>imgReader.getLry())
+      	  croplry-=fmod(croplry-imgReader.getLry(),dy);
+      	else if(croplry<imgReader.getLry())
+      	  croplry+=fmod(imgReader.getLry()-croplry,dy)-dy;
+      	if(cropuly<imgReader.getUly())
+      	  cropuly+=fmod(imgReader.getUly()-cropuly,dy);
+      	else if(cropuly>imgReader.getUly())
+      	  cropuly-=fmod(cropuly-imgReader.getUly(),dy)+dy;
       }
       imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
       imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
