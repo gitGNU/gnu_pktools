@@ -174,10 +174,6 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
-  if(down_opt.empty()){
-    std::cerr << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
-    exit(0);//help was invoked, stop processing
-  }
   try{
     ostringstream errorStream;
     if(model_opt.size()<1){
@@ -1668,7 +1664,7 @@ int main(int argc,char **argv) {
     imgWriterEst.setGeoTransform(geotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
-    imgWriterUncert.open(uncertfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
+    imgWriterUncert.open(uncertfb_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
     imgWriterUncert.setProjectionProj4(projection_opt[0]);
     imgWriterUncert.setGeoTransform(geotransform);
     for(int modindex=0;modindex<nmodel;++modindex){
