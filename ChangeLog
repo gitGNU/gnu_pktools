@@ -444,8 +444,16 @@ version 2.6.6
  - pkcrop
 	support -align option to align output bounding box to first input image
  - pkkalman
-	bug loop icol beyond limits and start counting from jcol
-Todo:
- - todo for API
-	ImgReaderGdal (ImgWriterGdal) open in update mode (check gdal_edit.py: http://searchcode.com/codesearch/view/18938404)
+	bug loop icol beyond limits and start counting from jcol (ticket #46880)
+ - ImgRasterGdal
+	new base class for ImgReaderGdal and ImgWriterGdal
+ - ImgUpdaterGdal
+	new class for reading GDAL raster datasets in update mode
+ - ImgReaderGdal
+	derived from base class ImgRasterGdal
+ - ImgWriterGdal
+	derived from base class ImgRasterGdal
+ - pkkalman
+	first release
+	support multi-band input and output
 

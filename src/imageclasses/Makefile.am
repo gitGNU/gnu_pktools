@@ -18,8 +18,8 @@ libimageClasses_ladir = $(includedir)/pktools/imageclasses
 libimageClasses_la_LDFLAGS = -version-info $(PKTOOLS_SO_VERSION) $(AM_LDFLAGS) -lgsl
 
 # the list of header files that belong to the library (to be installed later)
-libimageClasses_la_HEADERS = ImgReaderGdal.h  ImgReaderOgr.h  ImgWriterGdal.h  ImgWriterOgr.h
+libimageClasses_la_HEADERS = ImgRasterGdal.h ImgReaderGdal.h  ImgReaderOgr.h  ImgWriterGdal.h  ImgWriterOgr.h ImgUpdaterGdal.h
 
 # the sources to add to the library and to add to the source distribution
-libimageClasses_la_SOURCES = $(libimageClasses_la_HEADERS) ImgReaderGdal.cc  ImgReaderOgr.cc  ImgWriterGdal.cc  ImgWriterOgr.cc
+libimageClasses_la_SOURCES = $(libimageClasses_la_HEADERS) ImgRasterGdal.cc ImgReaderGdal.cc  ImgReaderOgr.cc  ImgWriterGdal.cc  ImgWriterOgr.cc ImgUpdaterGdal.cc
 ###############################################################################

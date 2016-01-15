@@ -32,13 +32,12 @@ extern "C" {
 #endif
 
 //---------------------------------------------------------------------------
-ImgWriterGdal::ImgWriterGdal(void)
-  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
-{}
 
 // ImgWriterGdal::ImgWriterGdal(void)
 //   : m_gds(NULL), m_magic_x(1), m_magic_y(1), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0), m_interleave("BAND"), m_compression("LZW")
 // {}
+
+ImgWriterGdal::ImgWriterGdal(void){};
 
 ImgWriterGdal::~ImgWriterGdal(void)
 {
@@ -55,7 +54,7 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
-  m_type=imgSrc.getDataType();
+  // m_type=imgSrc.getDataType();
   m_options=options;
   // m_interleave=imgSrc.getInterleave();
   // m_compression=imgSrc.getCompression();
@@ -85,23 +84,24 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
-  m_type=dataType;
+  // m_type=dataType;
   // m_interleave = interleave;
   // m_compression=compression;
   m_options=options;
   // m_magic_x=magicX;
   // m_magic_y=magicY;
-  setCodec(imageType);
+  setCodec(dataType,imageType);
 }
 
 //---------------------------------------------------------------------------
 void ImgWriterGdal::close(void)
 {
-  GDALClose(m_gds);
+  ImgRasterGdal::close();
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
-  CSLDestroy(papszOptions);
+  if(papszOptions)
+    CSLDestroy(papszOptions);
 }
 
 //---------------------------------------------------------------------------
@@ -127,7 +127,7 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   // std::ostringstream interleaveList;
   // interleaveList << "INTERLEAVE=" << m_interleave;
   // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
-  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_type,papszOptions);
+  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
   // if(imgSrc.isGeoRef()){
     setProjection(imgSrc.getProjection());
     double gt[6];
@@ -182,7 +182,7 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
     setColorTable(imgSrc.getColorTable());
 }
 
-void ImgWriterGdal::setCodec(const std::string& imageType)
+void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& imageType)
 {
   GDALAllRegister();
   GDALDriver *poDriver;
@@ -205,7 +205,7 @@ void ImgWriterGdal::setCodec(const std::string& imageType)
   // std::ostringstream interleaveList;
   // interleaveList << "INTERLEAVE=" << m_interleave;
   // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
-  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_type,papszOptions);
+  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,dataType,papszOptions);
 
   // m_gds->SetMetadataItem( "INTERLEAVE", m_interleave.c_str(), "IMAGE_STRUCTURE" );
   // m_gds->SetMetadataItem( "COMPRESSION", m_compression.c_str(), "IMAGE_STRUCTURE" );
@@ -250,19 +250,6 @@ void ImgWriterGdal::setMetadata(char** metadata)
 {
   assert(m_gds);
   m_gds->SetMetadata(metadata); 
-}
-
-std::string ImgWriterGdal::getProjection(void) const 
-{
-  assert(m_gds);
-  std::string theProjection=m_gds->GetProjectionRef();
-  //due to error in Gdal? AUTHORITY fields do not seem to work!
-  // size_t startpos,endpos;
-  // while((startpos=theProjection.find(",AUTHORITY"))!=string::npos){
-  //   endpos=theProjection.find("]",startpos+1,1)+1;
-  //   theProjection.erase(startpos,endpos-startpos);
-  // }
-  return theProjection;
 }
 
 //---------------------------------------------------------------------------
@@ -353,220 +340,23 @@ void ImgWriterGdal::setProjection(const std::string& projection)
 }
 
 //default projection: ETSR-LAEA
-std::string ImgWriterGdal::setProjection(void)
-{
-  std::string theProjection;
-  OGRSpatialReference oSRS;
-  char *pszSRS_WKT = NULL;
-  //// oSRS.importFromEPSG(3035);
-  oSRS.SetGeogCS("ETRS89","European_Terrestrial_Reference_System_1989","GRS 1980",6378137,298.2572221010042,"Greenwich",0,"degree",0.0174532925199433);
-  // cout << setprecision(16) << "major axis: " << oSRS.GetSemiMajor(NULL) << endl;//notice that major axis can be set to a different value than the default to the well known standard corresponding to the name (European_Terrestrial_Reference_System_1989), but that new value, while recognized by GetSemiMajor, will not be written in the geotiff tag!
-  oSRS.SetProjCS( "ETRS89 / ETRS-LAEA" );
-  oSRS.SetLAEA(52,10,4321000,3210000);
-  oSRS.exportToWkt( &pszSRS_WKT );
-  theProjection=pszSRS_WKT;
-  CPLFree( pszSRS_WKT );
-  assert(m_gds);
-  m_gds->SetProjection(theProjection.c_str());
-  return(theProjection);
-}
-
-bool ImgWriterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-
-  ulx=gt[0];
-  uly=gt[3];
-  lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
-  lry=gt[3]+nrOfCol()*gt[4]+nrOfRow()*gt[5];
-  if(isGeoRef()){
-    // ulx=m_ulx;
-    // uly=m_uly;
-    // lrx=ulx+nrOfCol()*m_delta_x;
-    // lry=uly-nrOfRow()*m_delta_y;
-    return true;
-  }
-  else{
-    // ulx=0;
-    // uly=nrOfRow()-1;
-    // lrx=nrOfCol()-1;
-    // lry=0;
-    return false;
-  }
-}
-
-bool ImgWriterGdal::getCentrePos(double& x, double& y) const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-  x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
-  y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
-  if(isGeoRef()){
-    // x=m_ulx+nrOfCol()/2.0*m_delta_x;
-    // y=m_uly-nrOfRow()/2.0*m_delta_y;
-    return true;
-  }
-  else
-    return false;
-}
-
-bool ImgWriterGdal::geo2image(double x, double y, double& i, double& j) const
-{
-  //double values are returned, caller is responsible for interpolation step
-  //double values are returned, caller is responsible for interpolation step
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-  double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
-  double eps=0.00001;
-  if(fabs(denom)>eps){
-    i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
-    j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
-  }
-  if(isGeoRef()){
-    // double ulx=m_ulx;
-    // double uly=m_uly;
-    // i=(x-ulx)/m_delta_x;
-    // j=(uly-y)/m_delta_y;
-    return true;
-  }
-  else{
-    // i=x;
-    // j=nrOfRow()-y;
-    return false;
-  }
-}
-
-//centre of pixel is always returned (regardless of magic pixel reference)!
-bool ImgWriterGdal::image2geo(double i, double j, double& x, double& y) const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-
-  x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
-  y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
-
-  if(isGeoRef()){
-    // x=m_ulx+(0.5+i)*m_delta_x;
-    // y=m_uly-(0.5+j)*m_delta_y;
-    return true;
-  }
-  else
-    return false;
-}
-
-bool ImgWriterGdal::covers(double x, double  y) const
-{
-  double theULX, theULY, theLRX, theLRY;
-  getBoundingBox(theULX,theULY,theLRX,theLRY);
-  return((x > theULX)&&
-	 (x < theLRX)&&
-	 (y < theULY)&&
-	 (y >theLRY));
-}
-
-bool ImgWriterGdal::covers(double ulx, double  uly, double lrx, double lry) const
-{
-  double theULX, theULY, theLRX, theLRY;
-  getBoundingBox(theULX,theULY,theLRX,theLRY);
-  return((ulx < theLRX)&&(lrx > theULX)&&(lry < theULY)&&(uly > theLRY));
-}
-
-std::string ImgWriterGdal::getGeoTransform() const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  if(m_gds)
-    m_gds->GetGeoTransform(gt);
-  else{//virtual writer
-    gt[0]=m_gt[0];
-    gt[1]=m_gt[1];
-    gt[2]=m_gt[2];
-    gt[3]=m_gt[3];
-    gt[4]=m_gt[4];
-    gt[5]=m_gt[5];
-  }
-  std::ostringstream s;
-  s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << gt[5] << "]";
-  return(s.str());
-}
-
-void ImgWriterGdal::getGeoTransform(double* gt) const{
-  if(m_gds)
-    m_gds->GetGeoTransform(gt);
-  else{//virtual writer
-    gt[0]=m_gt[0];
-    gt[1]=m_gt[1];
-    gt[2]=m_gt[2];
-    gt[3]=m_gt[3];
-    gt[4]=m_gt[4];
-    gt[5]=m_gt[5];
-  }
-}
-
-// void ImgWriterGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
+// std::string ImgWriterGdal::setProjection(void)
 // {
-//   if(m_gds){
-//     double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-//     m_gds->GetGeoTransform(adfGeoTransform);
-//     ulx=adfGeoTransform[0];
-//     deltaX=adfGeoTransform[1];
-//     rot1=adfGeoTransform[2];
-//     uly=adfGeoTransform[3];
-//     rot2=adfGeoTransform[4];
-//     deltaY=-adfGeoTransform[5];//convention of GDAL!
-//   }
-//   else{//virtual writer
-//     ulx=m_ulx;
-//     uly=m_uly;
-//     deltaX=m_delta_x;
-//     deltaY=m_delta_y;
-//     rot1=0;
-//     rot2=0;
-//   }
+//   std::string theProjection;
+//   OGRSpatialReference oSRS;
+//   char *pszSRS_WKT = NULL;
+//   //// oSRS.importFromEPSG(3035);
+//   oSRS.SetGeogCS("ETRS89","European_Terrestrial_Reference_System_1989","GRS 1980",6378137,298.2572221010042,"Greenwich",0,"degree",0.0174532925199433);
+//   // cout << setprecision(16) << "major axis: " << oSRS.GetSemiMajor(NULL) << endl;//notice that major axis can be set to a different value than the default to the well known standard corresponding to the name (European_Terrestrial_Reference_System_1989), but that new value, while recognized by GetSemiMajor, will not be written in the geotiff tag!
+//   oSRS.SetProjCS( "ETRS89 / ETRS-LAEA" );
+//   oSRS.SetLAEA(52,10,4321000,3210000);
+//   oSRS.exportToWkt( &pszSRS_WKT );
+//   theProjection=pszSRS_WKT;
+//   CPLFree( pszSRS_WKT );
+//   assert(m_gds);
+//   m_gds->SetProjection(theProjection.c_str());
+//   return(theProjection);
 // }
-
-GDALDataType ImgWriterGdal::getDataType(int band) const
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1))->GetRasterDataType();
-}
-
-GDALRasterBand* ImgWriterGdal::getRasterBand(int band)
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1));
-}
 
 //filename is ascii file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
 void ImgWriterGdal::setColorTable(const std::string& filename, int band)

@@ -10,7 +10,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatprofile pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman
 
 # the program to build but not install (the names of the final binaries)
-noinst_PROGRAMS = pkkalman
+#noinst_PROGRAMS = pkkalman
 
 
 if USE_FANN
@@ -38,7 +38,7 @@ pkoptsvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lgsl
 endif
 # list of sources for the binaries
 pkinfo_SOURCES = pkinfo.cc
-pkinfo_LDADD = -lgsl
+pkinfo_LDADD = $(AM_LDFLAGS) -lgsl
 pkcrop_SOURCES = pkcrop.cc
 pkcrop_LDADD = -lgsl
 pkdiff_SOURCES = pkdiff.cc

@@ -20,6 +20,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _IMGREADERGDAL_H_
 #define _IMGREADERGDAL_H_
 
+#include "ImgRasterGdal.h"
 #include <assert.h>
 #include <fstream>
 #include <string>
@@ -27,37 +28,16 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "gdal_priv.h"
 #include "base/Vector2d.h"
 
-enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
-
 //--------------------------------------------------------------------------
-class ImgReaderGdal
+class ImgReaderGdal : public virtual ImgRasterGdal
 {
 public:
   ImgReaderGdal(void);
-  ImgReaderGdal(const std::string& filename){open(filename);};
+  ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly){open(filename, readMode);};
   ~ImgReaderGdal(void);
-  void open(const std::string& filename);//, double magicX=1, double magicY=1);
+  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly);
   void close(void);
-  std::string getFileName() const {return m_filename;};
-  int nrOfCol(void) const { return m_ncol;};
-  int nrOfRow(void) const { return m_nrow;};
-  int nrOfBand(void) const { return m_nband;};
-  bool isGeoRef() const {double gt[6];getGeoTransform(gt);if(gt[5]<0) return true;else return false;};
-  std::string getProjection(void) const;
-  std::string getProjectionRef(void) const;
-  std::string getGeoTransform() const;
-  void getGeoTransform(double* gt) const;
-  /* void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const; */
-  std::string getDescription() const;
-  std::string getMetadataItem() const;
-  std::string getImageDescription() const;
-  bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
-  bool getCenterPos(double& x, double& y) const;
-  double getUlx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(ulx);};
-  double getUly() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(uly);};
-  double getLrx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lrx);};
-  double getLry() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lry);};
-  // bool getMagicPixel(double& magicX, double& magicY) const {magicX=m_magic_x;magicY=m_magic_y;};
+
   void setScale(double theScale, int band=0){
     /* if(getRasterBand(band)->SetScale(theScale)==CE_Failure){ */
     if(m_scale.size()!=nrOfBand()){//initialize
@@ -78,17 +58,6 @@ public:
       m_offset[band]=theOffset;
     /* }; */
   }
-  int getNoDataValues(std::vector<double>& noDataValues) const;
-  bool isNoData(double value) const{if(m_noDataValues.empty()) return false;else return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
-  int pushNoDataValue(double noDataValue);
-  int setNoData(const std::vector<double> nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
-  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
-  bool covers(double x, double y) const;
-  bool covers(double ulx, double  uly, double lrx, double lry) const;
-  bool geo2image(double x, double y, double& i, double& j) const;
-  bool image2geo(double i, double j, double& x, double& y) const;
-  double getDeltaX(void) const {double gt[6];getGeoTransform(gt);return gt[1];};
-  double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
   template<typename T> void readData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR) const;
@@ -104,34 +73,10 @@ public:
   void getRefPix(double& refX, double &refY, int band=0) const;
   void getRange(std::vector<short>& range, int Band=0) const;
   unsigned long int getNvalid(int band) const;
-  GDALDataType getDataType(int band=0) const;
-  GDALRasterBand* getRasterBand(int band=0);
-  GDALColorTable* getColorTable(int band=0) const;
-  std::string getDriverDescription() const;
-  std::string getImageType() const{return getDriverDescription();};
-//   std::string getImageType() const{return "GTiff";};
-  std::string getInterleave() const;
-  std::string getCompression() const;
-  GDALDataset* getDataset(){return m_gds;};
-  char** getMetadata();
-  char** getMetadata() const;
-  void getMetadata(std::list<std::string>& metadata) const;
 
 protected:
-  void setCodec();//double magicX, double magicY);
+  void setCodec(const GDALAccess& readMode=GA_ReadOnly);
 
-  std::string m_filename;
-  GDALDataset *m_gds;
-  int m_ncol;
-  int m_nrow;
-  int m_nband;
-  double m_gt[6];
-  /* double m_ulx; */
-  /* double m_uly; */
-  /* double m_delta_x; */
-  /* double m_delta_y; */
-  /* bool m_isGeoRef; */
-  std::vector<double> m_noDataValues;
   std::vector<double> m_scale;
   std::vector<double> m_offset;
 };

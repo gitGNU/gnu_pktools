@@ -23,15 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <gsl/gsl_cdf.h>
 
-ImgReaderGdal::ImgReaderGdal(void)
-  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
-{}
-
-void ImgReaderGdal::open(const std::string& filename)//, double magicX, double magicY)
-{
-  m_filename = filename;
-  setCodec();//magicX,magicY);
-}
+ImgReaderGdal::ImgReaderGdal(void){};
 
 ImgReaderGdal::~ImgReaderGdal(void)
 {
@@ -41,15 +33,21 @@ ImgReaderGdal::~ImgReaderGdal(void)
 }
 
 //--------------------------------------------------------------------------
-void ImgReaderGdal::close(void)
+void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode)
 {
-  GDALClose(m_gds);
+  m_filename = filename;
+  setCodec(readMode);
 }
 
-void ImgReaderGdal::setCodec()//double magicX, double magicY)
+void ImgReaderGdal::close(void)
+{
+  ImgRasterGdal::close();
+}
+
+void ImgReaderGdal::setCodec(const GDALAccess& readMode)
 {
   GDALAllRegister();
-  m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
+  m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
   if(m_gds == NULL){
     std::string errorString="FileOpenError";
     throw(errorString);
@@ -80,289 +78,6 @@ void ImgReaderGdal::setCodec()//double magicX, double magicY)
   // }
 }
 
-std::string ImgReaderGdal::getProjection(void) const 
-{
-  std::string theProjection=m_gds->GetProjectionRef();
-  // size_t startpos,endpos;
-  // while((startpos=theProjection.find(",AUTHORITY"))!=std::string::npos){
-  //   endpos=theProjection.find("]",startpos+1,1)+1;
-  //   theProjection.erase(startpos,endpos-startpos);
-  // }
-  return theProjection;
-}
-
-std::string ImgReaderGdal::getProjectionRef(void) const 
-{
-  std::string theProjection;
-  if(m_gds->GetProjectionRef())
-    return(m_gds->GetProjectionRef());
-  else
-    return "";
-}
-
-GDALDataType ImgReaderGdal::getDataType(int band) const
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1))->GetRasterDataType();
-}
-
-GDALRasterBand* ImgReaderGdal::getRasterBand(int band)
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1));
-}
-
-GDALColorTable* ImgReaderGdal::getColorTable(int band) const
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1))->GetColorTable();
-}
-
-std::string ImgReaderGdal::getDriverDescription() const
-{
-  return m_gds->GetDriver()->GetDescription();
-}
-
-void ImgReaderGdal::getGeoTransform(double* gt) const{
-  m_gds->GetGeoTransform(gt);
-}
-
-// void ImgReaderGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
-// {
-//   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-//   m_gds->GetGeoTransform(adfGeoTransform);
-//   ulx=adfGeoTransform[0];
-//   deltaX=adfGeoTransform[1];
-//   rot1=adfGeoTransform[2];
-//   uly=adfGeoTransform[3];
-//   rot2=adfGeoTransform[4];
-//   deltaY=-adfGeoTransform[5];//convention of GDAL!
-// }
-
-std::string ImgReaderGdal::getGeoTransform() const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-  std::ostringstream s;
-  s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << gt[5] << "]";
-  return(s.str());
-  // if(!isGeoRef())
-  //   return("");
-  // else{
-  //   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  //   m_gds->GetGeoTransform(adfGeoTransform);
-  //   double ulx=adfGeoTransform[0];
-  //   double deltaX=adfGeoTransform[1];
-  //   double rot1=adfGeoTransform[2];
-  //   double uly=adfGeoTransform[3];
-  //   double rot2=adfGeoTransform[4];
-  //   double deltaY=-adfGeoTransform[5];//convention of GDAL!
-  //   std::ostringstream s;
-  //   s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
-  //   return(s.str());
-  // }
-}
-
-char** ImgReaderGdal::getMetadata()
-{
-  if(m_gds->GetMetadata()!=NULL)
-    return(m_gds->GetMetadata());
-  else
-    return (char**)"";
-}
-
-char** ImgReaderGdal::getMetadata() const
-{
-  if(m_gds->GetMetadata()!=NULL)
-    return(m_gds->GetMetadata());
-  else 
-    return (char**)"";
-}
-
-void ImgReaderGdal::getMetadata(std::list<std::string>& metadata) const
-{
-  char** cmetadata=m_gds->GetMetadata();
-  while(*cmetadata!=NULL){
-    metadata.push_back(*(cmetadata));
-    ++cmetadata;
-  }
-}
-
-std::string ImgReaderGdal::getDescription() const
-{
-  if(m_gds->GetDriver()->GetDescription()!=NULL)
-    return m_gds->GetDriver()->GetDescription();
-  else
-    return "";
-}
-
-std::string ImgReaderGdal::getMetadataItem() const 
-{
-  if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
-    return m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME );
-  else
-    return "";
-}
-std::string ImgReaderGdal::getImageDescription() const 
-{
-  if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
-    return m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION");
-  else
-    return "";
-}
-
-std::string ImgReaderGdal::getInterleave() const
-{
-  if(m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE"))
-    return m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE");
-  else
-    return("BAND");
-}
-
-std::string ImgReaderGdal::getCompression() const
-{
-  if(m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE"))
-    return m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE");
-  else
-    return("NONE");
-}
-
-bool ImgReaderGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-  ulx=gt[0];
-  uly=gt[3];
-  lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
-  lry=gt[3]+nrOfCol()*gt[4]+nrOfRow()*gt[5];
-  if(isGeoRef()){
-    // ulx=m_ulx;
-    // uly=m_uly;
-    // lrx=ulx+nrOfCol()*m_delta_x;
-    // lry=uly-nrOfRow()*m_delta_y;
-    return true;
-  }
-  else{
-    // ulx=0;
-    // uly=nrOfRow()-1;
-    // lrx=nrOfCol()-1;
-    // lry=0;
-    return false;
-  }
-}
-
-bool ImgReaderGdal::getCenterPos(double& x, double& y) const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-  x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
-  y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
-  if(isGeoRef()){
-    // x=m_ulx+(nrOfCol()/2.0)*m_delta_x;
-    // y=m_uly-(nrOfRow()/2.0)*m_delta_y;
-    return true;
-  }
-  else{
-    // x=nrOfCol()/2.0;
-    // y=nrOfRow()/2.0;
-    return false;
-  }
-}
-
-//i and j represent fraction of pixels, return true if image is georeferenced
-bool ImgReaderGdal::geo2image(double x, double y, double& i, double& j) const
-{
-  //double values are returned, caller is responsible for interpolation step
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-
-  double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
-  double eps=0.00001;
-  if(fabs(denom)>eps){
-    i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
-    j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
-  }
-  if(isGeoRef()){
-    // double ulx=m_ulx;
-    // double uly=m_uly;
-    // i=(x-ulx)/m_delta_x;
-    // j=(uly-y)/m_delta_y;
-    return true;
-  }
-  else{
-    // i=x;
-    // j=nrOfRow()-y;
-    return false;
-  }
-}
-
-//x and y represent center of pixel, return true if image is georeferenced
-bool ImgReaderGdal::image2geo(double i, double j, double& x, double& y) const
-{
-  double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
-
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
-
-  x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
-  y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
-  if(isGeoRef()){
-    // x=m_ulx+(0.5+i)*m_delta_x;
-    // y=m_uly-(0.5+j)*m_delta_y;
-    return true;
-  }
-  else{
-    // x=0.5+i;
-    // y=nrOfRow()-(0.5+j);
-    return false;
-  }
-}
-
-bool ImgReaderGdal::covers(double x, double  y) const
-{
-  double theULX, theULY, theLRX, theLRY;
-  getBoundingBox(theULX,theULY,theLRX,theLRY);
-  return((x > theULX)&&
-         (x < theLRX)&&
-         (y < theULY)&&
-         (y >theLRY));
-}
-
-bool ImgReaderGdal::covers(double ulx, double  uly, double lrx, double lry) const
-{
-  double theULX, theULY, theLRX, theLRY;
-  getBoundingBox(theULX,theULY,theLRX,theLRY);
-  return((ulx < theLRX)&&(lrx > theULX)&&(lry < theULY)&&(uly > theLRY));
-}
 
 double ImgReaderGdal::getMin(int& x, int& y, int band) const{
   double minValue=0;
@@ -636,32 +351,6 @@ unsigned long int ImgReaderGdal::getNvalid(int band) const
     return(nrOfCol()*nrOfRow());
 }
 
-int ImgReaderGdal::getNoDataValues(std::vector<double>& noDataValues) const
-{
-  if(m_noDataValues.size()){
-    noDataValues=m_noDataValues;
-    return m_noDataValues.size();
-  }
-  else
-    return 0;
-}
-
-int ImgReaderGdal::pushNoDataValue(double noDataValue)
-{
-  if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
-    m_noDataValues.push_back(noDataValue);
-  return(m_noDataValues.size());
-}
-
-// bool ImgReaderGdal::setNoDataValue(double noDataValue,int band)
-// {
-//   GDALRasterBand  *poBand;
-//   poBand = m_gds->GetRasterBand(band+1);
-//   if(poBand->SetNoDataValue(noDataValue)!=CE_None)
-//     return false;
-//   else
-//     return true;
-// }
 
 void ImgReaderGdal::getRefPix(double& refX, double &refY, int band) const
 {

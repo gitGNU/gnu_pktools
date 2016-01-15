@@ -25,46 +25,28 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <sstream>
 #include "gdal_priv.h"
+#include "ImgRasterGdal.h"
 #include "ImgReaderGdal.h"
 #include "ImgReaderOgr.h"
 
 //--------------------------------------------------------------------------
-class ImgWriterGdal
+class ImgWriterGdal : public virtual ImgRasterGdal
 {
 public:
   ImgWriterGdal(void);
   ~ImgWriterGdal(void);
   void open(const std::string& filename);
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
-  // void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType="GTiff", const std::string& interleave="BAND", const std::string& compression="LZW", int magicX=1, int magicY=1);
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   void close(void);
-  std::string getFileName() const {return m_filename;};
-  int nrOfCol(void) const { return m_ncol;};
-  int nrOfRow(void) const { return m_nrow;};
-  int nrOfBand(void) const { return m_nband;};
+
   void copyGeoTransform(const ImgReaderGdal& imgSrc);
-  std::string setProjection(void);//set (and return) default projection ETSR-LAEA
   void setProjection(const std::string& projection);
   std::string setProjectionProj4(const std::string& projection);
+
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
-  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
-  std::string getProjection(void) const;
-  std::string getGeoTransform() const;
-  void getGeoTransform(double* gt) const;
   void setGeoTransform(double* gt);
-  /* void setGeoTransform(double ulx, double uly, double deltaX, double deltaY, double rot1=0, double rot2=0); */
-  /* void getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const; */
-  bool getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const;
-  bool getCentrePos(double& x, double& y) const;
-  bool covers(double x, double y) const;
-  bool covers(double ulx, double  uly, double lrx, double lry) const;
-  bool geo2image(double x, double y, double& i, double& j) const;
-  bool image2geo(double i, double j, double& x, double& y) const;
-  bool isGeoRef() const {double gt[6];getGeoTransform(gt);if(gt[5]<0) return true;else return false;};
-  // void getMagicPixel(double& x, double& y) const {x=m_magic_x;y=m_magic_y;};
-  double getDeltaX(void) const {double gt[6];getGeoTransform(gt);return gt[1];};
-  double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
+
   template<typename T> bool writeData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
   template<typename T> bool writeData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
   template<typename T> bool writeData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
@@ -72,24 +54,15 @@ public:
   template<typename T> bool writeDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   // std::string getInterleave(){return m_interleave;};
   // std::string getCompression(){return m_compression;};
-  GDALDataType getDataType(int band=0) const;
-  GDALRasterBand* getRasterBand(int band);
   void setColorTable(const std::string& filename, int band=0);
   void setColorTable(GDALColorTable* colorTable, int band=0);
   void setMetadata(char** metadata);
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues=std::vector<double>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
 protected:
-  void setCodec(const std::string& imageType);
+  void setCodec(const GDALDataType& dataType, const std::string& imageType);
   void setCodec(const ImgReaderGdal& ImgSrc);
 
-  std::string m_filename;
-  GDALDataset *m_gds;
-  int m_ncol;
-  int m_nrow;
-  int m_nband;
-  GDALDataType m_type;
-  double m_gt[6];
   /* double m_ulx; */
   /* double m_uly; */
   /* double m_delta_x; */
