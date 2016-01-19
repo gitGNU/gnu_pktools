@@ -33,13 +33,23 @@ produce kalman filtered raster time series
 ## SYNOPSIS
 
 <code>
-  
+  Usage: pkkalman -mod modelinput.tif -obs obsinput.tif [-direction [forward|backward|smooth]]* -ofw output_fc.tif -obw output_bw.tif -ofb output_fb.tif
 </code>
 
-\section pkkalman_options Options
+<code>
+
+  Options[-tmod time]* [-tobs time]* [-modnodata value]* [-obsnodata value]* [-modmask mask.tif] [-obsmask mask.tif] [-msknodata value]* [-mskband] [-u_ofw uncert_fw.tif] [-u_obw uncert_bw.tif] [-u_ofb uncert_fb.tif]
+
+  Advanced options (see table)
+</code>
+
+\section pkkalman_description Description
+
+The utilty pkkalman will complement a time series of observations (option -obs) at fine spatial resolution. A data assimilation technique based on a Kalman filter is hereby used. The data at fine spatial resolution are assimilated with coarse spatial resolution time series at a finer temporal resolution, referred to as a model (option -mod). The time series for both observation and model can either be provided as multi-band raster datasets or as multiple single band datasets. Missing data in the observations are predicted by the algorithm. The model must cover at least the spatial coverage of the observation. The missing data must be provided either as nodata values in the input (using option -obsnodata) or as an external mask (using option -obsmask). The time sequence for the model and observation should be provided via the options -tmod and -tobs. Tuning parameters for the algorithm are process noise (option -q) and the weights for uncertainty of valid observations (-uo) and the model (-um). 
+
+\section pkcrop_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
-
 |short|long|type|default|description|
 |-----|----|----|-------|-----------|
  | dir    | direction            | std::string | forward |direction to run model (forward\|backward\|smooth) | 
@@ -73,6 +83,9 @@ produce kalman filtered raster time series
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | v      | verbose              | short | 0     |verbose mode when positive | 
 
+Examples
+========
+Some examples how to use pkcrop can be found \ref examples_pkkalman "here"
 **/
 
 using namespace std;

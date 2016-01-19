@@ -48,7 +48,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 \section pkcrop_description Description
 
-The utility pkcrop can subset and stack raster images. In the spatial domain it can crop a bounding box from a larger image. The output bounding box is selected by setting the new corner coordinates using the options -ulx -uly -lrx -lry. Alternatively you can set the new image center (-x -y) and size. This can be done either in projected coordinates (using the options -nx -ny) or in image coordinates (using the options -ns -nl). You can also use a vector file to set the new bounding box (option -e). In the spectral domain, pkcrop allows you to select individual bands from one or more input image(s). Bands are stored in the same order as provided on the command line, using the option -b. Band numbers start with index 0 (indicating the first band). The default is to select all input bands. If more input images are provided, the bands are stacked into a multi-band image. If the bounding boxes or spatial resolution are not identical for all input images, you should explicitly set them via the options. The pkcrop utility is not suitable to mosaic or composite images. Consider the utility pkcomposite instead.\section pkcrop_options Options
+The utility pkcrop can subset and stack raster images. In the spatial domain it can crop a bounding box from a larger image. The output bounding box is selected by setting the new corner coordinates using the options -ulx -uly -lrx -lry. Alternatively you can set the new image center (-x -y) and size. This can be done either in projected coordinates (using the options -nx -ny) or in image coordinates (using the options -ns -nl). You can also use a vector file to set the new bounding box (option -e). In the spectral domain, pkcrop allows you to select individual bands from one or more input image(s). Bands are stored in the same order as provided on the command line, using the option -b. Band numbers start with index 0 (indicating the first band). The default is to select all input bands. If more input images are provided, the bands are stacked into a multi-band image. If the bounding boxes or spatial resolution are not identical for all input images, you should explicitly set them via the options. The pkcrop utility is not suitable to mosaic or composite images. Consider the utility pkcomposite instead.
+
+\section pkcrop_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
 |short|long|type|default|description|
@@ -88,9 +90,6 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
  | align  | align                | bool  |       |Align output bounding box to input image | 
  | d      | description          | std::string |       |Set image description | 
-
-Usage: pkcrop -i input -o output
-
 
 Examples
 ========
