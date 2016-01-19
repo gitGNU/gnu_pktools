@@ -137,7 +137,9 @@ int main(int argc,char **argv) {
   try{
     doProcess=direction_opt.retrieveOption(argc,argv);
     model_opt.retrieveOption(argc,argv);
+    modelmask_opt.retrieveOption(argc,argv);
     observation_opt.retrieveOption(argc,argv);
+    observationmask_opt.retrieveOption(argc,argv);
     tmodel_opt.retrieveOption(argc,argv);
     tobservation_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
@@ -245,8 +247,8 @@ int main(int argc,char **argv) {
   stat.setNoDataValues(modnodata_opt);
   ImgReaderGdal imgReaderModel1;
   ImgReaderGdal imgReaderModel2;
-  //todo: do something with model mask?
-  ImgReaderGdal imgReaderModelMask;
+  ImgReaderGdal imgReaderModel1Mask;
+  ImgReaderGdal imgReaderModel2Mask;
   ImgReaderGdal imgReaderObs;
   ImgReaderGdal imgReaderObsMask;
   //test
@@ -254,11 +256,14 @@ int main(int argc,char **argv) {
 
   imgReaderModel1.open(model_opt[0]);
   imgReaderModel1.setNoData(modnodata_opt);
-  imgReaderModelMask.setNoData(msknodata_opt);
   imgReaderObs.open(observation_opt[0]);
   imgReaderObs.setNoData(obsnodata_opt);
   // if(observationmask_opt.empty())
   //   observationmask_opt=observation_opt;
+  if(modelmask_opt.size()){
+    imgReaderModel1Mask.open(modelmask_opt[0]);
+    imgReaderModel1Mask.setNoData(msknodata_opt);
+  }
   if(observationmask_opt.size()){
     imgReaderObsMask.open(observationmask_opt[0]);
     imgReaderObsMask.setNoData(msknodata_opt);
@@ -369,7 +374,7 @@ int main(int argc,char **argv) {
   if(model_opt.size()==nmodel)
     imgReaderModel1.close();
   if(modelmask_opt.size()==nmodel)
-    imgReaderModelMask.close();
+    imgReaderModel1Mask.close();
   if(observation_opt.size()==nobs)
     imgReaderObs.close();
   if(observationmask_opt.size()==nobs)
@@ -380,18 +385,6 @@ int main(int argc,char **argv) {
       ///////////////////////////// forward model /////////////////////////
       cout << "Running forward model" << endl;
       obsindex=0;
-      //initialization
-      // string theOutput=outputfw_opt[0];
-      // if(outputfw_opt.size()==model_opt.size()){
-      // 	theOutput=outputfw_opt[0];
-      // }
-      // else{
-      // 	ostringstream outputstream;
-      // 	outputstream << outputfw_opt[0] << "_";
-      // 	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[0];
-      // 	outputstream << ".tif";
-      // 	theOutput=outputstream.str();
-      // }
       if(verbose_opt[0])
 	cout << "Opening image " << outputfw_opt[0] << " for writing " << endl << flush;
     
@@ -428,6 +421,10 @@ int main(int argc,char **argv) {
 	  imgReaderModel1.open(model_opt[0]);
 	  imgReaderModel1.setNoData(modnodata_opt);
 	}
+	if(modelmask_opt.size()==nmodel){
+	  imgReaderModel1Mask.open(modelmask_opt[0]);
+	  imgReaderModel1Mask.setNoData(msknodata_opt);
+	}
       }
       catch(string errorString){
 	cerr << errorString << endl;
@@ -448,6 +445,7 @@ int main(int argc,char **argv) {
 	  cout << "write first model as output" << endl;
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  vector<double> estReadBuffer;
+	  vector<double> lineModelMask;
 	  vector<double> estWriteBuffer(ncol);
 	  vector<double> uncertWriteBuffer(ncol);
 	  //test
@@ -461,13 +459,25 @@ int main(int argc,char **argv) {
 		assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	      }
 	      // imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
-	      int readModelBand=(model_opt.size()==nmodel)? 0:0;
-	      imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
 
+	      int readModelBand=(model_opt.size()==nmodel)? 0:0;
+	      int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
+	      imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
+	      if(modelmask_opt.size())
+		imgReaderModel1Mask.readData(lineModelMask,GDT_Float64,modRow,readModelMaskBand,theResample);
 	      for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 		for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		  imgWriterEst.image2geo(icol,irow,geox,geoy);
 		  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		  if(modelmask_opt.size()){
+		    if(imgReaderModel1Mask.isNoData(lineModelMask[modCol])){
+		      estWriteBuffer[icol]=obsnodata_opt[0];
+		      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		      //test
+		      gainWriteBuffer[icol]=obsnodata_opt[0];
+		      continue;
+		    }
+		  }
 		  lowerCol=modCol-0.5;
 		  lowerCol=static_cast<int>(lowerCol);
 		  upperCol=modCol+0.5;
@@ -481,21 +491,22 @@ int main(int argc,char **argv) {
 		  if(imgReaderModel1.isNoData(modValue)){
 		    estWriteBuffer[icol]=obsnodata_opt[0];
 		    uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		    //test
 		    gainWriteBuffer[icol]=obsnodata_opt[0];
+		    continue;
 		  }
-		  else{
-		    estWriteBuffer[icol]=modValue;
-		    if(obsmin_opt.size()){
-		      if(estWriteBuffer[icol]<obsmin_opt[0])
-			estWriteBuffer[icol]=obsmin_opt[0];
-		    }
-		    if(obsmax_opt.size()){
-		      if(estWriteBuffer[icol]>obsmax_opt[0])
-			estWriteBuffer[icol]=obsmax_opt[0];
-		    }
-		    uncertWriteBuffer[icol]=uncertModel_opt[0];
-		    gainWriteBuffer[icol]=0;
+		  estWriteBuffer[icol]=modValue;
+		  if(obsmin_opt.size()){
+		    if(estWriteBuffer[icol]<obsmin_opt[0])
+		      estWriteBuffer[icol]=obsmin_opt[0];
 		  }
+		  if(obsmax_opt.size()){
+		    if(estWriteBuffer[icol]>obsmax_opt[0])
+		      estWriteBuffer[icol]=obsmax_opt[0];
+		  }
+		  uncertWriteBuffer[icol]=uncertModel_opt[0];
+		  //test
+		  gainWriteBuffer[icol]=0;
 		}
 	      }
 	      imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
@@ -528,6 +539,8 @@ int main(int argc,char **argv) {
 
 	vector< vector<double> > obsLineVector(down_opt[0]);
 	vector<double> obsLineBuffer;
+	vector<double> obsMaskLineBuffer;
+	vector<double> modelMaskLineBuffer;
 	vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	vector<double> estReadBuffer;
 	vector<double> estWriteBuffer(ncol);
@@ -540,6 +553,9 @@ int main(int argc,char **argv) {
 	  cout << "initialize obsLineVector" << endl;
 	assert(down_opt[0]%2);//window size must be odd 
 	int readObsBand=(observation_opt.size()==nobs)? 0:0;
+	int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:0;
+	int readModelBand=(model_opt.size()==nmodel)? 0:0;
+	int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
 	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	  if(iline<0)//replicate line 0
 	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,readObsBand);
@@ -551,22 +567,25 @@ int main(int argc,char **argv) {
 	    imgWriterEst.image2geo(0,irow,geox,geoy);
 	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-
-	    int readModelBand=(model_opt.size()==nmodel)? 0:0;
 	    imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
+	    if(modelmask_opt.size())
+	      imgReaderModel1Mask.readData(modelMaskLineBuffer,GDT_Float64,modRow,readModelMaskBand);
 	    int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	    obsLineVector.erase(obsLineVector.begin());
 	    imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
 	    obsLineVector.push_back(obsLineBuffer);
 
 	    if(observationmask_opt.size())
-	      imgReaderObsMask.readData(uncertObsLineBuffer,GDT_Float64,irow,readObsBand);
+	      imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsMaskBand);
 
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		imgWriterEst.image2geo(icol,irow,geox,geoy);
 		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 		assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+		bool modelIsNoData=false;
+		if(modelmask_opt.size())
+		  modelIsNoData=imgReaderModel1Mask.isNoData(modelMaskLineBuffer[modCol]);
 		lowerCol=modCol-0.5;
 		lowerCol=static_cast<int>(lowerCol);
 		upperCol=modCol+0.5;
@@ -578,10 +597,16 @@ int main(int argc,char **argv) {
 		double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
 		// double modValue=estReadBuffer[modCol];
 		double errMod=uncertModel_opt[0];//*stdDev*stdDev;
-		if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
-		  if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
+		modelIsNoData=modelIsNoData||imgReaderModel1.isNoData(modValue);
+		bool obsIsNoData=false;
+		if(observationmask_opt.size())
+		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
+		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+		if(modelIsNoData){//model is nodata: retain observation 
+		  if(obsIsNoData){//both model and observation nodata
 		    estWriteBuffer[icol]=obsnodata_opt[0];
 		    uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		    //test
 		    gainWriteBuffer[icol]=obsnodata_opt[0];
 		  }
 		  else{
@@ -594,19 +619,17 @@ int main(int argc,char **argv) {
 		      if(estWriteBuffer[icol]>obsmax_opt[0])
 			estWriteBuffer[icol]=obsmax_opt[0];
 		    }
-		    if(uncertObsLineBuffer.size()>icol)
-		      uncertWriteBuffer[icol]=uncertObsLineBuffer[icol];
-		    else
-		      uncertWriteBuffer[icol]=uncertObs_opt[0];
+		    uncertWriteBuffer[icol]=uncertObs_opt[0];
 		  }
 		}
 		else{//model is valid: calculate estimate from model
 		  estWriteBuffer[icol]=modValue;
 		  uncertWriteBuffer[icol]=errMod;//in case observation is not valid
+		  //test
 		  gainWriteBuffer[icol]=0;
 		}
 		//measurement update
-		if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
+		if(!obsIsNoData){
 		  // estWriteBuffer[icol]=estReadBuffer[icol]*modValue1/modValue2
 		  double kalmanGain=1;
 		  int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
@@ -620,7 +643,7 @@ int main(int argc,char **argv) {
 		      obsWindowBuffer.push_back(obsLineVector[iline][isample]);
 		    }
 		  }
-		  if(!imgReaderModel1.isNoData(modValue)){//model is valid
+		  if(!modelIsNoData){//model is valid
 		    statfactory::StatFactory statobs;
 		    statobs.setNoDataValues(obsnodata_opt);
 		    double obsMeanValue=0;
@@ -649,6 +672,7 @@ int main(int argc,char **argv) {
 		    }
 		  }
 		  assert(kalmanGain<=1);
+		  //test
 		  gainWriteBuffer[icol]=kalmanGain;
 		}
 	      }
@@ -662,10 +686,14 @@ int main(int argc,char **argv) {
 	}
 	if(observation_opt.size()==nobs)
 	  imgReaderObs.close();
+	if(observationmask_opt.size()==nobs)
+	  imgReaderObsMask.close();
 	++obsindex;
       }
       if(model_opt.size()==nmodel)
 	imgReaderModel1.close();
+      if(modelmask_opt.size()==nmodel)
+	imgReaderModel1Mask.close();
       imgWriterEst.close();
       imgWriterUncert.close();
 
@@ -682,23 +710,6 @@ int main(int argc,char **argv) {
 	  else
 	    cout << "There is no next observation" << endl;
 	}
-	// string theOutput;
-	// if(outputfw_opt.size()==model_opt.size())
-	//   theOutput=outputfw_opt[modindex];
-	// else{
-	//   ostringstream outputstream;
-	//   outputstream << outputfw_opt[0] << "_";
-	//   outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-	//   outputstream << ".tif";
-	//   // outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
-	//   theOutput=outputstream.str();
-	// }
-    
-	//two band output band0=estimation, band1=uncertainty
-	// imgWriterEst.open(theOutput,ncol,nrow,2,theType,imageType,option_opt);
-	// imgWriterEst.setProjectionProj4(projection_opt[0]);
-	// imgWriterEst.setGeoTransform(geotransform);
-	// imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
 	//calculate regression between two subsequence model inputs
 	if(model_opt.size()==nmodel){
@@ -707,9 +718,12 @@ int main(int argc,char **argv) {
 	  imgReaderModel2.open(model_opt[modindex]);
 	  imgReaderModel2.setNoData(modnodata_opt);
 	}
-	//calculate regression
-	//we could re-use the points from second image from last run, but
-	//to keep it general, we must redo it (overlap might have changed)
+	if(modelmask_opt.size()==nmodel){
+	  imgReaderModel1Mask.open(modelmask_opt[modindex-1]);
+	  imgReaderModel1Mask.setNoData(msknodata_opt);
+	  imgReaderModel2Mask.open(modelmask_opt[modindex]);
+	  imgReaderModel2Mask.setNoData(msknodata_opt);
+	}
 	
 	pfnProgress(progress,pszMessage,pProgressArg);
 
@@ -725,28 +739,20 @@ int main(int argc,char **argv) {
 	    imgReaderObs.getGeoTransform(geotransform);
 	    imgReaderObs.setNoData(obsnodata_opt);
 	  }
+	  if(observationmask_opt.size()==nobs){
+	    imgReaderObsMask.open(observationmask_opt[obsindex]);
+	    imgReaderObsMask.setNoData(msknodata_opt);
+	  }
 	}
-
 	//prediction (also to fill cloudy pixels in measurement update mode)
 	string input;
 	input=outputfw_opt[0];
-	// if(outputfw_opt.size()==model_opt.size())
-	//   input=outputfw_opt[modindex-1];
-	// else{
-	//   ostringstream outputstream;
-	//   outputstream << outputfw_opt[0] << "_";
-	//   outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex-1];
-	//   outputstream << ".tif";
-	//   // outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex-1] << ".tif";
-	//   input=outputstream.str();
-	// }
-	// if(verbose_opt[0])
-	//   cout << "opening " << input << endl;
-	// ImgReaderGdal imgReaderEst(input);
-	// imgReaderEst.setNoData(obsnodata_opt);
 
 	vector< vector<double> > obsLineVector(down_opt[0]);
 	vector<double> obsLineBuffer;
+	vector<double> obsMaskLineBuffer;
+	vector<double> model1MaskLineBuffer;
+	vector<double> model2MaskLineBuffer;
 	vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	vector<double> model1LineBuffer;
 	vector<double> model2LineBuffer;
@@ -759,9 +765,15 @@ int main(int argc,char **argv) {
 	vector<double> uncertReadBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
+	//test
 	vector<double> gainWriteBuffer(ncol);
 
 	int readObsBand=(observation_opt.size()==nobs)? 0:obsindex;
+	int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:obsindex;
+	int readModel1Band=(model_opt.size()==nmodel)? 0:modindex-1;
+	int readModel2Band=(model_opt.size()==nmodel)? 0:modindex;
+	int readModel1MaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:modindex-1;
+	int readModel2MaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:modindex;
 
 	//initialize obsLineVector if update
 	if(update){
@@ -788,8 +800,6 @@ int main(int argc,char **argv) {
 	}
 	statfactory::StatFactory statobs;
 	statobs.setNoDataValues(obsnodata_opt);
-	int readModel1Band=(model_opt.size()==nmodel)? 0:modindex-1;
-	int readModel2Band=(model_opt.size()==nmodel)? 0:modindex;
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  //todo: read entire window for uncertReadBuffer...
 	  for(int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
@@ -808,6 +818,14 @@ int main(int argc,char **argv) {
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	    imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,readModel1Band,theResample);
 
+	    if(modelmask_opt.size()){
+	      imgReaderModel1Mask.readData(model1MaskLineBuffer,GDT_Float64,modRow,readModel1MaskBand);
+	      if(modelmask_opt.size()==nmodel)
+		imgReaderModel2Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+	      else
+		imgReaderModel1Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+	    }
+
 	    int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
 	    estLineVector.erase(estLineVector.begin());
 	    imgUpdaterEst.readData(estLineBuffer,GDT_Float64,maxRow,modindex-1);
@@ -820,12 +838,11 @@ int main(int argc,char **argv) {
 	      imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
 	      obsLineVector.push_back(obsLineBuffer);
 	      obsLineBuffer=obsLineVector[down_opt[0]/2];
-	      // imgReaderObs.readData(obsLineBuffer,GDT_Float64,irow,0);
+
 	      if(observationmask_opt.size())
-		imgReaderObsMask.readData(uncertObsLineBuffer,GDT_Float64,irow,readObsBand);
-	      // if(imgReaderObs.nrOfBand()>1)
-	      // 	imgReaderObs.readData(uncertObsLineBuffer,GDT_Float64,irow,1);
+		imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsMaskBand);
 	    }
+
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		imgUpdaterEst.image2geo(icol,irow,geox,geoy);
@@ -851,6 +868,9 @@ int main(int argc,char **argv) {
 		}
 		double estValue=estLineBuffer[icol];
 		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		bool model1IsNoData=false;
+		if(modelmask_opt.size())
+		  model1IsNoData=imgReaderModel1Mask.isNoData(model1MaskLineBuffer[modCol]);
 		lowerCol=modCol-0.5;
 		lowerCol=static_cast<int>(lowerCol);
 		upperCol=modCol+0.5;
@@ -860,11 +880,14 @@ int main(int argc,char **argv) {
 		if(upperCol>=imgReaderModel1.nrOfCol())
 		  upperCol=imgReaderModel1.nrOfCol()-1;
 		double modValue1=(modCol-0.5-lowerCol)*model1LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model1LineBuffer[lowerCol];
-		// double modValue1=model1LineBuffer[modCol];
+		model1IsNoData=model1IsNoData||imgReaderModel1.isNoData(modValue1);
 		if(model_opt.size()==nmodel)
 		  imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 		else
 		  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		bool model2IsNoData=false;
+		if(modelmask_opt.size())
+		  model2IsNoData=imgReaderModel1Mask.isNoData(model2MaskLineBuffer[modCol]);
 		lowerCol=modCol-0.5;
 		lowerCol=static_cast<int>(lowerCol);
 		upperCol=modCol+0.5;
@@ -874,12 +897,18 @@ int main(int argc,char **argv) {
 		if(upperCol>=imgReaderModel1.nrOfCol())
 		  upperCol=imgReaderModel1.nrOfCol()-1;
 		double modValue2=(modCol-0.5-lowerCol)*model2LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model2LineBuffer[lowerCol];
-		// double modValue2=model2LineBuffer[modCol];
+		model2IsNoData=model2IsNoData||imgReaderModel1.isNoData(modValue2);
+		bool obsIsNoData=false;
+		if(observationmask_opt.size())
+		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
+		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+
 		if(imgUpdaterEst.isNoData(estValue)){
 		  //we have not found any valid data yet, better here to take the current model value if valid
-		  if(imgReaderModel1.isNoData(modValue2)){//if both estimate and model are no-data, set obs to nodata
+		  if(model2IsNoData){//if both estimate and model are no-data, set obs to nodata
 		    estWriteBuffer[icol]=obsnodata_opt[0];
 		    uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		    //test
 		    gainWriteBuffer[icol]=0;
 		  }
 		  else{
@@ -895,6 +924,7 @@ int main(int argc,char **argv) {
 		      if(uncertWriteBuffer[icol]>obsmax_opt[0])
 			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
+		    //test
 		    gainWriteBuffer[icol]=0;
 		  }
 		}
@@ -905,10 +935,9 @@ int main(int argc,char **argv) {
 		  double nvalid=0;
 		  //time update
 		  double processNoiseVariance=processNoise_opt[0]*estVarValue;
-		  //todo: estimate process noise variance expressing instability of weights over time
 		  //estimate stability of weight distribution from model (low resolution) data in a window mod1 -> mod2 and assume distribution holds at fine spatial resolution. 
 
-		  if(imgReaderModel1.isNoData(modValue1)||imgReaderModel1.isNoData(modValue2)){
+		  if(model1IsNoData||model2IsNoData){
 		    estWriteBuffer[icol]=estValue;
 		    // uncertWriteBuffer[icol]=uncertReadBuffer[icol]+processNoiseVariance;
 		    //todo: check following line if makes sense
@@ -931,9 +960,9 @@ int main(int argc,char **argv) {
 		  }
 		}
 		//measurement update
-		if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
+		if(update&&!obsIsNoData){
 		  double kalmanGain=1;
-		  if(!imgReaderModel1.isNoData(modValue2)){//model is valid
+		  if(!model2IsNoData){//model is valid
 		    statfactory::StatFactory statobs;
 		    statobs.setNoDataValues(obsnodata_opt);
 		    double obsMeanValue=0;
@@ -966,10 +995,12 @@ int main(int argc,char **argv) {
 		    }
 		  }
 		  assert(kalmanGain<=1);
+		  //test
 		  gainWriteBuffer[icol]=kalmanGain;
 		}
 	      }
 	    }
+
 	    //test
 	    if(gain_opt.size())
 	      imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,modindex);
@@ -979,6 +1010,7 @@ int main(int argc,char **argv) {
 	    pfnProgress(progress,pszMessage,pProgressArg);
 	  }
 	}
+
 	//must close writers to ensure flush
 	imgUpdaterEst.close();
 	imgUpdaterUncert.close();
@@ -988,11 +1020,17 @@ int main(int argc,char **argv) {
 	if(update){
 	  if(observation_opt.size()==nobs)
 	    imgReaderObs.close();
+	  if(observationmask_opt.size()==nobs)
+	    imgReaderObsMask.close();
 	  ++obsindex;
 	}
 	if(model_opt.size()==nmodel){
 	  imgReaderModel1.close();
 	  imgReaderModel2.close();
+	}
+	if(modelmask_opt.size()==nmodel){
+	  imgReaderModel1Mask.close();
+	  imgReaderModel2Mask.close();
 	}
       }
       //test
@@ -1013,18 +1051,6 @@ int main(int argc,char **argv) {
       ///////////////////////////// backward model /////////////////////////
       cout << "Running backward model" << endl;
       obsindex=relobsindex.size()-1;
-      //initialization
-      // string theOutput=outputbw_opt[0];
-      // if(outputbw_opt.size()==model_opt.size())
-      //   theOutput=outputbw_opt.back();
-      // else{
-      //   ostringstream outputstream;
-      //   outputstream << outputbw_opt[0] << "_";
-      //   outputstream << setfill('0') << setw(ndigit) << tmodel_opt.back();
-      //   outputstream << ".tif";
-      //   // outputstream << outputbw_opt[0] << "_" << tmodel_opt.back() << ".tif";
-      //   theOutput=outputstream.str();
-      // }
       if(verbose_opt[0])
 	cout << "Opening image " << outputbw_opt[0] << " for writing " << endl;
 
@@ -1061,6 +1087,10 @@ int main(int argc,char **argv) {
 	  imgReaderModel1.open(model_opt.back());
 	  imgReaderModel1.setNoData(modnodata_opt);
 	}
+	if(modelmask_opt.size()==nmodel){
+	  imgReaderModel1Mask.open(modelmask_opt[0]);
+	  imgReaderModel1Mask.setNoData(msknodata_opt);
+	}
       }
       catch(string errorString){
 	cerr << errorString << endl;
@@ -1081,6 +1111,7 @@ int main(int argc,char **argv) {
 	  cout << "write last model as output" << endl;
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  vector<double> estReadBuffer;
+	  vector<double> lineModelMask;
 	  vector<double> estWriteBuffer(ncol);
 	  vector<double> uncertWriteBuffer(ncol);
 	  // //test
@@ -1095,12 +1126,23 @@ int main(int argc,char **argv) {
 	      }
 	      // imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
 	      int readModelBand=(model_opt.size()==nmodel)? 0:nmodel-1;
+	      int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
 	      imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
-
+	      if(modelmask_opt.size())
+		imgReaderModel1Mask.readData(lineModelMask,GDT_Float64,modRow,readModelMaskBand,theResample);
 	      for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 		for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		  imgWriterEst.image2geo(icol,irow,geox,geoy);
 		  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		  if(lineModelMask.size()>modCol){
+		    if(imgReaderModel1Mask.isNoData(lineModelMask[modCol])){
+		      estWriteBuffer[icol]=obsnodata_opt[0];
+		      uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		      //test
+		      // gainWriteBuffer[icol]=obsnodata_opt[0];
+		      continue;
+		    }
+		  }
 		  lowerCol=modCol-0.5;
 		  lowerCol=static_cast<int>(lowerCol);
 		  upperCol=modCol+0.5;
@@ -1110,26 +1152,26 @@ int main(int argc,char **argv) {
 		  if(upperCol>=imgReaderModel1.nrOfCol())
 		    upperCol=imgReaderModel1.nrOfCol()-1;
 		  double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
-
 		  // double modValue=estReadBuffer[modCol];
 		  if(imgReaderModel1.isNoData(modValue)){
 		    estWriteBuffer[icol]=obsnodata_opt[0];
 		    uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		    //test
 		    // gainWriteBuffer[icol]=obsnodata_opt[0];
+		    continue;
 		  }
-		  else{
-		    estWriteBuffer[icol]=modValue;
-		    if(obsmin_opt.size()){
-		      if(estWriteBuffer[icol]<obsmin_opt[0])
-			estWriteBuffer[icol]=obsmin_opt[0];
-		    }
-		    if(obsmax_opt.size()){
-		      if(estWriteBuffer[icol]>obsmax_opt[0])
-			estWriteBuffer[icol]=obsmax_opt[0];
-		    }
-		    uncertWriteBuffer[icol]=uncertModel_opt[0];//*stdDev*stdDev;
-		    // gainWriteBuffer[icol]=0;
+		  estWriteBuffer[icol]=modValue;
+		  if(obsmin_opt.size()){
+		    if(estWriteBuffer[icol]<obsmin_opt[0])
+		      estWriteBuffer[icol]=obsmin_opt[0];
 		  }
+		  if(obsmax_opt.size()){
+		    if(estWriteBuffer[icol]>obsmax_opt[0])
+		      estWriteBuffer[icol]=obsmax_opt[0];
+		  }
+		  uncertWriteBuffer[icol]=uncertModel_opt[0];//*stdDev*stdDev;
+		  //test
+		  // gainWriteBuffer[icol]=0;
 		}
 	      }
 	      imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,nmodel-1);
@@ -1162,6 +1204,8 @@ int main(int argc,char **argv) {
       
 	vector< vector<double> > obsLineVector(down_opt[0]);
 	vector<double> obsLineBuffer;
+	vector<double> obsMaskLineBuffer;
+	vector<double> modelMaskLineBuffer;
 	vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	vector<double> estReadBuffer;
 	vector<double> estWriteBuffer(ncol);
@@ -1174,6 +1218,9 @@ int main(int argc,char **argv) {
 	  cout << "initialize obsLineVector" << endl;
 	assert(down_opt[0]%2);//window size must be odd 
 	int readObsBand=(observation_opt.size()==nobs)? 0:nobs-1;
+	int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:nobs-1;
+	int readModelBand=(model_opt.size()==nmodel)? 0:nmodel-1;
+	int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:nmodel-1;
 	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	  if(iline<0)//replicate line 0
 	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,readObsBand);
@@ -1185,21 +1232,25 @@ int main(int argc,char **argv) {
 	    imgWriterEst.image2geo(0,irow,geox,geoy);
 	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	    int readModelBand=(model_opt.size()==nmodel)? 0:nmodel-1;
 	    imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
+	    if(modelmask_opt.size())
+	      imgReaderModel1Mask.readData(modelMaskLineBuffer,GDT_Float64,modRow,readModelMaskBand);
 	    int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	    obsLineVector.erase(obsLineVector.begin());
 	    imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
 	    obsLineVector.push_back(obsLineBuffer);
 
 	    if(observationmask_opt.size())
-	      imgReaderObsMask.readData(uncertObsLineBuffer,GDT_Float64,irow,readObsBand);
+	      imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsMaskBand);
 
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		imgWriterEst.image2geo(icol,irow,geox,geoy);
 		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 		assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
+		bool modelIsNoData=false;
+		if(modelmask_opt.size())
+		  modelIsNoData=imgReaderModel1Mask.isNoData(modelMaskLineBuffer[modCol]);
 		lowerCol=modCol-0.5;
 		lowerCol=static_cast<int>(lowerCol);
 		upperCol=modCol+0.5;
@@ -1211,17 +1262,20 @@ int main(int argc,char **argv) {
 		double modValue=(modCol-0.5-lowerCol)*estReadBuffer[upperCol]+(1-modCol+0.5+lowerCol)*estReadBuffer[lowerCol];
 		// double modValue=estReadBuffer[modCol];
 		double errMod=uncertModel_opt[0];//*stdDev*stdDev;
-		if(imgReaderModel1.isNoData(modValue)){//model is nodata: retain observation 
-		  if(imgReaderObs.isNoData(obsLineBuffer[icol])){//both model and observation nodata
+		modelIsNoData=modelIsNoData||imgReaderModel1.isNoData(modValue);
+		bool obsIsNoData=false;
+		if(observationmask_opt.size())
+		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
+		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+		if(modelIsNoData){//model is nodata: retain observation 
+		  if(obsIsNoData){//both model and observation nodata
 		    estWriteBuffer[icol]=obsnodata_opt[0];
 		    uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		    //test
+		    // gainWriteBuffer[icol]=obsnodata_opt[0];
 		  }
 		  else{
 		    estWriteBuffer[icol]=obsLineBuffer[icol];
-		    if(uncertObsLineBuffer.size()>icol)
-		      uncertWriteBuffer[icol]=uncertObsLineBuffer[icol];
-		    else
-		      uncertWriteBuffer[icol]=uncertObs_opt[0];
 		    if(obsmin_opt.size()){
 		      if(estWriteBuffer[icol]<obsmin_opt[0])
 			estWriteBuffer[icol]=obsmin_opt[0];
@@ -1229,18 +1283,18 @@ int main(int argc,char **argv) {
 		    if(obsmax_opt.size()){
 		      if(estWriteBuffer[icol]>obsmax_opt[0])
 			estWriteBuffer[icol]=obsmax_opt[0];
-		      if(uncertWriteBuffer[icol]>obsmax_opt[0])
-			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
+		    uncertWriteBuffer[icol]=uncertObs_opt[0];
 		  }
 		}
 		else{//model is valid: calculate estimate from model
 		  estWriteBuffer[icol]=modValue;
 		  uncertWriteBuffer[icol]=errMod;//in case observation is not valid
+		  //test
 		  // gainWriteBuffer[icol]=0;
 		}
 		//measurement update
-		if(!imgReaderObs.isNoData(obsLineBuffer[icol])){
+		if(!obsIsNoData){
 		  // estWriteBuffer[icol]=estReadBuffer[icol]*modValue1/modValue2
 		  double kalmanGain=1;
 		  int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
@@ -1254,7 +1308,7 @@ int main(int argc,char **argv) {
 		      obsWindowBuffer.push_back(obsLineVector[iline][isample]);
 		    }
 		  }
-		  if(!imgReaderModel1.isNoData(modValue)){//model is valid
+		  if(!modelIsNoData){//model is valid
 		    statfactory::StatFactory statobs;
 		    statobs.setNoDataValues(obsnodata_opt);
 		    double obsMeanValue=0;
@@ -1283,6 +1337,7 @@ int main(int argc,char **argv) {
 		    }
 		  }
 		  assert(kalmanGain<=1);
+		  //test
 		  // gainWriteBuffer[icol]=kalmanGain;
 		}
 	      }
@@ -1296,10 +1351,15 @@ int main(int argc,char **argv) {
 	}
 	if(observation_opt.size()==nobs)
 	  imgReaderObs.close();
+	if(observationmask_opt.size()==nobs)
+	  imgReaderObsMask.close();
 	--obsindex;
       }
+
       if(model_opt.size()==nmodel)
 	imgReaderModel1.close();
+      if(modelmask_opt.size()==nmodel)
+	imgReaderModel1Mask.close();
       imgWriterEst.close();
       imgWriterUncert.close();
 
@@ -1316,23 +1376,6 @@ int main(int argc,char **argv) {
 	  else
 	    cout << "There is no next observation" << endl;
 	}
-	// string theOutput;
-	// if(outputbw_opt.size()==model_opt.size())
-	// 	theOutput=outputbw_opt[modindex];
-	// else{
-	// 	ostringstream outputstream;
-	// 	outputstream << outputbw_opt[0] << "_";
-	// 	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-	// 	outputstream << ".tif";
-	// 	// outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
-	// 	theOutput=outputstream.str();
-	// }
-
-	// //two band output band0=estimation, band1=uncertainty
-	// imgWriterEst.open(theOutput,ncol,nrow,2,theType,imageType,option_opt);
-	// imgWriterEst.setProjectionProj4(projection_opt[0]);
-	// imgWriterEst.setGeoTransform(geotransform);
-	// imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
 	//calculate regression between two subsequence model inputs
 	if(model_opt.size()==nmodel){
@@ -1341,9 +1384,12 @@ int main(int argc,char **argv) {
 	  imgReaderModel2.open(model_opt[modindex]);
 	  imgReaderModel2.setNoData(modnodata_opt);
 	}
-	//calculate regression
-	//we could re-use the points from second image from last run, but
-	//to keep it general, we must redo it (overlap might have changed)
+	if(modelmask_opt.size()==nmodel){
+	  imgReaderModel1Mask.open(modelmask_opt[modindex-1]);
+	  imgReaderModel1Mask.setNoData(msknodata_opt);
+	  imgReaderModel2Mask.open(modelmask_opt[modindex]);
+	  imgReaderModel2Mask.setNoData(msknodata_opt);
+	}
     
 	pfnProgress(progress,pszMessage,pProgressArg);
 
@@ -1359,27 +1405,20 @@ int main(int argc,char **argv) {
 	    imgReaderObs.getGeoTransform(geotransform);
 	    imgReaderObs.setNoData(obsnodata_opt);
 	  }
+	  if(observationmask_opt.size()==nobs){
+	    imgReaderObsMask.open(observationmask_opt[obsindex]);
+	    imgReaderObsMask.setNoData(msknodata_opt);
+	  }
 	}
 	//prediction (also to fill cloudy pixels in update mode)
 	string input;
 	input=outputbw_opt[0];
-	// if(outputbw_opt.size()==model_opt.size())
-	// 	input=outputbw_opt[modindex+1];
-	// else{
-	// 	ostringstream outputstream;
-	// 	outputstream << outputbw_opt[0] << "_";
-	// 	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex+1];
-	// 	outputstream << ".tif";
-	// 	// outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex+1] << ".tif";
-	// 	input=outputstream.str();
-	// }
-	// if(verbose_opt[0])
-	// 	cout << "opening " << input << endl;
-	// ImgReaderGdal imgReaderEst(input);
-	// imgReaderEst.setNoData(obsnodata_opt);
       
 	vector< vector<double> > obsLineVector(down_opt[0]);
 	vector<double> obsLineBuffer;
+	vector<double> obsMaskLineBuffer;
+	vector<double> model1MaskLineBuffer;
+	vector<double> model2MaskLineBuffer;
 	vector<double> obsWindowBuffer;//buffer for observation to calculate average corresponding to model pixel
 	vector<double> model1LineBuffer;
 	vector<double> model2LineBuffer;
@@ -1392,9 +1431,15 @@ int main(int argc,char **argv) {
 	vector<double> uncertReadBuffer;
 	vector<double> estWriteBuffer(ncol);
 	vector<double> uncertWriteBuffer(ncol);
+	//test
 	// vector<double> gainWriteBuffer(ncol);
 
 	int readObsBand=(observation_opt.size()==nobs)? 0:obsindex;
+	int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:obsindex;
+	int readModel1Band=(model_opt.size()==nmodel)? 0:modindex+1;
+	int readModel2Band=(model_opt.size()==nmodel)? 0:modindex;
+	int readModel1MaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:modindex+1;
+	int readModel2MaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:modindex;
 
 	//initialize obsLineVector
 	if(update){
@@ -1412,6 +1457,7 @@ int main(int argc,char **argv) {
 	if(verbose_opt[0])
 	  cout << "initialize estLineVector" << endl;
 	assert(down_opt[0]%2);//window size must be odd 
+
 	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	  if(iline<0)//replicate line 0
 	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],GDT_Float64,0,modindex+1);
@@ -1420,8 +1466,7 @@ int main(int argc,char **argv) {
 	}
 	statfactory::StatFactory statobs;
 	statobs.setNoDataValues(obsnodata_opt);
-	int readModel1Band=(model_opt.size()==nmodel)? 0:modindex+1;
-	int readModel2Band=(model_opt.size()==nmodel)? 0:modindex;
+
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  //todo: read entire window for uncertReadBuffer...
 	  for(int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
@@ -1437,9 +1482,16 @@ int main(int argc,char **argv) {
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	      imgReaderModel1.readData(model2LineBuffer,GDT_Float64,modRow,readModel2Band,theResample);
 	    }
+
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	    imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,readModel1Band,theResample);
-
+	    if(modelmask_opt.size()){
+	      imgReaderModel1Mask.readData(model1MaskLineBuffer,GDT_Float64,modRow,readModel1MaskBand);
+	      if(modelmask_opt.size()==nmodel)
+		imgReaderModel2Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+	      else
+		imgReaderModel1Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+	    }
 	    int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
 	    estLineVector.erase(estLineVector.begin());
 	    imgUpdaterEst.readData(estLineBuffer,GDT_Float64,maxRow,modindex+1);
@@ -1452,11 +1504,9 @@ int main(int argc,char **argv) {
 	      imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
 	      obsLineVector.push_back(obsLineBuffer);
 	      obsLineBuffer=obsLineVector[down_opt[0]/2];
-	      // imgReaderObs.readData(obsLineBuffer,GDT_Float64,irow,0);
+
 	      if(observationmask_opt.size())
-		imgReaderObsMask.readData(uncertObsLineBuffer,GDT_Float64,irow,readObsBand);
-	      // if(imgReaderObs.nrOfBand()>1)
-	      //   imgReaderObs.readData(uncertObsLineBuffer,GDT_Float64,irow,1);
+		imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsBand);
 	    }
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
@@ -1481,8 +1531,14 @@ int main(int argc,char **argv) {
 		    }
 		  }
 		}
+
 		double estValue=estLineBuffer[icol];
 		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		bool model1IsNoData=false;
+
+		if(modelmask_opt.size())
+		  model1IsNoData=imgReaderModel1Mask.isNoData(model1MaskLineBuffer[modCol]);
+
 		lowerCol=modCol-0.5;
 		lowerCol=static_cast<int>(lowerCol);
 		upperCol=modCol+0.5;
@@ -1492,11 +1548,15 @@ int main(int argc,char **argv) {
 		if(upperCol>=imgReaderModel1.nrOfCol())
 		  upperCol=imgReaderModel1.nrOfCol()-1;
 		double modValue1=(modCol-0.5-lowerCol)*model1LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model1LineBuffer[lowerCol];
-		// double modValue1=model1LineBuffer[modCol];
+		model1IsNoData=model1IsNoData||imgReaderModel1.isNoData(modValue1);
 		if(model_opt.size()==nmodel)
 		  imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 		else
 		  imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
+		bool model2IsNoData=false;
+
+		if(modelmask_opt.size())
+		  model2IsNoData=imgReaderModel1Mask.isNoData(model2MaskLineBuffer[modCol]);
 		lowerCol=modCol-0.5;
 		lowerCol=static_cast<int>(lowerCol);
 		upperCol=modCol+0.5;
@@ -1506,12 +1566,18 @@ int main(int argc,char **argv) {
 		if(upperCol>=imgReaderModel1.nrOfCol())
 		  upperCol=imgReaderModel1.nrOfCol()-1;
 		double modValue2=(modCol-0.5-lowerCol)*model2LineBuffer[upperCol]+(1-modCol+0.5+lowerCol)*model2LineBuffer[lowerCol];
-		// double modValue2=model2LineBuffer[modCol];
+		model2IsNoData=model2IsNoData||imgReaderModel1.isNoData(modValue2);
+		bool obsIsNoData=false;
+		if(observationmask_opt.size())
+		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
+		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+
 		if(imgUpdaterEst.isNoData(estValue)){
 		  //we have not found any valid data yet, better here to take the current model value if valid
-		  if(imgReaderModel1.isNoData(modValue2)){//if both estimate and model are no-data, set obs to nodata
+		  if(model2IsNoData){//if both estimate and model are no-data, set obs to nodata
 		    estWriteBuffer[icol]=obsnodata_opt[0];
 		    uncertWriteBuffer[icol]=uncertNodata_opt[0];
+		    //test
 		    // gainWriteBuffer[icol]=0;
 		  }
 		  else{
@@ -1527,6 +1593,7 @@ int main(int argc,char **argv) {
 		      if(uncertWriteBuffer[icol]>obsmax_opt[0])
 			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
+		    //test
 		    // gainWriteBuffer[icol]=0;
 		  }
 		}
@@ -1537,10 +1604,9 @@ int main(int argc,char **argv) {
 		  double nvalid=0;
 		  //time update
 		  double processNoiseVariance=processNoise_opt[0]*estVarValue;
-		  //todo: estimate process noise variance expressing instabilityof weights over time
 		  //estimate stability of weight distribution from model (low resolution) data in a window mod1 -> mod2 and assume distribution holds at fine spatial resolution. 
 
-		  if(imgReaderModel1.isNoData(modValue1)||imgReaderModel1.isNoData(modValue2)){
+		  if(model1IsNoData||model2IsNoData){
 		    estWriteBuffer[icol]=estValue;
 		    // uncertWriteBuffer[icol]=uncertReadBuffer[icol]+processNoiseVariance;
 		    //todo: check following line if makes sense
@@ -1598,6 +1664,7 @@ int main(int argc,char **argv) {
 		    }
 		  }
 		  assert(kalmanGain<=1);
+		  //test
 		  // gainWriteBuffer[icol]=kalmanGain;
 		}
 	      }
@@ -1620,11 +1687,17 @@ int main(int argc,char **argv) {
 	if(update){
 	  if(observation_opt.size()==nobs)
 	    imgReaderObs.close();
+	  if(observationmask_opt.size()==nobs)
+	    imgReaderObsMask.close();
 	  --obsindex;
 	}
 	if(model_opt.size()==nmodel){
 	  imgReaderModel1.close();
 	  imgReaderModel2.close();
+	}
+	if(modelmask_opt.size()==nmodel){
+	  imgReaderModel1Mask.close();
+	  imgReaderModel2Mask.close();
 	}
       }
       // //test
