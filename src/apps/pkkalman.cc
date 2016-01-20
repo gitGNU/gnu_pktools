@@ -684,7 +684,7 @@ int main(int argc,char **argv) {
 			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
 		  }
-		  assert(kalmanGain<=1);
+		  assert(kalmanGain<=1+eps_opt[0]);
 		  //test
 		  gainWriteBuffer[icol]=kalmanGain;
 		}
@@ -1007,7 +1007,7 @@ int main(int argc,char **argv) {
 			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
 		  }
-		  assert(kalmanGain<=1);
+		  assert(kalmanGain<=1+eps_opt[0]);
 		  //test
 		  gainWriteBuffer[icol]=kalmanGain;
 		}
@@ -1349,7 +1349,7 @@ int main(int argc,char **argv) {
 			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
 		  }
-		  assert(kalmanGain<=1);
+		  assert(kalmanGain<=1+eps_opt[0]);
 		  //test
 		  // gainWriteBuffer[icol]=kalmanGain;
 		}
@@ -1676,7 +1676,7 @@ int main(int argc,char **argv) {
 			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
 		  }
-		  assert(kalmanGain<=1);
+		  assert(kalmanGain<=1+eps_opt[0]);
 		  //test
 		  // gainWriteBuffer[icol]=kalmanGain;
 		}
