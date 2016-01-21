@@ -41,7 +41,7 @@ class pklas2img(pktoolsAlgorithm):
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
     ATTRIBUTE_OPTIONS = ["z","intensity", "return", "nreturn"]
-    COMPOSITE_OPTIONS = ["last", "min", "max", "median", "mean", "sum", "first", "profile" "percentile", "height", "values", "percentile", "number"]
+    COMPOSITE_OPTIONS = ["last", "min", "max", "median", "mean", "sum", "first", "profile", "percentile", "height", "values", "percentile", "number"]
     FILTER_OPTIONS = ["all","first","last","single","multiple"]
 
     ATTRIBUTE = "ATTRIBUTE"

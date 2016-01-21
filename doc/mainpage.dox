@@ -11,7 +11,7 @@
 
 \section pktools_introduction Introduction
 
-pktools is a collection of programs written in C++ for image processing with a focus on remote sensing applications. It relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR.
+pktools is a suite of utilities written in C++ for image processing with a focus on remote sensing applications. It relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR.
 
 All utilities in pktools use command line options and have a built in help
 

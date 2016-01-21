@@ -32,7 +32,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ## SYNOPSIS
 
 <code>
-  
+  Usage: pklas2img -i input.las -o output.tif
 </code>
 
 <code>
@@ -45,7 +45,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 \section pklas2img_description Description
 
-The utility pklas2img converts a las/laz point cloud into a gridded raster dataset. The implementation is based on <a href="www.liblas.org">liblas</a> API. You can define the bounding box, grid cell size and spatial reference set. The composite rule for multiple returns within a single grid cell can be set with the option -comp. The default attribute is z (heiht), but can also be intensity (if available), scan angle rank (-n angle), the return number (-n return) or the total number of returns in that grid cell (-n nreturn). To select specific returns only, set the option -fir (first, last, single, multiple, or all).
+The utility pklas2img converts a las/laz point cloud into a gridded raster dataset. The implementation is based on <a href="http://www.liblas.org">liblas</a> API. You can define the bounding box, grid cell size and spatial reference set. The composite rule for multiple returns within a single grid cell can be set with the option -comp. The default attribute is z (heiht), but can also be intensity (if available), scan angle rank (-n angle), the return number (-n return) or the total number of returns in that grid cell (-n nreturn). To select specific returns only, set the option -fir (first, last, single, multiple, or all).
 \section pklas2img_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
