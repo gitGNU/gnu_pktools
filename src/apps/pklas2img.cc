@@ -334,7 +334,7 @@ int main(int argc,char **argv) {
             std::cout << "writing intensity" << std::endl;
           ++ait;
         }
-        if(*ait=="angle"){
+        else if(*ait=="angle"){
           if(verbose_opt[0])
             std::cout << "writing angle" << std::endl;
           ++ait;
@@ -353,6 +353,7 @@ int main(int argc,char **argv) {
           attribute_opt.erase(ait);
       }
     }
+
     liblas::Point thePoint(&(lasReader.getHeader()));
     while(lasReader.readNextPoint(thePoint)){
       progress=static_cast<float>(ipoint)/totalPoints;

@@ -401,7 +401,6 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	cout << "Opening image " << outputfw_opt[0] << " for writing " << endl << flush;
     
-      // imgWriterEst.open(theOutput,ncol,nrow,2,theType,imageType,option_opt);
       ImgWriterGdal imgWriterEst;
       ImgWriterGdal imgWriterUncert;
       imgWriterEst.open(outputfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
@@ -471,7 +470,6 @@ int main(int argc,char **argv) {
 		cerr << "Error: geo coordinates (" << geox << "," << geoy << ") not covered in model image " << imgReaderModel1.getFileName() << endl;
 		assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	      }
-	      // imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
 
 	      int readModelBand=(model_opt.size()==nmodel)? 0:0;
 	      int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
@@ -1029,8 +1027,6 @@ int main(int argc,char **argv) {
 	//must close writers to ensure flush
 	imgUpdaterEst.close();
 	imgUpdaterUncert.close();
-	// imgWriterEst.close();
-	// imgReaderEst.close();
 
 	if(update){
 	  if(observation_opt.size()==nobs)
@@ -1069,7 +1065,6 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	cout << "Opening image " << outputbw_opt[0] << " for writing " << endl;
 
-      // imgWriterEst.open(theOutput,ncol,nrow,2,theType,imageType,option_opt);
       ImgWriterGdal imgWriterEst;
       ImgWriterGdal imgWriterUncert;
       imgWriterEst.open(outputbw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
@@ -1698,8 +1693,6 @@ int main(int argc,char **argv) {
 	//must close writers to ensure flush
 	imgUpdaterEst.close();
 	imgUpdaterUncert.close();
-	// imgWriterEst.close();
-	// imgReaderEst.close();
 
 	if(update){
 	  if(observation_opt.size()==nobs)
@@ -1765,44 +1758,6 @@ int main(int argc,char **argv) {
 	else
 	  cout << "There is no next observation" << endl;
       }
-      // if(outputfb_opt.size()==model_opt.size())
-      // 	theOutput=outputfb_opt[modindex];
-      // else{
-      // 	ostringstream outputstream;
-      // 	outputstream << outputfb_opt[0] << "_";
-      // 	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-      // 	outputstream << ".tif";
-      // 	// outputstream << outputfb_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
-      // 	theOutput=outputstream.str();
-      // }
-    
-      //two band output band0=estimation, band1=uncertainty
-
-      //open forward and backward estimates
-      //we assume forward in model and backward in observation...
-
-      // string inputfw;
-      // string inputbw;
-      // if(outputfw_opt.size()==model_opt.size())
-      // 	inputfw=outputfw_opt[modindex];
-      // else{
-      // 	ostringstream outputstream;
-      // 	outputstream << outputfw_opt[0] << "_";
-      // 	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-      // 	outputstream << ".tif";
-      // 	// outputstream << outputfw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
-      // 	inputfw=outputstream.str();
-      // }
-      // if(outputbw_opt.size()==model_opt.size())
-      // 	inputbw=outputbw_opt[modindex];
-      // else{
-      // 	ostringstream outputstream;
-      // 	outputstream << outputbw_opt[0] << "_";
-      // 	outputstream << setfill('0') << setw(ndigit) << tmodel_opt[modindex];
-      // 	outputstream << ".tif";
-      // 	// outputstream << outputbw_opt[0] << "_" << tmodel_opt[modindex] << ".tif";
-      // 	inputbw=outputstream.str();
-      // }
       vector<double> estForwardBuffer;
       vector<double> estBackwardBuffer;
       vector<double> uncertObsLineBuffer;
@@ -1811,7 +1766,6 @@ int main(int argc,char **argv) {
       vector<double> uncertReadBuffer;
       vector<double> estWriteBuffer(ncol);
       vector<double> uncertWriteBuffer(ncol);
-      // vector<double> lineMask;
 
       bool update=false;
       if(obsindex<relobsindex.size()){
@@ -1832,10 +1786,6 @@ int main(int argc,char **argv) {
 	  imgReaderObsMask.open(observationmask_opt[obsindex]);
 	  imgReaderObsMask.setNoData(msknodata_opt);
 	}
-	// imgReaderObs.open(observation_opt[obsindex]);
-	// imgReaderObs.getGeoTransform(geotransform);
-	// imgReaderObs.setNoData(obsnodata_opt);
-	//calculate regression between model and observation
       }
 
       pfnProgress(progress,pszMessage,pProgressArg);
@@ -1847,10 +1797,6 @@ int main(int argc,char **argv) {
 	imgReaderBackward.readData(estBackwardBuffer,GDT_Float64,irow,modindex);
 	imgReaderForwardUncert.readData(uncertForwardBuffer,GDT_Float64,irow,modindex);
 	imgReaderBackwardUncert.readData(uncertBackwardBuffer,GDT_Float64,irow,modindex);
-	// imgReaderForward.readData(estForwardBuffer,GDT_Float64,irow,0);
-	// imgReaderBackward.readData(estBackwardBuffer,GDT_Float64,irow,0);
-	// imgReaderForward.readData(uncertForwardBuffer,GDT_Float64,irow,1);
-	// imgReaderBackward.readData(uncertBackwardBuffer,GDT_Float64,irow,1);
 
 	if(update){
 	  if(observation_opt.size()==nobs)
@@ -1859,7 +1805,6 @@ int main(int argc,char **argv) {
 	    imgReaderObsMask.readData(uncertObsLineBuffer,GDT_Float64,irow,readObsBand);
 	}
 
-	// double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){
 	  imgWriterEst.image2geo(icol,irow,geox,geoy);
 	  double A=estForwardBuffer[icol];
@@ -1867,13 +1812,6 @@ int main(int argc,char **argv) {
 	  double C=uncertForwardBuffer[icol];
 	  double D=uncertBackwardBuffer[icol];
 	  double uncertObs=uncertObs_opt[0];
-
-	  // if(update){//check for nodata in observation
-	  //   if(imgReaderObs.isNoData(estWriteBuffer[icol]))
-	  //     uncertObs=uncertNodata_opt[0];
-	  //   else if(uncertObsLineBuffer.size()>icol)
-	  //     uncertObs=uncertObsLineBuffer[icol];
-	  // }
 
 	  double noemer=(C+D);
 	  //todo: consistently check for division by zero...
@@ -1907,16 +1845,6 @@ int main(int argc,char **argv) {
 		if(uncertWriteBuffer[icol]>obsmax_opt[0])
 		  uncertWriteBuffer[icol]=obsmax_opt[0];
 	      }
-	      // double P=0;
-	      // if(C>eps_opt[0])
-	      // 	P+=1.0/C;
-	      // if(D>eps_opt[0])
-	      // 	P+=1.0/D;
-	      // if(P>eps_opt[0])
-	      // 	P=1.0/P;
-	      // else
-	      // 	P=0;
-	      // uncertWriteBuffer[icol]=P;
 	    }
 	  }
 	}
@@ -1940,7 +1868,5 @@ int main(int argc,char **argv) {
     imgReaderObs.close();
   if(model_opt.size()<nmodel)
     imgReaderModel1.close();
-  // if(mask_opt.size())
-  //   maskReader.close();
 }
 
