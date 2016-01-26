@@ -354,8 +354,12 @@ int main(int argc,char **argv) {
       }
     }
 
-    liblas::Point thePoint(&(lasReader.getHeader()));
-    while(lasReader.readNextPoint(thePoint)){
+    // liblas::Point thePoint(&(lasReader.getHeader()));
+    // while(lasReader.readNextPoint(thePoint)){
+
+    while(lasReader.getReader()->ReadNextPoint()){
+      liblas::Point const& thePoint = lasReader.getReader()->GetPoint();
+      // liblas::Point const& thePoint=lasReader.getPoint();
       progress=static_cast<float>(ipoint)/totalPoints;
       pfnProgress(progress,pszMessage,pProgressArg);
       if(verbose_opt[0]>1)

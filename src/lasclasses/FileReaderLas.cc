@@ -103,6 +103,12 @@ unsigned long int FileReaderLas::getPointCount() const{
   return getHeader().GetPointRecordsCount();
 }
 
+bool const& FileReaderLas::readNextPoint(liblas::Point& thePoint){
+  bool returnValue=m_reader->ReadNextPoint();
+  thePoint=m_reader->GetPoint();
+  return(returnValue);
+}
+
 void FileReaderLas::las2ascii(const std::string& filename, bool verbose) const{
   std::ofstream fpoints(filename.c_str(),std::ios::out);
   fpoints << "#";
