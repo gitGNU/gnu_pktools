@@ -93,8 +93,8 @@ int main(int argc,char **argv) {
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
   Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point", "last");
   Optionpk<string> filter_opt("fir", "filter", "filter las points (first,last,single,multiple,all).", "all");
-  Optionpk<unsigned short> angle_min_opt("angle_min", "angle_min", "Minimum scan angle to read points.");
-  Optionpk<unsigned short> angle_max_opt("angle_max", "angle_max", "Maximum scan angle to read points.");
+  Optionpk<short> angle_min_opt("angle_min", "angle_min", "Minimum scan angle to read points.");
+  Optionpk<short> angle_max_opt("angle_max", "angle_max", "Maximum scan angle to read points.");
   // Optionpk<string> postFilter_opt("pf", "pfilter", "post processing filter (etew_min,promorph (progressive morphological filter),bunting (adapted promorph),open,close,none).", "none");
   // Optionpk<short> dimx_opt("dimx", "dimx", "Dimension X of postFilter", 3);
   // Optionpk<short> dimy_opt("dimy", "dimy", "Dimension Y of postFilter", 3);
