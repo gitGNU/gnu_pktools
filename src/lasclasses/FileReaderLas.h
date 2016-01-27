@@ -52,9 +52,12 @@ public:
   void getExtent(double& ulx, double& uly, double& lrx, double& lry) const;
   double getMinZ() const;
   double getMaxZ() const;
+  liblas::Reader* getReader(){return m_reader;};
   void resetReader(){m_reader->Reset();};
   void setFilter(std::vector<liblas::FilterPtr> const& filters);
-  bool const& readNextPoint(liblas::Point& thePoint){bool returnValue=m_reader->ReadNextPoint();thePoint=m_reader->GetPoint();return(returnValue);};
+  bool const& readNextPoint(){return(m_reader->ReadNextPoint());};
+  bool const& readNextPoint(liblas::Point& thePoint);
+  liblas::Point const& getPoint(){return m_reader->GetPoint();};
   liblas::Point const& readPointAt(std::size_t n){m_reader->ReadPointAt(n);return m_reader->GetPoint();};
   // void addBoundsFilter(double ulx, double uly, double lrx, double lry);
   void addReturnsFilter(std::vector<unsigned short> const& returns);
