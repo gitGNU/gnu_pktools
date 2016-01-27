@@ -351,6 +351,14 @@ int main(int argc, char *argv[])
       }
       extentReader.close();
     }
+    if(croplrx>cropulx&&cropulx>ulx_opt[0])
+      ulx_opt[0]=cropulx;
+    if(croplrx>cropulx&&croplrx<lrx_opt[0])
+      lrx_opt[0]=croplrx;
+    if(cropuly>croplry&&cropuly<uly_opt[0])
+      uly_opt[0]=cropuly;
+    if(croplry<cropuly&&croplry>lry_opt[0])
+      lry_opt[0]=croplry;
     if(cut_opt.size())
       extentReader.open(extent_opt[0]);
   }

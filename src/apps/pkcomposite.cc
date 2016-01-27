@@ -295,10 +295,10 @@ int main(int argc, char *argv[])
   vector<short> bands;
   
   //get bounding box
-  double maxLRX=0;
-  double maxULY=0;
-  double minULX=0;
-  double minLRY=0;
+  double maxLRX=lrx_opt[0];
+  double maxULY=uly_opt[0];
+  double minULX=ulx_opt[0];
+  double minLRY=lry_opt[0];
   double magic_x=1,magic_y=1;//magic pixel for GDAL map info
 
   GDALDataType theType=GDT_Unknown;
@@ -353,6 +353,14 @@ int main(int argc, char *argv[])
       }
       extentReader.close();
     }
+    if(maxLRX>minULX&&minULX>ulx_opt[0])
+      ulx_opt[0]=minULX;
+    if(maxLRX>minULX&&maxLRX<lrx_opt[0])
+      lrx_opt[0]=maxLRX;
+    if(maxULY>minLRY&&maxULY<uly_opt[0])
+      uly_opt[0]=maxULY;
+    if(minLRY<maxULY&&minLRY>lry_opt[0])
+      lry_opt[0]=minLRY;
     if(cut_opt.size())
       extentReader.open(extent_opt[0]);
   }

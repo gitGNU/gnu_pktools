@@ -456,4 +456,8 @@ version 2.6.6
  - pkkalman
 	first release
 	support multi-band input and output
+ - pkextract
+	skip file if not within extent boundaries
+ - pklas2img
+	repair readNextPoint segfault
 

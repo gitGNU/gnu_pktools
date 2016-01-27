@@ -857,7 +857,18 @@ int main(int argc, char *argv[])
       std::cout << "creating image sample writer " << output_opt[0] << std::endl;
     ImgWriterOgr ogrWriter;
     ImgWriterOgr ogrTestWriter;
+    double e_ulx;
+    double e_uly;
+    double e_lrx;
+    double e_lry;
     try{
+      sampleReaderOgr.getExtent(e_ulx,e_uly,e_lrx,e_lry);
+      bool hasCoverage=((e_ulx < imgReader.getLrx())&&(e_lrx > imgReader.getUlx())&&(e_lry < imgReader.getUly())&&(e_uly > imgReader.getLry()));
+      if(!hasCoverage){
+	ostringstream ess;
+	ess << "No coverage in " << image_opt[0] << " for any layer in " << sample_opt[0] << endl;
+	throw(ess.str());
+      }
       ogrWriter.open(output_opt[0],ogrformat_opt[0]);
       if(test_opt.size()){
 	if(verbose_opt[0]>1)
@@ -902,7 +913,7 @@ int main(int argc, char *argv[])
 
     if(verbose_opt[0])
       std::cout << "number of layers: " << nlayerRead << endl;
-      
+
     for(int ilayer=0;ilayer<nlayerRead;++ilayer){
       OGRLayer *readLayer=sampleReaderOgr.getLayer(ilayer);
       string currentLayername=readLayer->GetName();
@@ -914,6 +925,10 @@ int main(int argc, char *argv[])
 	else
 	  layerIndex=it-layer_opt.begin();
       }
+      sampleReaderOgr.getExtent(e_ulx,e_uly,e_lrx,e_lry,ilayer);
+      bool hasCoverage=((e_ulx < imgReader.getLrx())&&(e_lrx > imgReader.getUlx())&&(e_lry < imgReader.getUly())&&(e_uly > imgReader.getLry()));
+      if(!hasCoverage)
+	continue;
       float theThreshold=(threshold_opt.size()==layer_opt.size())? threshold_opt[layerIndex]: threshold_opt[0];
       cout << "processing layer " << currentLayername << endl;
       
