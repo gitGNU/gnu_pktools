@@ -90,7 +90,7 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | grid   | grid                 | double |       |Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m) | 
  | o      | output               | std::string |       |Output sample dataset | 
  | c      | class                | int  |       |Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count | 
- | t      | threshold            | float | 100   |Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es) | 
+ | t      | threshold            | float | 100   |Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold per vector sample layer. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es) | 
  | perc   | perc                 | double | 95    |Percentile value used for rule percentile | 
  | f      | f                    | std::string | SQLite |Output sample dataset format | 
  | ft     | ftype                | std::string | Real  |Field type (only Real or Integer) | 
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
   Optionpk<double> grid_opt("grid", "grid", "Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m)");
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count");
-  Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold for vector sample datasets. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
+  Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold per vector sample layer. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
   Optionpk<double> percentile_opt("perc","perc","Percentile value used for rule percentile",95);
   Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
