@@ -52,10 +52,10 @@ The utility pklas2img converts a las/laz point cloud into a gridded raster datas
 |short|long|type|default|description|
 |-----|----|----|-------|-----------|
  | i      | input                | std::string |       |Input las file | 
- | n      | name                 | std::string | z     |names of the attribute to select: intensity, angle, return, nreturn, z | 
+ | n      | name                 | std::string | z     |names of the attribute to select: intensity, angle, return, nreturn, spacing, z | 
  | ret    | ret                  | unsigned short |       |number(s) of returns to include | 
  | class  | class                | unsigned short |       |classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap) | 
- | comp   | comp                 | std::string | last  |composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point | 
+ | comp   | comp                 | std::string | last  |composite for multiple points in cell (min, max, absmin, absmax, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point | 
  | fir    | filter               | std::string | all   |filter las points (first,last,single,multiple,all). | 
  | angle_min  | angle_min        | unsigned short |    |minimum scan angle to read points. | 
  | angle_max  | angle_max        | unsigned short |    |maximum scan angle to read points. | 
@@ -84,14 +84,14 @@ using namespace std;
 
 int main(int argc,char **argv) {
   Optionpk<string> input_opt("i", "input", "Input las file");
-  Optionpk<string> attribute_opt("n", "name", "names of the point attribute to select: intensity, angle, return, nreturn, angle, z", "z");
+  Optionpk<string> attribute_opt("n", "name", "names of the point attribute to select: intensity, angle, return, nreturn, spacing, z", "z");
   // Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> maxSlope_opt("s", "maxSlope", "Maximum slope used for morphological filtering", 0.0);
   // Optionpk<double> hThreshold_opt("ht", "maxHeight", "initial and maximum height threshold for progressive morphological filtering (e.g., -ht 0.2 -ht 2.5)", 0.2);
   // Optionpk<short> maxIter_opt("maxit", "maxit", "Maximum number of iterations in post filter", 5);
   Optionpk<unsigned short> returns_opt("ret", "ret", "number(s) of returns to include");
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
-  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point", "last");
+  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, absmin, absmax, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point", "last");
   Optionpk<string> filter_opt("fir", "filter", "filter las points (first,last,single,multiple,all).", "all");
   Optionpk<short> angle_min_opt("angle_min", "angle_min", "Minimum scan angle to read points.");
   Optionpk<short> angle_max_opt("angle_max", "angle_max", "Maximum scan angle to read points.");
@@ -184,6 +184,10 @@ int main(int argc,char **argv) {
         && EQUAL(GDALGetDataTypeName((GDALDataType)iType),
                  otype_opt[0].c_str()))
       theType=(GDALDataType) iType;
+  }
+  if(attribute_opt[0]=="spacing"){
+    if(theType!=GDT_Float32||theType!=GDT_Float64)
+      theType=GDT_Float32;
   }
   if(verbose_opt[0]){
     if(theType==GDT_Unknown)
@@ -349,6 +353,11 @@ int main(int argc,char **argv) {
             std::cout << "writing number of returns" << std::endl;
           ++ait;
         }
+        else if(*ait=="spacing"){
+          if(verbose_opt[0])
+            std::cout << "writing spacing" << std::endl;
+          ++ait;
+        }
         else
           attribute_opt.erase(ait);
       }
@@ -356,15 +365,23 @@ int main(int argc,char **argv) {
 
     // liblas::Point thePoint(&(lasReader.getHeader()));
     // while(lasReader.readNextPoint(thePoint)){
-
+    OGRSpatialReference projectionRef(outputWriter.getProjectionRef().c_str());
+    OGRPoint ogrPoint;
+    OGRPoint ogrCenter;
+    if(attribute_opt[0]=="spacing"){
+      ogrPoint.assignSpatialReference(&projectionRef);
+      ogrCenter.assignSpatialReference(&projectionRef);
+    }
     while(lasReader.getReader()->ReadNextPoint()){
       liblas::Point const& thePoint = lasReader.getReader()->GetPoint();
       // liblas::Point const& thePoint=lasReader.getPoint();
       progress=static_cast<float>(ipoint)/totalPoints;
       pfnProgress(progress,pszMessage,pProgressArg);
+      double theX=thePoint.GetX();
+      double theY=thePoint.GetY();
       if(verbose_opt[0]>1)
         cout << "reading point " << ipoint << endl;
-      if(thePoint.GetX()<minULX||thePoint.GetX()>=maxLRX||thePoint.GetY()>=maxULY||thePoint.GetY()<minLRY)
+      if(theX<minULX||theX>=maxLRX||theY>=maxULY||theY<minLRY)
         continue;
       if((filter_opt[0]=="single")&&(thePoint.GetNumberOfReturns()!=1))
         continue;
@@ -383,7 +400,7 @@ int main(int argc,char **argv) {
 	  continue;
       }
       double dcol,drow;
-      outputWriter.geo2image(thePoint.GetX(),thePoint.GetY(),dcol,drow);
+      outputWriter.geo2image(theX,theY,dcol,drow);
       int icol=static_cast<int>(dcol);
       int irow=static_cast<int>(drow);
       if(irow<0||irow>=nrow){
@@ -412,6 +429,16 @@ int main(int argc,char **argv) {
         inputData[irow][icol].push_back(thePoint.GetReturnNumber());
       else if(attribute_opt[0]=="nreturn")
         inputData[irow][icol].push_back(thePoint.GetNumberOfReturns());
+      else if(attribute_opt[0]=="spacing"){
+	ogrPoint.setX(theX);
+	ogrPoint.setY(theY);
+	double centerX;
+	double centerY;
+	outputWriter.image2geo(icol,irow,centerX,centerY);
+	ogrCenter.setX(centerX);
+	ogrCenter.setY(centerY);
+	inputData[irow][icol].push_back(ogrPoint.Distance(&ogrCenter));
+      }
       else{
         std::string errorString="attribute not supported";
         throw(errorString);
@@ -449,6 +476,10 @@ int main(int argc,char **argv) {
           outputData[irow][icol]=stat.mymin(inputData[irow][icol]);
         else if(composite_opt[0]=="max")
           outputData[irow][icol]=stat.mymax(inputData[irow][icol]);
+        else if(composite_opt[0]=="absmin")
+          outputData[irow][icol]=stat.absmin(inputData[irow][icol]);
+        else if(composite_opt[0]=="absmax")
+          outputData[irow][icol]=stat.absmax(inputData[irow][icol]);
         else if(composite_opt[0]=="median")
           outputData[irow][icol]=stat.median(inputData[irow][icol]);
         else if(composite_opt[0]=="percentile")

@@ -142,6 +142,9 @@ public:
   template<class T> T mymax(const typename std::vector<T>& v) const;
   template<class T> T mymin(const typename std::vector<T>& v, T minConstraint) const;
   template<class T> T mymax(const typename std::vector<T>& v, T maxConstraint) const;
+  template<class T> T absmin(const typename std::vector<T>& v) const;
+  template<class T> T absmax(const typename std::vector<T>& v) const;
+
 //   template<class T> typename std::vector<T>::const_iterator mymax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> typename std::vector<T>::const_iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const;
   template<class T> typename std::vector<T>::iterator mymin(const typename std::vector<T>& v, typename std::vector<T>::iterator begin, typename std::vector<T>::iterator end) const;
@@ -552,7 +555,47 @@ template<class T> inline T StatFactory::mymax(const std::vector<T>& v, T maxCons
   }
 }
 
-template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
+template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
+{
+  bool isValid=false;
+  if(v.empty()){
+    std::string errorString="Error: vector is empty";
+    throw(errorString);
+  }
+  typename std::vector<T>::const_iterator tmpIt;
+  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
+    if(isNoData(*it))
+      continue;
+    if(isValid){
+      if(abs(*tmpIt)>abs(*it))
+	tmpIt=it;
+    }
+    else{
+      tmpIt=it;
+      isValid=true;
+    }
+  }
+  if(isValid)
+    return tmpIt;
+  else
+    return end;
+}
+
+template<class T> inline T StatFactory::absmin(const std::vector<T>& v) const
+{
+  typename std::vector<T>::const_iterator tmpIt;
+  tmpIt=absmin(v, v.begin(), v.end());
+  if(tmpIt!=v.end())
+    return *tmpIt;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
+  }
+}
+ 
+ template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
 {
   bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt;
@@ -574,28 +617,20 @@ template<class T> inline typename std::vector<T>::const_iterator StatFactory::ab
     return end;
 }
 
-template<class T> inline typename std::vector<T>::const_iterator StatFactory::absmin(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end) const
+template<class T> inline T StatFactory::absmax(const std::vector<T>& v) const
 {
-  bool isValid=false;
   typename std::vector<T>::const_iterator tmpIt;
-  for (typename std::vector<T>::const_iterator it = begin; it!=end; ++it){
-    if(isNoData(*it))
-      continue;
-    if(isValid){
-      if(abs(*tmpIt)>abs(*it))
-	tmpIt=it;
-    }
-    else{
-      tmpIt=it;
-      isValid=true;
-    }
+  tmpIt=absmax(v, v.begin(), v.end());
+  if(tmpIt!=v.end())
+    return *tmpIt;
+  else if(m_noDataValues.size())
+    return m_noDataValues[0];
+  else{
+    std::string errorString="Error: no valid data found";
+    throw(errorString);
   }
-  if(isValid)
-    return tmpIt;
-  else
-    return end;
 }
-
+ 
 template<class T> inline void StatFactory::minmax(const std::vector<T>& v, typename std::vector<T>::const_iterator begin, typename std::vector<T>::const_iterator end, T& theMin, T& theMax) const
 {
   bool isConstraint=(theMax>theMin);

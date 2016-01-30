@@ -460,4 +460,6 @@ version 2.6.6
 	skip file if not within extent boundaries
  - pklas2img
 	repair readNextPoint segfault
+	support of absmin and absmax rules
+	support of spacing attribute
 
