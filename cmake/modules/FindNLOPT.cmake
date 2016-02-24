@@ -7,14 +7,15 @@ find_path(NLOPT_INCLUDE_DIR nlopt.h
         include/nlopt
 )
 
-find_library(NLOPT_LIBRARY libnlopt-0
-    HINTS
-        ENV NLOPT_DIR
-        ENV NLOPT_ROOT
-    PATH_SUFFIXES
-        lib
-        lib/nlopt
-)
+#find_library(NLOPT_LIBRARY libnlopt-0
+find_library(NLOPT_LIBRARY nlopt
+  HINTS
+  ENV NLOPT_DIR
+  ENV NLOPT_ROOT
+  PATH_SUFFIXES
+  lib
+  lib/nlopt
+  )
 
 set(NLOPT_INCLUDE_DIRS "${NLOPT_INCLUDE_DIR}")
 set(NLOPT_LIBRARIES "${NLOPT_LIBRARY}")

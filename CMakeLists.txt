@@ -18,9 +18,6 @@
 #  define snprintf _snprintf
 #endif
 #set CMAKE_INSTALL_PREFIX to C:/OSGeo4W64;C:/Users/kempenep/Downloads/FANN-2.2.0-Source/FANN-2.2.0-Source/install;C:/Users/kempenep/Downloads/armadillo-6.200.4/install;C:\Users\kempenep\Downloads\nlopt-2.4.2-dll64
-#rename pktools.config.h.in cmake.config.h.in
-#rename pktools.config.in cmake.config.in
-#rename pktools.pc.in cmake.pc.in
 #
 ###############################################################################
 cmake_minimum_required(VERSION 3.0)
@@ -78,8 +75,8 @@ set(BUILD_WITH_FANN FALSE CACHE BOOL "Choose if pktools is to be built with fann
 set(BUILD_WITH_NLOPT FALSE CACHE BOOL "Choose if pktools is to be built with nlopt")
 set(PKTOOLS_WITH_UTILITIES TRUE CACHE BOOL "Choose if pktools utilities should be built")
 
-set(GSL_INCLUDE_DIR /usr/local/include CACHE PATH "Include PATH for GSL")
-set(GSL_LIB_PATH /usr/local/lib CACHE PATH "Library PATH for GSL")
+set(GSL_INCLUDE_DIR /usr/include CACHE PATH "Include PATH for GSL")
+set(GSL_LIB_PATH /usr/lib CACHE PATH "Library PATH for GSL")
 
 ###############################################################################
 
@@ -191,8 +188,8 @@ endif()
 
 find_package(GSL REQUIRED)
 if(GSL_FOUND)
-	include_directories(${GSL_INCLUDE_DIRS})
-	add_definitions(-DGSL_DLL)
+  include_directories(${GSL_INCLUDE_DIRS})
+  add_definitions(-DGSL_DLL)
 endif()
 
 find_package(Armadillo REQUIRED)
@@ -203,7 +200,7 @@ endif()
 if (BUILD_WITH_LIBLAS)
 	find_package(LIBLAS)
 	if(LIBLAS_FOUND)
-		include_directories(${LIBLAS_INCLUDE_DIRS})
+	  include_directories(${LIBLAS_INCLUDE_DIRS})
 	endif()
 	set(Boost_DEBUG 0)
 	find_package(Boost COMPONENTS filesystem system)
@@ -229,11 +226,11 @@ if (BUILD_WITH_FANN)
 endif(BUILD_WITH_FANN)
 
 if (BUILD_WITH_NLOPT)
-	find_package(NLOPT)
-	if(NLOPT_FOUND)
-		include_directories(${NLOPT_INCLUDE_DIRS})
-		add_definitions(-DNLOPT_DLL)
-	endif()
+  find_package(NLOPT)
+  if(NLOPT_FOUND)
+    include_directories(${NLOPT_INCLUDE_DIRS})
+    add_definitions(-DNLOPT_DLL)
+  endif()
 endif(BUILD_WITH_NLOPT)
 ###############################################################################
 
@@ -247,6 +244,8 @@ add_subdirectory ("${PROJECT_SOURCE_DIR}")
 # Build executables
 
 #configure_file ( "cmake-config.in" "${PROJECT_BINARY_DIR}/pktools-config" @ONLY )
+#test
+configure_file ( "cmake-config.in" "${CMAKE_CURRENT_BINARY_DIR}/pktools-config" @ONLY )
 configure_file ( "cmake.pc.in" "pktools.pc"  @ONLY)
 
 
@@ -345,7 +344,10 @@ endif()
 
 ###############################################################################
 # Installation
-install (FILES "${PROJECT_BINARY_DIR}/pktools-config" DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+#install (FILES "${PROJECT_BINARY_DIR}/pktools-config" DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+#install (FILES "${PROJECT_BINARY_DIR}/pktools-config" DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+#test
+install (FILES "${CMAKE_CURRENT_BINARY_DIR}/pktools-config" DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install (FILES "pktools.pc" DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 if (PKTOOLS_WITH_UTILITIES)

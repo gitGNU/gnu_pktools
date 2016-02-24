@@ -3,7 +3,7 @@
 usage()
 {
     cat <<EOF
-Usage: pktools-config [OPTIONS]
+Usage: cmake-config [OPTIONS]
 Options:
      [--prefix]
      [--version]

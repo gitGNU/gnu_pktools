@@ -15,7 +15,7 @@ libimageClasses_ladir = $(includedir)/pktools/imageclasses
 ## Instruct libtool to include ABI version information in the generated shared
 ## library file (.so).  The library ABI version is defined in configure.ac, so
 ## that all version information is kept in one place.
-libimageClasses_la_LDFLAGS = -version-info $(PKTOOLS_SO_VERSION) $(AM_LDFLAGS) -lgsl
+libimageClasses_la_LDFLAGS = -version-info $(PKTOOLS_SO_VERSION) $(AM_LDFLAGS)
 
 # the list of header files that belong to the library (to be installed later)
 libimageClasses_la_HEADERS = ImgRasterGdal.h ImgReaderGdal.h  ImgReaderOgr.h  ImgWriterGdal.h  ImgWriterOgr.h ImgUpdaterGdal.h

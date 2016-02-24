@@ -7,7 +7,7 @@ find_path(LIBLAS_INCLUDE_DIR liblas/liblas.hpp
         include
 )
 
-find_library(LIBLAS_LIBRARY liblas
+find_library(LIBLAS_LIBRARY las
     HINTS
         ENV LIBLAS_DIR
         ENV LIBLAS_ROOT
@@ -16,7 +16,7 @@ find_library(LIBLAS_LIBRARY liblas
         liblas/
 )
 
-find_library(LIBLAS_C_LIBRARY liblas_c
+find_library(LIBLAS_C_LIBRARY las_c
     HINTS
         ENV LIBLAS_DIR
         ENV LIBLAS_ROOT
