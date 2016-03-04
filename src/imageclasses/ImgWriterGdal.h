@@ -51,7 +51,7 @@ public:
   template<typename T> bool writeData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
   template<typename T> bool writeData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
   bool writeData(void* pdata, const GDALDataType& dataType, int band=0) const;
-  template<typename T> bool writeDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
+  template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   // std::string getInterleave(){return m_interleave;};
   // std::string getCompression(){return m_compression;};
   void setColorTable(const std::string& filename, int band=0);
@@ -179,8 +179,9 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, const
   return true;
 }
 
-template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
 {
+  typename std::vector<T> buffer((maxRow-minRow+1)*(maxCol-minCol+1));
   //fetch raster band
   GDALRasterBand  *poBand;
   if(band>=nrOfBand()+1){
@@ -188,12 +189,33 @@ template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer, con
     s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
     throw(s.str());
   }
+
+  typename std::vector<T>::iterator startit=buffer.begin();
+  typename std::vector<T>::iterator endit=startit;
+  for(int irow=minRow;irow<=maxRow;++irow){
+    buffer.insert(startit,buffer2d[irow-minRow].begin(),buffer2d[irow-minRow].end());
+    startit+=maxCol-minCol+1;
+  }
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  assert(buffer.size()==maxRow-minRow+1);
-  for(int irow=minRow;irow<=maxRow;++irow)
-    writeData(buffer[irow-minRow], dataType, minCol, maxCol, irow, band);
+  poBand->RasterIO(GF_Write,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);
   return true;
 }
+
+// template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+// {
+//   //fetch raster band
+//   GDALRasterBand  *poBand;
+//   if(band>=nrOfBand()+1){
+//     std::ostringstream s;
+//     s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+//     throw(s.str());
+//   }
+//   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+//   assert(buffer.size()==maxRow-minRow+1);
+//   for(int irow=minRow;irow<=maxRow;++irow)
+//     writeData(buffer[irow-minRow], dataType, minCol, maxCol, irow, band);
+//   return true;
+// }
 
 #endif // _IMGWRITERGDAL_H_
 

@@ -24,8 +24,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 int main(int argc, char *argv[])
 {
   Optionpk<std::string> foo_opt("f","foo","command line option **foo** of type string can be invoked with either short (f) or long (foo) option","defaultString");
-  Optionpk<int> bar_opt("\0","bar","command line option **bar** of type int has no short option",false,1);//bar will only be visible in long help (hide=1)
-  Optionpk<bool> easterEgg_opt("egg","egg","this help information is useless",false,2);//this option will not be shown in help (hide=2)
+  Optionpk<int> bar_opt("\0","bar","command line option **bar** of type int has no short option");//bar will only be visible in long help (hide=1)
+  Optionpk<bool> easterEgg_opt("egg","egg","this help information is useless");//this option will not be shown in help (hide=2)
+
+  bar_opt.setHide(1);//option only visible with long help (--help)
+  easterEgg_opt.setHide(2);//hidden option
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{

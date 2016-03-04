@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
   Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
   Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector dataset", "label");
   Optionpk<short> geo_opt("geo", "geo", "Use geo coordinates (set to 0 to use image coordinates)", 1);
-  Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only). Can be used to create grid points", 1);
+  Optionpk<short> down_opt("down", "down", "Down sampling factor (for raster sample datasets only).", 1);
   Optionpk<short> buffer_opt("buf", "buffer", "Buffer for calculating statistics for point features ");
   Optionpk<bool> disc_opt("circ", "circular", "Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option)", false);
   Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0,2);
@@ -234,8 +234,6 @@ int main(int argc, char *argv[])
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
       srcnodata_opt.push_back(srcnodata_opt[0]);
-    while(bndnodata_opt.size()<srcnodata_opt.size())
-      bndnodata_opt.push_back(bndnodata_opt[0]);
   }
 
   if(verbose_opt[0])
@@ -406,7 +404,7 @@ int main(int argc, char *argv[])
 	pt.setY(theY);
 	pointFeature->SetGeometry( &pt ); 
 	if(sampleWriterOgr.createFeature(pointFeature) != OGRERR_NONE ){
-	  cerr << "Failed to create feature in shapefile" << endl;
+	  cerr << "Failed to create feature in vector dataset" << endl;
 	  exit( 1 );
 	}
 	OGRFeature::DestroyFeature(pointFeature);
@@ -429,7 +427,7 @@ int main(int argc, char *argv[])
 	  pt.setY(theY);
 	  pointFeature->SetGeometry( &pt ); 
 	  if(sampleWriterOgr.createFeature(pointFeature) != OGRERR_NONE ){
-	    cerr << "Failed to create feature in shapefile" << endl;
+	    cerr << "Failed to create feature in vector dataset" << endl;
 	    exit( 1 );
 	  }
 	  OGRFeature::DestroyFeature(pointFeature);

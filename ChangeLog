@@ -463,3 +463,7 @@ version 2.6.6
 	support of absmin and absmax rules
 	support of spacing attribute
 
+version 2.6.7
+ - pkextract deprecated: split into pkextractimg and pkextractogr
+ - pkextractogr: extract OGR vector dataset sample from raster dataset supporting multiple rules
+ - pkextractimg: extract raster dataset sample from raster dataset

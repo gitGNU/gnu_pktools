@@ -249,7 +249,8 @@ int main(int argc, char *argv[])
 
     int nband=band_opt.size();
     for(int iband=0;iband<nband;++iband){
-
+      minValue=(src_min_opt.size())? src_min_opt[0] : 0;
+      maxValue=(src_max_opt.size())? src_max_opt[0] : 0;
       for(int inodata=0;inodata<nodata_opt.size();++inodata){
 	if(!inodata)
 	  imgReader.GDALSetNoDataValue(nodata_opt[0],band_opt[iband]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)

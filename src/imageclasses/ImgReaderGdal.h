@@ -61,7 +61,7 @@ public:
   template<typename T> void readData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR) const;
-  template<typename T> void readDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
+  template<typename T> void readDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   template<typename T> void readDataBlock(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
   template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=NEAR) const;
@@ -162,12 +162,18 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
   }
 }
 
-template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
 {
-  buffer.resize(maxRow-minRow+1);
+  buffer2d.resize(maxRow-minRow+1);
+  typename std::vector<T> buffer;
+  readDataBlock(buffer,dataType,minCol,maxCol,minRow,maxRow,band);
+  typename std::vector<T>::const_iterator startit=buffer.begin();
+  typename std::vector<T>::const_iterator endit=startit;
   for(int irow=minRow;irow<=maxRow;++irow){
-    buffer[irow-minRow].resize(maxCol-minCol+1);
-    readData(buffer[irow-minRow],dataType,minCol,maxCol,irow,band);
+    buffer2d[irow-minRow].resize(maxCol-minCol+1);
+    endit+=maxCol-minCol+1;
+    buffer2d[irow-minRow].assign(startit,endit);
+    startit+=maxCol-minCol+1;
   }
 }
   

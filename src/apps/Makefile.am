@@ -7,7 +7,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 
 # the program to build and install (the names of the final binaries)
 #bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatprofile pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass
-bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatprofile pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman
+bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatprofile pkegcs pkextractimg pkextractogr pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS = pkkalman
@@ -44,7 +44,9 @@ pkcrop_LDADD = -lgsl
 pkdiff_SOURCES = pkdiff.cc
 pkdiff_LDADD = -lgsl
 pkgetmask_SOURCES = pkgetmask.cc
+pkgetmask_LDADD = $(GSL_LIBS)
 pksetmask_SOURCES = pksetmask.cc
+pksetmask_LDADD = $(GSL_LIBS)
 pkcreatect_SOURCES = pkcreatect.cc
 pkdumpimg_SOURCES = pkdumpimg.cc
 pkdumpogr_SOURCES = pkdumpogr.h pkdumpogr.cc
@@ -59,8 +61,10 @@ pkstatogr_SOURCES = pkstatogr.cc
 pkstatogr_LDADD = -lgsl
 pkegcs_SOURCES = pkegcs.cc
 pkegcs_LDADD = $(AM_LDFLAGS) -lgsl -lgdal
-pkextract_SOURCES = pkextract.cc
-pkextract_LDADD = $(AM_LDFLAGS) -lgsl -lgdal
+pkextractimg_SOURCES = pkextractimg.cc
+pkextractimg_LDADD = $(AM_LDFLAGS) -lgsl -lgdal
+pkextractogr_SOURCES = pkextractogr.cc
+pkextractogr_LDADD = $(AM_LDFLAGS) -lgsl -lgdal
 pkfillnodata_SOURCES = pkfillnodata.cc
 pkfilter_SOURCES = pkfilter.cc
 pkfilter_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl -lgdal

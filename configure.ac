@@ -1,4 +1,4 @@
-AC_INIT([pktools], [2.6.6], [kempenep@gmail.com])
+AC_INIT([pktools], [2.6.7], [kempenep@gmail.com])
 #AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_INIT_AUTOMAKE([-Wall -Wno-extra-portability foreign])
 #AM_INIT_AUTOMAKE([subdir-objects]) #not working due to bug in autoconf, see Debian list: Bug #752993)

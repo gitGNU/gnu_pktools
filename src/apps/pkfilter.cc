@@ -63,7 +63,7 @@ The number of output bands equals number of input bands
 
 |filter|description|
 |-------------|-------------|
-dilate|morphological dilation|
+|dilate|morphological dilation|
 |erode|morphological erosion|
 |close|morpholigical closing (dilate+erode)|
 |open|morpholigical opening (erode+dilate)|
@@ -390,6 +390,7 @@ int main(int argc,char **argv) {
     option_opt.push_back(theInterleave);
   }
   try{
+    string errorString;
     int nband=input.nrOfBand();
 
     if(fwhm_opt.size())
@@ -400,8 +401,8 @@ int main(int argc,char **argv) {
       nband=input.nrOfBand();
     else{
       if(method_opt.empty()){
-	cerr << "Error: no filter selected, use option -f" << endl;
-	exit(1);
+        errorString="Error: no filter selected, use option -f";
+        throw(errorString);
       }
       switch(filter2d::Filter2d::getFilterType(method_opt[0])){
       case(filter2d::dilate):
@@ -432,8 +433,8 @@ int main(int argc,char **argv) {
 	  assert(threshold_opt.size());
 	}
 	else{
-	  cerr << "filter not implemented in spatial domain" << endl;
-	  exit(1);
+          errorString="filter not implemented in spatial domain";
+          throw(errorString);
 	}
 	break;
       case(filter2d::mrf)://deliberate fall through
@@ -456,8 +457,8 @@ int main(int argc,char **argv) {
       case(filter2d::heterog):
 	//only implemented in spatial domain
 	if(dimZ_opt.size()){
-	  cerr << "filter not implemented in spectral/temporal domain" << endl;
-	  exit(1);
+          errorString="filter not implemented in spectral/temporal domain";
+          throw(errorString);
 	}
 	break;
       // case(filter2d::percentile):
@@ -487,12 +488,8 @@ int main(int argc,char **argv) {
 	  nband=input.nrOfBand();
 	break;
       default:
-	cerr << "filter not implemented" << endl;
-	exit(1);
-	// if(dimZ_opt.size())
-	//   nband=dimZ_opt[0];
-	// else
-	//   nband=input.nrOfBand();
+	errorString="filter not implemented";
+        throw(errorString);
 	break;
       }
     }
@@ -500,8 +497,8 @@ int main(int argc,char **argv) {
     output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
   }
   catch(string errorstring){
-    cout << errorstring << endl;
-    exit(4);
+    cerr << errorstring << endl;
+    exit(1);
   }
   output.setProjection(input.getProjection());
   double gt[6];
