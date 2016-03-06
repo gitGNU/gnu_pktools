@@ -1149,16 +1149,33 @@ int main(int argc, char *argv[])
               ++ntotalvalidLayer;
             }
           }
-	  else if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
-            
-	    OGRPolygon readPolygon = *((OGRPolygon *) poGeometry);
-	    readPolygon.closeRings();
+	  else{
+	    OGRPolygon readPolygon;
+	    OGRMultiPolygon readMultiPolygon;
+
+            //get envelope
+            OGREnvelope* psEnvelope=new OGREnvelope();
+
+	    if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+	      readPolygon = *((OGRPolygon *) poGeometry);
+	      readPolygon.closeRings();
+	      readPolygon.getEnvelope(psEnvelope);
+	    }
+	    else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon){
+	      readMultiPolygon = *((OGRMultiPolygon *) poGeometry);
+	      readMultiPolygon.closeRings();
+	      readMultiPolygon.getEnvelope(psEnvelope);
+	    }
+	    else{
+	      std::string test;
+	      test=poGeometry->getGeometryName();
+	      ostringstream oss;
+	      oss << "geometry " << test << " not supported";
+	      throw(oss.str());
+	    }
 
 	    double ulx,uly,lrx,lry;
 	    double uli,ulj,lri,lrj;
-            //get envelope
-            OGREnvelope* psEnvelope=new OGREnvelope();
-            readPolygon.getEnvelope(psEnvelope);
             ulx=psEnvelope->MinX;
             uly=psEnvelope->MaxY;
             lrx=psEnvelope->MaxX;
@@ -1187,7 +1204,11 @@ int main(int argc, char *argv[])
 	    if(find(rule_opt.begin(),rule_opt.end(),"centroid")!=rule_opt.end()){
               if(verbose_opt[0]>1)
                 std::cout << "get centroid" << std::endl;
-	      readPolygon.Centroid(&readPoint);
+	      if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon)
+		readPolygon.Centroid(&readPoint);
+	      else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon)
+		readMultiPolygon.Centroid(&readPoint);
+
               double i,j;
               imgReader.geo2image(readPoint.getX(),readPoint.getY(),i,j);
               int indexJ=static_cast<int>(j-layer_ulj);
@@ -1251,8 +1272,14 @@ int main(int argc, char *argv[])
 	    if(find(rule_opt.begin(),rule_opt.end(),"point")!=rule_opt.end()){
               if(verbose_opt[0]>1)
                 std::cout << "get point on surface" << std::endl;
-              if(readPolygon.PointOnSurface(&readPoint)!=OGRERR_NONE)
-                readPolygon.Centroid(&readPoint);
+	      if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+		if(readPolygon.PointOnSurface(&readPoint)!=OGRERR_NONE)
+		  readPolygon.Centroid(&readPoint);
+	      }
+	      else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon){
+		// if(readMultiPolygon.PointOnSurface(&readPoint)!=OGRERR_NONE)
+		  readMultiPolygon.Centroid(&readPoint);
+	      }
               double i,j;
               imgReader.geo2image(readPoint.getX(),readPoint.getY(),i,j);
               int indexJ=static_cast<int>(j-layer_ulj);
@@ -1370,8 +1397,15 @@ int main(int argc, char *argv[])
                   thePoint.setX(theX);
                   thePoint.setY(theY);
                   //check if point is on surface
-                  if(!readPolygon.Contains(&thePoint))
-                    continue;
+		  if(wkbFlatten(poGeometry->getGeometryType()) == wkbPolygon){
+		    if(!readPolygon.Contains(&thePoint))
+		      continue;
+		  }
+		  else if(wkbFlatten(poGeometry->getGeometryType()) == wkbMultiPolygon){
+		    if(!readMultiPolygon.Contains(&thePoint))
+		      continue;
+		  }
+		  
                   bool valid=true;
                   if(srcnodata_opt.size()){
                     for(int vband=0;vband<bndnodata_opt.size();++vband){
@@ -1610,13 +1644,6 @@ int main(int argc, char *argv[])
               ++ntotalvalid;
               ++ntotalvalidLayer;
             }
-          }
-	  else{
-	    std::string test;
-	    test=poGeometry->getGeometryName();
-	    ostringstream oss;
-	    oss << "geometry " << test << " not supported";
-	    throw(oss.str());
 	  }
 	  ++ifeature;
 	  if(theThreshold>0){
