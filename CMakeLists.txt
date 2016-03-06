@@ -72,7 +72,7 @@ set(PKTOOLS_LASCLASSES_LIB_NAME lasClasses)
 option (BUILD_SHARED_LIBS "Build with shared library" OFF)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
 set(BUILD_WITH_FANN FALSE CACHE BOOL "Choose if pktools is to be built with fann")
-set(BUILD_WITH_NLOPT FALSE CACHE BOOL "Choose if pktools is to be built with nlopt")
+#set(BUILD_WITH_NLOPT FALSE CACHE BOOL "Choose if pktools is to be built with nlopt")
 set(PKTOOLS_WITH_UTILITIES TRUE CACHE BOOL "Choose if pktools utilities should be built")
 
 set(GSL_INCLUDE_DIR /usr/include CACHE PATH "Include PATH for GSL")
@@ -225,13 +225,13 @@ if (BUILD_WITH_FANN)
 	endif()
 endif(BUILD_WITH_FANN)
 
-if (BUILD_WITH_NLOPT)
-  find_package(NLOPT)
-  if(NLOPT_FOUND)
-    include_directories(${NLOPT_INCLUDE_DIRS})
-    add_definitions(-DNLOPT_DLL)
-  endif()
-endif(BUILD_WITH_NLOPT)
+# if (BUILD_WITH_NLOPT)
+#   find_package(NLOPT)
+#   if(NLOPT_FOUND)
+#     include_directories(${NLOPT_INCLUDE_DIRS})
+#     add_definitions(-DNLOPT_DLL)
+#   endif()
+# endif(BUILD_WITH_NLOPT)
 ###############################################################################
 
 ###############################################################################
@@ -280,6 +280,7 @@ set(PKUTILITIES
 	pkascii2img 
 	pksvm 
 	pkfssvm 
+	pkoptsvm
 	pkascii2ogr 
 	pkreclass 
 	pkkalman
@@ -295,9 +296,9 @@ set(PKFANNUTILITIES
 	pkregann
 )
 
-set(PKNLOPTUTILITIES
-	pkoptsvm
-)
+# set(PKNLOPTUTILITIES
+# 	pkoptsvm
+# )
 
 if (PKTOOLS_WITH_UTILITIES)
 	foreach(UTILITY ${PKUTILITIES})
@@ -324,16 +325,17 @@ if (PKTOOLS_WITH_UTILITIES)
     		set_target_properties(${PKFANNUTILITY} PROPERTIES FOLDER utilities)
 		endforeach()
 	endif()
-	if (BUILD_WITH_NLOPT)
-		set(PKLIBS ${PKLIBS} ${NLOPT_LIBRARIES})
-		foreach(PKNLOPTUTILITY ${PKNLOPTUTILITIES})
-		add_executable(${PKNLOPTUTILITY} src/apps/${PKNLOPTUTILITY}.cc)
-		message(${PKLIBS})
-		target_link_libraries (${PKNLOPTUTILITY} ${PKLIBS})
-    		set_target_properties(${PKNLOPTUTILITY} PROPERTIES FOLDER utilities)
-		endforeach()
-	endif()	
-	add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES} ${PKNLOPTUTILITIES})
+	# if (BUILD_WITH_NLOPT)
+	# 	set(PKLIBS ${PKLIBS} ${NLOPT_LIBRARIES})
+	# 	foreach(PKNLOPTUTILITY ${PKNLOPTUTILITIES})
+	# 	add_executable(${PKNLOPTUTILITY} src/apps/${PKNLOPTUTILITY}.cc)
+	# 	message(${PKLIBS})
+	# 	target_link_libraries (${PKNLOPTUTILITY} ${PKLIBS})
+    	# 	set_target_properties(${PKNLOPTUTILITY} PROPERTIES FOLDER utilities)
+	# 	endforeach()
+	# endif()	
+	# add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES} ${PKNLOPTUTILITIES})
+	add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES})
 	set_target_properties(utilities PROPERTIES FOLDER 
 	phony)
 
@@ -359,9 +361,9 @@ if (PKTOOLS_WITH_UTILITIES)
 	if (BUILD_WITH_FANN)
 		install (TARGETS ${PKFANNUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 	endif(BUILD_WITH_FANN)
-	if (BUILD_WITH_NLOPT)
-		install (TARGETS ${PKNLOPTUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-	endif(BUILD_WITH_NLOPT)
+	# if (BUILD_WITH_NLOPT)
+	# 	install (TARGETS ${PKNLOPTUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+	# endif(BUILD_WITH_NLOPT)
 	
 endif(PKTOOLS_WITH_UTILITIES)
 

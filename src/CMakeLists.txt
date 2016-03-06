@@ -25,10 +25,10 @@ set(ALGOR_H
 	${ALGOR_SRC_DIR}/Filter.h
 	${ALGOR_SRC_DIR}/Filter2d.h
 	${ALGOR_SRC_DIR}/ImgRegression.h
-	${ALGOR_SRC_DIR}/OptFactory.h
 	${ALGOR_SRC_DIR}/StatFactory.h
 	${ALGOR_SRC_DIR}/myfann_cpp.h
 	${ALGOR_SRC_DIR}/svm.h
+#	${ALGOR_SRC_DIR}/OptFactory.h
 	)
 
 set(ALGOR_CC

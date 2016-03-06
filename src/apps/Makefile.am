@@ -7,7 +7,7 @@ LDADD = $(GSL_LIBS) $(GDAL_LDFLAGS) $(top_builddir)/src/algorithms/libalgorithms
 
 # the program to build and install (the names of the final binaries)
 #bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatprofile pkegcs pkextract pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass
-bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatprofile pkegcs pkextractimg pkextractogr pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkascii2ogr pkreclass pkkalman
+bin_PROGRAMS = pkinfo pkcrop pkdiff pkgetmask pksetmask pkcreatect pkdumpimg pkdumpogr pksieve pkstat pkstatascii pkstatogr pkstatprofile pkegcs pkextractimg pkextractogr pkfillnodata pkfilter pkfilterdem pkfilterascii pkdsm2shadow pkcomposite pkpolygonize pkascii2img pksvm pkfssvm pkoptsvm pkascii2ogr pkreclass pkkalman
 
 # the program to build but not install (the names of the final binaries)
 #noinst_PROGRAMS = pkkalman
@@ -31,11 +31,11 @@ bin_PROGRAMS += pklas2img
 pklas2img_SOURCES = pklas2img.cc
 pklas2img_LDADD = -lgsl $(top_srcdir)/src/lasclasses/liblasClasses.la -llas $(AM_LDFLAGS)
 endif
-if USE_NLOPT
-bin_PROGRAMS += pkoptsvm
-pkoptsvm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h $(top_srcdir)/src/algorithms/CostFactorySVM.h pkoptsvm.cc
-pkoptsvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lgsl
-endif
+# if USE_NLOPT
+# bin_PROGRAMS += pkoptsvm
+# pkoptsvm_SOURCES = $(top_srcdir)/src/algorithms/OptFactory.h $(top_srcdir)/src/algorithms/CostFactorySVM.h pkoptsvm.cc
+# pkoptsvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lnlopt -lgsl
+# endif
 # list of sources for the binaries
 pkinfo_SOURCES = pkinfo.cc
 pkinfo_LDADD = $(AM_LDFLAGS) -lgsl
@@ -82,6 +82,8 @@ pksvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/
 pksvm_LDADD = -lgsl
 pkfssvm_SOURCES = $(top_srcdir)/src/algorithms/svm.h $(top_srcdir)/src/algorithms/FeatureSelector.h  $(top_srcdir)/src/algorithms/CostFactorySVM.h $(top_srcdir)/src/algorithms/svm.cpp pkfssvm.cc
 pkfssvm_LDADD = -lgsl $(GSL_LIBS) $(AM_LDFLAGS) -lalgorithms
+pkoptsvm_SOURCES = $(top_srcdir)/src/algorithms/CostFactorySVM.h pkoptsvm.cc
+pkoptsvm_LDADD = $(GSL_LIBS) $(AM_LDFLAGS) -lgsl
 pkascii2img_SOURCES = pkascii2img.cc
 pkascii2ogr_SOURCES = pkascii2ogr.cc
 pkreclass_SOURCES = pkreclass.cc

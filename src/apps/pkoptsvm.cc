@@ -22,11 +22,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include <vector>
 #include <math.h>
-#include <nlopt.hpp>
+//#include <nlopt.hpp>
 #include "base/Optionpk.h"
 #include "algorithms/ConfusionMatrix.h"
 #include "algorithms/FeatureSelector.h"
-#include "algorithms/OptFactory.h"
+//#include "algorithms/OptFactory.h"
 #include "algorithms/CostFactorySVM.h"
 #include "algorithms/svm.h"
 #include "imageclasses/ImgReaderOgr.h"

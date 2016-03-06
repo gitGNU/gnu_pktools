@@ -77,17 +77,15 @@ AM_CONDITIONAL(USE_LAS, false)
 dnl AC_MSG_WARN("USE_LAS=false")
 ])
 
-AC_ARG_ENABLE([nlopt],
-AS_HELP_STRING([--enable-nlopt], [Enable feature nlopt]))
+dnl AC_ARG_ENABLE([nlopt],
+dnl AS_HELP_STRING([--enable-nlopt], [Enable feature nlopt]))
 
-AS_IF([test "x$enable_nlopt" = "xyes"], [
-PKG_CHECK_MODULES(NLOPT, nlopt >= 2.1.0, [HAVE_NLOPT=1], [HAVE_NLOPT=0])
-AM_CONDITIONAL([USE_NLOPT], [test "$HAVE_NLOPT" -eq 1])
-dnl AC_MSG_WARN("USE_NLOPT=true")
-], [
-AM_CONDITIONAL(USE_NLOPT, false)
-dnl AC_MSG_WARN("USE_NLOPT=false")
-])
+dnl AS_IF([test "x$enable_nlopt" = "xyes"], [
+dnl PKG_CHECK_MODULES(NLOPT, nlopt >= 2.1.0, [HAVE_NLOPT=1], [HAVE_NLOPT=0])
+dnl AM_CONDITIONAL([USE_NLOPT], [test "$HAVE_NLOPT" -eq 1])
+dnl ], [
+dnl AM_CONDITIONAL(USE_NLOPT, false)
+dnl ])
 
 
 PKG_CHECK_MODULES(GSL, gsl >= 1.14, [HAVE_GSL=1], [HAVE_GSL=0])
