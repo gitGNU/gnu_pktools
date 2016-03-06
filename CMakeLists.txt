@@ -20,7 +20,7 @@
 #set CMAKE_INSTALL_PREFIX to C:/OSGeo4W64;C:/Users/kempenep/Downloads/FANN-2.2.0-Source/FANN-2.2.0-Source/install;C:/Users/kempenep/Downloads/armadillo-6.200.4/install;C:\Users\kempenep\Downloads\nlopt-2.4.2-dll64
 #
 ###############################################################################
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 2.8)
 ###############################################################################
 # Set Project name and version
 project (PKTOOLS)
