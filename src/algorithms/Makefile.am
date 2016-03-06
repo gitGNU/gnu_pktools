@@ -31,9 +31,9 @@ if USE_FANN
 libalgorithms_la_HEADERS += myfann_cpp.h
 endif
 
-if USE_NLOPT
-libalgorithms_la_HEADERS += OptFactory.h
-endif
+# if USE_NLOPT
+# libalgorithms_la_HEADERS += OptFactory.h
+# endif
 
 # the sources to add to the library and to add to the source distribution
 libalgorithms_la_SOURCES = $(libalgorithms_la_HEADERS) Egcs.cc Filter2d.cc Filter.cc ConfusionMatrix.cc svm.cpp CostFactorySVM.cc
