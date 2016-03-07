@@ -188,3 +188,30 @@ Compile and link via make:
 \code
 make
 \endcode
+
+Finally install on your system:
+
+\code
+make install
+\endcode
+
+\subsection Troubleshooting cmake in Linux (installed version is not 3.0)
+If your system does not have CMake version 3.0, or your repository has an older version, you can manually install the latest version of CMake (for instance version 3.2.2):
+
+\code
+wget http://www.cmake.org/files/v3.2/cmake-3.2.2.tar.gz
+tar xf cmake-3.2.2.tar.gz
+cd cmake-3.2.2
+./configure
+make
+make install
+\endcode
+
+In order to have ccmake look for the newly installed version in /usr/local/bin, I had to (on a Debian/Ubuntu based system):
+
+\code
+sudo apt-get install libncurses5-dev
+\code
+
+Then reconfigure/compile/install cmake and restart the shell
+
