@@ -356,350 +356,718 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
 
 void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
 {
-  const char* pszMessage;
-  void* pProgressArg=NULL;
-  GDALProgressFunc pfnProgress=GDALTermProgress;
-  double progress=0;
-  pfnProgress(progress,pszMessage,pProgressArg);
+  // const char* pszMessage;
+  // void* pProgressArg=NULL;
+  // GDALProgressFunc pfnProgress=GDALTermProgress;
+  // double progress=0;
+  // pfnProgress(progress,pszMessage,pProgressArg);
 
   assert(dimX);
   assert(dimY);
 
-  statfactory::StatFactory stat;
   for(int iband=0;iband<input.nrOfBand();++iband){
-    Vector2d<double> inBuffer(dimY,input.nrOfCol());
-    std::vector<double> outBuffer((input.nrOfCol()+down-1)/down);
-    int indexI=0;
-    int indexJ=0;
-    //initialize last half of inBuffer
-    for(int j=-(dimY-1)/2;j<=dimY/2;++j){
-      try{
-        input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
+    switch(input.getDataType()){
+    case GDT_Byte:{
+      Vector2d<unsigned short> inBuffer;
+      input.readDataBlock(inBuffer,GDT_UInt16,0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      switch(output.getDataType()){
+      case GDT_Byte:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,GDT_UInt16,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
       }
-      catch(std::string errorstring){
-	std::cerr << errorstring << "in line " << indexJ << std::endl;
+      case GDT_Int16:{
+        Vector2d<short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
       }
-      ++indexJ;
+      case GDT_UInt16:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int32:{
+        Vector2d<int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt32:{
+        Vector2d<unsigned int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float32:{
+        Vector2d<float> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float64:
+      default:{
+        Vector2d<double> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      }
+      break;
     }
-    for(int y=0;y<input.nrOfRow();++y){
-      if(y){//inBuffer already initialized for y=0
-	//erase first line from inBuffer
-	if(dimY>1)
-	  inBuffer.erase(inBuffer.begin());
-	//read extra line and push back to inBuffer if not out of bounds
-	if(y+dimY/2<input.nrOfRow()){
-          //allocate buffer
-	  if(dimY>1)
-	    inBuffer.push_back(inBuffer.back());
-	  try{
-            input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
-	  }
-	  catch(std::string errorstring){
-	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
-	  }
-	}
-        else{
-          int over=y+dimY/2-input.nrOfRow();
-          int index=(inBuffer.size()-1)-over;
-          assert(index>=0);
-          assert(index<inBuffer.size());
-          inBuffer.push_back(inBuffer[index]);
-        }
+    case GDT_Int16:{
+      Vector2d<short> inBuffer;
+      input.readDataBlock(inBuffer,input.getDataType(),0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      switch(output.getDataType()){
+      case GDT_Byte:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,GDT_UInt16,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
       }
-      if((y+1+down/2)%down)
-        continue;
-      for(int x=0;x<input.nrOfCol();++x){
-        if((x+1+down/2)%down)
-          continue;
-	outBuffer[x/down]=0;
-	std::vector<double> windowBuffer;
-	std::map<long int,int> occurrence;
-        int centre=dimX*(dimY-1)/2+(dimX-1)/2;
-	for(int j=-(dimY-1)/2;j<=dimY/2;++j){
-	  for(int i=-(dimX-1)/2;i<=dimX/2;++i){
-	    double d2=i*i+j*j;//square distance
-            if(disc&&(d2>(dimX/2)*(dimY/2)))
-              continue;
-	    indexI=x+i;
-	    //check if out of bounds
-	    if(indexI<0)
-	      indexI=-indexI;
-	    else if(indexI>=input.nrOfCol())
-	      indexI=input.nrOfCol()-i;
-	    if(y+j<0)
-	      indexJ=-j;
-	    else if(y+j>=input.nrOfRow())
-	      indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
-	    else
-	      indexJ=(dimY-1)/2+j;
-	    bool masked=false;
-	    for(int imask=0;imask<m_noDataValues.size();++imask){
-	      if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
-		masked=true;
-		break;
-	      }
-	    }
-	    if(!masked){
-              std::vector<short>::const_iterator vit=m_class.begin();
-              if(!m_class.size())
-                ++occurrence[inBuffer[indexJ][indexI]];
-              else{
-                while(vit!=m_class.end()){
-                  if(inBuffer[indexJ][indexI]==*(vit++))
-                    ++occurrence[inBuffer[indexJ][indexI]];
-                }
-              }
-              windowBuffer.push_back(inBuffer[indexJ][indexI]);
-            }
-	  }
-        }
-        switch(getFilterType(method)){
-        case(filter2d::nvalid):
-	  outBuffer[x/down]=stat.nvalid(windowBuffer);
-          break;
-        case(filter2d::median):
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-            outBuffer[x/down]=stat.median(windowBuffer);
-          break;
-        case(filter2d::var):{
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-            outBuffer[x/down]=stat.var(windowBuffer);
-          break;
-        }
-        case(filter2d::stdev):{
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-            outBuffer[x/down]=sqrt(stat.var(windowBuffer));
-          break;
-        }
-        case(filter2d::mean):{
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-            outBuffer[x/down]=stat.mean(windowBuffer);
-          break;
-        }
-        case(filter2d::min):{
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-           outBuffer[x/down]=stat.mymin(windowBuffer);
-          break;
-        }
-        case(filter2d::ismin):{
-           if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-            outBuffer[x/down]=(stat.mymin(windowBuffer)==windowBuffer[centre])? 1:0;
-          break;
-        }
-        case(filter2d::minmax):{//is the same as homog?
-          double min=0;
-          double max=0;
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else{
-            stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
-            if(min!=max)
-              outBuffer[x/down]=0;
-            else
-              outBuffer[x/down]=windowBuffer[centre];//centre pixels
-          }
-          break;
-        }
-        case(filter2d::max):{
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-            outBuffer[x/down]=stat.mymax(windowBuffer);
-          break;
-        }
-        case(filter2d::ismax):{
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else
-            outBuffer[x/down]=(stat.mymax(windowBuffer)==windowBuffer[centre])? 1:0;
-          break;
-        }
-        case(filter2d::order):{
-          if(windowBuffer.empty())
-            outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          else{
-            double lbound=0;
-            double ubound=dimX*dimY;
-            double theMin=stat.mymin(windowBuffer);
-            double theMax=stat.mymax(windowBuffer);
-            double scale=(ubound-lbound)/(theMax-theMin);
-            outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[centre]-theMin)+lbound);
-          }
-          break;
-        }
-        case(filter2d::sum):{
-          outBuffer[x/down]=stat.sum(windowBuffer);
-          break;
-        }
-	case(filter2d::percentile):{
-	  assert(m_threshold.size());
-	  outBuffer[x/down]=stat.percentile(windowBuffer,windowBuffer.begin(),windowBuffer.end(),m_threshold[0]);
-	  break;
-	}
-        case(filter2d::proportion):{
-	  if(windowBuffer.size()){
-	    double sum=stat.sum(windowBuffer);
-	    if(sum)
-	      outBuffer[x/down]=100.0*windowBuffer[centre]/stat.sum(windowBuffer);
-	    else
-	      outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-	  }
-	  else
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          break;
-	}
-        case(filter2d::homog):
-	  if(occurrence.size()==1)//all values in window are the same
-	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
-	  else
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          break;
-        case(filter2d::heterog):{
-	  if(occurrence.size()==windowBuffer.size())
-	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
-	  else	    
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-	  // if(occurrence.size()==1)//all values in window are the same
-	  //   outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-	  // else
-	  //   outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
-          // break;
-          // for(std::vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
-          //   if(wit==windowBuffer.begin()+windowBuffer.size()/2)
-          //     continue;
-          //   else if(*wit!=inBuffer[(dimY-1)/2][x]){
-          //     outBuffer[x/down]=1;
-	  //     break;
-	  //   }
-          //   else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
-          //     outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          //     break;
-          //   }
-          // }
-          // break;
-        }
-        case(filter2d::density):{
-	  if(windowBuffer.size()){
-	    std::vector<short>::const_iterator vit=m_class.begin();
-	    while(vit!=m_class.end())
-	      outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
-	  }
-	  else
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          break;
-	}
-        case(filter2d::countid):{
-	  if(windowBuffer.size())
-	    outBuffer[x/down]=occurrence.size();
-	  else
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          break;
-	}
-        case(filter2d::mode):{
-	  if(occurrence.size()){
-            std::map<long int,int>::const_iterator maxit=occurrence.begin();
-            for(std::map<long int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
-              if(mit->second>maxit->second)
-                maxit=mit;
-            }
-            if(occurrence[inBuffer[(dimY-1)/2][x]]<maxit->second)//
-              outBuffer[x/down]=maxit->first;
-            else//favorize original value in case of ties
-              outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
-	  }
-	  else
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          break;
-        }
-        case(filter2d::threshold):{
-          assert(m_class.size()==m_threshold.size());
-	  if(windowBuffer.size()){
-            outBuffer[x/down]=inBuffer[(dimY-1)/2][x];//initialize with original value (in case thresholds not met)
-            for(int iclass=0;iclass<m_class.size();++iclass){
-              if(100.0*(occurrence[m_class[iclass]])/windowBuffer.size()>m_threshold[iclass])
-                outBuffer[x/down]=m_class[iclass];
-            }
-          }
-          else
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          break;
-        }
-        case(filter2d::scramble):{//could be done more efficiently window by window with random shuffling entire buffer and assigning entire buffer at once to output image...
-	  if(windowBuffer.size()){
-            int randomIndex=std::rand()%windowBuffer.size();
-	    if(randomIndex>=windowBuffer.size())
-	      outBuffer[x/down]=windowBuffer.back();
-	    else if(randomIndex<0)
-	      outBuffer[x/down]=windowBuffer[0];
-	    else
-	      outBuffer[x/down]=windowBuffer[randomIndex];
-          }
-          else
-	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
-          break;
-        }
-        case(filter2d::mixed):{
-          enum Type { BF=11, CF=12, MF=13, NF=20, W=30 };
-          double nBF=occurrence[BF];
-          double nCF=occurrence[CF];
-          double nMF=occurrence[MF];
-          double nNF=occurrence[NF];
-          double nW=occurrence[W];
-	  if(windowBuffer.size()){
-            if((nBF+nCF+nMF)&&(nBF+nCF+nMF>=nNF+nW)){//forest
-              if(nBF/(nBF+nCF)>=0.75)
-                outBuffer[x/down]=BF;
-              else if(nCF/(nBF+nCF)>=0.75)
-                outBuffer[x/down]=CF;
-              else
-                outBuffer[x/down]=MF;
-            }
-            else{//non-forest
-              if(nW&&(nW>=nNF))
-                outBuffer[x/down]=W;
-              else
-                outBuffer[x/down]=NF;
-            }
-          }
-	  else
-	    outBuffer[x/down]=inBuffer[indexJ][indexI];
-          break;
-        }
-        default:{
-	  std::ostringstream ess;
-	  ess << "Error: filter method " << method << " not supported" << std::endl;
-	  throw(ess.str());
-          break;
-	}
-        }
+      case GDT_Int16:{
+        Vector2d<short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
       }
-      progress=(1.0+y/down);
-      progress+=(output.nrOfRow()*iband);
-      progress/=output.nrOfBand()*output.nrOfRow();
-      pfnProgress(progress,pszMessage,pProgressArg);
-      //write outBuffer to file
-      try{
-        output.writeData(outBuffer,GDT_Float64,y/down,iband);
+      case GDT_UInt16:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
       }
-      catch(std::string errorstring){
-	std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
+      case GDT_Int32:{
+        Vector2d<int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
       }
+      case GDT_UInt32:{
+        Vector2d<unsigned int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float32:{
+        Vector2d<float> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float64:
+      default:{
+        Vector2d<double> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      }
+      break;
+    }
+    case GDT_UInt16:{
+      Vector2d<unsigned short> inBuffer;
+      input.readDataBlock(inBuffer,input.getDataType(),0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      switch(output.getDataType()){
+      case GDT_Byte:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,GDT_UInt16,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int16:{
+        Vector2d<short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt16:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int32:{
+        Vector2d<int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt32:{
+        Vector2d<unsigned int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float32:{
+        Vector2d<float> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float64:
+      default:{
+        Vector2d<double> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      }
+      break;
+    }
+    case GDT_Int32:{
+      Vector2d<int> inBuffer;
+      input.readDataBlock(inBuffer,input.getDataType(),0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      switch(output.getDataType()){
+      case GDT_Byte:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,GDT_UInt16,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int16:{
+        Vector2d<short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt16:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int32:{
+        Vector2d<int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt32:{
+        Vector2d<unsigned int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float32:{
+        Vector2d<float> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float64:
+      default:{
+        Vector2d<double> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      }
+      break;
+    }
+    case GDT_UInt32:{
+      Vector2d<unsigned int> inBuffer;
+      input.readDataBlock(inBuffer,input.getDataType(),0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      switch(output.getDataType()){
+      case GDT_Byte:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,GDT_UInt16,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int16:{
+        Vector2d<short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt16:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int32:{
+        Vector2d<int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt32:{
+        Vector2d<unsigned int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float32:{
+        Vector2d<float> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float64:
+      default:{
+        Vector2d<double> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      }
+      break;
+    }
+    case GDT_Float32:{
+      Vector2d<float> inBuffer;
+      input.readDataBlock(inBuffer,input.getDataType(),0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      switch(output.getDataType()){
+      case GDT_Byte:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,GDT_UInt16,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int16:{
+        Vector2d<short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt16:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int32:{
+        Vector2d<int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt32:{
+        Vector2d<unsigned int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float32:{
+        Vector2d<float> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float64:
+      default:{
+        Vector2d<double> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      }
+      break;
+    }
+    case GDT_Float64:{
+      Vector2d<double> inBuffer;
+      input.readDataBlock(inBuffer,input.getDataType(),0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      switch(output.getDataType()){
+      case GDT_Byte:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,GDT_UInt16,0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int16:{
+        Vector2d<short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt16:{
+        Vector2d<unsigned short> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Int32:{
+        Vector2d<int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_UInt32:{
+        Vector2d<unsigned int> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float32:{
+        Vector2d<float> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      case GDT_Float64:
+      default:{
+        Vector2d<double> outBuffer;
+        doit(inBuffer,outBuffer,method,dimX,dimY,down,disc);
+        output.writeDataBlock(outBuffer,output.getDataType(),0,outBuffer.nCols()-1,0,outBuffer.nRows()-1,iband);
+        break;
+      }
+      }
+      break;
+    }
     }
   }
-  pfnProgress(1.0,pszMessage,pProgressArg);
 }
+
+
+// void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
+// {
+//   const char* pszMessage;
+//   void* pProgressArg=NULL;
+//   GDALProgressFunc pfnProgress=GDALTermProgress;
+//   double progress=0;
+//   pfnProgress(progress,pszMessage,pProgressArg);
+
+//   assert(dimX);
+//   assert(dimY);
+
+//   statfactory::StatFactory stat;
+//   for(int iband=0;iband<input.nrOfBand();++iband){
+//     Vector2d<double> inBuffer(dimY,input.nrOfCol());
+//     std::vector<double> outBuffer((input.nrOfCol()+down-1)/down);
+//     int indexI=0;
+//     int indexJ=0;
+//     //initialize last half of inBuffer
+//     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+//       try{
+//         input.readData(inBuffer[indexJ],GDT_Float64,abs(j),iband);
+//       }
+//       catch(std::string errorstring){
+// 	std::cerr << errorstring << "in line " << indexJ << std::endl;
+//       }
+//       ++indexJ;
+//     }
+//     for(int y=0;y<input.nrOfRow();++y){
+//       if(y){//inBuffer already initialized for y=0
+// 	//erase first line from inBuffer
+// 	if(dimY>1)
+// 	  inBuffer.erase(inBuffer.begin());
+// 	//read extra line and push back to inBuffer if not out of bounds
+// 	if(y+dimY/2<input.nrOfRow()){
+//           //allocate buffer
+// 	  if(dimY>1)
+// 	    inBuffer.push_back(inBuffer.back());
+// 	  try{
+//             input.readData(inBuffer[inBuffer.size()-1],GDT_Float64,y+dimY/2,iband);
+// 	  }
+// 	  catch(std::string errorstring){
+// 	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
+// 	  }
+// 	}
+//         else{
+//           int over=y+dimY/2-input.nrOfRow();
+//           int index=(inBuffer.size()-1)-over;
+//           assert(index>=0);
+//           assert(index<inBuffer.size());
+//           inBuffer.push_back(inBuffer[index]);
+//         }
+//       }
+//       if((y+1+down/2)%down)
+//         continue;
+//       for(int x=0;x<input.nrOfCol();++x){
+//         if((x+1+down/2)%down)
+//           continue;
+// 	outBuffer[x/down]=0;
+// 	std::vector<double> windowBuffer;
+// 	std::map<long int,int> occurrence;
+//         int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+// 	for(int j=-(dimY-1)/2;j<=dimY/2;++j){
+// 	  for(int i=-(dimX-1)/2;i<=dimX/2;++i){
+// 	    double d2=i*i+j*j;//square distance
+//             if(disc&&(d2>(dimX/2)*(dimY/2)))
+//               continue;
+// 	    indexI=x+i;
+// 	    //check if out of bounds
+// 	    if(indexI<0)
+// 	      indexI=-indexI;
+// 	    else if(indexI>=input.nrOfCol())
+// 	      indexI=input.nrOfCol()-i;
+// 	    if(y+j<0)
+// 	      indexJ=-j;
+// 	    else if(y+j>=input.nrOfRow())
+// 	      indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
+// 	    else
+// 	      indexJ=(dimY-1)/2+j;
+// 	    bool masked=false;
+// 	    for(int imask=0;imask<m_noDataValues.size();++imask){
+// 	      if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
+// 		masked=true;
+// 		break;
+// 	      }
+// 	    }
+// 	    if(!masked){
+//               std::vector<short>::const_iterator vit=m_class.begin();
+//               if(!m_class.size())
+//                 ++occurrence[inBuffer[indexJ][indexI]];
+//               else{
+//                 while(vit!=m_class.end()){
+//                   if(inBuffer[indexJ][indexI]==*(vit++))
+//                     ++occurrence[inBuffer[indexJ][indexI]];
+//                 }
+//               }
+//               windowBuffer.push_back(inBuffer[indexJ][indexI]);
+//             }
+// 	  }
+//         }
+//         switch(getFilterType(method)){
+//         case(filter2d::nvalid):
+// 	  outBuffer[x/down]=stat.nvalid(windowBuffer);
+//           break;
+//         case(filter2d::median):
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//             outBuffer[x/down]=stat.median(windowBuffer);
+//           break;
+//         case(filter2d::var):{
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//             outBuffer[x/down]=stat.var(windowBuffer);
+//           break;
+//         }
+//         case(filter2d::stdev):{
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//             outBuffer[x/down]=sqrt(stat.var(windowBuffer));
+//           break;
+//         }
+//         case(filter2d::mean):{
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//             outBuffer[x/down]=stat.mean(windowBuffer);
+//           break;
+//         }
+//         case(filter2d::min):{
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//            outBuffer[x/down]=stat.mymin(windowBuffer);
+//           break;
+//         }
+//         case(filter2d::ismin):{
+//            if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//             outBuffer[x/down]=(stat.mymin(windowBuffer)==windowBuffer[centre])? 1:0;
+//           break;
+//         }
+//         case(filter2d::minmax):{//is the same as homog?
+//           double min=0;
+//           double max=0;
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else{
+//             stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
+//             if(min!=max)
+//               outBuffer[x/down]=0;
+//             else
+//               outBuffer[x/down]=windowBuffer[centre];//centre pixels
+//           }
+//           break;
+//         }
+//         case(filter2d::max):{
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//             outBuffer[x/down]=stat.mymax(windowBuffer);
+//           break;
+//         }
+//         case(filter2d::ismax):{
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else
+//             outBuffer[x/down]=(stat.mymax(windowBuffer)==windowBuffer[centre])? 1:0;
+//           break;
+//         }
+//         case(filter2d::order):{
+//           if(windowBuffer.empty())
+//             outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           else{
+//             double lbound=0;
+//             double ubound=dimX*dimY;
+//             double theMin=stat.mymin(windowBuffer);
+//             double theMax=stat.mymax(windowBuffer);
+//             double scale=(ubound-lbound)/(theMax-theMin);
+//             outBuffer[x/down]=static_cast<short>(scale*(windowBuffer[centre]-theMin)+lbound);
+//           }
+//           break;
+//         }
+//         case(filter2d::sum):{
+//           outBuffer[x/down]=stat.sum(windowBuffer);
+//           break;
+//         }
+// 	case(filter2d::percentile):{
+// 	  assert(m_threshold.size());
+// 	  outBuffer[x/down]=stat.percentile(windowBuffer,windowBuffer.begin(),windowBuffer.end(),m_threshold[0]);
+// 	  break;
+// 	}
+//         case(filter2d::proportion):{
+// 	  if(windowBuffer.size()){
+// 	    double sum=stat.sum(windowBuffer);
+// 	    if(sum)
+// 	      outBuffer[x/down]=100.0*windowBuffer[centre]/stat.sum(windowBuffer);
+// 	    else
+// 	      outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+// 	  }
+// 	  else
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           break;
+// 	}
+//         case(filter2d::homog):
+// 	  if(occurrence.size()==1)//all values in window are the same
+// 	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
+// 	  else
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           break;
+//         case(filter2d::heterog):{
+// 	  if(occurrence.size()==windowBuffer.size())
+// 	    outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
+// 	  else	    
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+// 	  // if(occurrence.size()==1)//all values in window are the same
+// 	  //   outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+// 	  // else
+// 	  //   outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
+//           // break;
+//           // for(std::vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
+//           //   if(wit==windowBuffer.begin()+windowBuffer.size()/2)
+//           //     continue;
+//           //   else if(*wit!=inBuffer[(dimY-1)/2][x]){
+//           //     outBuffer[x/down]=1;
+// 	  //     break;
+// 	  //   }
+//           //   else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
+//           //     outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           //     break;
+//           //   }
+//           // }
+//           // break;
+//         }
+//         case(filter2d::density):{
+// 	  if(windowBuffer.size()){
+// 	    std::vector<short>::const_iterator vit=m_class.begin();
+// 	    while(vit!=m_class.end())
+// 	      outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
+// 	  }
+// 	  else
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           break;
+// 	}
+//         case(filter2d::countid):{
+// 	  if(windowBuffer.size())
+// 	    outBuffer[x/down]=occurrence.size();
+// 	  else
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           break;
+// 	}
+//         case(filter2d::mode):{
+// 	  if(occurrence.size()){
+//             std::map<long int,int>::const_iterator maxit=occurrence.begin();
+//             for(std::map<long int,int>::const_iterator mit=occurrence.begin();mit!=occurrence.end();++mit){
+//               if(mit->second>maxit->second)
+//                 maxit=mit;
+//             }
+//             if(occurrence[inBuffer[(dimY-1)/2][x]]<maxit->second)//
+//               outBuffer[x/down]=maxit->first;
+//             else//favorize original value in case of ties
+//               outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
+// 	  }
+// 	  else
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           break;
+//         }
+//         case(filter2d::threshold):{
+//           assert(m_class.size()==m_threshold.size());
+// 	  if(windowBuffer.size()){
+//             outBuffer[x/down]=inBuffer[(dimY-1)/2][x];//initialize with original value (in case thresholds not met)
+//             for(int iclass=0;iclass<m_class.size();++iclass){
+//               if(100.0*(occurrence[m_class[iclass]])/windowBuffer.size()>m_threshold[iclass])
+//                 outBuffer[x/down]=m_class[iclass];
+//             }
+//           }
+//           else
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           break;
+//         }
+//         case(filter2d::scramble):{//could be done more efficiently window by window with random shuffling entire buffer and assigning entire buffer at once to output image...
+// 	  if(windowBuffer.size()){
+//             int randomIndex=std::rand()%windowBuffer.size();
+// 	    if(randomIndex>=windowBuffer.size())
+// 	      outBuffer[x/down]=windowBuffer.back();
+// 	    else if(randomIndex<0)
+// 	      outBuffer[x/down]=windowBuffer[0];
+// 	    else
+// 	      outBuffer[x/down]=windowBuffer[randomIndex];
+//           }
+//           else
+// 	    outBuffer[x/down]=(m_noDataValues.size())? m_noDataValues[0] : 0;
+//           break;
+//         }
+//         case(filter2d::mixed):{
+//           enum Type { BF=11, CF=12, MF=13, NF=20, W=30 };
+//           double nBF=occurrence[BF];
+//           double nCF=occurrence[CF];
+//           double nMF=occurrence[MF];
+//           double nNF=occurrence[NF];
+//           double nW=occurrence[W];
+// 	  if(windowBuffer.size()){
+//             if((nBF+nCF+nMF)&&(nBF+nCF+nMF>=nNF+nW)){//forest
+//               if(nBF/(nBF+nCF)>=0.75)
+//                 outBuffer[x/down]=BF;
+//               else if(nCF/(nBF+nCF)>=0.75)
+//                 outBuffer[x/down]=CF;
+//               else
+//                 outBuffer[x/down]=MF;
+//             }
+//             else{//non-forest
+//               if(nW&&(nW>=nNF))
+//                 outBuffer[x/down]=W;
+//               else
+//                 outBuffer[x/down]=NF;
+//             }
+//           }
+// 	  else
+// 	    outBuffer[x/down]=inBuffer[indexJ][indexI];
+//           break;
+//         }
+//         default:{
+// 	  std::ostringstream ess;
+// 	  ess << "Error: filter method " << method << " not supported" << std::endl;
+// 	  throw(ess.str());
+//           break;
+// 	}
+//         }
+//       }
+//       progress=(1.0+y/down);
+//       progress+=(output.nrOfRow()*iband);
+//       progress/=output.nrOfBand()*output.nrOfRow();
+//       pfnProgress(progress,pszMessage,pProgressArg);
+//       //write outBuffer to file
+//       try{
+//         output.writeData(outBuffer,GDT_Float64,y/down,iband);
+//       }
+//       catch(std::string errorstring){
+// 	std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
+//       }
+//     }
+//   }
+//   pfnProgress(1.0,pszMessage,pProgressArg);
+// }
 
 void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
   assert(m_class.size()>1);

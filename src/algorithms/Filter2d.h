@@ -58,7 +58,7 @@ extern "C" {
 
 namespace filter2d
 {
-  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135, savgolay=136, percentile=137, proportion=138, nvalid=139};
+  enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135, savgolay=136, percentile=137, proportion=138, nvalid=139, sauvola=140};
 
   enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
@@ -157,6 +157,7 @@ private:
     m_filterMap["ismin"]=filter2d::ismin;
     m_filterMap["ismax"]=filter2d::ismax;
     m_filterMap["heterog"]=filter2d::heterog;
+    m_filterMap["sauvola"]=filter2d::sauvola;
     m_filterMap["order"]=filter2d::order;
     m_filterMap["stdev"]=filter2d::stdev;
     m_filterMap["mrf"]=filter2d::mrf;
@@ -263,17 +264,19 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
 
+  statfactory::StatFactory stat;
   double noDataValue=0;
-  if(m_noDataValues.size())
+  if(m_noDataValues.size()){
+    stat.setNoDataValues(m_noDataValues);
     noDataValue=m_noDataValues[0];
-
+  }
   assert(dimX);
   assert(dimY);
 
-  statfactory::StatFactory stat;
   outputVector.resize((inputVector.size()+down-1)/down);
   Vector2d<T1> inBuffer(dimY);
   std::vector<T2> outBuffer((inputVector[0].size()+down-1)/down);
+  
   int indexI=0;
   int indexJ=0;
   //initialize last half of inBuffer
@@ -282,6 +285,7 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
     ++indexJ;
   }
   for(int y=0;y<inputVector.size();++y){
+    
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
       inBuffer.erase(inBuffer.begin());
@@ -302,9 +306,11 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       if((x+1+down/2)%down)
         continue;
       outBuffer[x/down]=0;
-      std::vector<double> windowBuffer;
+
+      std::vector<T1> windowBuffer;
       std::map<int,int> occurrence;
       int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+      bool centreMasked=false;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
 	  indexI=x+i;
@@ -319,14 +325,8 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
             indexJ=(dimY>2) ? (dimY-1)/2-j : 0;
           else
             indexJ=(dimY-1)/2+j;
-          bool masked=false;
-          for(int imask=0;imask<m_noDataValues.size();++imask){
-            if(inBuffer[indexJ][indexI]==m_noDataValues[imask]){
-              masked=true;
-              break;
-            }
-          }
-          if(!masked){
+          windowBuffer.push_back(inBuffer[indexJ][indexI]);
+          if(!stat.isNoData(inBuffer[indexJ][indexI])){
             std::vector<short>::const_iterator vit=m_class.begin();
             //todo: test if this works (only add occurrence if within defined classes)!
             if(!m_class.size())
@@ -337,7 +337,6 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
                   ++occurrence[inBuffer[indexJ][indexI]];
               }
             }
-            windowBuffer.push_back(inBuffer[indexJ][indexI]);
           }
         }
       }
@@ -346,23 +345,18 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
 	outBuffer[x/down]=stat.nvalid(windowBuffer);
         break;
       case(filter2d::median):
-        if(windowBuffer.empty())
-          outBuffer[x/down]=noDataValue;
-        else
-          outBuffer[x/down]=stat.median(windowBuffer);
+        outBuffer[x/down]=stat.median(windowBuffer);
         break;
       case(filter2d::var):{
-        if(windowBuffer.empty())
-          outBuffer[x/down]=noDataValue;
-        else
-          outBuffer[x/down]=stat.var(windowBuffer);
+        outBuffer[x/down]=stat.var(windowBuffer);
         break;
       }
       case(filter2d::stdev):{
-        if(windowBuffer.empty())
+        T2 varValue=stat.var(windowBuffer);
+        if(stat.isNoData(varValue))
           outBuffer[x/down]=noDataValue;
-        else
-          outBuffer[x/down]=sqrt(stat.var(windowBuffer));
+        else          
+          outBuffer[x/down]=sqrt(varValue);
         break;
       }
       case(filter2d::mean):{
@@ -373,48 +367,41 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         break;
       }
       case(filter2d::min):{
-        if(windowBuffer.empty())
-          outBuffer[x/down]=noDataValue;
-        else
-          outBuffer[x/down]=stat.mymin(windowBuffer);
+        outBuffer[x/down]=stat.mymin(windowBuffer);
         break;
       }
       case(filter2d::ismin):{
-        if(windowBuffer.empty())
+        T1 minValue=stat.mymin(windowBuffer);
+        if(stat.isNoData(minValue))
           outBuffer[x/down]=noDataValue;
         else
-          outBuffer[x/down]=(stat.mymin(windowBuffer)==windowBuffer[centre])? 1:0;
+          outBuffer[x/down]=(windowBuffer[centre]==minValue)? 1:0;
         break;
       }
       case(filter2d::minmax):{
-        double min=0;
-        double max=0;
-        if(windowBuffer.empty())
-          outBuffer[x/down]=noDataValue;
-        else{
-          stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
-          if(min!=max)
-            outBuffer[x/down]=0;
-          else
-            outBuffer[x/down]=windowBuffer[centre];//centre pixels
-        }
+        T1 min=0;
+        T1 max=0;
+        stat.minmax(windowBuffer,windowBuffer.begin(),windowBuffer.end(),min,max);
+        if(min!=max)
+          outBuffer[x/down]=0;
+        else
+          outBuffer[x/down]=windowBuffer[centre];//centre pixels
         break;
       }
       case(filter2d::max):{
-        if(windowBuffer.empty())
-          outBuffer[x/down]=noDataValue;
-        else
-          outBuffer[x/down]=stat.mymax(windowBuffer);
+        outBuffer[x/down]=stat.mymax(windowBuffer);
         break;
       }
       case(filter2d::ismax):{
-        if(windowBuffer.empty())
+        T1 maxValue=stat.mymax(windowBuffer);
+        if(stat.isNoData(maxValue))
           outBuffer[x/down]=noDataValue;
         else
-          outBuffer[x/down]=(stat.mymax(windowBuffer)==windowBuffer[centre])? 1:0;
+          outBuffer[x/down]=(windowBuffer[centre]==maxValue)? 1:0;
         break;
       }
       case(filter2d::order):{
+        stat.eraseNoData(windowBuffer);
         if(windowBuffer.empty())
           outBuffer[x/down]=noDataValue;
         else{
@@ -437,45 +424,94 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
         break;
       }
       case(filter2d::proportion):{
-	assert(m_threshold.size());
-	double sum=stat.sum(windowBuffer);
+        stat.eraseNoData(windowBuffer);
+	T2 sum=stat.sum(windowBuffer);
 	if(sum)
 	  outBuffer[x/down]=windowBuffer[centre]/sum;
 	else
 	  outBuffer[x/down]=noDataValue;
         break;
       }
-      case(filter2d::homog):
-        if(occurrence.size()==1)//all values in window must be the same
-          outBuffer[x/down]=inBuffer[(dimY-1)/2][x];
-        else//favorize original value in case of ties
-          outBuffer[x/down]=noDataValue;
-        break;
-      case(filter2d::heterog):{
-        for(std::vector<double>::const_iterator wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
-          if(wit==windowBuffer.begin()+windowBuffer.size()/2)
+      case(filter2d::homog):{
+        T1 centreValue=inBuffer[(dimY-1)/2][x];
+        bool isHomog=true;
+        stat.eraseNoData(windowBuffer);
+        typename std::vector<T1>::const_iterator wit;
+        for(wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
+          if(*wit==centreValue)
             continue;
-          else if(*wit!=inBuffer[(dimY-1)/2][x])
-            outBuffer[x/down]=1;
-          else if(*wit==inBuffer[(dimY-1)/2][x]){//todo:wit mag niet central pixel zijn
-            outBuffer[x/down]=noDataValue;
+          else{
+            isHomog=false;
             break;
           }
+        }
+        if(isHomog)
+          outBuffer[x/down]=1;
+        else
+          outBuffer[x/down]=noDataValue;
+        break;
+      }
+      case(filter2d::heterog):{
+        T1 centreValue=inBuffer[(dimY-1)/2][x];
+        bool isHeterog=true;
+        stat.eraseNoData(windowBuffer);
+        typename std::vector<T1>::const_iterator wit;
+        for(wit=windowBuffer.begin();wit!=windowBuffer.end();++wit){
+          if(*wit!=centreValue)
+            continue;
+          else{
+            isHeterog=false;
+            break;
+          }
+        }
+        if(isHeterog)
+          outBuffer[x/down]=1;
+        else
+          outBuffer[x/down]=noDataValue;
+        break;
+      }
+      case(filter2d::sauvola):{
+        try{
+          double theMean=0;
+          double theStdev=0;
+          bool invalid=false;
+          T1 centreValue=inBuffer[(dimY-1)/2][x];
+          if(windowBuffer.empty()||stat.isNoData(centreValue)){
+            invalid=true;
+            throw(invalid);
+          }
+          stat.meanVar(windowBuffer,theMean,theStdev);
+          theStdev=sqrt(theStdev);
+          double kValue=0.5;
+          double rValue=128;
+          if(m_threshold.size()==2){
+            kValue=m_threshold[0];
+            rValue=m_threshold[1];
+          }
+          //from http://fiji.sc/Auto_Local_Threshold
+          //pixel = ( pixel > mean * ( 1 + k * ( standard_deviation / r - 1 ) ) ) ? object : background
+          double theThreshold=theMean*(1+kValue*(theStdev/rValue - 1));
+          //isdata value hardcoded as 1 for now
+          outBuffer[x/down]=(centreValue>theThreshold) ? 1 : noDataValue;
+        }
+        catch(bool invalid){
+          outBuffer[x/down]=noDataValue;
         }
         break;
       }
       case(filter2d::density):{
-        if(windowBuffer.size()){
+        int nvalid=stat.nvalid(windowBuffer);
+        if(nvalid){
           std::vector<short>::const_iterator vit=m_class.begin();
           while(vit!=m_class.end())
-            outBuffer[x/down]+=100.0*occurrence[*(vit++)]/windowBuffer.size();
+            outBuffer[x/down]+=100.0*occurrence[*(vit++)]/nvalid;
         }
         else
           outBuffer[x/down]=noDataValue;
         break;
       }
       case(filter2d::countid):{
-	if(windowBuffer.size())
+        if(occurrence.size())
 	  outBuffer[x/down]=occurrence.size();
 	else
 	  outBuffer[x/down]=noDataValue;
@@ -499,10 +535,11 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       }
       case(filter2d::threshold):{
         assert(m_class.size()==m_threshold.size());
-        if(windowBuffer.size()){
+        int nvalid=stat.nvalid(windowBuffer);
+        if(nvalid>0){
           outBuffer[x/down]=inBuffer[(dimY-1)/2][x];//initialize with original value (in case thresholds not met)
           for(int iclass=0;iclass<m_class.size();++iclass){
-            if(100.0*(occurrence[m_class[iclass]])/windowBuffer.size()>m_threshold[iclass])
+            if(100.0*(occurrence[m_class[iclass]])/nvalid>m_threshold[iclass])
               outBuffer[x/down]=m_class[iclass];
           }
         }
@@ -556,7 +593,6 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       }
     }
     progress=(1.0+y/down);
-    progress+=(outputVector.size());
     progress/=outputVector.size();
     pfnProgress(progress,pszMessage,pProgressArg);
     //copy outBuffer to outputVector

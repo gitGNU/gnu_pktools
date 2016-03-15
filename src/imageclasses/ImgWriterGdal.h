@@ -189,12 +189,10 @@ template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, c
     s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
     throw(s.str());
   }
-
-  typename std::vector<T>::iterator startit=buffer.begin();
-  typename std::vector<T>::iterator endit=startit;
+  // typename std::vector<T>::iterator startit=buffer.begin();
   for(int irow=minRow;irow<=maxRow;++irow){
-    buffer.insert(startit,buffer2d[irow-minRow].begin(),buffer2d[irow-minRow].end());
-    startit+=maxCol-minCol+1;
+    buffer.insert(buffer.begin()+(maxCol-minCol+1)*(irow-minRow),buffer2d[irow-minRow].begin(),buffer2d[irow-minRow].end());
+    // startit+=maxCol-minCol+1;
   }
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   poBand->RasterIO(GF_Write,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);

@@ -1158,9 +1158,9 @@ template<class T> T  StatFactory::percentile(const std::vector<T>& input, typena
     s<<"Error: input is empty";
     throw(s.str());
   }
-  std::vector<T> inputSort;
+  std::vector<double> inputSort;
   inputSort.assign(begin,end);
-  typename std::vector<T>::iterator vit=inputSort.begin();
+  typename std::vector<double>::iterator vit=inputSort.begin();
   while(vit!=inputSort.end()){
     if(maximum>minimum){
       if(*vit<minimum||*vit>maximum)

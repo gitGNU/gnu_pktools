@@ -496,6 +496,21 @@ int main(int argc, char *argv[])
       if(!hasCoverage)
 	continue;
 
+      //align bounding box to input image
+      layer_ulx-=fmod(layer_ulx-imgReader.getUlx(),imgReader.getDeltaX());
+      layer_lrx+=fmod(imgReader.getLrx()-layer_lrx,imgReader.getDeltaX());
+      layer_uly+=fmod(imgReader.getUly()-layer_uly,imgReader.getDeltaY());
+      layer_lry-=fmod(layer_lry-imgReader.getLry(),imgReader.getDeltaY());
+
+      //do not read outside input image
+      if(layer_ulx<imgReader.getUlx())
+        layer_ulx=imgReader.getUlx();
+      if(layer_lrx>imgReader.getLrx())
+        layer_lrx=imgReader.getLrx();
+      if(layer_uly>imgReader.getUly())
+        layer_uly=imgReader.getUly();
+      if(layer_lry<imgReader.getLry())
+        layer_lry=imgReader.getLry();
 
       //read entire block for coverage in memory
       //todo: use different data types

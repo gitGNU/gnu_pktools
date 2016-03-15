@@ -428,17 +428,18 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
   }
   void *pTransformArg;
   char **papszOptions;
-  double dfComplete=0.0;
-  const char* pszMessage;
+  // double dfComplete=0.0;
+  // const char* pszMessage;
   void* pProgressArg=NULL;
-  GDALProgressFunc pfnProgress=GDALTermProgress;
-  pfnProgress(dfComplete,pszMessage,pProgressArg);
-  if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),papszOptions,pfnProgress,pProgressArg)!=CE_None){
-    std::cerr << CPLGetLastErrorMsg() << std::endl;
-    exit(1);
+  // GDALProgressFunc pfnProgress=GDALTermProgress;
+  // pfnProgress(dfComplete,pszMessage,pProgressArg);
+  //if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),papszOptions,pfnProgress,pProgressArg)!=CE_None){
+  if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),NULL,NULL,NULL)!=CE_None){
+    std::string errorString(CPLGetLastErrorMsg());
+    throw(errorString);
   }
-  else{
-    dfComplete=1.0;
-    pfnProgress(dfComplete,pszMessage,pProgressArg);
-  }
+  // else{
+  //   dfComplete=1.0;
+  //   pfnProgress(dfComplete,pszMessage,pProgressArg);
+  // }
 }

@@ -31,7 +31,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "fileclasses/FileReaderAscii.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterGdal.h"
-//test
 #include "algorithms/StatFactory.h"
 
 /******************************************************************************/
@@ -170,6 +169,7 @@ order | rank pixels in order
 density | calculated the density
 homog | central pixel must be identical to all other pixels within window
 heterog | central pixel must be different than all other pixels within window
+sauvola | Sauvola's thresholding method
 
 Example: Sobel edge detection in horizontal direction
 
@@ -232,7 +232,7 @@ int main(int argc,char **argv) {
   // Optionpk<std::string> tmpdir_opt("tmp", "tmp", "Temporary directory","/tmp",2);
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
-  Optionpk<std::string> method_opt("f", "filter", "filter function (nvalid, median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), density, countid, mode (majority voting), only for classes), smoothnodata (smooth nodata values only) values, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion)");
+  Optionpk<std::string> method_opt("f", "filter", "filter function (nvalid, median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sauvola, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), density, countid, mode (majority voting), only for classes), smoothnodata (smooth nodata values only) values, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion)");
   Optionpk<std::string> resample_opt("r", "resampling-method", "Resampling method for shifting operation (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<double> dimX_opt("dx", "dx", "filter kernel size in x, use odd values only", 3);
   Optionpk<double> dimY_opt("dy", "dy", "filter kernel size in y, use odd values only", 3);
@@ -389,6 +389,7 @@ int main(int argc,char **argv) {
     theInterleave+=input.getInterleave();
     option_opt.push_back(theInterleave);
   }
+
   try{
     string errorString;
     int nband=input.nrOfBand();
@@ -455,6 +456,7 @@ int main(int argc,char **argv) {
       case(filter2d::density):
       case(filter2d::homog):
       case(filter2d::heterog):
+      case(filter2d::sauvola):
 	//only implemented in spatial domain
 	if(dimZ_opt.size()){
           errorString="filter not implemented in spectral/temporal domain";
@@ -555,6 +557,9 @@ int main(int argc,char **argv) {
     if(verbose_opt[0])
       std::cout<< std::endl;
   }
+  filter1d.setThresholds(threshold_opt);
+  filter2d.setThresholds(threshold_opt);
+
   if(tap_opt.size()){
     ifstream tapfile(tap_opt[0].c_str());
     assert(tapfile);
@@ -811,6 +816,21 @@ int main(int argc,char **argv) {
     case(filter2d::heterog):{//spatially heterogeneous
       try{
 	filter2d.doit(input,output,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+      }
+      catch(string errorstring){
+	cerr << errorstring << endl;
+      }
+      break;
+    }
+    case(filter2d::sauvola):{//Implements Sauvola's thresholding method (http://fiji.sc/Auto_Local_Threshold)
+
+  //test
+      Vector2d<unsigned short> inBuffer;
+      for(int iband=0;iband<input.nrOfBand();++iband){
+        input.readDataBlock(inBuffer,GDT_UInt16,0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+      }
+      try{
+	filter2d.doit(input,output,"sauvola",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
       }
       catch(string errorstring){
 	cerr << errorstring << endl;
