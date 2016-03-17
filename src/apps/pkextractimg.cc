@@ -706,7 +706,6 @@ int main(int argc, char *argv[])
           for(mapit=nvalid.begin();mapit!=nvalid.end();++mapit)
             ncopied[mapit->first]=0;
 
-          cout << "ncopied.size(): " << ncopied.size() << endl;
           while(classDone.size()<nvalid.size()){
             int index=rand()%writeBufferClass.size();
             int theClass=writeBufferClass[index];
