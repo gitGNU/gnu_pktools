@@ -466,7 +466,10 @@ version 2.6.6
 version 2.6.7
 	- pkextract deprecated: split into pkextractimg and pkextractogr
 	- pkextractogr: extract OGR vector dataset sample from raster dataset supporting multiple rules
-	- pkextractimg: extract raster dataset sample from raster dataset
+	- pkextractimg
+		extract raster dataset sample from raster dataset
+		support for change request sr#108995 (collect random samples with absolute threshold)
+		bug #47257 extract class label 0
 	- pkoptsvm: removed dependency from nlopt library. Only grid search supported.
 	- configure.ac: removed option to enable nlopt
 	- CMakeLists.txt: removed option to enable nlopt

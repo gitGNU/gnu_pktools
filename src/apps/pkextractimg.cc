@@ -48,12 +48,12 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-b band]* [-r rule]
 
   Advanced options:
-  [-sband band -eband band]* [-bndnodata band -srcnodata value]* [-bn attribute] [-cn attribute] [-down value]
+  [-sband band -eband band]* [-bndnodata band [-srcnodata value]*] [-bn attribute] [-cn attribute] [-down value]
 </code>
 
 \section pkextractimg_description Description
 
-The utility pkextractimg extracts pixel values from an input raster dataset, based on the locations you provide via a sample file. The sample should be a raster dataset with categorical values. The typical use case is a land cover map that overlaps the input raster dataset. The utility then extracts pixels from the input raster for the respective land cover classes. To select a random subset of the sample raster dataset you can set the threshold option -t with a percentage value. You can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es). As output, a new copy of the vector file is created with an extra attribute for the extracted pixel value. For each raster band in the input image, a separate attribute is created. For instance, if the raster dataset contains three bands, three attributes are created (b0, b1 and b2). 
+The utility pkextractimg extracts pixel values from an input raster dataset, based on the locations you provide via a sample file. The sample should be a raster dataset with categorical (integer) values. The typical use case is a land cover map that overlaps the input raster dataset. The utility then extracts pixels from the input raster for the respective land cover classes. To select a random subset of the sample raster dataset you can set the threshold option -t with a percentage value. You can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es). As output, a new copy of the vector file is created with an extra attribute for the extracted pixel value. For each raster band in the input image, a separate attribute is created. For instance, if the raster dataset contains three bands, three attributes are created (b0, b1 and b2). 
 
 \anchor pkextractimg_rules 
 
@@ -78,7 +78,7 @@ Overview of the possible extraction rules:
  | b      | band                 | int  |       |Band index(es) to extract (0 based). Leave empty to use all bands | 
  | sband  | startband            | unsigned short |      |Start band sequence number | 
  | eband  | endband              | unsigned short |      |End band sequence number   | 
- | bndnodata | bndnodata            | int  | 0     |Band(s) in input image to check if pixel is valid (used for srcnodata) | 
+ | bndnodata | bndnodata            | int  | 0     |Band in input image to check if pixel is valid (used for srcnodata) | 
  | srcnodata | srcnodata            | double |       |Invalid value(s) for input image | 
  | bn     | bname                | std::string | b     |For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.) | 
  | cn     | cname                | std::string | label |Name of the class label in the output vector dataset | 
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
   Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
-  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata)", 0);
+  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band in input image to check if pixel is valid (used for srcnodata)", 0);
   Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
   Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector dataset", "label");
   Optionpk<short> down_opt("down", "down", "Down sampling factor", 1);
@@ -160,10 +160,10 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  if(srcnodata_opt.size()){
-    while(srcnodata_opt.size()<bndnodata_opt.size())
-      srcnodata_opt.push_back(srcnodata_opt[0]);
-  }
+  // if(srcnodata_opt.size()){
+  //   while(srcnodata_opt.size()<bndnodata_opt.size())
+  //     srcnodata_opt.push_back(srcnodata_opt[0]);
+  // }
 
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
@@ -173,11 +173,25 @@ int main(int argc, char *argv[])
   unsigned long int nsample=0;
   unsigned long int ntotalvalid=0;
   unsigned long int ntotalinvalid=0;
-  vector<unsigned long int> nvalid(class_opt.size());
-  vector<unsigned long int> ninvalid(class_opt.size());
-  for(int it=0;it<nvalid.size();++it){
-    nvalid[it]=0;
-    ninvalid[it]=0;
+
+  map<int,unsigned long int> nvalid;
+  map<int,unsigned long int> ninvalid;
+  // vector<unsigned long int> nvalid(class_opt.size());
+  // vector<unsigned long int> ninvalid(class_opt.size());
+  // if(class_opt.empty()){
+  //   nvalid.resize(256);
+  //   ninvalid.resize(256);
+  // }
+  // for(int it=0;it<nvalid.size();++it){
+  //   nvalid[it]=0;
+  //   ninvalid[it]=0;
+  // }
+
+  map <int,short> classmap;//class->index
+  for(int iclass=0;iclass<class_opt.size();++iclass){
+    nvalid[class_opt[iclass]]=0;
+    ninvalid[class_opt[iclass]]=0;
+    classmap[class_opt[iclass]]=iclass;
   }
 
   ImgReaderGdal imgReader;
@@ -290,18 +304,17 @@ int main(int argc, char *argv[])
   double progress=0;
   srand(time(NULL));
 
-  bool sampleIsRaster=false;
-  bool sampleIsVirtual=false;
+  bool sampleIsRaster=true;
 
-  ImgReaderOgr sampleReaderOgr;
+  ImgReaderGdal classReader;
   ImgWriterOgr sampleWriterOgr;
 
   if(sample_opt.size()){
     try{
-      sampleReaderOgr.open(sample_opt[0]);
+      classReader.open(sample_opt[0]);
     }
     catch(string errorString){
-      sampleIsRaster=true;
+      sampleIsRaster=false;
     }
   }
   else{
@@ -311,17 +324,16 @@ int main(int argc, char *argv[])
 
   if(sampleIsRaster){
     if(class_opt.empty()){
-      ImgReaderGdal classReader;
       ImgWriterOgr ogrWriter;
       assert(sample_opt.size());
       classReader.open(sample_opt[0]);
       // vector<int> classBuffer(classReader.nrOfCol());
       vector<double> classBuffer(classReader.nrOfCol());
-      Vector2d<double> imgBuffer(nband);//[band][col]
+      Vector2d<double> imgBuffer(nband,imgReader.nrOfCol());//[band][col]
+      // vector<double> imgBuffer(nband);//[band]
       vector<double> sample(2+nband);//x,y,band values
       Vector2d<double> writeBuffer;
-      // vector<int> writeBufferClass;
-      vector<double> writeBufferClass;
+      vector<int> writeBufferClass;
       vector<int> selectedClass;
       Vector2d<double> selectedBuffer;
       double oldimgrow=-1;
@@ -334,94 +346,99 @@ int main(int argc, char *argv[])
       for(irow=0;irow<classReader.nrOfRow();++irow){
         if(irow%down_opt[0])
           continue;
-        // classReader.readData(classBuffer,GDT_Int32,irow);
         classReader.readData(classBuffer,GDT_Float64,irow);
-        double x,y;//geo coordinates
-        double iimg,jimg;//image coordinates in img image
+        double x=0;//geo x coordinate
+        double y=0;//geo y coordinate
+        double iimg=0;//image x-coordinate in img image
+        double jimg=0;//image y-coordinate in img image
+
+        //find col in img
+        classReader.image2geo(icol,irow,x,y);
+        imgReader.geo2image(x,y,iimg,jimg);
+        //nearest neighbour
+        if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
+          continue;
+        for(int iband=0;iband<nband;++iband){
+          int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+          imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
+        }
         for(icol=0;icol<classReader.nrOfCol();++icol){
           if(icol%down_opt[0])
             continue;
-          // int theClass=0;
-          double theClass=classBuffer[icol];
-          // int processClass=-1;
+          int theClass=classBuffer[icol];
           int processClass=0;
-          bool valid=true;
+          bool valid=false;
+          if(class_opt.empty()){
+            valid=true;//process every class
+            processClass=theClass;
+          }
+          else{
+            for(int iclass=0;iclass<class_opt.size();++iclass){
+              if(classBuffer[icol]==class_opt[iclass]){
+                processClass=iclass;
+                theClass=class_opt[iclass];
+                valid=true;//process this class
+                break;
+              }
+            }
+          }
+          classReader.image2geo(icol,irow,x,y);
+          sample[0]=x;
+          sample[1]=y;
+          if(verbose_opt[0]>1){
+            std::cout.precision(12);
+            std::cout << theClass << " " << x << " " << y << std::endl;
+          }
+          //find col in img
+          imgReader.geo2image(x,y,iimg,jimg);
+          //nearest neighbour
+          iimg=static_cast<int>(iimg);
+          if(static_cast<int>(iimg)<0||static_cast<int>(iimg)>=imgReader.nrOfCol())
+            continue;
+
+          for(int iband=0;iband<nband&&valid;++iband){
+            int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+            if(srcnodata_opt.size()&&theBand==bndnodata_opt[0]){
+              // vector<int>::const_iterator bndit=bndnodata_opt.begin();
+              for(int inodata=0;inodata<srcnodata_opt.size()&&valid;++inodata){
+                if(imgBuffer[iband][iimg]==srcnodata_opt[inodata])
+                  valid=false;
+              }
+            }
+          }
+          // oldimgrow=jimg;
+
           if(valid){
-            classReader.image2geo(icol,irow,x,y);
-            sample[0]=x;
-            sample[1]=y;
-            if(verbose_opt[0]>1){
-              std::cout.precision(12);
-              std::cout << theClass << " " << x << " " << y << std::endl;
+            for(int iband=0;iband<imgBuffer.size();++iband){
+              sample[iband+2]=imgBuffer[iband][iimg];
             }
-            //find col in img
-            imgReader.geo2image(x,y,iimg,jimg);
-            //nearest neighbour
-            jimg=static_cast<int>(jimg);
-            iimg=static_cast<int>(iimg);
-            if(static_cast<int>(iimg)<0||static_cast<int>(iimg)>=imgReader.nrOfCol())
-              continue;
-            if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
-              continue;
-
-            bool valid=true;
-
-            if(static_cast<int>(jimg)!=static_cast<int>(oldimgrow)){
-              assert(imgBuffer.size()==nband);
-              for(int iband=0;iband<nband;++iband){
-		int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-                imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
-                assert(imgBuffer[iband].size()==imgReader.nrOfCol());
-		if(srcnodata_opt.size()){
-		  vector<int>::const_iterator bndit=bndnodata_opt.begin();
-		  vector<double>::const_iterator srcit=srcnodata_opt.begin();
-		  while(bndit!=bndnodata_opt.end()&&srcit!=srcnodata_opt.end()){
-		    if((*bndit==theBand)&&(*srcit==imgBuffer[iband][static_cast<int>(iimg)])){
-		      valid=false;
-		      break;
-		    }
-		    else{
-		      ++bndit;
-		      ++srcit;
-		    }
-		  }
-		}
-	      }
-              oldimgrow=jimg;
-	    }
-
-            if(valid){
-              for(int iband=0;iband<imgBuffer.size();++iband){
-                if(imgBuffer[iband].size()!=imgReader.nrOfCol()){
-                  std::cout << "Error in band " << iband << ": " << imgBuffer[iband].size() << "!=" << imgReader.nrOfCol() << std::endl;
-                  assert(imgBuffer[iband].size()==imgReader.nrOfCol());
-                }
-                sample[iband+2]=imgBuffer[iband][static_cast<int>(iimg)];
-              }
-              float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
-              if(theThreshold>0){//percentual value
-                double p=static_cast<double>(rand())/(RAND_MAX);
-                p*=100.0;
-                if(p>theThreshold)
-		  continue;//do not select for now, go to next column
-              }
-              else if(nvalid.size()>processClass){//absolute value
-                if(nvalid[processClass]>=-theThreshold)
-                  continue;//do not select any more pixels for this class, go to next column to search for other classes
-              }
-	      writeBuffer.push_back(sample);
-	      writeBufferClass.push_back(theClass);
-	      ++ntotalvalid;
-              if(nvalid.size()>processClass)
-                ++(nvalid[processClass]);
-	    }
-            else{
-              ++ntotalinvalid;
-              if(ninvalid.size()>processClass)
-                ++(ninvalid[processClass]);
+            float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
+            if(theThreshold>0){//percentual value
+              double p=static_cast<double>(rand())/(RAND_MAX);
+              p*=100.0;
+              if(p>theThreshold)
+                continue;//do not select for now, go to next column
             }
-          }//processClass
-        }//icol
+            // else if(nvalid.size()>processClass){//absolute value
+            //   if(nvalid[processClass]>=-theThreshold)
+            //     continue;//do not select any more pixels for this class, go to next column to search for other classes
+            // }
+            writeBuffer.push_back(sample);
+            writeBufferClass.push_back(theClass);
+            ++ntotalvalid;
+            if(nvalid.count(theClass))
+              nvalid[theClass]+=1;
+            else
+              nvalid[theClass]=1;
+          }
+          else{
+            ++ntotalinvalid;
+            if(ninvalid.count(theClass))
+              ninvalid[theClass]+=1;
+            else
+              ninvalid[theClass]=1;
+          }
+        }
         progress=static_cast<float>(irow+1.0)/classReader.nrOfRow();
         pfnProgress(progress,pszMessage,pProgressArg);
       }//irow
@@ -445,9 +462,59 @@ int main(int argc, char *argv[])
 	  int theBand=(band_opt.size()) ? band_opt[iband] : iband;
           ogrWriter.createField(fieldname_opt[iband],fieldType);
         }
-        std::cout << "writing sample to " << output_opt[0] << "..." << std::endl;
         progress=0;
         pfnProgress(progress,pszMessage,pProgressArg);
+        
+        map<int,short> classDone;
+        Vector2d<double> writeBufferTmp;
+        vector<int> writeBufferClassTmp;
+
+        if(threshold_opt[0]<0){//absolute threshold
+          map<int,unsigned long int>::iterator mapit;
+          map<int,unsigned long int> ncopied;
+          for(mapit=nvalid.begin();mapit!=nvalid.end();++mapit)
+            ncopied[mapit->first]=0;
+
+          cout << "ncopied.size(): " << ncopied.size() << endl;
+          while(classDone.size()<nvalid.size()){
+            int index=rand()%writeBufferClass.size();
+            int theClass=writeBufferClass[index];
+            float theThreshold=threshold_opt[0];
+            if(threshold_opt.size()>1&&class_opt.size())
+              theThreshold=threshold_opt[classmap[theClass]];
+            theThreshold=-theThreshold;
+            if(ncopied[theClass]<theThreshold){
+              writeBufferClassTmp.push_back(*(writeBufferClass.begin()+index));
+              writeBufferTmp.push_back(*(writeBuffer.begin()+index));
+              writeBufferClass.erase(writeBufferClass.begin()+index);
+              writeBuffer.erase(writeBuffer.begin()+index);
+              ++(ncopied[theClass]);
+            }
+            else
+              classDone[theClass]=1;
+            if(ncopied[theClass]>=nvalid[theClass]){
+              classDone[theClass]=1;
+            }
+          }
+          writeBuffer=writeBufferTmp;
+          writeBufferClass=writeBufferClassTmp;
+
+          //   while(classDone.size()<nvalid.size()){
+          //     int index=rand()%writeBufferClass.size();
+          //     int theClass=writeBufferClass[index];
+          //     float theThreshold=threshold_opt[0];
+          //     if(threshold_opt.size()>1&&class_opt.size())
+          //       theThreshold=threshold_opt[classmap[theClass]];
+          //     theThreshold=-theThreshold;
+          //     if(nvalid[theClass]>theThreshold){
+          //       writeBufferClass.erase(writeBufferClass.begin()+index);
+          //       writeBuffer.erase(writeBuffer.begin()+index);
+          //       --(nvalid[theClass]);
+          //     }
+          //     else
+          //       classDone[theClass]=1;
+          //   }
+        }
         for(int isample=0;isample<writeBuffer.size();++isample){
           if(verbose_opt[0]>1)
             std::cout << "writing sample " << isample << std::endl;
@@ -491,11 +558,11 @@ int main(int argc, char *argv[])
       classReader.open(sample_opt[0]);
       vector<int> classBuffer(classReader.nrOfCol());
       // vector<double> classBuffer(classReader.nrOfCol());
-      Vector2d<double> imgBuffer(nband);//[band][col]
+      Vector2d<double> imgBuffer(nband,imgReader.nrOfCol());//[band][col]
+      // vector<double> imgBuffer(nband);//[band]
       vector<double> sample(2+nband);//x,y,band values
       Vector2d<double> writeBuffer;
       vector<int> writeBufferClass;
-      // vector<double> writeBufferClass;
       vector<int> selectedClass;
       Vector2d<double> selectedBuffer;
       double oldimgrow=-1;
@@ -509,8 +576,22 @@ int main(int argc, char *argv[])
         if(irow%down_opt[0])
           continue;
         classReader.readData(classBuffer,GDT_Int32,irow);
-        double x,y;//geo coordinates
-        double iimg,jimg;//image coordinates in img image
+        double x=0;//geo x coordinate
+        double y=0;//geo y coordinate
+        double iimg=0;//image x-coordinate in img image
+        double jimg=0;//image y-coordinate in img image
+
+        //find col in img
+        classReader.image2geo(icol,irow,x,y);
+        imgReader.geo2image(x,y,iimg,jimg);
+        //nearest neighbour
+        if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
+          continue;
+        for(int iband=0;iband<nband;++iband){
+          int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+          imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
+        }
+
         for(icol=0;icol<classReader.nrOfCol();++icol){
           if(icol%down_opt[0])
             continue;
@@ -543,46 +624,24 @@ int main(int argc, char *argv[])
             //find col in img
             imgReader.geo2image(x,y,iimg,jimg);
             //nearest neighbour
-            jimg=static_cast<int>(jimg);
             iimg=static_cast<int>(iimg);
             if(static_cast<int>(iimg)<0||static_cast<int>(iimg)>=imgReader.nrOfCol())
               continue;
-            if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
-              continue;
-
             bool valid=true;
 
-            if(static_cast<int>(jimg)!=static_cast<int>(oldimgrow)){
-              assert(imgBuffer.size()==nband);
-              for(int iband=0;iband<nband;++iband){
-		int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-                imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
-                assert(imgBuffer[iband].size()==imgReader.nrOfCol());
-
-		if(srcnodata_opt.size()){
-		  vector<int>::const_iterator bndit=bndnodata_opt.begin();
-		  vector<double>::const_iterator srcit=srcnodata_opt.begin();
-		  while(bndit!=bndnodata_opt.end()&&srcit!=srcnodata_opt.end()){
-		    if((*bndit==theBand)&&(*srcit==imgBuffer[iband][static_cast<int>(iimg)])){
-		      valid=false;
-		      break;
-		    }
-		    else{
-		      ++bndit;
-		      ++srcit;
-		    }
-		  }
-		}
+            for(int iband=0;iband<nband;++iband){
+              int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+              if(srcnodata_opt.size()&&theBand==bndnodata_opt[0]){
+                // vector<int>::const_iterator bndit=bndnodata_opt.begin();
+                for(int inodata=0;inodata<srcnodata_opt.size()&&valid;++inodata){
+                  if(imgBuffer[iband][iimg]==srcnodata_opt[inodata])
+                    valid=false;
+                }
               }
-              oldimgrow=jimg;
             }
             if(valid){
               for(int iband=0;iband<imgBuffer.size();++iband){
-                if(imgBuffer[iband].size()!=imgReader.nrOfCol()){
-                  std::cout << "Error in band " << iband << ": " << imgBuffer[iband].size() << "!=" << imgReader.nrOfCol() << std::endl;
-                  assert(imgBuffer[iband].size()==imgReader.nrOfCol());
-                }
-                sample[iband+2]=imgBuffer[iband][static_cast<int>(iimg)];
+                sample[iband+2]=imgBuffer[iband][iimg];
               }
               float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
               if(theThreshold>0){//percentual value
@@ -591,21 +650,24 @@ int main(int argc, char *argv[])
                 if(p>theThreshold)
                   continue;//do not select for now, go to next column
               }
-              else if(nvalid.size()>processClass){//absolute value
-                if(nvalid[processClass]>=-theThreshold)
-                  continue;//do not select any more pixels for this class, go to next column to search for other classes
-              }
+              // else if(nvalid.size()>processClass){//absolute value
+              //   if(nvalid[processClass]>=-theThreshold)
+              //     continue;//do not select any more pixels for this class, go to next column to search for other classes
+              // }
               writeBuffer.push_back(sample);
-              //             writeBufferClass.push_back(class_opt[processClass]);
               writeBufferClass.push_back(theClass);
               ++ntotalvalid;
-              if(nvalid.size()>processClass)
-                ++(nvalid[processClass]);
+              if(nvalid.count(theClass))
+                nvalid[theClass]+=1;
+              else
+                nvalid[theClass]=1;
             }
             else{
               ++ntotalinvalid;
-              if(ninvalid.size()>processClass)
-                ++(ninvalid[processClass]);
+              if(ninvalid.count(theClass))
+                ninvalid[theClass]+=1;
+              else
+                ninvalid[theClass]=1;
             }
           }//processClass
         }//icol
@@ -631,9 +693,59 @@ int main(int argc, char *argv[])
           ogrWriter.createField(fieldname_opt[iband],fieldType);
         }
         pfnProgress(progress,pszMessage,pProgressArg);
-        std::cout << "writing sample to " << output_opt[0] << "..." << std::endl;
         progress=0;
         pfnProgress(progress,pszMessage,pProgressArg);
+
+        map<int,short> classDone;
+        Vector2d<double> writeBufferTmp;
+        vector<int> writeBufferClassTmp;
+
+        if(threshold_opt[0]<0){//absolute threshold
+          map<int,unsigned long int>::iterator mapit;
+          map<int,unsigned long int> ncopied;
+          for(mapit=nvalid.begin();mapit!=nvalid.end();++mapit)
+            ncopied[mapit->first]=0;
+
+          cout << "ncopied.size(): " << ncopied.size() << endl;
+          while(classDone.size()<nvalid.size()){
+            int index=rand()%writeBufferClass.size();
+            int theClass=writeBufferClass[index];
+            float theThreshold=threshold_opt[0];
+            if(threshold_opt.size()>1&&class_opt.size())
+              theThreshold=threshold_opt[classmap[theClass]];
+            theThreshold=-theThreshold;
+            if(ncopied[theClass]<theThreshold){
+              writeBufferClassTmp.push_back(*(writeBufferClass.begin()+index));
+              writeBufferTmp.push_back(*(writeBuffer.begin()+index));
+              writeBufferClass.erase(writeBufferClass.begin()+index);
+              writeBuffer.erase(writeBuffer.begin()+index);
+              ++(ncopied[theClass]);
+            }
+            else
+              classDone[theClass]=1;
+            if(ncopied[theClass]>=nvalid[theClass]){
+              classDone[theClass]=1;
+            }
+          }
+          writeBuffer=writeBufferTmp;
+          writeBufferClass=writeBufferClassTmp;
+          // while(classDone.size()<nvalid.size()){
+          //   int index=rand()%writeBufferClass.size();
+          //   int theClass=writeBufferClass[index];
+          //   float theThreshold=threshold_opt[0];
+          //   if(threshold_opt.size()>1&&class_opt.size())
+          //     theThreshold=threshold_opt[classmap[theClass]];
+          //   theThreshold=-theThreshold;
+          //   if(nvalid[theClass]>theThreshold){
+          //     writeBufferClass.erase(writeBufferClass.begin()+index);
+          //     writeBuffer.erase(writeBuffer.begin()+index);
+          //     --(nvalid[theClass]);
+          //   }
+          //   else
+          //     classDone[theClass]=1;
+          // }
+        }          
+
         for(int isample=0;isample<writeBuffer.size();++isample){
           pointAttributes[label_opt[0]]=writeBufferClass[isample];
           for(int iband=0;iband<writeBuffer[0].size()-2;++iband){
