@@ -234,14 +234,18 @@ template<class T> inline std::string Optionpk<T>::usage() const
   std::string longOption=m_longName;
   shortOption.insert(0,"-");
   longOption.insert(0,"--");
-  if(hasShortOption())
-    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(4) << shortOption;
-  else
-    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(4) << " ";
-  if(hasLongOption())
+  if(hasShortOption()){
+    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(6) << shortOption;
+  }
+  else{
+    helpss << "   " << std::setiosflags(std::ios::left) << std::setw(6) << " ";
+  }
+  if(hasLongOption()){
     helpss << "   " << std::setiosflags(std::ios::left) << std::setw(20) << longOption;
-  else
+  }
+  else{
     helpss << "   " << std::setiosflags(std::ios::left) << std::setw(20) << " ";
+  }
   helpss << "   " << m_help;
   if(m_hasDefault)
     helpss << " (default: " << type2string<T>(m_defaultValue) << ")";
