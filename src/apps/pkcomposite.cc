@@ -375,7 +375,11 @@ int main(int argc, char *argv[])
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      imgReader[ifile].open(input_opt[ifile]);
+      //test
+      cout << "before open" << endl;
+      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,1000);
+      //test
+      cout << "after open" << endl;
     }
     catch(string errorstring){
       cerr << errorstring << " " << input_opt[ifile] << endl;

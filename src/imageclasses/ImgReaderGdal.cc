@@ -33,8 +33,9 @@ ImgReaderGdal::~ImgReaderGdal(void)
 }
 
 //--------------------------------------------------------------------------
-void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode)
+void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {
+  m_memory=memory;
   m_filename = filename;
   setCodec(readMode);
 }
@@ -76,6 +77,35 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
   //   m_gt[4]=0;
   //   m_gt[5]=1;
   // }
+
+  //todo 1: check if memory is sufficient to read entire image
+  //todo 2: alt read N lines that fit in memory
+  if(m_memory>0){
+    m_data.resize(m_nband);
+    double theScale=1;
+    double theOffset=0;
+    // if(m_scale.size()>band)
+    //   theScale=m_scale[band];
+    // if(m_offset.size()>band)
+    //   theOffset=m_offset[band];
+    for(int iband=0;iband<m_nband;++iband){
+      //fetch raster band
+      GDALRasterBand  *poBand;
+      assert(iband<nrOfBand()+1);
+      poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
+      m_data[iband].resize(nrOfRow()*nrOfCol());
+      //todo: make template function (not GDT_Float64 hard coded)
+      poBand->RasterIO(GF_Read,0,0,nrOfCol(),nrOfRow(),&(m_data[iband][0]),nrOfCol(),nrOfRow(),GDT_Float64,0,0);
+      if(m_scale.size()>iband||m_offset.size()>iband){
+        for(int irow=0;irow<nrOfRow();++irow){
+          for(int icol=0;icol<nrOfCol();++icol){
+            unsigned long int index=irow*nrOfCol()+icol;
+            m_data[iband][index]=theScale*m_data[iband][index]+theOffset;
+          }
+        }
+      }
+    }
+  }
 }
 
 

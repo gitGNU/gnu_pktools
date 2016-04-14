@@ -33,9 +33,9 @@ class ImgReaderGdal : public virtual ImgRasterGdal
 {
 public:
   ImgReaderGdal(void);
-  ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly){open(filename, readMode);};
+  ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0){open(filename, readMode, memory);};
   ~ImgReaderGdal(void);
-  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly);
+  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
   void close(void);
 
   void setScale(double theScale, int band=0){
@@ -98,7 +98,12 @@ template<typename T> void ImgReaderGdal::readData(T& value, const GDALDataType& 
   assert(col>=0);
   assert(row<nrOfRow());
   assert(row>=0);
-  poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,dataType,0,0);
+  if(m_memory>0){
+    int index=row*nrOfCol()+col;
+    value=m_data[band][index];
+  }
+  else
+    poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,dataType,0,0);
   if(m_scale.size()>band)
     value=static_cast<double>(value)*m_scale[band];
   if(m_offset.size()>band)
@@ -119,7 +124,12 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
   assert(row>=0);
   if(buffer.size()!=maxCol-minCol+1)
     buffer.resize(maxCol-minCol+1);
-  poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
+  if(m_memory>0){
+    int index=row*nrOfCol();
+    buffer.assign(m_data[band].begin()+index+minCol,m_data[band].begin()+index+maxCol);
+  }
+  else
+    poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
   if(m_scale.size()>band||m_offset.size()>band){
     double theScale=1;
     double theOffset=0;
@@ -210,7 +220,14 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, c
   /* assert(minRow<=maxRow); */
   if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
     buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
-  poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);
+  if(m_memory>0){
+    for(int irow=minRow;irow<=maxRow;++irow){
+      int index=irow*nrOfCol();
+      buffer.assign(m_data[band].begin()+index+minCol,m_data[band].begin()+index+maxCol);
+    }
+  }
+  else
+    poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);
   if(m_scale.size()>band||m_offset.size()>band){
     for(int index=0;index<buffer.size();++index)
       buffer[index]=theScale*buffer[index]+theOffset;

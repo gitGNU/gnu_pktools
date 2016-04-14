@@ -95,6 +95,9 @@ protected:
   int m_nband;
   double m_gt[6];
   std::vector<double> m_noDataValues;
+  unsigned long int m_memory;
+  //todo: make template instead of double
+  std::vector<std::vector<double> > m_data;
 };
 
 #endif // _IMGRASTERGDAL_H_
