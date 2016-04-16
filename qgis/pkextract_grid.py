@@ -102,7 +102,7 @@ class pkextract_grid(pktoolsAlgorithm):
     FORMAT = "FORMAT"
 
     def cliName(self):
-        return "pkextract"
+        return "pkextractogr"
 
     def defineCharacteristics(self):
         self.name = "extract regular grid"

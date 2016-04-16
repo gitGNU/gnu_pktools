@@ -104,7 +104,7 @@ class pkextract(pktoolsAlgorithm):
     FORMAT = "FORMAT"
 
     def cliName(self):
-        return "pkextract"
+        return "pkextractogr"
 
     def defineCharacteristics(self):
         self.name = "extract vector sample from raster"

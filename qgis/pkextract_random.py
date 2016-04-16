@@ -102,7 +102,7 @@ class pkextract_random(pktoolsAlgorithm):
     FORMAT = "FORMAT"
 
     def cliName(self):
-        return "pkextract"
+        return "pkextractogr"
 
     def defineCharacteristics(self):
         self.name = "extract random points"
