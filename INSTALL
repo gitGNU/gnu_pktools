@@ -3,31 +3,19 @@ How to install pktools
 
 The simplest way to compile this package is:
 
-  1. `cd' to the directory containing the package's source code and type
-     `./configure' to configure the package for your system.  If you're
-     using `csh' on an old version of System V, you might need to type
-     `sh ./configure' instead to prevent `csh' from trying to execute
-     `configure' itself.
-     
-     You might need to execute:
-     
-     autoreconf -i
+  1. `cd' to the directory containing the package's source code and build out of source using cmake:
+     mkdir build
+     cd build
+     cmake ..
 
-     before you are able to configure (in case there is no configure file)
-     
-     configure options (use ./configure --help for help info)
-     
-        --with-gdal=<path to gdal-config file>
-     	--enable-fann
-	--enable-las
-	--enable-nlopt
+     to enable fann and liblas libraries, use
+     cmake -DBUILD_WITH_FANN=ON and -DBUILD_WITH_LIBLAS=ON respectively
 
+     In that case, please make sure to first install libfann-dev and liblas-dev.
+     
   2. Type `make' to compile the package.
 
-  3. Optionally, type `make check' to run any self-tests that come with
-     the package.
-
-  4. Type `make install' to install the programs and any data files and
+  3. Type `make install' to install the programs and any data files and
      documentation. You probably will need sudo rights (root access) to write into
      /usr/local/bin directory (default installation directory).
 
