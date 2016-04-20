@@ -46,17 +46,17 @@ void filter2d::Filter2d::setTaps(const Vector2d<double> &taps)
   m_taps=taps;
 }
 
-void filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output, int dim)
+void filter2d::Filter2d::smoothNoData(ImgReaderGdal& input, ImgWriterGdal& output, int dim)
 {
   smoothNoData(input, output,dim,dim);
 }
 
-void filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, int dim)
+void filter2d::Filter2d::smooth(ImgReaderGdal& input, ImgWriterGdal& output, int dim)
 {
   smooth(input, output,dim,dim);
 }
 
-void filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smoothNoData(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -67,7 +67,7 @@ void filter2d::Filter2d::smoothNoData(const ImgReaderGdal& input, ImgWriterGdal&
   filter(input,output,false,true,true);
 }
 
-void filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smooth(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -79,7 +79,7 @@ void filter2d::Filter2d::smooth(const ImgReaderGdal& input, ImgWriterGdal& outpu
 }
 
     
-void filter2d::Filter2d::filter(const ImgReaderGdal& input, ImgWriterGdal& output, bool absolute, bool normalize, bool noData)
+void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, bool absolute, bool normalize, bool noData)
 {
   int dimX=m_taps[0].size();//horizontal!!!
   int dimY=m_taps.size();//vertical!!!
@@ -349,12 +349,12 @@ void filter2d::Filter2d::var(const std::string& inputFilename, const std::string
   doit(input,output,"var",dim,disc);
 }
 
-void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, bool disc)
+void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, bool disc)
 {
   doit(input,output,method,dim,dim,down,disc);
 }
 
-void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
+void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
 {
   const char* pszMessage;
   void* pProgressArg=NULL;
@@ -701,7 +701,7 @@ void filter2d::Filter2d::doit(const ImgReaderGdal& input, ImgWriterGdal& output,
   pfnProgress(1.0,pszMessage,pProgressArg);
 }
 
-void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
+void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
   assert(m_class.size()>1);
   Vector2d<double> fullBeta(m_class.size(),m_class.size());
   for(int iclass1=0;iclass1<m_class.size();++iclass1)
@@ -711,7 +711,7 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
 }
 
 //beta[classTo][classFrom]
-void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
+void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
 {
   const char* pszMessage;
   void* pProgressArg=NULL;
@@ -843,7 +843,7 @@ void filter2d::Filter2d::mrf(const ImgReaderGdal& input, ImgWriterGdal& output, 
   }
 }
 
-void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
+void filter2d::Filter2d::shift(ImgReaderGdal& input, ImgWriterGdal& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
 {
   assert(input.nrOfCol()==output.nrOfCol());
   assert(input.nrOfRow()==output.nrOfRow());
@@ -970,7 +970,7 @@ void filter2d::Filter2d::shift(const ImgReaderGdal& input, ImgWriterGdal& output
 //   output.close();
 // }
 
-void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc)
+void filter2d::Filter2d::morphology(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc)
 {
   const char* pszMessage;
   void* pProgressArg=NULL;
@@ -1149,7 +1149,7 @@ void filter2d::Filter2d::morphology(const ImgReaderGdal& input, ImgWriterGdal& o
   }
 }
 
-void filter2d::Filter2d::shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
+void filter2d::Filter2d::shadowDsm(ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
   Vector2d<float> inputBuffer;
   Vector2d<float> outputBuffer;
   input.readDataBlock(inputBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, 0);
@@ -1157,7 +1157,7 @@ void filter2d::Filter2d::shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& ou
   output.writeDataBlock(outputBuffer,0,output.nrOfCol()-1,0,output.nrOfRow()-1,0);
 }
 
-void filter2d::Filter2d::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+void filter2d::Filter2d::dwtForward(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
   Vector2d<float> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
     input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
@@ -1167,7 +1167,7 @@ void filter2d::Filter2d::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& o
   }
 }
 
-void filter2d::Filter2d::dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+void filter2d::Filter2d::dwtInverse(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
   Vector2d<float> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
     input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
@@ -1177,7 +1177,7 @@ void filter2d::Filter2d::dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& o
   }
 }
 
-void filter2d::Filter2d::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose){
+void filter2d::Filter2d::dwtCut(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose){
   Vector2d<float> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
     input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
@@ -1187,7 +1187,7 @@ void filter2d::Filter2d::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
-void filter2d::Filter2d::linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
+void filter2d::Filter2d::linearFeature(ImgReaderGdal& input, ImgWriterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
   Vector2d<float> inputBuffer;
   std::vector< Vector2d<float> > outputBuffer;
   input.readDataBlock(inputBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, band);

@@ -62,7 +62,7 @@ unsigned int filter::Filter::setNoDataValues(std::vector<double> vnodata){
   return m_noDataValues.size();
 };
 
-void filter::Filter::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+void filter::Filter::dwtForward(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -93,7 +93,7 @@ void filter::Filter::dwtForward(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
-void filter::Filter::dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+void filter::Filter::dwtInverse(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -124,7 +124,7 @@ void filter::Filter::dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
-void filter::Filter::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut){
+void filter::Filter::dwtCut(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut){
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -155,7 +155,7 @@ void filter::Filter::dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, c
   }
 }
 
-void filter::Filter::dwtCutFrom(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, int band){
+void filter::Filter::dwtCutFrom(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, int band){
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -257,7 +257,7 @@ void filter::Filter::dwtCut(std::vector<double>& data, const std::string& wavele
   gsl_wavelet_workspace_free (work);
 }
 
-void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose)
+void filter::Filter::morphology(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose)
 {
   // bool bverbose=(verbose>1)? true:false;
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
@@ -292,7 +292,7 @@ void filter::Filter::morphology(const ImgReaderGdal& input, ImgWriterGdal& outpu
   }
 }
 
-void filter::Filter::smoothNoData(const ImgReaderGdal& input, const std::string& interpolationType, ImgWriterGdal& output)
+void filter::Filter::smoothNoData(ImgReaderGdal& input, const std::string& interpolationType, ImgWriterGdal& output)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -325,7 +325,7 @@ void filter::Filter::smoothNoData(const ImgReaderGdal& input, const std::string&
   }
 }
 
-void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim)
+void filter::Filter::smooth(ImgReaderGdal& input, ImgWriterGdal& output, short dim)
 {
   assert(dim>0);
   m_taps.resize(dim);
@@ -334,7 +334,7 @@ void filter::Filter::smooth(const ImgReaderGdal& input, ImgWriterGdal& output, s
   filter(input,output);
 }
 
-void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output)
+void filter::Filter::filter(ImgReaderGdal& input, ImgWriterGdal& output)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
@@ -367,7 +367,7 @@ void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output)
   }
 }
 
-void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method)
+void filter::Filter::stat(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   assert(output.nrOfCol()==input.nrOfCol());
@@ -428,7 +428,7 @@ void filter::Filter::stat(const ImgReaderGdal& input, ImgWriterGdal& output, con
   }
 }
 
-void filter::Filter::stats(const ImgReaderGdal& input, ImgWriterGdal& output, const vector<std::string>& methods)
+void filter::Filter::stats(ImgReaderGdal& input, ImgWriterGdal& output, const vector<std::string>& methods)
 {
   assert(output.nrOfBand()==methods.size());
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
@@ -501,7 +501,7 @@ void filter::Filter::stats(const ImgReaderGdal& input, ImgWriterGdal& output, co
   }
 }
 
-void filter::Filter::filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim)
+void filter::Filter::filter(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim)
 {
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());;

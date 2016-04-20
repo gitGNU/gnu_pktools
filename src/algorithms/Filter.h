@@ -76,30 +76,30 @@ public:
   template<class T> void filter(T* input, int inputSize, std::vector<T>& output);
   template<class T> void smooth(T* input, int inputSize, std::vector<T>& output, short dim);
   //template<class T> void morphology(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim, bool verbose=false);
-  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose=0);
-  void filter(const ImgReaderGdal& input, ImgWriterGdal& output);
-  void stat(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method);
-  void stats(const ImgReaderGdal& input, ImgWriterGdal& output, const std::vector<std::string >& methods);
-  void filter(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim);
+  void morphology(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short verbose=0);
+  void filter(ImgReaderGdal& input, ImgWriterGdal& output);
+  void stat(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method);
+  void stats(ImgReaderGdal& input, ImgWriterGdal& output, const std::vector<std::string >& methods);
+  void filter(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim);
   void getSavGolayCoefficients(std::vector<double> &c, int np, int nl, int nr, int ld, int m);
   void ludcmp(std::vector<double> &a, std::vector<int> &indx, double &d);
   void lubksb(std::vector<double> &a, std::vector<int> &indx, std::vector<double> &b);
   /* void savgolay(const ImgReaderGdal& input, ImgWriterGdal& output, int np, int nl, int nr, int m); */
-  void smooth(const ImgReaderGdal& input, ImgWriterGdal& output, short dim);
-  void smoothNoData(const ImgReaderGdal& input, const std::string& interpolationType, ImgWriterGdal& output);
+  void smooth(ImgReaderGdal& input, ImgWriterGdal& output, short dim);
+  void smoothNoData(ImgReaderGdal& input, const std::string& interpolationType, ImgWriterGdal& output);
   double getCentreWavelength(const std::vector<double> &wavelengthIn, const Vector2d<double>& srf, const std::string& interpolationType, double delta=1.0, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, T& output, double delta=1.0, bool normalize=false, bool verbose=false);
   template<class T> double applySrf(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const Vector2d<double>& srf, const std::string& interpolationType, std::vector<T>& output, double delta=1.0, bool normalize=false, int down=1, bool transposeInput=false, bool verbose=false);
 
   template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const std::vector<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, std::vector<T>& output, bool verbose=false);
   template<class T> void applyFwhm(const std::vector<double> &wavelengthIn, const Vector2d<T>& input, const std::vector<double> &wavelengthOut, const std::vector<double> &fwhm, const std::string& interpolationType, Vector2d<T>& output, int down=1, bool verbose=false);
-  void dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
-  void dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
-  void dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut);
+  void dwtForward(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtInverse(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtCut(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut);
   void dwtForward(std::vector<double>& data, const std::string& wavelet_type, int family);
   void dwtInverse(std::vector<double>& data, const std::string& wavelet_type, int family);
   void dwtCut(std::vector<double>& data, const std::string& wavelet_type, int family, double cut);
-  void dwtCutFrom(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, int band);
+  void dwtCutFrom(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, int band);
 
 private:
 

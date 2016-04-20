@@ -671,7 +671,7 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
   return getFeatureCount();
 }
 
-int ImgWriterOgr::addData(const ImgReaderGdal& imgReader, int theLayer, bool verbose)
+int ImgWriterOgr::addData(ImgReaderGdal& imgReader, int theLayer, bool verbose)
 {
   OGRLayer  *poLayer;
   assert(m_datasource->GetLayerCount()>theLayer);
