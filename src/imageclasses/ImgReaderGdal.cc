@@ -33,9 +33,8 @@ ImgReaderGdal::~ImgReaderGdal(void)
 }
 
 //--------------------------------------------------------------------------
-void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
+void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode)
 {
-  m_memory=memory;
   m_filename = filename;
   setCodec(readMode);
 }
@@ -61,60 +60,21 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
   // m_magic_y=magicY;
   double adfGeoTransform[6];
   m_gds->GetGeoTransform( adfGeoTransform );
-  // if( m_gds->GetGeoTransform( adfGeoTransform ) == CE_None ){
   m_gt[0]=adfGeoTransform[0];
   m_gt[1]=adfGeoTransform[1];
   m_gt[2]=adfGeoTransform[2];
   m_gt[3]=adfGeoTransform[3];
   m_gt[4]=adfGeoTransform[4];
   m_gt[5]=adfGeoTransform[5];
-  // }
-  // else{
-  //   m_gt[0]=0;
-  //   m_gt[1]=1;
-  //   m_gt[2]=0;
-  //   m_gt[3]=0;
-  //   m_gt[4]=0;
-  //   m_gt[5]=1;
-  // }
-
-  //todo 1: check if memory is sufficient to read entire image
-  //todo 2: alt read N lines that fit in memory
-  if(m_memory>0){
-    m_data.resize(m_nband);
-    double theScale=1;
-    double theOffset=0;
-    // if(m_scale.size()>band)
-    //   theScale=m_scale[band];
-    // if(m_offset.size()>band)
-    //   theOffset=m_offset[band];
-    for(int iband=0;iband<m_nband;++iband){
-      //fetch raster band
-      GDALRasterBand  *poBand;
-      assert(iband<nrOfBand()+1);
-      poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-      m_data[iband].resize(nrOfRow()*nrOfCol());
-      //todo: make template function (not GDT_Float64 hard coded)
-      poBand->RasterIO(GF_Read,0,0,nrOfCol(),nrOfRow(),&(m_data[iband][0]),nrOfCol(),nrOfRow(),GDT_Float64,0,0);
-      if(m_scale.size()>iband||m_offset.size()>iband){
-        for(int irow=0;irow<nrOfRow();++irow){
-          for(int icol=0;icol<nrOfCol();++icol){
-            unsigned long int index=irow*nrOfCol()+icol;
-            m_data[iband][index]=theScale*m_data[iband][index]+theOffset;
-          }
-        }
-      }
-    }
-  }
 }
 
 
-double ImgReaderGdal::getMin(int& x, int& y, int band) const{
+double ImgReaderGdal::getMin(int& x, int& y, int band){
   double minValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
   for(int irow=0;irow<nrOfRow();++irow){
-    readData(lineBuffer,GDT_Float64,irow,band);
+    readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
@@ -139,12 +99,12 @@ double ImgReaderGdal::getMin(int& x, int& y, int band) const{
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
-double ImgReaderGdal::getMax(int& x, int& y, int band) const{
+double ImgReaderGdal::getMax(int& x, int& y, int band){
   double maxValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
   for(int irow=0;irow<nrOfRow();++irow){
-    readData(lineBuffer,GDT_Float64,irow,band);
+    readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
@@ -169,7 +129,7 @@ double ImgReaderGdal::getMax(int& x, int& y, int band) const{
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
-void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const
+void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue)
 {
   bool isConstraint=(maxValue>minValue);
   double minConstraint=minValue;
@@ -178,7 +138,7 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
   bool isValid=false;
   assert(endRow<nrOfRow());
   for(int irow=startCol;irow<endRow+1;++irow){
-    readData(lineBuffer,GDT_Float64,startCol,endCol,irow,band);
+    readData(lineBuffer,startCol,endCol,irow,band);
     for(int icol=0;icol<lineBuffer.size();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
@@ -211,7 +171,7 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
-void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band) const
+void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band)
 {
   bool isConstraint=(maxValue>minValue);
   double minConstraint=minValue;
@@ -219,7 +179,7 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band) cons
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
   for(int irow=0;irow<nrOfRow();++irow){
-    readData(lineBuffer,GDT_Float64,irow,band);
+    readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
@@ -306,7 +266,7 @@ double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min,
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());
   for(int irow=0;irow<nrOfRow();++irow){
-    readData(lineBuffer,GDT_Float64,irow,theBand);
+    readData(lineBuffer,irow,theBand);
     for(int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
         ++ninvalid;
@@ -347,12 +307,12 @@ double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min,
   return nvalid;
 }
 
-void ImgReaderGdal::getRange(std::vector<short>& range, int band) const
+void ImgReaderGdal::getRange(std::vector<short>& range, int band)
 {
   std::vector<short> lineBuffer(nrOfCol());
   range.clear();
   for(int irow=0;irow<nrOfRow();++irow){
-    readData(lineBuffer,GDT_Int16,irow,band);
+    readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       if(find(range.begin(),range.end(),lineBuffer[icol])==range.end())
         range.push_back(lineBuffer[icol]);
@@ -361,13 +321,13 @@ void ImgReaderGdal::getRange(std::vector<short>& range, int band) const
   sort(range.begin(),range.end());
 }
 
-unsigned long int ImgReaderGdal::getNvalid(int band) const
+unsigned long int ImgReaderGdal::getNvalid(int band)
 {
   unsigned long int nvalid=0;
   if(m_noDataValues.size()){
     std::vector<double> lineBuffer(nrOfCol());
     for(int irow=0;irow<nrOfRow();++irow){
-      readData(lineBuffer,GDT_Float64,irow,band);
+      readData(lineBuffer,irow,band);
       for(int icol=0;icol<nrOfCol();++icol){
 	if(isNoData(lineBuffer[icol]))
 	  continue;
@@ -382,7 +342,7 @@ unsigned long int ImgReaderGdal::getNvalid(int band) const
 }
 
 
-void ImgReaderGdal::getRefPix(double& refX, double &refY, int band) const
+void ImgReaderGdal::getRefPix(double& refX, double &refY, int band)
 {
   std::vector<double> lineBuffer(nrOfCol());
   double validCol=0;
@@ -390,7 +350,7 @@ void ImgReaderGdal::getRefPix(double& refX, double &refY, int band) const
   int nvalidCol=0;
   int nvalidRow=0;
   for(int irow=0;irow<nrOfRow();++irow){
-    readData(lineBuffer,GDT_Float64,irow,band);
+    readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
       // if(valid){

@@ -215,7 +215,7 @@ int main(int argc,char **argv) {
   vector<char> writeBuffer(imgWriter.nrOfCol());
   for(int irow=0;irow<imgReader.nrOfRow();++irow){
     for(int iband=0;iband<band_opt.size();++iband)
-      imgReader.readData(lineBuffer[iband],GDT_Float32,irow,band_opt[iband]);
+      imgReader.readData(lineBuffer[iband],irow,band_opt[iband]);
     for(int icol=0;icol<imgReader.nrOfCol();++icol){
       bool valid=(operator_opt[0]=="OR")?false:true;
       unsigned short validValue=data_opt[0];

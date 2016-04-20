@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
   }
   assert(data.size()==nrow);
   for(irow=0;irow<nrow;++irow)
-    imgWriter.writeData(data[irow],GDT_Float64,irow);
+    imgWriter.writeData(data[irow],irow);
   imgWriter.close();
 }
 

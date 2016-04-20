@@ -188,7 +188,7 @@ int main(int argc,char **argv) {
   Vector2d<double> inputData(input.nrOfRow(),input.nrOfCol());
   Vector2d<double> outputData(outputWriter.nrOfRow(),outputWriter.nrOfCol());
   Vector2d<double> tmpData(outputWriter.nrOfRow(),outputWriter.nrOfCol());
-  input.readDataBlock(inputData,GDT_Float64,0,inputData.nCols()-1,0,inputData.nRows()-1);
+  input.readDataBlock(inputData,0,inputData.nCols()-1,0,inputData.nRows()-1);
 
   //apply post filter
   std::cout << "Applying post processing filter: " << postFilter_opt[0] << std::endl;

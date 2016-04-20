@@ -53,6 +53,7 @@ set(FILECLASS_CC
 set(IMGCLASS_H
 	${IMGCLASS_SRC_DIR}/ImgRasterGdal.h 
 	${IMGCLASS_SRC_DIR}/ImgReaderGdal.h 
+	${IMGCLASS_SRC_DIR}/ImgReaderMem.h 
 	${IMGCLASS_SRC_DIR}/ImgReaderOgr.h 
 	${IMGCLASS_SRC_DIR}/ImgWriterGdal.h 
 	${IMGCLASS_SRC_DIR}/ImgWriterOgr.h 

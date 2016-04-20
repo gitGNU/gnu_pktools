@@ -20,6 +20,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _IMGRASTERGDAL_H_
 #define _IMGRASTERGDAL_H_
 
+#include <typeinfo>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -31,13 +32,36 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
+template<typename T1> GDALDataType getGDALDataType(){
+  if (typeid(T1) == typeid(char))
+    return GDT_Byte;
+  else if (typeid(T1) == typeid(unsigned char))
+    return GDT_Byte;
+  else if (typeid(T1) == typeid(unsigned short))
+    return GDT_UInt16;
+  else if (typeid(T1) == typeid(short))
+    return GDT_Int16;
+  else if (typeid(T1) == typeid(int))
+    return GDT_Int32;
+  else if (typeid(T1) == typeid(unsigned int))
+    return GDT_UInt32;
+  else if (typeid(T1) == typeid(long))
+    return GDT_Int32;
+  else if (typeid(T1) == typeid(unsigned long))
+    return GDT_UInt32;
+  else if (typeid(T1) == typeid(float))
+    return GDT_Float32;
+  else if (typeid(T1) == typeid(double))
+    return GDT_Float64;
+  else
+    return GDT_Byte;
+};
 //--------------------------------------------------------------------------
 class ImgRasterGdal
 {
 public:
   ImgRasterGdal(void);
   virtual ~ImgRasterGdal(void){};
-
   virtual void close(void);
   std::string getFileName() const {return m_filename;};
   int nrOfCol(void) const { return m_ncol;};
@@ -95,9 +119,7 @@ protected:
   int m_nband;
   double m_gt[6];
   std::vector<double> m_noDataValues;
-  unsigned long int m_memory;
-  //todo: make template instead of double
-  std::vector<std::vector<double> > m_data;
+  // unsigned long int m_memory;
 };
 
 #endif // _IMGRASTERGDAL_H_

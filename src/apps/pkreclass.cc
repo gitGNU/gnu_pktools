@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
       for(int iband=0;iband<inputReader.nrOfBand();++iband){
         try{
           // inputReader.readData(lineInput[iband],GDT_Int32,irow,iband);
-          inputReader.readData(lineInput[iband],GDT_Float64,irow,iband);
+          inputReader.readData(lineInput[iband],irow,iband);
         }
         catch(string errorstring){
           cerr << errorstring << endl;
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
             if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
               assert(rowMask>=0&&rowMask<maskReader[imask].nrOfRow());
               try{
-                maskReader[imask].readData(lineMask[imask],GDT_Int16,static_cast<int>(rowMask));
+                maskReader[imask].readData(lineMask[imask],static_cast<int>(rowMask));
               }
               catch(string errorstring){
                 cerr << errorstring << endl;
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
           if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
             assert(rowMask>=0&&rowMask<maskReader[0].nrOfRow());
             try{
-              maskReader[0].readData(lineMask[0],GDT_Int16,static_cast<int>(rowMask));
+              maskReader[0].readData(lineMask[0],static_cast<int>(rowMask));
             }
             catch(string errorstring){
               cerr << errorstring << endl;
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
       //write buffer lineOutput to output file
       try{
         for(int iband=0;iband<outputWriter.nrOfBand();++iband)
-          outputWriter.writeData(lineOutput[iband],GDT_Float64,irow,iband);
+          outputWriter.writeData(lineOutput[iband],irow,iband);
       }
       catch(string errorstring){
         cerr << errorstring << endl;

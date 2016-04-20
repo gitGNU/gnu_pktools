@@ -730,9 +730,9 @@ int main(int argc, char *argv[])
 	    cout << "reading row: " << readRow << endl;
 	  try{
             if(endCol<imgReader.nrOfCol()-1)
-              imgReader.readData(readBuffer,GDT_Float64,startCol,endCol+1,readRow,readBand,theResample);
+              imgReader.readData(readBuffer,startCol,endCol+1,readRow,readBand,theResample);
             else
-              imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,readBand,theResample);
+              imgReader.readData(readBuffer,startCol,endCol,readRow,readBand,theResample);
 	    // for(int icol=0;icol<ncropcol;++icol){
 	    double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	    for(int icol=0;icol<imgWriter.nrOfCol();++icol){
@@ -765,7 +765,7 @@ int main(int argc, char *argv[])
 
 		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 		      try{
-			maskReader.readData(lineMask,GDT_Float32,static_cast<int>(rowMask),mskband_opt[0]);
+			maskReader.readData(lineMask,static_cast<int>(rowMask),mskband_opt[0]);
 		      }
 		      catch(string errorstring){
 			cerr << errorstring << endl;

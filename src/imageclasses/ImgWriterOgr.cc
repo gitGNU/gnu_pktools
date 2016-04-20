@@ -704,7 +704,7 @@ int ImgWriterOgr::addData(const ImgReaderGdal& imgReader, int theLayer, bool ver
     double y=poPoint->getY();
     for(int iband=0;iband<imgReader.nrOfBand();++iband){
       double imgData;
-      imgReader.readData(imgData,GDT_Float64,x,y,iband);
+      imgReader.readData(imgData,x,y,iband);
       //todo: put imgdata in field
       std::ostringstream fs;
       fs << "band" << iband;

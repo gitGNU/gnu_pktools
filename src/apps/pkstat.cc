@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 	statfactory::StatFactory stat;
 	vector<double> readBuffer;
 	double varValue;
-	imgReader.readDataBlock(readBuffer, GDT_Float64, 0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
+	imgReader.readDataBlock(readBuffer,  0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
 	stat.setNoDataValues(nodata_opt);
 	stat.meanVar(readBuffer,meanValue,varValue);
 	medianValue=stat.median(readBuffer);
@@ -437,8 +437,8 @@ int main(int argc, char *argv[])
       for(int irow=0;irow<imgReader.nrOfRow();++irow){
         if(irow%down_opt[0])
           continue;
-	imgReader.readData(inputX,GDT_Float64,irow,band_opt[0]);
-	imgReader.readData(inputY,GDT_Float64,irow,band_opt[1]);
+	imgReader.readData(inputX,irow,band_opt[0]);
+	imgReader.readData(inputY,irow,band_opt[1]);
 	for(int icol=0;icol<imgReader.nrOfCol();++icol){
           if(icol%down_opt[0])
             continue;
@@ -544,8 +544,8 @@ int main(int argc, char *argv[])
       double nValid=0;
       double nPixel=imgReader.nrOfCol()/down_opt[0]*imgReader.nrOfRow()/down_opt[0];
       for(int irow;irow<imgReader.nrOfRow();irow+=down_opt[0]){
-	imgReader.readData(xBuffer,GDT_Float64,irow,band_opt[0]);
-	imgReader.readData(yBuffer,GDT_Float64,irow,band_opt[1]);
+	imgReader.readData(xBuffer,irow,band_opt[0]);
+	imgReader.readData(yBuffer,irow,band_opt[1]);
 	for(int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
 	  double xValue=xBuffer[icol];
 	  double yValue=yBuffer[icol];
@@ -623,8 +623,8 @@ int main(int argc, char *argv[])
   //     imgReader1.image2geo(icol1,irow1,geoX,geoY);
   //     imgReader2.geo2image(geoX,geoY,icol2,irow2);
   //     irow2=static_cast<int>(irow2);
-  //     imgReader1.readData(xBuffer,GDT_Float64,irow1,band_opt[0]);
-  //     imgReader2.readData(yBuffer,GDT_Float64,irow2,band_opt[1]);
+  //     imgReader1.readData(xBuffer,irow1,band_opt[0]);
+  //     imgReader2.readData(yBuffer,irow2,band_opt[1]);
   //     for(int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
   // 	icol1=icol;
   // 	imgReader1.image2geo(icol1,irow1,geoX,geoY);
@@ -955,8 +955,8 @@ int main(int argc, char *argv[])
       imgReader1.image2geo(icol1,irow1,geoX,geoY);
       imgReader2.geo2image(geoX,geoY,icol2,irow2);
       irow2=static_cast<int>(irow2);
-      imgReader1.readData(inputX,GDT_Float64,irow1,band_opt[0]);
-      imgReader2.readData(inputY,GDT_Float64,irow2,band_opt[1]);
+      imgReader1.readData(inputX,irow1,band_opt[0]);
+      imgReader2.readData(inputY,irow2,band_opt[1]);
       for(int icol=0;icol<imgReader.nrOfCol();++icol){
 	if(icol%down_opt[0])
 	  continue;
@@ -1061,8 +1061,8 @@ int main(int argc, char *argv[])
 // for(irow=0;irow<classReader.nrOfRow();++irow){
 //   if(irow%down_opt[0])
 //     continue;
-//   // classReader.readData(classBuffer,GDT_Int32,irow);
-//   classReader.readData(classBuffer,GDT_Float64,irow);
+//   // classReader.readData(classBuffer,irow);
+//   classReader.readData(classBuffer,irow);
 //   double x,y;//geo coordinates
 //   double iimg,jimg;//image coordinates in img image
 //   for(icol=0;icol<classReader.nrOfCol();++icol){

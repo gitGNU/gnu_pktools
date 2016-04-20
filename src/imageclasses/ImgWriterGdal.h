@@ -47,11 +47,11 @@ public:
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
   void setGeoTransform(double* gt);
 
-  template<typename T> bool writeData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
-  template<typename T> bool writeData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
-  template<typename T> bool writeData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
+  template<typename T> bool writeData(T& value, int col, int row, int band=0) const;
+  template<typename T> bool writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0) const;
+  template<typename T> bool writeData(std::vector<T>& buffer, int row, int band=0) const;
   bool writeData(void* pdata, const GDALDataType& dataType, int band=0) const;
-  template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
+  template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
   // std::string getInterleave(){return m_interleave;};
   // std::string getCompression(){return m_compression;};
   void setColorTable(const std::string& filename, int band=0);
@@ -60,8 +60,8 @@ public:
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues=std::vector<double>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
 protected:
-  void setCodec(const GDALDataType& dataType, const std::string& imageType);
-  void setCodec(const ImgReaderGdal& ImgSrc);
+  virtual void setCodec(const GDALDataType& dataType, const std::string& imageType);
+  virtual void setCodec(const ImgReaderGdal& ImgSrc);
 
   /* double m_ulx; */
   /* double m_uly; */
@@ -73,7 +73,7 @@ protected:
   std::vector<std::string> m_options;
 };
 
-template<typename T> bool ImgWriterGdal::writeData(T& value, const GDALDataType& dataType, int col, int row, int band) const
+template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, int band) const
 {
   //fetch raster band
   GDALRasterBand  *poBand;
@@ -103,11 +103,11 @@ template<typename T> bool ImgWriterGdal::writeData(T& value, const GDALDataType&
     s << "row (" << row << ") is negative";
     throw(s.str());
   }
-  poBand->RasterIO(GF_Write,col,row,1,1,&value,1,1,dataType,0,0);
+  poBand->RasterIO(GF_Write,col,row,1,1,&value,1,1,getGDALDataType<T>(),0,0);
   return true;
 }
 
-template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, const GDALDataType& dataType, int minCol, int maxCol, int row, int band) const
+template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band) const
 {
   //fetch raster band
   GDALRasterBand  *poBand;
@@ -152,11 +152,11 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, const
     s << "row (" << row << ") is negative";
     throw(s.str());
   }
-  poBand->RasterIO(GF_Write,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
+  poBand->RasterIO(GF_Write,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
   return true;
 }
 
-template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band) const
+template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int row, int band) const
 {
   //fetch raster band
   GDALRasterBand  *poBand;
@@ -175,11 +175,11 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, const
     s << "row (" << row << ") exceeds nrOfRow (" << nrOfRow() << ")";
     throw(s.str());
   }
-  poBand->RasterIO(GF_Write,0,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
+  poBand->RasterIO(GF_Write,0,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
   return true;
 }
 
-template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band) const
 {
   typename std::vector<T> buffer((maxRow-minRow+1)*(maxCol-minCol+1));
   //fetch raster band
@@ -195,7 +195,7 @@ template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, c
     // startit+=maxCol-minCol+1;
   }
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  poBand->RasterIO(GF_Write,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);
+  poBand->RasterIO(GF_Write,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
   return true;
 }
 

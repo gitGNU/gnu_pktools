@@ -33,50 +33,45 @@ class ImgReaderGdal : public virtual ImgRasterGdal
 {
 public:
   ImgReaderGdal(void);
-  ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0){open(filename, readMode, memory);};
-  ~ImgReaderGdal(void);
-  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
-  void close(void);
-
+  ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly){open(filename, readMode);};
+  virtual ~ImgReaderGdal(void);
   void setScale(double theScale, int band=0){
-    /* if(getRasterBand(band)->SetScale(theScale)==CE_Failure){ */
     if(m_scale.size()!=nrOfBand()){//initialize
       m_scale.resize(nrOfBand());
       for(int iband=0;iband<nrOfBand();++iband)
-	m_scale[iband]=1.0;
+       m_scale[iband]=1.0;
     }
     m_scale[band]=theScale;
-    /* }; */
   }
   void setOffset(double theOffset, int band=0){
-    /* if(getRasterBand(band)->SetOffset(theOffset)==CE_Failure){ */
     if(m_offset.size()!=nrOfBand()){
       m_offset.resize(nrOfBand());
       for(int iband=0;iband<nrOfBand();++iband)
-	m_offset[iband]=0.0;
+       m_offset[iband]=0.0;
     }
       m_offset[band]=theOffset;
-    /* }; */
   }
-  template<typename T> void readData(T& value, const GDALDataType& dataType, int col, int row, int band=0) const;
-  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int row, int band=0) const;
-  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR) const;
-  template<typename T> void readDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
-  template<typename T> void readDataBlock(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band=0) const;
-  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band=0) const;
-  template<typename T> void readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band=0, RESAMPLE resample=NEAR) const;
-  void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue) const;
-  void getMinMax(double& minValue, double& maxValue, int band=0) const;
-  double getMin(int& col, int& row, int band=0) const;
+
+  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly);
+  void close(void);
+  template<typename T> void readData(T& value,  int col, int row, int band=0);
+  template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
+  template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR);
+  template<typename T> void readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  template<typename T> void readDataBlock(std::vector<T>& buffer , int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  template<typename T> void readData(std::vector<T>& buffer, int row, int band=0);
+  template<typename T> void readData(std::vector<T>& buffer, double row, int band=0, RESAMPLE resample=NEAR);
+  void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue);
+  void getMinMax(double& minValue, double& maxValue, int band=0);
+  double getMin(int& col, int& row, int band=0);
   double getHistogram(std::vector<double>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0, bool kde=false);
-  double getMax(int& col, int& row, int band=0) const;
-  void getRefPix(double& refX, double &refY, int band=0) const;
-  void getRange(std::vector<short>& range, int Band=0) const;
-  unsigned long int getNvalid(int band) const;
+  double getMax(int& col, int& row, int band=0);
+  void getRefPix(double& refX, double &refY, int band=0);
+  void getRange(std::vector<short>& range, int Band=0);
+  unsigned long int getNvalid(int band);
 
 protected:
   void setCodec(const GDALAccess& readMode=GA_ReadOnly);
-
   std::vector<double> m_scale;
   std::vector<double> m_offset;
 };
@@ -88,7 +83,7 @@ protected:
 //     adfGeoTransform[4] /* rotation, 0 if image is "north up" */
 //     adfGeoTransform[5] /* n-s pixel resolution */
 
-template<typename T> void ImgReaderGdal::readData(T& value, const GDALDataType& dataType, int col, int row, int band) const
+template<typename T> void ImgReaderGdal::readData(T& value, int col, int row, int band)
 {
   //fetch raster band
   GDALRasterBand  *poBand;
@@ -98,19 +93,14 @@ template<typename T> void ImgReaderGdal::readData(T& value, const GDALDataType& 
   assert(col>=0);
   assert(row<nrOfRow());
   assert(row>=0);
-  if(m_memory>0){
-    int index=row*nrOfCol()+col;
-    value=m_data[band][index];
-  }
-  else
-    poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,dataType,0,0);
+  poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,getGDALDataType<T>(),0,0);
   if(m_scale.size()>band)
     value=static_cast<double>(value)*m_scale[band];
   if(m_offset.size()>band)
     value=static_cast<double>(value)+m_offset[band];
 }
 
-template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType, int minCol, int maxCol, int row, int band) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
 {
   //fetch raster band
   GDALRasterBand  *poBand;
@@ -124,12 +114,7 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
   assert(row>=0);
   if(buffer.size()!=maxCol-minCol+1)
     buffer.resize(maxCol-minCol+1);
-  if(m_memory>0){
-    int index=row*nrOfCol();
-    buffer.assign(m_data[band].begin()+index+minCol,m_data[band].begin()+index+maxCol);
-  }
-  else
-    poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,dataType,0,0);
+  poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
   if(m_scale.size()>band||m_offset.size()>band){
     double theScale=1;
     double theOffset=0;
@@ -142,7 +127,7 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
   }
 }
 
-template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, double row, int band, RESAMPLE resample) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band, RESAMPLE resample)
 {
   //todo: make upper and lower row depend on isGeo...
   std::vector<T> readBuffer_upper;
@@ -159,24 +144,24 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const 
       lowerRow=nrOfRow()-1;
     if(upperRow<0)
       upperRow=0;
-    readData(readBuffer_upper,GDT_Float64,minCol,maxCol,static_cast<int>(upperRow),band);
-    readData(readBuffer_lower,GDT_Float64,minCol,maxCol,static_cast<int>(lowerRow),band);
+    readData(readBuffer_upper,minCol,maxCol,static_cast<int>(upperRow),band);
+    readData(readBuffer_lower,minCol,maxCol,static_cast<int>(lowerRow),band);
     //do interpolation in y
     for(int icol=0;icol<maxCol-minCol+1;++icol){
       buffer[icol]=(lowerRow-row+0.5)*readBuffer_upper[icol]+(1-lowerRow+row-0.5)*readBuffer_lower[icol];
     }
     break;
   default:
-    readData(buffer,GDT_Float64,minCol,maxCol,static_cast<int>(row),band);
+    readData(buffer,minCol,maxCol,static_cast<int>(row),band);
     break;
   }
 }
 
-template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer2d, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
   buffer2d.resize(maxRow-minRow+1);
   typename std::vector<T> buffer;
-  readDataBlock(buffer,dataType,minCol,maxCol,minRow,maxRow,band);
+  readDataBlock(buffer,minCol,maxCol,minRow,maxRow,band);
   typename std::vector<T>::const_iterator startit=buffer.begin();
   typename std::vector<T>::const_iterator endit=startit;
   for(int irow=minRow;irow<=maxRow;++irow){
@@ -187,7 +172,7 @@ template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer2d, co
   }
 }
   
-template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, const GDALDataType& dataType , int minCol, int maxCol, int minRow, int maxRow, int band) const
+template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
   double theScale=1;
   double theOffset=0;
@@ -220,14 +205,7 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, c
   /* assert(minRow<=maxRow); */
   if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
     buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
-  if(m_memory>0){
-    for(int irow=minRow;irow<=maxRow;++irow){
-      int index=irow*nrOfCol();
-      buffer.assign(m_data[band].begin()+index+minCol,m_data[band].begin()+index+maxCol);
-    }
-  }
-  else
-    poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),dataType,0,0);
+  poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
   if(m_scale.size()>band||m_offset.size()>band){
     for(int index=0;index<buffer.size();++index)
       buffer[index]=theScale*buffer[index]+theOffset;
@@ -255,14 +233,14 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, c
 //     poBand->RasterIO(GF_Read,minCol,minRow+irow,maxCol-minCol+1,1,&(buffer[irow*(maxCol-minCol+1)]),maxCol-minCol+1,1,dataType,0,0);
 // }
   
-template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType, int row, int band) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int row, int band)
 {
-  readData(buffer,dataType,0,nrOfCol()-1,row,band);
+  readData(buffer,0,nrOfCol()-1,row,band);
 }
 
-template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, const GDALDataType& dataType, double row, int band, RESAMPLE resample) const
+template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, double row, int band, RESAMPLE resample)
 {
-  readData(buffer,dataType,0,nrOfCol()-1,row,band,resample);
+  readData(buffer,0,nrOfCol()-1,row,band,resample);
 }
 
 

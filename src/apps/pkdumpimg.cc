@@ -302,11 +302,11 @@ int main(int argc, char *argv[])
       }
       try{
         //test
-        // imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,band_opt[0],theResample);
+        // imgReader.readData(readBuffer,startCol,endCol,readRow,band_opt[0],theResample);
         if(endCol<imgReader.nrOfCol()-1)
-          imgReader.readData(readBuffer,GDT_Float64,startCol,endCol+1,readRow,band_opt[iband],theResample);
+          imgReader.readData(readBuffer,startCol,endCol+1,readRow,band_opt[iband],theResample);
         else
-          imgReader.readData(readBuffer,GDT_Float64,startCol,endCol,readRow,band_opt[iband],theResample);
+          imgReader.readData(readBuffer,startCol,endCol,readRow,band_opt[iband],theResample);
         for(int ib=0;ib<ncropcol;++ib){
           // assert(imgWriter.image2geo(ib,irow,x,y));
           assert(imgReader.image2geo(ib,irow,x,y));

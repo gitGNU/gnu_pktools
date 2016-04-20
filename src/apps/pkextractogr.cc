@@ -562,11 +562,11 @@ int main(int argc, char *argv[])
             cout << "reading image band " << theBand << endl;
           switch( fieldType ){
           case OFTInteger:
-            imgReader.readDataBlock(readValuesInt[iband],GDT_Int32,layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
+            imgReader.readDataBlock(readValuesInt[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
           case OFTReal:
           default:
-            imgReader.readDataBlock(readValuesReal[iband],GDT_Float32,layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
+            imgReader.readDataBlock(readValuesReal[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
           }
         }
