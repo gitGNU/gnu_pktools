@@ -3,7 +3,7 @@ ImgWriterGdal.h: class to write raster files using GDAL API library
 Copyright (C) 2008-2012 Pieter Kempeneers
 
 This file is part of pktools
-n
+
 pktools is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -35,10 +35,28 @@ class ImgWriterGdal : public virtual ImgRasterGdal
 public:
   ImgWriterGdal(void);
   ~ImgWriterGdal(void);
-  void open(const std::string& filename);
+  void setScale(double theScale, int band=0){
+    if(m_scale.size()!=nrOfBand()){//initialize
+      m_scale.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+       m_scale[iband]=1.0;
+    }
+    m_scale[band]=theScale;
+  }
+  void setOffset(double theOffset, int band=0){
+    if(m_offset.size()!=nrOfBand()){
+      m_offset.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+       m_offset[iband]=0.0;
+    }
+      m_offset[band]=theOffset;
+  }
+  // void open(const std::string& filename);//not needed?
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
-  void close(void);
+  void close(void){ImgRasterGdal::close();};
+  //todo: check?
+  //void close(void);
 
   void copyGeoTransform(const ImgReaderGdal& imgSrc);
   void setProjection(const std::string& projection);
@@ -62,6 +80,8 @@ public:
 protected:
   virtual void setCodec(const GDALDataType& dataType, const std::string& imageType);
   virtual void setCodec(const ImgReaderGdal& ImgSrc);
+  std::vector<double> m_scale;
+  std::vector<double> m_offset;
 
   /* double m_ulx; */
   /* double m_uly; */

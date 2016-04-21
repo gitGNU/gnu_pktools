@@ -1,6 +1,6 @@
 /**********************************************************************
 ImgReaderMem.h: class to read raster files using GDAL API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -29,18 +29,18 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Vector2d.h"
 
 //--------------------------------------------------------------------------
-//todo: automatic gdal type definitions?
 class ImgReaderMem : public ImgReaderGdal
 {
 public:
-  ImgReaderMem(void) {};
+  ImgReaderMem(void) : m_begin(0), m_end(0), m_deletePointer(true) {};
   //memory (in MB) indicates maximum memory read in memory for this image
-  ImgReaderMem(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : ImgReaderGdal(filename, readMode) {initMem(memory);};
+  ImgReaderMem(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : ImgReaderGdal(filename, readMode), deletePointer(true) {initMem(memory);};
+  ImgReaderMem(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType){open(dataPointer,ncol,nrow,nband,dataType);};
   //memory (in MB) indicates maximum memory read in memory for this image
+  void open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType);
   void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0){ImgReaderGdal::open(filename, readMode);initMem(memory);};
-  void setMemory(unsigned long int memory){initMem(memory);};
-  ~ImgReaderMem(void){for(int iband=0;iband<m_nband;++iband) free(m_data[iband]);};
-  //void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly);
+  void setMemory(unsigned long int memory=0){initMem(memory);};
+  ~ImgReaderMem(void){if(m_deletePointer){for(int iband=0;iband<m_nband;++iband) free(m_data[iband])};};
   template<typename T1> void readData(T1& value, int col, int row, int band=0);
   template<typename T1> void readData(std::vector<T1>& buffer, int minCol, int maxCol, int row, int band=0);
   template<typename T1> void readData(std::vector<T1>& buffer, int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR);
@@ -50,87 +50,86 @@ public:
   template<typename T1> void readData(std::vector<T1>& buffer, double row, int band=0, RESAMPLE resample=NEAR);
 
 protected:
-  unsigned int m_nrow;
+  unsigned int m_blockSize;
   std::vector<void *> m_data;
   unsigned int m_begin;//first line that has been read
   unsigned int m_end;//beyond last line read
 private:
   void initMem(unsigned long int memory);
+  bool m_deletePointer;
   bool readNewBlock(unsigned int row);
 };
 
-//     adfGeoTransform[0] /* top left x */
-//     adfGeoTransform[1] /* w-e pixel resolution */
-//     adfGeoTransform[2] /* rotation, 0 if image is "north up" */
-//     adfGeoTransform[3] /* top left y */
-//     adfGeoTransform[4] /* rotation, 0 if image is "north up" */
-//     adfGeoTransform[5] /* n-s pixel resolution */
+//not tested yet!!!
+//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
+//what about projection and geotransform data (must be set from outside!)
+void ImgReaderMem::open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType)
+{
+  m_deletePointer=false;//we are not the owner
+  m_nband=nband;
+  m_ncol=ncol;
+  m_nrow=nrow;
+  m_data.resize(nband);
+  for(int iband=0;iband<nband;++iband)
+    m_data[iband]=dataPointer+iband*m_ncol*m_nrow*(GDALGetDataTypeSize(getDataType())>>3);
+  m_begin=0;
+  m_blockSize=nrow;//memory contains entire image
+  m_end=nrow;//and has been read already
+}
 
-// template<typename T> void ImgReaderMem<T>::open(const std::string& filename, const GDALAccess& readMode){
-//   ImgReaderGdal::open(filename, readMode);
-//   setCodec();
-// }
-
-//todo: support external memory setting (initMem by passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
 void ImgReaderMem::initMem(unsigned long int memory)
 {
-  m_nrow=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-  // //test
-  // m_nrow=nrOfRow();
-  if(m_nrow<1)
-    m_nrow=1;
-  if(m_nrow>nrOfRow())
-    m_nrow=nrOfRow();
+  m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+  if(m_blockSize<1)
+    m_blockSize=1;
+  if(m_blockSize>nrOfRow())
+    m_blockSize=nrOfRow();
   m_data.resize(m_nband);
   for(int iband=0;iband<m_nband;++iband)
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_nrow);
+    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
   m_begin=0;
   m_end=0;
-  readNewBlock(0);
+  // readNewBlock(0);
 }
 
 bool ImgReaderMem::readNewBlock(unsigned int row)
 {
-  if(row<m_begin||row>=m_end){
-    if(m_end<m_nrow)//first time
-      m_end=m_nrow;
-    else{
-      while(row>=m_end&&m_begin<nrOfRow()){
-        m_begin+=m_nrow;
-        m_end=m_begin+m_nrow;
-      }
-    }
-    if(m_end>nrOfRow())
-      m_end=nrOfRow();
-    double theScale=1;
-    double theOffset=0;
-    for(int iband=0;iband<m_nband;++iband){
-      //fetch raster band
-      GDALRasterBand  *poBand;
-      assert(iband<nrOfBand()+1);
-      poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-      poBand->RasterIO(GF_Read,0,m_begin,nrOfCol(),m_end-m_begin,m_data[iband],nrOfCol(),m_end-m_begin,getDataType(),0,0);
-    }
-    return true;//new block was read
-  }
+  if(m_end<m_blockSize)//first time
+    m_end=m_blockSize;
   else{
-    return false;//no need to read new block
+    while(row>=m_end&&m_begin<nrOfRow()){
+      m_begin+=m_blockSize;
+      m_end=m_begin+m_blockSize;
+    }
   }
+  if(m_end>nrOfRow())
+    m_end=nrOfRow();
+  for(int iband=0;iband<m_nband;++iband){
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    assert(iband<nrOfBand()+1);
+    poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Read,0,m_begin,nrOfCol(),m_end-m_begin,m_data[iband],nrOfCol(),m_end-m_begin,getDataType(),0,0);
+  }
+  return true;//new block was read
 }
 
 template<typename T1> void ImgReaderMem::readData(T1& value, int col, int row, int band)
 {
-  readNewBlock(row);
-  //fetch raster band
-  GDALRasterBand  *poBand;
+  //only support random access reading if entire image is in memory for permance reasons
+  if(m_blockSize!=nrOfRow()){
+    std::ostringstream s;
+    s << "Error: increase memory to support random access reading (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+    throw(s.str());
+  }
+  if(row<m_begin||row>=m_end)
+    readNewBlock(row);
   assert(band<nrOfBand()+1);
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   assert(col<nrOfCol());
   assert(col>=0);
   assert(row<nrOfRow());
   assert(row>=0);
   int index=(row-m_begin)*nrOfCol()+col;
-  //index*=(GDALGetDataTypeSize(getDataType())>>3);//multiply index with size of GDALDataType in Bytes
   if(m_scale.size()>band||m_offset.size()>band){
     double theScale=1;
     double theOffset=0;
@@ -147,11 +146,9 @@ template<typename T1> void ImgReaderMem::readData(T1& value, int col, int row, i
 
 template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int minCol, int maxCol, int row, int band)
 {
-  readNewBlock(row);
-  //fetch raster band
-  GDALRasterBand  *poBand;
+  if(row<m_begin||row>=m_end)
+    readNewBlock(row);
   assert(band<nrOfBand()+1);
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   assert(minCol<nrOfCol());
   assert(minCol>=0);
   assert(maxCol<nrOfCol());
@@ -161,8 +158,8 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
   if(buffer.size()!=maxCol-minCol+1)
     buffer.resize(maxCol-minCol+1);
   int index=(row-m_begin)*nrOfCol();
-  int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
-  int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+  int minindex=(index+minCol);
+  int maxindex=(index+maxCol);
   if(getGDALDataType<T1>()==getDataType()){//no conversion needed
     buffer.assign(static_cast<T1*>(m_data[band])+minindex,static_cast<T1*>(m_data[band])+maxindex);
     if(m_scale.size()>band||m_offset.size()>band){
@@ -201,7 +198,6 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
 //deprecated: there is a new interpolation argument from GDAL 2.0 (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
 template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int minCol, int maxCol, double row, int band, RESAMPLE resample)
 {
-  //todo: make upper and lower row depend on isGeo...
   std::vector<T1> readBuffer_upper;
   std::vector<T1> readBuffer_lower;
   if(buffer.size()!=maxCol-minCol+1)
@@ -252,10 +248,7 @@ template<typename T1> void ImgReaderMem::readDataBlock(std::vector<T1>& buffer, 
     theScale=m_scale[band];
   if(m_offset.size()>band)
     theOffset=m_offset[band];
-  //fetch raster band
-  GDALRasterBand  *poBand;
   assert(band<nrOfBand()+1);
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   if(minCol>=nrOfCol() ||
      (minCol<0) ||
      (maxCol>=nrOfCol()) ||
@@ -271,7 +264,8 @@ template<typename T1> void ImgReaderMem::readDataBlock(std::vector<T1>& buffer, 
     buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
 
   for(int irow=minRow;irow<=maxRow;++irow){
-    readNewBlock(irow);
+    if(irow<m_begin||irow>=m_end)
+      readNewBlock(irow);
     int index=(irow-m_begin)*nrOfCol();
     int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
     int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
