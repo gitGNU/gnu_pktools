@@ -121,6 +121,8 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | c      | class                | short | 0     |classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image. | 
  | ct     | ct                   | std::string |       |color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
  | align  | align                | bool  |       |Align output bounding box to first input image | 
+ | scale  | scale                | double |       |output=scale*input+offset | 
+ | off    | offset               | double |       |output=scale*input+offset | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -172,6 +174,8 @@ int main(int argc, char *argv[])
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
+  Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
+  Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
   Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
@@ -186,6 +190,8 @@ int main(int argc, char *argv[])
   class_opt.setHide(1);
   colorTable_opt.setHide(1);
   description_opt.setHide(1);
+  scale_opt.setHide(1);
+  offset_opt.setHide(1);
   memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -222,6 +228,8 @@ int main(int argc, char *argv[])
     colorTable_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     align_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
     memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
@@ -378,7 +386,10 @@ int main(int argc, char *argv[])
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
-
+    for(int iband=0;iband<scale_opt.size();++iband)
+      imgReader[ifile].setScale(scale_opt[iband],iband);
+    for(int iband=0;iband<offset_opt.size();++iband)
+      imgReader[ifile].setOffset(offset_opt[iband],iband);
     //todo: must be in init part only?
     if(colorTable_opt.empty())
       if(imgReader[ifile].getColorTable())
