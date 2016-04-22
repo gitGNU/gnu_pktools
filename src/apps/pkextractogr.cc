@@ -221,8 +221,8 @@ int main(int argc, char *argv[])
   unsigned long int ntotalvalid=0;
   unsigned long int ntotalinvalid=0;
 
-  ImgReaderMem imgReader;
-  // ImgReaderGdal imgReader;
+  // ImgReaderMem imgReader;
+  ImgReaderGdal imgReader;
   if(image_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
       exit(1);
@@ -232,7 +232,8 @@ int main(int argc, char *argv[])
       exit(1);
   }
   try{
-    imgReader.open(image_opt[0],GA_ReadOnly,memory_opt[0]);
+    // imgReader.open(image_opt[0],GA_ReadOnly,memory_opt[0]);
+    imgReader.open(image_opt[0],GA_ReadOnly);
   }
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;
@@ -519,8 +520,7 @@ int main(int argc, char *argv[])
 
       //read entire block for coverage in memory
       //todo: use different data types
-      vector< Vector2d<double> > readValuesReal(nband);
-      // vector< Vector2d<float> > readValuesReal(nband);
+      vector< Vector2d<float> > readValuesReal(nband);
       vector< Vector2d<int> > readValuesInt(nband);
 
       double layer_uli;
@@ -573,13 +573,10 @@ int main(int argc, char *argv[])
           case OFTReal:
           default:{
             //test
-            // for(int irow=layer_ulj;irow<=layer_lrj;++irow){
-            // std::vector<float> tmpvector(imgReader.nrOfCol());
-            // imgReader.readData(tmpvector,imgReader.nrOfCol()-2,imgReader.nrOfCol()-1,1736,theBand);
-              // readValuesReal[iband].resize(imgReader-layer_ulj+1);
-              // imgReader.readData(readValuesReal[iband][irow],irow,iband);
-              imgReader.readDataBlock(readValuesReal[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
-            // }
+            readValuesReal[iband].resize(imgReader.nrOfRow());
+            for(int irow=layer_ulj;irow<=layer_lrj;++irow)
+              imgReader.readData(readValuesReal[iband][irow],irow,iband);
+              // imgReader.readDataBlock(readValuesReal[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
           }
           }
@@ -782,6 +779,7 @@ int main(int argc, char *argv[])
                 valid=valid&&(indexJ<imgReader.nrOfRow());
                 valid=valid&&(indexI>=0);
                 valid=valid&&(indexI<imgReader.nrOfCol());
+
                 if(valid&&srcnodata_opt.size()){
                   for(int vband=0;vband<bndnodata_opt.size();++vband){
                     switch( fieldType ){
