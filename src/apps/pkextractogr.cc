@@ -25,7 +25,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <ctime>
 #include <vector>
-#include "imageclasses/ImgReaderGdal.h"
+#include "imageclasses/ImgReaderMem.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
@@ -102,6 +102,7 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | tp     | thresholdPolygon     | float |       |(absolute) threshold for selecting samples in each polygon | 
  | buf    | buffer               | short | 0     |Buffer for calculating statistics for point features (in number of pixels)  | 
  | circ   | circular             | bool | false |Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option) | 
+ | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output -r rule
 
@@ -139,6 +140,7 @@ int main(int argc, char *argv[])
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
   Optionpk<short> buffer_opt("buf", "buffer", "Buffer for calculating statistics for point features (in number of pixels) ",0);
   Optionpk<bool> disc_opt("circ", "circular", "Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option)", false);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
   Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0,2);
 
   bstart_opt.setHide(1);
@@ -149,6 +151,7 @@ int main(int argc, char *argv[])
   percentile_opt.setHide(1);
   buffer_opt.setHide(1);
   disc_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -172,6 +175,7 @@ int main(int argc, char *argv[])
     polythreshold_opt.retrieveOption(argc,argv);
     buffer_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -217,7 +221,8 @@ int main(int argc, char *argv[])
   unsigned long int ntotalvalid=0;
   unsigned long int ntotalinvalid=0;
 
-  ImgReaderGdal imgReader;
+  ImgReaderMem imgReader;
+  // ImgReaderGdal imgReader;
   if(image_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
       exit(1);
@@ -227,7 +232,7 @@ int main(int argc, char *argv[])
       exit(1);
   }
   try{
-    imgReader.open(image_opt[0]);
+    imgReader.open(image_opt[0],GA_ReadOnly,memory_opt[0]);
   }
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;
@@ -514,7 +519,8 @@ int main(int argc, char *argv[])
 
       //read entire block for coverage in memory
       //todo: use different data types
-      vector< Vector2d<float> > readValuesReal(nband);
+      vector< Vector2d<double> > readValuesReal(nband);
+      // vector< Vector2d<float> > readValuesReal(nband);
       vector< Vector2d<int> > readValuesInt(nband);
 
       double layer_uli;
@@ -559,15 +565,23 @@ int main(int argc, char *argv[])
             throw(errorString);
           }
           if(verbose_opt[0])
-            cout << "reading image band " << theBand << endl;
+            cout << "reading image band " << theBand << " block rows " << layer_ulj << "-" << layer_lrj << ", cols " << layer_uli << "-" << layer_lri << endl;
           switch( fieldType ){
           case OFTInteger:
             imgReader.readDataBlock(readValuesInt[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
           case OFTReal:
-          default:
-            imgReader.readDataBlock(readValuesReal[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
+          default:{
+            //test
+            // for(int irow=layer_ulj;irow<=layer_lrj;++irow){
+            // std::vector<float> tmpvector(imgReader.nrOfCol());
+            // imgReader.readData(tmpvector,imgReader.nrOfCol()-2,imgReader.nrOfCol()-1,1736,theBand);
+              // readValuesReal[iband].resize(imgReader-layer_ulj+1);
+              // imgReader.readData(readValuesReal[iband][irow],irow,iband);
+              imgReader.readDataBlock(readValuesReal[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
+            // }
             break;
+          }
           }
         }
       }
@@ -576,6 +590,7 @@ int main(int argc, char *argv[])
         exit(1);
       }
 
+    
       float theThreshold=(threshold_opt.size()==layer_opt.size())? threshold_opt[layerIndex]: threshold_opt[0];
       cout << "processing layer " << currentLayername << endl;
       

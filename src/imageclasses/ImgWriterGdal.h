@@ -35,6 +35,8 @@ class ImgWriterGdal : public virtual ImgRasterGdal
 public:
   ImgWriterGdal(void);
   ~ImgWriterGdal(void);
+  ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, options);};
+  ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
   void setScale(double theScale, int band=0){
     if(m_scale.size()!=nrOfBand()){//initialize
       m_scale.resize(nrOfBand());
@@ -54,9 +56,7 @@ public:
   // void open(const std::string& filename);//not needed?
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
-  void close(void){ImgRasterGdal::close();};
-  //todo: check?
-  //void close(void);
+  void close(void);//definition in ImgWritergdal.cc
 
   void copyGeoTransform(const ImgReaderGdal& imgSrc);
   void setProjection(const std::string& projection);

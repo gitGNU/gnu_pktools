@@ -22,7 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <string>
 #include "imageclasses/ImgReaderMem.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgWriterMem.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -123,6 +123,7 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | align  | align                | bool  |       |Align output bounding box to first input image | 
  | scale  | scale                | double |       |output=scale*input+offset | 
  | off    | offset               | double |       |output=scale*input+offset | 
+ | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -586,6 +587,7 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0])
     cout << "composite image dim (nrow x ncol): " << nrow << " x " << ncol << endl;
+  // ImgWriterMem imgWriter;
   ImgWriterGdal imgWriter;
   while(weight_opt.size()<input_opt.size())
     weight_opt.push_back(weight_opt[0]);
@@ -605,6 +607,7 @@ int main(int argc, char *argv[])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
     imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
+    // imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt,memory_opt[0]);
     for(int iband=0;iband<nwriteBand;++iband)
       imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
   }

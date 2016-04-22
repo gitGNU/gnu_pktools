@@ -32,15 +32,15 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 class ImgReaderMem : public ImgReaderGdal
 {
 public:
-  ImgReaderMem(void) : m_begin(0), m_end(0), m_deletePointer(true) {};
+  ImgReaderMem(void) : m_deletePointer(true) {};
   //memory (in MB) indicates maximum memory read in memory for this image
-  ImgReaderMem(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : ImgReaderGdal(filename, readMode), deletePointer(true) {initMem(memory);};
+  ImgReaderMem(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : ImgReaderGdal(filename, readMode), m_deletePointer(true) {initMem(memory);};
   ImgReaderMem(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType){open(dataPointer,ncol,nrow,nband,dataType);};
   //memory (in MB) indicates maximum memory read in memory for this image
   void open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType);
   void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0){ImgReaderGdal::open(filename, readMode);initMem(memory);};
   void setMemory(unsigned long int memory=0){initMem(memory);};
-  ~ImgReaderMem(void){if(m_deletePointer){for(int iband=0;iband<m_nband;++iband) free(m_data[iband])};};
+  ~ImgReaderMem(void){if(m_deletePointer);for(int iband=0;iband<m_nband;++iband) free(m_data[iband]);};
   template<typename T1> void readData(T1& value, int col, int row, int band=0);
   template<typename T1> void readData(std::vector<T1>& buffer, int minCol, int maxCol, int row, int band=0);
   template<typename T1> void readData(std::vector<T1>& buffer, int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR);
@@ -52,12 +52,12 @@ public:
 protected:
   unsigned int m_blockSize;
   std::vector<void *> m_data;
-  unsigned int m_begin;//first line that has been read
-  unsigned int m_end;//beyond last line read
+  std::vector<unsigned int> m_begin;//first line that has been read
+  std::vector<unsigned int> m_end;//beyond last line read
 private:
   void initMem(unsigned long int memory);
   bool m_deletePointer;
-  bool readNewBlock(unsigned int row);
+  bool readNewBlock(int row, int band);
 };
 
 //not tested yet!!!
@@ -70,11 +70,14 @@ void ImgReaderMem::open(void* dataPointer, unsigned int ncol, unsigned int nrow,
   m_ncol=ncol;
   m_nrow=nrow;
   m_data.resize(nband);
-  for(int iband=0;iband<nband;++iband)
+  m_begin.resize(nband);
+  m_end.resize(nband);
+  for(int iband=0;iband<nband;++iband){
     m_data[iband]=dataPointer+iband*m_ncol*m_nrow*(GDALGetDataTypeSize(getDataType())>>3);
-  m_begin=0;
-  m_blockSize=nrow;//memory contains entire image
-  m_end=nrow;//and has been read already
+    m_begin[iband]=0;
+    m_blockSize=nrow;//memory contains entire image
+    m_end[iband]=nrow;//and has been read already
+  }
 }
 
 void ImgReaderMem::initMem(unsigned long int memory)
@@ -84,52 +87,53 @@ void ImgReaderMem::initMem(unsigned long int memory)
     m_blockSize=1;
   if(m_blockSize>nrOfRow())
     m_blockSize=nrOfRow();
-  m_data.resize(m_nband);
-  for(int iband=0;iband<m_nband;++iband)
+  m_data.resize(nrOfBand());
+  m_begin.resize(nrOfBand());
+  m_end.resize(nrOfBand());
+  for(int iband=0;iband<m_nband;++iband){
     m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-  m_begin=0;
-  m_end=0;
+    m_begin[iband]=0;
+    m_end[iband]=0;
+  }
   // readNewBlock(0);
 }
 
-bool ImgReaderMem::readNewBlock(unsigned int row)
+bool ImgReaderMem::readNewBlock(int row, int band)
 {
-  if(m_end<m_blockSize)//first time
-    m_end=m_blockSize;
-  else{
-    while(row>=m_end&&m_begin<nrOfRow()){
-      m_begin+=m_blockSize;
-      m_end=m_begin+m_blockSize;
-    }
+  if(m_end[band]<m_blockSize)//first time
+    m_end[band]=m_blockSize;
+  while(row>=m_end[band]&&m_begin[band]<nrOfRow()){
+    m_begin[band]+=m_blockSize;
+    m_end[band]=m_begin[band]+m_blockSize;
   }
-  if(m_end>nrOfRow())
-    m_end=nrOfRow();
+  if(m_end[band]>nrOfRow())
+    m_end[band]=nrOfRow();
   for(int iband=0;iband<m_nband;++iband){
     //fetch raster band
     GDALRasterBand  *poBand;
     assert(iband<nrOfBand()+1);
     poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-    poBand->RasterIO(GF_Read,0,m_begin,nrOfCol(),m_end-m_begin,m_data[iband],nrOfCol(),m_end-m_begin,getDataType(),0,0);
+    poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
   }
   return true;//new block was read
 }
 
 template<typename T1> void ImgReaderMem::readData(T1& value, int col, int row, int band)
 {
-  //only support random access reading if entire image is in memory for permance reasons
+  //only support random access reading if entire image is in memory for performance reasons
   if(m_blockSize!=nrOfRow()){
     std::ostringstream s;
     s << "Error: increase memory to support random access reading (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
     throw(s.str());
   }
-  if(row<m_begin||row>=m_end)
-    readNewBlock(row);
+  if(row<m_begin[band]||row>=m_end[band])
+    readNewBlock(row,band);
   assert(band<nrOfBand()+1);
   assert(col<nrOfCol());
   assert(col>=0);
   assert(row<nrOfRow());
   assert(row>=0);
-  int index=(row-m_begin)*nrOfCol()+col;
+  int index=(row-m_begin[band])*nrOfCol()+col;
   if(m_scale.size()>band||m_offset.size()>band){
     double theScale=1;
     double theOffset=0;
@@ -137,17 +141,96 @@ template<typename T1> void ImgReaderMem::readData(T1& value, int col, int row, i
       theScale=m_scale[band];
     if(m_offset.size()>band)
       theOffset=m_offset[band];
-    double dvalue=theScale*(static_cast<double*>(m_data[band]))[index]+theOffset;
+    // double dvalue=theScale*(static_cast<double*>(m_data[band]))[index]+theOffset;
+    double dvalue=0;
+    switch(getDataType()){
+    case(GDT_Byte):
+      dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Int16):
+      dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_UInt16):
+      dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Int32):
+      dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_UInt32):
+      dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Float32):
+      dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Float64):
+      dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+      break;
+    default:
+      std::string errorString="Error: data type not supported";
+      throw(errorString);
+    }
     value=static_cast<T1>(dvalue);
   }
-  else
-    value=(static_cast<T1*>(m_data[band]))[index];
+  else{
+    switch(getDataType()){
+    case(GDT_Byte):
+      *(static_cast<T1*>(m_data[band])+index);
+      value=static_cast<T1>(static_cast<unsigned char*>(m_data[band])[index]);
+      break;
+    case(GDT_Int16):
+      value=static_cast<T1>(*(static_cast<short*>(m_data[band])+index));
+      break;
+    case(GDT_UInt16):
+      value=static_cast<T1>(*(static_cast<unsigned short*>(m_data[band])+index));
+    break;
+    case(GDT_Int32):
+      value=static_cast<T1>(*(static_cast<int*>(m_data[band])+index));
+    break;
+ case(GDT_UInt32):
+   value=static_cast<T1>(*(static_cast<unsigned int*>(m_data[band])+index));
+      break;
+    case(GDT_Float32):
+      value=static_cast<T1>(*(static_cast<float*>(m_data[band])+index));
+      break;
+    case(GDT_Float64):
+      value=static_cast<T1>(*(static_cast<double*>(m_data[band])+index));
+      break;
+    default:
+      std::string errorString="Error: data type not supported";
+      throw(errorString);
+    }
+ //    switch(getDataType()){
+ //    case(GDT_Byte):
+ //      *(static_cast<T1*>(m_data[band])+index);
+ //      value=static_cast<T1>(*(static_cast<unsigned char*>(m_data[band])+index));
+ //      break;
+ //    case(GDT_Int16):
+ //      value=static_cast<T1>(*(static_cast<short*>(m_data[band])+index));
+ //      break;
+ //    case(GDT_UInt16):
+ //      value=static_cast<T1>(*(static_cast<unsigned short*>(m_data[band])+index));
+ //    break;
+ //    case(GDT_Int32):
+ //      value=static_cast<T1>(*(static_cast<int*>(m_data[band])+index));
+ //    break;
+ // case(GDT_UInt32):
+ //   value=static_cast<T1>(*(static_cast<unsigned int*>(m_data[band])+index));
+ //      break;
+ //    case(GDT_Float32):
+ //      value=static_cast<T1>(*(static_cast<float*>(m_data[band])+index));
+ //      break;
+ //    case(GDT_Float64):
+ //      value=static_cast<T1>(*(static_cast<double*>(m_data[band])+index));
+ //      break; 
+ //    }
+  }
 }
 
 template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int minCol, int maxCol, int row, int band)
 {
-  if(row<m_begin||row>=m_end)
-    readNewBlock(row);
+  if(row<m_begin[band]||row>=m_end[band]){
+    readNewBlock(row,band);
+  }
   assert(band<nrOfBand()+1);
   assert(minCol<nrOfCol());
   assert(minCol>=0);
@@ -157,7 +240,7 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
   assert(row>=0);
   if(buffer.size()!=maxCol-minCol+1)
     buffer.resize(maxCol-minCol+1);
-  int index=(row-m_begin)*nrOfCol();
+  int index=(row-m_begin[band])*nrOfCol();
   int minindex=(index+minCol);
   int maxindex=(index+maxCol);
   if(getGDALDataType<T1>()==getDataType()){//no conversion needed
@@ -172,7 +255,7 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
       typename std::vector<T1>::iterator bufit=buffer.begin();
       while(bufit!=buffer.end()){
         double dvalue=theScale*(*bufit)+theOffset;
-        (*bufit++)=static_cast<T1>(dvalue);
+        *(bufit++)=static_cast<T1>(dvalue);
       }
     }
   }
@@ -186,11 +269,65 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
           theScale=m_scale[band];
         if(m_offset.size()>band)
           theOffset=m_offset[band];
-        double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
+        double dvalue=0;
+        switch(getDataType()){
+        case(GDT_Byte):
+          dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int16):
+          dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt16):
+          dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int32):
+          dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt32):
+          dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float32):
+          dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float64):
+          dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+          break;
+        default:
+          std::string errorString="Error: data type not supported";
+          throw(errorString);
+        }
+        // double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
         *(bufit++)=static_cast<T1>(dvalue);
       }
-      else
-        *(bufit++)=*(static_cast<T1*>(m_data[band])+index);
+      else{
+        switch(getDataType()){
+        case(GDT_Byte):
+          *(bufit++)=static_cast<T1>(static_cast<unsigned char*>(m_data[band])[index]);
+          break;
+        case(GDT_Int16):
+          *(bufit++)=static_cast<T1>(static_cast<short*>(m_data[band])[index]);
+          break;
+        case(GDT_UInt16):
+          *(bufit++)=static_cast<T1>(static_cast<unsigned short*>(m_data[band])[index]);
+          break;
+        case(GDT_Int32):
+          *(bufit++)=static_cast<T1>(static_cast<int*>(m_data[band])[index]);
+          break;
+        case(GDT_UInt32):
+          *(bufit++)=static_cast<T1>(static_cast<unsigned int*>(m_data[band])[index]);
+          break;
+        case(GDT_Float32):
+          *(bufit++)=static_cast<T1>(static_cast<float*>(m_data[band])[index]);
+          break;
+        case(GDT_Float64):
+          *(bufit++)=static_cast<T1>(static_cast<double*>(m_data[band])[index]);
+          break; 
+        default:
+          std::string errorString="Error: data type not supported";
+          throw(errorString);
+        }
+        // *(bufit++)=*(static_cast<T1*>(m_data[band])+index);
+      }
     }
   }
 }
@@ -260,37 +397,43 @@ template<typename T1> void ImgReaderMem::readDataBlock(std::vector<T1>& buffer, 
     std::string errorString="block not within image boundaries";
     throw(errorString);
   }
-  if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
-    buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
-
+  //test
+  buffer.clear();
   for(int irow=minRow;irow<=maxRow;++irow){
-    if(irow<m_begin||irow>=m_end)
-      readNewBlock(irow);
-    int index=(irow-m_begin)*nrOfCol();
-    int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
-    int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
-    if(getGDALDataType<T1>()==getDataType()){//no conversion needed
-      buffer.assign(static_cast<T1*>(m_data[band])+minindex,static_cast<T1*>(m_data[band])+maxindex);
-      if(m_scale.size()>band||m_offset.size()>band){
-        typename std::vector<T1>::iterator bufit=buffer.begin();
-        while(bufit!=buffer.end()){
-          double dvalue=theScale*(*bufit)+theOffset;
-          (*bufit++)=static_cast<T1>(dvalue);
-        }
-      }
-    }
-    else{
-      typename std::vector<T1>::iterator bufit=buffer.begin();
-      for(index=minindex;index<maxindex;++index){
-        if(m_scale.size()>band||m_offset.size()>band){
-          double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
-          *(bufit++)=static_cast<T1>(dvalue);
-        }
-        else
-          *(bufit++)=*(static_cast<T1*>(m_data[band])+index);
-      }
-    }
+    //test
+    std::cout << "irow, minCol, maxCol " << irow << ", " << minCol << ", " << maxCol << std::endl;
+    std::vector<T1> tmpbuffer(maxCol-minCol+1);
+    readData(tmpbuffer,minCol,maxCol,irow,band);
+    buffer.insert(buffer.end(),tmpbuffer.begin(),tmpbuffer.end());
   }
+    // if(irow<m_begin[band]||irow>=m_end[band])
+    //   readNewBlock(irow,band);
+    // int index=(irow-m_begin[band])*nrOfCol();
+    // int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+    // int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+    // if(getGDALDataType<T1>()==getDataType()){//no conversion needed
+    //   buffer.assign(static_cast<T1*>(m_data[band])+minindex,static_cast<T1*>(m_data[band])+maxindex);
+    //   if(m_scale.size()>band||m_offset.size()>band){
+    //     typename std::vector<T1>::iterator bufit=buffer.begin();
+    //     while(bufit!=buffer.end()){
+    //       double dvalue=theScale*(*bufit)+theOffset;
+    //       *(bufit++)=static_cast<T1>(dvalue);
+    //     }
+    //   }
+    // }
+    // else{
+    //   typename std::vector<T1>::iterator bufit=buffer.begin();
+    //   for(index=minindex;index<maxindex;++index){
+        
+    //     if(m_scale.size()>band||m_offset.size()>band){
+    //       double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
+    //       *(bufit++)=static_cast<T1>(dvalue);
+    //     }
+    //     else
+    //       *(bufit++)=*(static_cast<T1*>(m_data[band])+index);
+    //   }
+    // }
+  //}
 }
   
 template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int row, int band)
