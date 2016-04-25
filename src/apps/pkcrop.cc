@@ -748,6 +748,7 @@ int main(int argc, char *argv[])
 		writeBuffer.push_back(nodataValue);
 	      }
 	      else{
+		
                 bool valid=true;
 		double geox=0;
 		double geoy=0;
@@ -818,7 +819,7 @@ int main(int argc, char *argv[])
 	  cout << "writeBuffer.size()=" << writeBuffer.size() << ", imgWriter.nrOfCol()=" << imgWriter.nrOfCol() << endl;
 	assert(writeBuffer.size()==imgWriter.nrOfCol());
 	try{
-	  imgWriter.writeData(writeBuffer,GDT_Float64,irow,writeBand);
+	  imgWriter.writeData(writeBuffer,irow,writeBand);
 	}
 	catch(string errorstring){
 	  cout << errorstring << endl;

@@ -138,7 +138,7 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int m
   }
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   if(buffer.size()!=maxCol-minCol+1){
-    std::string errorstring="invalid buffer size";
+    std::string errorstring="invalid size of buffer";
     throw(errorstring);
   }
   if(minCol>=nrOfCol()){
@@ -187,7 +187,7 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int r
   }
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   if(buffer.size()!=nrOfCol()){
-    std::string errorstring="invalid buffer size";
+    std::string errorstring="invalid size of buffer";
     throw(errorstring);
   }
   if(row>=nrOfRow()){
