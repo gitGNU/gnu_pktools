@@ -275,17 +275,10 @@ template<typename T> bool ImgWriterMem::writeData(std::vector<T>& buffer, int mi
     theScale=m_scale[band];
   if(m_offset.size()>band)
     theOffset=m_offset[band];
-  for(index=minindex;index<maxindex;++index,++bufit){
+  for(index=minindex;index<=maxindex;++index,++bufit){
     double dvalue=theScale*(*(bufit))+theOffset;
     switch(getDataType()){
     case(GDT_Byte):
-      //test
-      if(row<10&&index-minindex<10)
-	;
-	/* std::cout << buffer[0] << " "; */
-	/* std::cout << dvalue << " "; */
-      if(row<10&&index==maxindex-1)
-	;/* std::cout << std::endl; */
       *(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
       break;
     case(GDT_Int16):
@@ -401,7 +394,7 @@ template<typename T> bool ImgWriterMem::writeDataBlock(Vector2d<T>& buffer2d, in
     int minindex=index+minCol;
     int maxindex=index+maxCol;
     typename std::vector<T>::iterator bufit=buffer2d[irow-minRow].begin();
-    for(index=minindex;index<maxindex;++index,++bufit){
+    for(index=minindex;index<=maxindex;++index,++bufit){
       double dvalue=theScale*(*(bufit))+theOffset;
       switch(getDataType()){
       case(GDT_Byte):

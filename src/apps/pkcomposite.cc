@@ -381,12 +381,14 @@ int main(int argc, char *argv[])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
   vector<ImgReaderMem> imgReader(input_opt.size());
+  // vector<ImgReaderGdal> imgReader(input_opt.size());
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
   string imageType;
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
+    // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
     for(int iband=0;iband<scale_opt.size();++iband)
       imgReader[ifile].setScale(scale_opt[iband],iband);
     for(int iband=0;iband<offset_opt.size();++iband)
@@ -587,8 +589,8 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0])
     cout << "composite image dim (nrow x ncol): " << nrow << " x " << ncol << endl;
-  ImgWriterMem imgWriter;
-  // ImgWriterGdal imgWriter;
+  // ImgWriterMem imgWriter;
+  ImgWriterGdal imgWriter;
   while(weight_opt.size()<input_opt.size())
     weight_opt.push_back(weight_opt[0]);
   if(verbose_opt[0]){
@@ -606,8 +608,8 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
-    // imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
-    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt,memory_opt[0]);
+    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
+    // imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt,memory_opt[0]);
     for(int iband=0;iband<nwriteBand;++iband)
       imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
   }
@@ -809,8 +811,13 @@ int main(int argc, char *argv[])
         // readBuffer[iband].resize(readncol);
 	try{
           imgReader[ifile].readData(readBuffer[ifile][iband],startCol,endCol,readRow,readBand,theResample);
-          //test
+	  //test
           // imgReader[ifile].readData(readBuffer[ifile][iband],static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(readRow),static_cast<int>(readBand));
+	  // if(readRow==0&&iband==0){
+	  //   for(int icol=0;icol<10;++icol)
+	  //     cout << readBuffer[0][0][icol] << " ";
+	  //   cout << endl;
+	  // }
 	}
 	catch(string error){
 	  cerr << "error reading image " << input_opt[ifile] << ": " << endl;
@@ -1288,11 +1295,6 @@ int main(int argc, char *argv[])
 	  }
         }
         try{
-	  if(irow<10){
-	    for(int icol=0;icol<10;++icol)
-	      cout << writeBuffer[iband][icol] << " ";
-	    cout << endl;
-	  }
           imgWriter.writeData(writeBuffer[iband],irow,iband);
         }
         catch(string error){

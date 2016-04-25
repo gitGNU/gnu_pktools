@@ -205,17 +205,10 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
       double dvalue=theScale*(*bufit)+theOffset;
       *(bufit++)=static_cast<T1>(dvalue);
     }
-  }
+   }
   else{
     typename std::vector<T1>::iterator bufit=buffer.begin();
-    for(index=minindex;index<maxindex;++index,++bufit){
-      if(m_scale.size()>band||m_offset.size()>band){
-        double theScale=1;
-        double theOffset=0;
-        if(m_scale.size()>band)
-          theScale=m_scale[band];
-        if(m_offset.size()>band)
-          theOffset=m_offset[band];
+    for(index=minindex;index<=maxindex;++index,++bufit){
         double dvalue=0;
         switch(getDataType()){
         case(GDT_Byte):
@@ -246,7 +239,6 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
         }
         // double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
         *(bufit)=static_cast<T1>(dvalue);
-      }
     }
   }
 }
@@ -271,7 +263,7 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
     readData(readBuffer_upper,minCol,maxCol,static_cast<int>(upperRow),band);
     readData(readBuffer_lower,minCol,maxCol,static_cast<int>(lowerRow),band);
     //do interpolation in y
-    for(int icol=0;icol<maxCol-minCol+1;++icol){
+    for(int icol=0;icol<=maxCol-minCol+1;++icol){
       buffer[icol]=(lowerRow-row+0.5)*readBuffer_upper[icol]+(1-lowerRow+row-0.5)*readBuffer_lower[icol];
     }
     break;
@@ -331,7 +323,7 @@ template<typename T1> void ImgReaderMem::readDataBlock(std::vector<T1>& buffer, 
       buffer.assign(static_cast<T1*>(m_data[band])+minindex,static_cast<T1*>(m_data[band])+maxindex);
     }
     else{
-      for(index=minindex;index<maxindex;++index,++bufit){
+      for(index=minindex;index<=maxindex;++index,++bufit){
         double dvalue=0;
         switch(getDataType()){
         case(GDT_Byte):
