@@ -134,96 +134,43 @@ template<typename T1> void ImgReaderMem::readData(T1& value, int col, int row, i
   assert(row<nrOfRow());
   assert(row>=0);
   int index=(row-m_begin[band])*nrOfCol()+col;
+  double theScale=1;
+  double theOffset=0;
   if(m_scale.size()>band||m_offset.size()>band){
-    double theScale=1;
-    double theOffset=0;
     if(m_scale.size()>band)
       theScale=m_scale[band];
     if(m_offset.size()>band)
       theOffset=m_offset[band];
-    // double dvalue=theScale*(static_cast<double*>(m_data[band]))[index]+theOffset;
-    double dvalue=0;
-    switch(getDataType()){
-    case(GDT_Byte):
-      dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
-      break;
-    case(GDT_Int16):
-      dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
-      break;
-    case(GDT_UInt16):
-      dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
-      break;
-    case(GDT_Int32):
-      dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
-      break;
-    case(GDT_UInt32):
-      dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
-      break;
-    case(GDT_Float32):
-      dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
-      break;
-    case(GDT_Float64):
-      dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
-      break;
-    default:
-      std::string errorString="Error: data type not supported";
-      throw(errorString);
-    }
-    value=static_cast<T1>(dvalue);
   }
-  else{
-    switch(getDataType()){
-    case(GDT_Byte):
-      *(static_cast<T1*>(m_data[band])+index);
-      value=static_cast<T1>(static_cast<unsigned char*>(m_data[band])[index]);
-      break;
-    case(GDT_Int16):
-      value=static_cast<T1>(*(static_cast<short*>(m_data[band])+index));
-      break;
-    case(GDT_UInt16):
-      value=static_cast<T1>(*(static_cast<unsigned short*>(m_data[band])+index));
+  double dvalue=0;
+  switch(getDataType()){
+  case(GDT_Byte):
+    dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
     break;
-    case(GDT_Int32):
-      value=static_cast<T1>(*(static_cast<int*>(m_data[band])+index));
+  case(GDT_Int16):
+    dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
     break;
- case(GDT_UInt32):
-   value=static_cast<T1>(*(static_cast<unsigned int*>(m_data[band])+index));
-      break;
-    case(GDT_Float32):
-      value=static_cast<T1>(*(static_cast<float*>(m_data[band])+index));
-      break;
-    case(GDT_Float64):
-      value=static_cast<T1>(*(static_cast<double*>(m_data[band])+index));
-      break;
-    default:
-      std::string errorString="Error: data type not supported";
-      throw(errorString);
-    }
- //    switch(getDataType()){
- //    case(GDT_Byte):
- //      *(static_cast<T1*>(m_data[band])+index);
- //      value=static_cast<T1>(*(static_cast<unsigned char*>(m_data[band])+index));
- //      break;
- //    case(GDT_Int16):
- //      value=static_cast<T1>(*(static_cast<short*>(m_data[band])+index));
- //      break;
- //    case(GDT_UInt16):
- //      value=static_cast<T1>(*(static_cast<unsigned short*>(m_data[band])+index));
- //    break;
- //    case(GDT_Int32):
- //      value=static_cast<T1>(*(static_cast<int*>(m_data[band])+index));
- //    break;
- // case(GDT_UInt32):
- //   value=static_cast<T1>(*(static_cast<unsigned int*>(m_data[band])+index));
- //      break;
- //    case(GDT_Float32):
- //      value=static_cast<T1>(*(static_cast<float*>(m_data[band])+index));
- //      break;
- //    case(GDT_Float64):
- //      value=static_cast<T1>(*(static_cast<double*>(m_data[band])+index));
- //      break; 
- //    }
+  case(GDT_UInt16):
+    dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+    break;
+  case(GDT_Int32):
+    dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+    break;
+  case(GDT_UInt32):
+    dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+    break;
+  case(GDT_Float32):
+    dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+    break;
+  case(GDT_Float64):
+    dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+    break;
+  default:
+    std::string errorString="Error: data type not supported";
+    throw(errorString);
+    break;
   }
+  value=static_cast<T1>(dvalue);
 }
 
 template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int minCol, int maxCol, int row, int band)
@@ -243,25 +190,25 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
   int index=(row-m_begin[band])*nrOfCol();
   int minindex=(index+minCol);
   int maxindex=(index+maxCol);
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band||m_offset.size()>band){
+    if(m_scale.size()>band)
+      theScale=m_scale[band];
+    if(m_offset.size()>band)
+      theOffset=m_offset[band];
+  }
   if(getGDALDataType<T1>()==getDataType()){//no conversion needed
     buffer.assign(static_cast<T1*>(m_data[band])+minindex,static_cast<T1*>(m_data[band])+maxindex);
-    if(m_scale.size()>band||m_offset.size()>band){
-      double theScale=1;
-      double theOffset=0;
-      if(m_scale.size()>band)
-        theScale=m_scale[band];
-      if(m_offset.size()>band)
-        theOffset=m_offset[band];
-      typename std::vector<T1>::iterator bufit=buffer.begin();
-      while(bufit!=buffer.end()){
-        double dvalue=theScale*(*bufit)+theOffset;
-        *(bufit++)=static_cast<T1>(dvalue);
-      }
+    typename std::vector<T1>::iterator bufit=buffer.begin();
+    while(bufit!=buffer.end()){
+      double dvalue=theScale*(*bufit)+theOffset;
+      *(bufit++)=static_cast<T1>(dvalue);
     }
   }
   else{
-    for(index=minindex;index<maxindex;++index){
-      typename std::vector<T1>::iterator bufit=buffer.begin();
+    typename std::vector<T1>::iterator bufit=buffer.begin();
+    for(index=minindex;index<maxindex;++index,++bufit){
       if(m_scale.size()>band||m_offset.size()>band){
         double theScale=1;
         double theOffset=0;
@@ -295,38 +242,10 @@ template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int m
         default:
           std::string errorString="Error: data type not supported";
           throw(errorString);
+	  break;
         }
         // double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
-        *(bufit++)=static_cast<T1>(dvalue);
-      }
-      else{
-        switch(getDataType()){
-        case(GDT_Byte):
-          *(bufit++)=static_cast<T1>(static_cast<unsigned char*>(m_data[band])[index]);
-          break;
-        case(GDT_Int16):
-          *(bufit++)=static_cast<T1>(static_cast<short*>(m_data[band])[index]);
-          break;
-        case(GDT_UInt16):
-          *(bufit++)=static_cast<T1>(static_cast<unsigned short*>(m_data[band])[index]);
-          break;
-        case(GDT_Int32):
-          *(bufit++)=static_cast<T1>(static_cast<int*>(m_data[band])[index]);
-          break;
-        case(GDT_UInt32):
-          *(bufit++)=static_cast<T1>(static_cast<unsigned int*>(m_data[band])[index]);
-          break;
-        case(GDT_Float32):
-          *(bufit++)=static_cast<T1>(static_cast<float*>(m_data[band])[index]);
-          break;
-        case(GDT_Float64):
-          *(bufit++)=static_cast<T1>(static_cast<double*>(m_data[band])[index]);
-          break; 
-        default:
-          std::string errorString="Error: data type not supported";
-          throw(errorString);
-        }
-        // *(bufit++)=*(static_cast<T1*>(m_data[band])+index);
+        *(bufit)=static_cast<T1>(dvalue);
       }
     }
   }
@@ -397,43 +316,62 @@ template<typename T1> void ImgReaderMem::readDataBlock(std::vector<T1>& buffer, 
     std::string errorString="block not within image boundaries";
     throw(errorString);
   }
-  //test
-  buffer.clear();
+  if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
+    buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
+  typename std::vector<T1>::iterator bufit=buffer.begin();
   for(int irow=minRow;irow<=maxRow;++irow){
-    //test
-    std::cout << "irow, minCol, maxCol " << irow << ", " << minCol << ", " << maxCol << std::endl;
-    std::vector<T1> tmpbuffer(maxCol-minCol+1);
-    readData(tmpbuffer,minCol,maxCol,irow,band);
-    buffer.insert(buffer.end(),tmpbuffer.begin(),tmpbuffer.end());
+    if(irow<m_begin[band]||irow>=m_end[band])
+      readNewBlock(irow,band);
+    int index=(irow-m_begin[band])*nrOfCol();
+    int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+    int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+
+    if(getGDALDataType<T1>()==getDataType()){//no conversion needed
+      //assign will replace current contents and modify its size accordingly
+      buffer.assign(static_cast<T1*>(m_data[band])+minindex,static_cast<T1*>(m_data[band])+maxindex);
+    }
+    else{
+      for(index=minindex;index<maxindex;++index,++bufit){
+        double dvalue=0;
+        switch(getDataType()){
+        case(GDT_Byte):
+          dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int16):
+          dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt16):
+          dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int32):
+          dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt32):
+          dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float32):
+          dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float64):
+          dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+          break;
+        default:
+          std::string errorString="Error: data type not supported";
+          throw(errorString);
+	  break;
+        }
+        *(bufit)=static_cast<T1>(dvalue);
+      }//for index
+    }//else
+    if(getGDALDataType<T1>()==getDataType()){
+      if(m_scale.size()>band||m_offset.size()>band){
+	for(bufit=buffer.begin();bufit!=buffer.end();++bufit){
+	  double dvalue=theScale*(*bufit)+theOffset;
+	  *(bufit)=static_cast<T1>(dvalue);
+	}
+      }
+    }
   }
-    // if(irow<m_begin[band]||irow>=m_end[band])
-    //   readNewBlock(irow,band);
-    // int index=(irow-m_begin[band])*nrOfCol();
-    // int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
-    // int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
-    // if(getGDALDataType<T1>()==getDataType()){//no conversion needed
-    //   buffer.assign(static_cast<T1*>(m_data[band])+minindex,static_cast<T1*>(m_data[band])+maxindex);
-    //   if(m_scale.size()>band||m_offset.size()>band){
-    //     typename std::vector<T1>::iterator bufit=buffer.begin();
-    //     while(bufit!=buffer.end()){
-    //       double dvalue=theScale*(*bufit)+theOffset;
-    //       *(bufit++)=static_cast<T1>(dvalue);
-    //     }
-    //   }
-    // }
-    // else{
-    //   typename std::vector<T1>::iterator bufit=buffer.begin();
-    //   for(index=minindex;index<maxindex;++index){
-        
-    //     if(m_scale.size()>band||m_offset.size()>band){
-    //       double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
-    //       *(bufit++)=static_cast<T1>(dvalue);
-    //     }
-    //     else
-    //       *(bufit++)=*(static_cast<T1*>(m_data[band])+index);
-    //   }
-    // }
-  //}
 }
   
 template<typename T1> void ImgReaderMem::readData(std::vector<T1>& buffer, int row, int band)

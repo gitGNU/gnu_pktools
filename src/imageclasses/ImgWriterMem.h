@@ -162,18 +162,42 @@ template<typename T> bool ImgWriterMem::writeData(T& value, int col, int row, in
   }
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   int index=(row-m_begin[band])*nrOfCol()+col;
+  double theScale=1;
+  double theOffset=0;
   if(m_scale.size()>band||m_offset.size()>band){
-    double theScale=1;
-    double theOffset=0;
     if(m_scale.size()>band)
       theScale=m_scale[band];
     if(m_offset.size()>band)
       theOffset=m_offset[band];
-    double dvalue=theScale*value+theOffset;
-    *(static_cast<T*>((m_data[band])+index))=static_cast<T>(dvalue);
   }
-  else
-    *(static_cast<T*>((m_data[band])+index))=value;
+  double dvalue=theScale*value+theOffset;
+  switch(getDataType()){
+  case(GDT_Byte):
+    *(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
+    break;
+  case(GDT_Int16):
+    *(static_cast<short*>((m_data[band])+index))=static_cast<short>(dvalue);
+    break;
+  case(GDT_UInt16):
+    *(static_cast<unsigned short*>((m_data[band])+index))=static_cast<unsigned short>(dvalue);
+    break;
+  case(GDT_Int32):
+    *(static_cast<int*>((m_data[band])+index))=static_cast<int>(dvalue);
+    break;
+  case(GDT_UInt32):
+    *(static_cast<unsigned int*>((m_data[band])+index))=static_cast<unsigned int>(dvalue);
+    break;
+  case(GDT_Float32):
+    *(static_cast<float*>((m_data[band])+index))=static_cast<float>(dvalue);
+    break;
+  case(GDT_Float64):
+    *(static_cast<double*>((m_data[band])+index))=static_cast<double>(dvalue);
+    break;
+  default:
+    std::string errorString="Error: data type not supported";
+    throw(errorString);
+    break;
+  }
   return true;
 }
 
@@ -245,86 +269,66 @@ template<typename T> bool ImgWriterMem::writeData(std::vector<T>& buffer, int mi
   int minindex=(index+minCol);
   int maxindex=(index+maxCol);
   typename std::vector<T>::iterator bufit=buffer.begin();
-  for(index=minindex;index<maxindex;++index){
-    if(m_scale.size()>band||m_offset.size()>band){
-      double theScale=1;
-      double theOffset=0;
-      if(m_scale.size()>band)
-        theScale=m_scale[band];
-      if(m_offset.size()>band)
-        theOffset=m_offset[band];
-      double dvalue=theScale*(*(bufit++))+theOffset;
-      *(static_cast<T*>((m_data[band])+index))=static_cast<T>(dvalue);
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band)
+    theScale=m_scale[band];
+  if(m_offset.size()>band)
+    theOffset=m_offset[band];
+  for(index=minindex;index<maxindex;++index,++bufit){
+    double dvalue=theScale*(*(bufit))+theOffset;
+    switch(getDataType()){
+    case(GDT_Byte):
+      //test
+      if(row<10&&index-minindex<10)
+	;
+	/* std::cout << buffer[0] << " "; */
+	/* std::cout << dvalue << " "; */
+      if(row<10&&index==maxindex-1)
+	;/* std::cout << std::endl; */
+      *(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
+      break;
+    case(GDT_Int16):
+      *(static_cast<short*>((m_data[band])+index))=static_cast<short>(dvalue);
+      break;
+    case(GDT_UInt16):
+      *(static_cast<unsigned short*>((m_data[band])+index))=static_cast<unsigned short>(dvalue);
+      break;
+    case(GDT_Int32):
+      *(static_cast<int*>((m_data[band])+index))=static_cast<int>(dvalue);
+      break;
+    case(GDT_UInt32):
+      *(static_cast<unsigned int*>((m_data[band])+index))=static_cast<unsigned int>(dvalue);
+      break;
+    case(GDT_Float32):
+      *(static_cast<float*>((m_data[band])+index))=static_cast<float>(dvalue);
+      break;
+    case(GDT_Float64):
+      *(static_cast<double*>((m_data[band])+index))=static_cast<double>(dvalue);
+      break;
+    default:
+      std::string errorString="Error: data type not supported";
+      throw(errorString);
+      break;
     }
-    else
-      *(static_cast<T*>(m_data[band])+index)=*(bufit++);
   }
-  return true;
 }
 
 //todo: make buffer const?
 template<typename T> bool ImgWriterMem::writeData(std::vector<T>& buffer, int row, int band)
 {
-  if(buffer.size()!=nrOfCol()){
-    std::string errorstring="invalid buffer size";
-    throw(errorstring);
-  }
-  if(row>=nrOfRow()){
-    std::ostringstream s;
-    s << "row (" << row << ") exceeds nrOfRow (" << nrOfRow() << ")";
-    throw(s.str());
-  }
-  if(row<0){
-    std::ostringstream s;
-    s << "row (" << row << ") is negative";
-    throw(s.str());
-  }
-  if(row<m_begin[band]){
-    std::ostringstream s;
-    s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
-    throw(s.str());
-  }
-  if(row>=m_end[band]){
-    if(row>=m_end[band]+m_blockSize){
-      std::ostringstream s;
-      s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
-      throw(s.str());
-    }
-    else
-      writeNewBlock(row,band);
-  }
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  if(band>=nrOfBand()+1){
-    std::ostringstream s;
-    s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
-    throw(s.str());
-  }
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  int index=(row-m_begin[band])*nrOfCol();
-  int minindex=index;
-  int maxindex=index+nrOfCol();
-  typename std::vector<T>::iterator bufit=buffer.begin();
-  for(index=minindex;index<maxindex;++index){
-    if(m_scale.size()>band||m_offset.size()>band){
-      double theScale=1;
-      double theOffset=0;
-      if(m_scale.size()>band)
-        theScale=m_scale[band];
-      if(m_offset.size()>band)
-        theOffset=m_offset[band];
-      double dvalue=theScale*(*(bufit++))+theOffset;
-      *(static_cast<T*>((m_data[band])+index))=static_cast<T>(dvalue);
-    }
-    else
-      *(static_cast<T*>(m_data[band])+index)=*(bufit++);
-  }
-  return true;
+  return writeData(buffer,0,nrOfCol()-1,row,band);
 }
 
 //todo: make buffer2d const?
 template<typename T> bool ImgWriterMem::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band)
+    theScale=m_scale[band];
+  if(m_offset.size()>band)
+    theOffset=m_offset[band];
   if(buffer2d.size()!=maxRow-minRow+1){
     std::string errorstring="invalid buffer size";
     throw(errorstring);
@@ -397,21 +401,37 @@ template<typename T> bool ImgWriterMem::writeDataBlock(Vector2d<T>& buffer2d, in
     int minindex=index+minCol;
     int maxindex=index+maxCol;
     typename std::vector<T>::iterator bufit=buffer2d[irow-minRow].begin();
-    for(index=minindex;index<maxindex;++index){
-      if(m_scale.size()>band||m_offset.size()>band){
-        double theScale=1;
-        double theOffset=0;
-        if(m_scale.size()>band)
-          theScale=m_scale[band];
-        if(m_offset.size()>band)
-          theOffset=m_offset[band];
-        double dvalue=theScale*(*(bufit++))+theOffset;
-        *(static_cast<T*>((m_data[band])+index))=static_cast<T>(dvalue);
+    for(index=minindex;index<maxindex;++index,++bufit){
+      double dvalue=theScale*(*(bufit))+theOffset;
+      switch(getDataType()){
+      case(GDT_Byte):
+	*(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
+	break;
+      case(GDT_Int16):
+	*(static_cast<short*>((m_data[band])+index))=static_cast<short>(dvalue);
+	break;
+      case(GDT_UInt16):
+	*(static_cast<unsigned short*>((m_data[band])+index))=static_cast<unsigned short>(dvalue);
+	break;
+      case(GDT_Int32):
+	*(static_cast<int*>((m_data[band])+index))=static_cast<int>(dvalue);
+	break;
+      case(GDT_UInt32):
+	*(static_cast<unsigned int*>((m_data[band])+index))=static_cast<unsigned int>(dvalue);
+	break;
+      case(GDT_Float32):
+	*(static_cast<float*>((m_data[band])+index))=static_cast<float>(dvalue);
+	break;
+      case(GDT_Float64):
+	*(static_cast<double*>((m_data[band])+index))=static_cast<double>(dvalue);
+	break;
+      default:
+	std::string errorString="Error: data type not supported";
+	throw(errorString);
+	break;
       }
-      else
-        *(static_cast<T*>(m_data[band])+index)=*(bufit++);
     }
-                         }
+  }
   return true;
 }
 

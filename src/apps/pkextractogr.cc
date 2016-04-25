@@ -207,22 +207,22 @@ int main(int argc, char *argv[])
   ruleMap["percentile"]=rule::percentile;
   ruleMap["allpoints"]=rule::allpoints;
 
+  statfactory::StatFactory stat;
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
       srcnodata_opt.push_back(srcnodata_opt[0]);
+    stat.setNoDataValues(srcnodata_opt);
   }
 
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
-  statfactory::StatFactory stat;
-  stat.setNoDataValues(srcnodata_opt);
   Vector2d<unsigned int> posdata;
   unsigned long int nsample=0;
   unsigned long int ntotalvalid=0;
   unsigned long int ntotalinvalid=0;
 
-  // ImgReaderMem imgReader;
-  ImgReaderGdal imgReader;
+  ImgReaderMem imgReader;
+  // ImgReaderGdal imgReader;
   if(image_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
       exit(1);
@@ -232,8 +232,11 @@ int main(int argc, char *argv[])
       exit(1);
   }
   try{
-    // imgReader.open(image_opt[0],GA_ReadOnly,memory_opt[0]);
-    imgReader.open(image_opt[0],GA_ReadOnly);
+    imgReader.open(image_opt[0],GA_ReadOnly,memory_opt[0]);
+    // imgReader.open(image_opt[0],GA_ReadOnly);
+    //test
+    // imgReader.setScale(1);
+    // imgReader.setOffset(0);
   }
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;
@@ -571,14 +574,9 @@ int main(int argc, char *argv[])
             imgReader.readDataBlock(readValuesInt[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
           case OFTReal:
-          default:{
-            //test
-            readValuesReal[iband].resize(imgReader.nrOfRow());
-            for(int irow=layer_ulj;irow<=layer_lrj;++irow)
-              imgReader.readData(readValuesReal[iband][irow],irow,iband);
-              // imgReader.readDataBlock(readValuesReal[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
+          default:
+	    imgReader.readDataBlock(readValuesReal[iband],layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
-          }
           }
         }
       }
@@ -1163,10 +1161,13 @@ int main(int argc, char *argv[])
                 }
               }
             }
-            if(createPolygon){
+	    //test
+            if(createPolygon&&validFeature){
+            // if(createPolygon){
               //write polygon feature
+	      //todo: create only in case of valid feature
               if(verbose_opt[0]>1)
-                std::cout << "creating polygon feature" << std::endl;
+                std::cout << "creating polygon feature (1)" << std::endl;
               if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
                 std::string errorString="Failed to create polygon feature in ogr vector dataset";
                 throw(errorString);
@@ -1176,7 +1177,7 @@ int main(int argc, char *argv[])
               ++ntotalvalid;
               ++ntotalvalidLayer;
             }
-          }
+	  }
 	  else{
 	    OGRPolygon readPolygon;
 	    OGRMultiPolygon readMultiPolygon;
@@ -1548,6 +1549,7 @@ int main(int argc, char *argv[])
                     }//iband
                   }//else (not class_opt.size())
                   if(!createPolygon){
+		    //todo: only if valid feature?
                     //write feature
                     if(verbose_opt[0]>1)
                       std::cout << "creating point feature" << std::endl;
@@ -1658,11 +1660,13 @@ int main(int argc, char *argv[])
                   }
                 }
               }
-            }
-            if(createPolygon){
+	    }
+	    //hiero
+            if(createPolygon&&validFeature){
+	      //todo: only create if valid feature?
               //write polygon feature
               if(verbose_opt[0]>1)
-                std::cout << "creating polygon feature" << std::endl;
+                std::cout << "creating polygon feature (2)" << std::endl;
               if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
                 std::string errorString="Failed to create polygon feature in ogr vector dataset";
                 throw(errorString);
