@@ -89,6 +89,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | off    | offset               | double |       |output=scale*input+offset | 
  | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
  | align  | align                | bool  |       |Align output bounding box to input image | 
+ | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -135,6 +136,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -155,6 +157,7 @@ int main(int argc, char *argv[])
   offset_opt.setHide(1);
   nodata_opt.setHide(1);
   description_opt.setHide(1);
+  memory_opt.setHide(1);
   
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -192,6 +195,7 @@ int main(int argc, char *argv[])
     nodata_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     align_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -276,7 +280,7 @@ int main(int argc, char *argv[])
   bool isGeoRef=false;
   string projectionString;
   for(int iimg=0;iimg<input_opt.size();++iimg){
-    imgReader.open(input_opt[iimg]);
+    imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
     if(!isGeoRef)
       isGeoRef=imgReader.isGeoRef();
     if(imgReader.isGeoRef()&&projection_opt.empty())
@@ -285,6 +289,7 @@ int main(int argc, char *argv[])
       if(!iimg||imgReader.getDeltaX()<dx)
         dx=imgReader.getDeltaX();
     }
+    
     if(dy_opt.empty()){
       if(!iimg||imgReader.getDeltaY()<dy)
         dy=imgReader.getDeltaY();
@@ -438,7 +443,7 @@ int main(int argc, char *argv[])
     try{
       if(verbose_opt[0]>=1)
 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0]);
+      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -476,7 +481,7 @@ int main(int argc, char *argv[])
   for(int iimg=0;iimg<input_opt.size();++iimg){
     if(verbose_opt[0])
       cout << "opening image " << input_opt[iimg] << endl;
-    imgReader.open(input_opt[iimg]);
+    imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
     //if output type not set, get type from input image
     if(theType==GDT_Unknown){
       theType=imgReader.getDataType();
@@ -604,7 +609,7 @@ int main(int argc, char *argv[])
       if(oformat_opt.size())//default
         imageType=oformat_opt[0];
       try{
-        imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,option_opt);
+        imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
 	if(nodata_opt.size()){
 	  for(int iband=0;iband<ncropband;++iband)
 	    imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);

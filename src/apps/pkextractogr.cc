@@ -25,7 +25,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <ctime>
 #include <vector>
-#include "imageclasses/ImgReaderMem.h"
+#include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
   unsigned long int ntotalvalid=0;
   unsigned long int ntotalinvalid=0;
 
-  ImgReaderMem imgReader;
+  ImgReaderGdal imgReader;
   // ImgReaderGdal imgReader;
   if(image_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";

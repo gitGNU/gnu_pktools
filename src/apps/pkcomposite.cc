@@ -21,8 +21,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <string>
-#include "imageclasses/ImgReaderMem.h"
-#include "imageclasses/ImgWriterMem.h"
+#include "imageclasses/ImgReaderGdal.h"
+#include "imageclasses/ImgWriterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -380,7 +380,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
-  vector<ImgReaderMem> imgReader(input_opt.size());
+  vector<ImgReaderGdal> imgReader(input_opt.size());
   // vector<ImgReaderGdal> imgReader(input_opt.size());
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
@@ -589,8 +589,7 @@ int main(int argc, char *argv[])
 
   if(verbose_opt[0])
     cout << "composite image dim (nrow x ncol): " << nrow << " x " << ncol << endl;
-  ImgWriterMem imgWriter;
-  // ImgWriterGdal imgWriter;
+  ImgWriterGdal imgWriter;
   while(weight_opt.size()<input_opt.size())
     weight_opt.push_back(weight_opt[0]);
   if(verbose_opt[0]){
@@ -609,7 +608,7 @@ int main(int argc, char *argv[])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
     // imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
-    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt,memory_opt[0]);
+    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,memory_opt[0],option_opt);
     for(int iband=0;iband<nwriteBand;++iband)
       imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
   }
@@ -683,7 +682,7 @@ int main(int argc, char *argv[])
     mask_opt.clear();
     mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgReaderMem maskReader;
+  ImgReaderGdal maskReader;
   if(mask_opt.size()){
     try{
       if(verbose_opt[0]>=1)

@@ -41,61 +41,120 @@ ImgWriterGdal::ImgWriterGdal(void){};
 
 ImgWriterGdal::~ImgWriterGdal(void)
 {
+  if(m_data.size()&&m_deletePointer){
+    for(int iband=0;iband<m_nband;++iband) 
+      free(m_data[iband]);
+  }
   // delete m_gds;
 //   GDALDumpOpenDatasets(stderr);
 //   GDALDestroyDriverManager();//could still be be used by other objects
 }
 
 //---------------------------------------------------------------------------
+void ImgWriterGdal::initMem(unsigned long int memory)
+{
+  m_deletePointer=true;
+  //we will only write after processing a block
+  m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+  if(m_blockSize<1)
+    m_blockSize=1;
+  if(m_blockSize>nrOfRow())
+    m_blockSize=nrOfRow();
+  //allocate block of memory
+  m_data.resize(m_nband);
+  m_begin.resize(m_nband);
+  m_end.resize(m_nband);
+  for(int iband=0;iband<m_nband;++iband){
+    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+    m_begin[iband]=0;
+    m_end[iband]=m_blockSize;
+  }
+}
+
+//not tested yet!!!
+//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
+void ImgWriterGdal::open(void* dataPointer, const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options){
+  open(filename, imgSrc, options);
+  m_deletePointer=false;//we are not the owner
+  m_data.resize(nrOfBand());
+  m_begin.resize(nrOfBand());
+  m_end.resize(nrOfBand());
+  for(int iband=0;iband<nrOfBand();++iband){
+    m_data[iband]=dataPointer+iband*nrOfCol()*nrOfRow()*(GDALGetDataTypeSize(getDataType())>>3);
+    m_begin[iband]=0;
+    m_end[iband]=nrOfRow();
+  }
+  m_blockSize=nrOfRow();//memory contains entire image and has been read already
+}
+
+//not tested yet!!!
+//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
+void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options){
+  open(filename, ncol, nrow, nband, dataType, imageType, options);
+  m_deletePointer=false;//we are not the owner
+  m_data.resize(nband);
+  m_begin.resize(nband);
+  m_end.resize(nband);
+  for(int iband=0;iband<nband;++iband){
+    m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
+    m_begin[iband]=0;
+    m_end[iband]=nrow;
+  }
+  m_blockSize=nrow;//memory contains entire image and has been read already
+}
+
+bool ImgWriterGdal::writeNewBlock(int row, int band)
+{
+  //assert(row==m_end)
+  if(m_end[band]>nrOfRow())
+    m_end[band]=nrOfRow();
+  //fetch raster band
+  GDALRasterBand  *poBand;
+  assert(band<nrOfBand()+1);
+  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+  poBand->RasterIO(GF_Write,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
+  m_begin[band]+=m_blockSize;//m_begin points to first line in block that will be written next
+  m_end[band]=m_begin[band]+m_blockSize;//m_end points to last line in block that will be written next
+  return true;//new block was written
+}
+
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
 {
-  // m_isGeoRef=imgSrc.isGeoRef();
   m_filename=filename;
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
-  // m_type=imgSrc.getDataType();
   m_options=options;
-  // m_interleave=imgSrc.getInterleave();
-  // m_compression=imgSrc.getCompression();
-  // imgSrc.getMagicPixel(m_magic_x,m_magic_y);
   setCodec(imgSrc);
 }
 
-// void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::string& interleave, const std::string& compression, int magicX, int magicY)
-// {
-//   m_isGeoRef=false;
-//   m_filename = filename;
-//   m_ncol = ncol;
-//   m_nrow = nrow;
-//   m_nband = nband;
-//   m_type=dataType;
-//   m_interleave = interleave;
-//   m_compression=compression;
-//   m_magic_x=magicX;
-//   m_magic_y=magicY;
-//   setCodec(imageType);
-// }
+void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options)
+{
+  open(filename,imgSrc,options);
+  initMem(memory);
+}
 
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 {
-  // m_isGeoRef=false;
   m_filename = filename;
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
-  // m_type=dataType;
-  // m_interleave = interleave;
-  // m_compression=compression;
   m_options=options;
-  // m_magic_x=magicX;
-  // m_magic_y=magicY;
   setCodec(dataType,imageType);
+}
+
+void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
+{
+  open(filename,ncol,nrow,nband,dataType,imageType,options);
+  initMem(memory);
 }
 
 //---------------------------------------------------------------------------
 void ImgWriterGdal::close(void)
 {
+  for(int iband=0;iband<nrOfBand();++iband) 
+    writeNewBlock(nrOfRow(),iband);
   ImgRasterGdal::close();
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
@@ -387,7 +446,7 @@ void ImgWriterGdal::setColorTable(GDALColorTable* colorTable, int band)
 }
 
 //write an entire image from memory to file
-bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int band) const{
+bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int band){
   //fetch raster band
   GDALRasterBand  *poBand;
   if(band>=nrOfBand()+1){
