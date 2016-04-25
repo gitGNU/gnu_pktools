@@ -778,30 +778,34 @@ int main(int argc, char *argv[])
                 valid=valid&&(indexI>=0);
                 valid=valid&&(indexI<imgReader.nrOfCol());
 
-                if(valid&&srcnodata_opt.size()){
-                  for(int vband=0;vband<bndnodata_opt.size();++vband){
-                    switch( fieldType ){
-                    case OFTInteger:{
-                      int value;
-                      value=((readValuesInt[vband])[indexJ])[indexI];
-                      if(value==srcnodata_opt[vband])
-                        valid=false;
-                      break;
-                    }
-                    case OFTReal:{
-                      double value;
-                      value=((readValuesReal[vband])[indexJ])[indexI];
-                      if(value==srcnodata_opt[vband])
-                        valid=false;
-                      break;
-                    }
-                    }
-                    if(!valid)
-                      continue;
-                    else
-                      validFeature=true;
-                  }
-                }
+                if(valid){
+		  if(srcnodata_opt.empty())
+		    validFeature=true;
+		  else{
+		    for(int vband=0;vband<bndnodata_opt.size();++vband){
+		      switch( fieldType ){
+		      case OFTInteger:{
+			int value;
+			value=((readValuesInt[vband])[indexJ])[indexI];
+			if(value==srcnodata_opt[vband])
+			  valid=false;
+			break;
+		      }
+		      case OFTReal:{
+			double value;
+			value=((readValuesReal[vband])[indexJ])[indexI];
+			if(value==srcnodata_opt[vband])
+			  valid=false;
+			break;
+		      }
+		      }
+		      if(!valid)
+			continue;
+		      else
+			validFeature=true;
+		    }
+		  }
+		}
                 if(valid){
                   assert(readValuesReal.size()==nband);
                   for(int iband=0;iband<nband;++iband){
@@ -1247,30 +1251,34 @@ int main(int argc, char *argv[])
               valid=valid&&(indexJ<imgReader.nrOfRow());
               valid=valid&&(indexI>=0);
               valid=valid&&(indexI<imgReader.nrOfCol());
-              if(valid&&srcnodata_opt.size()){
-                for(int vband=0;vband<bndnodata_opt.size();++vband){
-                  switch( fieldType ){
-                  case OFTInteger:{
-                    int value;
-                    value=((readValuesInt[vband])[indexJ])[indexI];
-                    if(value==srcnodata_opt[vband])
-                      valid=false;
-                    break;
-                  }
-                  case OFTReal:{
-                    double value;
-                    value=((readValuesReal[vband])[indexJ])[indexI];
-                    if(value==srcnodata_opt[vband])
-                      valid=false;
-                    break;
-                  }
-                  }
-                  if(!valid)
-                    continue;
-                  else
-                    validFeature=true;
-                }
-              }
+              if(valid){
+		if(srcnodata_opt.empty())
+		  validFeature=true;
+		else{
+		  for(int vband=0;vband<bndnodata_opt.size();++vband){
+		    switch( fieldType ){
+		    case OFTInteger:{
+		      int value;
+		      value=((readValuesInt[vband])[indexJ])[indexI];
+		      if(value==srcnodata_opt[vband])
+			valid=false;
+		      break;
+		    }
+		    case OFTReal:{
+		      double value;
+		      value=((readValuesReal[vband])[indexJ])[indexI];
+		      if(value==srcnodata_opt[vband])
+			valid=false;
+		      break;
+		    }
+		    }
+		    if(!valid)
+		      continue;
+		    else
+		      validFeature=true;
+		  }
+		}
+	      }
               if(valid){
                 assert(readValuesReal.size()==nband);
                 for(int iband=0;iband<nband;++iband){
