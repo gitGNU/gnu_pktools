@@ -18,13 +18,13 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <iostream>
+#include "ogr_spatialref.h"
 #include "ImgRasterGdal.h"
 
 ImgRasterGdal::ImgRasterGdal(void)
   : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
 {}
 
-//--------------------------------------------------------------------------
 void ImgRasterGdal::close(void)
 {
   GDALClose(m_gds);
@@ -49,6 +49,39 @@ std::string ImgRasterGdal::getProjectionRef(void) const
   else
     return "";
 }
+
+void ImgRasterGdal::setGeoTransform(double* gt){
+  // m_isGeoRef=true;
+  m_gt[0]=gt[0];
+  m_gt[1]=gt[1];
+  m_gt[2]=gt[2];
+  m_gt[3]=gt[3];
+  m_gt[4]=gt[4];
+  m_gt[5]=gt[5];
+  if(m_gds)
+    m_gds->SetGeoTransform(m_gt);
+}
+
+std::string ImgRasterGdal::setProjectionProj4(const std::string& projection)
+{
+  OGRSpatialReference theRef;
+  theRef.SetFromUserInput(projection.c_str());
+  char *wktString;
+  theRef.exportToWkt(&wktString);
+  assert(m_gds);
+  m_gds->SetProjection(wktString);
+  return(wktString);
+}
+
+void ImgRasterGdal::setProjection(const std::string& projection)
+{
+  OGRSpatialReference oSRS;
+  char *pszSRS_WKT = NULL;
+  assert(m_gds);
+  m_gds->SetProjection(projection.c_str());
+  CPLFree(pszSRS_WKT);
+}
+
 
 GDALDataType ImgRasterGdal::getDataType(int band) const
 {

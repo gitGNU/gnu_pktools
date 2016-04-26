@@ -28,9 +28,9 @@ class ImgUpdaterGdal : public ImgReaderGdal, public ImgWriterGdal
 {
 public:
   ImgUpdaterGdal(void);
-  ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode=GA_Update);
+  ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode=GA_Update, unsigned int memory=0);
   ~ImgUpdaterGdal(void);
-  void open(const std::string& filename, const GDALAccess& readMode=GA_Update);
+  void open(const std::string& filename, const GDALAccess& readMode=GA_Update, unsigned int memory=0);
   void close(void);
 
 protected:

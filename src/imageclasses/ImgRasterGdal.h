@@ -72,6 +72,10 @@ public:
   std::string getProjectionRef(void) const;
   std::string getGeoTransform() const;
   void getGeoTransform(double* gt) const;
+  void setGeoTransform(double* gt);
+  void setProjection(const std::string& projection);
+  std::string setProjectionProj4(const std::string& projection);
+
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
   bool getCenterPos(double& x, double& y) const;
   double getUlx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(ulx);};
@@ -119,7 +123,8 @@ protected:
   int m_nband;
   double m_gt[6];
   std::vector<double> m_noDataValues;
-  // unsigned long int m_memory;
+
+private:
 };
 
 #endif // _IMGRASTERGDAL_H_

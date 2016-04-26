@@ -1,6 +1,6 @@
 /**********************************************************************
 ImgReaderGdal.cc: class to read raster files using GDAL API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -31,15 +31,15 @@ ImgReaderGdal::~ImgReaderGdal(void)
     for(int iband=0;iband<m_nband;++iband)
       free(m_data[iband]);
   }
-  // delete m_gds;
-//   GDALDumpOpenDatasets(stderr);
-//   GDALDestroyDriverManager();//could be used by other objects...
 }
 
-//--------------------------------------------------------------------------
-//not tested yet!!!
-//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
-//what about projection and geotransform data (must be set from outside!)
+/**
+ * @paramdataPointer External pointer already containing the image data
+ * @param ncol The number of columns in the image
+ * @param nrow The number of rows in the image
+ * @param band The number of bands in the image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
 void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType)
 {
   m_deletePointer=false;//we are not the owner
@@ -57,6 +57,9 @@ void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow
   }
 }
 
+/**
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
 void ImgReaderGdal::initMem(unsigned long int memory)
 {
   m_deletePointer=true;
@@ -75,6 +78,10 @@ void ImgReaderGdal::initMem(unsigned long int memory)
   }
 }
 
+/**
+ * @param row Read a new block for caching this row (if needed)
+ * @param band Band that must be read for caching
+ **/
 bool ImgReaderGdal::readNewBlock(int row, int band)
 {
   if(m_end[band]<m_blockSize)//first time
@@ -95,13 +102,15 @@ bool ImgReaderGdal::readNewBlock(int row, int band)
   return true;//new block was read
 }
 
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param readMode Open dataset in ReadOnly or Update mode
+ **/
 void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {
   m_filename = filename;
   setCodec(readMode);
-  if(memory>0){
-    initMem(memory);
-  }
+  initMem(memory);
 }
 
 void ImgReaderGdal::close(void)
@@ -109,6 +118,9 @@ void ImgReaderGdal::close(void)
   ImgRasterGdal::close();
 }
 
+/**
+ * @param readMode Open dataset in ReadOnly or Update mode
+ **/
 void ImgReaderGdal::setCodec(const GDALAccess& readMode)
 {
   GDALAllRegister();
@@ -120,9 +132,6 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
   m_ncol= m_gds->GetRasterXSize();
   m_nrow= m_gds->GetRasterYSize();
   m_nband= m_gds->GetRasterCount();
-  // m_isGeoRef=( static_cast<std::string>(m_gds->GetProjectionRef())  != "" );
-  // m_magic_x=magicX;
-  // m_magic_y=magicY;
   double adfGeoTransform[6];
   m_gds->GetGeoTransform( adfGeoTransform );
   m_gt[0]=adfGeoTransform[0];
@@ -133,7 +142,11 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
   m_gt[5]=adfGeoTransform[5];
 }
 
-
+/**
+ * @param x Reported column where minimum value in image was found (start counting from 0)
+ * @param y Reported row where minimum value in image was found (start counting from 0)
+ * @param band Search mininum value in image for this band
+ **/
 double ImgReaderGdal::getMin(int& x, int& y, int band){
   double minValue=0;
   std::vector<double> lineBuffer(nrOfCol());
@@ -164,6 +177,11 @@ double ImgReaderGdal::getMin(int& x, int& y, int band){
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
+/**
+ * @param x Reported column where maximum value in image was found (start counting from 0)
+ * @param y Reported row where maximum value in image was found (start counting from 0)
+ * @param band Search mininum value in image for this band
+ **/
 double ImgReaderGdal::getMax(int& x, int& y, int band){
   double maxValue=0;
   std::vector<double> lineBuffer(nrOfCol());
@@ -194,6 +212,12 @@ double ImgReaderGdal::getMax(int& x, int& y, int band){
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
+/**
+ * @param startCol, endCol, startRow, endRow Search extreme value in this region of interest (all indices start counting from 0)
+ * @param band Search extreme value in image for this band
+ * @param minValue Reported minimum value within searched region
+ * @param maxValue Reported maximum value within searched region
+ **/
 void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue)
 {
   bool isConstraint=(maxValue>minValue);
@@ -236,6 +260,11 @@ void ImgReaderGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
+/**
+ * @param minValue Reported minimum value in image
+ * @param maxValue Reported maximum value in image
+ * @param band Search extreme value in image for this band
+ **/
 void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band)
 {
   bool isConstraint=(maxValue>minValue);
@@ -277,6 +306,13 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band)
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
+/**
+ * @param histvector The reported histogram with counts per bin
+ * @param min, max Only calculate histogram for values between min and max. If min>=max, calculate min and max from the image
+ * @param nbin Number of bins used for calculating the histogram. If nbin is 0, the number of bins is  automatically calculated from min and max
+ * @param theBand The band for which to calculate the histogram (start counting from 0)
+ * @param kde Apply kernel density function for a Gaussian basis function
+ **/
 double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
   double minValue=0;
   double maxValue=0;
@@ -346,7 +382,6 @@ double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min,
 	  //create kde for Gaussian basis function
 	  //todo: speed up by calculating first and last bin with non-zero contriubtion...
 	  //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
-	  //hiero
 	  for(int ibin=0;ibin<nbin;++ibin){
 	    double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
 	    double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
@@ -372,6 +407,10 @@ double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min,
   return nvalid;
 }
 
+/**
+ * @param range Sorted vector containing the range of image values
+ * @param band The band for which to calculate the range
+ **/
 void ImgReaderGdal::getRange(std::vector<short>& range, int band)
 {
   std::vector<short> lineBuffer(nrOfCol());
@@ -386,6 +425,9 @@ void ImgReaderGdal::getRange(std::vector<short>& range, int band)
   sort(range.begin(),range.end());
 }
 
+/**
+ * @param band The band for which to calculate the number of valid pixels
+ **/
 unsigned long int ImgReaderGdal::getNvalid(int band)
 {
   unsigned long int nvalid=0;
@@ -406,6 +448,10 @@ unsigned long int ImgReaderGdal::getNvalid(int band)
     return(nrOfCol()*nrOfRow());
 }
 
+/**
+ * @param refX, refY Calculated reference pixel position in geo-refererenced coordinates
+ * @param band The band for which to calculate the number of valid pixels
+ **/
 
 void ImgReaderGdal::getRefPix(double& refX, double &refY, int band)
 {
@@ -445,6 +491,5 @@ void ImgReaderGdal::getRefPix(double& refX, double &refY, int band)
     refY=floor(validRow/nvalidRow-0.5);//upper corner
     //shift to lower left corner of pixel
     refY+=1;
-      
   }
 }

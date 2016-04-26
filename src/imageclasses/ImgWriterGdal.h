@@ -1,6 +1,6 @@
 /**********************************************************************
 ImgWriterGdal.h: class to write raster files using GDAL API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -29,18 +29,45 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "ImgReaderGdal.h"
 #include "ImgReaderOgr.h"
 
-//--------------------------------------------------------------------------
+/** Class to read a raster dataset in a format supported by GDAL. Currently only those formats where the drivers support the Create method can be written. Data are cached in memory for a number of rows (if memory>0) before written to file.
+
+   This class inherits from ImgRasterGdal, a general raster class to store e.g., filename, number of columns, rows and bands of the dataset. 
+
+   If memory is set (in MB) to 0 (default), the raster is read line by line directly from file. A scale and offset can be set when reading the raster data values. The scaling and offset are applied on a per band basis. 
+
+   For random access reading (not in sequential order line by line), set memory to 0 or a value sufficiently large to read the entire image to memory.
+ **/
+
 class ImgWriterGdal : public virtual ImgRasterGdal
 {
 public:
+  ///default constructor. Image needs to be opened later with one of the open methods.
   ImgWriterGdal(void);
-  ~ImgWriterGdal(void);
+  ///constructor opening an image for writing, copying image attributes from a source image. Image is directly read from file. Use the constructor with memory>0 to support caching
   ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, options);};
+  ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, memory, options);};
+  ///constructor opening an image for writing, defining all image attributes. Image is directly read from file. Use the constructor with memory>0 to support caching
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
+  ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
-  ImgWriterGdal(void* dataPointer, const std::string& filename, const ImgReaderGdal& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(dataPointer,filename, imgSrc, options);};
+  ///constructor opening an image for writing using an external data pointer (not tested yet)
   ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(dataPointer, filename, ncol, nrow, nband, dataType, imageType, options);};
+  //constructor
+  ~ImgWriterGdal(void);
+
+  ///Open an image for writing, copying image attributes from a source image. Image is directly read from file. Use the constructor with memory>0 to support caching
+  void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
+  void open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing, defining all image attributes. Image is directly read from file. Use the constructor with memory>0 to support caching
+  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
+  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing using an external data pointer (not tested yet)
+  void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Close the raster dataset
+  void close(void);//definition in ImgWritergdal.cc
   void setScale(double theScale, int band=0){
     if(m_scale.size()!=nrOfBand()){//initialize
       m_scale.resize(nrOfBand());
@@ -57,30 +84,20 @@ public:
     }
       m_offset[band]=theOffset;
   }
-  // void open(const std::string& filename);//not needed?
-  void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
-  void open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
-  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
-  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
-  void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
-  void open(void* dataPointer, const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
-  
-  void close(void);//definition in ImgWritergdal.cc
-
-  void copyGeoTransform(const ImgReaderGdal& imgSrc);
-  void setProjection(const std::string& projection);
-  std::string setProjectionProj4(const std::string& projection);
-
+  ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
-  void setGeoTransform(double* gt);
+  ///Copy geotransform information from another georeferenced image
+  void copyGeoTransform(const ImgReaderGdal& imgSrc);
 
+  ///Write a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
   template<typename T> bool writeData(T& value, int col, int row, int band=0);
+  ///Write pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
   template<typename T> bool writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
+  ///Write pixel cell values for an entire row for a specific band (all indices start counting from 0)
   template<typename T> bool writeData(std::vector<T>& buffer, int row, int band=0);
-  bool writeData(void* pdata, const GDALDataType& dataType, int band=0);
+  // ///write an entire image from memory to file
+  // bool writeData(void* pdata, const GDALDataType& dataType, int band=0);
   template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
-  // std::string getInterleave(){return m_interleave;};
-  // std::string getCompression(){return m_compression;};
   void setColorTable(const std::string& filename, int band=0);
   void setColorTable(GDALColorTable* colorTable, int band=0);
   void setMetadata(char** metadata);
@@ -89,18 +106,26 @@ public:
 protected:
   virtual void setCodec(const GDALDataType& dataType, const std::string& imageType);
   virtual void setCodec(const ImgReaderGdal& ImgSrc);
-  std::vector<double> m_scale;
-  std::vector<double> m_offset;
-
   std::vector<std::string> m_options;
+  std::vector<double> m_scale;
+  ///Vector containing the offset factor to be applied (one offset value for each band)
+  std::vector<double> m_offset;
+  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
   unsigned int m_blockSize;
+  ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
   std::vector<void *> m_data;
-  std::vector<unsigned int> m_begin;//[band] first line in block that will be written next
-  std::vector<unsigned int> m_end;//[band] beyond last line in block that will be written next
+  ///first line that has been read in cache for a specific band
+  std::vector<unsigned int> m_begin;
+  ///beyond last line read in cache for a specific band
+  std::vector<unsigned int> m_end;
+
 private:
-  void initMem(unsigned long int memory);
-  bool m_deletePointer;
+  ///Write new block from cache (defined by m_begin and m_end)
   bool writeNewBlock(int row, int band);
+  ///Initialize the memory for read/write image in cache
+  void initMem(unsigned long int memory);
+  ///Flag to indicate if the pointer used for caching should be deleted (only false for external pointer)
+  bool m_deletePointer;
 };
 
 template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, int band)
@@ -140,7 +165,6 @@ template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, i
   }
   if(m_data.size()){
     //only support random access writing if entire image is in memory
-    //if m_blockSize!=nrOfRow() we risk not to write all data if not written in sequence (e.g. line per line)
     if(m_blockSize!=nrOfRow()){
       std::ostringstream s;
       s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
@@ -185,7 +209,6 @@ template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, i
   return true;
 }
 
-//todo: make buffer const?
 template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
 {
   if(buffer.size()!=maxCol-minCol+1){
@@ -252,12 +275,6 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int m
       switch(getDataType()){
       case(GDT_Byte):
 	*(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
-	//test
-	/* if(band==0&&row==511){ */
-	/*   std::cout << dvalue << " "; */
-	/* if(maxindex-minindex+1==512) */
-	/*   std::cout << std::endl; */
-	/* } */
 	break;
       case(GDT_Int16):
 	*(static_cast<short*>((m_data[band])+index))=static_cast<short>(dvalue);
@@ -299,13 +316,11 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int m
   return true;
 }
 
-//todo: make buffer const?
 template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int row, int band)
 {
   return writeData(buffer,0,nrOfCol()-1,row,band);
 }
 
-//todo: make buffer2d const?
 template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
   double theScale=1;

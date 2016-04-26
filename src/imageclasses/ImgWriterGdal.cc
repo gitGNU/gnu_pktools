@@ -1,6 +1,6 @@
 /**********************************************************************
 ImgWriterGdal.cc: class to write raster files using GDAL API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -21,7 +21,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iomanip>
 #include <time.h>
 #include <algorithm>
-#include "ogr_spatialref.h"
 extern "C" {
 #include "gdal_alg.h"
 }
@@ -42,49 +41,9 @@ ImgWriterGdal::ImgWriterGdal(void){};
 ImgWriterGdal::~ImgWriterGdal(void)
 {
   if(m_data.size()&&m_deletePointer){
-    for(int iband=0;iband<m_nband;++iband) 
+    for(int iband=0;iband<m_nband;++iband)
       free(m_data[iband]);
   }
-  // delete m_gds;
-//   GDALDumpOpenDatasets(stderr);
-//   GDALDestroyDriverManager();//could still be be used by other objects
-}
-
-//---------------------------------------------------------------------------
-void ImgWriterGdal::initMem(unsigned long int memory)
-{
-  m_deletePointer=true;
-  //we will only write after processing a block
-  m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-  if(m_blockSize<1)
-    m_blockSize=1;
-  if(m_blockSize>nrOfRow())
-    m_blockSize=nrOfRow();
-  //allocate block of memory
-  m_data.resize(m_nband);
-  m_begin.resize(m_nband);
-  m_end.resize(m_nband);
-  for(int iband=0;iband<m_nband;++iband){
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-    m_begin[iband]=0;
-    m_end[iband]=m_blockSize;
-  }
-}
-
-//not tested yet!!!
-//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
-void ImgWriterGdal::open(void* dataPointer, const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options){
-  open(filename, imgSrc, options);
-  m_deletePointer=false;//we are not the owner
-  m_data.resize(nrOfBand());
-  m_begin.resize(nrOfBand());
-  m_end.resize(nrOfBand());
-  for(int iband=0;iband<nrOfBand();++iband){
-    m_data[iband]=dataPointer+iband*nrOfCol()*nrOfRow()*(GDALGetDataTypeSize(getDataType())>>3);
-    m_begin[iband]=0;
-    m_end[iband]=nrOfRow();
-  }
-  m_blockSize=nrOfRow();//memory contains entire image and has been read already
 }
 
 //not tested yet!!!
@@ -101,6 +60,27 @@ void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int nco
     m_end[iband]=nrow;
   }
   m_blockSize=nrow;//memory contains entire image and has been read already
+}
+
+/**
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+void ImgWriterGdal::initMem(unsigned long int memory)
+{
+  m_deletePointer=true;
+  m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+  if(m_blockSize<1)
+    m_blockSize=1;
+  if(m_blockSize>nrOfRow())
+    m_blockSize=nrOfRow();
+  m_data.resize(nrOfBand());
+  m_begin.resize(nrOfBand());
+  m_end.resize(nrOfBand());
+  for(int iband=0;iband<m_nband;++iband){
+    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+    m_begin[iband]=0;
+    m_end[iband]=0;
+  }
 }
 
 bool ImgWriterGdal::writeNewBlock(int row, int band)
@@ -153,8 +133,10 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
 //---------------------------------------------------------------------------
 void ImgWriterGdal::close(void)
 {
-  for(int iband=0;iband<nrOfBand();++iband) 
-    writeNewBlock(nrOfRow(),iband);
+  if(m_data.size()){
+    for(int iband=0;iband<nrOfBand();++iband) 
+      writeNewBlock(nrOfRow(),iband);
+  }
   ImgRasterGdal::close();
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
@@ -179,20 +161,13 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
-  // char **papszOptions=NULL;
-  // std::ostringstream compressList;
-  // compressList << "COMPRESS=" << m_compression;
-  // papszOptions = CSLAddString(papszOptions,(compressList.str()).c_str());
-  // std::ostringstream interleaveList;
-  // interleaveList << "INTERLEAVE=" << m_interleave;
-  // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
+
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
-  // if(imgSrc.isGeoRef()){
     setProjection(imgSrc.getProjection());
     double gt[6];
     imgSrc.getGeoTransform(gt);
-    setGeoTransform(gt);
-  // }
+    ImgRasterGdal::setGeoTransform(gt);
+
   m_gds->SetMetadata(imgSrc.getMetadata() ); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
@@ -228,15 +203,6 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   else
     datestream << ":" << now->tm_sec;
   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
-//   list<std::string> lmeta;
-//   imgReader.getMetadata(lmeta);
-//   list<std::string>::const_iterator lit=lmeta.begin();
-//   while(lit!=lmeta.end()){
-//     cout << *lit << endl;
-//     ++lit;
-//   }
-  // m_gds->SetMetadataItem( "INTERLEAVE", m_interleave.c_str(), "IMAGE_STRUCTURE" );
-  // m_gds->SetMetadataItem( "COMPRESS", m_compression.c_str(), "IMAGE_STRUCTURE" );
   if(imgSrc.getColorTable()!=NULL)
     setColorTable(imgSrc.getColorTable());
 }
@@ -258,16 +224,8 @@ void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& im
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
-  // std::ostringstream compressList;
-  // compressList << "COMPRESS=" << m_compression;
-  // papszOptions = CSLAddString(papszOptions,(compressList.str()).c_str());
-  // std::ostringstream interleaveList;
-  // interleaveList << "INTERLEAVE=" << m_interleave;
-  // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,dataType,papszOptions);
 
-  // m_gds->SetMetadataItem( "INTERLEAVE", m_interleave.c_str(), "IMAGE_STRUCTURE" );
-  // m_gds->SetMetadataItem( "COMPRESSION", m_compression.c_str(), "IMAGE_STRUCTURE" );
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
   versionString+=VERSION;
@@ -302,7 +260,6 @@ void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& im
   else
     datestream << ":" << now->tm_sec;
   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
-//   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", ctime(&rawtime));
 }
 
 void ImgWriterGdal::setMetadata(char** metadata)
@@ -311,91 +268,12 @@ void ImgWriterGdal::setMetadata(char** metadata)
   m_gds->SetMetadata(metadata); 
 }
 
-//---------------------------------------------------------------------------
-void ImgWriterGdal::setGeoTransform(double* gt){
-  // m_isGeoRef=true;
-  m_gt[0]=gt[0];
-  m_gt[1]=gt[1];
-  m_gt[2]=gt[2];
-  m_gt[3]=gt[3];
-  m_gt[4]=gt[4];
-  m_gt[5]=gt[5];
-  if(m_gds)
-    m_gds->SetGeoTransform(m_gt);
-}
-
-// void ImgWriterGdal::setGeoTransform(double ulx, double uly, double deltaX, double deltaY, double rot1, double rot2)
-// {
-//   m_isGeoRef=true;
-//   m_ulx=ulx;
-//   m_uly=uly;
-//   m_delta_x=deltaX;
-//   m_delta_y=deltaY;
-//   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-//   adfGeoTransform[0]=ulx;
-//   adfGeoTransform[1]=deltaX;
-//   adfGeoTransform[2]=rot1;
-//   adfGeoTransform[3]=uly;
-//   adfGeoTransform[4]=rot2;
-//   adfGeoTransform[5]=-deltaY;//convention of GDAL!
-//   if(m_gds)
-//     m_gds->SetGeoTransform(adfGeoTransform);
-// }
-
 void ImgWriterGdal::copyGeoTransform(const ImgReaderGdal& imgSrc)
 {
   setProjection(imgSrc.getProjection());
   double gt[6];
   imgSrc.getGeoTransform(gt);
-  setGeoTransform(gt);
-  // imgSrc.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-  // setGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-}
-
-std::string ImgWriterGdal::setProjectionProj4(const std::string& projection)
-{
-  // if(!m_isGeoRef)
-  //   m_isGeoRef=true;
-
-  OGRSpatialReference theRef;
-  theRef.SetFromUserInput(projection.c_str());
-  char *wktString;
-  theRef.exportToWkt(&wktString);
-  assert(m_gds);
-  m_gds->SetProjection(wktString);
-  return(wktString);
-
-    // OGRSpatialReferenceH hSRS;  
-    // char *pszResult = NULL;  
-  
-    // CPLErrorReset();  
-      
-    // hSRS = OSRNewSpatialReference( NULL );  
-    // if( OSRSetFromUserInput( hSRS, projection.c_str() ) == OGRERR_NONE )  
-    //     OSRExportToWkt( hSRS, &pszResult );  
-    // else  
-    // {  
-    //     std::ostringstream s;
-    //     s << "Error in set projection " << projection;
-    //     throw(s.str());
-    // }  
-    // std::string theProjection=pszResult;
-    // assert(m_gds);
-    // m_gds->SetProjection(theProjection.c_str());
-    // OSRDestroySpatialReference( hSRS );  
-  
-    // return theProjection;  
-}
-
-void ImgWriterGdal::setProjection(const std::string& projection)
-{
-  // if(!m_isGeoRef)
-  //   m_isGeoRef=true;
-  OGRSpatialReference oSRS;
-  char *pszSRS_WKT = NULL;
-  assert(m_gds);
-  m_gds->SetProjection(projection.c_str());
-  CPLFree(pszSRS_WKT);
+  ImgRasterGdal::setGeoTransform(gt);
 }
 
 //default projection: ETSR-LAEA
@@ -432,11 +310,8 @@ void ImgWriterGdal::setColorTable(const std::string& filename, int band)
     GDALColorEntry sEntry;
     short id;
     ist >> id >> sEntry.c1 >> sEntry.c2 >> sEntry.c3 >> sEntry.c4;
-//     poCT->SetColorEntry(id,&sEntry);
     colorTable.SetColorEntry(id,&sEntry);
   }
-  // assert(nline==colorTable.GetColorEntryCount());
-//   (m_gds->GetRasterBand(band+1))->SetColorTable(poCT);
   (m_gds->GetRasterBand(band+1))->SetColorTable(&colorTable);
 }
 
@@ -445,19 +320,19 @@ void ImgWriterGdal::setColorTable(GDALColorTable* colorTable, int band)
   (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
 }
 
-//write an entire image from memory to file
-bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int band){
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  if(band>=nrOfBand()+1){
-    std::ostringstream s;
-    s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
-    throw(s.str());
-  }
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  poBand->RasterIO(GF_Write,0,0,nrOfCol(),nrOfRow(),pdata,nrOfCol(),nrOfRow(),dataType,0,0);
-  return true;
-}  
+// //write an entire image from memory to file
+// bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int band){
+//   //fetch raster band
+//   GDALRasterBand  *poBand;
+//   if(band>=nrOfBand()+1){
+//     std::ostringstream s;
+//     s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+//     throw(s.str());
+//   }
+//   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+//   poBand->RasterIO(GF_Write,0,0,nrOfCol(),nrOfRow(),pdata,nrOfCol(),nrOfRow(),dataType,0,0);
+//   return true;
+// }  
 
 void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& layernames ){
   std::vector<int> bands;
@@ -487,18 +362,9 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
   }
   void *pTransformArg;
   char **papszOptions;
-  // double dfComplete=0.0;
-  // const char* pszMessage;
   void* pProgressArg=NULL;
-  // GDALProgressFunc pfnProgress=GDALTermProgress;
-  // pfnProgress(dfComplete,pszMessage,pProgressArg);
-  //if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),papszOptions,pfnProgress,pProgressArg)!=CE_None){
   if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),NULL,NULL,NULL)!=CE_None){
     std::string errorString(CPLGetLastErrorMsg());
     throw(errorString);
   }
-  // else{
-  //   dfComplete=1.0;
-  //   pfnProgress(dfComplete,pszMessage,pProgressArg);
-  // }
 }
