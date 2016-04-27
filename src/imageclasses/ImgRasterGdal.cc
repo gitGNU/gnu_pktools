@@ -110,18 +110,6 @@ void ImgRasterGdal::getGeoTransform(double* gt) const{
   m_gds->GetGeoTransform(gt);
 }
 
-// void ImgRasterGdal::getGeoTransform(double& ulx, double& uly, double& deltaX, double& deltaY, double& rot1, double& rot2) const
-// {
-//   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-//   m_gds->GetGeoTransform(adfGeoTransform);
-//   ulx=adfGeoTransform[0];
-//   deltaX=adfGeoTransform[1];
-//   rot1=adfGeoTransform[2];
-//   uly=adfGeoTransform[3];
-//   rot2=adfGeoTransform[4];
-//   deltaY=-adfGeoTransform[5];//convention of GDAL!
-// }
-
 std::string ImgRasterGdal::getGeoTransform() const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
@@ -129,21 +117,6 @@ std::string ImgRasterGdal::getGeoTransform() const
   std::ostringstream s;
   s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << gt[5] << "]";
   return(s.str());
-  // if(!isGeoRef())
-  //   return("");
-  // else{
-  //   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  //   m_gds->GetGeoTransform(adfGeoTransform);
-  //   double ulx=adfGeoTransform[0];
-  //   double deltaX=adfGeoTransform[1];
-  //   double rot1=adfGeoTransform[2];
-  //   double uly=adfGeoTransform[3];
-  //   double rot2=adfGeoTransform[4];
-  //   double deltaY=-adfGeoTransform[5];//convention of GDAL!
-  //   std::ostringstream s;
-  //   s << "[" << ulx << "," << deltaX << "," << rot1 << "," << uly << "," << rot2 << "," << -deltaY << "]";
-  //   return(s.str());
-  // }
 }
 
 char** ImgRasterGdal::getMetadata()
@@ -363,13 +336,3 @@ int ImgRasterGdal::pushNoDataValue(double noDataValue)
     m_noDataValues.push_back(noDataValue);
   return(m_noDataValues.size());
 }
-
-// bool ImgRasterGdal::setNoDataValue(double noDataValue,int band)
-// {
-//   GDALRasterBand  *poBand;
-//   poBand = m_gds->GetRasterBand(band+1);
-//   if(poBand->SetNoDataValue(noDataValue)!=CE_None)
-//     return false;
-//   else
-//     return true;
-// }

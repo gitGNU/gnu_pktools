@@ -78,7 +78,7 @@ public:
   template<typename T> void readData(T& value, int col, int row, int band=0);
   ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
   template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
-  ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (todo).
+  ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
   template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR);
   ///Read pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
   template<typename T> void readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
@@ -86,7 +86,7 @@ public:
   template<typename T> void readDataBlock(std::vector<T>& buffer , int minCol, int maxCol, int minRow, int maxRow, int band=0);
   ///Read pixel cell values for an entire row for a specific band (all indices start counting from 0)
   template<typename T> void readData(std::vector<T>& buffer, int row, int band=0);
-  ///Read pixel cell values for an entire row for a specific band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (todo).
+  ///Read pixel cell values for an entire row for a specific band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
   template<typename T> void readData(std::vector<T>& buffer, double row, int band=0, RESAMPLE resample=NEAR);
   ///Get the minimum and maximum cell values for a specific band in a region of interest defined by startCol, endCol, startRow and endRow (all indices start counting from 0).
   void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue);
@@ -106,7 +106,7 @@ public:
   unsigned long int getNvalid(int band);
 
 protected:
-  ///Set GDAL dataset number of columns, rows, bands and geotransform. If memory>0, set amount of memory (in MB) to cache a block of cell values in all bands
+  ///Set GDAL dataset number of columns, rows, bands and geotransform.
   void setCodec(const GDALAccess& readMode=GA_ReadOnly);
   ///Vector containing the scale factor to be applied (one scale value for each band)
   std::vector<double> m_scale;
@@ -138,10 +138,10 @@ private:
 //     adfGeoTransform[5] /* n-s pixel resolution */
 
 /**
- * @param value The cell value that was read
- * @param col The column number to read (counting starts from 0)
- * @param row The row number to read (counting starts from 0)
- * @param band The band number to read (counting starts from 0)
+ * @param[out] value The cell value that was read
+ * @param[in] col The column number to read (counting starts from 0)
+ * @param[in] row The row number to read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
  **/
 template<typename T> void ImgReaderGdal::readData(T& value, int col, int row, int band)
 {
@@ -209,7 +209,6 @@ template<typename T> void ImgReaderGdal::readData(T& value, int col, int row, in
 }
 
 /**
- * Read pixel cell values for a range of columns for a specific row and band
  * @param[out] buffer The vector with all cell values that were read
  * @param[in] minCol First column from where to start reading (counting starts from 0)
  * @param[in] maxCol Last column that must be read (counting starts from 0)
@@ -301,7 +300,6 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int mi
 }
 
 /**
- * Read pixel cell values for a range of columns for a specific row and band, using some interpolation. Notice that this function will be deprecated. There is a new interpolation argument from GDAL 2.0 (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
  * @param[out] buffer The vector with all cell values that were read
  * @param[in] minCol First column from where to start reading (counting starts from 0)
  * @param[in] maxCol Last column that must be read (counting starts from 0)
@@ -339,7 +337,6 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int mi
 }
 
 /**
- * Read pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). 
  * @param[out] buffer2d Two dimensional vector of type Vector2d (stl vector of stl vector) representing [row][col]. This vector contains all cell values that were read
  * @param[in] minCol First column from where to start reading (counting starts from 0)
  * @param[in] maxCol Last column that must be read (counting starts from 0)
@@ -363,7 +360,6 @@ template<typename T> void ImgReaderGdal::readDataBlock(Vector2d<T>& buffer2d, in
 }
   
 /**
- * Read pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). 
  * @param[out] buffer One dimensional vector representing all pixel values read starting from upper left to lower right.
  * @param[in] minCol First column from where to start reading (counting starts from 0)
  * @param[in] maxCol Last column that must be read (counting starts from 0)
@@ -462,7 +458,6 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, i
 }
 
 /**
- * Read pixel cell values for an entire row for a specific band
  * @param[out] buffer The vector with all cell values that were read
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
@@ -473,7 +468,6 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int ro
 }
 
 /**
- * Read pixel cell values for an entire row for a specific band supporting resampling. Notice that this function will be deprecated. There is a new interpolation argument from GDAL 2.0 (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
  * @param[out] buffer The vector with all cell values that were read
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)

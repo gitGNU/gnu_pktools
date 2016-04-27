@@ -34,7 +34,7 @@ ImgReaderGdal::~ImgReaderGdal(void)
 }
 
 /**
- * @paramdataPointer External pointer already containing the image data
+ * @param dataPointer External pointer already containing the image data
  * @param ncol The number of columns in the image
  * @param nrow The number of rows in the image
  * @param band The number of bands in the image
@@ -80,7 +80,7 @@ void ImgReaderGdal::initMem(unsigned long int memory)
 
 /**
  * @param row Read a new block for caching this row (if needed)
- * @param band Band that must be read for caching
+ * @param band Band that must be read to cache
  **/
 bool ImgReaderGdal::readNewBlock(int row, int band)
 {
@@ -105,6 +105,7 @@ bool ImgReaderGdal::readNewBlock(int row, int band)
 /**
  * @param filename Open a raster dataset with this filename
  * @param readMode Open dataset in ReadOnly or Update mode
+ * @param memory Available memory to cache image raster data (in MB)
  **/
 void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {

@@ -52,8 +52,8 @@ public:
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
   ///constructor opening an image for writing using an external data pointer (not tested yet)
-  ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(dataPointer, filename, ncol, nrow, nband, dataType, imageType, options);};
-  //constructor
+  ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){open(dataPointer, filename, ncol, nrow, nband, dataType);};
+  ///destructor
   ~ImgWriterGdal(void);
 
   ///Open an image for writing, copying image attributes from a source image. Image is directly read from file. Use the constructor with memory>0 to support caching
@@ -65,7 +65,7 @@ public:
   ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing using an external data pointer (not tested yet)
-  void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the raster dataset
   void close(void);//definition in ImgWritergdal.cc
   void setScale(double theScale, int band=0){
@@ -95,16 +95,23 @@ public:
   template<typename T> bool writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
   ///Write pixel cell values for an entire row for a specific band (all indices start counting from 0)
   template<typename T> bool writeData(std::vector<T>& buffer, int row, int band=0);
-  // ///write an entire image from memory to file
+  // deprecated? Write an entire image from memory to file
   // bool writeData(void* pdata, const GDALDataType& dataType, int band=0);
+  ///Write pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
   template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
   void setColorTable(const std::string& filename, int band=0);
+  ///Set the color table using the GDAL class GDALColorTable
   void setColorTable(GDALColorTable* colorTable, int band=0);
+  ///Set specific metadata (driver specific)
   void setMetadata(char** metadata);
+  ///Rasterize an OGR vector dataset using the gdal algorithm "GDALRasterizeLayers"
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues=std::vector<double>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
 protected:
+  ///Register GDAL driver, setting the datatype, imagetype and some metadata
   virtual void setCodec(const GDALDataType& dataType, const std::string& imageType);
+  ///Register GDAL driver, setting the datatype, imagetype and some metadata
   virtual void setCodec(const ImgReaderGdal& ImgSrc);
   std::vector<std::string> m_options;
   std::vector<double> m_scale;
@@ -128,6 +135,12 @@ private:
   bool m_deletePointer;
 };
 
+/**
+ * @param[in] value The cell value to write
+ * @param[in] col The column number to write (counting starts from 0)
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ **/
 template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, int band)
 {
   if(band>=nrOfBand()+1){
@@ -209,6 +222,13 @@ template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, i
   return true;
 }
 
+/**
+ * @param[in] buffer The vector with all cell values to write
+ * @param[in] minCol First column from where to start writing (counting starts from 0)
+ * @param[in] maxCol Last column that must be written (counting starts from 0)
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ **/
 template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
 {
   if(buffer.size()!=maxCol-minCol+1){
@@ -316,11 +336,23 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int m
   return true;
 }
 
+/**
+ * @param[in] buffer The vector with all cell values to write
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ **/
 template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int row, int band)
 {
   return writeData(buffer,0,nrOfCol()-1,row,band);
 }
 
+/**
+ * @param[in] buffer2d Two dimensional vector of type Vector2d (stl vector of stl vector) representing [row][col]. This vector contains all cell values that must be written
+ * @param[in] minCol First column from where to start writing (counting starts from 0)
+ * @param[in] maxCol Last column that must be written (counting starts from 0)
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ **/
 template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
   double theScale=1;

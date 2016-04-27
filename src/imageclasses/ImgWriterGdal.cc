@@ -30,12 +30,6 @@ extern "C" {
 #include <config.h>
 #endif
 
-//---------------------------------------------------------------------------
-
-// ImgWriterGdal::ImgWriterGdal(void)
-//   : m_gds(NULL), m_magic_x(1), m_magic_y(1), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0), m_interleave("BAND"), m_compression("LZW")
-// {}
-
 ImgWriterGdal::ImgWriterGdal(void){};
 
 ImgWriterGdal::~ImgWriterGdal(void)
@@ -48,8 +42,15 @@ ImgWriterGdal::~ImgWriterGdal(void)
 
 //not tested yet!!!
 //open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
-void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options){
-  open(filename, ncol, nrow, nband, dataType, imageType, options);
+/**
+ * @paramdataPointer External pointer to which the image data should be written in memory
+ * @param ncol The number of columns in the image
+ * @param nrow The number of rows in the image
+ * @param band The number of bands in the image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
+void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){
+  open(dataPointer, filename, ncol, nrow, nband, dataType);
   m_deletePointer=false;//we are not the owner
   m_data.resize(nband);
   m_begin.resize(nband);
@@ -83,6 +84,10 @@ void ImgWriterGdal::initMem(unsigned long int memory)
   }
 }
 
+/**
+ * @param row Write a new block for caching this row (if needed)
+ * @param band Band that must be written in cache
+ **/
 bool ImgWriterGdal::writeNewBlock(int row, int band)
 {
   //assert(row==m_end)
@@ -98,6 +103,11 @@ bool ImgWriterGdal::writeNewBlock(int row, int band)
   return true;//new block was written
 }
 
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param options Creation options
+ **/
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
 {
   m_filename=filename;
@@ -108,12 +118,27 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
   setCodec(imgSrc);
 }
 
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param memory Available memory to cache image raster data (in MB)
+ * @param options Creation options
+ **/
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options)
 {
   open(filename,imgSrc,options);
   initMem(memory);
 }
 
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param ncol Number of columns in image
+ * @param nrow Number of rows in image
+ * @param nband Number of bands in image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ * @param options Creation options
+ **/
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 {
   m_filename = filename;
@@ -124,13 +149,22 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
   setCodec(dataType,imageType);
 }
 
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param ncol Number of columns in image
+ * @param nrow Number of rows in image
+ * @param nband Number of bands in image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ * @param memory Available memory to cache image raster data (in MB)
+ * @param options Creation options
+ **/
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
   open(filename,ncol,nrow,nband,dataType,imageType,options);
   initMem(memory);
 }
 
-//---------------------------------------------------------------------------
 void ImgWriterGdal::close(void)
 {
   if(m_data.size()){
@@ -145,7 +179,10 @@ void ImgWriterGdal::close(void)
     CSLDestroy(papszOptions);
 }
 
-//---------------------------------------------------------------------------
+
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ **/
 void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   GDALAllRegister();
   GDALDriver *poDriver;
@@ -163,10 +200,10 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
 
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
-    setProjection(imgSrc.getProjection());
-    double gt[6];
-    imgSrc.getGeoTransform(gt);
-    ImgRasterGdal::setGeoTransform(gt);
+  setProjection(imgSrc.getProjection());
+  double gt[6];
+  imgSrc.getGeoTransform(gt);
+  ImgRasterGdal::setGeoTransform(gt);
 
   m_gds->SetMetadata(imgSrc.getMetadata() ); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
@@ -207,6 +244,10 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
     setColorTable(imgSrc.getColorTable());
 }
 
+/**
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ **/
 void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& imageType)
 {
   GDALAllRegister();
@@ -262,12 +303,18 @@ void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& im
   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
 }
 
+/**
+ * @param metadata Set this metadata when writing the image (if supported byt the driver)
+ **/
 void ImgWriterGdal::setMetadata(char** metadata)
 {
   assert(m_gds);
   m_gds->SetMetadata(metadata); 
 }
 
+/**
+ * @param imgSrc Use this source image as a template to copy geotranform information
+ **/
 void ImgWriterGdal::copyGeoTransform(const ImgReaderGdal& imgSrc)
 {
   setProjection(imgSrc.getProjection());
@@ -295,7 +342,11 @@ void ImgWriterGdal::copyGeoTransform(const ImgReaderGdal& imgSrc)
 //   return(theProjection);
 // }
 
-//filename is ascii file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
+
+/**
+ * @param filename ASCII file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
+ * @param band band number to set color table (starting counting from 0)
+ **/
 void ImgWriterGdal::setColorTable(const std::string& filename, int band)
 {
   //todo: fool proof table in file (no checking currently done...)
@@ -315,6 +366,10 @@ void ImgWriterGdal::setColorTable(const std::string& filename, int band)
   (m_gds->GetRasterBand(band+1))->SetColorTable(&colorTable);
 }
 
+/**
+ * @param colorTable Instance of the GDAL class GDALColorTable
+ * @param band band number to set color table (starting counting from 0)
+ **/
 void ImgWriterGdal::setColorTable(GDALColorTable* colorTable, int band)
 {
   (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
@@ -334,6 +389,11 @@ void ImgWriterGdal::setColorTable(GDALColorTable* colorTable, int band)
 //   return true;
 // }  
 
+/**
+ * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
+ * @param burnValues Values to burn into raster cells (one value for each band)
+ * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
+ **/
 void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& layernames ){
   std::vector<int> bands;
   std::vector<double> burnBands;//burn values for all bands in a single layer

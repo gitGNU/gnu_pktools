@@ -56,72 +56,123 @@ template<typename T1> GDALDataType getGDALDataType(){
   else
     return GDT_Byte;
 };
-//--------------------------------------------------------------------------
+
+/**
+   Base class for raster dataset (read and write) in a format supported by GDAL. This general raster class is used to store e.g., filename, number of columns, rows and bands of the dataset. 
+**/
 class ImgRasterGdal
 {
 public:
+  ///default constructor
   ImgRasterGdal(void);
+  ///destructor
   virtual ~ImgRasterGdal(void){};
+  ///Close the image.
   virtual void close(void);
+  ///Get the filename of this dataset
   std::string getFileName() const {return m_filename;};
+  ///Get the number of columns of this dataset
   int nrOfCol(void) const { return m_ncol;};
+  ///Get the number of rows of this dataset
   int nrOfRow(void) const { return m_nrow;};
+  ///Get the number of bands of this dataset
   int nrOfBand(void) const { return m_nband;};
+  ///Is this dataset georeferenced (pixel size in y must be negative) ?
   bool isGeoRef() const {double gt[6];getGeoTransform(gt);if(gt[5]<0) return true;else return false;};
+  ///Get the projection string (deprecated, use getProjectionRef instead)
   std::string getProjection(void) const;
+  ///Get the projection reference
   std::string getProjectionRef(void) const;
+  ///Get the geotransform data for this dataset as a string
   std::string getGeoTransform() const;
+  ///Get the geotransform data for this dataset
   void getGeoTransform(double* gt) const;
+  ///Set the geotransform data for this dataset
   void setGeoTransform(double* gt);
+  ///Set the projection for this dataset in well known text (wkt) format
   void setProjection(const std::string& projection);
+  ///Set the projection for this dataset from user input (supports epsg:<number> format)
   std::string setProjectionProj4(const std::string& projection);
-
+  ///Get the bounding box of this dataset in georeferenced coordinates
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
+  ///Get the center position of this dataset in georeferenced coordinates
   bool getCenterPos(double& x, double& y) const;
+  ///Get the upper left corner x (georeferenced) coordinate of this dataset
   double getUlx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(ulx);};
+  ///Get the upper left corner y (georeferenced) coordinate of this dataset
   double getUly() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(uly);};
+  ///Get the lower right corner x (georeferenced) coordinate of this dataset
   double getLrx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lrx);};
+  ///Get the lower right corner y (georeferenced) coordinate of this dataset
   double getLry() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lry);};
-
+  ///Get the no data values of this dataset as a standard template library (stl) vector
   int getNoDataValues(std::vector<double>& noDataValues) const;
+  ///Check if value is nodata in this dataset
   bool isNoData(double value) const{if(m_noDataValues.empty()) return false;else return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
+  ///Push a no data value for this dataset
   int pushNoDataValue(double noDataValue);
+  ///Set the no data values of this dataset using a standard template library (stl) vector as input
   int setNoData(const std::vector<double> nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
+  ///Set the GDAL (internal) no data value for this data set. Only a single no data value per band is supported.
   CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
+  ///Check if a geolocation is covered by this dataset. Only the bounding box is checked, irrespective of no data values.
   bool covers(double x, double y) const;
+  ///Check if a region of interest is (partially) covered by this dataset. Only the bounding box is checked, irrespective of no data values.
   bool covers(double ulx, double  uly, double lrx, double lry) const;
+  ///Convert georeferenced coordinates (x and y) to image coordinates (column and row)
   bool geo2image(double x, double y, double& i, double& j) const;
+  ///Convert image coordinates (column and row) to georeferenced coordinates (x and y)
   bool image2geo(double i, double j, double& x, double& y) const;
+  ///Get the pixel cell spacing in x
   double getDeltaX(void) const {double gt[6];getGeoTransform(gt);return gt[1];};
+  ///Get the pixel cell spacing in y
   double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
-
+  ///Get the GDAL datatype for this dataset
   GDALDataType getDataType(int band=0) const;
+  ///Get the GDAL rasterband for this dataset
   GDALRasterBand* getRasterBand(int band=0);
+  ///Get the GDAL color table for this dataset as an instance of the GDALColorTable class
   GDALColorTable* getColorTable(int band=0) const;
+  ///Get the GDAL driver description of this dataset
   std::string getDriverDescription() const;
+  ///Get the image type (implemented as the driver description)
   std::string getImageType() const{return getDriverDescription();};
-//   std::string getImageType() const{return "GTiff";};
+  ///Get the band coding (interleave)
   std::string getInterleave() const;
+  ///Get the compression from the metadata of this dataset
   std::string getCompression() const;
+  //Get a pointer to the GDAL dataset
   GDALDataset* getDataset(){return m_gds;};
+  ///Get the metadata of this dataset
   char** getMetadata();
+  ///Get the metadata of this dataset (const version)
   char** getMetadata() const;
+  ///Get the metadata of this dataset in the form of a list of strings (const version)
   void getMetadata(std::list<std::string>& metadata) const;
-
+  ///Get the image description from the driver of this dataset
   std::string getDescription() const;
+  ///Get metadata item of this dataset
   std::string getMetadataItem() const;
+  ///Get the image description from the metadata of this dataset
   std::string getImageDescription() const;
 
   friend class ImgReaderGdal;
   friend class ImgWriterGdal;
 
 protected:
+  ///filename of this dataset
   std::string m_filename;
+  ///instance of the GDAL dataset of this dataset
   GDALDataset *m_gds;
+  ///number of columns in this dataset
   int m_ncol;
+  ///number of rows in this dataset
   int m_nrow;
+  ///number of bands in this dataset
   int m_nband;
+  ///geotransform information of this dataset
   double m_gt[6];
+  ///no data values for this dataset
   std::vector<double> m_noDataValues;
 
 private:
