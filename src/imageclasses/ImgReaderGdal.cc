@@ -121,6 +121,7 @@ void ImgReaderGdal::initMem(unsigned long int memory)
   }
   else
     m_deletePointer=false;
+    m_blockSize=0;
 }
 
 /**
