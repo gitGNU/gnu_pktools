@@ -495,7 +495,7 @@ int main(int argc, char *argv[])
 		  continue;
 		if(verbose_opt[0])
 		  cout << setprecision(12) << "reading image value at x,y " << x << "," << y << " (" << i << "," << j << "), ";
-		inputReader.readData(inputValue,GDT_Float64,i,j,band_opt[0]);
+		inputReader.readData(inputValue,i,j,band_opt[0]);
 		inputValues.push_back(inputValue);
 		if(inputValues.back()!=*(inputValues.begin()))
 		  isHomogeneous=false;
@@ -510,7 +510,7 @@ int main(int argc, char *argv[])
 		}
 		maskFlagged=false;//(msknodata_opt[ivalue]>=0)?false:true;
 		if(mask_opt.size()){
-		  maskReader.readData(maskValue,GDT_Float64,i,j,0);
+		  maskReader.readData(maskValue,i,j,0);
 		  for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
 		    if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
 		      if(maskValue==msknodata_opt[ivalue]){
@@ -754,7 +754,7 @@ int main(int argc, char *argv[])
     // for(irow=0;irow<inputReader.nrOfRow()&&!isDifferent;++irow){
     for(irow=0;irow<inputReader.nrOfRow();++irow){
       //read line in lineInput, lineReference and lineMask
-      inputReader.readData(lineInput,GDT_Float64,irow,band_opt[0]);
+      inputReader.readData(lineInput,irow,band_opt[0]);
       double x,y;//geo coordinates
       double ireference,jreference;//image coordinates in reference image
       double imask,jmask;//image coordinates in mask image
@@ -784,7 +784,7 @@ int main(int argc, char *argv[])
 	    }
           }
           else{
-            referenceReaderGdal.readData(lineReference,GDT_Float64,static_cast<int>(jreference),band_opt[1]);
+            referenceReaderGdal.readData(lineReference,static_cast<int>(jreference),band_opt[1]);
             oldreferencerow=jreference;
           }
         }
@@ -801,7 +801,7 @@ int main(int argc, char *argv[])
 	  maskReader.geo2image(x,y,imask,jmask);
 	  if(jmask>=0&&jmask<maskReader.nrOfRow()){
 	    if(jmask!=oldmaskrow)
-	      maskReader.readData(lineMask,GDT_Float64,jmask);
+	      maskReader.readData(lineMask,jmask);
 	    for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
 	      if(lineMask[icol]==msknodata_opt[ivalue]){
 		flagged=true;

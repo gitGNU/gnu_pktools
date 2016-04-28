@@ -615,7 +615,7 @@ int main(int argc,char **argv) {
       if((y+1+down_opt[0]/2)%down_opt[0])
         continue;
       for(int iband=0;iband<input.nrOfBand();++iband)
-        input.readData(lineInput[iband],GDT_Float64,y,iband);
+        input.readData(lineInput[iband],y,iband);
       filter1d.applyFwhm<double>(wavelengthIn_opt,lineInput,wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], lineOutput, down_opt[0], verbose_opt[0]);
       for(int iband=0;iband<output.nrOfBand();++iband){
         try{
@@ -670,7 +670,7 @@ int main(int argc,char **argv) {
       if((y+1+down_opt[0]/2)%down_opt[0])
         continue;
       for(int iband=0;iband<input.nrOfBand();++iband)
-        input.readData(lineInput[iband],GDT_Float64,y,iband);
+        input.readData(lineInput[iband],y,iband);
       for(int isrf=0;isrf<srf.size();++isrf){
         vector<double> lineOutput(output.nrOfCol());
         double delta=1.0;
@@ -827,7 +827,7 @@ int main(int argc,char **argv) {
   //test
       Vector2d<unsigned short> inBuffer;
       for(int iband=0;iband<input.nrOfBand();++iband){
-        input.readDataBlock(inBuffer,GDT_UInt16,0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
+        input.readDataBlock(inBuffer,0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
       }
       try{
 	filter2d.doit(input,output,"sauvola",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);

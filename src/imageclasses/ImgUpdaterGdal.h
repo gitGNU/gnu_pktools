@@ -27,10 +27,15 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 class ImgUpdaterGdal : public ImgReaderGdal, public ImgWriterGdal
 {
 public:
+  ///default constructor. Image needs to be opened later with one of the open methods.
   ImgUpdaterGdal(void);
-  ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode=GA_Update);
+  ///constructor opening an image in update mode (read and write). Caching is supported when memory>0.
+  ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode=GA_Update, unsigned int memory=0);
+  ///destructor
   ~ImgUpdaterGdal(void);
-  void open(const std::string& filename, const GDALAccess& readMode=GA_Update);
+  ///Open an image in update mode (read and write). Caching is supported when memory>0.
+  void open(const std::string& filename, const GDALAccess& readMode=GA_Update, unsigned int memory=0);
+  ///close the image
   void close(void);
 
 protected:

@@ -91,42 +91,42 @@ public:
   void pushThreshold(double theThreshold){m_threshold.push_back(theThreshold);};
   void setThresholds(const std::vector<double>& theThresholds){m_threshold=theThresholds;};
   void setClasses(const std::vector<short>& theClasses){m_class=theClasses;};
-  void filter(const ImgReaderGdal& input, ImgWriterGdal& output, bool absolute=false, bool normalize=false, bool noData=false);
-  void smooth(const ImgReaderGdal& input, ImgWriterGdal& output,int dim);
-  void smooth(const ImgReaderGdal& input, ImgWriterGdal& output,int dimX, int dimY);
-  void smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output,int dim);
-  void smoothNoData(const ImgReaderGdal& input, ImgWriterGdal& output,int dimX, int dimY);
+  void filter(ImgReaderGdal& input, ImgWriterGdal& output, bool absolute=false, bool normalize=false, bool noData=false);
+  void smooth(ImgReaderGdal& input, ImgWriterGdal& output,int dim);
+  void smooth(ImgReaderGdal& input, ImgWriterGdal& output,int dimX, int dimY);
+  void smoothNoData(ImgReaderGdal& input, ImgWriterGdal& output,int dim);
+  void smoothNoData(ImgReaderGdal& input, ImgWriterGdal& output,int dimX, int dimY);
   template<class T1, class T2> void filter(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector);
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dim);
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dimX, int dimY);
-  void dwtForward(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
-  void dwtInverse(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
-  void dwtCut(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose=false);
+  void dwtForward(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtInverse(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family);
+  void dwtCut(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose=false);
   template<class T> void dwtForward(Vector2d<T>& data, const std::string& wavelet_type, int family);
   template<class T> void dwtInverse(Vector2d<T>& data, const std::string& wavelet_type, int family);
   template<class T> void dwtCut(Vector2d<T>& data, const std::string& wavelet_type, int family, double cut);
   void majorVoting(const std::string& inputFilename, const std::string& outputFilename,int dim=0,const std::vector<int> &prior=std::vector<int>());
   /* void homogeneousSpatial(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false, int noValue=0); */
-  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, bool disc=false);
-  void doit(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
-  void mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity=true, short down=1, bool verbose=false);
-  void mrf(const ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity=true, short down=1, bool verbose=false);
+  void doit(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down=1, bool disc=false);
+  void doit(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
+  void mrf(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity=true, short down=1, bool verbose=false);
+  void mrf(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity=true, short down=1, bool verbose=false);
   template<class T1, class T2> void doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
   void median(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false);
   void var(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false);
-  void morphology(const ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc=false);
+  void morphology(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc=false);
   template<class T> unsigned long int morphology(const Vector2d<T>& input, Vector2d<T>& output, const std::string& method, int dimX, int dimY, bool disc=false, double hThreshold=0);
   template<class T> unsigned long int dsm2dtm_nwse(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> unsigned long int dsm2dtm_nesw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> unsigned long int dsm2dtm_senw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> unsigned long int dsm2dtm_swne(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
-  void shadowDsm(const ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
+  void shadowDsm(ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down=1, int iband=0, bool verbose=false);
-  void shift(const ImgReaderGdal& input, ImgWriterGdal& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
+  void shift(ImgReaderGdal& input, ImgWriterGdal& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
   template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=NEAR, bool verbose=false);
   void linearFeature(const Vector2d<float>& input, std::vector< Vector2d<float> >& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, bool verbose=false);
-  void linearFeature(const ImgReaderGdal& input, ImgWriterGdal& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, int band=0, bool verbose=false);
+  void linearFeature(ImgReaderGdal& input, ImgWriterGdal& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, int band=0, bool verbose=false);
   
 private:
   static void initMap(std::map<std::string, FILTER_TYPE>& m_filterMap){

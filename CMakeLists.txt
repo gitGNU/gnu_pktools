@@ -255,41 +255,41 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(PKLIBS ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
 
 set(PKUTILITIES
-	pkinfo
-	pkcrop
-	pkdiff
-	pkgetmask
-	pksetmask
-	pkcreatect 
-	pkdumpimg 
-	pkdumpogr 
-	pksieve 
-	pkstat
-	pkstatascii 
-	pkstatogr 
-	pkstatprofile
-	pkegcs 
-	pkextractimg
-	pkextractogr
-	pkfillnodata 
-	pkfilter 
-	pkfilterdem 
-	pkfilterascii 
-	pkdsm2shadow 
 	pkcomposite 
-	pkpolygonize 
-	pkascii2img 
-	pksvm 
-	pkfssvm 
-	pkoptsvm
-	pkascii2ogr 
-	pkreclass 
-	pkkalman
 )
 
-set(PKLASUTILITIES
-	pklas2img
-)
+set(PKUTILITIES
+  pkinfo
+  pkcrop
+  pkdiff
+  pkgetmask
+  pksetmask
+  pkcreatect 
+  pkdumpimg 
+  pkdumpogr 
+  pksieve 
+  pkstat
+  pkstatascii 
+  pkstatogr 
+  pkstatprofile
+  pkegcs 
+  pkextractimg
+  pkextractogr
+  pkfillnodata 
+  pkfilter 
+  pkfilterdem 
+  pkfilterascii 
+  pkdsm2shadow 
+  pkcomposite 
+  pkpolygonize 
+  pkascii2img 
+  pksvm 
+  pkfssvm 
+  pkoptsvm
+  pkascii2ogr 
+  pkreclass 
+  pkkalman
+  )
 
 set(PKFANNUTILITIES
 	pkann

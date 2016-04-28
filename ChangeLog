@@ -473,3 +473,7 @@ version 2.6.7
 	- pkoptsvm: removed dependency from nlopt library. Only grid search supported.
 	- configure.ac: removed option to enable nlopt
 	- CMakeLists.txt: removed option to enable nlopt
+version 3.0.1
+	- todo: remove gdal type in writeData function for all apps
+	- ImgReader redesign with in memory support
+	- pkcomposite: support scale and offset

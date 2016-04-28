@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
 	    }
             assert(theRow>=0);
             assert(theRow<imgReader.nrOfRow());
-            imgReader.readData(rowBuffer,GDT_Float32, static_cast<int>(theRow), theBand);
+            imgReader.readData(rowBuffer, static_cast<int>(theRow), theBand);
 	    assert(theCol<rowBuffer.size());
 	    std::cout << rowBuffer[static_cast<int>(theCol)] << " ";
 	  }

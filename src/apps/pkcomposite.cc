@@ -121,6 +121,9 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | c      | class                | short | 0     |classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image. | 
  | ct     | ct                   | std::string |       |color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
  | align  | align                | bool  |       |Align output bounding box to first input image | 
+ | scale  | scale                | double |       |output=scale*input+offset | 
+ | off    | offset               | double |       |output=scale*input+offset | 
+ | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -172,6 +175,9 @@ int main(int argc, char *argv[])
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
+  Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
+  Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -185,6 +191,9 @@ int main(int argc, char *argv[])
   class_opt.setHide(1);
   colorTable_opt.setHide(1);
   description_opt.setHide(1);
+  scale_opt.setHide(1);
+  offset_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -220,6 +229,9 @@ int main(int argc, char *argv[])
     colorTable_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     align_opt.retrieveOption(argc,argv);
+    scale_opt.retrieveOption(argc,argv);
+    offset_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -369,18 +381,23 @@ int main(int argc, char *argv[])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
   vector<ImgReaderGdal> imgReader(input_opt.size());
+  // vector<ImgReaderGdal> imgReader(input_opt.size());
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
   string imageType;
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,1000);
+      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
+      // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
+      for(int iband=0;iband<scale_opt.size();++iband)
+        imgReader[ifile].setScale(scale_opt[iband],iband);
+      for(int iband=0;iband<offset_opt.size();++iband)
+        imgReader[ifile].setOffset(offset_opt[iband],iband);
     }
     catch(string errorstring){
       cerr << errorstring << " " << input_opt[ifile] << endl;
     }
-
     //todo: must be in init part only?
     if(colorTable_opt.empty())
       if(imgReader[ifile].getColorTable())
@@ -595,7 +612,7 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
-    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
+    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,memory_opt[0],option_opt);
     for(int iband=0;iband<nwriteBand;++iband)
       imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
   }
@@ -674,7 +691,7 @@ int main(int argc, char *argv[])
     try{
       if(verbose_opt[0]>=1)
 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0]);
+      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -697,7 +714,7 @@ int main(int argc, char *argv[])
   vector<short> fileBuffer(ncol);//holds the number of used files
   Vector2d<short> maxBuffer;//buffer used for maximum voting
   // Vector2d<double> readBuffer(nband);
-  vector<Vector2d<double> > readBuffer(input_opt.size());
+  vector<Vector2d<unsigned short> > readBuffer(input_opt.size());
   for(int ifile=0;ifile<input_opt.size();++ifile)
     readBuffer[ifile].resize(imgReader[ifile].nrOfBand());
   statfactory::StatFactory stat;
@@ -796,14 +813,20 @@ int main(int argc, char *argv[])
 	int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
         // readBuffer[iband].resize(readncol);
 	try{
-          imgReader[ifile].readData(readBuffer[ifile][iband],GDT_Float64,startCol,endCol,readRow,readBand,theResample);
+          imgReader[ifile].readData(readBuffer[ifile][iband],startCol,endCol,readRow,readBand,theResample);
+	  //test
+          // imgReader[ifile].readData(readBuffer[ifile][iband],static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(readRow),static_cast<int>(readBand));
+	  // if(readRow==0&&iband==0){
+	  //   for(int icol=0;icol<10;++icol)
+	  //     cout << readBuffer[0][0][icol] << " ";
+	  //   cout << endl;
+	  // }
 	}
 	catch(string error){
 	  cerr << "error reading image " << input_opt[ifile] << ": " << endl;
 	  throw;
 	}
       }
-        
       for(int ib=0;ib<ncol;++ib){
         imgWriter.image2geo(ib,irow,x,y);
 	//check mask first
@@ -821,7 +844,7 @@ int main(int argc, char *argv[])
 
 	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
-		maskReader.readData(lineMask,GDT_Float32,static_cast<int>(rowMask),mskband_opt[0]);
+		maskReader.readData(lineMask,static_cast<int>(rowMask),mskband_opt[0]);
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;
@@ -1205,7 +1228,7 @@ int main(int argc, char *argv[])
           for(int icol=0;icol<imgWriter.nrOfCol();++icol)
             classBuffer[icol]=maxBuffer[icol][class_opt[iclass]];
           try{
-            imgWriter.writeData(classBuffer,GDT_Int16,irow,iclass);
+            imgWriter.writeData(classBuffer,irow,iclass);
           }
           catch(string error){
             cerr << "error writing image file " << output_opt[0] << ": " << error << endl;
@@ -1222,9 +1245,9 @@ int main(int argc, char *argv[])
 	    fileBuffer[icol]=*(maxit);
         }
         try{
-          imgWriter.writeData(writeBuffer[0],GDT_Float64,irow,0);
+          imgWriter.writeData(writeBuffer[0],irow,0);
           if(file_opt[0])
-            imgWriter.writeData(fileBuffer,GDT_Int16,irow,1);
+            imgWriter.writeData(fileBuffer,irow,1);
         }
         catch(string error){
           cerr << "error writing image file " << output_opt[0] << ": " << error << endl;
@@ -1275,7 +1298,7 @@ int main(int argc, char *argv[])
 	  }
         }
         try{
-          imgWriter.writeData(writeBuffer[iband],GDT_Float64,irow,iband);
+          imgWriter.writeData(writeBuffer[iband],irow,iband);
         }
         catch(string error){
           cerr << error << " in " << output_opt[0] << endl;
@@ -1284,7 +1307,7 @@ int main(int argc, char *argv[])
       }
       if(file_opt[0]){
         try{
-          imgWriter.writeData(fileBuffer,GDT_Int16,irow,bands.size());
+          imgWriter.writeData(fileBuffer,irow,bands.size());
         }
         catch(string error){
           cerr << error << " in " << output_opt[0] << endl;
@@ -1298,8 +1321,9 @@ int main(int argc, char *argv[])
   if(extent_opt.size()&&cut_opt.size()){
     extentReader.close();
   }
-  for(int ifile=0;ifile<input_opt.size();++ifile)
+  for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader[ifile].close();
+  }
   if(mask_opt.size())
     maskReader.close();
   imgWriter.close();

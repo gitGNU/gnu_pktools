@@ -473,9 +473,9 @@ int main(int argc,char **argv) {
 
 	      int readModelBand=(model_opt.size()==nmodel)? 0:0;
 	      int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
-	      imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
+	      imgReaderModel1.readData(estReadBuffer,modRow,readModelBand,theResample);
 	      if(modelmask_opt.size())
-		imgReaderModel1Mask.readData(lineModelMask,GDT_Float64,modRow,readModelMaskBand,theResample);
+		imgReaderModel1Mask.readData(lineModelMask,modRow,readModelMaskBand,theResample);
 	      for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 		for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		  imgWriterEst.image2geo(icol,irow,geox,geoy);
@@ -569,25 +569,25 @@ int main(int argc,char **argv) {
 	int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
 	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	  if(iline<0)//replicate line 0
-	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,readObsBand);
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],0,readObsBand);
 	  else
-	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,readObsBand);
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],iline,readObsBand);
 	}
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  for(int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
 	    imgWriterEst.image2geo(0,irow,geox,geoy);
 	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	    imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
+	    imgReaderModel1.readData(estReadBuffer,modRow,readModelBand,theResample);
 	    if(modelmask_opt.size())
-	      imgReaderModel1Mask.readData(modelMaskLineBuffer,GDT_Float64,modRow,readModelMaskBand);
+	      imgReaderModel1Mask.readData(modelMaskLineBuffer,modRow,readModelMaskBand);
 	    int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	    obsLineVector.erase(obsLineVector.begin());
-	    imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
+	    imgReaderObs.readData(obsLineBuffer,maxRow,readObsBand);
 	    obsLineVector.push_back(obsLineBuffer);
 
 	    if(observationmask_opt.size())
-	      imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsMaskBand);
+	      imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsMaskBand);
 
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
@@ -794,9 +794,9 @@ int main(int argc,char **argv) {
 	  assert(down_opt[0]%2);//window size must be odd 
 	  for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	    if(iline<0)//replicate line 0
-	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,readObsBand);
+	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],0,readObsBand);
 	    else
-	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,readObsBand);
+	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],iline,readObsBand);
 	  }
 	}
 	//initialize estLineVector
@@ -806,53 +806,53 @@ int main(int argc,char **argv) {
 
 	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	  if(iline<0)//replicate line 0
-	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],GDT_Float64,0,modindex-1);
+	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],0,modindex-1);
 	  else
-	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],GDT_Float64,iline,modindex-1);
+	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],iline,modindex-1);
 	}
 	statfactory::StatFactory statobs;
 	statobs.setNoDataValues(obsnodata_opt);
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  //todo: read entire window for uncertReadBuffer...
 	  for(int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
-	    imgUpdaterUncert.readData(uncertReadBuffer,GDT_Float64,irow,modindex-1);
+	    imgUpdaterUncert.readData(uncertReadBuffer,irow,modindex-1);
 	    imgUpdaterUncert.image2geo(0,irow,geox,geoy);
 	    if(model_opt.size()==nmodel){
 	      imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	      imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,readModel2Band,theResample);
+	      imgReaderModel2.readData(model2LineBuffer,modRow,readModel2Band,theResample);
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    }
 	    else{
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	      imgReaderModel1.readData(model2LineBuffer,GDT_Float64,modRow,readModel2Band,theResample);
+	      imgReaderModel1.readData(model2LineBuffer,modRow,readModel2Band,theResample);
 	    }
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	    imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,readModel1Band,theResample);
+	    imgReaderModel1.readData(model1LineBuffer,modRow,readModel1Band,theResample);
 
 	    if(modelmask_opt.size()){
-	      imgReaderModel1Mask.readData(model1MaskLineBuffer,GDT_Float64,modRow,readModel1MaskBand);
+	      imgReaderModel1Mask.readData(model1MaskLineBuffer,modRow,readModel1MaskBand);
 	      if(modelmask_opt.size()==nmodel)
-		imgReaderModel2Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+		imgReaderModel2Mask.readData(model2MaskLineBuffer,modRow,readModel2MaskBand);
 	      else
-		imgReaderModel1Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+		imgReaderModel1Mask.readData(model2MaskLineBuffer,modRow,readModel2MaskBand);
 	    }
 
 	    int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
 	    estLineVector.erase(estLineVector.begin());
-	    imgUpdaterEst.readData(estLineBuffer,GDT_Float64,maxRow,modindex-1);
+	    imgUpdaterEst.readData(estLineBuffer,maxRow,modindex-1);
 	    estLineVector.push_back(estLineBuffer);
 	    estLineBuffer=estLineVector[down_opt[0]/2];
 
 	    if(update){
 	      int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	      obsLineVector.erase(obsLineVector.begin());
-	      imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
+	      imgReaderObs.readData(obsLineBuffer,maxRow,readObsBand);
 	      obsLineVector.push_back(obsLineBuffer);
 	      obsLineBuffer=obsLineVector[down_opt[0]/2];
 
 	      if(observationmask_opt.size())
-		imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsMaskBand);
+		imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsMaskBand);
 	    }
 
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
@@ -1134,12 +1134,12 @@ int main(int argc,char **argv) {
 		cerr << "Error: geo coordinates (" << geox << "," << geoy << ") not covered in model image " << imgReaderModel1.getFileName() << endl;
 		assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	      }
-	      // imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,0,theResample);
+	      // imgReaderModel1.readData(estReadBuffer,modRow,0,theResample);
 	      int readModelBand=(model_opt.size()==nmodel)? 0:nmodel-1;
 	      int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
-	      imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
+	      imgReaderModel1.readData(estReadBuffer,modRow,readModelBand,theResample);
 	      if(modelmask_opt.size())
-		imgReaderModel1Mask.readData(lineModelMask,GDT_Float64,modRow,readModelMaskBand,theResample);
+		imgReaderModel1Mask.readData(lineModelMask,modRow,readModelMaskBand,theResample);
 	      for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 		for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		  imgWriterEst.image2geo(icol,irow,geox,geoy);
@@ -1233,25 +1233,25 @@ int main(int argc,char **argv) {
 	int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:nmodel-1;
 	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	  if(iline<0)//replicate line 0
-	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,readObsBand);
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],0,readObsBand);
 	  else
-	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,readObsBand);
+	    imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],iline,readObsBand);
 	}
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  for(int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
 	    imgWriterEst.image2geo(0,irow,geox,geoy);
 	    imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	    imgReaderModel1.readData(estReadBuffer,GDT_Float64,modRow,readModelBand,theResample);
+	    imgReaderModel1.readData(estReadBuffer,modRow,readModelBand,theResample);
 	    if(modelmask_opt.size())
-	      imgReaderModel1Mask.readData(modelMaskLineBuffer,GDT_Float64,modRow,readModelMaskBand);
+	      imgReaderModel1Mask.readData(modelMaskLineBuffer,modRow,readModelMaskBand);
 	    int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	    obsLineVector.erase(obsLineVector.begin());
-	    imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
+	    imgReaderObs.readData(obsLineBuffer,maxRow,readObsBand);
 	    obsLineVector.push_back(obsLineBuffer);
 
 	    if(observationmask_opt.size())
-	      imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsMaskBand);
+	      imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsMaskBand);
 
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
@@ -1459,9 +1459,9 @@ int main(int argc,char **argv) {
 	  assert(down_opt[0]%2);//window size must be odd 
 	  for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	    if(iline<0)//replicate line 0
-	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,0,readObsBand);
+	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],0,readObsBand);
 	    else
-	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],GDT_Float64,iline,readObsBand);
+	      imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],iline,readObsBand);
 	  }
 	}
 	//initialize estLineVector
@@ -1471,9 +1471,9 @@ int main(int argc,char **argv) {
 
 	for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
 	  if(iline<0)//replicate line 0
-	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],GDT_Float64,0,modindex+1);
+	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],0,modindex+1);
 	  else
-	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],GDT_Float64,iline,modindex+1);
+	    imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],iline,modindex+1);
 	}
 	statfactory::StatFactory statobs;
 	statobs.setNoDataValues(obsnodata_opt);
@@ -1481,43 +1481,43 @@ int main(int argc,char **argv) {
 	for(int jrow=0;jrow<nrow;jrow+=down_opt[0]){
 	  //todo: read entire window for uncertReadBuffer...
 	  for(int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
-	    imgUpdaterUncert.readData(uncertReadBuffer,GDT_Float64,irow,modindex+1);
+	    imgUpdaterUncert.readData(uncertReadBuffer,irow,modindex+1);
 	    imgUpdaterUncert.image2geo(0,irow,geox,geoy);
 	    if(model_opt.size()==nmodel){
 	      imgReaderModel2.geo2image(geox,geoy,modCol,modRow);
 	      assert(modRow>=0&&modRow<imgReaderModel2.nrOfRow());
-	      imgReaderModel2.readData(model2LineBuffer,GDT_Float64,modRow,readModel2Band,theResample);
+	      imgReaderModel2.readData(model2LineBuffer,modRow,readModel2Band,theResample);
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 	    }
 	    else{
 	      imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
-	      imgReaderModel1.readData(model2LineBuffer,GDT_Float64,modRow,readModel2Band,theResample);
+	      imgReaderModel1.readData(model2LineBuffer,modRow,readModel2Band,theResample);
 	    }
 
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
-	    imgReaderModel1.readData(model1LineBuffer,GDT_Float64,modRow,readModel1Band,theResample);
+	    imgReaderModel1.readData(model1LineBuffer,modRow,readModel1Band,theResample);
 	    if(modelmask_opt.size()){
-	      imgReaderModel1Mask.readData(model1MaskLineBuffer,GDT_Float64,modRow,readModel1MaskBand);
+	      imgReaderModel1Mask.readData(model1MaskLineBuffer,modRow,readModel1MaskBand);
 	      if(modelmask_opt.size()==nmodel)
-		imgReaderModel2Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+		imgReaderModel2Mask.readData(model2MaskLineBuffer,modRow,readModel2MaskBand);
 	      else
-		imgReaderModel1Mask.readData(model2MaskLineBuffer,GDT_Float64,modRow,readModel2MaskBand);
+		imgReaderModel1Mask.readData(model2MaskLineBuffer,modRow,readModel2MaskBand);
 	    }
 	    int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
 	    estLineVector.erase(estLineVector.begin());
-	    imgUpdaterEst.readData(estLineBuffer,GDT_Float64,maxRow,modindex+1);
+	    imgUpdaterEst.readData(estLineBuffer,maxRow,modindex+1);
 	    estLineVector.push_back(estLineBuffer);
 	    estLineBuffer=estLineVector[down_opt[0]/2];
 
 	    if(update){
 	      int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 	      obsLineVector.erase(obsLineVector.begin());
-	      imgReaderObs.readData(obsLineBuffer,GDT_Float64,maxRow,readObsBand);
+	      imgReaderObs.readData(obsLineBuffer,maxRow,readObsBand);
 	      obsLineVector.push_back(obsLineBuffer);
 	      obsLineBuffer=obsLineVector[down_opt[0]/2];
 
 	      if(observationmask_opt.size())
-		imgReaderObsMask.readData(obsMaskLineBuffer,GDT_Float64,irow,readObsBand);
+		imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsBand);
 	    }
 	    for(int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
@@ -1793,16 +1793,16 @@ int main(int argc,char **argv) {
       for(int irow=0;irow<imgWriterEst.nrOfRow();++irow){
 	assert(irow<imgReaderForward.nrOfRow());
 	assert(irow<imgReaderBackward.nrOfRow());
-	imgReaderForward.readData(estForwardBuffer,GDT_Float64,irow,modindex);
-	imgReaderBackward.readData(estBackwardBuffer,GDT_Float64,irow,modindex);
-	imgReaderForwardUncert.readData(uncertForwardBuffer,GDT_Float64,irow,modindex);
-	imgReaderBackwardUncert.readData(uncertBackwardBuffer,GDT_Float64,irow,modindex);
+	imgReaderForward.readData(estForwardBuffer,irow,modindex);
+	imgReaderBackward.readData(estBackwardBuffer,irow,modindex);
+	imgReaderForwardUncert.readData(uncertForwardBuffer,irow,modindex);
+	imgReaderBackwardUncert.readData(uncertBackwardBuffer,irow,modindex);
 
 	if(update){
 	  if(observation_opt.size()==nobs)
-	    imgReaderObs.readData(estWriteBuffer,GDT_Float64,irow,readObsBand);
+	    imgReaderObs.readData(estWriteBuffer,irow,readObsBand);
 	  if(observationmask_opt.size())
-	    imgReaderObsMask.readData(uncertObsLineBuffer,GDT_Float64,irow,readObsBand);
+	    imgReaderObsMask.readData(uncertObsLineBuffer,irow,readObsBand);
 	}
 
 	for(int icol=0;icol<imgWriterEst.nrOfCol();++icol){

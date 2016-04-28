@@ -215,7 +215,7 @@ int main(int argc,char **argv) {
     case(GDT_Byte):{
       vector<char> buffer;
       for(int irow=0;irow<imgReader.nrOfRow();++irow){
-        imgReader.readData(buffer,GDT_Byte,irow);
+        imgReader.readData(buffer,irow);
         imgWriter.writeData(buffer,GDT_Byte,irow);
       }
       break;
@@ -224,7 +224,7 @@ int main(int argc,char **argv) {
       vector<short> buffer;
       cout << "Warning: copying short to unsigned short without conversion, use gdal_translate -scale if needed..." << endl;
       for(int irow=0;irow<imgReader.nrOfRow();++irow){
-        imgReader.readData(buffer,GDT_Int16,irow,0);
+        imgReader.readData(buffer,irow,0);
         imgWriter.writeData(buffer,GDT_Int16,irow,0);
       }
       break;
@@ -232,7 +232,7 @@ int main(int argc,char **argv) {
     case(GDT_UInt16):{
       vector<unsigned short> buffer;
       for(int irow=0;irow<imgReader.nrOfRow();++irow){
-        imgReader.readData(buffer,GDT_UInt16,irow,0);
+        imgReader.readData(buffer,irow,0);
         imgWriter.writeData(buffer,GDT_UInt16,irow,0);
       }
       break;

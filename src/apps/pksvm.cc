@@ -1148,15 +1148,15 @@ int main(int argc, char *argv[])
       //----------------------------------- write output ------------------------------------------
       if(classBag_opt.size())
         for(int ibag=0;ibag<nbag;++ibag)
-          classImageBag.writeData(classBag[ibag],GDT_Byte,iline,ibag);
+          classImageBag.writeData(classBag[ibag],iline,ibag);
       if(prob_opt.size()){
         for(short iclass=0;iclass<nclass;++iclass)
-          probImage.writeData(probOut[iclass],GDT_Float32,iline,iclass);
+          probImage.writeData(probOut[iclass],iline,iclass);
       }
       if(entropy_opt.size()){
-        entropyImage.writeData(entropy,GDT_Float32,iline);
+        entropyImage.writeData(entropy,iline);
       }
-      classImageOut.writeData(classOut,GDT_Byte,iline);
+      classImageOut.writeData(classOut,iline);
       if(!verbose_opt[0]){
         progress=static_cast<float>(iline+1.0)/classImageOut.nrOfRow();
         pfnProgress(progress,pszMessage,pProgressArg);
@@ -1168,7 +1168,7 @@ int main(int argc, char *argv[])
 	std::map<string,double> pointMap;
 	for(int iband=0;iband<testImage.nrOfBand();++iband){
 	  double value;
-	  testImage.readData(value,GDT_Float64,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
+	  testImage.readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
 	  ostringstream fs;
 	  fs << "B" << iband;
 	  pointMap[fs.str()]=value;

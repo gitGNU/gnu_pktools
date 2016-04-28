@@ -891,7 +891,7 @@ int main(int argc, char *argv[])
               std::cout << "reading band " << band_opt[iband] << std::endl;
             assert(band_opt[iband]>=0);
             assert(band_opt[iband]<testImage.nrOfBand());
-            testImage.readData(buffer,GDT_Float32,iline,band_opt[iband]);
+            testImage.readData(buffer,iline,band_opt[iband]);
             for(int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -902,7 +902,7 @@ int main(int argc, char *argv[])
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);
             assert(iband<testImage.nrOfBand());
-            testImage.readData(buffer,GDT_Float32,iline,iband);
+            testImage.readData(buffer,iline,iband);
             for(int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -925,7 +925,7 @@ int main(int argc, char *argv[])
 	  for(short iclass=0;iclass<nclass;++iclass){
 	    if(verbose_opt.size()>1)
 	      std::cout << "Reading " << priorimg_opt[0] << " band " << iclass << " line " << iline << std::endl;
-	    priorReader.readData(linePrior[iclass],GDT_Float32,iline,iclass);
+	    priorReader.readData(linePrior[iclass],iline,iclass);
 	  }
         }
         catch(string theError){
@@ -967,7 +967,7 @@ int main(int argc, char *argv[])
 	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
 		// maskReader.readData(lineMask[imask],GDT_Int32,static_cast<int>(rowMask));
-		maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+		maskReader.readData(lineMask,static_cast<int>(rowMask));
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;
@@ -1125,15 +1125,15 @@ int main(int argc, char *argv[])
       //----------------------------------- write output ------------------------------------------
       if(classBag_opt.size())
         for(int ibag=0;ibag<nbag;++ibag)
-          classImageBag.writeData(classBag[ibag],GDT_Byte,iline,ibag);
+          classImageBag.writeData(classBag[ibag],iline,ibag);
       if(prob_opt.size()){
         for(int iclass=0;iclass<nclass;++iclass)
-          probImage.writeData(probOut[iclass],GDT_Float32,iline,iclass);
+          probImage.writeData(probOut[iclass],iline,iclass);
       }
       if(entropy_opt.size()){
-        entropyImage.writeData(entropy,GDT_Float32,iline);
+        entropyImage.writeData(entropy,iline);
       }
-      classImageOut.writeData(classOut,GDT_Byte,iline);
+      classImageOut.writeData(classOut,iline);
       if(!verbose_opt[0]){
         progress=static_cast<float>(iline+1.0)/classImageOut.nrOfRow();
         pfnProgress(progress,pszMessage,pProgressArg);
@@ -1145,7 +1145,7 @@ int main(int argc, char *argv[])
 	std::map<string,double> pointMap;
 	for(int iband=0;iband<testImage.nrOfBand();++iband){
 	  double value;
-	  testImage.readData(value,GDT_Float64,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
+	  testImage.readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
 	  ostringstream fs;
 	  fs << "B" << iband;
 	  pointMap[fs.str()]=value;

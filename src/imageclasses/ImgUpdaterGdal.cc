@@ -22,8 +22,13 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 ImgUpdaterGdal::ImgUpdaterGdal(void){};
 
-ImgUpdaterGdal::ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode){
-  open(filename,readMode);
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param readMode Open dataset in ReadOnly or Update mode
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+ImgUpdaterGdal::ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode, unsigned int memory){
+  open(filename,readMode,memory);
 }
 
 ImgUpdaterGdal::~ImgUpdaterGdal(void)
@@ -35,10 +40,16 @@ ImgUpdaterGdal::~ImgUpdaterGdal(void)
 
 //--------------------------------------------------------------------------
 
-void ImgUpdaterGdal::open(const std::string& filename, const GDALAccess& readMode)
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param readMode Open dataset in ReadOnly or Update mode
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+void ImgUpdaterGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned int memory)
 {
-  ImgReaderGdal::open(filename,readMode);
+  ImgReaderGdal::open(filename,readMode,memory);
 }
+
 void ImgUpdaterGdal::close(void)
 {
   ImgRasterGdal::close();

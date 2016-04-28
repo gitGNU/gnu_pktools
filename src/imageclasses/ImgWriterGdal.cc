@@ -1,6 +1,6 @@
 /**********************************************************************
 ImgWriterGdal.cc: class to write raster files using GDAL API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -21,7 +21,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iomanip>
 #include <time.h>
 #include <algorithm>
-#include "ogr_spatialref.h"
 extern "C" {
 #include "gdal_alg.h"
 }
@@ -31,71 +30,154 @@ extern "C" {
 #include <config.h>
 #endif
 
-//---------------------------------------------------------------------------
-
-// ImgWriterGdal::ImgWriterGdal(void)
-//   : m_gds(NULL), m_magic_x(1), m_magic_y(1), m_isGeoRef(false), m_ncol(0), m_nrow(0), m_nband(0), m_interleave("BAND"), m_compression("LZW")
-// {}
-
 ImgWriterGdal::ImgWriterGdal(void){};
 
 ImgWriterGdal::~ImgWriterGdal(void)
 {
-  // delete m_gds;
-//   GDALDumpOpenDatasets(stderr);
-//   GDALDestroyDriverManager();//could still be be used by other objects
+  if(m_data.size()&&m_deletePointer){
+    for(int iband=0;iband<m_nband;++iband)
+      free(m_data[iband]);
+  }
 }
 
-//---------------------------------------------------------------------------
+//not tested yet!!!
+//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
+/**
+ * @paramdataPointer External pointer to which the image data should be written in memory
+ * @param ncol The number of columns in the image
+ * @param nrow The number of rows in the image
+ * @param band The number of bands in the image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
+void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){
+  open(dataPointer, filename, ncol, nrow, nband, dataType);
+  m_deletePointer=false;//we are not the owner
+  m_data.resize(nband);
+  m_begin.resize(nband);
+  m_end.resize(nband);
+  for(int iband=0;iband<nband;++iband){
+    m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
+    m_begin[iband]=0;
+    m_end[iband]=nrow;
+  }
+  m_blockSize=nrow;//memory contains entire image and has been read already
+}
+
+/**
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+void ImgWriterGdal::initMem(unsigned long int memory)
+{
+  if(memory>0){
+    m_deletePointer=true;
+    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+    if(m_blockSize<1)
+      m_blockSize=1;
+    if(m_blockSize>nrOfRow())
+      m_blockSize=nrOfRow();
+    m_data.resize(nrOfBand());
+    m_begin.resize(nrOfBand());
+    m_end.resize(nrOfBand());
+    for(int iband=0;iband<m_nband;++iband){
+      m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+      m_begin[iband]=0;
+      m_end[iband]=m_begin[iband]+m_blockSize;
+    }
+  }
+  else{
+    m_deletePointer=true;
+    m_blockSize=0;
+  }
+}
+
+/**
+ * @param row Write a new block for caching this row (if needed)
+ * @param band Band that must be written in cache
+ * @return true if write was successful
+ **/
+bool ImgWriterGdal::writeNewBlock(int row, int band)
+{
+  //assert(row==m_end)
+  if(m_end[band]>nrOfRow())
+    m_end[band]=nrOfRow();
+  //fetch raster band
+  GDALRasterBand  *poBand;
+  assert(band<nrOfBand()+1);
+  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+  poBand->RasterIO(GF_Write,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
+  m_begin[band]+=m_blockSize;//m_begin points to first line in block that will be written next
+  m_end[band]=m_begin[band]+m_blockSize;//m_end points to last line in block that will be written next
+  return true;//new block was written
+}
+
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param options Creation options
+ **/
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
 {
-  // m_isGeoRef=imgSrc.isGeoRef();
   m_filename=filename;
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
-  // m_type=imgSrc.getDataType();
   m_options=options;
-  // m_interleave=imgSrc.getInterleave();
-  // m_compression=imgSrc.getCompression();
-  // imgSrc.getMagicPixel(m_magic_x,m_magic_y);
   setCodec(imgSrc);
 }
 
-// void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::string& interleave, const std::string& compression, int magicX, int magicY)
-// {
-//   m_isGeoRef=false;
-//   m_filename = filename;
-//   m_ncol = ncol;
-//   m_nrow = nrow;
-//   m_nband = nband;
-//   m_type=dataType;
-//   m_interleave = interleave;
-//   m_compression=compression;
-//   m_magic_x=magicX;
-//   m_magic_y=magicY;
-//   setCodec(imageType);
-// }
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param memory Available memory to cache image raster data (in MB)
+ * @param options Creation options
+ **/
+void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options)
+{
+  open(filename,imgSrc,options);
+  initMem(memory);
+}
 
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param ncol Number of columns in image
+ * @param nrow Number of rows in image
+ * @param nband Number of bands in image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ * @param options Creation options
+ **/
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 {
-  // m_isGeoRef=false;
   m_filename = filename;
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
-  // m_type=dataType;
-  // m_interleave = interleave;
-  // m_compression=compression;
   m_options=options;
-  // m_magic_x=magicX;
-  // m_magic_y=magicY;
   setCodec(dataType,imageType);
 }
 
-//---------------------------------------------------------------------------
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param ncol Number of columns in image
+ * @param nrow Number of rows in image
+ * @param nband Number of bands in image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ * @param memory Available memory to cache image raster data (in MB)
+ * @param options Creation options
+ **/
+void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
+{
+  open(filename,ncol,nrow,nband,dataType,imageType,options);
+  initMem(memory);
+}
+
 void ImgWriterGdal::close(void)
 {
+  if(m_data.size()){
+    for(int iband=0;iband<nrOfBand();++iband) 
+      writeNewBlock(nrOfRow(),iband);
+  }
   ImgRasterGdal::close();
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
@@ -104,7 +186,10 @@ void ImgWriterGdal::close(void)
     CSLDestroy(papszOptions);
 }
 
-//---------------------------------------------------------------------------
+
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ **/
 void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   GDALAllRegister();
   GDALDriver *poDriver;
@@ -120,20 +205,13 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
-  // char **papszOptions=NULL;
-  // std::ostringstream compressList;
-  // compressList << "COMPRESS=" << m_compression;
-  // papszOptions = CSLAddString(papszOptions,(compressList.str()).c_str());
-  // std::ostringstream interleaveList;
-  // interleaveList << "INTERLEAVE=" << m_interleave;
-  // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
+
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
-  // if(imgSrc.isGeoRef()){
-    setProjection(imgSrc.getProjection());
-    double gt[6];
-    imgSrc.getGeoTransform(gt);
-    setGeoTransform(gt);
-  // }
+  setProjection(imgSrc.getProjection());
+  double gt[6];
+  imgSrc.getGeoTransform(gt);
+  ImgRasterGdal::setGeoTransform(gt);
+
   m_gds->SetMetadata(imgSrc.getMetadata() ); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
@@ -169,19 +247,14 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
   else
     datestream << ":" << now->tm_sec;
   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
-//   list<std::string> lmeta;
-//   imgReader.getMetadata(lmeta);
-//   list<std::string>::const_iterator lit=lmeta.begin();
-//   while(lit!=lmeta.end()){
-//     cout << *lit << endl;
-//     ++lit;
-//   }
-  // m_gds->SetMetadataItem( "INTERLEAVE", m_interleave.c_str(), "IMAGE_STRUCTURE" );
-  // m_gds->SetMetadataItem( "COMPRESS", m_compression.c_str(), "IMAGE_STRUCTURE" );
   if(imgSrc.getColorTable()!=NULL)
     setColorTable(imgSrc.getColorTable());
 }
 
+/**
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ **/
 void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& imageType)
 {
   GDALAllRegister();
@@ -199,16 +272,8 @@ void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& im
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
-  // std::ostringstream compressList;
-  // compressList << "COMPRESS=" << m_compression;
-  // papszOptions = CSLAddString(papszOptions,(compressList.str()).c_str());
-  // std::ostringstream interleaveList;
-  // interleaveList << "INTERLEAVE=" << m_interleave;
-  // papszOptions = CSLAddString(papszOptions,(interleaveList.str()).c_str());
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,dataType,papszOptions);
 
-  // m_gds->SetMetadataItem( "INTERLEAVE", m_interleave.c_str(), "IMAGE_STRUCTURE" );
-  // m_gds->SetMetadataItem( "COMPRESSION", m_compression.c_str(), "IMAGE_STRUCTURE" );
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
   versionString+=VERSION;
@@ -243,100 +308,26 @@ void ImgWriterGdal::setCodec(const GDALDataType& dataType, const std::string& im
   else
     datestream << ":" << now->tm_sec;
   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
-//   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", ctime(&rawtime));
 }
 
+/**
+ * @param metadata Set this metadata when writing the image (if supported byt the driver)
+ **/
 void ImgWriterGdal::setMetadata(char** metadata)
 {
   assert(m_gds);
   m_gds->SetMetadata(metadata); 
 }
 
-//---------------------------------------------------------------------------
-void ImgWriterGdal::setGeoTransform(double* gt){
-  // m_isGeoRef=true;
-  m_gt[0]=gt[0];
-  m_gt[1]=gt[1];
-  m_gt[2]=gt[2];
-  m_gt[3]=gt[3];
-  m_gt[4]=gt[4];
-  m_gt[5]=gt[5];
-  if(m_gds)
-    m_gds->SetGeoTransform(m_gt);
-}
-
-// void ImgWriterGdal::setGeoTransform(double ulx, double uly, double deltaX, double deltaY, double rot1, double rot2)
-// {
-//   m_isGeoRef=true;
-//   m_ulx=ulx;
-//   m_uly=uly;
-//   m_delta_x=deltaX;
-//   m_delta_y=deltaY;
-//   double adfGeoTransform[6];// { 444720, 30, 0, 3751320, 0, -30 };
-//   adfGeoTransform[0]=ulx;
-//   adfGeoTransform[1]=deltaX;
-//   adfGeoTransform[2]=rot1;
-//   adfGeoTransform[3]=uly;
-//   adfGeoTransform[4]=rot2;
-//   adfGeoTransform[5]=-deltaY;//convention of GDAL!
-//   if(m_gds)
-//     m_gds->SetGeoTransform(adfGeoTransform);
-// }
-
+/**
+ * @param imgSrc Use this source image as a template to copy geotranform information
+ **/
 void ImgWriterGdal::copyGeoTransform(const ImgReaderGdal& imgSrc)
 {
   setProjection(imgSrc.getProjection());
   double gt[6];
   imgSrc.getGeoTransform(gt);
-  setGeoTransform(gt);
-  // imgSrc.getGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-  // setGeoTransform(ulx,uly,deltaX,deltaY,rot1,rot2);
-}
-
-std::string ImgWriterGdal::setProjectionProj4(const std::string& projection)
-{
-  // if(!m_isGeoRef)
-  //   m_isGeoRef=true;
-
-  OGRSpatialReference theRef;
-  theRef.SetFromUserInput(projection.c_str());
-  char *wktString;
-  theRef.exportToWkt(&wktString);
-  assert(m_gds);
-  m_gds->SetProjection(wktString);
-  return(wktString);
-
-    // OGRSpatialReferenceH hSRS;  
-    // char *pszResult = NULL;  
-  
-    // CPLErrorReset();  
-      
-    // hSRS = OSRNewSpatialReference( NULL );  
-    // if( OSRSetFromUserInput( hSRS, projection.c_str() ) == OGRERR_NONE )  
-    //     OSRExportToWkt( hSRS, &pszResult );  
-    // else  
-    // {  
-    //     std::ostringstream s;
-    //     s << "Error in set projection " << projection;
-    //     throw(s.str());
-    // }  
-    // std::string theProjection=pszResult;
-    // assert(m_gds);
-    // m_gds->SetProjection(theProjection.c_str());
-    // OSRDestroySpatialReference( hSRS );  
-  
-    // return theProjection;  
-}
-
-void ImgWriterGdal::setProjection(const std::string& projection)
-{
-  // if(!m_isGeoRef)
-  //   m_isGeoRef=true;
-  OGRSpatialReference oSRS;
-  char *pszSRS_WKT = NULL;
-  assert(m_gds);
-  m_gds->SetProjection(projection.c_str());
-  CPLFree(pszSRS_WKT);
+  ImgRasterGdal::setGeoTransform(gt);
 }
 
 //default projection: ETSR-LAEA
@@ -358,7 +349,11 @@ void ImgWriterGdal::setProjection(const std::string& projection)
 //   return(theProjection);
 // }
 
-//filename is ascii file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
+
+/**
+ * @param filename ASCII file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
+ * @param band band number to set color table (starting counting from 0)
+ **/
 void ImgWriterGdal::setColorTable(const std::string& filename, int band)
 {
   //todo: fool proof table in file (no checking currently done...)
@@ -373,33 +368,39 @@ void ImgWriterGdal::setColorTable(const std::string& filename, int band)
     GDALColorEntry sEntry;
     short id;
     ist >> id >> sEntry.c1 >> sEntry.c2 >> sEntry.c3 >> sEntry.c4;
-//     poCT->SetColorEntry(id,&sEntry);
     colorTable.SetColorEntry(id,&sEntry);
   }
-  // assert(nline==colorTable.GetColorEntryCount());
-//   (m_gds->GetRasterBand(band+1))->SetColorTable(poCT);
   (m_gds->GetRasterBand(band+1))->SetColorTable(&colorTable);
 }
 
+/**
+ * @param colorTable Instance of the GDAL class GDALColorTable
+ * @param band band number to set color table (starting counting from 0)
+ **/
 void ImgWriterGdal::setColorTable(GDALColorTable* colorTable, int band)
 {
   (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
 }
 
-//write an entire image from memory to file
-bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int band) const{
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  if(band>=nrOfBand()+1){
-    std::ostringstream s;
-    s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
-    throw(s.str());
-  }
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  poBand->RasterIO(GF_Write,0,0,nrOfCol(),nrOfRow(),pdata,nrOfCol(),nrOfRow(),dataType,0,0);
-  return true;
-}  
+// //write an entire image from memory to file
+// bool ImgWriterGdal::writeData(void* pdata, const GDALDataType& dataType, int band){
+//   //fetch raster band
+//   GDALRasterBand  *poBand;
+//   if(band>=nrOfBand()+1){
+//     std::ostringstream s;
+//     s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+//     throw(s.str());
+//   }
+//   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+//   poBand->RasterIO(GF_Write,0,0,nrOfCol(),nrOfRow(),pdata,nrOfCol(),nrOfRow(),dataType,0,0);
+//   return true;
+// }  
 
+/**
+ * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
+ * @param burnValues Values to burn into raster cells (one value for each band)
+ * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
+ **/
 void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& layernames ){
   std::vector<int> bands;
   std::vector<double> burnBands;//burn values for all bands in a single layer
@@ -428,18 +429,9 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
   }
   void *pTransformArg;
   char **papszOptions;
-  // double dfComplete=0.0;
-  // const char* pszMessage;
   void* pProgressArg=NULL;
-  // GDALProgressFunc pfnProgress=GDALTermProgress;
-  // pfnProgress(dfComplete,pszMessage,pProgressArg);
-  //if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),papszOptions,pfnProgress,pProgressArg)!=CE_None){
   if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),NULL,NULL,NULL)!=CE_None){
     std::string errorString(CPLGetLastErrorMsg());
     throw(errorString);
   }
-  // else{
-  //   dfComplete=1.0;
-  //   pfnProgress(dfComplete,pszMessage,pProgressArg);
-  // }
 }

@@ -57,7 +57,7 @@ public:
   void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId, int layer=0);
   void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, const std::string& theId, int layer=0);
   void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, int theId, int layer=0);
-  int addData(const ImgReaderGdal& imgReader, int layer=0, bool verbose=false);
+  int addData(ImgReaderGdal& imgReader, int layer=0, bool verbose=false);
   OGRFeature* createFeature(int layer=0);
   OGRErr createFeature(OGRFeature* theFeature, int layer=0);
   int getFieldCount(int layer=0) const;
