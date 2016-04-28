@@ -30,6 +30,9 @@ void ImgRasterGdal::close(void)
   GDALClose(m_gds);
 }
 
+/**
+ * @return the projection of this data set in string format
+ **/
 std::string ImgRasterGdal::getProjection(void) const 
 {
   std::string theProjection=m_gds->GetProjectionRef();
@@ -41,6 +44,9 @@ std::string ImgRasterGdal::getProjection(void) const
   return theProjection;
 }
 
+/**
+ * @return the projection of this data set in string format
+ **/
 std::string ImgRasterGdal::getProjectionRef(void) const 
 {
   std::string theProjection;
@@ -50,6 +56,80 @@ std::string ImgRasterGdal::getProjectionRef(void) const
     return "";
 }
 
+/**
+ * @param projection projection string to be used for this dataset
+ * @return the projection of this data set in string format
+ **/
+std::string ImgRasterGdal::setProjectionProj4(const std::string& projection)
+{
+  OGRSpatialReference theRef;
+  theRef.SetFromUserInput(projection.c_str());
+  char *wktString;
+  theRef.exportToWkt(&wktString);
+  assert(m_gds);
+  m_gds->SetProjection(wktString);
+  return(wktString);
+}
+
+/**
+ * @param projection projection string to be used for this dataset
+ **/
+void ImgRasterGdal::setProjection(const std::string& projection)
+{
+  OGRSpatialReference oSRS;
+  char *pszSRS_WKT = NULL;
+  assert(m_gds);
+  m_gds->SetProjection(projection.c_str());
+  CPLFree(pszSRS_WKT);
+}
+
+/**
+ * @param band get data type for this band (start counting from 0)
+ * @return the GDAL data type of this data set for the selected band
+ **/
+GDALDataType ImgRasterGdal::getDataType(int band) const
+{
+  assert(band<m_nband+1);
+  return (m_gds->GetRasterBand(band+1))->GetRasterDataType();
+}
+
+/**
+ * @param band get GDAL raster band for this band (start counting from 0)
+ * @return the GDAL raster band of this data set for the selected band
+ **/
+GDALRasterBand* ImgRasterGdal::getRasterBand(int band)
+{
+  assert(band<m_nband+1);
+  return (m_gds->GetRasterBand(band+1));
+}
+
+/**
+ * @param band get GDAL color table for this band (start counting from 0)
+ * @return the GDAL color table of this data set for the selected band
+ **/
+GDALColorTable* ImgRasterGdal::getColorTable(int band) const
+{
+  assert(band<m_nband+1);
+  return (m_gds->GetRasterBand(band+1))->GetColorTable();
+}
+
+/**
+ * @return the driver description of this data set in string format
+ **/
+std::string ImgRasterGdal::getDriverDescription() const
+{
+  return m_gds->GetDriver()->GetDescription();
+}
+
+/**
+ * @param gt pointer to the six geotransform parameters:
+ * @param adfGeoTransform[0] top left x
+ * @param GeoTransform[1] w-e pixel resolution
+ * @param GeoTransform[2] rotation, 0 if image is "north up"
+ * @param GeoTransform[3] top left y
+ * @param GeoTransform[4] rotation, 0 if image is "north up"
+ * @param GeoTransform[5] n-s pixel resolution
+ **/
 void ImgRasterGdal::setGeoTransform(double* gt){
   // m_isGeoRef=true;
   m_gt[0]=gt[0];
@@ -62,54 +142,22 @@ void ImgRasterGdal::setGeoTransform(double* gt){
     m_gds->SetGeoTransform(m_gt);
 }
 
-std::string ImgRasterGdal::setProjectionProj4(const std::string& projection)
-{
-  OGRSpatialReference theRef;
-  theRef.SetFromUserInput(projection.c_str());
-  char *wktString;
-  theRef.exportToWkt(&wktString);
-  assert(m_gds);
-  m_gds->SetProjection(wktString);
-  return(wktString);
-}
-
-void ImgRasterGdal::setProjection(const std::string& projection)
-{
-  OGRSpatialReference oSRS;
-  char *pszSRS_WKT = NULL;
-  assert(m_gds);
-  m_gds->SetProjection(projection.c_str());
-  CPLFree(pszSRS_WKT);
-}
-
-
-GDALDataType ImgRasterGdal::getDataType(int band) const
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1))->GetRasterDataType();
-}
-
-GDALRasterBand* ImgRasterGdal::getRasterBand(int band)
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1));
-}
-
-GDALColorTable* ImgRasterGdal::getColorTable(int band) const
-{
-  assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1))->GetColorTable();
-}
-
-std::string ImgRasterGdal::getDriverDescription() const
-{
-  return m_gds->GetDriver()->GetDescription();
-}
-
+/**
+ * @param gt pointer to the six geotransform parameters:
+ * @param adfGeoTransform[0] top left x
+ * @param GeoTransform[1] w-e pixel resolution
+ * @param GeoTransform[2] rotation, 0 if image is "north up"
+ * @param GeoTransform[3] top left y
+ * @param GeoTransform[4] rotation, 0 if image is "north up"
+ * @param GeoTransform[5] n-s pixel resolution
+ **/
 void ImgRasterGdal::getGeoTransform(double* gt) const{
   m_gds->GetGeoTransform(gt);
 }
 
+/**
+ * @return the geotransform of this data set in string format
+ **/
 std::string ImgRasterGdal::getGeoTransform() const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
@@ -119,6 +167,9 @@ std::string ImgRasterGdal::getGeoTransform() const
   return(s.str());
 }
 
+/**
+ * @return the metadata of this data set in string format
+ **/
 char** ImgRasterGdal::getMetadata()
 {
   if(m_gds->GetMetadata()!=NULL)
@@ -127,6 +178,9 @@ char** ImgRasterGdal::getMetadata()
     return (char**)"";
 }
 
+/**
+ * @return the metadata of this data set in C style string format (const version)
+ **/
 char** ImgRasterGdal::getMetadata() const
 {
   if(m_gds->GetMetadata()!=NULL)
@@ -135,6 +189,9 @@ char** ImgRasterGdal::getMetadata() const
     return (char**)"";
 }
 
+/**
+ * @return the metadata of this data set in standard template library (stl) string format
+ **/
 void ImgRasterGdal::getMetadata(std::list<std::string>& metadata) const
 {
   char** cmetadata=m_gds->GetMetadata();
@@ -144,6 +201,9 @@ void ImgRasterGdal::getMetadata(std::list<std::string>& metadata) const
   }
 }
 
+/**
+ * @return the description of this data set in string format
+ **/
 std::string ImgRasterGdal::getDescription() const
 {
   if(m_gds->GetDriver()->GetDescription()!=NULL)
@@ -152,6 +212,9 @@ std::string ImgRasterGdal::getDescription() const
     return "";
 }
 
+/**
+ * @return the meta data item of this data set in string format
+ **/
 std::string ImgRasterGdal::getMetadataItem() const 
 {
   if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
@@ -159,6 +222,10 @@ std::string ImgRasterGdal::getMetadataItem() const
   else
     return "";
 }
+
+/**
+ * @return the image description (TIFFTAG) of this data set in string format
+ **/
 std::string ImgRasterGdal::getImageDescription() const 
 {
   if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
@@ -167,6 +234,9 @@ std::string ImgRasterGdal::getImageDescription() const
     return "";
 }
 
+/**
+ * @return the band coding interleave of this data set in string format
+ **/
 std::string ImgRasterGdal::getInterleave() const
 {
   if(m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE"))
@@ -175,6 +245,9 @@ std::string ImgRasterGdal::getInterleave() const
     return("BAND");
 }
 
+/**
+ * @return the compression meta data of this data set in string format
+ **/
 std::string ImgRasterGdal::getCompression() const
 {
   if(m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE"))
@@ -183,18 +256,26 @@ std::string ImgRasterGdal::getCompression() const
     return("NONE");
 }
 
+/**
+ * assuming
+ * adfGeotransform[0]: ULX (upper left X coordinate)
+ * adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[3]: ULY (upper left Y coordinate)
+ * adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+ * adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+
+ * @param ulx upper left coordinate in x
+ * @param uly upper left coordinate in y
+ * @param lrx lower left coordinate in x
+ * @param lry lower left coordinate in y
+ * @return true if image is georeferenced
+ **/
 bool ImgRasterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   m_gds->GetGeoTransform(gt);
 
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
   ulx=gt[0];
   uly=gt[3];
   lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
@@ -215,18 +296,22 @@ bool ImgRasterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double
   }
 }
 
+/**
+ * assuming
+ * adfGeotransform[0]: ULX (upper left X coordinate)
+ * adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[3]: ULY (upper left Y coordinate)
+ * adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+ * adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+ * @param x, y centre coordinates in x and y
+ * @return true if image is georeferenced
+ **/
 bool ImgRasterGdal::getCenterPos(double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   m_gds->GetGeoTransform(gt);
 
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
   x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
   y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
   if(isGeoRef()){
@@ -241,19 +326,23 @@ bool ImgRasterGdal::getCenterPos(double& x, double& y) const
   }
 }
 
-//i and j represent fraction of pixels, return true if image is georeferenced
+/**
+ * assuming
+ * adfGeotransform[0]: ULX (upper left X coordinate)
+ * adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[3]: ULY (upper left Y coordinate)
+ * adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+ * adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+ * @param x,y georeferenced coordinates in x and y
+ * @param i,j image coordinates (can be fraction of pixels)
+ * @return true if image is georeferenced
+ **/
 bool ImgRasterGdal::geo2image(double x, double y, double& i, double& j) const
 {
   //double values are returned, caller is responsible for interpolation step
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   m_gds->GetGeoTransform(gt);
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
 
   double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
   double eps=0.00001;
@@ -275,19 +364,22 @@ bool ImgRasterGdal::geo2image(double x, double y, double& i, double& j) const
   }
 }
 
-//x and y represent center of pixel, return true if image is georeferenced
+/**
+ * assuming
+ * adfGeotransform[0]: ULX (upper left X coordinate)
+ * adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[3]: ULY (upper left Y coordinate)
+ * adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+ * adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+ * @param i,j image coordinates (can be fraction of pixels)
+ * @param x,y georeferenced coordinates in x and y (can be fraction of pixels)
+ * @return true if image is georeferenced
+ **/
 bool ImgRasterGdal::image2geo(double i, double j, double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   m_gds->GetGeoTransform(gt);
-
-  //assuming
-  //adfGeotransform[0]: ULX (upper left X coordinate)
-  //adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
-  //adfGeotransform[3]: ULY (upper left Y coordinate)
-  //adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
-  //adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
 
   x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
   y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
@@ -303,6 +395,17 @@ bool ImgRasterGdal::image2geo(double i, double j, double& x, double& y) const
   }
 }
 
+/**
+ * assuming
+ * adfGeotransform[0]: ULX (upper left X coordinate)
+ * adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[3]: ULY (upper left Y coordinate)
+ * adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+ * adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+ * @param x,y georeferenced coordinates in x and y
+ * @return true if image covers the georeferenced location
+ **/
 bool ImgRasterGdal::covers(double x, double  y) const
 {
   double theULX, theULY, theLRX, theLRY;
@@ -313,6 +416,20 @@ bool ImgRasterGdal::covers(double x, double  y) const
          (y >theLRY));
 }
 
+/**
+ * assuming
+ * adfGeotransform[0]: ULX (upper left X coordinate)
+ * adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[2]: $-sin(\alpha)\cdot\textrm{Xres}$
+ * adfGeotransform[3]: ULY (upper left Y coordinate)
+ * adfGeotransform[4]: $-sin(\alpha)\cdot\textrm{Yres}$
+ * adfGeotransform[5]: $-cos(\alpha)\cdot\textrm{Yres}$
+ * @param ulx upper left coordinate in x
+ * @param uly upper left coordinate in y
+ * @param lrx lower left coordinate in x
+ * @param lry lower left coordinate in y
+ * @return true if image (partially) covers the bounding box
+ **/
 bool ImgRasterGdal::covers(double ulx, double  uly, double lrx, double lry) const
 {
   double theULX, theULY, theLRX, theLRY;
@@ -320,6 +437,10 @@ bool ImgRasterGdal::covers(double ulx, double  uly, double lrx, double lry) cons
   return((ulx < theLRX)&&(lrx > theULX)&&(lry < theULY)&&(uly > theLRY));
 }
 
+/**
+ * @param noDataValues standard template library (stl) vector containing no data values
+ * @return number of no data values in this dataset
+ **/
 int ImgRasterGdal::getNoDataValues(std::vector<double>& noDataValues) const
 {
   if(m_noDataValues.size()){
@@ -330,6 +451,10 @@ int ImgRasterGdal::getNoDataValues(std::vector<double>& noDataValues) const
     return 0;
 }
 
+/**
+ * @param noDataValue no data value to be pushed for this dataset
+ * @return number of no data values in this dataset
+ **/
 int ImgRasterGdal::pushNoDataValue(double noDataValue)
 {
   if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())

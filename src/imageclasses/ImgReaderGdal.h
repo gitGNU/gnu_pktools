@@ -54,7 +54,7 @@ public:
   void setMemory(unsigned long int memory=0){initMem(memory);};
   ///destructor
   ~ImgReaderGdal(void);
-  ///Set scale for a specific band when reading the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
+  ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
   void setScale(double theScale, int band=0){
     if(m_scale.size()!=nrOfBand()){//initialize
       m_scale.resize(nrOfBand());
@@ -62,8 +62,8 @@ public:
        m_scale[iband]=1.0;
     }
     m_scale[band]=theScale;
-  }
-  ///Set offset for a specific band when reading the raster data values. The scaling and offset are applied on a per band basis. You need to set the offset for each band. If the image data are cached (class was created with memory>0), the offset is applied on the cached memory.
+  };
+  ///Set offset for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the offset for each band. If the image data are cached (class was created with memory>0), the offset is applied on the cached memory.
   void setOffset(double theOffset, int band=0){
     if(m_offset.size()!=nrOfBand()){
       m_offset.resize(nrOfBand());
@@ -71,7 +71,8 @@ public:
        m_offset[iband]=0.0;
     }
       m_offset[band]=theOffset;
-  }
+  };
+
   ///Close the image.
   void close(void);
   ///Read a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
@@ -108,11 +109,6 @@ public:
 protected:
   ///Set GDAL dataset number of columns, rows, bands and geotransform.
   void setCodec(const GDALAccess& readMode=GA_ReadOnly);
-  ///Vector containing the scale factor to be applied (one scale value for each band)
-  std::vector<double> m_scale;
-  ///Vector containing the offset factor to be applied (one offset value for each band)
-  std::vector<double> m_offset;
-  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
   unsigned int m_blockSize;
   ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
   std::vector<void *> m_data;
@@ -120,6 +116,11 @@ protected:
   std::vector<unsigned int> m_begin;
   ///beyond last line read in cache for a specific band
   std::vector<unsigned int> m_end;
+  ///Vector containing the scale factor to be applied (one scale value for each band)
+  std::vector<double> m_scale;
+  ///Vector containing the offset factor to be applied (one offset value for each band)
+  std::vector<double> m_offset;
+  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
 
 private:
   ///Read new block in cache (defined by m_begin and m_end)
@@ -129,13 +130,6 @@ private:
   ///Flag to indicate if the pointer used for caching should be deleted (only false for external pointer)
   bool m_deletePointer;
 };
-
-//     adfGeoTransform[0] /* top left x */
-//     adfGeoTransform[1] /* w-e pixel resolution */
-//     adfGeoTransform[2] /* rotation, 0 if image is "north up" */
-//     adfGeoTransform[3] /* top left y */
-//     adfGeoTransform[4] /* rotation, 0 if image is "north up" */
-//     adfGeoTransform[5] /* n-s pixel resolution */
 
 /**
  * @param[out] value The cell value that was read

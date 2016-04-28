@@ -32,6 +32,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
+/**
+ * @param C++ data type to be converted to GDAL data type
+ * @return the GDAL data type that corresponds to the given C++ data type
+ **/
 template<typename T1> GDALDataType getGDALDataType(){
   if (typeid(T1) == typeid(char))
     return GDT_Byte;

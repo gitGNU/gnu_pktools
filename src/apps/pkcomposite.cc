@@ -607,7 +607,6 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
   try{
-    // imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
     imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,memory_opt[0],option_opt);
     for(int iband=0;iband<nwriteBand;++iband)
       imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);

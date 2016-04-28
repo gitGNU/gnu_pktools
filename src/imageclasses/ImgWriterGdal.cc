@@ -68,25 +68,32 @@ void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int nco
  **/
 void ImgWriterGdal::initMem(unsigned long int memory)
 {
-  m_deletePointer=true;
-  m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-  if(m_blockSize<1)
-    m_blockSize=1;
-  if(m_blockSize>nrOfRow())
-    m_blockSize=nrOfRow();
-  m_data.resize(nrOfBand());
-  m_begin.resize(nrOfBand());
-  m_end.resize(nrOfBand());
-  for(int iband=0;iband<m_nband;++iband){
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-    m_begin[iband]=0;
-    m_end[iband]=0;
+  if(memory>0){
+    m_deletePointer=true;
+    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+    if(m_blockSize<1)
+      m_blockSize=1;
+    if(m_blockSize>nrOfRow())
+      m_blockSize=nrOfRow();
+    m_data.resize(nrOfBand());
+    m_begin.resize(nrOfBand());
+    m_end.resize(nrOfBand());
+    for(int iband=0;iband<m_nband;++iband){
+      m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+      m_begin[iband]=0;
+      m_end[iband]=m_begin[iband]+m_blockSize;
+    }
+  }
+  else{
+    m_deletePointer=true;
+    m_blockSize=0;
   }
 }
 
 /**
  * @param row Write a new block for caching this row (if needed)
  * @param band Band that must be written in cache
+ * @return true if write was successful
  **/
 bool ImgWriterGdal::writeNewBlock(int row, int band)
 {

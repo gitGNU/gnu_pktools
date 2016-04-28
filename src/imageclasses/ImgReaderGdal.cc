@@ -58,51 +58,6 @@ void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow
 }
 
 /**
- * @param memory Available memory to cache image raster data (in MB)
- **/
-void ImgReaderGdal::initMem(unsigned long int memory)
-{
-  m_deletePointer=true;
-  m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-  if(m_blockSize<1)
-    m_blockSize=1;
-  if(m_blockSize>nrOfRow())
-    m_blockSize=nrOfRow();
-  m_data.resize(nrOfBand());
-  m_begin.resize(nrOfBand());
-  m_end.resize(nrOfBand());
-  for(int iband=0;iband<m_nband;++iband){
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-    m_begin[iband]=0;
-    m_end[iband]=0;
-  }
-}
-
-/**
- * @param row Read a new block for caching this row (if needed)
- * @param band Band that must be read to cache
- **/
-bool ImgReaderGdal::readNewBlock(int row, int band)
-{
-  if(m_end[band]<m_blockSize)//first time
-    m_end[band]=m_blockSize;
-  while(row>=m_end[band]&&m_begin[band]<nrOfRow()){
-    m_begin[band]+=m_blockSize;
-    m_end[band]=m_begin[band]+m_blockSize;
-  }
-  if(m_end[band]>nrOfRow())
-    m_end[band]=nrOfRow();
-  for(int iband=0;iband<m_nband;++iband){
-    //fetch raster band
-    GDALRasterBand  *poBand;
-    assert(iband<nrOfBand()+1);
-    poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-    poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
-  }
-  return true;//new block was read
-}
-
-/**
  * @param filename Open a raster dataset with this filename
  * @param readMode Open dataset in ReadOnly or Update mode
  * @param memory Available memory to cache image raster data (in MB)
@@ -144,9 +99,60 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
 }
 
 /**
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+void ImgReaderGdal::initMem(unsigned long int memory)
+{
+  if(memory>0){
+    m_deletePointer=true;
+    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+    if(m_blockSize<1)
+      m_blockSize=1;
+    if(m_blockSize>nrOfRow())
+      m_blockSize=nrOfRow();
+    m_data.resize(nrOfBand());
+    m_begin.resize(nrOfBand());
+    m_end.resize(nrOfBand());
+    for(int iband=0;iband<m_nband;++iband){
+      m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+      m_begin[iband]=0;
+      m_end[iband]=0;
+    }
+  }
+  else
+    m_deletePointer=false;
+}
+
+/**
+ * @param row Read a new block for caching this row (if needed)
+ * @param band Band that must be read to cache
+ * @return true if block was read
+ **/
+bool ImgReaderGdal::readNewBlock(int row, int band)
+{
+  if(m_end[band]<m_blockSize)//first time
+    m_end[band]=m_blockSize;
+  while(row>=m_end[band]&&m_begin[band]<nrOfRow()){
+    m_begin[band]+=m_blockSize;
+    m_end[band]=m_begin[band]+m_blockSize;
+  }
+  if(m_end[band]>nrOfRow())
+    m_end[band]=nrOfRow();
+  for(int iband=0;iband<m_nband;++iband){
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    assert(iband<nrOfBand()+1);
+    poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
+  }
+  return true;//new block was read
+}
+
+/**
  * @param x Reported column where minimum value in image was found (start counting from 0)
  * @param y Reported row where minimum value in image was found (start counting from 0)
  * @param band Search mininum value in image for this band
+ * @return minimum value in image for the selected band
  **/
 double ImgReaderGdal::getMin(int& x, int& y, int band){
   double minValue=0;
@@ -182,6 +188,7 @@ double ImgReaderGdal::getMin(int& x, int& y, int band){
  * @param x Reported column where maximum value in image was found (start counting from 0)
  * @param y Reported row where maximum value in image was found (start counting from 0)
  * @param band Search mininum value in image for this band
+ * @return maximum value in image for the selected band
  **/
 double ImgReaderGdal::getMax(int& x, int& y, int band){
   double maxValue=0;
@@ -313,6 +320,7 @@ void ImgReaderGdal::getMinMax(double& minValue, double& maxValue, int band)
  * @param nbin Number of bins used for calculating the histogram. If nbin is 0, the number of bins is  automatically calculated from min and max
  * @param theBand The band for which to calculate the histogram (start counting from 0)
  * @param kde Apply kernel density function for a Gaussian basis function
+ * @return number of valid pixels in this dataset for the the selected band
  **/
 double ImgReaderGdal::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
   double minValue=0;
@@ -428,6 +436,7 @@ void ImgReaderGdal::getRange(std::vector<short>& range, int band)
 
 /**
  * @param band The band for which to calculate the number of valid pixels
+ * @return number of valid pixels in this dataset for the the selected band
  **/
 unsigned long int ImgReaderGdal::getNvalid(int band)
 {

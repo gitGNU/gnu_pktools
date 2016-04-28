@@ -55,7 +55,24 @@ public:
   ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){open(dataPointer, filename, ncol, nrow, nband, dataType);};
   ///destructor
   ~ImgWriterGdal(void);
-
+  ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
+  void setScale(double theScale, int band=0){
+    if(m_scale.size()!=nrOfBand()){//initialize
+      m_scale.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+       m_scale[iband]=1.0;
+    }
+    m_scale[band]=theScale;
+  };
+  ///Set offset for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the offset for each band. If the image data are cached (class was created with memory>0), the offset is applied on the cached memory.
+  void setOffset(double theOffset, int band=0){
+    if(m_offset.size()!=nrOfBand()){
+      m_offset.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+       m_offset[iband]=0.0;
+    }
+      m_offset[band]=theOffset;
+  };
   ///Open an image for writing, copying image attributes from a source image. Image is directly read from file. Use the constructor with memory>0 to support caching
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
@@ -68,22 +85,6 @@ public:
   void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the raster dataset
   void close(void);//definition in ImgWritergdal.cc
-  void setScale(double theScale, int band=0){
-    if(m_scale.size()!=nrOfBand()){//initialize
-      m_scale.resize(nrOfBand());
-      for(int iband=0;iband<nrOfBand();++iband)
-       m_scale[iband]=1.0;
-    }
-    m_scale[band]=theScale;
-  }
-  void setOffset(double theOffset, int band=0){
-    if(m_offset.size()!=nrOfBand()){
-      m_offset.resize(nrOfBand());
-      for(int iband=0;iband<nrOfBand();++iband)
-       m_offset[iband]=0.0;
-    }
-      m_offset[band]=theOffset;
-  }
   ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
   ///Copy geotransform information from another georeferenced image
@@ -114,9 +115,6 @@ protected:
   ///Register GDAL driver, setting the datatype, imagetype and some metadata
   virtual void setCodec(const ImgReaderGdal& ImgSrc);
   std::vector<std::string> m_options;
-  std::vector<double> m_scale;
-  ///Vector containing the offset factor to be applied (one offset value for each band)
-  std::vector<double> m_offset;
   ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
   unsigned int m_blockSize;
   ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
@@ -125,6 +123,11 @@ protected:
   std::vector<unsigned int> m_begin;
   ///beyond last line read in cache for a specific band
   std::vector<unsigned int> m_end;
+  ///Vector containing the scale factor to be applied (one scale value for each band)
+  std::vector<double> m_scale;
+  ///Vector containing the offset factor to be applied (one offset value for each band)
+  std::vector<double> m_offset;
+  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
 
 private:
   ///Write new block from cache (defined by m_begin and m_end)
@@ -140,6 +143,7 @@ private:
  * @param[in] col The column number to write (counting starts from 0)
  * @param[in] row The row number to write (counting starts from 0)
  * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
  **/
 template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, int band)
 {
@@ -187,25 +191,25 @@ template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, i
     double dvalue=theScale*value+theOffset;
     switch(getDataType()){
     case(GDT_Byte):
-      *(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
+      static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
       break;
     case(GDT_Int16):
-      *(static_cast<short*>((m_data[band])+index))=static_cast<short>(dvalue);
+      static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
       break;
     case(GDT_UInt16):
-      *(static_cast<unsigned short*>((m_data[band])+index))=static_cast<unsigned short>(dvalue);
+      static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
       break;
     case(GDT_Int32):
-      *(static_cast<int*>((m_data[band])+index))=static_cast<int>(dvalue);
+      static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
       break;
     case(GDT_UInt32):
-      *(static_cast<unsigned int*>((m_data[band])+index))=static_cast<unsigned int>(dvalue);
+      static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
       break;
     case(GDT_Float32):
-      *(static_cast<float*>((m_data[band])+index))=static_cast<float>(dvalue);
+      static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
       break;
     case(GDT_Float64):
-      *(static_cast<double*>((m_data[band])+index))=static_cast<double>(dvalue);
+      static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
       break;
     default:
       std::string errorString="Error: data type not supported";
@@ -228,6 +232,7 @@ template<typename T> bool ImgWriterGdal::writeData(T& value, int col, int row, i
  * @param[in] maxCol Last column that must be written (counting starts from 0)
  * @param[in] row The row number to write (counting starts from 0)
  * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
  **/
 template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
 {
@@ -294,25 +299,25 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int m
       double dvalue=theScale*(*(bufit))+theOffset;
       switch(getDataType()){
       case(GDT_Byte):
-	*(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
+	static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
 	break;
       case(GDT_Int16):
-	*(static_cast<short*>((m_data[band])+index))=static_cast<short>(dvalue);
+	static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
 	break;
       case(GDT_UInt16):
-	*(static_cast<unsigned short*>((m_data[band])+index))=static_cast<unsigned short>(dvalue);
+	static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
 	break;
       case(GDT_Int32):
-	*(static_cast<int*>((m_data[band])+index))=static_cast<int>(dvalue);
+	static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
 	break;
       case(GDT_UInt32):
-	*(static_cast<unsigned int*>((m_data[band])+index))=static_cast<unsigned int>(dvalue);
+	static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
 	break;
       case(GDT_Float32):
-	*(static_cast<float*>((m_data[band])+index))=static_cast<float>(dvalue);
+	static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
 	break;
       case(GDT_Float64):
-	*(static_cast<double*>((m_data[band])+index))=static_cast<double>(dvalue);
+	static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
 	break;
       default:
 	std::string errorString="Error: data type not supported";
@@ -340,6 +345,7 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int m
  * @param[in] buffer The vector with all cell values to write
  * @param[in] row The row number to write (counting starts from 0)
  * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
  **/
 template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int row, int band)
 {
@@ -352,6 +358,7 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int r
  * @param[in] maxCol Last column that must be written (counting starts from 0)
  * @param[in] row The row number to write (counting starts from 0)
  * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
  **/
 template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
@@ -429,25 +436,25 @@ template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, i
 	double dvalue=theScale*(*(bufit))+theOffset;
 	switch(getDataType()){
 	case(GDT_Byte):
-	  *(static_cast<unsigned char*>((m_data[band])+index))=static_cast<unsigned char>(dvalue);
+	  static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
 	  break;
 	case(GDT_Int16):
-	  *(static_cast<short*>((m_data[band])+index))=static_cast<short>(dvalue);
+	  static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
 	  break;
 	case(GDT_UInt16):
-	  *(static_cast<unsigned short*>((m_data[band])+index))=static_cast<unsigned short>(dvalue);
+	  static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
 	  break;
 	case(GDT_Int32):
-	  *(static_cast<int*>((m_data[band])+index))=static_cast<int>(dvalue);
+	  static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
 	  break;
 	case(GDT_UInt32):
-	  *(static_cast<unsigned int*>((m_data[band])+index))=static_cast<unsigned int>(dvalue);
+	  static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
 	  break;
 	case(GDT_Float32):
-	  *(static_cast<float*>((m_data[band])+index))=static_cast<float>(dvalue);
+	  static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
 	  break;
 	case(GDT_Float64):
-	  *(static_cast<double*>((m_data[band])+index))=static_cast<double>(dvalue);
+	  static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
 	  break;
 	default:
 	  std::string errorString="Error: data type not supported";
