@@ -203,21 +203,22 @@ int main(int argc, char *argv[])
   ruleMap["percentile"]=rule::percentile;
   ruleMap["allpoints"]=rule::allpoints;
 
+  statfactory::StatFactory stat;
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
       srcnodata_opt.push_back(srcnodata_opt[0]);
+    stat.setNoDataValues(srcnodata_opt);
   }
 
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
-  statfactory::StatFactory stat;
-  stat.setNoDataValues(srcnodata_opt);
   Vector2d<unsigned int> posdata;
   unsigned long int nsample=0;
   unsigned long int ntotalvalid=0;
   unsigned long int ntotalinvalid=0;
 
   ImgReaderGdal imgReader;
+  // ImgReaderGdal imgReader;
   if(image_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
       exit(1);
@@ -227,7 +228,10 @@ int main(int argc, char *argv[])
       exit(1);
   }
   try{
-    imgReader.open(image_opt[0]);
+    imgReader.open(image_opt[0],GA_ReadOnly);
+    //test
+    // imgReader.setScale(1);
+    // imgReader.setOffset(0);
   }
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;
@@ -559,14 +563,14 @@ int main(int argc, char *argv[])
             throw(errorString);
           }
           if(verbose_opt[0])
-            cout << "reading image band " << theBand << endl;
+            cout << "reading image band " << theBand << " block rows " << layer_ulj << "-" << layer_lrj << ", cols " << layer_uli << "-" << layer_lri << endl;
           switch( fieldType ){
           case OFTInteger:
             imgReader.readDataBlock(readValuesInt[iband],GDT_Int32,layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
           case OFTReal:
           default:
-            imgReader.readDataBlock(readValuesReal[iband],GDT_Float32,layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
+	    imgReader.readDataBlock(readValuesReal[iband],GDT_Float32,layer_uli,layer_lri,layer_ulj,layer_lrj,theBand);
             break;
           }
         }
@@ -576,6 +580,7 @@ int main(int argc, char *argv[])
         exit(1);
       }
 
+    
       float theThreshold=(threshold_opt.size()==layer_opt.size())? threshold_opt[layerIndex]: threshold_opt[0];
       cout << "processing layer " << currentLayername << endl;
       
@@ -767,30 +772,35 @@ int main(int argc, char *argv[])
                 valid=valid&&(indexJ<imgReader.nrOfRow());
                 valid=valid&&(indexI>=0);
                 valid=valid&&(indexI<imgReader.nrOfCol());
-                if(valid&&srcnodata_opt.size()){
-                  for(int vband=0;vband<bndnodata_opt.size();++vband){
-                    switch( fieldType ){
-                    case OFTInteger:{
-                      int value;
-                      value=((readValuesInt[vband])[indexJ])[indexI];
-                      if(value==srcnodata_opt[vband])
-                        valid=false;
-                      break;
-                    }
-                    case OFTReal:{
-                      double value;
-                      value=((readValuesReal[vband])[indexJ])[indexI];
-                      if(value==srcnodata_opt[vband])
-                        valid=false;
-                      break;
-                    }
-                    }
-                    if(!valid)
-                      continue;
-                    else
-                      validFeature=true;
-                  }
-                }
+
+                if(valid){
+		  if(srcnodata_opt.empty())
+		    validFeature=true;
+		  else{
+		    for(int vband=0;vband<bndnodata_opt.size();++vband){
+		      switch( fieldType ){
+		      case OFTInteger:{
+			int value;
+			value=((readValuesInt[vband])[indexJ])[indexI];
+			if(value==srcnodata_opt[vband])
+			  valid=false;
+			break;
+		      }
+		      case OFTReal:{
+			double value;
+			value=((readValuesReal[vband])[indexJ])[indexI];
+			if(value==srcnodata_opt[vband])
+			  valid=false;
+			break;
+		      }
+		      }
+		      if(!valid)
+			continue;
+		      else
+			validFeature=true;
+		    }
+		  }
+		}
                 if(valid){
                   assert(readValuesReal.size()==nband);
                   for(int iband=0;iband<nband;++iband){
@@ -1150,10 +1160,13 @@ int main(int argc, char *argv[])
                 }
               }
             }
-            if(createPolygon){
+	    //test
+            if(createPolygon&&validFeature){
+            // if(createPolygon){
               //write polygon feature
+	      //todo: create only in case of valid feature
               if(verbose_opt[0]>1)
-                std::cout << "creating polygon feature" << std::endl;
+                std::cout << "creating polygon feature (1)" << std::endl;
               if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
                 std::string errorString="Failed to create polygon feature in ogr vector dataset";
                 throw(errorString);
@@ -1163,7 +1176,7 @@ int main(int argc, char *argv[])
               ++ntotalvalid;
               ++ntotalvalidLayer;
             }
-          }
+	  }
 	  else{
 	    OGRPolygon readPolygon;
 	    OGRMultiPolygon readMultiPolygon;
@@ -1233,30 +1246,34 @@ int main(int argc, char *argv[])
               valid=valid&&(indexJ<imgReader.nrOfRow());
               valid=valid&&(indexI>=0);
               valid=valid&&(indexI<imgReader.nrOfCol());
-              if(valid&&srcnodata_opt.size()){
-                for(int vband=0;vband<bndnodata_opt.size();++vband){
-                  switch( fieldType ){
-                  case OFTInteger:{
-                    int value;
-                    value=((readValuesInt[vband])[indexJ])[indexI];
-                    if(value==srcnodata_opt[vband])
-                      valid=false;
-                    break;
-                  }
-                  case OFTReal:{
-                    double value;
-                    value=((readValuesReal[vband])[indexJ])[indexI];
-                    if(value==srcnodata_opt[vband])
-                      valid=false;
-                    break;
-                  }
-                  }
-                  if(!valid)
-                    continue;
-                  else
-                    validFeature=true;
-                }
-              }
+              if(valid){
+		if(srcnodata_opt.empty())
+		  validFeature=true;
+		else{
+		  for(int vband=0;vband<bndnodata_opt.size();++vband){
+		    switch( fieldType ){
+		    case OFTInteger:{
+		      int value;
+		      value=((readValuesInt[vband])[indexJ])[indexI];
+		      if(value==srcnodata_opt[vband])
+			valid=false;
+		      break;
+		    }
+		    case OFTReal:{
+		      double value;
+		      value=((readValuesReal[vband])[indexJ])[indexI];
+		      if(value==srcnodata_opt[vband])
+			valid=false;
+		      break;
+		    }
+		    }
+		    if(!valid)
+		      continue;
+		    else
+		      validFeature=true;
+		  }
+		}
+	      }
               if(valid){
                 assert(readValuesReal.size()==nband);
                 for(int iband=0;iband<nband;++iband){
@@ -1535,6 +1552,7 @@ int main(int argc, char *argv[])
                     }//iband
                   }//else (not class_opt.size())
                   if(!createPolygon){
+		    //todo: only if valid feature?
                     //write feature
                     if(verbose_opt[0]>1)
                       std::cout << "creating point feature" << std::endl;
@@ -1645,11 +1663,13 @@ int main(int argc, char *argv[])
                   }
                 }
               }
-            }
-            if(createPolygon){
+	    }
+	    //hiero
+            if(createPolygon&&validFeature){
+	      //todo: only create if valid feature?
               //write polygon feature
               if(verbose_opt[0]>1)
-                std::cout << "creating polygon feature" << std::endl;
+                std::cout << "creating polygon feature (2)" << std::endl;
               if(writeLayer->CreateFeature( writePolygonFeature ) != OGRERR_NONE ){
                 std::string errorString="Failed to create polygon feature in ogr vector dataset";
                 throw(errorString);
