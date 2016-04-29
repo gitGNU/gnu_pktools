@@ -85,7 +85,7 @@ void ImgWriterGdal::initMem(unsigned long int memory)
     }
   }
   else{
-    m_deletePointer=true;
+    m_deletePointer=false;
     m_blockSize=0;
   }
 }
