@@ -71,6 +71,25 @@ public:
   ImgRasterGdal(void);
   ///destructor
   virtual ~ImgRasterGdal(void){};
+  ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
+  void setScale(double theScale, int band=0){
+    if(m_scale.size()!=nrOfBand()){//initialize
+      m_scale.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+       m_scale[iband]=1.0;
+    }
+    m_scale[band]=theScale;
+  };
+  ///Set offset for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the offset for each band. If the image data are cached (class was created with memory>0), the offset is applied on the cached memory.
+  void setOffset(double theOffset, int band=0){
+    if(m_offset.size()!=nrOfBand()){
+      m_offset.resize(nrOfBand());
+      for(int iband=0;iband<nrOfBand();++iband)
+       m_offset[iband]=0.0;
+    }
+      m_offset[band]=theOffset;
+  };
+
   ///Close the image.
   virtual void close(void);
   ///Get the filename of this dataset
@@ -178,6 +197,12 @@ protected:
   double m_gt[6];
   ///no data values for this dataset
   std::vector<double> m_noDataValues;
+  ///Vector containing the scale factor to be applied (one scale value for each band)
+  std::vector<double> m_scale;
+  ///Vector containing the offset factor to be applied (one offset value for each band)
+  std::vector<double> m_offset;
+  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
+
 
 private:
 };

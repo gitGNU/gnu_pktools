@@ -399,23 +399,37 @@ void ImgWriterGdal::setColorTable(GDALColorTable* colorTable, int band)
 /**
  * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
  * @param burnValues Values to burn into raster cells (one value for each band)
+ * @param controlOptions special options controlling rasterization (ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG)
+ * "ATTRIBUTE":
+ * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer. 
+ * "CHUNKYSIZE":
+ * The height in lines of the chunk to operate on. The larger the chunk size the less times we need to make a pass through all the shapes. If it is not set or set to zero the default chunk size will be used. Default size will be estimated based on the GDAL cache buffer size using formula: cache_size_bytes/scanline_size_bytes, so the chunk will not exceed the cache.
+ * "ALL_TOUCHED":
+ * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE. 
+ "BURN_VALUE_
+ * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future. 
+ * "MERGE_ALG":
+ * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
  * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
  **/
-void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& layernames ){
+void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
   std::vector<int> bands;
-  std::vector<double> burnBands;//burn values for all bands in a single layer
-  std::vector<double> burnLayers;//burn values for all bands and all layers
-  if(burnValues.empty()){
-    std::string errorString="Error: burn values not provided";
+  if(burnValues.empty()&&controlOptions.empty()){
+    std::string errorString="Error: either burn values or control options must be provided";
     throw(errorString);
   }
-  burnBands=burnValues;
-  while(burnBands.size()<nrOfBand())
-    burnBands.push_back(burnValues[0]);
   for(int iband=0;iband<nrOfBand();++iband)
     bands.push_back(iband+1);
   std::vector<OGRLayerH> layers;
   int nlayer=0;
+
+  std::vector<double> burnBands;//burn values for all bands in a single layer
+  std::vector<double> burnLayers;//burn values for all bands and all layers
+  if(burnValues.size()){
+    burnBands=burnValues;
+    while(burnBands.size()<nrOfBand())
+      burnBands.push_back(burnValues[0]);
+  }
   for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
     std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
     if(layernames.size())
@@ -424,14 +438,29 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
     std::cout << "processing layer " << currentLayername << std::endl;
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
-    for(int iband=0;iband<nrOfBand();++iband)
-      burnLayers.insert(burnLayers.end(),burnBands.begin(),burnBands.end());
+    if(burnValues.size()){
+      for(int iband=0;iband<nrOfBand();++iband)
+        burnLayers.insert(burnLayers.end(),burnBands.begin(),burnBands.end());
+    }
   }
   void *pTransformArg;
   char **papszOptions;
   void* pProgressArg=NULL;
-  if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),NULL,NULL,NULL)!=CE_None){
-    std::string errorString(CPLGetLastErrorMsg());
-    throw(errorString);
+
+  std::vector<char*> coptions;
+  for(size_t i = 0; i < controlOptions.size(); ++i)
+    coptions.push_back(const_cast<char*>(controlOptions[i].c_str()));
+
+  if(burnValues.size()){
+    if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),NULL,NULL,NULL)!=CE_None){
+      std::string errorString(CPLGetLastErrorMsg());
+      throw(errorString);
+    }
+  }
+  else{
+    if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,NULL,coptions.data(),NULL,NULL)!=CE_None){
+      std::string errorString(CPLGetLastErrorMsg());
+      throw(errorString);
+    }
   }
 }

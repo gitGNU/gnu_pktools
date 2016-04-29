@@ -55,24 +55,7 @@ public:
   ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){open(dataPointer, filename, ncol, nrow, nband, dataType);};
   ///destructor
   ~ImgWriterGdal(void);
-  ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
-  void setScale(double theScale, int band=0){
-    if(m_scale.size()!=nrOfBand()){//initialize
-      m_scale.resize(nrOfBand());
-      for(int iband=0;iband<nrOfBand();++iband)
-       m_scale[iband]=1.0;
-    }
-    m_scale[band]=theScale;
-  };
-  ///Set offset for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the offset for each band. If the image data are cached (class was created with memory>0), the offset is applied on the cached memory.
-  void setOffset(double theOffset, int band=0){
-    if(m_offset.size()!=nrOfBand()){
-      m_offset.resize(nrOfBand());
-      for(int iband=0;iband<nrOfBand();++iband)
-       m_offset[iband]=0.0;
-    }
-      m_offset[band]=theOffset;
-  };
+
   ///Open an image for writing, copying image attributes from a source image. Image is directly read from file. Use the constructor with memory>0 to support caching
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
@@ -107,7 +90,7 @@ public:
   ///Set specific metadata (driver specific)
   void setMetadata(char** metadata);
   ///Rasterize an OGR vector dataset using the gdal algorithm "GDALRasterizeLayers"
-  void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues=std::vector<double>(), const std::vector<std::string>& layernames=std::vector<std::string>());
+  void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
 protected:
   ///Register GDAL driver, setting the datatype, imagetype and some metadata
@@ -123,11 +106,6 @@ protected:
   std::vector<unsigned int> m_begin;
   ///beyond last line read in cache for a specific band
   std::vector<unsigned int> m_end;
-  ///Vector containing the scale factor to be applied (one scale value for each band)
-  std::vector<double> m_scale;
-  ///Vector containing the offset factor to be applied (one offset value for each band)
-  std::vector<double> m_offset;
-  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
 
 private:
   ///Write new block from cache (defined by m_begin and m_end)
