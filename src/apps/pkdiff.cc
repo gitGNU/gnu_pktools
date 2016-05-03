@@ -291,6 +291,7 @@ int main(int argc, char *argv[])
     referenceReaderOgr.close();
   }
   catch(string errorString){
+    //todo: sampleIsRaster will not work from GDAL 2.0!!?? (unification of driver for raster and vector datasets)
     refIsRaster=true;
   }
   const char* pszMessage;

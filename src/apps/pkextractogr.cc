@@ -325,6 +325,7 @@ int main(int argc, char *argv[])
       sampleReaderOgr.open(sample_opt[0]);
     }
     catch(string errorString){
+      //todo: sampleIsRaster will not work from GDAL 2.0!!?? (unification of driver for raster and vector datasets)
       sampleIsRaster=true;
     }
   }

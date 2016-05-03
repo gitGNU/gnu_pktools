@@ -24,6 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <algorithm>
 #include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgUpdaterGdal.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Optionpk.h"
@@ -43,7 +44,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   Options: [-of out_format] [-ot {Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}] [-b band]* [-ulx ULX -uly ULY -lrx LRX -lry LRY] [-dx xres] [-dy yres] [-r resampling_method] [-a_srs epsg:number] [-nodata value] 
 
   Advanced options:
-  	   [-e vector [-cut]] [-sband band -eband band]* [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-scale value]* [-off offset]* [-ct colortable] [-d description] [-align]
+  	   [-e vector [-cut] [-eo option]*] [-sband band -eband band]* [-co NAME=VALUE]* [-x center_x -y center_y] [-nx size_x -ny size_y] [-ns nsample -nl nlines] [-as min -as max] [-scale value]* [-off offset]* [-ct colortable] [-d description] [-align]
 </code>
 
 \section pkcrop_description Description
@@ -74,10 +75,10 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | r      | resampling-method    | std::string | near  |Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation). | 
  | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
  | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
+ | eo       | eo                 | std::string |       |special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname |
  | m      | mask                 | std::string |       |Use the specified file as a validity mask (0 is nodata) | 
  | msknodata | msknodata            | float | 0     |Mask value not to consider for crop
- | msknodata | msknodata            | float | 0     |Mask value not to consider for crop
- | mskband | mskband              | short | 0     |Mask band to read (0 indexed). Provide band for each mask. | 
+ | mskband | mskband              | short | 0     |Mask band to read (0 indexed) | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | x      | x                    | double |       |x-coordinate of image center to crop (in meter) | 
  | y      | y                    | double |       |y-coordinate of image center to crop (in meter) | 
@@ -107,9 +108,11 @@ int main(int argc, char *argv[])
   //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
+  Optionpk<double> burn_opt("burn","burn", "Value(s) to burn into the raster (one for each band)");
+  Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
-  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed). Provide band for each mask.", 0);
+  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -141,6 +144,8 @@ int main(int argc, char *argv[])
 
   extent_opt.setHide(1);
   cut_opt.setHide(1);
+  burn_opt.setHide(1);
+  eoption_opt.setHide(1);
   bstart_opt.setHide(1);
   bend_opt.setHide(1);
   mask_opt.setHide(1);
@@ -180,6 +185,8 @@ int main(int argc, char *argv[])
     resample_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);
     cut_opt.retrieveOption(argc,argv);
+    burn_opt.retrieveOption(argc,argv);
+    eoption_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     msknodata_opt.retrieveOption(argc,argv);
     mskband_opt.retrieveOption(argc,argv);
@@ -243,7 +250,7 @@ int main(int argc, char *argv[])
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  ImgReaderGdal imgReader;
+  ImgUpdaterGdal imgReader;
   ImgWriterGdal imgWriter;
   //open input images to extract number of bands and spatial resolution
   int ncropband=0;//total number of bands to write
@@ -280,7 +287,13 @@ int main(int argc, char *argv[])
   bool isGeoRef=false;
   string projectionString;
   for(int iimg=0;iimg<input_opt.size();++iimg){
+    try{
     imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+    }
+    catch(string error){
+      cerr << "Error: could not open file " << input_opt[iimg] << ": " << error << std::endl;
+      exit(1);
+    }
     if(!isGeoRef)
       isGeoRef=imgReader.isGeoRef();
     if(imgReader.isGeoRef()&&projection_opt.empty())
@@ -333,9 +346,16 @@ int main(int argc, char *argv[])
     double e_lrx;
     double e_lry;
     for(int iextent=0;iextent<extent_opt.size();++iextent){
-      extentReader.open(extent_opt[iextent]);
-      if(!(extentReader.getExtent(e_ulx,e_uly,e_lrx,e_lry))){
-        cerr << "Error: could not get extent from " << extent_opt[0] << endl;
+      try{
+        extentReader.open(extent_opt[iextent]);
+        if(!(extentReader.getExtent(e_ulx,e_uly,e_lrx,e_lry))){
+          ostringstream os;
+          os << "Error: could not get extent from " << extent_opt[0] << endl;
+          throw(os.str());
+        }
+      }
+      catch(string error){
+        cerr << error << std::endl;
         exit(1);
       }
       if(!iextent){
@@ -404,9 +424,14 @@ int main(int argc, char *argv[])
 
   ImgWriterGdal maskWriter;
   if(extent_opt.size()&&cut_opt[0]){
+    if(mask_opt.size()){
+      string errorString="Error: can only either mask or extent extent with cutline, not both";
+      throw(errorString);
+    }
     try{
       ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
       ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
+      //todo: produce unique name
       maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
       double gt[6];
       gt[0]=ulx_opt[0];
@@ -422,27 +447,22 @@ int main(int argc, char *argv[])
 	maskWriter.setProjection(projectionString);
 	
       //todo: handle multiple extent options
-      vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskWriter.rasterizeOgr(extentReader,burnValues);
+      if(burn_opt.empty())
+        burn_opt.push_back(1.0);
+      maskWriter.rasterizeOgr(extentReader,burn_opt,eoption_opt);
       maskWriter.close();
     }
     catch(string error){
       cerr << error << std::endl;
       exit(2);
     }
-    catch(...){
-      cerr << "error caught" << std::endl;
-      exit(1);
-    }
-    //todo: support multiple masks
     mask_opt.clear();
     mask_opt.push_back("/vsimem/mask.tif");
   }
   ImgReaderGdal maskReader;
-  if(mask_opt.size()){
+  if(mask_opt.size()==1){
     try{
-      if(verbose_opt[0]>=1)
-	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
+      //there is only a single mask
       maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
@@ -452,10 +472,6 @@ int main(int argc, char *argv[])
     catch(string error){
       cerr << error << std::endl;
       exit(2);
-    }
-    catch(...){
-      cerr << "error caught" << std::endl;
-      exit(1);
     }
   }
 
@@ -481,7 +497,13 @@ int main(int argc, char *argv[])
   for(int iimg=0;iimg<input_opt.size();++iimg){
     if(verbose_opt[0])
       cout << "opening image " << input_opt[iimg] << endl;
-    imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+    try{
+      imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(2);
+    }
     //if output type not set, get type from input image
     if(theType==GDT_Unknown){
       theType=imgReader.getDataType();
@@ -731,8 +753,6 @@ int main(int argc, char *argv[])
 	    writeBuffer.push_back(nodataValue);
 	}
 	else{
-	  if(verbose_opt[0]>1)
-	    cout << "reading row: " << readRow << endl;
 	  try{
             if(endCol<imgReader.nrOfCol()-1)
               imgReader.readData(readBuffer,startCol,endCol+1,readRow,readBand,theResample);
@@ -783,11 +803,14 @@ int main(int argc, char *argv[])
 		      }
 		      oldRowMask=rowMask;
 		    }
-		    if(lineMask[colMask]==msknodata_opt[0])
-		      valid=false;
+                    for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+                      if(lineMask[colMask]==msknodata_opt[ivalue]){
+                        valid=false;
+                        nodataValue=(nodata_opt.size()>ivalue)? nodata_opt[ivalue] : nodata_opt[0];
+                      }
+                    }
 		  }
 		}
-
                 if(!valid)
                   writeBuffer.push_back(nodataValue);
                 else{
@@ -848,7 +871,7 @@ int main(int argc, char *argv[])
     }
     imgReader.close();
   }
-  if(extent_opt.size()&&cut_opt.size()){
+  if(extent_opt.size()&&cut_opt[0]){
     extentReader.close();
   }
   if(mask_opt.size())

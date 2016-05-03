@@ -91,6 +91,8 @@ public:
   void setMetadata(char** metadata);
   ///Rasterize an OGR vector dataset using the gdal algorithm "GDALRasterizeLayers"
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
+  ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
+  void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
 protected:
   ///Register GDAL driver, setting the datatype, imagetype and some metadata

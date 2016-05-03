@@ -79,8 +79,17 @@ void ImgReaderGdal::close(void)
  **/
 void ImgReaderGdal::setCodec(const GDALAccess& readMode)
 {
+#if GDAL_VERSION_MAJOR < 2
   GDALAllRegister();
   m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
+#else
+  GDALAllRegister();
+  if(readMode==GA_ReadOnly)
+    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY||GDAL_OF_RASTER, NULL, NULL, NULL);
+  else if(readMode==GA_Update)
+    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE||GDAL_OF_RASTER, NULL, NULL, NULL);
+#endif
+
   if(m_gds == NULL){
     std::string errorString="FileOpenError";
     throw(errorString);

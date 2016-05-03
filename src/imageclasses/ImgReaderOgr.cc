@@ -66,11 +66,20 @@ void ImgReaderOgr::setCodec(void){
   //register the drivers
   GDALAllRegister();
   //open the input OGR datasource. Datasources can be files, RDBMSes, directories full of files, or even remote web services depending on the driver being used. However, the datasource name is always a single string.
-  m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY, NULL, NULL, NULL);
+  m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_VECTOR||GDAL_OF_READONLY, NULL, NULL, NULL);
+  //  m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY||GDAL_OF_VECTOR, NULL, NULL, NULL);
 #endif
   if( m_datasource == NULL ){
+#if GDAL_VERSION_MAJOR < 2
     std::string errorString="Open failed";
     throw(errorString);
+#else
+    m_datasource = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_VECTOR, NULL, NULL, NULL);
+    if( m_datasource == NULL ){
+      std::string errorString="Open failed";
+      throw(errorString);
+    }
+#endif
   }
 }
 
