@@ -447,21 +447,25 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
   GDALProgressFunc pfnProgress=NULL;
   void* pProgressArg=NULL;
 
-  std::vector<char*> coptions;
-  for(size_t i = 0; i < controlOptions.size(); ++i)
-    coptions.push_back(const_cast<char*>(controlOptions[i].c_str()));
+  char **coptions=NULL;
+  for(std::vector<std::string>::const_iterator optionIt=controlOptions.begin();optionIt!=controlOptions.end();++optionIt)
+    coptions=CSLAddString(coptions,optionIt->c_str());
 
-  if(burnValues.size()){
+  if(controlOptions.size()){
+    if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
+      std::string errorString(CPLGetLastErrorMsg());
+      throw(errorString);
+    }
+  }
+  else if(burnValues.size()){
     if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),NULL,pfnProgress,pProgressArg)!=CE_None){
       std::string errorString(CPLGetLastErrorMsg());
       throw(errorString);
     }
   }
   else{
-    if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,NULL,coptions.data(),pfnProgress,pProgressArg)!=CE_None){
-      std::string errorString(CPLGetLastErrorMsg());
-      throw(errorString);
-    }
+    std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
+    throw(errorString);
   }
 }
 
@@ -512,24 +516,28 @@ void ImgWriterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<doub
   GDALProgressFunc pfnProgress=NULL;
   void* pProgressArg=NULL;
 
-  std::vector<char*> coptions;
-  for(size_t i = 0; i < controlOptions.size(); ++i)
-    coptions.push_back(const_cast<char*>(controlOptions[i].c_str()));
+  char **coptions=NULL;
+  for(std::vector<std::string>::const_iterator optionIt=controlOptions.begin();optionIt!=controlOptions.end();++optionIt)
+    coptions=CSLAddString(coptions,optionIt->c_str());
 
   for(int iband=0;iband<nrOfBand();++iband){
     double gt[6];
     getGeoTransform(gt);
-    if(burnValues.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],coptions.data(),pfnProgress,pProgressArg)!=CE_None){
+    if(controlOptions.size()){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
+        std::string errorString(CPLGetLastErrorMsg());
+        throw(errorString);
+      }
+    }
+    else if(burnValues.size()){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
         std::string errorString(CPLGetLastErrorMsg());
         throw(errorString);
       }
     }
     else{
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
-        std::string errorString(CPLGetLastErrorMsg());
+      std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
         throw(errorString);
-      }
     }
   }
 }

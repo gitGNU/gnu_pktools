@@ -108,7 +108,6 @@ int main(int argc, char *argv[])
   //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
-  Optionpk<double> burn_opt("burn","burn", "Value(s) to burn into the raster (one for each band)");
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
@@ -144,7 +143,6 @@ int main(int argc, char *argv[])
 
   extent_opt.setHide(1);
   cut_opt.setHide(1);
-  burn_opt.setHide(1);
   eoption_opt.setHide(1);
   bstart_opt.setHide(1);
   bend_opt.setHide(1);
@@ -185,7 +183,6 @@ int main(int argc, char *argv[])
     resample_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);
     cut_opt.retrieveOption(argc,argv);
-    burn_opt.retrieveOption(argc,argv);
     eoption_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     msknodata_opt.retrieveOption(argc,argv);
@@ -384,7 +381,7 @@ int main(int argc, char *argv[])
       uly_opt[0]=cropuly;
     if(croplry<cropuly&&croplry>lry_opt[0])
       lry_opt[0]=croplry;
-    if(cut_opt.size())
+    if(cut_opt.size()||eoption_opt.size())
       extentReader.open(extent_opt[0]);
   }
   else if(cx_opt.size()&&cy_opt.size()&&nx_opt.size()&&ny_opt.size()){
@@ -423,7 +420,7 @@ int main(int argc, char *argv[])
   int ncroprow=0;
 
   ImgWriterGdal maskWriter;
-  if(extent_opt.size()&&cut_opt[0]){
+  if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     if(mask_opt.size()){
       string errorString="Error: can only either mask or extent extent with cutline, not both";
       throw(errorString);
@@ -447,9 +444,9 @@ int main(int argc, char *argv[])
 	maskWriter.setProjection(projectionString);
 	
       //todo: handle multiple extent options
-      if(burn_opt.empty())
-        burn_opt.push_back(1.0);
-      maskWriter.rasterizeOgr(extentReader,burn_opt,eoption_opt);
+      vector<double> burnValues;
+      burnValues.push_back(1.0);
+      maskWriter.rasterizeOgr(extentReader,burnValues,eoption_opt);
       maskWriter.close();
     }
     catch(string error){
@@ -871,7 +868,7 @@ int main(int argc, char *argv[])
     }
     imgReader.close();
   }
-  if(extent_opt.size()&&cut_opt[0]){
+  if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     extentReader.close();
   }
   if(mask_opt.size())
