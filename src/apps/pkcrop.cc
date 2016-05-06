@@ -443,9 +443,7 @@ int main(int argc, char *argv[])
       else if(projectionString.size())
 	maskWriter.setProjection(projectionString);
 	
-      //todo: handle multiple extent options
-      vector<double> burnValues;
-      burnValues.push_back(1.0);
+      vector<double> burnValues(1,1);//burn value is 1 (single band)
       maskWriter.rasterizeOgr(extentReader,burnValues,eoption_opt);
       maskWriter.close();
     }

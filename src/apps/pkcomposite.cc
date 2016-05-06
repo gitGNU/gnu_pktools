@@ -97,6 +97,7 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | dy     | dy                   | double |       |Output resolution in y (in meter) (empty: keep original resolution) | 
  | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
  | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
+ | eo       | eo                 | std::string |       |special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname |
  | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (0 is nodata) | 
  | msknodata | msknodata            | float | 0     |Mask value not to consider for composite
  | mskband | mskband              | short | 0     |Mask band to read (0 indexed) | 
@@ -150,6 +151,7 @@ int main(int argc, char *argv[])
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
+  Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
   Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
@@ -182,6 +184,7 @@ int main(int argc, char *argv[])
 
   extent_opt.setHide(1);
   cut_opt.setHide(1);
+  eoption_opt.setHide(1);
   mask_opt.setHide(1);
   msknodata_opt.setHide(1);
   mskband_opt.setHide(1);
@@ -204,6 +207,7 @@ int main(int argc, char *argv[])
     dy_opt.retrieveOption(argc,argv);
     extent_opt.retrieveOption(argc,argv);
     cut_opt.retrieveOption(argc,argv);
+    eoption_opt.retrieveOption(argc,argv);
     mask_opt.retrieveOption(argc,argv);
     msknodata_opt.retrieveOption(argc,argv);
     mskband_opt.retrieveOption(argc,argv);
@@ -373,7 +377,8 @@ int main(int argc, char *argv[])
       uly_opt[0]=maxULY;
     if(minLRY<maxULY&&minLRY>lry_opt[0])
       lry_opt[0]=minLRY;
-    if(cut_opt.size())
+    if(cut_opt.size()||eoption_opt.size())
+      extentReader.open(extent_opt[0]);
       extentReader.open(extent_opt[0]);
   }
 
@@ -650,7 +655,7 @@ int main(int argc, char *argv[])
   }
 
   ImgWriterGdal maskWriter;
-  if(extent_opt.size()&&cut_opt[0]){
+  if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     try{
       maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,"GTiff",option_opt);
       double gt[6];
@@ -668,10 +673,8 @@ int main(int argc, char *argv[])
 	  cout << "projection: " << theProjection << endl;
 	maskWriter.setProjection(theProjection);
       }
-	
-      //todo: handle multiple extent options
       vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskWriter.rasterizeOgr(extentReader,burnValues);
+      maskWriter.rasterizeOgr(extentReader,burnValues,eoption_opt);
       maskWriter.close();
     }
     catch(string error){
@@ -1318,7 +1321,7 @@ int main(int argc, char *argv[])
     progress=static_cast<float>(irow+1.0)/imgWriter.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
   }
-  if(extent_opt.size()&&cut_opt.size()){
+  if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     extentReader.close();
   }
   for(int ifile=0;ifile<input_opt.size();++ifile){
