@@ -48,13 +48,13 @@ public:
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, memory, options);};
   ///constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgWriterGdal(const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>()){open(imgSrc, options);};//todo: do not delete!
+  ImgWriterGdal(const ImgReaderGdal& imgSrc){open(imgSrc);};
   ///constructor opening an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgWriterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(ncol, nrow, nband, dataType, imageType, options);};
+  ImgWriterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType){open(ncol, nrow, nband, dataType);};
   ///constructor opening an image for writing using an external data pointer (not tested yet)
   ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){open(dataPointer, filename, ncol, nrow, nband, dataType);};
   ///constructor opening an image for writing in memory using an external data pointer (not tested yet)
@@ -70,8 +70,10 @@ public:
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
+  void open(int ncol, int nrow, int nband, const GDALDataType& dataType);
+  ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
+  void open(const ImgReaderGdal& imgSrc);
   ///Open an image for writing using an external data pointer (not tested yet)
   void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory using an external data pointer (not tested yet)
@@ -124,8 +126,6 @@ private:
   bool writeNewBlock(int row, int band);
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned long int memory);
-  ///Flag to indicate if the pointer used for caching should be deleted (only false for external pointer)
-  bool m_deletePointer;
 };
 
 /**
@@ -272,7 +272,7 @@ template<typename T> bool ImgWriterGdal::writeData(std::vector<T>& buffer, int m
 	s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
 	throw(s.str());
       }
-      else
+      else if(m_filename.size())
 	writeNewBlock(row,band);
     }
     int index=(row-m_begin[band])*nrOfCol();
@@ -415,7 +415,7 @@ template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, i
 	  s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
 	  throw(s.str());
 	}
-	else
+	else if(m_filename.size())
 	  writeNewBlock(irow,band);
       }
       int index=(irow-m_begin[band])*nrOfCol();

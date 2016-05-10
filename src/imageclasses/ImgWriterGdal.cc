@@ -34,7 +34,7 @@ ImgWriterGdal::ImgWriterGdal(void){};
 
 ImgWriterGdal::~ImgWriterGdal(void)
 {
-  if(m_data.size()&&m_deletePointer){
+  if(m_data.size()&&m_filename.size()){
     for(int iband=0;iband<m_nband;++iband)
       free(m_data[iband]);
   }
@@ -52,7 +52,6 @@ ImgWriterGdal::~ImgWriterGdal(void)
  **/
 void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){
   open(dataPointer, filename, ncol, nrow, nband, dataType);
-  m_deletePointer=false;//we are not the owner
   m_data.resize(nband);
   m_begin.resize(nband);
   m_end.resize(nband);
@@ -75,7 +74,6 @@ void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int nco
  **/
 void ImgWriterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
   open(dataPointer, ncol, nrow, nband, dataType);
-  m_deletePointer=false;//we are not the owner
   m_data.resize(nband);
   m_begin.resize(nband);
   m_end.resize(nband);
@@ -93,7 +91,6 @@ void ImgWriterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const
 void ImgWriterGdal::initMem(unsigned long int memory)
 {
   if(memory>0){
-    m_deletePointer=true;
     m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
     if(m_blockSize<1)
       m_blockSize=1;
@@ -108,10 +105,8 @@ void ImgWriterGdal::initMem(unsigned long int memory)
       m_end[iband]=m_begin[iband]+m_blockSize;
     }
   }
-  else{
-    m_deletePointer=false;
-    m_blockSize=0;
-  }
+  else
+    m_blockSize=nrOfRow();
 }
 
 /**
@@ -141,24 +136,12 @@ bool ImgWriterGdal::writeNewBlock(int row, int band)
  **/
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
 {
-  m_filename=filename;
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
+  m_filename=filename;
   m_options=options;
   setCodec(imgSrc);
-}
-
-
-/**
- * @param imgSrc Use this source image as a template to copy image attributes
- * @param options Creation options
- **/
-void ImgWriterGdal::open(const ImgReaderGdal& imgSrc)
-{
-  m_ncol=imgSrc.nrOfCol();
-  m_nrow=imgSrc.nrOfRow();
-  m_nband=imgSrc.nrOfBand();
 }
 
 /**
@@ -173,15 +156,16 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
   initMem(memory);
 }
 
-
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
+ * @param options Creation options
  **/
 void ImgWriterGdal::open(const ImgReaderGdal& imgSrc)
 {
-  open(imgSrc);
-  //todo: init memory with all memory (0)?
-  initMem(memory);
+  m_ncol=imgSrc.nrOfCol();
+  m_nrow=imgSrc.nrOfRow();
+  m_nband=imgSrc.nrOfBand();
+  initMem(0);
 }
 
 /**
@@ -222,7 +206,7 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
   m_nband = nband;
   m_options=options;
   setCodec(dataType,imageType);
-  init(memory);
+  initMem(memory);
 }
 
 /**
@@ -236,12 +220,12 @@ void ImgWriterGdal::open(int ncol, int nrow, int nband, const GDALDataType& data
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
-  //todo: init memory with all memory (0)?
+  initMem(0);
 }
 
 void ImgWriterGdal::close(void)
 {
-  if(m_data.size()){
+  if(m_data.size()&&m_filename.size()){
     for(int iband=0;iband<nrOfBand();++iband) 
       writeNewBlock(nrOfRow(),iband);
   }
