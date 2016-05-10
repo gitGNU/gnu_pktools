@@ -44,6 +44,7 @@ ImgWriterGdal::~ImgWriterGdal(void)
 //open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
 /**
  * @paramdataPointer External pointer to which the image data should be written in memory
+ * @param filename Open a raster dataset with this filename
  * @param ncol The number of columns in the image
  * @param nrow The number of rows in the image
  * @param band The number of bands in the image
@@ -51,6 +52,29 @@ ImgWriterGdal::~ImgWriterGdal(void)
  **/
 void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){
   open(dataPointer, filename, ncol, nrow, nband, dataType);
+  m_deletePointer=false;//we are not the owner
+  m_data.resize(nband);
+  m_begin.resize(nband);
+  m_end.resize(nband);
+  for(int iband=0;iband<nband;++iband){
+    m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
+    m_begin[iband]=0;
+    m_end[iband]=nrow;
+  }
+  m_blockSize=nrow;//memory contains entire image and has been read already
+}
+
+//not tested yet!!!
+//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
+/**
+ * @paramdataPointer External pointer to which the image data should be written in memory
+ * @param ncol The number of columns in the image
+ * @param nrow The number of rows in the image
+ * @param band The number of bands in the image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
+void ImgWriterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+  open(dataPointer, ncol, nrow, nband, dataType);
   m_deletePointer=false;//we are not the owner
   m_data.resize(nband);
   m_begin.resize(nband);
@@ -125,6 +149,18 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
   setCodec(imgSrc);
 }
 
+
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param options Creation options
+ **/
+void ImgWriterGdal::open(const ImgReaderGdal& imgSrc)
+{
+  m_ncol=imgSrc.nrOfCol();
+  m_nrow=imgSrc.nrOfRow();
+  m_nband=imgSrc.nrOfBand();
+}
+
 /**
  * @param filename Open a raster dataset with this filename
  * @param imgSrc Use this source image as a template to copy image attributes
@@ -134,6 +170,17 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options)
 {
   open(filename,imgSrc,options);
+  initMem(memory);
+}
+
+
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ **/
+void ImgWriterGdal::open(const ImgReaderGdal& imgSrc)
+{
+  open(imgSrc);
+  //todo: init memory with all memory (0)?
   initMem(memory);
 }
 
@@ -156,6 +203,7 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
   setCodec(dataType,imageType);
 }
 
+//hiero: todo add memory
 /**
  * @param filename Open a raster dataset with this filename
  * @param ncol Number of columns in image
@@ -168,8 +216,27 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
  **/
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
-  open(filename,ncol,nrow,nband,dataType,imageType,options);
-  initMem(memory);
+  m_filename = filename;
+  m_ncol = ncol;
+  m_nrow = nrow;
+  m_nband = nband;
+  m_options=options;
+  setCodec(dataType,imageType);
+  init(memory);
+}
+
+/**
+ * @param ncol Number of columns in image
+ * @param nrow Number of rows in image
+ * @param nband Number of bands in image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
+void ImgWriterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
+{
+  m_ncol = ncol;
+  m_nrow = nrow;
+  m_nband = nband;
+  //todo: init memory with all memory (0)?
 }
 
 void ImgWriterGdal::close(void)

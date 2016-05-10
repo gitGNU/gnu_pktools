@@ -68,6 +68,7 @@ set(PKTOOLS_ALGORITHMS_LIB_NAME algorithms)
 set(PKTOOLS_FILECLASSES_LIB_NAME fileClasses)
 set(PKTOOLS_IMAGECLASSES_LIB_NAME imageClasses)
 set(PKTOOLS_LASCLASSES_LIB_NAME lasClasses)
+set(PKTOOLS_APP_LIB_NAME appClasses)
 
 option (BUILD_SHARED_LIBS "Build with shared library" OFF)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
@@ -252,11 +253,7 @@ configure_file ( "cmake.pc.in" "pktools.pc"  @ONLY)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(PKLIBS ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
-
-set(PKUTILITIES
-	pkcomposite 
-)
+set(PKLIBS ${PKTOOLS_APP_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
 
 set(PKUTILITIES
   pkinfo
@@ -280,7 +277,8 @@ set(PKUTILITIES
   pkfilterdem 
   pkfilterascii 
   pkdsm2shadow 
-  pkcomposite 
+  pkcomposite
+  pkcomposite_app
   pkpolygonize 
   pkascii2img 
   pksvm 

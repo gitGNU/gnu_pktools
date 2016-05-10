@@ -5,7 +5,7 @@ set(ALGOR_SRC_DIR algorithms)
 set(FILECLASS_SRC_DIR fileclasses)
 set(IMGCLASS_SRC_DIR imageclasses)
 set(LASCLASS_SRC_DIR lasclasses)
-
+set(APP_SRC_DIR apps)
 
 set(BASE_H
 	${BASE_SRC_DIR}/IndexValue.h
@@ -75,6 +75,15 @@ set(LASCLASS_H
 set(LASCLASS_CC
 	${LASCLASS_SRC_DIR}/FileReaderLas.cc 
 	)
+	
+set(APP_H
+	${APP_SRC_DIR}/AppFactory.h 
+	)
+
+set(APP_CC
+	${APP_SRC_DIR}/AppFactory.cc 
+	)
+
 ###############################################################################
 
 ###############################################################################
@@ -95,9 +104,9 @@ target_link_libraries(${PKTOOLS_BASE_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES
 
 add_library( ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${IMGCLASS_H} ${IMGCLASS_CC} ${BASE_H} )
 target_link_libraries(${PKTOOLS_IMAGECLASSES_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} )
-foreach(lib ${GSL_LIBRARIES})
-message(${lib})
-endforeach()
+# foreach(lib ${GSL_LIBRARIES})
+# message(${lib})
+# endforeach()
 add_library( ${PKTOOLS_ALGORITHMS_LIB_NAME} ${ALGOR_H} ${ALGOR_CC} ${BASE_H} )
 target_link_libraries(${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${PKTOOLS_IMAGECLASSES_LIB_NAME} )
 
@@ -109,6 +118,8 @@ if (BUILD_WITH_LIBLAS)
 	target_link_libraries(${PKTOOLS_FILECLASSES_LIB_NAME} ${LIBLAS_LIBRARIES} ${BOOST_LIBRARIES} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} )
 endif(BUILD_WITH_LIBLAS)
 
+add_library( ${PKTOOLS_APP_LIB_NAME} ${APP_CC} ${APP_H} )
+target_link_libraries(${PKTOOLS_APP_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} )
 
 ###############################################################################
 
