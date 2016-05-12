@@ -10,83 +10,191 @@
 using namespace std;
 using namespace appfactory;
 
-bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& imgWriter){
+void AppFactory::setOptions(int argc, char* argv[]){
+  m_argc=argc;
+  for(int iarg=0;iarg<argc;++iarg)
+    m_argv.push_back(argv[iarg]);
+}
 
-  ///Output image filename
-  vector<string>  output_opt;
-  ///band index(es) to crop (leave empty if all bands must be retained)
- vector<int>  band_opt;
- ///Output resolution in x (in meter) (empty: keep original resolution)
- vector<double>  dx_opt;
- ///Output resolution in y (in meter) (empty: keep original resolution)
- vector<double>  dy_opt;
- ///get boundary from extent from polygons in vector file
- vector<string>  extent_opt;
- ///Crop the extent of the target dataset to the extent of the cutline.
- vector<bool> cut_opt;
- ///special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname
- vector<string> eoption_opt;
- ///Use the first band of the specified file as a validity mask (0 is nodata).
- vector<string> mask_opt;
- ///Mask value not to consider for composite.
- vector<float> msknodata_opt;
- ///Mask band to read (0 indexed)
- vector<short> mskband_opt;
- ///Upper left x value bounding box
- vector<double>  ulx_opt;
- ///Upper left y value bounding box
- vector<double>  uly_opt;
- ///Lower right x value bounding box
- vector<double>  lrx_opt;
- ///Lower right y value bounding box
- vector<double>  lry_opt;
- ///Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev
- vector<string> crule_opt;
- ///band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively
- vector<int> ruleBand_opt;
- ///invalid value(s) for input raster dataset
- vector<double> srcnodata_opt;
- ///Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)
- vector<int> bndnodata_opt;
- ///flag values smaller or equal to this value as invalid.
- vector<double> minValue_opt;
- ///flag values larger or equal to this value as invalid.
- vector<double> maxValue_opt;
- ///nodata value to put in output raster dataset if not valid or out of bounds.
- vector<double>  dstnodata_opt;
- ///Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).
- vector<string>  resample_opt;
- ///Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image
- vector<string>  otype_opt;
- ///Output image format (see also gdal_translate).
- vector<string>  oformat_opt;
- ///Creation option for output file. Multiple options can be specified.
- vector<string> option_opt;
- ///Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid
- vector<string>  projection_opt;
- ///write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite
- vector<short> file_opt;
- ///Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.
- vector<short> weight_opt;
- ///classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.
- vector<short> class_opt;
- ///color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)
- vector<string>  colorTable_opt;
- ///Set image description
- vector<string>  description_opt;
- ///Align output bounding box to input image
- vector<bool>  align_opt;
- ///output=scale*input+offset
- vector<double> scale_opt;
- ///output=scale*input+offset
- vector<double> offset_opt;
- ///verbose
- vector<short> verbose_opt(0,1);
-  
- std::map<std::string, crule::CRULE_TYPE> cruleMap;
+bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& imgWriter){
+  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
+  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
+  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
+  Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
+  Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
+  Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
+  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
+  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
+  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
+  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
+  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
+  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
+  Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev", "overwrite");
+  Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
+  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value(s) for input raster dataset");
+  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
+  Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
+  Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
+  Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output raster dataset if not valid or out of bounds.", 0);
+  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
+  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
+  Optionpk<short> file_opt("file", "file", "write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite", 0);
+  Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
+  Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.", 0);
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<string>  description_opt("d", "description", "Set image description");
+  Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
+  Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
+  Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
+  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
+
+  extent_opt.setHide(1);
+  cut_opt.setHide(1);
+  eoption_opt.setHide(1);
+  mask_opt.setHide(1);
+  msknodata_opt.setHide(1);
+  mskband_opt.setHide(1);
+  option_opt.setHide(1);
+  file_opt.setHide(1);
+  weight_opt.setHide(1);
+  class_opt.setHide(1);
+  colorTable_opt.setHide(1);
+  description_opt.setHide(1);
+  scale_opt.setHide(1);
+  offset_opt.setHide(1);
+  memory_opt.setHide(1);
+
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    doProcess=band_opt.retrieveOption(m_argc,m_argv);
+    dx_opt.retrieveOption(m_argc,m_argv);
+    dy_opt.retrieveOption(m_argc,m_argv);
+    extent_opt.retrieveOption(m_argc,m_argv);
+    cut_opt.retrieveOption(m_argc,m_argv);
+    eoption_opt.retrieveOption(m_argc,m_argv);
+    mask_opt.retrieveOption(m_argc,m_argv);
+    msknodata_opt.retrieveOption(m_argc,m_argv);
+    mskband_opt.retrieveOption(m_argc,m_argv);
+    ulx_opt.retrieveOption(m_argc,m_argv);
+    uly_opt.retrieveOption(m_argc,m_argv);
+    lrx_opt.retrieveOption(m_argc,m_argv);
+    lry_opt.retrieveOption(m_argc,m_argv);
+    crule_opt.retrieveOption(m_argc,m_argv);
+    ruleBand_opt.retrieveOption(m_argc,m_argv);
+    srcnodata_opt.retrieveOption(m_argc,m_argv);
+    bndnodata_opt.retrieveOption(m_argc,m_argv);
+    minValue_opt.retrieveOption(m_argc,m_argv);
+    maxValue_opt.retrieveOption(m_argc,m_argv);
+    dstnodata_opt.retrieveOption(m_argc,m_argv);
+    resample_opt.retrieveOption(m_argc,m_argv);
+    otype_opt.retrieveOption(m_argc,m_argv);
+    oformat_opt.retrieveOption(m_argc,m_argv);
+    option_opt.retrieveOption(m_argc,m_argv);
+    projection_opt.retrieveOption(m_argc,m_argv);
+    file_opt.retrieveOption(m_argc,m_argv);
+    weight_opt.retrieveOption(m_argc,m_argv);
+    class_opt.retrieveOption(m_argc,m_argv);
+    colorTable_opt.retrieveOption(m_argc,m_argv);
+    description_opt.retrieveOption(m_argc,m_argv);
+    align_opt.retrieveOption(m_argc,m_argv);
+    scale_opt.retrieveOption(m_argc,m_argv);
+    offset_opt.retrieveOption(m_argc,m_argv);
+    memory_opt.retrieveOption(m_argc,m_argv);
+    verbose_opt.retrieveOption(m_argc,m_argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
+    exit(0);
+  }
+  if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkcomposite -i input [-i input]* -o output" << endl;
+    cout << endl;
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
+  }
+  // ///Output image filename
+  // vector<string>  output_opt;
+  // ///band index(es) to crop (leave empty if all bands must be retained)
+  // vector<int>  band_opt;
+  // ///Output resolution in x (in meter) (empty: keep original resolution)
+  // vector<double>  dx_opt;
+  // ///Output resolution in y (in meter) (empty: keep original resolution)
+  // vector<double>  dy_opt;
+  // ///get boundary from extent from polygons in vector file
+  // vector<string>  extent_opt;
+  // ///Crop the extent of the target dataset to the extent of the cutline.
+  // vector<bool> cut_opt;
+  // ///special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname
+  // vector<string> eoption_opt;
+  // ///Use the first band of the specified file as a validity mask (0 is nodata).
+  // vector<string> mask_opt;
+  // ///Mask value not to consider for composite.
+  // vector<float> msknodata_opt;
+  // ///Mask band to read (0 indexed)
+  // vector<short> mskband_opt;
+  // ///Upper left x value bounding box
+  // vector<double>  ulx_opt;
+  // ///Upper left y value bounding box
+  // vector<double>  uly_opt;
+  // ///Lower right x value bounding box
+  // vector<double>  lrx_opt;
+  // ///Lower right y value bounding box
+  // vector<double>  lry_opt;
+  // ///Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev
+  // vector<string> crule_opt;
+  // ///band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively
+  // vector<int> ruleBand_opt;
+  // ///invalid value(s) for input raster dataset
+  // vector<double> srcnodata_opt;
+  // ///Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)
+  // vector<int> bndnodata_opt;
+  // ///flag values smaller or equal to this value as invalid.
+  // vector<double> minValue_opt;
+  // ///flag values larger or equal to this value as invalid.
+  // vector<double> maxValue_opt;
+  // ///nodata value to put in output raster dataset if not valid or out of bounds.
+  // vector<double>  dstnodata_opt;
+  // ///Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).
+  // vector<string>  resample_opt("near",1);
+  // ///Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image
+  // vector<string>  otype_opt("",1);
+  // ///Output image format (see also gdal_translate).
+  // vector<string>  oformat_opt("GTiff",1);
+  // ///Creation option for output file. Multiple options can be specified.
+  // vector<string> option_opt;
+  // ///Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid
+  // vector<string>  projection_opt;
+  // ///write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite
+  // vector<short> file_opt;
+  // ///Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.
+  // vector<short> weight_opt;
+  // ///classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.
+  // vector<short> class_opt;
+  // ///color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)
+  // vector<string>  colorTable_opt;
+  // ///Set image description
+  // vector<string>  description_opt;
+  // ///Align output bounding box to input image
+  // vector<bool>  align_opt;
+  // ///output=scale*input+offset
+  // vector<double> scale_opt;
+  // ///output=scale*input+offset
+  // vector<double> offset_opt;
+  // ///verbose
+  // vector<short> verbose_opt(0,1);
+
+  //test
+  cout << "debug0" << endl;
+  std::map<std::string, crule::CRULE_TYPE> cruleMap;
   // //initialize cruleMap
   // enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8};
-
+  
   cruleMap["overwrite"]=crule::overwrite;
   cruleMap["maxndvi"]=crule::maxndvi;
   cruleMap["maxband"]=crule::maxband;
@@ -99,6 +207,9 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   cruleMap["maxallbands"]=crule::maxallbands;
   cruleMap["minallbands"]=crule::minallbands;
   cruleMap["stdev"]=crule::stdev;
+
+ //test
+ cout << "debug0" << endl;
 
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
@@ -142,6 +253,9 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   int nwriteBand=0;
   int writeBand=0;
   vector<short> bands;
+
+  //test
+  cout << "debug1" << endl;
   
   //get bounding box
   double maxLRX=lrx_opt[0];
@@ -168,6 +282,9 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     else
       cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
   }
+
+  //test
+  cout << "debug2" << endl;
 
   double dx=0;
   double dy=0;
@@ -215,14 +332,21 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
       extentReader.open(extent_opt[0]);
   }
 
+  //test
+  cout << "debug3" << endl;
+
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
+
 
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
   string imageType;
   bool init=false;
-  //hiero
+
+  //test
+  cout << "debug4" << endl;
+
   for(int ifile=0;ifile<imgReader.size();++ifile){
     //todo: must be in init part only?
     if(colorTable_opt.empty())
@@ -435,17 +559,22 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   // }
   // if(verbose_opt[0])
   //   cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
+
+  //test
+  cout << "debug5" << endl;
+  //todo: segmentation faults between debug5 and debug6
   //todo: if in memory, do not require filename, else, filename must be set by caller?
   try{
-    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,m_memory,option_opt);
-    for(int iband=0;iband<nwriteBand;++iband)
-      imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
+    //open imgWriter in memory
+    imgWriter.open(ncol,nrow,nwriteBand,theType);
+    // for(int iband=0;iband<nwriteBand;++iband)
+    //   imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
   }
   catch(string error){
     cout << error << endl;
   }
-  if(description_opt.size())
-    imgWriter.setImageDescription(description_opt[0]);
+  // if(description_opt.size())
+  //   imgWriter.setImageDescription(description_opt[0]);
   double gt[6];
   gt[0]=minULX;
   gt[1]=dx;
@@ -453,6 +582,11 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   gt[3]=maxULY;
   gt[4]=0;
   gt[5]=-dy;
+
+  //test
+  cout << "debug3" << endl;
+
+  //todo: check if I can set geotransform and projection when dataset is not set yet...
   imgWriter.setGeoTransform(gt);
   // imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
   if(projection_opt.size()){
@@ -465,14 +599,17 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
       cout << "projection: " << theProjection << endl;
     imgWriter.setProjection(theProjection);
   }
-  if(imgWriter.getDataType()==GDT_Byte){
-    if(colorTable_opt.size()){
-      if(colorTable_opt[0]!="none")
-	imgWriter.setColorTable(colorTable_opt[0]);
-    }
-    else if(theColorTable)
-      imgWriter.setColorTable(theColorTable);
-  }
+  // if(imgWriter.getDataType()==GDT_Byte){
+  //   if(colorTable_opt.size()){
+  //     if(colorTable_opt[0]!="none")
+  //       imgWriter.setColorTable(colorTable_opt[0]);
+  //   }
+  //   else if(theColorTable)
+  //     imgWriter.setColorTable(theColorTable);
+  // }
+
+  //test
+  cout << "debug3" << endl;
 
   ImgWriterGdal maskWriter;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
@@ -1054,7 +1191,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
             imgWriter.writeData(classBuffer,irow,iclass);
           }
           catch(string error){
-            cerr << "error writing image file " << output_opt[0] << ": " << error << endl;
+            cerr << "error writing image file: " << error << endl;
             throw;
           }
         }
@@ -1073,7 +1210,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
             imgWriter.writeData(fileBuffer,irow,1);
         }
         catch(string error){
-          cerr << "error writing image file " << output_opt[0] << ": " << error << endl;
+          cerr << "error writing image file: " << error << endl;
           throw;
         }
       }
@@ -1124,7 +1261,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
           imgWriter.writeData(writeBuffer[iband],irow,iband);
         }
         catch(string error){
-          cerr << error << " in " << output_opt[0] << endl;
+          cerr << error << endl;
           throw;
         }
       }
@@ -1133,7 +1270,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
           imgWriter.writeData(fileBuffer,irow,bands.size());
         }
         catch(string error){
-          cerr << error << " in " << output_opt[0] << endl;
+          cerr << error << endl;
           throw;
         }
       }
@@ -1144,10 +1281,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     extentReader.close();
   }
-  for(int ifile=0;ifile<imgReader.size();++ifile){
-    imgReader[ifile].close();
-  }
   if(mask_opt.size())
     maskReader.close();
-  imgWriter.close();
 }

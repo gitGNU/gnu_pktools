@@ -70,7 +70,7 @@ public:
   ///default constructor
   ImgRasterGdal(void);
   ///destructor
-  virtual ~ImgRasterGdal(void){};
+  virtual ~ImgRasterGdal(void);
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
   void setScale(double theScale, int band=0){
     if(m_scale.size()!=nrOfBand()){//initialize
@@ -153,7 +153,7 @@ public:
   ///Get the GDAL datatype for this dataset
   GDALDataType getDataType(int band=0) const;
   ///Get the GDAL rasterband for this dataset
-  GDALRasterBand* getRasterBand(int band=0);
+  GDALRasterBand* getRasterBand(int band=0) const;
   ///Get the GDAL color table for this dataset as an instance of the GDALColorTable class
   GDALColorTable* getColorTable(int band=0) const;
   ///Get the GDAL driver description of this dataset
@@ -178,6 +178,33 @@ public:
   std::string getMetadataItem() const;
   ///Get the image description from the metadata of this dataset
   std::string getImageDescription() const;
+  unsigned int getBlockSize() const{return m_blockSize;};
+  int getBlockSizeX(int band=0)
+  {
+    int blockSizeX, blockSizeY;
+    getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
+    return blockSizeX;
+  }
+  int getBlockSizeY(int band=0)
+  {
+    int blockSizeX, blockSizeY;
+    getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
+    return blockSizeY;
+  }
+  int nrOfBlockX(int band=0)
+  {
+    int nXBlockSize, nYBlockSize;
+    getRasterBand(band)->GetBlockSize( &nXBlockSize, &nYBlockSize );
+    int nXBlocks = (nrOfCol() + nXBlockSize - 1) / nXBlockSize;
+    return nXBlocks;
+  }
+  int nrOfBlockY(int band=0)
+  {
+    int nXBlockSize, nYBlockSize;
+    getRasterBand(band)->GetBlockSize( &nXBlockSize, &nYBlockSize );
+    int nYBlocks = (nrOfRow() + nYBlockSize - 1) / nYBlockSize;
+    return nYBlocks;
+  }
 
   friend class ImgReaderGdal;
   friend class ImgWriterGdal;
@@ -193,6 +220,8 @@ protected:
   int m_nrow;
   ///number of bands in this dataset
   int m_nband;
+  ///GDAL data type for this dataset
+  GDALDataType m_dataType;
   ///geotransform information of this dataset
   double m_gt[6];
   ///no data values for this dataset
@@ -201,7 +230,15 @@ protected:
   std::vector<double> m_scale;
   ///Vector containing the offset factor to be applied (one offset value for each band)
   std::vector<double> m_offset;
+
   ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
+  unsigned int m_blockSize;
+  ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
+  std::vector<void *> m_data;
+  ///first line that has been read in cache for a specific band
+  std::vector<unsigned int> m_begin;
+  ///beyond last line read in cache for a specific band
+  std::vector<unsigned int> m_end;
 
 
 private:

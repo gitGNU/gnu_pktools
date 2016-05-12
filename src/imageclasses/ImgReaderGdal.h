@@ -91,14 +91,7 @@ public:
 protected:
   ///Set GDAL dataset number of columns, rows, bands and geotransform.
   void setCodec(const GDALAccess& readMode=GA_ReadOnly);
-  unsigned int m_blockSize;
-  ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
-  std::vector<void *> m_data;
-  ///first line that has been read in cache for a specific band
-  std::vector<unsigned int> m_begin;
-  ///beyond last line read in cache for a specific band
-  std::vector<unsigned int> m_end;
-
+  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
 private:
   ///Read new block in cache (defined by m_begin and m_end)
   bool readNewBlock(int row, int band);

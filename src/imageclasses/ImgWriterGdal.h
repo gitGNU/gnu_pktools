@@ -95,6 +95,8 @@ public:
   // bool writeData(void* pdata, const GDALDataType& dataType, int band=0);
   ///Write pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
   template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  ///Write pixel cell values for the entire image from memory to file
+  void setFile(const std::string& filename, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
   void setColorTable(const std::string& filename, int band=0);
   ///Set the color table using the GDAL class GDALColorTable
@@ -108,18 +110,10 @@ public:
 
 protected:
   ///Register GDAL driver, setting the datatype, imagetype and some metadata
-  virtual void setCodec(const GDALDataType& dataType, const std::string& imageType);
+  virtual void setCodec(const std::string& imageType);
   ///Register GDAL driver, setting the datatype, imagetype and some metadata
   virtual void setCodec(const ImgReaderGdal& ImgSrc);
   std::vector<std::string> m_options;
-  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
-  unsigned int m_blockSize;
-  ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
-  std::vector<void *> m_data;
-  ///first line that has been read in cache for a specific band
-  std::vector<unsigned int> m_begin;
-  ///beyond last line read in cache for a specific band
-  std::vector<unsigned int> m_end;
 
 private:
   ///Write new block from cache (defined by m_begin and m_end)

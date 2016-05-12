@@ -17,21 +17,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-#include "ImgReaderGdal.h"
 #include <assert.h>
 #include <sstream>
 #include <iostream>
 #include <gsl/gsl_cdf.h>
+#include "cpl_conv.h" // for CPLMalloc()
+#include "ImgReaderGdal.h"
 
 ImgReaderGdal::ImgReaderGdal(void){};
 
-ImgReaderGdal::~ImgReaderGdal(void)
-{
-  if(m_data.size()&&m_deletePointer){
-    for(int iband=0;iband<m_nband;++iband)
-      free(m_data[iband]);
-  }
-}
+ImgReaderGdal::~ImgReaderGdal(void){};
+// {
+//   if(m_data.size()&&m_filename.size()){
+//     for(int iband=0;iband<m_nband;++iband)
+//       free(m_data[iband]);
+//   }
+// }
 
 /**
  * @param dataPointer External pointer already containing the image data
@@ -42,7 +43,6 @@ ImgReaderGdal::~ImgReaderGdal(void)
  **/
 void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType)
 {
-  m_deletePointer=false;//we are not the owner
   m_nband=nband;
   m_ncol=ncol;
   m_nrow=nrow;
@@ -79,15 +79,17 @@ void ImgReaderGdal::close(void)
  **/
 void ImgReaderGdal::setCodec(const GDALAccess& readMode)
 {
+  GDALAllRegister();
+  // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #if GDAL_VERSION_MAJOR < 2
   GDALAllRegister();
   m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #else
   GDALAllRegister();
   if(readMode==GA_ReadOnly)
-    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY||GDAL_OF_RASTER, NULL, NULL, NULL);
+    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY|GDAL_OF_RASTER, NULL, NULL, NULL);
   else if(readMode==GA_Update)
-    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE||GDAL_OF_RASTER, NULL, NULL, NULL);
+    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
 #endif
 
   if(m_gds == NULL){
@@ -112,25 +114,24 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
  **/
 void ImgReaderGdal::initMem(unsigned long int memory)
 {
-  if(memory>0){
-    m_deletePointer=true;
-    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-    if(m_blockSize<1)
-      m_blockSize=1;
-    if(m_blockSize>nrOfRow())
-      m_blockSize=nrOfRow();
-    m_data.resize(nrOfBand());
-    m_begin.resize(nrOfBand());
-    m_end.resize(nrOfBand());
-    for(int iband=0;iband<m_nband;++iband){
-      m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-      m_begin[iband]=0;
-      m_end[iband]=0;
-    }
-  }
+  int nXBlockSize, nYBlockSize;
+  if(memory<=0)
+    m_blockSize=nrOfRow();
   else{
-    m_deletePointer=false;
-    m_blockSize=0;
+    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+    m_blockSize-=m_blockSize%getBlockSizeY(0);
+  }
+  if(m_blockSize<1)
+    m_blockSize=1;
+  if(m_blockSize>nrOfRow())
+    m_blockSize=nrOfRow();
+  m_data.resize(nrOfBand());
+  m_begin.resize(nrOfBand());
+  m_end.resize(nrOfBand());
+  for(int iband=0;iband<m_nband;++iband){
+    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+    m_begin[iband]=0;
+    m_end[iband]=0;
   }
 }
 

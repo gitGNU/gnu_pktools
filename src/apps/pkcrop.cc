@@ -24,7 +24,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <algorithm>
 #include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgUpdaterGdal.h"
 #include "imageclasses/ImgReaderGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Optionpk.h"
@@ -247,7 +246,7 @@ int main(int argc, char *argv[])
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  ImgUpdaterGdal imgReader;
+  ImgReaderGdal imgReader;
   ImgWriterGdal imgWriter;
   //open input images to extract number of bands and spatial resolution
   int ncropband=0;//total number of bands to write
@@ -687,7 +686,8 @@ int main(int argc, char *argv[])
 
 
     int readncol=endCol-startCol+1;
-    vector<double> readBuffer(readncol+1);
+    // vector<double> readBuffer(readncol+1);
+    vector<double> readBuffer;
     int nband=(band_opt.size())?band_opt.size() : imgReader.nrOfBand();
     for(int iband=0;iband<nband;++iband){
       int readBand=(band_opt.size()>iband)?band_opt[iband]:iband;
@@ -749,10 +749,12 @@ int main(int argc, char *argv[])
 	}
 	else{
 	  try{
-            if(endCol<imgReader.nrOfCol()-1)
+            if(endCol<imgReader.nrOfCol()-1){
               imgReader.readData(readBuffer,startCol,endCol+1,readRow,readBand,theResample);
-            else
+            }
+            else{
               imgReader.readData(readBuffer,startCol,endCol,readRow,readBand,theResample);
+            }
 	    // for(int icol=0;icol<ncropcol;++icol){
 	    double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 	    for(int icol=0;icol<imgWriter.nrOfCol();++icol){

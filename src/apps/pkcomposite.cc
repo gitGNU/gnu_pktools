@@ -379,7 +379,6 @@ int main(int argc, char *argv[])
       lry_opt[0]=minLRY;
     if(cut_opt.size()||eoption_opt.size())
       extentReader.open(extent_opt[0]);
-      extentReader.open(extent_opt[0]);
   }
 
   if(verbose_opt[0])

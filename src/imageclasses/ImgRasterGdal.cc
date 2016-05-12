@@ -22,8 +22,16 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "ImgRasterGdal.h"
 
 ImgRasterGdal::ImgRasterGdal(void)
-  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0)
+  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown)
 {}
+
+ImgRasterGdal::~ImgRasterGdal(void)
+{
+  if(m_data.size()&&m_filename.size()){
+    for(int iband=0;iband<m_nband;++iband)
+      free(m_data[iband]);
+  }
+}
 
 void ImgRasterGdal::close(void)
 {
@@ -90,14 +98,17 @@ void ImgRasterGdal::setProjection(const std::string& projection)
 GDALDataType ImgRasterGdal::getDataType(int band) const
 {
   assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1))->GetRasterDataType();
+  if(getRasterBand(band))
+    return (getRasterBand(band)->GetRasterDataType());
+  else
+    return m_dataType;
 }
 
 /**
  * @param band get GDAL raster band for this band (start counting from 0)
  * @return the GDAL raster band of this data set for the selected band
  **/
-GDALRasterBand* ImgRasterGdal::getRasterBand(int band)
+GDALRasterBand* ImgRasterGdal::getRasterBand(int band) const
 {
   assert(band<m_nband+1);
   return (m_gds->GetRasterBand(band+1));
@@ -110,7 +121,7 @@ GDALRasterBand* ImgRasterGdal::getRasterBand(int band)
 GDALColorTable* ImgRasterGdal::getColorTable(int band) const
 {
   assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1))->GetColorTable();
+  return getRasterBand(band)->GetColorTable();
 }
 
 /**

@@ -118,6 +118,8 @@ public:
   void setHelp(const std::string& helpInfo){m_help=helpInfo;};
   ///hide option from short help -h (1) or make invisible to short and long help --help (2)
   void setHide(short hide){m_hide=hide;};
+  ///read option from command line (use for all options!), std::string implementation
+  bool retrieveOption(int argc, const std::vector<std::string>& argv);
   ///read option from command line (use for all options!)
   bool retrieveOption(int argc, char ** argv);
   ///print values for this option
@@ -301,6 +303,77 @@ template<class T> inline void Optionpk<T>::setAll(const std::string& shortName, 
 
 template<class T> inline Optionpk<T>::~Optionpk() 
 {
+}
+
+/**
+make sure to call this function first before using the option in main program (or segmentation fault will occur...)
+**/
+template<class T> inline bool Optionpk<T>::retrieveOption(int argc, const std::vector<std::string>& argv){
+  bool noHelp=true;//return value, alert main program that hard coded option (help, version, license, doxygen) was invoked
+  std::string helpStringShort="-h";//short option for help (hard coded)
+  std::string helpStringLong="--help";//long option for help (hard coded)
+  std::string helpStringDoxygen="--doxygen";//option to create table of options ready to use for doxygen
+  std::string versionString="--version";//option to show current version
+  std::string licenseString="--license";//option to show current version
+  for(int i = 1; i < argc; ++i ){
+    std::string currentArgument;
+    std::string currentOption=argv[i];
+    std::string shortOption=m_shortName;
+    std::string longOption=m_longName;
+    shortOption.insert(0,"-");
+    longOption.insert(0,"--");
+    size_t foundEqual=currentOption.rfind("=");
+    if(foundEqual!=std::string::npos){
+      currentArgument=currentOption.substr(foundEqual+1);
+      currentOption=currentOption.substr(0,foundEqual);
+    }
+    if(!helpStringShort.compare(currentOption)){
+      if(m_hide<1)
+        std::cout << usage() << std::endl;
+      noHelp=false;
+    }
+    else if(!helpStringLong.compare(currentOption)){
+      if(m_hide<2)
+        std::cout << usage() << std::endl;
+      noHelp=false;
+    }
+    else if(!helpStringDoxygen.compare(currentOption)){
+      if(m_hide<2)
+        std::cout << usageDoxygen() << std::endl;
+      noHelp=false;
+    }
+    else if(!versionString.compare(currentOption)){
+      std::string theVersion="version ";
+      theVersion+=VERSION;
+      theVersion+=", Copyright (C) Pieter Kempeneers.\n\
+   This program comes with ABSOLUTELY NO WARRANTY; for details type use option -h.\n \
+   This is free software, and you are welcome to redistribute it\n      \
+   under certain conditions; use option --license for details.";
+      throw(theVersion);//no need to continue registering (break prevents from multiplication of version info)
+    }
+    else if(!licenseString.compare(currentOption)){
+      throw(getGPLv3License());
+    }
+    if(hasShortOption()&&!(shortOption.compare(currentOption))){//for -option
+      if(foundEqual!=std::string::npos)
+        this->push_back(string2type<T>(currentArgument));
+      else if(m_hasArgument && i < argc-1)
+        this->push_back(string2type<T>(argv[++i]));
+      else
+        this->push_back(string2type<T>("1"));
+    }
+    else if(hasLongOption()&&!(longOption.compare(currentOption))){//for --option
+      if(foundEqual!=std::string::npos)
+        this->push_back(string2type<T>(currentArgument));
+      else if(m_hasArgument && i < argc-1)
+        this->push_back(string2type<T>(argv[++i]));
+      else
+        this->push_back(string2type<T>("1"));
+    }
+  }
+  if(!(this->size())&&m_hasDefault)//only set default value if no options were given
+    this->push_back(m_defaultValue);
+  return(noHelp);
 }
 
 /**

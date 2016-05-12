@@ -1,6 +1,6 @@
 /**********************************************************************
-pkcomposite.cc: program to mosaic and composite geo-referenced images
-Copyright (C) 2008-2014 Pieter Kempeneers
+pkcomposite_app.cc: program to mosaic and composite geo-referenced images
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -249,9 +249,14 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+
+  //todo: set all the arguments in app
   appfactory::AppFactory app(memory_opt[0]);
+  app.setOptions(argc,argv);
   vector<ImgReaderGdal> imgReader(input_opt.size());
   for(int ifile=0;ifile<input_opt.size();++ifile){
+    if(verbose_opt[0])
+      cout << "opening file " << input_opt[ifile] << endl;
     try{
       imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
       // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
@@ -264,8 +269,23 @@ int main(int argc, char *argv[])
       cerr << errorstring << " " << input_opt[ifile] << endl;
     }
   }
+  //test
+  cout << "constructor imgWriter" << endl;
   ImgWriterGdal imgWriter;//AppFactory has been instantiated with memory_opt so we can set mem in ImgWriter 
+  //test
+  cout << "calling app.pkcomposite" << endl;
   app.pkcomposite(imgReader,imgWriter);
+  //test
+  cout << "after app.pkcomposite" << endl;
+  for(int ifile=0;ifile<imgReader.size();++ifile){
+    imgReader[ifile].close();
+  }
+  imgWriter.setFile(output_opt[0],oformat_opt[0]);
+
+  for(int iband=0;iband<imgWriter.nrOfBand();++iband)
+    imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
+
+  imgWriter.close();
   return 0;
 }
   
