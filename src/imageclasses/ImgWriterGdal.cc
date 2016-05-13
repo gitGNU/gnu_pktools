@@ -49,12 +49,12 @@ void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int nco
   m_data.resize(nband);
   m_begin.resize(nband);
   m_end.resize(nband);
-  for(int iband=0;iband<nband;++iband){
-    m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
-    m_begin[iband]=0;
-    m_end[iband]=nrow;
-  }
   m_blockSize=nrow;//memory contains entire image and has been read already
+  for(int iband=0;iband<nband;++iband){
+    m_data[iband]=dataPointer+iband*ncol*m_end[iband]*(GDALGetDataTypeSize(getDataType())>>3);
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
 }
 
 //not tested yet!!!
@@ -71,12 +71,12 @@ void ImgWriterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const
   m_data.resize(nband);
   m_begin.resize(nband);
   m_end.resize(nband);
+  m_blockSize=nrow;//memory contains entire image and has been read already
   for(int iband=0;iband<nband;++iband){
     m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
     m_begin[iband]=0;
-    m_end[iband]=nrow;
+    m_end[iband]=m_begin[iband]+m_blockSize;
   }
-  m_blockSize=nrow;//memory contains entire image and has been read already
 }
 
 /**
@@ -135,9 +135,10 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
   m_dataType=imgSrc.getDataType();
-  m_filename=filename;
-  m_options=options;
-  setCodec(imgSrc);
+  setFile(filename,imgSrc,options);
+  // m_filename=filename;
+  // m_options=options;
+  // setCodec(imgSrc);
 }
 
 /**
@@ -176,16 +177,16 @@ void ImgWriterGdal::open(const ImgReaderGdal& imgSrc, unsigned int memory)
  **/
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 {
-  m_filename = filename;
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
   m_dataType = dataType;
-  m_options=options;
-  setCodec(imageType);
+  setFile(filename,imageType,options);
+  // m_filename = filename;
+  // m_options=options;
+  // setCodec(imageType);
 }
 
-//hiero: todo add memory
 /**
  * @param filename Open a raster dataset with this filename
  * @param ncol Number of columns in image
@@ -198,13 +199,14 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
  **/
 void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
-  m_filename = filename;
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
-  m_options=options;
   m_dataType = dataType;
-  setCodec(imageType);
+  setFile(filename,imageType,options);
+  // m_filename = filename;
+  // m_options=options;
+  // setCodec(imageType);
   initMem(memory);
 }
 
@@ -383,6 +385,17 @@ void ImgWriterGdal::setFile(const std::string& filename, const std::string& imag
   m_filename=filename;
   m_options=options;
   setCodec(imageType);
+}
+
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ **/
+void ImgWriterGdal::setFile(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
+{
+  m_filename=filename;
+  m_options=options;
+  setCodec(imgSrc);
 }
 
 /**

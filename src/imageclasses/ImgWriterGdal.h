@@ -62,6 +62,8 @@ public:
   ///destructor
   ~ImgWriterGdal(void);
 
+  ///Set the memory (in MB) to cache a number of rows in memory
+  void setMemory(unsigned long int memory=0){initMem(memory);};
   ///Open an image for writing, copying image attributes from a source image. Image is directly written to file. Use the constructor with memory>0 to support caching
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
@@ -93,8 +95,11 @@ public:
   // bool writeData(void* pdata, const GDALDataType& dataType, int band=0);
   ///Write pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
   template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
-  ///Write pixel cell values for the entire image from memory to file
+  ///Prepare image writer to write to file
   void setFile(const std::string& filename, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Prepare image writer to write to file
+  void setFile(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
+
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
   void setColorTable(const std::string& filename, int band=0);
   ///Set the color table using the GDAL class GDALColorTable

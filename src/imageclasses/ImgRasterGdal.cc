@@ -43,10 +43,10 @@ void ImgRasterGdal::close(void)
  **/
 std::string ImgRasterGdal::getProjection(void) const 
 {
-  if(m_gds)
-    return(m_gds->GetProjectionRef());
-  else
-    return(m_projection);
+  // if(m_gds)
+  //   return(m_gds->GetProjectionRef());
+  // else
+  return(m_projection);
 }
 
 /**
@@ -54,10 +54,10 @@ std::string ImgRasterGdal::getProjection(void) const
  **/
 std::string ImgRasterGdal::getProjectionRef(void) const 
 {
-  if(m_gds)
-    return(m_gds->GetProjectionRef());
-  else
-    return(m_projection);
+  // if(m_gds)
+  //   return(m_gds->GetProjectionRef());
+  // else
+  return(m_projection);
 }
 
 /**

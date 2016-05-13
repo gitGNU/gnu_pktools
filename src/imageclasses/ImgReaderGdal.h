@@ -46,14 +46,14 @@ public:
   ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0){open(filename, readMode, memory);};
   ///constructor opening an image using an external data pointer (not tested yet)
   ImgReaderGdal(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType){open(dataPointer,ncol,nrow,nband,dataType);};
+  ///destructor
+  ~ImgReaderGdal(void);
   ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
   void open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType);
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
   void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
   ///Set the memory (in MB) to cache a number of rows in memory
   void setMemory(unsigned long int memory=0){initMem(memory);};
-  ///destructor
-  ~ImgReaderGdal(void);
 
   ///Close the image.
   void close(void);
@@ -98,7 +98,6 @@ private:
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned long int memory);
   ///Flag to indicate if the pointer used for caching should be deleted (only false for external pointer)
-  bool m_deletePointer;
 };
 
 /**
@@ -130,8 +129,10 @@ template<typename T> void ImgReaderGdal::readData(T& value, int col, int row, in
       s << "Error: increase memory to support random access reading (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
       throw(s.str());
     }
-    if(row<m_begin[band]||row>=m_end[band])
-      readNewBlock(row,band);
+    if(row<m_begin[band]||row>=m_end[band]){
+      if(m_filename.size())
+        readNewBlock(row,band);
+    }
     int index=(row-m_begin[band])*nrOfCol()+col;
     switch(getDataType()){
     case(GDT_Byte):
@@ -198,7 +199,8 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int mi
   }
   if(m_data.size()){
     if(row<m_begin[band]||row>=m_end[band]){
-      readNewBlock(row,band);
+      if(m_filename.size())
+        readNewBlock(row,band);
     }
     if(buffer.size()!=maxCol-minCol+1)
       buffer.resize(maxCol-minCol+1);
@@ -355,8 +357,10 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, i
   if(m_data.size()){
     typename std::vector<T>::iterator bufit=buffer.begin();
     for(int irow=minRow;irow<=maxRow;++irow){
-      if(irow<m_begin[band]||irow>=m_end[band])
-	readNewBlock(irow,band);
+      if(irow<m_begin[band]||irow>=m_end[band]){
+        if(m_filename.size())
+          readNewBlock(irow,band);
+      }
       int index=(irow-m_begin[band])*nrOfCol();
       int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
       int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);

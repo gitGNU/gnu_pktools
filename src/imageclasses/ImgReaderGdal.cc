@@ -49,11 +49,11 @@ void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow
   m_data.resize(nband);
   m_begin.resize(nband);
   m_end.resize(nband);
+  m_blockSize=nrow;//memory contains entire image
   for(int iband=0;iband<nband;++iband){
     m_data[iband]=dataPointer+iband*m_ncol*m_nrow*(GDALGetDataTypeSize(getDataType())>>3);
     m_begin[iband]=0;
-    m_blockSize=nrow;//memory contains entire image
-    m_end[iband]=nrow;//and has been read already
+    m_end[iband]=m_begin[iband]+m_blockSize;
   }
 }
 
@@ -107,6 +107,7 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
   m_gt[3]=adfGeoTransform[3];
   m_gt[4]=adfGeoTransform[4];
   m_gt[5]=adfGeoTransform[5];
+  m_projection=m_gds->GetProjectionRef();
 }
 
 /**

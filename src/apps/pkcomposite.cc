@@ -417,7 +417,6 @@ int main(int argc, char *argv[])
     if((ulx_opt[0]||uly_opt[0]||lrx_opt[0]||lry_opt[0])&&(!imgReader[ifile].covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
       if(verbose_opt[0])
 	cout << input_opt[ifile] << " not within bounding box, skipping..." << endl;
-      // imgReader.close();
       continue;
     }
     double theULX, theULY, theLRX, theLRY;
@@ -499,7 +498,6 @@ int main(int argc, char *argv[])
       else
         imageType=imgReader[ifile].getImageType();
 
-      // dataType=imgReader.getDataType(0);
       if(verbose_opt[0]){
         cout << "type of data for " << input_opt[ifile] << ": " << theType << endl;
         cout << "nband: " << nband << endl;
@@ -517,19 +515,9 @@ int main(int argc, char *argv[])
 	dy=dy_opt[0];
       else
         dy=imgReader[ifile].getDeltaY();
-      // imgReader.getMagicPixel(magic_x,magic_y);
       init=true;
     }
     else{
-      //convert bounding box to magic coordinates
-      //check uniformity magic pixel
-      // double test_x,test_y;
-      // imgReader.getMagicPixel(test_x,test_y);
-      // if(verbose_opt[0]){
-      //   cout << "magic_x, magic_y: " << magic_x << ", " << magic_y << endl;
-      // }
-      // assert(magic_x==test_x);
-      // assert(magic_y==test_y);
       maxLRX=(theLRX>maxLRX)?theLRX:maxLRX;
       maxULY=(theULY>maxULY)?theULY:maxULY;
       minULX=(theULX<minULX)?theULX:minULX;
@@ -615,10 +603,10 @@ int main(int argc, char *argv[])
   }
   if(verbose_opt[0])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
+
   try{
     imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,memory_opt[0],option_opt);
-    for(int iband=0;iband<nwriteBand;++iband)
-      imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
+    imgWriter.setNoData(dstnodata_opt);
   }
   catch(string error){
     cout << error << endl;

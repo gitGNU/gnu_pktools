@@ -35,7 +35,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ## SYNOPSIS
 
 <code>
-  Usage: pkcomposite -i input [-i input]* -o output
+  Usage: pkcomposite_app -i input [-i input]* -o output
 </code>
 
 <code>
@@ -146,97 +146,25 @@ int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
   Optionpk<string>  output_opt("o", "output", "Output image file");
-  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
-  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
-  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
-  Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
-  Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
-  Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
-  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
-  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
-  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
-  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
-  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
-  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
-  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
-  Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev", "overwrite");
-  Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
-  Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value(s) for input raster dataset");
-  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
-  Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
-  Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
-  Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output raster dataset if not valid or out of bounds.", 0);
-  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
-  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
-  Optionpk<short> file_opt("file", "file", "write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite", 0);
-  Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
-  Optionpk<short> class_opt("c", "class", "classes for multi-band output image: each band represents the number of observations for one specific class. Use value 0 for no multi-band output image.", 0);
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<string>  description_opt("d", "description", "Set image description");
-  Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory. Use 0 to read entire image into memory",0,1);
-  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
-  extent_opt.setHide(1);
-  cut_opt.setHide(1);
-  eoption_opt.setHide(1);
-  mask_opt.setHide(1);
-  msknodata_opt.setHide(1);
-  mskband_opt.setHide(1);
   option_opt.setHide(1);
-  file_opt.setHide(1);
-  weight_opt.setHide(1);
-  class_opt.setHide(1);
-  colorTable_opt.setHide(1);
-  description_opt.setHide(1);
   scale_opt.setHide(1);
   offset_opt.setHide(1);
-  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
     doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
-    band_opt.retrieveOption(argc,argv);
-    dx_opt.retrieveOption(argc,argv);
-    dy_opt.retrieveOption(argc,argv);
-    extent_opt.retrieveOption(argc,argv);
-    cut_opt.retrieveOption(argc,argv);
-    eoption_opt.retrieveOption(argc,argv);
-    mask_opt.retrieveOption(argc,argv);
-    msknodata_opt.retrieveOption(argc,argv);
-    mskband_opt.retrieveOption(argc,argv);
-    ulx_opt.retrieveOption(argc,argv);
-    uly_opt.retrieveOption(argc,argv);
-    lrx_opt.retrieveOption(argc,argv);
-    lry_opt.retrieveOption(argc,argv);
-    crule_opt.retrieveOption(argc,argv);
-    ruleBand_opt.retrieveOption(argc,argv);
-    srcnodata_opt.retrieveOption(argc,argv);
-    bndnodata_opt.retrieveOption(argc,argv);
-    minValue_opt.retrieveOption(argc,argv);
-    maxValue_opt.retrieveOption(argc,argv);
-    dstnodata_opt.retrieveOption(argc,argv);
-    resample_opt.retrieveOption(argc,argv);
-    otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
-    file_opt.retrieveOption(argc,argv);
-    weight_opt.retrieveOption(argc,argv);
-    class_opt.retrieveOption(argc,argv);
-    colorTable_opt.retrieveOption(argc,argv);
-    description_opt.retrieveOption(argc,argv);
-    align_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
-    memory_opt.retrieveOption(argc,argv);
-    verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -250,15 +178,13 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  //todo: set all the arguments in app
   appfactory::AppFactory app;
   app.setOptions(argc,argv);
   vector<ImgReaderGdal> imgReader(input_opt.size());
   for(int ifile=0;ifile<input_opt.size();++ifile){
-    if(verbose_opt[0])
-      cout << "opening file " << input_opt[ifile] << endl;
     try{
-      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
+      // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
+      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
       for(int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
       for(int iband=0;iband<offset_opt.size();++iband)
@@ -268,13 +194,24 @@ int main(int argc, char *argv[])
       cerr << errorstring << " " << input_opt[ifile] << endl;
     }
   }
-  ImgWriterGdal imgWriter;//AppFactory has been instantiated with memory_opt so we can set mem in ImgWriter 
+  ImgWriterGdal imgWriter;
   app.pkcomposite(imgReader,imgWriter);
-  for(int ifile=0;ifile<imgReader.size();++ifile){
-    imgReader[ifile].close();
-  }
-  imgWriter.setFile(output_opt[0],oformat_opt[0]);
 
+  string imageType;
+  if(oformat_opt.size())//default
+    imageType=oformat_opt[0];
+  else
+    imageType=imgReader[0].getImageType();
+
+  if(projection_opt.size())
+    imgWriter.setProjectionProj4(projection_opt[0]);
+  else if(imgReader[0].getProjection()!="")
+    imgWriter.setProjection(imgReader[0].getProjection());
+
+  imgWriter.setFile(output_opt[0],imageType);
+
+  for(int ifile=0;ifile<imgReader.size();++ifile)
+    imgReader[ifile].close();
   imgWriter.close();
   return 0;
 }

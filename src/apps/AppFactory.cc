@@ -39,7 +39,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output raster dataset if not valid or out of bounds.", 0);
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
-  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<short> file_opt("file", "file", "write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite", 0);
@@ -48,8 +47,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
-  Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
-  Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
   Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
@@ -65,8 +62,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   class_opt.setHide(1);
   colorTable_opt.setHide(1);
   description_opt.setHide(1);
-  scale_opt.setHide(1);
-  offset_opt.setHide(1);
   memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -93,7 +88,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     dstnodata_opt.retrieveOption(m_argc,m_argv);
     resample_opt.retrieveOption(m_argc,m_argv);
     otype_opt.retrieveOption(m_argc,m_argv);
-    oformat_opt.retrieveOption(m_argc,m_argv);
     option_opt.retrieveOption(m_argc,m_argv);
     projection_opt.retrieveOption(m_argc,m_argv);
     file_opt.retrieveOption(m_argc,m_argv);
@@ -102,8 +96,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     colorTable_opt.retrieveOption(m_argc,m_argv);
     description_opt.retrieveOption(m_argc,m_argv);
     align_opt.retrieveOption(m_argc,m_argv);
-    scale_opt.retrieveOption(m_argc,m_argv);
-    offset_opt.retrieveOption(m_argc,m_argv);
     memory_opt.retrieveOption(m_argc,m_argv);
     verbose_opt.retrieveOption(m_argc,m_argv);
   }
@@ -118,8 +110,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
-  // ///Output image filename
-  // vector<string>  output_opt;
   // ///band index(es) to crop (leave empty if all bands must be retained)
   // vector<int>  band_opt;
   // ///Output resolution in x (in meter) (empty: keep original resolution)
@@ -164,8 +154,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   // vector<string>  resample_opt("near",1);
   // ///Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image
   // vector<string>  otype_opt("",1);
-  // ///Output image format (see also gdal_translate).
-  // vector<string>  oformat_opt("GTiff",1);
   // ///Creation option for output file. Multiple options can be specified.
   // vector<string> option_opt;
   // ///Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid
@@ -182,10 +170,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   // vector<string>  description_opt;
   // ///Align output bounding box to input image
   // vector<bool>  align_opt;
-  // ///output=scale*input+offset
-  // vector<double> scale_opt;
-  // ///output=scale*input+offset
-  // vector<double> offset_opt;
   // ///verbose
   // vector<short> verbose_opt(0,1);
 
@@ -326,10 +310,10 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
 
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
-  string imageType;
   bool init=false;
 
   for(int ifile=0;ifile<imgReader.size();++ifile){
+    imgReader[ifile].setMemory(memory_opt[0]);
     //todo: must be in init part only?
     if(colorTable_opt.empty())
       if(imgReader[ifile].getColorTable())
@@ -420,11 +404,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
         if(verbose_opt[0])
           cout << "Using data type from input image: " << GDALGetDataTypeName(theType) << endl;
       }
-
-      if(oformat_opt.size())//default
-        imageType=oformat_opt[0];
-      else
-        imageType=imgReader[ifile].getImageType();
 
       if(verbose_opt[0]){
         cout << "type of data for input " << ifile << ": " << theType << endl;
