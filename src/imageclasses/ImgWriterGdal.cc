@@ -156,13 +156,13 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param options Creation options
  **/
-void ImgWriterGdal::open(const ImgReaderGdal& imgSrc)
+void ImgWriterGdal::open(const ImgReaderGdal& imgSrc, unsigned int memory)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
   m_dataType=imgSrc.getDataType();
-  initMem(0);
+  initMem(memory);
 }
 
 /**
@@ -214,13 +214,13 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
  * @param nband Number of bands in image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-void ImgWriterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
+void ImgWriterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType, unsigned int memory)
 {
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
   m_dataType = dataType;
-  initMem(0);
+  initMem(memory);
 }
 
 void ImgWriterGdal::close(void)
@@ -258,10 +258,18 @@ void ImgWriterGdal::setCodec(const ImgReaderGdal& imgSrc){
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
 
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
-  setProjection(imgSrc.getProjection());
   double gt[6];
   imgSrc.getGeoTransform(gt);
-  ImgRasterGdal::setGeoTransform(gt);
+  if(setGeoTransform(gt)!=CE_None)
+    std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
+  setProjection(imgSrc.getProjection());
+  if(setProjection(imgSrc.getProjection())!=CE_None)
+    std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
+
+  if(m_noDataValues.size()){
+    for(int iband=0;iband<nrOfBand();++iband)
+      GDALSetNoDataValue(m_noDataValues[0],iband);
+  }
 
   m_gds->SetMetadata(imgSrc.getMetadata() ); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
@@ -324,7 +332,12 @@ void ImgWriterGdal::setCodec(const std::string& imageType)
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_dataType,papszOptions);
-
+  double gt[6];
+  getGeoTransform(gt);
+  if(setGeoTransform(gt)!=CE_None)
+    std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
+  if(setProjection(m_projection)!=CE_None)
+    std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
   versionString+=VERSION;
@@ -377,19 +390,8 @@ void ImgWriterGdal::setFile(const std::string& filename, const std::string& imag
  **/
 void ImgWriterGdal::setMetadata(char** metadata)
 {
-  assert(m_gds);
-  m_gds->SetMetadata(metadata); 
-}
-
-/**
- * @param imgSrc Use this source image as a template to copy geotranform information
- **/
-void ImgWriterGdal::copyGeoTransform(const ImgReaderGdal& imgSrc)
-{
-  setProjection(imgSrc.getProjection());
-  double gt[6];
-  imgSrc.getGeoTransform(gt);
-  ImgRasterGdal::setGeoTransform(gt);
+  if(m_gds)
+    m_gds->SetMetadata(metadata); 
 }
 
 //default projection: ETSR-LAEA
@@ -432,7 +434,8 @@ void ImgWriterGdal::setColorTable(const std::string& filename, int band)
     ist >> id >> sEntry.c1 >> sEntry.c2 >> sEntry.c3 >> sEntry.c4;
     colorTable.SetColorEntry(id,&sEntry);
   }
-  (m_gds->GetRasterBand(band+1))->SetColorTable(&colorTable);
+  if(m_gds)
+    (m_gds->GetRasterBand(band+1))->SetColorTable(&colorTable);
 }
 
 /**
@@ -441,7 +444,8 @@ void ImgWriterGdal::setColorTable(const std::string& filename, int band)
  **/
 void ImgWriterGdal::setColorTable(GDALColorTable* colorTable, int band)
 {
-  (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
+  if(m_gds)
+    (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
 }
 
 // //write an entire image from memory to file

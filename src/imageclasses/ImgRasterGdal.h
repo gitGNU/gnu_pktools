@@ -111,11 +111,13 @@ public:
   ///Get the geotransform data for this dataset
   void getGeoTransform(double* gt) const;
   ///Set the geotransform data for this dataset
-  void setGeoTransform(double* gt);
+  CPLErr setGeoTransform(double* gt);
+  ///Copy geotransform information from another georeferenced image
+  void copyGeoTransform(const ImgRasterGdal& imgSrc);
   ///Set the projection for this dataset in well known text (wkt) format
-  void setProjection(const std::string& projection);
+  CPLErr setProjection(const std::string& projection);
   ///Set the projection for this dataset from user input (supports epsg:<number> format)
-  std::string setProjectionProj4(const std::string& projection);
+  CPLErr setProjectionProj4(const std::string& projection);
   ///Get the bounding box of this dataset in georeferenced coordinates
   bool getBoundingBox (double& ulx, double& uly, double& lrx, double& lry) const;
   ///Get the center position of this dataset in georeferenced coordinates
@@ -224,6 +226,8 @@ protected:
   GDALDataType m_dataType;
   ///geotransform information of this dataset
   double m_gt[6];
+  //projection string in wkt format
+  std::string m_projection;
   ///no data values for this dataset
   std::vector<double> m_noDataValues;
   ///Vector containing the scale factor to be applied (one scale value for each band)

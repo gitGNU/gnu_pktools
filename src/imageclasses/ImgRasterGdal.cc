@@ -43,13 +43,10 @@ void ImgRasterGdal::close(void)
  **/
 std::string ImgRasterGdal::getProjection(void) const 
 {
-  std::string theProjection=m_gds->GetProjectionRef();
-  // size_t startpos,endpos;
-  // while((startpos=theProjection.find(",AUTHORITY"))!=std::string::npos){
-  //   endpos=theProjection.find("]",startpos+1,1)+1;
-  //   theProjection.erase(startpos,endpos-startpos);
-  // }
-  return theProjection;
+  if(m_gds)
+    return(m_gds->GetProjectionRef());
+  else
+    return(m_projection);
 }
 
 /**
@@ -57,38 +54,39 @@ std::string ImgRasterGdal::getProjection(void) const
  **/
 std::string ImgRasterGdal::getProjectionRef(void) const 
 {
-  std::string theProjection;
-  if(m_gds->GetProjectionRef())
+  if(m_gds)
     return(m_gds->GetProjectionRef());
   else
-    return "";
+    return(m_projection);
 }
 
 /**
  * @param projection projection string to be used for this dataset
  * @return the projection of this data set in string format
  **/
-std::string ImgRasterGdal::setProjectionProj4(const std::string& projection)
+CPLErr ImgRasterGdal::setProjectionProj4(const std::string& projection)
 {
   OGRSpatialReference theRef;
   theRef.SetFromUserInput(projection.c_str());
   char *wktString;
   theRef.exportToWkt(&wktString);
-  assert(m_gds);
-  m_gds->SetProjection(wktString);
-  return(wktString);
+  m_projection=wktString;
+  if(m_gds)
+    return(m_gds->SetProjection(wktString));
+  else
+    return(CE_Failure);
 }
 
 /**
  * @param projection projection string to be used for this dataset
  **/
-void ImgRasterGdal::setProjection(const std::string& projection)
+CPLErr ImgRasterGdal::setProjection(const std::string& projection)
 {
-  OGRSpatialReference oSRS;
-  char *pszSRS_WKT = NULL;
-  assert(m_gds);
-  m_gds->SetProjection(projection.c_str());
-  CPLFree(pszSRS_WKT);
+  m_projection=projection;
+  if(m_gds)
+    return(m_gds->SetProjection(projection.c_str()));
+  else
+    return(CE_Failure);
 }
 
 /**
@@ -99,9 +97,9 @@ GDALDataType ImgRasterGdal::getDataType(int band) const
 {
   assert(band<m_nband+1);
   if(getRasterBand(band))
-    return (getRasterBand(band)->GetRasterDataType());
+    return((getRasterBand(band)->GetRasterDataType()));
   else
-    return m_dataType;
+    return(m_dataType);
 }
 
 /**
@@ -111,7 +109,10 @@ GDALDataType ImgRasterGdal::getDataType(int band) const
 GDALRasterBand* ImgRasterGdal::getRasterBand(int band) const
 {
   assert(band<m_nband+1);
-  return (m_gds->GetRasterBand(band+1));
+  if(m_gds)
+    return((m_gds->GetRasterBand(band+1)));
+  else
+    return(0);
 }
 
 /**
@@ -121,7 +122,11 @@ GDALRasterBand* ImgRasterGdal::getRasterBand(int band) const
 GDALColorTable* ImgRasterGdal::getColorTable(int band) const
 {
   assert(band<m_nband+1);
-  return getRasterBand(band)->GetColorTable();
+  GDALRasterBand* theRasterBand=getRasterBand(band);
+  if(theRasterBand)
+    return(theRasterBand->GetColorTable());
+  else
+    return(0);
 }
 
 /**
@@ -129,7 +134,10 @@ GDALColorTable* ImgRasterGdal::getColorTable(int band) const
  **/
 std::string ImgRasterGdal::getDriverDescription() const
 {
-  return m_gds->GetDriver()->GetDescription();
+  std::string driverDescription;
+  if(m_gds)
+    driverDescription=m_gds->GetDriver()->GetDescription();
+  return(driverDescription);
 }
 
 /**
@@ -141,7 +149,7 @@ std::string ImgRasterGdal::getDriverDescription() const
  * @param GeoTransform[4] rotation, 0 if image is "north up"
  * @param GeoTransform[5] n-s pixel resolution
  **/
-void ImgRasterGdal::setGeoTransform(double* gt){
+CPLErr ImgRasterGdal::setGeoTransform(double* gt){
   // m_isGeoRef=true;
   m_gt[0]=gt[0];
   m_gt[1]=gt[1];
@@ -150,7 +158,21 @@ void ImgRasterGdal::setGeoTransform(double* gt){
   m_gt[4]=gt[4];
   m_gt[5]=gt[5];
   if(m_gds)
-    m_gds->SetGeoTransform(m_gt);
+    return(m_gds->SetGeoTransform(m_gt));
+  else
+    return(CE_Failure);
+      
+}
+
+/**
+ * @param imgSrc Use this source image as a template to copy geotranform information
+ **/
+void ImgRasterGdal::copyGeoTransform(const ImgRasterGdal& imgSrc)
+{
+  setProjection(imgSrc.getProjection());
+  double gt[6];
+  imgSrc.getGeoTransform(gt);
+  setGeoTransform(gt);
 }
 
 /**
@@ -163,7 +185,17 @@ void ImgRasterGdal::setGeoTransform(double* gt){
  * @param GeoTransform[5] n-s pixel resolution
  **/
 void ImgRasterGdal::getGeoTransform(double* gt) const{
-  m_gds->GetGeoTransform(gt);
+  // if(m_gds){
+  //   m_gds->GetGeoTransform(gt);
+  // }
+  // else{
+    gt[0]=m_gt[0];
+    gt[1]=m_gt[1];
+    gt[2]=m_gt[2];
+    gt[3]=m_gt[3];
+    gt[4]=m_gt[4];
+    gt[5]=m_gt[5];
+  // }
 }
 
 /**
@@ -171,10 +203,12 @@ void ImgRasterGdal::getGeoTransform(double* gt) const{
  **/
 std::string ImgRasterGdal::getGeoTransform() const
 {
+  std::string gtString;
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
+  getGeoTransform(gt);
   std::ostringstream s;
   s << "[" << gt[0] << "," << gt[1] << "," << gt[2] << "," << gt[3] << "," << gt[4] << "," << gt[5] << "]";
+  gtString=s.str();
   return(s.str());
 }
 
@@ -183,8 +217,10 @@ std::string ImgRasterGdal::getGeoTransform() const
  **/
 char** ImgRasterGdal::getMetadata()
 {
-  if(m_gds->GetMetadata()!=NULL)
-    return(m_gds->GetMetadata());
+  if(m_gds){
+    if(m_gds->GetMetadata()!=NULL)
+      return(m_gds->GetMetadata());
+  }
   else
     return (char**)"";
 }
@@ -194,8 +230,10 @@ char** ImgRasterGdal::getMetadata()
  **/
 char** ImgRasterGdal::getMetadata() const
 {
-  if(m_gds->GetMetadata()!=NULL)
-    return(m_gds->GetMetadata());
+  if(m_gds){
+    if(m_gds->GetMetadata()!=NULL)
+      return(m_gds->GetMetadata());
+  }
   else 
     return (char**)"";
 }
@@ -205,10 +243,12 @@ char** ImgRasterGdal::getMetadata() const
  **/
 void ImgRasterGdal::getMetadata(std::list<std::string>& metadata) const
 {
-  char** cmetadata=m_gds->GetMetadata();
-  while(*cmetadata!=NULL){
-    metadata.push_back(*(cmetadata));
-    ++cmetadata;
+  if(m_gds){
+    char** cmetadata=m_gds->GetMetadata();
+    while(*cmetadata!=NULL){
+      metadata.push_back(*(cmetadata));
+      ++cmetadata;
+    }
   }
 }
 
@@ -217,10 +257,12 @@ void ImgRasterGdal::getMetadata(std::list<std::string>& metadata) const
  **/
 std::string ImgRasterGdal::getDescription() const
 {
-  if(m_gds->GetDriver()->GetDescription()!=NULL)
-    return m_gds->GetDriver()->GetDescription();
+  if(m_gds){
+    if(m_gds->GetDriver()->GetDescription()!=NULL)
+      return m_gds->GetDriver()->GetDescription();
+  }
   else
-    return "";
+    return("");
 }
 
 /**
@@ -228,10 +270,12 @@ std::string ImgRasterGdal::getDescription() const
  **/
 std::string ImgRasterGdal::getMetadataItem() const 
 {
-  if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
-    return m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME );
+  if(m_gds){
+    if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
+      return m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME );
+  }
   else
-    return "";
+    return("");
 }
 
 /**
@@ -239,10 +283,12 @@ std::string ImgRasterGdal::getMetadataItem() const
  **/
 std::string ImgRasterGdal::getImageDescription() const 
 {
-  if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
-    return m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION");
+  if(m_gds){
+    if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
+      return m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION");
+  }
   else
-    return "";
+    return("");
 }
 
 /**
@@ -250,10 +296,14 @@ std::string ImgRasterGdal::getImageDescription() const
  **/
 std::string ImgRasterGdal::getInterleave() const
 {
-  if(m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE"))
-    return m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE");
+  if(m_gds){
+    if(m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE"))
+      return m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE");
+    else
+      return("BAND");
+  }
   else
-    return("BAND");
+    return("");
 }
 
 /**
@@ -261,8 +311,10 @@ std::string ImgRasterGdal::getInterleave() const
  **/
 std::string ImgRasterGdal::getCompression() const
 {
-  if(m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE"))
-    return m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE");
+  if(m_gds){
+    if(m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE"))
+      return m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE");
+  }
   else
     return("NONE");
 }
@@ -285,26 +337,16 @@ std::string ImgRasterGdal::getCompression() const
 bool ImgRasterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
+  getGeoTransform(gt);
 
   ulx=gt[0];
   uly=gt[3];
   lrx=gt[0]+nrOfCol()*gt[1]+nrOfRow()*gt[2];
   lry=gt[3]+nrOfCol()*gt[4]+nrOfRow()*gt[5];
-  if(isGeoRef()){
-    // ulx=m_ulx;
-    // uly=m_uly;
-    // lrx=ulx+nrOfCol()*m_delta_x;
-    // lry=uly-nrOfRow()*m_delta_y;
+  if(isGeoRef())
     return true;
-  }
-  else{
-    // ulx=0;
-    // uly=nrOfRow()-1;
-    // lrx=nrOfCol()-1;
-    // lry=0;
+  else
     return false;
-  }
 }
 
 /**
@@ -321,7 +363,7 @@ bool ImgRasterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double
 bool ImgRasterGdal::getCenterPos(double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
+  getGeoTransform(gt);
 
   x=gt[0]+(nrOfCol()/2.0)*gt[1]+(nrOfRow()/2.0)*gt[2];
   y=gt[3]+(nrOfCol()/2.0)*gt[4]+(nrOfRow()/2.0)*gt[5];
@@ -330,11 +372,8 @@ bool ImgRasterGdal::getCenterPos(double& x, double& y) const
     // y=m_uly-(nrOfRow()/2.0)*m_delta_y;
     return true;
   }
-  else{
-    // x=nrOfCol()/2.0;
-    // y=nrOfRow()/2.0;
+  else
     return false;
-  }
 }
 
 /**
@@ -351,9 +390,8 @@ bool ImgRasterGdal::getCenterPos(double& x, double& y) const
  **/
 bool ImgRasterGdal::geo2image(double x, double y, double& i, double& j) const
 {
-  //double values are returned, caller is responsible for interpolation step
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
+  getGeoTransform(gt);
 
   double denom=(gt[1]-gt[2]*gt[4]/gt[5]);
   double eps=0.00001;
@@ -361,18 +399,10 @@ bool ImgRasterGdal::geo2image(double x, double y, double& i, double& j) const
     i=(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom;
     j=(y-gt[3]-gt[4]*(x-gt[0]-gt[2]/gt[5]*(y-gt[3]))/denom)/gt[5];
   }
-  if(isGeoRef()){
-    // double ulx=m_ulx;
-    // double uly=m_uly;
-    // i=(x-ulx)/m_delta_x;
-    // j=(uly-y)/m_delta_y;
+  if(isGeoRef())
     return true;
-  }
-  else{
-    // i=x;
-    // j=nrOfRow()-y;
+  else
     return false;
-  }
 }
 
 /**
@@ -390,7 +420,7 @@ bool ImgRasterGdal::geo2image(double x, double y, double& i, double& j) const
 bool ImgRasterGdal::image2geo(double i, double j, double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-  m_gds->GetGeoTransform(gt);
+  getGeoTransform(gt);
 
   x=gt[0]+(0.5+i)*gt[1]+(0.5+j)*gt[2];
   y=gt[3]+(0.5+i)*gt[4]+(0.5+j)*gt[5];
@@ -399,11 +429,8 @@ bool ImgRasterGdal::image2geo(double i, double j, double& x, double& y) const
     // y=m_uly-(0.5+j)*m_delta_y;
     return true;
   }
-  else{
-    // x=0.5+i;
-    // y=nrOfRow()-(0.5+j);
+  else
     return false;
-  }
 }
 
 /**

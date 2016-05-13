@@ -48,13 +48,13 @@ public:
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, memory, options);};
   ///constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgWriterGdal(const ImgReaderGdal& imgSrc){open(imgSrc);};
+  ImgWriterGdal(const ImgReaderGdal& imgSrc, unsigned int memory=0){open(imgSrc,memory);};
   ///constructor opening an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
-  ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
+  ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgWriterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType){open(ncol, nrow, nband, dataType);};
+  ImgWriterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType, unsigned int memory=0){open(ncol, nrow, nband, dataType,memory);};
   ///constructor opening an image for writing using an external data pointer (not tested yet)
   ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){open(dataPointer, filename, ncol, nrow, nband, dataType);};
   ///constructor opening an image for writing in memory using an external data pointer (not tested yet)
@@ -70,10 +70,10 @@ public:
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
-  void open(int ncol, int nrow, int nband, const GDALDataType& dataType);
-  ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
+  ///Open an image for writing in memory, defining image attributes.
+  void open(int ncol, int nrow, int nband, const GDALDataType& dataType, unsigned int memory=0);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(const ImgReaderGdal& imgSrc);
+  void open(const ImgReaderGdal& imgSrc, unsigned int memory=0);
   ///Open an image for writing using an external data pointer (not tested yet)
   void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory using an external data pointer (not tested yet)
@@ -82,8 +82,6 @@ public:
   void close(void);//definition in ImgWritergdal.cc
   ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
-  ///Copy geotransform information from another georeferenced image
-  void copyGeoTransform(const ImgReaderGdal& imgSrc);
 
   ///Write a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
   template<typename T> bool writeData(T& value, int col, int row, int band=0);

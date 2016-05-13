@@ -124,7 +124,7 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | align  | align                | bool  |       |Align output bounding box to first input image | 
  | scale  | scale                | double |       |output=scale*input+offset | 
  | off    | offset               | double |       |output=scale*input+offset | 
- | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory. Use 0 to read entire image into memory| 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory. Use 0 to read entire image into memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);

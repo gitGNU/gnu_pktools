@@ -41,7 +41,7 @@ namespace crule{
 class AppFactory{
 
 public:
- AppFactory(unsigned long int memory=-1) : m_memory(memory){};
+  AppFactory(){};
   virtual ~AppFactory(void){};
   void setOptions(int argc, char* argv[]);
   //todo: support arguments as list of arguments, class or struct and xml file?
@@ -49,7 +49,6 @@ public:
 
 private:
   //todo: create member attribute for pointer to memory buffer?
-  unsigned long int m_memory;
   int m_argc;
   std::vector<std::string> m_argv;
 };

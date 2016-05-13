@@ -50,7 +50,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -189,8 +189,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   // ///verbose
   // vector<short> verbose_opt(0,1);
 
-  //test
-  cout << "debug0" << endl;
   std::map<std::string, crule::CRULE_TYPE> cruleMap;
   // //initialize cruleMap
   // enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8};
@@ -207,9 +205,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   cruleMap["maxallbands"]=crule::maxallbands;
   cruleMap["minallbands"]=crule::minallbands;
   cruleMap["stdev"]=crule::stdev;
-
- //test
- cout << "debug0" << endl;
 
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
@@ -254,9 +249,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   int writeBand=0;
   vector<short> bands;
 
-  //test
-  cout << "debug1" << endl;
-  
   //get bounding box
   double maxLRX=lrx_opt[0];
   double maxULY=uly_opt[0];
@@ -282,9 +274,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     else
       cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
   }
-
-  //test
-  cout << "debug2" << endl;
 
   double dx=0;
   double dy=0;
@@ -329,11 +318,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
       lry_opt[0]=minLRY;
     if(cut_opt.size()||eoption_opt.size())
       extentReader.open(extent_opt[0]);
-      extentReader.open(extent_opt[0]);
   }
-
-  //test
-  cout << "debug3" << endl;
 
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
@@ -344,9 +329,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   string imageType;
   bool init=false;
 
-  //test
-  cout << "debug4" << endl;
-
   for(int ifile=0;ifile<imgReader.size();++ifile){
     //todo: must be in init part only?
     if(colorTable_opt.empty())
@@ -354,11 +336,11 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
 	theColorTable=(imgReader[ifile].getColorTable()->Clone());
     if(projection_opt.empty())
       theProjection=imgReader[ifile].getProjection();
-    // if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
-    //   string theInterleave="INTERLEAVE=";
-    //   theInterleave+=imgReader[ifile].getInterleave();
-    //   option_opt.push_back(theInterleave);
-    // }
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=imgReader[ifile].getInterleave();
+      option_opt.push_back(theInterleave);
+    }
 
     if((ulx_opt[0]||uly_opt[0]||lrx_opt[0]||lry_opt[0])&&(!imgReader[ifile].covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
       if(verbose_opt[0])
@@ -444,7 +426,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
       else
         imageType=imgReader[ifile].getImageType();
 
-      // dataType=imgReader.getDataType(0);
       if(verbose_opt[0]){
         cout << "type of data for input " << ifile << ": " << theType << endl;
         cout << "nband: " << nband << endl;
@@ -462,19 +443,9 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
 	dy=dy_opt[0];
       else
         dy=imgReader[ifile].getDeltaY();
-      // imgReader.getMagicPixel(magic_x,magic_y);
       init=true;
     }
     else{
-      //convert bounding box to magic coordinates
-      //check uniformity magic pixel
-      // double test_x,test_y;
-      // imgReader.getMagicPixel(test_x,test_y);
-      // if(verbose_opt[0]){
-      //   cout << "magic_x, magic_y: " << magic_x << ", " << magic_y << endl;
-      // }
-      // assert(magic_x==test_x);
-      // assert(magic_y==test_y);
       maxLRX=(theLRX>maxLRX)?theLRX:maxLRX;
       maxULY=(theULY>maxULY)?theULY:maxULY;
       minULX=(theULX<minULX)?theULX:minULX;
@@ -545,36 +516,23 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     cout << "composite image dim (nrow x ncol): " << nrow << " x " << ncol << endl;
   while(weight_opt.size()< imgReader.size())
     weight_opt.push_back(weight_opt[0]);
-  // if(verbose_opt[0]){
-  //   std::cout << weight_opt << std::endl;
-  // }
+  if(verbose_opt[0]){
+    std::cout << weight_opt << std::endl;
+  }
   if(cruleMap[crule_opt[0]]==crule::mode){
     nwriteBand=(file_opt[0])? class_opt.size()+1:class_opt.size();
   }
   else
     nwriteBand=(file_opt[0])? bands.size()+1:bands.size();
-  // if(output_opt.empty()){
-  //   std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
-  //   exit(0);
-  // }
-  // if(verbose_opt[0])
-  //   cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
 
-  //test
-  cout << "debug5" << endl;
-  //todo: segmentation faults between debug5 and debug6
-  //todo: if in memory, do not require filename, else, filename must be set by caller?
   try{
     //open imgWriter in memory
-    imgWriter.open(ncol,nrow,nwriteBand,theType);
-    // for(int iband=0;iband<nwriteBand;++iband)
-    //   imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
+    imgWriter.open(ncol,nrow,nwriteBand,theType,0);
+    imgWriter.setNoData(dstnodata_opt);
   }
   catch(string error){
     cout << error << endl;
   }
-  // if(description_opt.size())
-  //   imgWriter.setImageDescription(description_opt[0]);
   double gt[6];
   gt[0]=minULX;
   gt[1]=dx;
@@ -583,12 +541,8 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   gt[4]=0;
   gt[5]=-dy;
 
-  //test
-  cout << "debug3" << endl;
-
-  //todo: check if I can set geotransform and projection when dataset is not set yet...
   imgWriter.setGeoTransform(gt);
-  // imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
+
   if(projection_opt.size()){
     if(verbose_opt[0])
       cout << "projection: " << projection_opt[0] << endl;
@@ -607,9 +561,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   //   else if(theColorTable)
   //     imgWriter.setColorTable(theColorTable);
   // }
-
-  //test
-  cout << "debug3" << endl;
 
   ImgWriterGdal maskWriter;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
@@ -651,7 +602,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     try{
       if(verbose_opt[0]>=1)
 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0],GA_ReadOnly,m_memory);
+      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);

@@ -124,7 +124,7 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | align  | align                | bool  |       |Align output bounding box to first input image | 
  | scale  | scale                | double |       |output=scale*input+offset | 
  | off    | offset               | double |       |output=scale*input+offset | 
- | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory. Use 0 to read entire image into memory | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory. Use 0 to read entire image into memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
   }
 
   //todo: set all the arguments in app
-  appfactory::AppFactory app(memory_opt[0]);
+  appfactory::AppFactory app;
   app.setOptions(argc,argv);
   vector<ImgReaderGdal> imgReader(input_opt.size());
   for(int ifile=0;ifile<input_opt.size();++ifile){
@@ -259,7 +259,6 @@ int main(int argc, char *argv[])
       cout << "opening file " << input_opt[ifile] << endl;
     try{
       imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
-      // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
       for(int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
       for(int iband=0;iband<offset_opt.size();++iband)
@@ -269,21 +268,12 @@ int main(int argc, char *argv[])
       cerr << errorstring << " " << input_opt[ifile] << endl;
     }
   }
-  //test
-  cout << "constructor imgWriter" << endl;
   ImgWriterGdal imgWriter;//AppFactory has been instantiated with memory_opt so we can set mem in ImgWriter 
-  //test
-  cout << "calling app.pkcomposite" << endl;
   app.pkcomposite(imgReader,imgWriter);
-  //test
-  cout << "after app.pkcomposite" << endl;
   for(int ifile=0;ifile<imgReader.size();++ifile){
     imgReader[ifile].close();
   }
   imgWriter.setFile(output_opt[0],oformat_opt[0]);
-
-  for(int iband=0;iband<imgWriter.nrOfBand();++iband)
-    imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
 
   imgWriter.close();
   return 0;
