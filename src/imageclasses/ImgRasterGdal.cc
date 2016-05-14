@@ -27,10 +27,6 @@ ImgRasterGdal::ImgRasterGdal(void)
 
 ImgRasterGdal::~ImgRasterGdal(void)
 {
-  if(m_data.size()&&m_filename.size()){
-    for(int iband=0;iband<m_nband;++iband)
-      free(m_data[iband]);
-  }
 }
 
 void ImgRasterGdal::close(void)

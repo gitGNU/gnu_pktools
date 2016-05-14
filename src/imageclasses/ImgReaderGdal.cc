@@ -27,12 +27,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ImgReaderGdal::ImgReaderGdal(void){};
 
 ImgReaderGdal::~ImgReaderGdal(void){};
-// {
-//   if(m_data.size()&&m_filename.size()){
-//     for(int iband=0;iband<m_nband;++iband)
-//       free(m_data[iband]);
-//   }
-// }
 
 /**
  * @param dataPointer External pointer already containing the image data
@@ -46,15 +40,6 @@ void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow
   m_nband=nband;
   m_ncol=ncol;
   m_nrow=nrow;
-  m_data.resize(nband);
-  m_begin.resize(nband);
-  m_end.resize(nband);
-  m_blockSize=nrow;//memory contains entire image
-  for(int iband=0;iband<nband;++iband){
-    m_data[iband]=dataPointer+iband*m_ncol*m_nrow*(GDALGetDataTypeSize(getDataType())>>3);
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-  }
 }
 
 /**
@@ -62,11 +47,10 @@ void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow
  * @param readMode Open dataset in ReadOnly or Update mode
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
+void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode)
 {
   m_filename = filename;
   setCodec(readMode);
-  initMem(memory);
 }
 
 void ImgReaderGdal::close(void)
@@ -108,57 +92,6 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
   m_gt[4]=adfGeoTransform[4];
   m_gt[5]=adfGeoTransform[5];
   m_projection=m_gds->GetProjectionRef();
-}
-
-/**
- * @param memory Available memory to cache image raster data (in MB)
- **/
-void ImgReaderGdal::initMem(unsigned long int memory)
-{
-  int nXBlockSize, nYBlockSize;
-  if(memory<=0)
-    m_blockSize=nrOfRow();
-  else{
-    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-    m_blockSize-=m_blockSize%getBlockSizeY(0);
-  }
-  if(m_blockSize<1)
-    m_blockSize=1;
-  if(m_blockSize>nrOfRow())
-    m_blockSize=nrOfRow();
-  m_data.resize(nrOfBand());
-  m_begin.resize(nrOfBand());
-  m_end.resize(nrOfBand());
-  for(int iband=0;iband<m_nband;++iband){
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-    m_begin[iband]=0;
-    m_end[iband]=0;
-  }
-}
-
-/**
- * @param row Read a new block for caching this row (if needed)
- * @param band Band that must be read to cache
- * @return true if block was read
- **/
-bool ImgReaderGdal::readNewBlock(int row, int band)
-{
-  if(m_end[band]<m_blockSize)//first time
-    m_end[band]=m_blockSize;
-  while(row>=m_end[band]&&m_begin[band]<nrOfRow()){
-    m_begin[band]+=m_blockSize;
-    m_end[band]=m_begin[band]+m_blockSize;
-  }
-  if(m_end[band]>nrOfRow())
-    m_end[band]=nrOfRow();
-  for(int iband=0;iband<m_nband;++iband){
-    //fetch raster band
-    GDALRasterBand  *poBand;
-    assert(iband<nrOfBand()+1);
-    poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-    poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
-  }
-  return true;//new block was read
 }
 
 /**

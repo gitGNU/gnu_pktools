@@ -29,12 +29,12 @@ class ImgUpdaterGdal : public ImgReaderGdal, public ImgWriterGdal
 public:
   ///default constructor. Image needs to be opened later with one of the open methods.
   ImgUpdaterGdal(void);
-  ///constructor opening an image in update mode (read and write). Caching is supported when memory>0.
-  ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode=GA_Update, unsigned int memory=0);
+  ///constructor opening an image in update mode (read and write).
+  ImgUpdaterGdal(const std::string& filename, const GDALAccess& readMode=GA_Update);
   ///destructor
   ~ImgUpdaterGdal(void);
-  ///Open an image in update mode (read and write). Caching is supported when memory>0.
-  void open(const std::string& filename, const GDALAccess& readMode=GA_Update, unsigned int memory=0);
+  ///Open an image in update mode (read and write).
+  void open(const std::string& filename, const GDALAccess& readMode=GA_Update);
   ///close the image
   void close(void);
 

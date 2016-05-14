@@ -5,7 +5,6 @@ set(ALGOR_SRC_DIR algorithms)
 set(FILECLASS_SRC_DIR fileclasses)
 set(IMGCLASS_SRC_DIR imageclasses)
 set(LASCLASS_SRC_DIR lasclasses)
-set(APP_SRC_DIR apps)
 
 set(BASE_H
 	${BASE_SRC_DIR}/IndexValue.h
@@ -75,14 +74,6 @@ set(LASCLASS_H
 set(LASCLASS_CC
 	${LASCLASS_SRC_DIR}/FileReaderLas.cc 
 	)
-	
-set(APP_H
-	${APP_SRC_DIR}/AppFactory.h 
-	)
-
-set(APP_CC
-	${APP_SRC_DIR}/AppFactory.cc 
-	)
 
 ###############################################################################
 
@@ -117,9 +108,6 @@ if (BUILD_WITH_LIBLAS)
 	add_library( ${PKTOOLS_LASCLASSES_LIB_NAME} ${LASCLASS_H} ${LASCLASS_CC} ${BASE_H} )
 	target_link_libraries(${PKTOOLS_FILECLASSES_LIB_NAME} ${LIBLAS_LIBRARIES} ${BOOST_LIBRARIES} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} )
 endif(BUILD_WITH_LIBLAS)
-
-add_library( ${PKTOOLS_APP_LIB_NAME} ${APP_CC} ${APP_H} )
-target_link_libraries(${PKTOOLS_APP_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} )
 
 ###############################################################################
 
