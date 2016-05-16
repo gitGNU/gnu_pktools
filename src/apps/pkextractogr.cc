@@ -108,7 +108,7 @@ Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output -r r
 
 Examples
 ========
-Some examples how to use pkextract can be found \ref examples_pkextract "here"
+Some examples how to use pkextract can be found \ref examples_pkextractogr "here"
 **/
 
 namespace rule{
