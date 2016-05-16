@@ -24,21 +24,18 @@ LAS=1 #pklas2img
 FANN=1 #pkann and pkfsann
 NLOPT=1 #pkoptsvm
 
-CONFIGURE="./configure"
+CONFIGURE="cmake .."
 
 #!/bin/bash
 function usage
 {
-    echo "usage: $0 [--enable-las] [--enable-fann] [--enable-nlopt] [-h]"
+    echo "usage: $0 [--enable-las] [--enable-fann] [-h]"
 }
 
 while [ "$1" != "" ]; do
     case $1 in
         --enable-las )             LAS=1
 	    echo "las enabled"
-                                ;;
-        --enable-nlopt )             NLOPT=1
-	    echo "nlopt enabled"
                                 ;;
         --enable-fann )             FANN=1
 	    echo "fann enabled"
@@ -71,7 +68,7 @@ apt-get -y install g++ make gdal-bin libgdal-dev libgsl0-dev libarmadillo-dev
 if [ "${FANN}" -eq 1 ];then
     #Install optional pre-requisites for Artificial Neural Network support
     apt-get -y install libfann-dev
-    CONFIGURE="$CONFIGURE --enable-fann"
+    CONFIGURE="$CONFIGURE -DBUILD_WITH_FANN=ON"
 fi
 
 if [ "${LAS}" -eq 1 ];then
@@ -125,22 +122,7 @@ if [ "${LAS}" -eq 1 ];then
     rm -rf /tmp/libLAS*
     #Install optional pre-requisites for libLAS support
     #apt-get -y install libboost-dev liblas-dev liblas-c-dev liblas1 liblas2 liblas-c2 python-liblas
-    CONFIGURE="$CONFIGURE --enable-las"
-fi
-
-if [ "${NLOPT}" -eq 1 ];then
-    #Install optional pre-requisites for NLOPT support
-    apt-get -y install libnlopt-dev
-#comment out manual installation when package is available in repository
-#Manual installation of NLOPT
-# cd /tmp
-# wget --progress=dot:mega "http://ab-initio.mit.edu/nlopt/nlopt-2.4.2.tar.gz"
-# tar xzvf nlopt-2.4.2.tar.gz
-# cd nlopt-2.4.2
-# ./configure
-# make
-# make install
-    CONFIGURE="$CONFIGURE --enable-nlopt"
+    CONFIGURE="$CONFIGURE -DBUILD_WITH_LIBLAS=ON"
 fi
 
 ldconfig
@@ -152,11 +134,12 @@ cd /tmp
 wget --progress=dot:mega "download.savannah.gnu.org/releases/pktools/pktools-latest.tar.gz"
 tar xzvf pktools-latest.tar.gz
 cd pktools-*
+mkdir build
+cd build
 $CONFIGURE
-#./configure --enable-nlopt --enable-fann --enable-las
+#./configure --enable-fann --enable-las
 make
 make install
 ldconfig
 
-rm -rf /tmp/nlopt-*
 rm -rf /tmp/pktools-*

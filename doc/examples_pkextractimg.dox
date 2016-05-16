@@ -1,0 +1,13 @@
+\section examples_pkextractimg Examples of pkextractimg (using raster sample)
+
+Typical use where pixels are extracted based on a land cover map (sample.tif). Extract all bands for a random sample of 10 percent of the pixels in the land cover map sample.tif where the land cover classes are either 1,2 or 3 (class values). Write output to the point vector dataset extracted.sqlite.
+
+\code
+pkextractimg -i input.tif -s sample.tif -o extracted.sqlite -t 10 -c 1 -c 2 -c 3
+\endcode
+
+Extract all bands for the first 5000 pixels encountered in sample.tif where pixels have a value equal to 1. Write output to point vector dataset extracted.sqlite.
+
+\code
+pkextractimg -i input.tif -s sample.tif -o extracted.sqlite -t -5000 -c 1
+\endcode

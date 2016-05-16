@@ -261,7 +261,7 @@ int main(int argc,char **argv) {
       else
 	writeBuffer[icol]=nodata_opt[0];
     }
-    imgWriter.writeData(writeBuffer,GDT_Byte,irow);
+    imgWriter.writeData(writeBuffer,irow);
     progress=(1.0+irow)/imgWriter.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
   }

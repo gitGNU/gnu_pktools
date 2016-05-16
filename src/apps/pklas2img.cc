@@ -525,7 +525,7 @@ int main(int argc,char **argv) {
         // assert(outputProfile[iband].size()==outputWriter.nrOfRow());
         assert(outputProfile[iband].size()==outputWriter.nrOfCol());
         try{
-          outputWriter.writeData(outputProfile[iband],GDT_Float64,irow,iband);
+          outputWriter.writeData(outputProfile[iband],irow,iband);
         }
         catch(std::string errorString){
           cout << errorString << endl;
@@ -645,7 +645,7 @@ int main(int argc,char **argv) {
       try{
         assert(outputData.size()==outputWriter.nrOfRow());
         assert(outputData[0].size()==outputWriter.nrOfCol());
-        outputWriter.writeData(outputData[irow],GDT_Float64,irow,0);
+        outputWriter.writeData(outputData[irow],irow,0);
       }
       catch(std::string errorString){
         cout << errorString << endl;

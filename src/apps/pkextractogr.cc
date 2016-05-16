@@ -55,11 +55,13 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 The utility pkextractogr extracts pixel values from an input raster dataset, based on the locations you provide via a sample file. Alternatively, a random sample or systematic grid of points can also be extracted. The sample can be a vector file with points or polygons. In the case of polygons, you can either extract the values for all raster pixels that are covered by the polygons, or extract a single value for each polygon such as the centroid, mean, median, etc. As output, a new copy of the vector file is created with an extra attribute for the extracted pixel value. For each raster band in the input image, a separate attribute is created. For instance, if the raster dataset contains three bands, three attributes are created (b0, b1 and b2). 
 
-A typical usage of pkextract is to prepare a training sample for one of the classifiers implemented in pktools.
+A typical usage of pkextractogr is to prepare a training sample for one of the classifiers implemented in pktools.
 
 \anchor pkextractogr_rules 
 
 Overview of the possible extraction rules:
+
+\section pkextractogr_rules Extraction rules:
 
 extraction rule | output features
 --------------- | ---------------
@@ -77,7 +79,7 @@ proportion | Extract proportion of class(es) within the polygon (classes must be
 count | Extract count of class(es) within the polygon (classes must be set with the option class).
 percentile | Extract percentile as defined by option perc (e.g, 95th percentile of values covered by polygon)
 
-\section pkextract_options Options
+\section pkextractogr_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
 |short|long|type|default|description|
@@ -104,12 +106,12 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | circ   | circular             | bool | false |Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option) | 
  | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
 
-Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output -r rule
+Usage: pkextractogr -i input [-s sample | -rand number | -grid size] -o output -r rule
 
 
 Examples
 ========
-Some examples how to use pkextract can be found \ref examples_pkextract "here"
+Some examples how to use pkextractogr can be found \ref examples_pkextractogr "here"
 **/
 
 namespace rule{
@@ -184,7 +186,7 @@ int main(int argc, char *argv[])
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output" << endl;
+    cout << "Usage: pkextractogr -i input [-s sample | -rand number | -grid size] -o output" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing

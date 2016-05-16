@@ -1,0 +1,65 @@
+\section examples_pkextractogr Examples of pkextractogr
+
+\subsection example_pkextractogr_vector Using vector sample
+
+Extract all points for all layers read in points.sqlite from input.tif. Create a new point vector dataset named extracted.sqlite, where each point will contain an attribute for the individual input bands in input.tif. Notice that the default vector format is Spatialite (.sqlite).
+
+\code
+pkextractogr -i input.tif -s points.sqlite -o extracted.sqlite
+\endcode
+
+Same example as above, but only extract the points for the layer in points.sqlite named "valid"
+
+\code
+pkextractogr -i input.tif -s points.sqlite -ln valid -o extracted.sqlite
+\endcode
+
+Extract points and write output in ESRI Shapefile format
+
+\code
+pkextractogr -i input.tif -s points.shp -f "ESRI Shapefile" -o extracted.shp
+\endcode
+
+Extract the mean and standard deviation for each input band in a 3 by 3 window, centered around the points in the sample vector dataset points.sqlite. The output vector dataset will contain polygon features defined by the buffered points (3x3 window). Use the option -circ to define a circular buffer.
+
+\code
+pkextractogr -i input.tif -s points.sqlite -o extracted.sqlite -r mean -r stdev -buf 1
+\endcode
+
+Extract all pixels from input.tif covered by the polygons in locations.sqlite. Each polygon can thus result in multiple point features with attributes for each input band. Write the extracted points to a point vector dataset training.sqlite.
+
+\code
+pkextractogr -i input.tif -s polygons.sqlite -o training.sqlite -r allpoints
+\endcode
+
+Extract the first band from input.tif at the centroids of the polygons in vector dataset polygons.sqlite. Assign the extracted point value to a new attribute of the polygon and write to the vector dataset extracted.sqlite.
+
+\code
+pkextractogr -i input.tif -b 0 -s polygons.sqlite -r centroid -o extracted.sqlite
+\endcode
+
+Extract the median and centroid values for the second band in input.tif covered by each polygon in polygons.sqlite. The mean values are written to a copy of the polygons in output vector dataset extracted.sqlite
+
+\code
+pkextractogr -i input.tif -b 1 -s polygons.sqlite -r median -r centroid -o extracted.sqlite
+\endcode
+
+Extract the majority class (mode) in each polygon for the input land cover map. The land cover map contains five valid classes, labeled 1-5. Other class values (e.g., labeled as 0) are not taken into account in the voting.
+
+\code
+pkextractogr -i landcover.tif -s polygons.sqlite -r mode -o majority.sqlite -c 1 -c 2 -c 3 -c 4 -c 5
+\endcode
+
+\subsection example_pkextractogr_random Using random and grid samples
+
+Extract 100 sample units following a simple random sampling design. For each sample unit, the median, min and max values are extracted from the input raster dataset in a window of 3 by 3 pixels and written as attributes of the output vector dataset. The output vector dataset contains polygon features defined by the windows centered at the random selected sample units.
+
+\code
+pkextractogr -i input.tif -o random.sqlite -rand 100 -r median -r min -r max -buf 1
+\endcode
+
+Extract points following a systematic grid with grid cell size of 100 m. Discard pixels that have a value 0 in the input raster dataset.
+
+\code
+pkextractogr -i input.tif -o systematic.sqlite -grid 100 -srcnodata 0
+\endcode
