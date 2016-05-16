@@ -180,19 +180,6 @@ public:
   std::string getMetadataItem() const;
   ///Get the image description from the metadata of this dataset
   std::string getImageDescription() const;
-  unsigned int getBlockSize() const{return m_blockSize;};
-  int getBlockSizeX(int band=0)
-  {
-    int blockSizeX, blockSizeY;
-    getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
-    return blockSizeX;
-  }
-  int getBlockSizeY(int band=0)
-  {
-    int blockSizeX, blockSizeY;
-    getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
-    return blockSizeY;
-  }
   int nrOfBlockX(int band=0)
   {
     int nXBlockSize, nYBlockSize;

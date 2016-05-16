@@ -102,7 +102,6 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | tp     | thresholdPolygon     | float |       |(absolute) threshold for selecting samples in each polygon | 
  | buf    | buffer               | short | 0     |Buffer for calculating statistics for point features (in number of pixels)  | 
  | circ   | circular             | bool | false |Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option) | 
- | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkextract -i input [-s sample | -rand number | -grid size] -o output -r rule
 
@@ -140,7 +139,6 @@ int main(int argc, char *argv[])
   Optionpk<float> polythreshold_opt("tp", "thresholdPolygon", "(absolute) threshold for selecting samples in each polygon");
   Optionpk<short> buffer_opt("buf", "buffer", "Buffer for calculating statistics for point features (in number of pixels) ",0);
   Optionpk<bool> disc_opt("circ", "circular", "Use a circular disc kernel buffer (for vector point sample datasets only, use in combination with buffer option)", false);
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
   Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0,2);
 
   bstart_opt.setHide(1);
@@ -151,7 +149,6 @@ int main(int argc, char *argv[])
   percentile_opt.setHide(1);
   buffer_opt.setHide(1);
   disc_opt.setHide(1);
-  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -175,7 +172,6 @@ int main(int argc, char *argv[])
     polythreshold_opt.retrieveOption(argc,argv);
     buffer_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
-    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -232,7 +228,7 @@ int main(int argc, char *argv[])
       exit(1);
   }
   try{
-    imgReader.open(image_opt[0],GA_ReadOnly,memory_opt[0]);
+    imgReader.open(image_opt[0],GA_ReadOnly);
   }
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;

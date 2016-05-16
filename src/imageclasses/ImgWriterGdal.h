@@ -29,13 +29,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "ImgReaderGdal.h"
 #include "ImgReaderOgr.h"
 
-/** Class to write a raster dataset in a format supported by GDAL. Currently only those formats where the drivers support the Create method can be written. Data are cached in memory for a number of rows (if memory>0) before written to file.
+/** Class to write a raster dataset in a format supported by GDAL. Currently only those formats where the drivers support the Create method can be written.
 
    This class inherits from ImgRasterGdal, a general raster class to store e.g., filename, number of columns, rows and bands of the dataset. 
-
-   If memory is set (in MB) to 0 (default), the raster is written line by line directly from file. A scale and offset can be set when writing the raster data values. The scaling and offset are applied on a per band basis. 
-
-   For random access writing (not in sequential order line by line), set memory to 0 or a value sufficiently large to write the entire image to memory.
  **/
 
 class ImgWriterGdal : public virtual ImgRasterGdal
@@ -43,24 +39,16 @@ class ImgWriterGdal : public virtual ImgRasterGdal
 public:
   ///default constructor. Image needs to be opened later with one of the open methods.
   ImgWriterGdal(void);
-  ///constructor opening an image for writing, copying image attributes from a source image. Image is directly writen to file. Use the constructor with memory>0 to support caching
+  ///constructor opening an image for writing, copying image attributes from a source image. Image is directly writen to file.
   ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, options);};
-  ///constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgWriterGdal(const ImgReaderGdal& imgSrc){open(imgSrc);};
   ///constructor opening an image for writing, defining all image attributes. Image is directly written to file.
-  ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
-  ///constructor opening an image for writing, defining all image attributes.
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
   ///destructor
   ~ImgWriterGdal(void);
 
   ///Open an image for writing, copying image attributes from a source image. Image is directly written to file.
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
-  ///Open an image for writing, copying image attributes from a source image.
-  void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Image is directly written to file.
-  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
-  ///Open an image for writing, defining all image attributes.
   void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   void close(void);//definition in ImgWritergdal.cc
   ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
@@ -96,10 +84,6 @@ protected:
   std::vector<std::string> m_options;
 
 private:
-  ///Write new block from cache (defined by m_begin and m_end)
-  bool writeNewBlock(int row, int band);
-  ///Initialize the memory for read/write image in cache
-  void initMem(unsigned long int memory);
 };
 
 /**
@@ -252,11 +236,6 @@ template<typename T> bool ImgWriterGdal::writeDataBlock(Vector2d<T>& buffer2d, i
   if(minCol<0){
     std::ostringstream s;
     s << "mincol (" << minCol << ") is negative";
-    throw(s.str());
-  }
-  if(minCol>0){
-    std::ostringstream s;
-    s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
     throw(s.str());
   }
   if(maxCol>=nrOfCol()){

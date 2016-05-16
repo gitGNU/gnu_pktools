@@ -53,27 +53,6 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
 
 /**
  * @param filename Open a raster dataset with this filename
- * @param imgSrc Use this source image as a template to copy image attributes
- * @param options Creation options
- **/
-void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
-{
-  open(filename,imgSrc,options);
-}
-
-/**
- * @param imgSrc Use this source image as a template to copy image attributes
- **/
-void ImgWriterGdal::open(const ImgReaderGdal& imgSrc)
-{
-  m_ncol=imgSrc.nrOfCol();
-  m_nrow=imgSrc.nrOfRow();
-  m_nband=imgSrc.nrOfBand();
-  m_dataType=imgSrc.getDataType();
-}
-
-/**
- * @param filename Open a raster dataset with this filename
  * @param ncol Number of columns in image
  * @param nrow Number of rows in image
  * @param nband Number of bands in image
@@ -90,40 +69,6 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
   m_filename = filename;
   m_options=options;
   setCodec(imageType);
-}
-
-/**
- * @param filename Open a raster dataset with this filename
- * @param ncol Number of columns in image
- * @param nrow Number of rows in image
- * @param nband Number of bands in image
- * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
- * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
- * @param options Creation options
- **/
-void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
-{
-  m_ncol = ncol;
-  m_nrow = nrow;
-  m_nband = nband;
-  m_dataType = dataType;
-  m_filename = filename;
-  m_options=options;
-  setCodec(imageType);
-}
-
-/**
- * @param ncol Number of columns in image
- * @param nrow Number of rows in image
- * @param nband Number of bands in image
- * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
- **/
-void ImgWriterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
-{
-  m_ncol = ncol;
-  m_nrow = nrow;
-  m_nband = nband;
-  m_dataType = dataType;
 }
 
 void ImgWriterGdal::close(void)
@@ -420,78 +365,5 @@ void ImgWriterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
   else{
     std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
     throw(errorString);
-  }
-}
-
-/**
- * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
- * @param burnValues Values to burn into raster cells (one value for each band)
- * @param controlOptions special options controlling rasterization (ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG)
- * "ATTRIBUTE":
- * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer. 
- * "ALL_TOUCHED":
- * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE. 
- "BURN_VALUE_FROM":
- * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future. 
- * "MERGE_ALG":
- * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
- * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
- **/
-void ImgWriterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
-  if(m_blockSize<nrOfRow()){
-    std::ostringstream s;
-    s << "Error: increase memory to perform rasterize in entirely in buffer (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
-    throw(s.str());
-  }
-  if(burnValues.empty()&&controlOptions.empty()){
-    std::string errorString="Error: either burn values or control options must be provided";
-    throw(errorString);
-  }
-
-  std::vector<OGRLayerH> layers;
-  int nlayer=0;
-
-  std::vector<double> burnBands;//burn values for all bands in a single layer
-   if(burnValues.size()){
-    burnBands=burnValues;
-    while(burnBands.size()<nrOfBand())
-      burnBands.push_back(burnValues[0]);
-  }
-  for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
-    std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
-    if(layernames.size())
-      if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
-	continue;
-    std::cout << "processing layer " << currentLayername << std::endl;
-    layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
-    ++nlayer;
-  }
-  void* pTransformArg;
-  GDALProgressFunc pfnProgress=NULL;
-  void* pProgressArg=NULL;
-
-  char **coptions=NULL;
-  for(std::vector<std::string>::const_iterator optionIt=controlOptions.begin();optionIt!=controlOptions.end();++optionIt)
-    coptions=CSLAddString(coptions,optionIt->c_str());
-
-  for(int iband=0;iband<nrOfBand();++iband){
-    double gt[6];
-    getGeoTransform(gt);
-    if(controlOptions.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
-        std::string errorString(CPLGetLastErrorMsg());
-        throw(errorString);
-      }
-    }
-    else if(burnValues.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
-        std::string errorString(CPLGetLastErrorMsg());
-        throw(errorString);
-      }
-    }
-    else{
-      std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
-        throw(errorString);
-    }
   }
 }

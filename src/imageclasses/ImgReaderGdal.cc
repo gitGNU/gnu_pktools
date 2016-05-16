@@ -29,20 +29,6 @@ ImgReaderGdal::ImgReaderGdal(void){};
 ImgReaderGdal::~ImgReaderGdal(void){};
 
 /**
- * @param dataPointer External pointer already containing the image data
- * @param ncol The number of columns in the image
- * @param nrow The number of rows in the image
- * @param band The number of bands in the image
- * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
- **/
-void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType)
-{
-  m_nband=nband;
-  m_ncol=ncol;
-  m_nrow=nrow;
-}
-
-/**
  * @param filename Open a raster dataset with this filename
  * @param readMode Open dataset in ReadOnly or Update mode
  * @param memory Available memory to cache image raster data (in MB)

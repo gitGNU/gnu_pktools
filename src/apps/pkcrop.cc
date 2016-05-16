@@ -89,7 +89,6 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | off    | offset               | double |       |output=scale*input+offset | 
  | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
  | align  | align                | bool  |       |Align output bounding box to input image | 
- | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -133,11 +132,10 @@ int main(int argc, char *argv[])
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
-  Optionpk<float>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
+  Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -159,7 +157,6 @@ int main(int argc, char *argv[])
   offset_opt.setHide(1);
   nodata_opt.setHide(1);
   description_opt.setHide(1);
-  memory_opt.setHide(1);
   
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -198,7 +195,6 @@ int main(int argc, char *argv[])
     nodata_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
     align_opt.retrieveOption(argc,argv);
-    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -284,7 +280,7 @@ int main(int argc, char *argv[])
   string projectionString;
   for(int iimg=0;iimg<input_opt.size();++iimg){
     try{
-    imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+    imgReader.open(input_opt[iimg],GA_ReadOnly);
     }
     catch(string error){
       cerr << "Error: could not open file " << input_opt[iimg] << ": " << error << std::endl;
@@ -457,7 +453,7 @@ int main(int argc, char *argv[])
   if(mask_opt.size()==1){
     try{
       //there is only a single mask
-      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
+      maskReader.open(mask_opt[0],GA_ReadOnly);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -492,7 +488,7 @@ int main(int argc, char *argv[])
     if(verbose_opt[0])
       cout << "opening image " << input_opt[iimg] << endl;
     try{
-      imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+      imgReader.open(input_opt[iimg],GA_ReadOnly);
     }
     catch(string error){
       cerr << error << std::endl;
@@ -625,10 +621,11 @@ int main(int argc, char *argv[])
       if(oformat_opt.size())//default
         imageType=oformat_opt[0];
       try{
-        imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
+        imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,option_opt);
 	if(nodata_opt.size()){
-	  for(int iband=0;iband<ncropband;++iband)
-	    imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
+	  imgWriter.setNoData(nodata_opt);
+	  // for(int iband=0;iband<ncropband;++iband)
+	  //   imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
 	}
       }
       catch(string errorstring){
@@ -803,7 +800,8 @@ int main(int argc, char *argv[])
                     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
                       if(lineMask[colMask]==msknodata_opt[ivalue]){
                         valid=false;
-                        nodataValue=(nodata_opt.size()>ivalue)? nodata_opt[ivalue] : nodata_opt[0];
+			if(nodata_opt.size()>ivalue)
+			  nodataValue=nodata_opt[ivalue];
                       }
                     }
 		  }
