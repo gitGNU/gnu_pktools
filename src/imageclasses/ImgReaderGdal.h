@@ -32,6 +32,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
    Class to read a raster dataset in a format supported by GDAL. Data are cached in memory for a number of rows (if memory>0) before read from file.
 
    This class inherits from ImgRasterGdal, a general raster class to store e.g., filename, number of columns, rows and bands of the dataset. 
+
+   If memory is set (in MB) to 0 (default), the raster is read line by line directly from file. A scale and offset can be set when reading the raster data values. The scaling and offset are applied on a per band basis. 
+
+   For random access reading (not in sequential order line by line), set memory to 0 or a value sufficiently large to read the entire image to memory.
 **/
 class ImgReaderGdal : public virtual ImgRasterGdal
 {
@@ -39,12 +43,17 @@ public:
   ///default constructor. Image needs to be opened later with one of the open methods.
   ImgReaderGdal(void);
   ///constructor opening an image. Set memory (in MB) to cache a number of rows in memory
-  ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly){open(filename, readMode);};
+  ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0){open(filename, readMode, memory);};
+  ///constructor opening an image using an external data pointer (not tested yet)
+  ImgReaderGdal(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType){open(dataPointer,ncol,nrow,nband,dataType);};
   ///destructor
   ~ImgReaderGdal(void);
-  ///Open an image.
-  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly);
+  ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
+  void open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType);
+  ///Open an image. Set memory (in MB) to cache a number of rows in memory
+  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
   ///Set the memory (in MB) to cache a number of rows in memory
+  void setMemory(unsigned long int memory=0){initMem(memory);};
 
   ///Close the image.
   void close(void);
@@ -84,6 +93,11 @@ protected:
   void setCodec(const GDALAccess& readMode=GA_ReadOnly);
   ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
 private:
+  ///Read new block in cache (defined by m_begin and m_end)
+  bool readNewBlock(int row, int band);
+  ///Initialize the memory for read/write image in cache
+  void initMem(unsigned long int memory);
+  ///Flag to indicate if the pointer used for caching should be deleted (only false for external pointer)
 };
 
 /**
@@ -108,12 +122,55 @@ template<typename T> void ImgReaderGdal::readData(T& value, int col, int row, in
     if(m_offset.size()>band)
       theOffset=m_offset[band];
   }
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,getGDALDataType<T>(),0,0);
-  dvalue=theScale*value+theOffset;
-  value=static_cast<T>(dvalue);
+  if(m_data.size()){
+    //only support random access reading if entire image is in memory for performance reasons
+    if(m_blockSize!=nrOfRow()){
+      std::ostringstream s;
+      s << "Error: increase memory to support random access reading (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+      throw(s.str());
+    }
+    if(row<m_begin[band]||row>=m_end[band]){
+      if(m_filename.size())
+        readNewBlock(row,band);
+    }
+    int index=(row-m_begin[band])*nrOfCol()+col;
+    switch(getDataType()){
+    case(GDT_Byte):
+      dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Int16):
+      dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_UInt16):
+      dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Int32):
+      dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_UInt32):
+      dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Float32):
+      dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Float64):
+      dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+      break;
+    default:
+      std::string errorString="Error: data type not supported";
+      throw(errorString);
+      break;
+    }
+    value=static_cast<T>(dvalue);
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,getGDALDataType<T>(),0,0);
+    dvalue=theScale*value+theOffset;
+    value=static_cast<T>(dvalue);
+  }
 }
 
 /**
@@ -140,15 +197,71 @@ template<typename T> void ImgReaderGdal::readData(std::vector<T>& buffer, int mi
     if(m_offset.size()>band)
       theOffset=m_offset[band];
   }
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  if(buffer.size()!=maxCol-minCol+1)
-    buffer.resize(maxCol-minCol+1);
-  poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
-  if(m_scale.size()>band||m_offset.size()>band){
-    for(int index=0;index<buffer.size();++index)
-      buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
+  if(m_data.size()){
+    if(row<m_begin[band]||row>=m_end[band]){
+      if(m_filename.size())
+        readNewBlock(row,band);
+    }
+    if(buffer.size()!=maxCol-minCol+1)
+      buffer.resize(maxCol-minCol+1);
+    int index=(row-m_begin[band])*nrOfCol();
+    int minindex=(index+minCol);
+    int maxindex=(index+maxCol);
+    if(getGDALDataType<T>()==getDataType()){//no conversion needed
+      buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
+      typename std::vector<T>::iterator bufit=buffer.begin();
+      while(bufit!=buffer.end()){
+	double dvalue=theScale*(*bufit)+theOffset;
+	*(bufit++)=static_cast<T>(dvalue);
+      }
+    }
+    else{
+      typename std::vector<T>::iterator bufit=buffer.begin();
+      for(index=minindex;index<=maxindex;++index,++bufit){
+        double dvalue=0;
+        switch(getDataType()){
+        case(GDT_Byte):
+          dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int16):
+          dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt16):
+          dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int32):
+          dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt32):
+          dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float32):
+          dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float64):
+          dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+          break;
+        default:
+          std::string errorString="Error: data type not supported";
+          throw(errorString);
+	  break;
+        }
+        // double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
+        *(bufit)=static_cast<T>(dvalue);
+      }
+    }
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    if(buffer.size()!=maxCol-minCol+1)
+      buffer.resize(maxCol-minCol+1);
+    poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
+    if(m_scale.size()>band||m_offset.size()>band){
+      for(int index=0;index<buffer.size();++index)
+	buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
+    }
   }
 }
 
@@ -241,14 +354,74 @@ template<typename T> void ImgReaderGdal::readDataBlock(std::vector<T>& buffer, i
   }
   if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
     buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  assert(band<nrOfBand()+1);
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
-  if(m_scale.size()>band||m_offset.size()>band){
-    for(int index=0;index<buffer.size();++index)
-      buffer[index]=theScale*buffer[index]+theOffset;
+  if(m_data.size()){
+    typename std::vector<T>::iterator bufit=buffer.begin();
+    for(int irow=minRow;irow<=maxRow;++irow){
+      if(irow<m_begin[band]||irow>=m_end[band]){
+        if(m_filename.size())
+          readNewBlock(irow,band);
+      }
+      int index=(irow-m_begin[band])*nrOfCol();
+      int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+      int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+
+      if(getGDALDataType<T>()==getDataType()){//no conversion needed
+	//assign will replace current contents and modify its size accordingly
+	buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
+      }
+      else{
+	for(index=minindex;index<=maxindex;++index,++bufit){
+	  double dvalue=0;
+	  switch(getDataType()){
+	  case(GDT_Byte):
+	    dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Int16):
+	    dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_UInt16):
+	    dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Int32):
+	    dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_UInt32):
+	    dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Float32):
+	    dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Float64):
+	    dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+	    break;
+	  default:
+	    std::string errorString="Error: data type not supported";
+	    throw(errorString);
+	    break;
+	  }
+	  *(bufit)=static_cast<T>(dvalue);
+	}//for index
+      }//else
+      if(getGDALDataType<T>()==getDataType()){
+	if(m_scale.size()>band||m_offset.size()>band){
+	  for(bufit=buffer.begin();bufit!=buffer.end();++bufit){
+	    double dvalue=theScale*(*bufit)+theOffset;
+	    *(bufit)=static_cast<T>(dvalue);
+	  }
+	}
+      }
+    }
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    assert(band<nrOfBand()+1);
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
+    if(m_scale.size()>band||m_offset.size()>band){
+      for(int index=0;index<buffer.size();++index)
+	buffer[index]=theScale*buffer[index]+theOffset;
+    }
   }
 }
 

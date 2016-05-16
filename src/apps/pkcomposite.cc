@@ -124,6 +124,7 @@ pkcomposite -i input1.tif -i input2.tif -o minimum.tif -cr minallbands
  | align  | align                | bool  |       |Align output bounding box to first input image | 
  | scale  | scale                | double |       |output=scale*input+offset | 
  | off    | offset               | double |       |output=scale*input+offset | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory. Use 0 to read entire image into memory| 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -178,6 +179,7 @@ int main(int argc, char *argv[])
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory. Use 0 to read entire image into memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -194,6 +196,7 @@ int main(int argc, char *argv[])
   description_opt.setHide(1);
   scale_opt.setHide(1);
   offset_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -232,6 +235,7 @@ int main(int argc, char *argv[])
     align_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -389,7 +393,7 @@ int main(int argc, char *argv[])
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
+      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
       // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
       for(int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
@@ -602,7 +606,7 @@ int main(int argc, char *argv[])
     cout << "open output image " << output_opt[0] << " with " << nwriteBand << " bands" << endl << flush;
 
   try{
-    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,option_opt);
+    imgWriter.open(output_opt[0],ncol,nrow,nwriteBand,theType,imageType,memory_opt[0],option_opt);
     imgWriter.setNoData(dstnodata_opt);
   }
   catch(string error){
@@ -678,7 +682,7 @@ int main(int argc, char *argv[])
     try{
       if(verbose_opt[0]>=1)
 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0],GA_ReadOnly);
+      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
