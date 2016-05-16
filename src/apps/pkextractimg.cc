@@ -45,7 +45,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 <code>
 
-  Options: [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-b band]* [-r rule]
+  Options: [-c class]* [-t threshold]* [-f format] [-ft fieldType] [-lt labelType] [-b band]*
 
   Advanced options:
   [-sband band -eband band]* [-bndnodata band [-srcnodata value]*] [-bn attribute] [-cn attribute] [-down value]
@@ -55,10 +55,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 The utility pkextractimg extracts pixel values from an input raster dataset, based on the locations you provide via a sample file. The sample should be a raster dataset with categorical (integer) values. The typical use case is a land cover map that overlaps the input raster dataset. The utility then extracts pixels from the input raster for the respective land cover classes. To select a random subset of the sample raster dataset you can set the threshold option -t with a percentage value. You can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es). As output, a new copy of the vector file is created with an extra attribute for the extracted pixel value. For each raster band in the input image, a separate attribute is created. For instance, if the raster dataset contains three bands, three attributes are created (b0, b1 and b2). 
 
-\anchor pkextractimg_rules 
-
-Overview of the possible extraction rules:
-
 \section pkextractimg_options Options
  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
  - short option `-h` shows basic options only, long option `--help` shows all options
@@ -66,11 +62,8 @@ Overview of the possible extraction rules:
 |-----|----|----|-------|-----------|
  | i      | input                | std::string |       |Raster input dataset containing band information | 
  | s      | sample               | std::string |       |Raster dataset with categorical values to sample the input raster dataset. Output will contain features with input band information included | 
- | ln     | ln                   | std::string |       |Layer name(s) in sample (leave empty to select all) | 
- | rand   | random               | unsigned int |       |Create simple random sample of points. Provide number of points to generate | 
- | grid   | grid                 | double |       |Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m) | 
  | o      | output               | std::string |       |Output sample dataset | 
- | c      | class                | int  |       |Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count | 
+ | c      | class                | int  |       |Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset | 
  | t      | threshold            | float | 100   |Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). You can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es) | 
  | f      | f                    | std::string | SQLite |Output sample dataset format | 
  | ft     | ftype                | std::string | Real  |Field type (only Real or Integer) | 
@@ -84,7 +77,7 @@ Overview of the possible extraction rules:
  | cn     | cname                | std::string | label |Name of the class label in the output vector dataset | 
  | down   | down                 | short | 1     |Down sampling factor | 
 
-Usage: pkextractimg -i input [-s sample | -rand number | -grid size] -o output
+Usage: pkextractimg -i input [-s sample] -o output
 
 
 Examples
@@ -98,10 +91,8 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "input", "Raster input dataset containing band information");
   Optionpk<string> sample_opt("s", "sample", "OGR vector dataset with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
-  Optionpk<unsigned int> random_opt("rand", "random", "Create simple random sample of points. Provide number of points to generate");
-  Optionpk<double> grid_opt("grid", "grid", "Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m)");
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
-  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count");
+  Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset");
   Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold per vector sample layer. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
   Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
@@ -128,8 +119,6 @@ int main(int argc, char *argv[])
   try{
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
-    random_opt.retrieveOption(argc,argv);
-    grid_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     class_opt.retrieveOption(argc,argv);
     threshold_opt.retrieveOption(argc,argv);
@@ -152,7 +141,7 @@ int main(int argc, char *argv[])
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkextractimg -i input [-s sample | -rand number | -grid size] -o output" << endl;
+    cout << "Usage: pkextractimg -i input -s sample -o output" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing

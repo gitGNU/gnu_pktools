@@ -1,6 +1,6 @@
 \section examples_pkextractogr Examples of pkextractogr
 
-\subsection example_pkextractogr_random Using vector sample
+\subsection example_pkextractogr_vector Using vector sample
 
 Extract all points for all layers read in points.sqlite from input.tif. Create a new point vector dataset named extracted.sqlite, where each point will contain an attribute for the individual input bands in input.tif. Notice that the default vector format is Spatialite (.sqlite).
 
