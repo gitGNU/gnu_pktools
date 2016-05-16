@@ -98,7 +98,6 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> image_opt("i", "input", "Raster input dataset containing band information");
   Optionpk<string> sample_opt("s", "sample", "OGR vector dataset with features to be extracted from input data. Output will contain features with input band information included. Sample image can also be GDAL raster dataset.");
-  Optionpk<string> layer_opt("ln", "ln", "Layer name(s) in sample (leave empty to select all)");
   Optionpk<unsigned int> random_opt("rand", "random", "Create simple random sample of points. Provide number of points to generate");
   Optionpk<double> grid_opt("grid", "grid", "Create systematic grid of points. Provide cell grid size (in projected units, e.g,. m)");
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
@@ -129,7 +128,6 @@ int main(int argc, char *argv[])
   try{
     doProcess=image_opt.retrieveOption(argc,argv);
     sample_opt.retrieveOption(argc,argv);
-    layer_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
     grid_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
@@ -347,7 +345,7 @@ int main(int argc, char *argv[])
       for(irow=0;irow<classReader.nrOfRow();++irow){
         if(irow%down_opt[0])
           continue;
-        classReader.readData(classBuffer,GDT_Float64,irow);
+        classReader.readData(classBuffer,irow);
         double x=0;//geo x coordinate
         double y=0;//geo y coordinate
         double iimg=0;//image x-coordinate in img image
@@ -361,7 +359,7 @@ int main(int argc, char *argv[])
           continue;
         for(int iband=0;iband<nband;++iband){
           int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-          imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
+          imgReader.readData(imgBuffer[iband],static_cast<int>(jimg),theBand);
         }
         for(icol=0;icol<classReader.nrOfCol();++icol){
           if(icol%down_opt[0])
@@ -576,7 +574,7 @@ int main(int argc, char *argv[])
       for(irow=0;irow<classReader.nrOfRow();++irow){
         if(irow%down_opt[0])
           continue;
-        classReader.readData(classBuffer,GDT_Int32,irow);
+        classReader.readData(classBuffer,irow);
         double x=0;//geo x coordinate
         double y=0;//geo y coordinate
         double iimg=0;//image x-coordinate in img image
@@ -590,7 +588,7 @@ int main(int argc, char *argv[])
           continue;
         for(int iband=0;iband<nband;++iband){
           int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-          imgReader.readData(imgBuffer[iband],GDT_Float64,static_cast<int>(jimg),theBand);
+          imgReader.readData(imgBuffer[iband],static_cast<int>(jimg),theBand);
         }
 
         for(icol=0;icol<classReader.nrOfCol();++icol){

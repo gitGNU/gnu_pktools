@@ -866,7 +866,7 @@ int main(int argc, char *argv[])
       }
       if(output_opt.size()){
         try{
-          gdalWriter.writeData(lineOutput,GDT_Float64,irow);
+          gdalWriter.writeData(lineOutput,irow);
         }
         catch(string errorstring){
           cerr << "lineOutput.size(): " << lineOutput.size() << endl;

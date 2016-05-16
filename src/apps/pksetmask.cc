@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
     //write buffer lineOutput to output file
     for(int iband=0;iband<outputWriter.nrOfBand();++iband){
       try{
-        outputWriter.writeData(lineOutput[iband],GDT_Float64,irow,iband);
+        outputWriter.writeData(lineOutput[iband],irow,iband);
       }
       catch(string errorstring){
         cerr << errorstring << endl;

@@ -901,7 +901,7 @@ int main(int argc, char *argv[])
               std::cout << "reading band " << band_opt[iband] << std::endl;
             assert(band_opt[iband]>=0);
             assert(band_opt[iband]<testImage.nrOfBand());
-            testImage.readData(buffer,GDT_Float32,iline,band_opt[iband]);
+            testImage.readData(buffer,iline,band_opt[iband]);
             for(int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -912,7 +912,7 @@ int main(int argc, char *argv[])
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);
             assert(iband<testImage.nrOfBand());
-            testImage.readData(buffer,GDT_Float32,iline,iband);
+            testImage.readData(buffer,iline,iband);
             for(int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -935,7 +935,7 @@ int main(int argc, char *argv[])
 	  for(short iclass=0;iclass<nclass;++iclass){
 	    if(verbose_opt.size()>1)
 	      std::cout << "Reading " << priorimg_opt[0] << " band " << iclass << " line " << iline << std::endl;
-	    priorReader.readData(linePrior[iclass],GDT_Float32,iline,iclass);
+	    priorReader.readData(linePrior[iclass],iline,iclass);
 	  }
         }
         catch(string theError){
@@ -977,7 +977,7 @@ int main(int argc, char *argv[])
 	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
 		// maskReader.readData(lineMask[imask],GDT_Int32,static_cast<int>(rowMask));
-		maskReader.readData(lineMask,GDT_Int16,static_cast<int>(rowMask));
+		maskReader.readData(lineMask,static_cast<int>(rowMask));
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;

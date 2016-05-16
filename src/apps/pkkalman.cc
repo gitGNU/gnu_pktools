@@ -520,11 +520,11 @@ int main(int argc,char **argv) {
 		  gainWriteBuffer[icol]=0;
 		}
 	      }
-	      imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
-	      imgWriterUncert.writeData(uncertWriteBuffer,GDT_Float64,irow,0);
+	      imgWriterEst.writeData(estWriteBuffer,irow,0);
+	      imgWriterUncert.writeData(uncertWriteBuffer,irow,0);
 	      //test
 	      if(gain_opt.size())
-		imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,0);
+		imgWriterGain.writeData(gainWriteBuffer,irow,0);
 	    }
 	  }
 	  catch(string errorString){
@@ -689,11 +689,11 @@ int main(int argc,char **argv) {
 		}
 	      }
 	    }
-	    imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,0);
-	    imgWriterUncert.writeData(uncertWriteBuffer,GDT_Float64,irow,0);
+	    imgWriterEst.writeData(estWriteBuffer,irow,0);
+	    imgWriterUncert.writeData(uncertWriteBuffer,irow,0);
 	    //test
 	    if(gain_opt.size())
-	      imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,0);
+	      imgWriterGain.writeData(gainWriteBuffer,irow,0);
 	  }
 	}
 	if(observation_opt.size()==nobs)
@@ -1016,9 +1016,9 @@ int main(int argc,char **argv) {
 
 	    //test
 	    if(gain_opt.size())
-	      imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,modindex);
-	    imgUpdaterEst.writeData(estWriteBuffer,GDT_Float64,irow,modindex);
-	    imgUpdaterUncert.writeData(uncertWriteBuffer,GDT_Float64,irow,modindex);
+	      imgWriterGain.writeData(gainWriteBuffer,irow,modindex);
+	    imgUpdaterEst.writeData(estWriteBuffer,irow,modindex);
+	    imgUpdaterUncert.writeData(uncertWriteBuffer,irow,modindex);
 	    progress=static_cast<float>((irow+1.0)/imgUpdaterEst.nrOfRow());
 	    pfnProgress(progress,pszMessage,pProgressArg);
 	  }
@@ -1184,11 +1184,11 @@ int main(int argc,char **argv) {
 		  // gainWriteBuffer[icol]=0;
 		}
 	      }
-	      imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,nmodel-1);
-	      imgWriterUncert.writeData(uncertWriteBuffer,GDT_Float64,irow,nmodel-1);
+	      imgWriterEst.writeData(estWriteBuffer,irow,nmodel-1);
+	      imgWriterUncert.writeData(uncertWriteBuffer,irow,nmodel-1);
 	      // //test
 	      // if(gain_opt.size())
-	      //   imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,0);
+	      //   imgWriterGain.writeData(gainWriteBuffer,irow,0);
 	    }
 	  }
 	  catch(string errorString){
@@ -1353,11 +1353,11 @@ int main(int argc,char **argv) {
 		}
 	      }
 	    }
-	    imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,nmodel-1);
-	    imgWriterUncert.writeData(uncertWriteBuffer,GDT_Float64,irow,nmodel-1);
+	    imgWriterEst.writeData(estWriteBuffer,irow,nmodel-1);
+	    imgWriterUncert.writeData(uncertWriteBuffer,irow,nmodel-1);
 	    // //test
 	    // if(gain_opt.size())
-	    //   imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,0);
+	    //   imgWriterGain.writeData(gainWriteBuffer,irow,0);
 	  }
 	}
 	if(observation_opt.size()==nobs)
@@ -1683,9 +1683,9 @@ int main(int argc,char **argv) {
 	    }
 	    // //test
 	    // if(gain_opt.size())
-	    //   imgWriterGain.writeData(gainWriteBuffer,GDT_Float64,irow,modindex);
-	    imgUpdaterEst.writeData(estWriteBuffer,GDT_Float64,irow,modindex);
-	    imgUpdaterUncert.writeData(uncertWriteBuffer,GDT_Float64,irow,modindex);
+	    //   imgWriterGain.writeData(gainWriteBuffer,irow,modindex);
+	    imgUpdaterEst.writeData(estWriteBuffer,irow,modindex);
+	    imgUpdaterUncert.writeData(uncertWriteBuffer,irow,modindex);
 	    progress=static_cast<float>((irow+1.0)/imgUpdaterEst.nrOfRow());
 	    pfnProgress(progress,pszMessage,pProgressArg);
 	  }
@@ -1848,8 +1848,8 @@ int main(int argc,char **argv) {
 	    }
 	  }
 	}
-	imgWriterEst.writeData(estWriteBuffer,GDT_Float64,irow,modindex);
-	imgWriterUncert.writeData(uncertWriteBuffer,GDT_Float64,irow,modindex);
+	imgWriterEst.writeData(estWriteBuffer,irow,modindex);
+	imgWriterUncert.writeData(uncertWriteBuffer,irow,modindex);
 	progress=static_cast<float>((irow+1.0)/imgWriterEst.nrOfRow());
 	pfnProgress(progress,pszMessage,pProgressArg);
       }

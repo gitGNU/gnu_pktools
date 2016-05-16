@@ -619,7 +619,7 @@ int main(int argc,char **argv) {
       filter1d.applyFwhm<double>(wavelengthIn_opt,lineInput,wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], lineOutput, down_opt[0], verbose_opt[0]);
       for(int iband=0;iband<output.nrOfBand();++iband){
         try{
-          output.writeData(lineOutput[iband],GDT_Float64,y/down_opt[0],iband);
+          output.writeData(lineOutput[iband],y/down_opt[0],iband);
         }
         catch(string errorstring){
           cerr << errorstring << "in band " << iband << ", line " << y << endl;
