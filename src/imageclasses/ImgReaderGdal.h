@@ -48,12 +48,13 @@ public:
   ImgReaderGdal(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType){open(dataPointer,ncol,nrow,nband,dataType);};
   ///destructor
   ~ImgReaderGdal(void);
+
+  ///Set the memory (in MB) to cache a number of rows in memory
+  void setMemory(unsigned long int memory=0){initMem(memory);};
   ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
   void open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType);
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
   void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
-  ///Set the memory (in MB) to cache a number of rows in memory
-  void setMemory(unsigned long int memory=0){initMem(memory);};
 
   ///Close the image.
   void close(void);

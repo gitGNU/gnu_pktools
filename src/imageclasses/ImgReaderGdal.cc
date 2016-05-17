@@ -115,7 +115,6 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
  **/
 void ImgReaderGdal::initMem(unsigned long int memory)
 {
-  int nXBlockSize, nYBlockSize;
   if(memory<=0)
     m_blockSize=nrOfRow();
   else{
