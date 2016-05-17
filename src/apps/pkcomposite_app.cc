@@ -21,8 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <string>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -151,10 +150,12 @@ int main(int argc, char *argv[])
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
 
   option_opt.setHide(1);
   scale_opt.setHide(1);
   offset_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -165,6 +166,7 @@ int main(int argc, char *argv[])
     projection_opt.retrieveOption(argc,argv);
     scale_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -178,13 +180,18 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
+  if(output_opt.empty()){
+    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
+    exit(0);
+  }
+
   appfactory::AppFactory app;
   app.setOptions(argc,argv);
-  vector<ImgReaderGdal> imgReader(input_opt.size());
+
+  vector<ImgRasterGdal> imgReader(input_opt.size());
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
-      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
+      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
       for(int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
       for(int iband=0;iband<offset_opt.size();++iband)
@@ -194,7 +201,9 @@ int main(int argc, char *argv[])
       cerr << errorstring << " " << input_opt[ifile] << endl;
     }
   }
-  ImgWriterGdal imgWriter;
+
+  ImgRasterGdal imgWriter;
+
   app.pkcomposite(imgReader,imgWriter);
 
   string imageType;

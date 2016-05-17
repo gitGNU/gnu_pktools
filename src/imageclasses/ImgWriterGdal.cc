@@ -34,76 +34,6 @@ ImgWriterGdal::ImgWriterGdal(void){};
 
 ImgWriterGdal::~ImgWriterGdal(void){};
 
-//not tested yet!!!
-//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
-/**
- * @paramdataPointer External pointer to which the image data should be written in memory
- * @param filename Open a raster dataset with this filename
- * @param ncol The number of columns in the image
- * @param nrow The number of rows in the image
- * @param band The number of bands in the image
- * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
- **/
-void ImgWriterGdal::open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){
-  open(dataPointer, filename, ncol, nrow, nband, dataType);
-  m_data.resize(nband);
-  m_begin.resize(nband);
-  m_end.resize(nband);
-  m_blockSize=nrow;//memory contains entire image and has been read already
-  for(int iband=0;iband<nband;++iband){
-    m_data[iband]=dataPointer+iband*ncol*m_end[iband]*(GDALGetDataTypeSize(getDataType())>>3);
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-  }
-}
-
-//not tested yet!!!
-//open image in memory (passing pointer to allocated memory). This will allow in place image processing in memory (streaming)
-/**
- * @paramdataPointer External pointer to which the image data should be written in memory
- * @param ncol The number of columns in the image
- * @param nrow The number of rows in the image
- * @param band The number of bands in the image
- * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
- **/
-void ImgWriterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
-  open(dataPointer, ncol, nrow, nband, dataType);
-  m_data.resize(nband);
-  m_begin.resize(nband);
-  m_end.resize(nband);
-  m_blockSize=nrow;//memory contains entire image and has been read already
-  for(int iband=0;iband<nband;++iband){
-    m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-  }
-}
-
-/**
- * @param memory Available memory to cache image raster data (in MB)
- **/
-void ImgWriterGdal::initMem(unsigned long int memory)
-{
-  if(memory<=0)
-    m_blockSize=nrOfRow();
-  else{
-    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-    m_blockSize-=m_blockSize%getBlockSizeY(0);
-  }
-  if(m_blockSize<1)
-    m_blockSize=1;
-  if(m_blockSize>nrOfRow())
-    m_blockSize=nrOfRow();
-  m_data.resize(nrOfBand());
-  m_begin.resize(nrOfBand());
-  m_end.resize(nrOfBand());
-  for(int iband=0;iband<m_nband;++iband){
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-  }
-}
-
 /**
  * @param row Write a new block for caching this row (if needed)
  * @param band Band that must be written in cache
@@ -124,22 +54,22 @@ bool ImgWriterGdal::writeNewBlock(int row, int band)
   return true;//new block was written
 }
 
-/**
- * @param filename Open a raster dataset with this filename
- * @param imgSrc Use this source image as a template to copy image attributes
- * @param options Creation options
- **/
-void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
-{
-  m_ncol=imgSrc.nrOfCol();
-  m_nrow=imgSrc.nrOfRow();
-  m_nband=imgSrc.nrOfBand();
-  m_dataType=imgSrc.getDataType();
-  setFile(filename,imgSrc,options);
-  // m_filename=filename;
-  // m_options=options;
-  // setCodec(imgSrc);
-}
+// /**
+//  * @param filename Open a raster dataset with this filename
+//  * @param imgSrc Use this source image as a template to copy image attributes
+//  * @param options Creation options
+//  **/
+// void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
+// {
+//   m_ncol=imgSrc.nrOfCol();
+//   m_nrow=imgSrc.nrOfRow();
+//   m_nband=imgSrc.nrOfBand();
+//   m_dataType=imgSrc.getDataType();
+//   setFile(filename,imgSrc,options);
+//   // m_filename=filename;
+//   // m_options=options;
+//   // setCodec(imgSrc);
+// }
 
 /**
  * @param filename Open a raster dataset with this filename
@@ -149,43 +79,50 @@ void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSr
  **/
 void ImgWriterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options)
 {
-  open(filename,imgSrc,options);
-  initMem(memory);
+  m_ncol=imgSrc.nrOfCol();
+  m_nrow=imgSrc.nrOfRow();
+  m_nband=imgSrc.nrOfBand();
+  m_dataType=imgSrc.getDataType();
+  setFile(filename,imgSrc,memory,options);
 }
 
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param options Creation options
  **/
-void ImgWriterGdal::open(const ImgReaderGdal& imgSrc, unsigned int memory)
+void ImgWriterGdal::open(const ImgReaderGdal& imgSrc)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
   m_dataType=imgSrc.getDataType();
-  initMem(memory);
+  initMem(0);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
 }
 
-/**
- * @param filename Open a raster dataset with this filename
- * @param ncol Number of columns in image
- * @param nrow Number of rows in image
- * @param nband Number of bands in image
- * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
- * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
- * @param options Creation options
- **/
-void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
-{
-  m_ncol = ncol;
-  m_nrow = nrow;
-  m_nband = nband;
-  m_dataType = dataType;
-  setFile(filename,imageType,options);
-  // m_filename = filename;
-  // m_options=options;
-  // setCodec(imageType);
-}
+// /**
+//  * @param filename Open a raster dataset with this filename
+//  * @param ncol Number of columns in image
+//  * @param nrow Number of rows in image
+//  * @param nband Number of bands in image
+//  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+//  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+//  * @param options Creation options
+//  **/
+// void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
+// {
+//   m_ncol = ncol;
+//   m_nrow = nrow;
+//   m_nband = nband;
+//   m_dataType = dataType;
+//   setFile(filename,imageType,options);
+//   // m_filename = filename;
+//   // m_options=options;
+//   // setCodec(imageType);
+// }
 
 /**
  * @param filename Open a raster dataset with this filename
@@ -203,11 +140,7 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
   m_nrow = nrow;
   m_nband = nband;
   m_dataType = dataType;
-  setFile(filename,imageType,options);
-  // m_filename = filename;
-  // m_options=options;
-  // setCodec(imageType);
-  initMem(memory);
+  setFile(filename,imageType,memory,options);
 }
 
 /**
@@ -216,13 +149,17 @@ void ImgWriterGdal::open(const std::string& filename, int ncol, int nrow, int nb
  * @param nband Number of bands in image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-void ImgWriterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType, unsigned int memory)
+void ImgWriterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
 {
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
   m_dataType = dataType;
-  initMem(memory);
+  initMem(0);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
 }
 
 void ImgWriterGdal::close(void)
@@ -380,22 +317,34 @@ void ImgWriterGdal::setCodec(const std::string& imageType)
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgWriterGdal::setFile(const std::string& filename, const std::string& imageType, const std::vector<std::string>& options)
+void ImgWriterGdal::setFile(const std::string& filename, const std::string& imageType, unsigned long int memory, const std::vector<std::string>& options)
 {
   m_filename=filename;
   m_options=options;
   setCodec(imageType);
+  if(m_data.empty())
+    initMem(memory);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
 }
 
 /**
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgWriterGdal::setFile(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
+void ImgWriterGdal::setFile(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned long int memory, const std::vector<std::string>& options)
 {
   m_filename=filename;
   m_options=options;
   setCodec(imgSrc);
+  if(m_data.empty())
+    initMem(memory);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
 }
 
 /**

@@ -5,6 +5,7 @@
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
+#include "algorithms/Egcs.h"
 #include "AppFactory.h"
 
 using namespace std;
@@ -16,7 +17,741 @@ void AppFactory::setOptions(int argc, char* argv[]){
     m_argv.push_back(argv[iarg]);
 }
 
-bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& imgWriter){
+bool AppFactory::pkcrop(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWriter){
+  Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
+  //todo: support layer names
+  Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
+  Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
+  Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
+  Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
+  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
+  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
+  Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
+  Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
+  Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
+  Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
+  Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
+  Optionpk<double> cx_opt("x", "x", "x-coordinate of image center to crop (in meter)");
+  Optionpk<double> cy_opt("y", "y", "y-coordinate of image center to crop (in meter)");
+  Optionpk<double> nx_opt("nx", "nx", "image size in x to crop (in meter)");
+  Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
+  Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
+  Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
+  Optionpk<unsigned short>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
+  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<double> autoscale_opt("as", "autoscale", "scale output to min and max, e.g., --autoscale 0 --autoscale 255");
+  Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
+  Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
+  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
+  Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
+  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
+  Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
+  Optionpk<string>  description_opt("d", "description", "Set image description");
+  Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
+  Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
+
+  extent_opt.setHide(1);
+  cut_opt.setHide(1);
+  eoption_opt.setHide(1);
+  bstart_opt.setHide(1);
+  bend_opt.setHide(1);
+  mask_opt.setHide(1);
+  msknodata_opt.setHide(1);
+  mskband_opt.setHide(1);
+  option_opt.setHide(1);
+  cx_opt.setHide(1);
+  cy_opt.setHide(1);
+  nx_opt.setHide(1);
+  ny_opt.setHide(1);
+  ns_opt.setHide(1);
+  nl_opt.setHide(1);
+  scale_opt.setHide(1);
+  offset_opt.setHide(1);
+  nodata_opt.setHide(1);
+  description_opt.setHide(1);
+  memory_opt.setHide(1);
+  
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  try{
+    //replace argc and argv with m_argc and m_argv
+    doProcess=projection_opt.retrieveOption(m_argc,m_argv);
+    ulx_opt.retrieveOption(m_argc,m_argv);
+    uly_opt.retrieveOption(m_argc,m_argv);
+    lrx_opt.retrieveOption(m_argc,m_argv);
+    lry_opt.retrieveOption(m_argc,m_argv);
+    band_opt.retrieveOption(m_argc,m_argv);
+    bstart_opt.retrieveOption(m_argc,m_argv);
+    bend_opt.retrieveOption(m_argc,m_argv);
+    autoscale_opt.retrieveOption(m_argc,m_argv);
+    otype_opt.retrieveOption(m_argc,m_argv);
+    oformat_opt.retrieveOption(m_argc,m_argv);
+    colorTable_opt.retrieveOption(m_argc,m_argv);
+    dx_opt.retrieveOption(m_argc,m_argv);
+    dy_opt.retrieveOption(m_argc,m_argv);
+    resample_opt.retrieveOption(m_argc,m_argv);
+    extent_opt.retrieveOption(m_argc,m_argv);
+    cut_opt.retrieveOption(m_argc,m_argv);
+    eoption_opt.retrieveOption(m_argc,m_argv);
+    mask_opt.retrieveOption(m_argc,m_argv);
+    msknodata_opt.retrieveOption(m_argc,m_argv);
+    mskband_opt.retrieveOption(m_argc,m_argv);
+    option_opt.retrieveOption(m_argc,m_argv);
+    cx_opt.retrieveOption(m_argc,m_argv);
+    cy_opt.retrieveOption(m_argc,m_argv);
+    nx_opt.retrieveOption(m_argc,m_argv);
+    ny_opt.retrieveOption(m_argc,m_argv);
+    ns_opt.retrieveOption(m_argc,m_argv);
+    nl_opt.retrieveOption(m_argc,m_argv);
+    scale_opt.retrieveOption(m_argc,m_argv);
+    offset_opt.retrieveOption(m_argc,m_argv);
+    nodata_opt.retrieveOption(m_argc,m_argv);
+    description_opt.retrieveOption(m_argc,m_argv);
+    align_opt.retrieveOption(m_argc,m_argv);
+    memory_opt.retrieveOption(m_argc,m_argv);
+    verbose_opt.retrieveOption(m_argc,m_argv);
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
+    exit(0);
+  }
+  if(verbose_opt[0])
+    cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
+
+  if(!doProcess){
+    cout << endl;
+    cout << "Usage: pkcrop -i input -o output" << endl;
+    cout << endl;
+    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    exit(0);//help was invoked, stop processing
+  }
+  // if(input_opt.empty()){
+  if(imgReader.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
+  // if(output_opt.empty()){
+  //   std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
+  //   exit(0);
+  // }
+
+  float nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
+  RESAMPLE theResample;
+  if(resample_opt[0]=="near"){
+    theResample=NEAR;
+    if(verbose_opt[0])
+      cout << "resampling: nearest neighbor" << endl;
+  }
+  else if(resample_opt[0]=="bilinear"){
+    theResample=BILINEAR;
+    if(verbose_opt[0])
+      cout << "resampling: bilinear interpolation" << endl;
+  }
+  else{
+    std::cout << "Error: resampling method " << resample_opt[0] << " not supported" << std::endl;
+    exit(1);
+  }
+
+  const char* pszMessage;
+  void* pProgressArg=NULL;
+  GDALProgressFunc pfnProgress=GDALTermProgress;
+  double progress=0;
+  pfnProgress(progress,pszMessage,pProgressArg);
+  // ImgReaderGdal imgReader;
+  // ImgWriterGdal imgWriter;
+  //open input images to extract number of bands and spatial resolution
+  int ncropband=0;//total number of bands to write
+  double dx=0;
+  double dy=0;
+  if(dx_opt.size())
+    dx=dx_opt[0];
+  if(dy_opt.size())
+    dy=dy_opt[0];
+
+  //convert start and end band options to vector of band indexes
+  try{
+    if(bstart_opt.size()){
+      if(bend_opt.size()!=bstart_opt.size()){
+	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+	throw(errorstring);
+      }
+      band_opt.clear();
+      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+	if(bend_opt[ipair]<=bstart_opt[ipair]){
+	  string errorstring="Error: index for end band must be smaller then start band";
+	  throw(errorstring);
+	}
+	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	  band_opt.push_back(iband);
+      }
+    }
+  }
+  catch(string error){
+    cerr << error << std::endl;
+    exit(1);
+  }
+
+  bool isGeoRef=false;
+  string projectionString;
+  // for(int iimg=0;iimg<input_opt.size();++iimg){
+  for(int iimg=0;iimg<imgReader.size();++iimg){
+    // try{
+    // imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+    // }
+    // catch(string error){
+    //   cerr << "Error: could not open file " << input_opt[iimg] << ": " << error << std::endl;
+    //   exit(1);
+    // }
+    if(!isGeoRef)
+      isGeoRef=imgReader[iimg].isGeoRef();
+    if(imgReader[iimg].isGeoRef()&&projection_opt.empty())
+      projectionString=imgReader[iimg].getProjection();
+    if(dx_opt.empty()){
+      if(!iimg||imgReader[iimg].getDeltaX()<dx)
+        dx=imgReader[iimg].getDeltaX();
+    }
+    
+    if(dy_opt.empty()){
+      if(!iimg||imgReader[iimg].getDeltaY()<dy)
+        dy=imgReader[iimg].getDeltaY();
+    }
+    if(band_opt.size())
+      ncropband+=band_opt.size();
+    else
+      ncropband+=imgReader[iimg].nrOfBand();
+    // imgReader[iimg].close();
+  }
+
+  GDALDataType theType=GDT_Unknown;
+  if(verbose_opt[0])
+    cout << "possible output data types: ";
+  for(int iType = 0; iType < GDT_TypeCount; ++iType){
+    if(verbose_opt[0])
+      cout << " " << GDALGetDataTypeName((GDALDataType)iType);
+    if( GDALGetDataTypeName((GDALDataType)iType) != NULL
+        && EQUAL(GDALGetDataTypeName((GDALDataType)iType),
+                 otype_opt[0].c_str()))
+      theType=(GDALDataType) iType;
+  }
+  if(verbose_opt[0]){
+    cout << endl;
+    if(theType==GDT_Unknown)
+      cout << "Unknown output pixel type: " << otype_opt[0] << endl;
+    else
+      cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
+  }
+  //bounding box of cropped image
+  double cropulx=ulx_opt[0];
+  double cropuly=uly_opt[0];
+  double croplrx=lrx_opt[0];
+  double croplry=lry_opt[0];
+  //get bounding box from extentReader if defined
+  ImgReaderOgr extentReader;
+
+  if(extent_opt.size()){
+    double e_ulx;
+    double e_uly;
+    double e_lrx;
+    double e_lry;
+    for(int iextent=0;iextent<extent_opt.size();++iextent){
+      try{
+        extentReader.open(extent_opt[iextent]);
+        if(!(extentReader.getExtent(e_ulx,e_uly,e_lrx,e_lry))){
+          ostringstream os;
+          os << "Error: could not get extent from " << extent_opt[0] << endl;
+          throw(os.str());
+        }
+      }
+      catch(string error){
+        cerr << error << std::endl;
+        exit(1);
+      }
+      if(!iextent){
+	ulx_opt[0]=e_ulx;
+	uly_opt[0]=e_uly;
+	lrx_opt[0]=e_lrx;
+	lry_opt[0]=e_lry;
+      }
+      else{
+	if(e_ulx<ulx_opt[0])
+	  ulx_opt[0]=e_ulx;
+	if(e_uly>uly_opt[0])
+	  uly_opt[0]=e_uly;
+	if(e_lrx>lrx_opt[0])
+	  lrx_opt[0]=e_lrx;
+	if(e_lry<lry_opt[0])
+	  lry_opt[0]=e_lry;
+      }
+      extentReader.close();
+    }
+    if(croplrx>cropulx&&cropulx>ulx_opt[0])
+      ulx_opt[0]=cropulx;
+    if(croplrx>cropulx&&croplrx<lrx_opt[0])
+      lrx_opt[0]=croplrx;
+    if(cropuly>croplry&&cropuly<uly_opt[0])
+      uly_opt[0]=cropuly;
+    if(croplry<cropuly&&croplry>lry_opt[0])
+      lry_opt[0]=croplry;
+    if(cut_opt.size()||eoption_opt.size())
+      extentReader.open(extent_opt[0]);
+  }
+  else if(cx_opt.size()&&cy_opt.size()&&nx_opt.size()&&ny_opt.size()){
+    ulx_opt[0]=cx_opt[0]-nx_opt[0]/2.0;
+    uly_opt[0]=(isGeoRef) ? cy_opt[0]+ny_opt[0]/2.0 : cy_opt[0]-ny_opt[0]/2.0;
+    lrx_opt[0]=cx_opt[0]+nx_opt[0]/2.0;
+    lry_opt[0]=(isGeoRef) ? cy_opt[0]-ny_opt[0]/2.0 : cy_opt[0]+ny_opt[0]/2.0;
+  }
+  else if(cx_opt.size()&&cy_opt.size()&&ns_opt.size()&&nl_opt.size()){
+    ulx_opt[0]=cx_opt[0]-ns_opt[0]*dx/2.0;
+    uly_opt[0]=(isGeoRef) ? cy_opt[0]+nl_opt[0]*dy/2.0 : cy_opt[0]-nl_opt[0]*dy/2.0;
+    lrx_opt[0]=cx_opt[0]+ns_opt[0]*dx/2.0;
+    lry_opt[0]=(isGeoRef) ? cy_opt[0]-nl_opt[0]*dy/2.0 : cy_opt[0]+nl_opt[0]*dy/2.0;
+  }
+
+  if(verbose_opt[0])
+    cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
+
+  int ncropcol=0;
+  int ncroprow=0;
+
+  ImgRasterGdal maskWriter;
+  if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
+    if(mask_opt.size()){
+      string errorString="Error: can only either mask or extent extent with cutline, not both";
+      throw(errorString);
+    }
+    try{
+      ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
+      ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
+      //todo: produce unique name
+      maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff");
+      // maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
+      double gt[6];
+      gt[0]=ulx_opt[0];
+      gt[1]=dx;
+      gt[2]=0;
+      gt[3]=uly_opt[0];
+      gt[4]=0;
+      gt[5]=-dy;
+      maskWriter.setGeoTransform(gt);
+      if(projection_opt.size())
+	maskWriter.setProjectionProj4(projection_opt[0]);
+      else if(projectionString.size())
+	maskWriter.setProjection(projectionString);
+	
+      vector<double> burnValues(1,1);//burn value is 1 (single band)
+      maskWriter.rasterizeOgr(extentReader,burnValues,eoption_opt);
+      maskWriter.close();
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(2);
+    }
+    mask_opt.clear();
+    mask_opt.push_back("/vsimem/mask.tif");
+  }
+  ImgRasterGdal maskReader;
+  if(mask_opt.size()==1){
+    try{
+      //there is only a single mask
+      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
+      if(mskband_opt[0]>=maskReader.nrOfBand()){
+	string errorString="Error: illegal mask band";
+	throw(errorString);
+      }
+    }
+    catch(string error){
+      cerr << error << std::endl;
+      exit(2);
+    }
+  }
+
+  //determine number of output bands
+  int writeBand=0;//write band
+
+  if(scale_opt.size()){
+    while(scale_opt.size()<band_opt.size())
+      scale_opt.push_back(scale_opt[0]);
+  }
+  if(offset_opt.size()){
+    while(offset_opt.size()<band_opt.size())
+      offset_opt.push_back(offset_opt[0]);
+  }
+  if(autoscale_opt.size()){
+    assert(autoscale_opt.size()%2==0);
+  }
+
+  // for(int iimg=0;iimg<input_opt.size();++iimg){
+  for(int iimg=0;iimg<imgReader.size();++iimg){
+    // if(verbose_opt[0])
+    //   cout << "opening image " << input_opt[iimg] << endl;
+    // try{
+    //   imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+    // }
+    // catch(string error){
+    //   cerr << error << std::endl;
+    //   exit(2);
+    // }
+    //if output type not set, get type from input image
+    if(theType==GDT_Unknown){
+      theType=imgReader[iimg].getDataType();
+      if(verbose_opt[0])
+        cout << "Using data type from input image: " << GDALGetDataTypeName(theType) << endl;
+    }
+    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+      string theInterleave="INTERLEAVE=";
+      theInterleave+=imgReader[iimg].getInterleave();
+      option_opt.push_back(theInterleave);
+    }
+    int nrow=imgReader[iimg].nrOfRow();
+    int ncol=imgReader[iimg].nrOfCol();
+    // if(verbose_opt[0])
+    //   cout << "size of " << input_opt[iimg] << ": " << ncol << " cols, "<< nrow << " rows" << endl;
+    double uli,ulj,lri,lrj;//image coordinates
+    bool forceEUgrid=false;
+    if(projection_opt.size())
+      forceEUgrid=(!(projection_opt[0].compare("EPSG:3035"))||!(projection_opt[0].compare("EPSG:3035"))||projection_opt[0].find("ETRS-LAEA")!=string::npos);
+    if(ulx_opt[0]>=lrx_opt[0]){//default bounding box: no cropping
+      uli=0;
+      lri=imgReader[iimg].nrOfCol()-1;
+      ulj=0;
+      lrj=imgReader[iimg].nrOfRow()-1;
+      ncropcol=imgReader[iimg].nrOfCol();
+      ncroprow=imgReader[iimg].nrOfRow();
+      imgReader[iimg].getBoundingBox(cropulx,cropuly,croplrx,croplry);
+      double magicX=1,magicY=1;
+      // imgReader[iimg].getMagicPixel(magicX,magicY);
+      if(forceEUgrid){
+	//force to LAEA grid
+	Egcs egcs;
+        egcs.setLevel(egcs.res2level(dx));
+	egcs.force2grid(cropulx,cropuly,croplrx,croplry);
+	imgReader[iimg].geo2image(cropulx+(magicX-1.0)*imgReader[iimg].getDeltaX(),cropuly-(magicY-1.0)*imgReader[iimg].getDeltaY(),uli,ulj);
+	imgReader[iimg].geo2image(croplrx+(magicX-2.0)*imgReader[iimg].getDeltaX(),croplry-(magicY-2.0)*imgReader[iimg].getDeltaY(),lri,lrj);
+      }
+      imgReader[iimg].geo2image(cropulx+(magicX-1.0)*imgReader[iimg].getDeltaX(),cropuly-(magicY-1.0)*imgReader[iimg].getDeltaY(),uli,ulj);
+      imgReader[iimg].geo2image(croplrx+(magicX-2.0)*imgReader[iimg].getDeltaX(),croplry-(magicY-2.0)*imgReader[iimg].getDeltaY(),lri,lrj);
+      //test
+      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
+    }
+    else{
+      double magicX=1,magicY=1;
+      // imgReader[iimg].getMagicPixel(magicX,magicY);
+      cropulx=ulx_opt[0];
+      cropuly=uly_opt[0];
+      croplrx=lrx_opt[0];
+      croplry=lry_opt[0];
+      if(forceEUgrid){
+	//force to LAEA grid
+	Egcs egcs;
+        egcs.setLevel(egcs.res2level(dx));
+	egcs.force2grid(cropulx,cropuly,croplrx,croplry);
+      }
+      else if(align_opt[0]){
+      	if(cropulx>imgReader[iimg].getUlx())
+      	  cropulx-=fmod(cropulx-imgReader[iimg].getUlx(),dx);
+      	else if(cropulx<imgReader[iimg].getUlx())
+      	  cropulx+=fmod(imgReader[iimg].getUlx()-cropulx,dx)-dx;
+      	if(croplrx<imgReader[iimg].getLrx())
+      	  croplrx+=fmod(imgReader[iimg].getLrx()-croplrx,dx);
+      	else if(croplrx>imgReader[iimg].getLrx())
+      	  croplrx-=fmod(croplrx-imgReader[iimg].getLrx(),dx)+dx;
+      	if(croplry>imgReader[iimg].getLry())
+      	  croplry-=fmod(croplry-imgReader[iimg].getLry(),dy);
+      	else if(croplry<imgReader[iimg].getLry())
+      	  croplry+=fmod(imgReader[iimg].getLry()-croplry,dy)-dy;
+      	if(cropuly<imgReader[iimg].getUly())
+      	  cropuly+=fmod(imgReader[iimg].getUly()-cropuly,dy);
+      	else if(cropuly>imgReader[iimg].getUly())
+      	  cropuly-=fmod(cropuly-imgReader[iimg].getUly(),dy)+dy;
+      }
+      imgReader[iimg].geo2image(cropulx+(magicX-1.0)*imgReader[iimg].getDeltaX(),cropuly-(magicY-1.0)*imgReader[iimg].getDeltaY(),uli,ulj);
+      imgReader[iimg].geo2image(croplrx+(magicX-2.0)*imgReader[iimg].getDeltaX(),croplry-(magicY-2.0)*imgReader[iimg].getDeltaY(),lri,lrj);
+
+      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
+      uli=floor(uli);
+      ulj=floor(ulj);
+      lri=floor(lri);
+      lrj=floor(lrj);
+    }
+
+    double dcropcol=0;
+    double dcroprow=0;
+    double deltaX=imgReader[iimg].getDeltaX();
+    double deltaY=imgReader[iimg].getDeltaY();
+    dcropcol=(lri-uli+1)/(dx/deltaX);
+    dcroprow=(lrj-ulj+1)/(dy/deltaY);
+    if(!imgWriter.nrOfBand()){//not opened yet
+      if(verbose_opt[0]){
+	cout << "cropulx: " << cropulx << endl;
+	cout << "cropuly: " << cropuly << endl;
+	cout << "croplrx: " << croplrx << endl;
+	cout << "croplry: " << croplry << endl;
+	cout << "ncropcol: " << ncropcol << endl;
+	cout << "ncroprow: " << ncroprow << endl;
+	cout << "cropulx+ncropcol*dx: " << cropulx+ncropcol*dx << endl;
+	cout << "cropuly-ncroprow*dy: " << cropuly-ncroprow*dy << endl;
+	cout << "upper left column of input image: " << uli << endl;
+	cout << "upper left row of input image: " << ulj << endl;
+	cout << "lower right column of input image: " << lri << endl;
+	cout << "lower right row of input image: " << lrj << endl;
+	cout << "new number of cols: " << ncropcol << endl;
+	cout << "new number of rows: " << ncroprow << endl;
+	cout << "new number of bands: " << ncropband << endl;
+      }
+      string imageType;//=imgReader[iimg].getImageType();
+      if(oformat_opt.size())//default
+        imageType=oformat_opt[0];
+      try{
+        //open imgWriter in memory
+        imgWriter.open(ncropcol,ncroprow,ncropband,theType);
+        imgWriter.setNoData(nodata_opt);
+        // imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
+	// if(nodata_opt.size()){
+	//   imgWriter.setNoData(nodata_opt);
+	// }
+      }
+      catch(string errorstring){
+        cout << errorstring << endl;
+        exit(4);
+      }
+      if(description_opt.size())
+	imgWriter.setImageDescription(description_opt[0]);
+      double gt[6];
+      gt[0]=cropulx;
+      gt[1]=dx;
+      gt[2]=0;
+      gt[3]=cropuly;
+      gt[4]=0;
+      gt[5]=(imgReader[iimg].isGeoRef())? -dy : dy;
+      imgWriter.setGeoTransform(gt);
+      if(projection_opt.size()){
+	if(verbose_opt[0])
+	  cout << "projection: " << projection_opt[0] << endl;
+	imgWriter.setProjectionProj4(projection_opt[0]);
+      }
+      else
+	imgWriter.setProjection(imgReader[iimg].getProjection());
+      if(imgWriter.getDataType()==GDT_Byte){
+	if(colorTable_opt.size()){
+	  if(colorTable_opt[0]!="none")
+	    imgWriter.setColorTable(colorTable_opt[0]);
+	}
+	else if (imgReader[iimg].getColorTable()!=NULL)//copy colorTable from input image
+	  imgWriter.setColorTable(imgReader[iimg].getColorTable());
+      }
+    }
+
+    double startCol=uli;
+    double endCol=lri;
+    if(uli<0)
+      startCol=0;
+    else if(uli>=imgReader[iimg].nrOfCol())
+      startCol=imgReader[iimg].nrOfCol()-1;
+    if(lri<0)
+      endCol=0;
+    else if(lri>=imgReader[iimg].nrOfCol())
+      endCol=imgReader[iimg].nrOfCol()-1;
+    double startRow=ulj;
+    double endRow=lrj;
+    if(ulj<0)
+      startRow=0;
+    else if(ulj>=imgReader[iimg].nrOfRow())
+      startRow=imgReader[iimg].nrOfRow()-1;
+    if(lrj<0)
+      endRow=0;
+    else if(lrj>=imgReader[iimg].nrOfRow())
+      endRow=imgReader[iimg].nrOfRow()-1;
+
+
+
+    int readncol=endCol-startCol+1;
+    vector<double> readBuffer;
+    int nband=(band_opt.size())?band_opt.size() : imgReader[iimg].nrOfBand();
+    for(int iband=0;iband<nband;++iband){
+      int readBand=(band_opt.size()>iband)?band_opt[iband]:iband;
+      if(verbose_opt[0]){
+	cout << "extracting band " << readBand << endl;
+	pfnProgress(progress,pszMessage,pProgressArg);
+      }
+      double theMin=0;
+      double theMax=0;
+      if(autoscale_opt.size()){
+	try{
+	  imgReader[iimg].getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
+	}
+	catch(string errorString){
+	  cout << errorString << endl;
+	}
+	if(verbose_opt[0])
+	  cout << "minmax: " << theMin << ", " << theMax << endl;
+	double theScale=(autoscale_opt[1]-autoscale_opt[0])/(theMax-theMin);
+	double theOffset=autoscale_opt[0]-theScale*theMin;
+	imgReader[iimg].setScale(theScale,readBand);
+	imgReader[iimg].setOffset(theOffset,readBand);
+      }	
+      else{
+	if(scale_opt.size()){
+	  if(scale_opt.size()>iband)
+	    imgReader[iimg].setScale(scale_opt[iband],readBand);
+	  else
+	    imgReader[iimg].setScale(scale_opt[0],readBand);
+	}
+	if(offset_opt.size()){
+	  if(offset_opt.size()>iband)
+	    imgReader[iimg].setOffset(offset_opt[iband],readBand);
+	  else
+	    imgReader[iimg].setOffset(offset_opt[0],readBand);
+	}
+      }
+
+      double readRow=0;
+      double readCol=0;
+      double lowerCol=0;
+      double upperCol=0;
+      for(int irow=0;irow<imgWriter.nrOfRow();++irow){
+	vector<float> lineMask;
+	double x=0;
+	double y=0;
+	//convert irow to geo
+	imgWriter.image2geo(0,irow,x,y);
+	//lookup corresponding row for irow in this file
+	imgReader[iimg].geo2image(x,y,readCol,readRow);
+	vector<double> writeBuffer;
+	if(readRow<0||readRow>=imgReader[iimg].nrOfRow()){
+	  for(int icol=0;icol<imgWriter.nrOfCol();++icol)
+	    writeBuffer.push_back(nodataValue);
+	}
+	else{
+	  try{
+            if(endCol<imgReader[iimg].nrOfCol()-1){
+              imgReader[iimg].readData(readBuffer,startCol,endCol+1,readRow,readBand,theResample);
+            }
+            else{
+              imgReader[iimg].readData(readBuffer,startCol,endCol,readRow,readBand,theResample);
+            }
+	    double oldRowMask=-1;//keep track of row mask to optimize number of line readings
+	    for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+	      imgWriter.image2geo(icol,irow,x,y);
+	      //lookup corresponding row for irow in this file
+	      imgReader[iimg].geo2image(x,y,readCol,readRow);
+	      if(readCol<0||readCol>=imgReader[iimg].nrOfCol()){
+		writeBuffer.push_back(nodataValue);
+	      }
+	      else{
+		
+                bool valid=true;
+		double geox=0;
+		double geoy=0;
+                if(mask_opt.size()){
+		  //read mask
+		  double colMask=0;
+		  double rowMask=0;
+
+		  imgWriter.image2geo(icol,irow,geox,geoy);
+		  maskReader.geo2image(geox,geoy,colMask,rowMask);
+		  colMask=static_cast<int>(colMask);
+		  rowMask=static_cast<int>(rowMask);
+		  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
+		    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+
+		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
+		      try{
+			maskReader.readData(lineMask,static_cast<int>(rowMask),mskband_opt[0]);
+		      }
+		      catch(string errorstring){
+			cerr << errorstring << endl;
+			exit(1);
+		      }
+		      catch(...){
+			cerr << "error caught" << std::endl;
+			exit(3);
+		      }
+		      oldRowMask=rowMask;
+		    }
+                    for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+                      if(lineMask[colMask]==msknodata_opt[ivalue]){
+                        valid=false;
+			if(nodata_opt.size()>ivalue)
+			  nodataValue=nodata_opt[ivalue];
+                      }
+                    }
+		  }
+		}
+                if(!valid)
+                  writeBuffer.push_back(nodataValue);
+                else{
+                  switch(theResample){
+                  case(BILINEAR):
+                    lowerCol=readCol-0.5;
+                    lowerCol=static_cast<int>(lowerCol);
+                    upperCol=readCol+0.5;
+                    upperCol=static_cast<int>(upperCol);
+                    if(lowerCol<0)
+                      lowerCol=0;
+                    if(upperCol>=imgReader[iimg].nrOfCol())
+                      upperCol=imgReader[iimg].nrOfCol()-1;
+                    writeBuffer.push_back((readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol]);
+                    break;
+                  default:
+                    readCol=static_cast<int>(readCol);
+                    readCol-=startCol;//we only start reading from startCol
+                    writeBuffer.push_back(readBuffer[readCol]);
+                    break;
+		  }
+		}
+	      }
+	    }
+	  }
+	  catch(string errorstring){
+	    cout << errorstring << endl;
+	    exit(2);
+	  }
+	}
+	if(writeBuffer.size()!=imgWriter.nrOfCol())
+	  cout << "writeBuffer.size()=" << writeBuffer.size() << ", imgWriter.nrOfCol()=" << imgWriter.nrOfCol() << endl;
+	assert(writeBuffer.size()==imgWriter.nrOfCol());
+	try{
+	  imgWriter.writeData(writeBuffer,irow,writeBand);
+	}
+	catch(string errorstring){
+	  cout << errorstring << endl;
+	  exit(3);
+	}
+	if(verbose_opt[0]){
+	  progress=(1.0+irow);
+	  progress/=imgWriter.nrOfRow();
+	  pfnProgress(progress,pszMessage,pProgressArg);
+	}
+	else{
+	  progress=(1.0+irow);
+	  progress+=(imgWriter.nrOfRow()*writeBand);
+	  progress/=imgWriter.nrOfBand()*imgWriter.nrOfRow();
+	  assert(progress>=0);
+	  assert(progress<=1);
+	  pfnProgress(progress,pszMessage,pProgressArg);
+	}
+      }
+      ++writeBand;
+    }
+    // imgReader[iimg].close();
+  }
+  if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
+    extentReader.close();
+  }
+  if(mask_opt.size())
+    maskReader.close();
+  // imgWriter.close();
+}
+
+
+bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWriter){
   Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
@@ -313,7 +1048,6 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   bool init=false;
 
   for(int ifile=0;ifile<imgReader.size();++ifile){
-    imgReader[ifile].setMemory(memory_opt[0]);
     //todo: must be in init part only?
     if(colorTable_opt.empty())
       if(imgReader[ifile].getColorTable())
@@ -506,7 +1240,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
 
   try{
     //open imgWriter in memory
-    imgWriter.open(ncol,nrow,nwriteBand,theType,0);
+    imgWriter.open(ncol,nrow,nwriteBand,theType);
     imgWriter.setNoData(dstnodata_opt);
   }
   catch(string error){
@@ -541,10 +1275,11 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
   //     imgWriter.setColorTable(theColorTable);
   // }
 
-  ImgWriterGdal maskWriter;
+  ImgRasterGdal maskWriter;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     try{
-      maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,"GTiff",option_opt);
+      //todo: support unique filename using boost
+      maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,"GTiff");
       double gt[6];
       gt[0]=minULX;
       gt[1]=dx;
@@ -576,7 +1311,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     mask_opt.clear();
     mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgReaderGdal maskReader;
+  ImgRasterGdal maskReader;
   if(mask_opt.size()){
     try{
       if(verbose_opt[0]>=1)
@@ -659,6 +1394,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
     double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 
     for(int ifile=0;ifile<imgReader.size();++ifile){
+
       //imgReader already open...
       // try{
       //   imgReader.open(imgReader[ifile]);
@@ -698,14 +1434,14 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
         // imgReader.close();
         continue;
       }
+
       // for(int iband=0;iband<imgReader.nrOfBand();++iband){
       for(int iband=0;iband<nband;++iband){
 	int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
         // readBuffer[iband].resize(readncol);
 	try{
+
           imgReader[ifile].readData(readBuffer[ifile][iband],startCol,endCol,readRow,readBand,theResample);
-	  //test
-          // imgReader[ifile].readData(readBuffer[ifile][iband],static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(readRow),static_cast<int>(readBand));
 	  // if(readRow==0&&iband==0){
 	  //   for(int icol=0;icol<10;++icol)
 	  //     cout << readBuffer[0][0][icol] << " ";
@@ -717,6 +1453,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
 	  throw;
 	}
       }
+
       for(int ib=0;ib<ncol;++ib){
         imgWriter.image2geo(ib,irow,x,y);
 	//check mask first
@@ -1110,6 +1847,7 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
         }
       }
       // imgReader.close();
+      
     }
     if(cruleMap[crule_opt[0]]==crule::mode){
       vector<short> classBuffer(imgWriter.nrOfCol());
@@ -1205,12 +1943,15 @@ bool AppFactory::pkcomposite(vector<ImgReaderGdal>& imgReader, ImgWriterGdal& im
         }
       }
     }
+
     progress=static_cast<float>(irow+1.0)/imgWriter.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
   }
+
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     extentReader.close();
   }
+
   if(mask_opt.size())
     maskReader.close();
 }

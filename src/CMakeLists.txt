@@ -52,20 +52,14 @@ set(FILECLASS_CC
 	
 set(IMGCLASS_H
 	${IMGCLASS_SRC_DIR}/ImgRasterGdal.h 
-	${IMGCLASS_SRC_DIR}/ImgReaderGdal.h 
 	${IMGCLASS_SRC_DIR}/ImgReaderOgr.h 
-	${IMGCLASS_SRC_DIR}/ImgWriterGdal.h 
 	${IMGCLASS_SRC_DIR}/ImgWriterOgr.h 
-	${IMGCLASS_SRC_DIR}/ImgUpdaterGdal.h 
 	)
 
 set(IMGCLASS_CC
 	${IMGCLASS_SRC_DIR}/ImgRasterGdal.cc
-	${IMGCLASS_SRC_DIR}/ImgReaderGdal.cc
 	${IMGCLASS_SRC_DIR}/ImgReaderOgr.cc
-	${IMGCLASS_SRC_DIR}/ImgWriterGdal.cc 
 	${IMGCLASS_SRC_DIR}/ImgWriterOgr.cc
-	${IMGCLASS_SRC_DIR}/ImgUpdaterGdal.cc 
 	)
 	
 set(LASCLASS_H

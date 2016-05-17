@@ -29,6 +29,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <assert.h>
 #include "gdal_priv.h"
+#include "base/Vector2d.h"
+#include "ImgReaderOgr.h"
 
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
@@ -69,8 +71,26 @@ class ImgRasterGdal
 public:
   ///default constructor
   ImgRasterGdal(void);
+  ///constructor opening an image in memory using an external data pointer (not tested yet)
+  ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  //from Reader
+  ImgRasterGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
+  //from Writer
+  ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
+  ImgRasterGdal(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : m_writeMode(false) {open(filename, imgSrc, memory, options);};
+  ///constructor opening an image for writing in memory, copying image attributes from a source image.
+  ImgRasterGdal(const ImgRasterGdal& imgSrc){open(imgSrc);};
+  ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
+  ImgRasterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : m_writeMode(true) {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
+  ///constructor opening an image for writing in memory, defining all image attributes
+  ImgRasterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType) : m_writeMode(false) {open(ncol, nrow, nband, dataType);};
+
   ///destructor
-  virtual ~ImgRasterGdal(void);
+  ~ImgRasterGdal(void);
+
+  ///Initialize the memory for read/write image in cache
+  void initMem(unsigned long int memory);
+  bool isInit(){return m_data.size();};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
   void setScale(double theScale, int band=0){
     if(m_scale.size()!=nrOfBand()){//initialize
@@ -90,8 +110,10 @@ public:
       m_offset[band]=theOffset;
   };
 
+  ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
+  void open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the image.
-  virtual void close(void);
+  void close(void);
   ///Get the filename of this dataset
   std::string getFileName() const {return m_filename;};
   ///Get the number of columns of this dataset
@@ -183,33 +205,121 @@ public:
   unsigned int getBlockSize() const{return m_blockSize;};
   int getBlockSizeX(int band=0)
   {
-    int blockSizeX, blockSizeY;
-    getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
+    int blockSizeX=0;
+    int blockSizeY=0;
+    if(getRasterBand(band))
+      getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
     return blockSizeX;
   }
   int getBlockSizeY(int band=0)
   {
-    int blockSizeX, blockSizeY;
-    getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
+    int blockSizeX=0;
+    int blockSizeY=0;
+    if(getRasterBand(band))
+      getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
     return blockSizeY;
   }
   int nrOfBlockX(int band=0)
   {
-    int nXBlockSize, nYBlockSize;
-    getRasterBand(band)->GetBlockSize( &nXBlockSize, &nYBlockSize );
-    int nXBlocks = (nrOfCol() + nXBlockSize - 1) / nXBlockSize;
+    int blockSizeX=0;
+    int blockSizeY=0;
+    int nXBlocks=0;
+    if(getRasterBand(band)){
+      getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
+      nXBlocks = (nrOfCol() + blockSizeX - 1) / blockSizeX;
+    }
     return nXBlocks;
   }
   int nrOfBlockY(int band=0)
   {
-    int nXBlockSize, nYBlockSize;
-    getRasterBand(band)->GetBlockSize( &nXBlockSize, &nYBlockSize );
-    int nYBlocks = (nrOfRow() + nYBlockSize - 1) / nYBlockSize;
+    int blockSizeX=0;
+    int blockSizeY=0;
+    int nYBlocks=0;
+    if(getRasterBand(band)){
+      getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
+      nYBlocks = (nrOfRow() + blockSizeY - 1) / blockSizeY;
+    }
     return nYBlocks;
   }
 
-  friend class ImgReaderGdal;
-  friend class ImgWriterGdal;
+  //From Reader
+  ///Open an image. Set memory (in MB) to cache a number of rows in memory
+  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
+  ///Read a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
+  template<typename T> void readData(T& value, int col, int row, int band=0);
+  ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
+  template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
+  ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
+  template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR);
+  ///Read pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
+  template<typename T> void readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  ///Read pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a one dimensional stl vector representing all pixel values read starting from upper left to lower right.
+  template<typename T> void readDataBlock(std::vector<T>& buffer , int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  ///Read pixel cell values for an entire row for a specific band (all indices start counting from 0)
+  template<typename T> void readData(std::vector<T>& buffer, int row, int band=0);
+  ///Read pixel cell values for an entire row for a specific band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
+  template<typename T> void readData(std::vector<T>& buffer, double row, int band=0, RESAMPLE resample=NEAR);
+  ///Get the minimum and maximum cell values for a specific band in a region of interest defined by startCol, endCol, startRow and endRow (all indices start counting from 0).
+  void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue);
+  ///Get the minimum and maximum cell values for a specific band (all indices start counting from 0).
+  void getMinMax(double& minValue, double& maxValue, int band=0);
+  ///Get the minimum cell values for a specific band and report the column and row in which the minimum value was found (all indices start counting from 0).
+  double getMin(int& col, int& row, int band=0);
+  ///Get the maximum cell values for a specific band and report the column and row in which the maximum value was found (all indices start counting from 0).
+  double getMax(int& col, int& row, int band=0);
+  ///Calculate the image histogram for a specific band using a defined number of bins and constrained   by a minimum and maximum value. A kernel density function can also be applied (default is false).
+  double getHistogram(std::vector<double>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0, bool kde=false);
+  ///Calculate the reference pixel as the centre of gravity pixel (weighted average of all values not taking into account no data values) for a specific band (start counting from 0).
+  void getRefPix(double& refX, double &refY, int band=0);
+  ///Calculate the range of cell values in the image for a specific band (start counting from 0).
+  void getRange(std::vector<short>& range, int Band=0);
+  ///Calculate the number of valid pixels (with a value not defined as no data).
+  unsigned long int getNvalid(int band);
+
+  //From Writer
+  ///Open an image for writing, copying image attributes from a source image. Image is directly written to file. Use the constructor with memory>0 to support caching
+  void open(const std::string& filename, const ImgRasterGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
+  void open(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
+  // void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
+  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Open an image for writing in memory, defining image attributes.
+  void open(int ncol, int nrow, int nband, const GDALDataType& dataType);
+  ///Open an image for writing in memory, copying image attributes from a source image.
+  void open(const ImgRasterGdal& imgSrc);
+  ///Open an image for writing using an external data pointer (not tested yet)
+  void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  ///Close the raster dataset
+  ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
+  void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
+
+  ///Write a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
+  template<typename T> bool writeData(T& value, int col, int row, int band=0);
+  ///Write pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
+  template<typename T> bool writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
+  ///Write pixel cell values for an entire row for a specific band (all indices start counting from 0)
+  template<typename T> bool writeData(std::vector<T>& buffer, int row, int band=0);
+  // deprecated? Write an entire image from memory to file
+  // bool writeData(void* pdata, const GDALDataType& dataType, int band=0);
+  ///Write pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
+  template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  ///Prepare image writer to write to file
+  void setFile(const std::string& filename, const std::string& imageType, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Prepare image writer to write to file
+  void setFile(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
+  void setColorTable(const std::string& filename, int band=0);
+  ///Set the color table using the GDAL class GDALColorTable
+  void setColorTable(GDALColorTable* colorTable, int band=0);
+  ///Set specific metadata (driver specific)
+  void setMetadata(char** metadata);
+  ///Rasterize an OGR vector dataset using the gdal algorithm "GDALRasterizeLayers"
+  void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
+  ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
+  void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
+
 
 protected:
   ///filename of this dataset
@@ -244,8 +354,714 @@ protected:
   ///beyond last line read in cache for a specific band
   std::vector<unsigned int> m_end;
 
+  //From Reader
+  ///Set GDAL dataset number of columns, rows, bands and geotransform.
+  void setCodec(const GDALAccess& readMode=GA_ReadOnly);
+  //From Writer
+  ///Register GDAL driver, setting the datatype, imagetype and some metadata
+  void setCodec(const std::string& imageType);
+  ///Register GDAL driver, setting the datatype, imagetype and some metadata
+  void setCodec(const ImgRasterGdal& ImgSrc);
+  ///Create options
+  std::vector<std::string> m_options;
+  ///We are writing a physical file
+  bool m_writeMode;
 
 private:
+  //From Reader
+  ///Read new block in cache (defined by m_begin and m_end)
+  bool readNewBlock(int row, int band);
+  //From Writer
+  ///Write new block from cache (defined by m_begin and m_end)
+  bool writeNewBlock(int row, int band);
 };
+
+/**
+ * @param[out] value The cell value that was read
+ * @param[in] col The column number to read (counting starts from 0)
+ * @param[in] row The row number to read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
+ **/
+template<typename T> void ImgRasterGdal::readData(T& value, int col, int row, int band)
+{
+  assert(band<nrOfBand()+1);
+  assert(col<nrOfCol());
+  assert(col>=0);
+  assert(row<nrOfRow());
+  assert(row>=0);
+  double dvalue=0;
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band||m_offset.size()>band){
+    if(m_scale.size()>band)
+      theScale=m_scale[band];
+    if(m_offset.size()>band)
+      theOffset=m_offset[band];
+  }
+  if(m_data.size()){
+    //only support random access reading if entire image is in memory for performance reasons
+    if(m_blockSize!=nrOfRow()){
+      std::ostringstream s;
+      s << "Error: increase memory to support random access reading (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+      throw(s.str());
+    }
+    if(row<m_begin[band]||row>=m_end[band]){
+      if(m_filename.size())
+        readNewBlock(row,band);
+    }
+    int index=(row-m_begin[band])*nrOfCol()+col;
+    switch(getDataType()){
+    case(GDT_Byte):
+      dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Int16):
+      dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_UInt16):
+      dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Int32):
+      dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_UInt32):
+      dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Float32):
+      dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+      break;
+    case(GDT_Float64):
+      dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+      break;
+    default:
+      std::string errorString="Error: data type not supported";
+      throw(errorString);
+      break;
+    }
+    value=static_cast<T>(dvalue);
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,getGDALDataType<T>(),0,0);
+    dvalue=theScale*value+theOffset;
+    value=static_cast<T>(dvalue);
+  }
+}
+
+/**
+ * @param[out] buffer The vector with all cell values that were read
+ * @param[in] minCol First column from where to start reading (counting starts from 0)
+ * @param[in] maxCol Last column that must be read (counting starts from 0)
+ * @param[in] row The row number to read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
+ **/
+template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
+{
+  assert(band<nrOfBand()+1);
+  assert(minCol<nrOfCol());
+  assert(minCol>=0);
+  assert(maxCol<nrOfCol());
+  assert(minCol<=maxCol);
+  assert(row<nrOfRow());
+  assert(row>=0);
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band||m_offset.size()>band){
+    if(m_scale.size()>band)
+      theScale=m_scale[band];
+    if(m_offset.size()>band)
+      theOffset=m_offset[band];
+  }
+  if(m_data.size()){
+    if(row<m_begin[band]||row>=m_end[band]){
+      if(m_filename.size())
+        readNewBlock(row,band);
+    }
+    if(buffer.size()!=maxCol-minCol+1)
+      buffer.resize(maxCol-minCol+1);
+    int index=(row-m_begin[band])*nrOfCol();
+    int minindex=(index+minCol);
+    int maxindex=(index+maxCol);
+    if(getGDALDataType<T>()==getDataType()){//no conversion needed
+      buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
+      typename std::vector<T>::iterator bufit=buffer.begin();
+      while(bufit!=buffer.end()){
+	double dvalue=theScale*(*bufit)+theOffset;
+	*(bufit++)=static_cast<T>(dvalue);
+      }
+    }
+    else{
+      typename std::vector<T>::iterator bufit=buffer.begin();
+      for(index=minindex;index<=maxindex;++index,++bufit){
+        double dvalue=0;
+        switch(getDataType()){
+        case(GDT_Byte):
+          dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int16):
+          dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt16):
+          dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Int32):
+          dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_UInt32):
+          dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float32):
+          dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+          break;
+        case(GDT_Float64):
+          dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+          break;
+        default:
+          std::string errorString="Error: data type not supported";
+          throw(errorString);
+	  break;
+        }
+        // double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
+        *(bufit)=static_cast<T>(dvalue);
+      }
+    }
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    if(buffer.size()!=maxCol-minCol+1)
+      buffer.resize(maxCol-minCol+1);
+    poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
+    if(m_scale.size()>band||m_offset.size()>band){
+      for(int index=0;index<buffer.size();++index)
+	buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
+    }
+  }
+}
+
+/**
+ * @param[out] buffer The vector with all cell values that were read
+ * @param[in] minCol First column from where to start reading (counting starts from 0)
+ * @param[in] maxCol Last column that must be read (counting starts from 0)
+ * @param[in] row The row number to read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
+ * @param[in] resample The resampling method (currently only BILINEAR and NEAR are supported)
+ **/
+template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band, RESAMPLE resample)
+{
+  std::vector<T> readBuffer_upper;
+  std::vector<T> readBuffer_lower;
+  if(buffer.size()!=maxCol-minCol+1)
+    buffer.resize(maxCol-minCol+1);
+  double upperRow=row-0.5;
+  upperRow=static_cast<int>(upperRow);
+  double lowerRow=row+0.5;
+  lowerRow=static_cast<int>(lowerRow);
+  switch(resample){
+  case(BILINEAR):
+    if(lowerRow>=nrOfRow())
+      lowerRow=nrOfRow()-1;
+    if(upperRow<0)
+      upperRow=0;
+    readData(readBuffer_upper,minCol,maxCol,static_cast<int>(upperRow),band);
+    readData(readBuffer_lower,minCol,maxCol,static_cast<int>(lowerRow),band);
+    //do interpolation in y
+    for(int icol=0;icol<maxCol-minCol+1;++icol){
+      buffer[icol]=(lowerRow-row+0.5)*readBuffer_upper[icol]+(1-lowerRow+row-0.5)*readBuffer_lower[icol];
+    }
+    break;
+  default:
+    readData(buffer,minCol,maxCol,static_cast<int>(row),band);
+    break;
+  }
+}
+
+/**
+ * @param[out] buffer2d Two dimensional vector of type Vector2d (stl vector of stl vector) representing [row][col]. This vector contains all cell values that were read
+ * @param[in] minCol First column from where to start reading (counting starts from 0)
+ * @param[in] maxCol Last column that must be read (counting starts from 0)
+ * @param[in] minRow First row from where to start reading (counting starts from 0)
+ * @param[in] maxRow Last row that must be read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
+ **/
+template<typename T> void ImgRasterGdal::readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
+{
+  buffer2d.resize(maxRow-minRow+1);
+  typename std::vector<T> buffer;
+  readDataBlock(buffer,minCol,maxCol,minRow,maxRow,band);
+  typename std::vector<T>::const_iterator startit=buffer.begin();
+  typename std::vector<T>::const_iterator endit=startit;
+  for(int irow=minRow;irow<=maxRow;++irow){
+    buffer2d[irow-minRow].resize(maxCol-minCol+1);
+    endit+=maxCol-minCol+1;
+    buffer2d[irow-minRow].assign(startit,endit);
+    startit+=maxCol-minCol+1;
+  }
+}
+  
+/**
+ * @param[out] buffer One dimensional vector representing all pixel values read starting from upper left to lower right.
+ * @param[in] minCol First column from where to start reading (counting starts from 0)
+ * @param[in] maxCol Last column that must be read (counting starts from 0)
+ * @param[in] minRow First row from where to start reading (counting starts from 0)
+ * @param[in] maxRow Last row that must be read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
+ **/
+template<typename T> void ImgRasterGdal::readDataBlock(std::vector<T>& buffer, int minCol, int maxCol, int minRow, int maxRow, int band)
+{
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band)
+    theScale=m_scale[band];
+  if(m_offset.size()>band)
+    theOffset=m_offset[band];
+  if(minCol>=nrOfCol() ||
+     (minCol<0) ||
+     (maxCol>=nrOfCol()) ||
+     (minCol>maxCol) ||
+     (minRow>=nrOfRow()) ||
+     (minRow<0) ||
+     (maxRow>=nrOfRow()) ||
+     (minRow>maxRow)){
+    std::string errorString="block not within image boundaries";
+    throw(errorString);
+  }
+  if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
+    buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
+  if(m_data.size()){
+    typename std::vector<T>::iterator bufit=buffer.begin();
+    for(int irow=minRow;irow<=maxRow;++irow){
+      if(irow<m_begin[band]||irow>=m_end[band]){
+        if(m_filename.size())
+          readNewBlock(irow,band);
+      }
+      int index=(irow-m_begin[band])*nrOfCol();
+      int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+      int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+
+      if(getGDALDataType<T>()==getDataType()){//no conversion needed
+	//assign will replace current contents and modify its size accordingly
+	buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
+      }
+      else{
+	for(index=minindex;index<=maxindex;++index,++bufit){
+	  double dvalue=0;
+	  switch(getDataType()){
+	  case(GDT_Byte):
+	    dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Int16):
+	    dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_UInt16):
+	    dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Int32):
+	    dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_UInt32):
+	    dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Float32):
+	    dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+	    break;
+	  case(GDT_Float64):
+	    dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+	    break;
+	  default:
+	    std::string errorString="Error: data type not supported";
+	    throw(errorString);
+	    break;
+	  }
+	  *(bufit)=static_cast<T>(dvalue);
+	}//for index
+      }//else
+      if(getGDALDataType<T>()==getDataType()){
+	if(m_scale.size()>band||m_offset.size()>band){
+	  for(bufit=buffer.begin();bufit!=buffer.end();++bufit){
+	    double dvalue=theScale*(*bufit)+theOffset;
+	    *(bufit)=static_cast<T>(dvalue);
+	  }
+	}
+      }
+    }
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    assert(band<nrOfBand()+1);
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
+    if(m_scale.size()>band||m_offset.size()>band){
+      for(int index=0;index<buffer.size();++index)
+	buffer[index]=theScale*buffer[index]+theOffset;
+    }
+  }
+}
+
+/**
+ * @param[out] buffer The vector with all cell values that were read
+ * @param[in] row The row number to read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
+ **/
+template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int row, int band)
+{
+  readData(buffer,0,nrOfCol()-1,row,band);
+}
+
+/**
+ * @param[out] buffer The vector with all cell values that were read
+ * @param[in] row The row number to read (counting starts from 0)
+ * @param[in] band The band number to read (counting starts from 0)
+ * @param[in] resample The resampling method (currently only BILINEAR and NEAR are supported).
+ **/
+template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, double row, int band, RESAMPLE resample)
+{
+  readData(buffer,0,nrOfCol()-1,row,band,resample);
+}
+
+//From Writer
+/**
+ * @param[in] value The cell value to write
+ * @param[in] col The column number to write (counting starts from 0)
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
+ **/
+template<typename T> bool ImgRasterGdal::writeData(T& value, int col, int row, int band)
+{
+  if(band>=nrOfBand()+1){
+    std::ostringstream s;
+    s << "Error: band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+    throw(s.str());
+  }
+  if(col>=nrOfCol()){
+    std::ostringstream s;
+    s << "Error: col (" << col << ") exceeds nrOfCol (" << nrOfCol() << ")";
+    throw(s.str());
+  }
+  if(col<0){
+    std::ostringstream s;
+    s << "Error: col (" << col << ") is negative";
+    throw(s.str());
+  }
+  if(row>=nrOfRow()){
+    std::ostringstream s;
+    s << "Error: row (" << row << ") exceeds nrOfRow (" << nrOfRow() << ")";
+    throw(s.str());
+  }
+  if(row<0){
+    std::ostringstream s;
+    s << "Error: row (" << row << ") is negative";
+    throw(s.str());
+  }
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band||m_offset.size()>band){
+    if(m_scale.size()>band)
+      theScale=m_scale[band];
+    if(m_offset.size()>band)
+      theOffset=m_offset[band];
+  }
+  if(m_data.size()){
+    //only support random access writing if entire image is in memory
+    if(m_blockSize!=nrOfRow()){
+      std::ostringstream s;
+      s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+      throw(s.str());
+    }
+    int index=(row-m_begin[band])*nrOfCol()+col;
+    double dvalue=theScale*value+theOffset;
+    switch(getDataType()){
+    case(GDT_Byte):
+      static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+      break;
+    case(GDT_Int16):
+      static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+      break;
+    case(GDT_UInt16):
+      static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+      break;
+    case(GDT_Int32):
+      static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+      break;
+    case(GDT_UInt32):
+      static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+      break;
+    case(GDT_Float32):
+      static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+      break;
+    case(GDT_Float64):
+      static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+      break;
+    default:
+      std::string errorString="Error: data type not supported";
+      throw(errorString);
+      break;
+    }
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    T dvalue=theScale*value+theOffset;
+    poBand->RasterIO(GF_Write,col,row,1,1,&dvalue,1,1,getGDALDataType<T>(),0,0);
+  }
+  return true;
+}
+
+/**
+ * @param[in] buffer The vector with all cell values to write
+ * @param[in] minCol First column from where to start writing (counting starts from 0)
+ * @param[in] maxCol Last column that must be written (counting starts from 0)
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
+ **/
+template<typename T> bool ImgRasterGdal::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
+{
+  if(buffer.size()!=maxCol-minCol+1){
+    std::string errorstring="invalid size of buffer";
+    throw(errorstring);
+  }
+  if(minCol>=nrOfCol()){
+    std::ostringstream s;
+    s << "minCol (" << minCol << ") exceeds nrOfCol (" << nrOfCol() << ")";
+    throw(s.str());
+  }
+  if(minCol<0){
+    std::ostringstream s;
+    s << "mincol (" << minCol << ") is negative";
+    throw(s.str());
+  }
+  if(maxCol>=nrOfCol()){
+    std::ostringstream s;
+    s << "maxCol (" << maxCol << ") exceeds nrOfCol (" << nrOfCol() << ")";
+    throw(s.str());
+  }
+  if(maxCol<minCol){
+    std::ostringstream s;
+    s << "maxCol (" << maxCol << ") is less than minCol (" << minCol << ")";
+    throw(s.str());
+  }
+  if(row>=nrOfRow()){
+    std::ostringstream s;
+    s << "row (" << row << ") exceeds nrOfRow (" << nrOfRow() << ")";
+    throw(s.str());
+  }
+  if(row<0){
+    std::ostringstream s;
+    s << "row (" << row << ") is negative";
+    throw(s.str());
+  }
+  if(m_data.size()){
+    if(minCol>0){
+      std::ostringstream s;
+      s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+      throw(s.str());
+    }
+    if(row>=m_end[band]){
+      if(row>=m_end[band]+m_blockSize){
+	std::ostringstream s;
+	s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+	throw(s.str());
+      }
+      else if(m_filename.size())
+	writeNewBlock(row,band);
+    }
+    int index=(row-m_begin[band])*nrOfCol();
+    int minindex=(index+minCol);
+    int maxindex=(index+maxCol);
+    typename std::vector<T>::iterator bufit=buffer.begin();
+    double theScale=1;
+    double theOffset=0;
+    if(m_scale.size()>band)
+      theScale=m_scale[band];
+    if(m_offset.size()>band)
+      theOffset=m_offset[band];
+    for(index=minindex;index<=maxindex;++index,++bufit){
+      double dvalue=theScale*(*(bufit))+theOffset;
+      switch(getDataType()){
+      case(GDT_Byte):
+	static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+	break;
+      case(GDT_Int16):
+	static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+	break;
+      case(GDT_UInt16):
+	static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+	break;
+      case(GDT_Int32):
+	static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+	break;
+      case(GDT_UInt32):
+	static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+	break;
+      case(GDT_Float32):
+	static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+	break;
+      case(GDT_Float64):
+	static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+	break;
+      default:
+	std::string errorString="Error: data type not supported";
+	throw(errorString);
+	break;
+      }
+    }
+  }
+  else{
+    //todo: scaling and offset!
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    if(band>=nrOfBand()+1){
+      std::ostringstream s;
+      s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+      throw(s.str());
+    }
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Write,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
+  }
+  return true;
+}
+
+/**
+ * @param[in] buffer The vector with all cell values to write
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
+ **/
+template<typename T> bool ImgRasterGdal::writeData(std::vector<T>& buffer, int row, int band)
+{
+  return writeData(buffer,0,nrOfCol()-1,row,band);
+}
+
+/**
+ * @param[in] buffer2d Two dimensional vector of type Vector2d (stl vector of stl vector) representing [row][col]. This vector contains all cell values that must be written
+ * @param[in] minCol First column from where to start writing (counting starts from 0)
+ * @param[in] maxCol Last column that must be written (counting starts from 0)
+ * @param[in] row The row number to write (counting starts from 0)
+ * @param[in] band The band number to write (counting starts from 0)
+ * @return true if write successful
+ **/
+template<typename T> bool ImgRasterGdal::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
+{
+  double theScale=1;
+  double theOffset=0;
+  if(m_scale.size()>band)
+    theScale=m_scale[band];
+  if(m_offset.size()>band)
+    theOffset=m_offset[band];
+  if(buffer2d.size()!=maxRow-minRow+1){
+    std::string errorstring="invalid buffer size";
+    throw(errorstring);
+  }
+  if(band>=nrOfBand()+1){
+    std::ostringstream s;
+    s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+    throw(s.str());
+  }
+  if(minCol>=nrOfCol()){
+    std::ostringstream s;
+    s << "minCol (" << minCol << ") exceeds nrOfCol (" << nrOfCol() << ")";
+    throw(s.str());
+  }
+  if(minCol<0){
+    std::ostringstream s;
+    s << "mincol (" << minCol << ") is negative";
+    throw(s.str());
+  }
+  if(minCol>0){
+    std::ostringstream s;
+    s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+    throw(s.str());
+  }
+  if(maxCol>=nrOfCol()){
+    std::ostringstream s;
+    s << "maxCol (" << maxCol << ") exceeds nrOfCol (" << nrOfCol() << ")";
+    throw(s.str());
+  }
+  if(maxCol<minCol){
+    std::ostringstream s;
+    s << "maxCol (" << maxCol << ") is less than minCol (" << minCol << ")";
+    throw(s.str());
+  }
+  if(m_data.size()){
+    for(int irow=minRow;irow<=maxRow;++irow){
+      if(irow>=nrOfRow()){
+	std::ostringstream s;
+	s << "row (" << irow << ") exceeds nrOfRow (" << nrOfRow() << ")";
+	throw(s.str());
+      }
+      if(irow<0){
+	std::ostringstream s;
+	s << "row (" << irow << ") is negative";
+	throw(s.str());
+      }
+      if(irow<m_begin[band]){
+	std::ostringstream s;
+	s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+	throw(s.str());
+      }
+      if(irow>=m_end[band]){
+	if(irow>=m_end[band]+m_blockSize){
+	  std::ostringstream s;
+	  s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+	  throw(s.str());
+	}
+	else if(m_filename.size())
+	  writeNewBlock(irow,band);
+      }
+      int index=(irow-m_begin[band])*nrOfCol();
+      int minindex=index+minCol;
+      int maxindex=index+maxCol;
+      typename std::vector<T>::iterator bufit=buffer2d[irow-minRow].begin();
+      for(index=minindex;index<=maxindex;++index,++bufit){
+	double dvalue=theScale*(*(bufit))+theOffset;
+	switch(getDataType()){
+	case(GDT_Byte):
+	  static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+	  break;
+	case(GDT_Int16):
+	  static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+	  break;
+	case(GDT_UInt16):
+	  static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+	  break;
+	case(GDT_Int32):
+	  static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+	  break;
+	case(GDT_UInt32):
+	  static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+	  break;
+	case(GDT_Float32):
+	  static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+	  break;
+	case(GDT_Float64):
+	  static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+	  break;
+	default:
+	  std::string errorString="Error: data type not supported";
+	  throw(errorString);
+	  break;
+	}
+      }
+    }
+  }
+  else{
+    //todo: apply scaling and offset!
+    typename std::vector<T> buffer((maxRow-minRow+1)*(maxCol-minCol+1));
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    // typename std::vector<T>::iterator startit=buffer.begin();
+    for(int irow=minRow;irow<=maxRow;++irow){
+      buffer.insert(buffer.begin()+(maxCol-minCol+1)*(irow-minRow),buffer2d[irow-minRow].begin(),buffer2d[irow-minRow].end());
+    }
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Write,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
+  }
+  return true;
+}
 
 #endif // _IMGRASTERGDAL_H_

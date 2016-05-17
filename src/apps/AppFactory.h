@@ -24,8 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <string>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -45,7 +44,8 @@ public:
   virtual ~AppFactory(void){};
   void setOptions(int argc, char* argv[]);
   //todo: support arguments as list of arguments, class or struct and xml file?
-  bool pkcomposite(std::vector<ImgReaderGdal>& input, ImgWriterGdal& imgWriter);   
+  bool pkcrop(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
+  bool pkcomposite(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
 
 private:
   //todo: create member attribute for pointer to memory buffer?

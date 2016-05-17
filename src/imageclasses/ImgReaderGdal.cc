@@ -35,29 +35,6 @@ ImgReaderGdal::~ImgReaderGdal(void){};
 // }
 
 /**
- * @param dataPointer External pointer already containing the image data
- * @param ncol The number of columns in the image
- * @param nrow The number of rows in the image
- * @param band The number of bands in the image
- * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
- **/
-void ImgReaderGdal::open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType)
-{
-  m_nband=nband;
-  m_ncol=ncol;
-  m_nrow=nrow;
-  m_data.resize(nband);
-  m_begin.resize(nband);
-  m_end.resize(nband);
-  m_blockSize=nrow;//memory contains entire image
-  for(int iband=0;iband<nband;++iband){
-    m_data[iband]=dataPointer+iband*m_ncol*m_nrow*(GDALGetDataTypeSize(getDataType())>>3);
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-  }
-}
-
-/**
  * @param filename Open a raster dataset with this filename
  * @param readMode Open dataset in ReadOnly or Update mode
  * @param memory Available memory to cache image raster data (in MB)
@@ -67,6 +44,10 @@ void ImgReaderGdal::open(const std::string& filename, const GDALAccess& readMode
   m_filename = filename;
   setCodec(readMode);
   initMem(memory);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=0;
+  }
 }
 
 void ImgReaderGdal::close(void)
@@ -108,31 +89,6 @@ void ImgReaderGdal::setCodec(const GDALAccess& readMode)
   m_gt[4]=adfGeoTransform[4];
   m_gt[5]=adfGeoTransform[5];
   m_projection=m_gds->GetProjectionRef();
-}
-
-/**
- * @param memory Available memory to cache image raster data (in MB)
- **/
-void ImgReaderGdal::initMem(unsigned long int memory)
-{
-  if(memory<=0)
-    m_blockSize=nrOfRow();
-  else{
-    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
-    m_blockSize-=m_blockSize%getBlockSizeY(0);
-  }
-  if(m_blockSize<1)
-    m_blockSize=1;
-  if(m_blockSize>nrOfRow())
-    m_blockSize=nrOfRow();
-  m_data.resize(nrOfBand());
-  m_begin.resize(nrOfBand());
-  m_end.resize(nrOfBand());
-  for(int iband=0;iband<m_nband;++iband){
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-    m_begin[iband]=0;
-    m_end[iband]=0;
-  }
 }
 
 /**

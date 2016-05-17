@@ -44,15 +44,9 @@ public:
   ImgReaderGdal(void);
   ///constructor opening an image. Set memory (in MB) to cache a number of rows in memory
   ImgReaderGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0){open(filename, readMode, memory);};
-  ///constructor opening an image using an external data pointer (not tested yet)
-  ImgReaderGdal(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType){open(dataPointer,ncol,nrow,nband,dataType);};
   ///destructor
   ~ImgReaderGdal(void);
 
-  ///Set the memory (in MB) to cache a number of rows in memory
-  void setMemory(unsigned long int memory=0){initMem(memory);};
-  ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
-  void open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned short nband, const GDALDataType& dataType);
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
   void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
 
@@ -92,13 +86,10 @@ public:
 protected:
   ///Set GDAL dataset number of columns, rows, bands and geotransform.
   void setCodec(const GDALAccess& readMode=GA_ReadOnly);
-  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
+
 private:
   ///Read new block in cache (defined by m_begin and m_end)
   bool readNewBlock(int row, int band);
-  ///Initialize the memory for read/write image in cache
-  void initMem(unsigned long int memory);
-  ///Flag to indicate if the pointer used for caching should be deleted (only false for external pointer)
 };
 
 /**

@@ -43,39 +43,29 @@ class ImgWriterGdal : public virtual ImgRasterGdal
 public:
   ///default constructor. Image needs to be opened later with one of the open methods.
   ImgWriterGdal(void);
-  ///constructor opening an image for writing, copying image attributes from a source image. Image is directly writen to file. Use the constructor with memory>0 to support caching
-  ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, options);};
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, imgSrc, memory, options);};
   ///constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgWriterGdal(const ImgReaderGdal& imgSrc, unsigned int memory=0){open(imgSrc,memory);};
-  ///constructor opening an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
-  ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, options);};
+  ImgWriterGdal(const ImgReaderGdal& imgSrc){open(imgSrc);};
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
   ImgWriterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()){open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgWriterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType, unsigned int memory=0){open(ncol, nrow, nband, dataType,memory);};
-  ///constructor opening an image for writing using an external data pointer (not tested yet)
-  ImgWriterGdal(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType){open(dataPointer, filename, ncol, nrow, nband, dataType);};
-  ///constructor opening an image for writing in memory using an external data pointer (not tested yet)
-  ImgWriterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){open(dataPointer, ncol, nrow, nband, dataType);};
+  ImgWriterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType){open(ncol, nrow, nband, dataType);};
   ///destructor
   ~ImgWriterGdal(void);
 
-  ///Set the memory (in MB) to cache a number of rows in memory
-  void setMemory(unsigned long int memory=0){initMem(memory);};
   ///Open an image for writing, copying image attributes from a source image. Image is directly written to file. Use the constructor with memory>0 to support caching
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   void open(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
-  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  // void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
-  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
+  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing in memory, defining image attributes.
-  void open(int ncol, int nrow, int nband, const GDALDataType& dataType, unsigned int memory=0);
+  void open(int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(const ImgReaderGdal& imgSrc, unsigned int memory=0);
+  void open(const ImgReaderGdal& imgSrc);
   ///Open an image for writing using an external data pointer (not tested yet)
   void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory using an external data pointer (not tested yet)
@@ -96,9 +86,9 @@ public:
   ///Write pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
   template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
   ///Prepare image writer to write to file
-  void setFile(const std::string& filename, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  void setFile(const std::string& filename, const std::string& imageType, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Prepare image writer to write to file
-  void setFile(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
+  void setFile(const std::string& filename, const ImgReaderGdal& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
 
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
   void setColorTable(const std::string& filename, int band=0);
@@ -121,8 +111,6 @@ protected:
 private:
   ///Write new block from cache (defined by m_begin and m_end)
   bool writeNewBlock(int row, int band);
-  ///Initialize the memory for read/write image in cache
-  void initMem(unsigned long int memory);
 };
 
 /**

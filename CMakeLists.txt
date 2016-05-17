@@ -74,8 +74,8 @@ set(PKTOOLS_APP_LIB_NAME appClasses)
 option (BUILD_SHARED_LIBS "Build with shared library" OFF)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
 set(BUILD_WITH_FANN FALSE CACHE BOOL "Choose if pktools is to be built with fann")
-#set(BUILD_WITH_NLOPT FALSE CACHE BOOL "Choose if pktools is to be built with nlopt")
-set(PKTOOLS_WITH_UTILITIES TRUE CACHE BOOL "Choose if pktools utilities should be built")
+# set(PKTOOLS_WITH_UTILITIES TRUE CACHE BOOL "Choose if pktools utilities should be built")
+set(PKTOOLS_WITH_APPS TRUE CACHE BOOL "Choose if pktools applications should be built")
 
 set(GSL_INCLUDE_DIR /usr/include CACHE PATH "Include PATH for GSL")
 set(GSL_LIB_PATH /usr/lib CACHE PATH "Library PATH for GSL")
@@ -256,6 +256,12 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(PKLIBS ${PKTOOLS_APP_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
 
+set(PKAPPS
+  pkcrop_app
+  pkcomposite_app
+  pktest_app
+  )
+
 set(PKUTILITIES
   pkinfo
   pkcrop
@@ -296,50 +302,48 @@ set(PKFANNUTILITIES
 	pkregann
 )
 
-# set(PKNLOPTUTILITIES
-# 	pkoptsvm
-# )
-
-if (PKTOOLS_WITH_UTILITIES)
-	foreach(UTILITY ${PKUTILITIES})
-    		add_executable(${UTILITY} src/apps/${UTILITY}.cc)
-    		target_link_libraries(${UTILITY} ${PKLIBS})
-    		set_target_properties(${UTILITY} PROPERTIES FOLDER utilities)
+if (PKTOOLS_WITH_APPS)
+	foreach(APP ${PKAPPS})
+    		add_executable(${APP} src/apps/${APP}.cc)
+    		target_link_libraries(${APP} ${PKLIBS})
+    		set_target_properties(${APP} PROPERTIES FOLDER utilities)
 	endforeach()
+	
+	add_custom_target(apps DEPENDS ${PKAPPS})
+	set_target_properties(apps PROPERTIES FOLDER 
+	  phony)
+endif (PKTOOLS_WITH_APPS)
 
-	if (BUILD_WITH_LIBLAS)
-		set(PKLIBS ${PKLIBS} ${PKTOOLS_LASCLASSES_LIB_NAME})
-		foreach(PKLASUTILITY ${PKLASUTILITIES})
-		add_executable(${PKLASUTILITY} src/apps/${PKLASUTILITY}.cc)
-		target_link_libraries (${PKLASUTILITY} 
-		${PKLIBS} ${LIBLAS_LIBRARIES})
-    		set_target_properties(${PKLASUTILITY} PROPERTIES FOLDER utilities)
-		endforeach()
-	endif()
-	if (BUILD_WITH_FANN)
-		set(PKLIBS ${PKLIBS} ${FANN_LIBRARIES})
-		foreach(PKFANNUTILITY ${PKFANNUTILITIES})
-		add_executable(${PKFANNUTILITY} src/apps/${PKFANNUTILITY}.cc)
-		message(${PKLIBS})
-		target_link_libraries (${PKFANNUTILITY} ${PKLIBS})
-    		set_target_properties(${PKFANNUTILITY} PROPERTIES FOLDER utilities)
-		endforeach()
-	endif()
-	# if (BUILD_WITH_NLOPT)
-	# 	set(PKLIBS ${PKLIBS} ${NLOPT_LIBRARIES})
-	# 	foreach(PKNLOPTUTILITY ${PKNLOPTUTILITIES})
-	# 	add_executable(${PKNLOPTUTILITY} src/apps/${PKNLOPTUTILITY}.cc)
-	# 	message(${PKLIBS})
-	# 	target_link_libraries (${PKNLOPTUTILITY} ${PKLIBS})
-    	# 	set_target_properties(${PKNLOPTUTILITY} PROPERTIES FOLDER utilities)
-	# 	endforeach()
-	# endif()	
-	# add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES} ${PKNLOPTUTILITIES})
-	add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES})
-	set_target_properties(utilities PROPERTIES FOLDER 
-	phony)
+# if (PKTOOLS_WITH_UTILITIES)
+# 	foreach(UTILITY ${PKUTILITIES})
+#     		add_executable(${UTILITY} src/apps/${UTILITY}.cc)
+#     		target_link_libraries(${UTILITY} ${PKLIBS})
+#     		set_target_properties(${UTILITY} PROPERTIES FOLDER utilities)
+# 	endforeach()
 
-endif()
+# 	if (BUILD_WITH_LIBLAS)
+# 		set(PKLIBS ${PKLIBS} ${PKTOOLS_LASCLASSES_LIB_NAME})
+# 		foreach(PKLASUTILITY ${PKLASUTILITIES})
+# 		add_executable(${PKLASUTILITY} src/apps/${PKLASUTILITY}.cc)
+# 		target_link_libraries (${PKLASUTILITY} 
+# 		${PKLIBS} ${LIBLAS_LIBRARIES})
+#     		set_target_properties(${PKLASUTILITY} PROPERTIES FOLDER utilities)
+# 		endforeach()
+# 	endif()
+# 	if (BUILD_WITH_FANN)
+# 		set(PKLIBS ${PKLIBS} ${FANN_LIBRARIES})
+# 		foreach(PKFANNUTILITY ${PKFANNUTILITIES})
+# 		add_executable(${PKFANNUTILITY} src/apps/${PKFANNUTILITY}.cc)
+# 		message(${PKLIBS})
+# 		target_link_libraries (${PKFANNUTILITY} ${PKLIBS})
+#     		set_target_properties(${PKFANNUTILITY} PROPERTIES FOLDER utilities)
+# 		endforeach()
+# 	endif()
+# 	add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES})
+# 	set_target_properties(utilities PROPERTIES FOLDER 
+# 	phony)
+
+# endif()
 
 
 	
@@ -353,19 +357,19 @@ endif()
 install (FILES "${CMAKE_CURRENT_BINARY_DIR}/pktools-config" DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install (FILES "pktools.pc" DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-if (PKTOOLS_WITH_UTILITIES)
-	install (TARGETS ${PKUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
-	if (BUILD_WITH_LIBLAS)
-		install (TARGETS ${PKLASUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-	endif(BUILD_WITH_LIBLAS)
-	if (BUILD_WITH_FANN)
-		install (TARGETS ${PKFANNUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-	endif(BUILD_WITH_FANN)
-	# if (BUILD_WITH_NLOPT)
-	# 	install (TARGETS ${PKNLOPTUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-	# endif(BUILD_WITH_NLOPT)
-	
-endif(PKTOOLS_WITH_UTILITIES)
+if (PKTOOLS_WITH_APPS)
+	install (TARGETS ${PKAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
+endif(PKTOOLS_WITH_APPS)
+
+# if (PKTOOLS_WITH_UTILITIES)
+#   install (TARGETS ${PKUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
+#   if (BUILD_WITH_LIBLAS)
+#     install (TARGETS ${PKLASUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+#   endif(BUILD_WITH_LIBLAS)
+#   if (BUILD_WITH_FANN)
+#     install (TARGETS ${PKFANNUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+#   endif(BUILD_WITH_FANN)
+# endif(PKTOOLS_WITH_UTILITIES)
 
 ###############################################################################
 

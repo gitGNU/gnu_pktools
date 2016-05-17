@@ -19,11 +19,26 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <iostream>
 #include "ogr_spatialref.h"
+extern "C" {
+#include "gdal_alg.h"
+}
+#include <config.h>
 #include "ImgRasterGdal.h"
 
 ImgRasterGdal::ImgRasterGdal(void)
-  : m_gds(NULL), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown)
-{}
+  : m_gds(0), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown), m_writeMode(false){}
+
+//not tested yet!!!
+/**
+ * @paramdataPointer External pointer to which the image data should be written in memory
+ * @param ncol The number of columns in the image
+ * @param nrow The number of rows in the image
+ * @param band The number of bands in the image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
+ImgRasterGdal::ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+  open(dataPointer,ncol,nrow,nband,dataType);
+}
 
 ImgRasterGdal::~ImgRasterGdal(void)
 {
@@ -33,9 +48,69 @@ ImgRasterGdal::~ImgRasterGdal(void)
   }
 }
 
+/**
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+void ImgRasterGdal::initMem(unsigned long int memory)
+{
+  if(memory<=0)
+    m_blockSize=nrOfRow();
+  else{
+    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
+    if(getBlockSizeY(0))
+      m_blockSize-=m_blockSize%getBlockSizeY(0);
+  }
+  if(m_blockSize<1)
+    m_blockSize=1;
+  if(m_blockSize>nrOfRow())
+    m_blockSize=nrOfRow();
+  m_data.resize(nrOfBand());
+  m_begin.resize(nrOfBand());
+  m_end.resize(nrOfBand());
+  for(int iband=0;iband<m_nband;++iband){
+    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+  }
+}
+
+//not tested yet!!!
+/**
+ * @paramdataPointer External pointer to which the image data should be written in memory
+ * @param ncol The number of columns in the image
+ * @param nrow The number of rows in the image
+ * @param band The number of bands in the image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
+void ImgRasterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+  m_ncol=ncol;
+  m_nrow=nrow;
+  m_nband=nband;
+  m_dataType=dataType;
+  m_data.resize(nband);
+  m_begin.resize(nband);
+  m_end.resize(nband);
+  m_blockSize=nrow;//memory contains entire image and has been read already
+  for(int iband=0;iband<nband;++iband){
+    m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
+}
+
 void ImgRasterGdal::close(void)
 {
+  if(m_writeMode){
+    if(m_data.size()&&m_filename.size()){
+      for(int iband=0;iband<nrOfBand();++iband) 
+        writeNewBlock(nrOfRow(),iband);
+    }
+    char **papszOptions=NULL;
+    for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+      papszOptions=CSLAddString(papszOptions,optionIt->c_str());
+    if(papszOptions)
+      CSLDestroy(papszOptions);
+  }
   GDALClose(m_gds);
+  m_filename.clear();
 }
 
 /**
@@ -498,4 +573,970 @@ int ImgRasterGdal::pushNoDataValue(double noDataValue)
   if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
     m_noDataValues.push_back(noDataValue);
   return(m_noDataValues.size());
+}
+
+//From Reader
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param readMode Open dataset in ReadOnly or Update mode
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+void ImgRasterGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
+{
+  m_filename = filename;
+  setCodec(readMode);
+  initMem(memory);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=0;
+  }
+}
+
+/**
+ * @param readMode Open dataset in ReadOnly or Update mode
+ **/
+void ImgRasterGdal::setCodec(const GDALAccess& readMode)
+{
+  GDALAllRegister();
+  // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
+#if GDAL_VERSION_MAJOR < 2
+  GDALAllRegister();
+  m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
+#else
+  GDALAllRegister();
+  if(readMode==GA_ReadOnly)
+    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY|GDAL_OF_RASTER, NULL, NULL, NULL);
+  else if(readMode==GA_Update)
+    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
+#endif
+
+  if(m_gds == NULL){
+    std::string errorString="FileOpenError";
+    throw(errorString);
+  }
+  m_ncol= m_gds->GetRasterXSize();
+  m_nrow= m_gds->GetRasterYSize();
+  m_nband= m_gds->GetRasterCount();
+  double adfGeoTransform[6];
+  m_gds->GetGeoTransform( adfGeoTransform );
+  m_gt[0]=adfGeoTransform[0];
+  m_gt[1]=adfGeoTransform[1];
+  m_gt[2]=adfGeoTransform[2];
+  m_gt[3]=adfGeoTransform[3];
+  m_gt[4]=adfGeoTransform[4];
+  m_gt[5]=adfGeoTransform[5];
+  m_projection=m_gds->GetProjectionRef();
+}
+
+/**
+ * @param row Read a new block for caching this row (if needed)
+ * @param band Band that must be read to cache
+ * @return true if block was read
+ **/
+bool ImgRasterGdal::readNewBlock(int row, int band)
+{
+  if(m_gds == NULL){
+    std::string errorString="Error in readNewBlock";
+    throw(errorString);
+  }
+  if(m_end[band]<m_blockSize)//first time
+    m_end[band]=m_blockSize;
+  while(row>=m_end[band]&&m_begin[band]<nrOfRow()){
+    m_begin[band]+=m_blockSize;
+    m_end[band]=m_begin[band]+m_blockSize;
+  }
+  if(m_end[band]>nrOfRow())
+    m_end[band]=nrOfRow();
+  for(int iband=0;iband<m_nband;++iband){
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    assert(iband<nrOfBand()+1);
+    poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
+    poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
+  }
+  return true;//new block was read
+}
+
+/**
+ * @param x Reported column where minimum value in image was found (start counting from 0)
+ * @param y Reported row where minimum value in image was found (start counting from 0)
+ * @param band Search mininum value in image for this band
+ * @return minimum value in image for the selected band
+ **/
+double ImgRasterGdal::getMin(int& x, int& y, int band){
+  double minValue=0;
+  std::vector<double> lineBuffer(nrOfCol());
+  bool isValid=false;
+  for(int irow=0;irow<nrOfRow();++irow){
+    readData(lineBuffer,irow,band);
+    for(int icol=0;icol<nrOfCol();++icol){
+      if(isNoData(lineBuffer[icol]))
+	continue;
+      if(isValid){
+	if(lineBuffer[icol]<minValue){
+          y=irow;
+          x=icol;
+          minValue=lineBuffer[icol];
+        }
+      }
+      else{
+	y=irow;
+	x=icol;
+	minValue=lineBuffer[icol];
+	isValid=true;
+      }
+    }
+  }
+  if(isValid)
+    return minValue;
+  else
+    throw(static_cast<std::string>("Warning: not initialized"));
+}
+
+/**
+ * @param x Reported column where maximum value in image was found (start counting from 0)
+ * @param y Reported row where maximum value in image was found (start counting from 0)
+ * @param band Search mininum value in image for this band
+ * @return maximum value in image for the selected band
+ **/
+double ImgRasterGdal::getMax(int& x, int& y, int band){
+  double maxValue=0;
+  std::vector<double> lineBuffer(nrOfCol());
+  bool isValid=false;
+  for(int irow=0;irow<nrOfRow();++irow){
+    readData(lineBuffer,irow,band);
+    for(int icol=0;icol<nrOfCol();++icol){
+      if(isNoData(lineBuffer[icol]))
+	continue;
+      if(isValid){
+	if(lineBuffer[icol]>maxValue){
+          y=irow;
+          x=icol;
+          maxValue=lineBuffer[icol];
+        }
+      }
+      else{
+	y=irow;
+	x=icol;
+	maxValue=lineBuffer[icol];
+	isValid=true;
+      }
+    }
+  }
+  if(isValid)
+    return maxValue;
+  else
+    throw(static_cast<std::string>("Warning: not initialized"));
+}
+
+/**
+ * @param startCol, endCol, startRow, endRow Search extreme value in this region of interest (all indices start counting from 0)
+ * @param band Search extreme value in image for this band
+ * @param minValue Reported minimum value within searched region
+ * @param maxValue Reported maximum value within searched region
+ **/
+void ImgRasterGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue)
+{
+  bool isConstraint=(maxValue>minValue);
+  double minConstraint=minValue;
+  double maxConstraint=maxValue;
+  std::vector<double> lineBuffer(endCol-startCol+1);
+  bool isValid=false;
+  assert(endRow<nrOfRow());
+  for(int irow=startCol;irow<endRow+1;++irow){
+    readData(lineBuffer,startCol,endCol,irow,band);
+    for(int icol=0;icol<lineBuffer.size();++icol){
+      if(isNoData(lineBuffer[icol]))
+	continue;
+      if(isValid){
+	if(isConstraint){
+	  if(lineBuffer[icol]<minConstraint)
+	    continue;
+	  if(lineBuffer[icol]>maxConstraint)
+	    continue;
+	}
+	if(lineBuffer[icol]<minValue)
+	  minValue=lineBuffer[icol];
+	if(lineBuffer[icol]>maxValue)
+	  maxValue=lineBuffer[icol];
+      }
+      else{
+	if(isConstraint){
+	  if(lineBuffer[icol]<minConstraint)
+	    continue;
+	  if(lineBuffer[icol]>maxConstraint)
+	    continue;
+	}
+	minValue=lineBuffer[icol];
+	maxValue=lineBuffer[icol];
+	isValid=true;
+      }
+    }
+  }
+  if(!isValid)
+    throw(static_cast<std::string>("Warning: not initialized"));
+}
+
+/**
+ * @param minValue Reported minimum value in image
+ * @param maxValue Reported maximum value in image
+ * @param band Search extreme value in image for this band
+ **/
+void ImgRasterGdal::getMinMax(double& minValue, double& maxValue, int band)
+{
+  bool isConstraint=(maxValue>minValue);
+  double minConstraint=minValue;
+  double maxConstraint=maxValue;
+  std::vector<double> lineBuffer(nrOfCol());
+  bool isValid=false;
+  for(int irow=0;irow<nrOfRow();++irow){
+    readData(lineBuffer,irow,band);
+    for(int icol=0;icol<nrOfCol();++icol){
+      if(isNoData(lineBuffer[icol]))
+	continue;
+      if(isValid){
+	if(isConstraint){
+	  if(lineBuffer[icol]<minConstraint)
+	    continue;
+	  if(lineBuffer[icol]>maxConstraint)
+	    continue;
+	}
+	if(lineBuffer[icol]<minValue)
+	  minValue=lineBuffer[icol];
+	if(lineBuffer[icol]>maxValue)
+	  maxValue=lineBuffer[icol];
+      }
+      else{
+	if(isConstraint){
+	  if(lineBuffer[icol]<minConstraint)
+	    continue;
+	  if(lineBuffer[icol]>maxConstraint)
+	    continue;
+	}
+	minValue=lineBuffer[icol];
+	maxValue=lineBuffer[icol];
+	isValid=true;
+      }
+    }
+  }
+  if(!isValid)
+    throw(static_cast<std::string>("Warning: not initialized"));
+}
+
+/**
+ * @param histvector The reported histogram with counts per bin
+ * @param min, max Only calculate histogram for values between min and max. If min>=max, calculate min and max from the image
+ * @param nbin Number of bins used for calculating the histogram. If nbin is 0, the number of bins is  automatically calculated from min and max
+ * @param theBand The band for which to calculate the histogram (start counting from 0)
+ * @param kde Apply kernel density function for a Gaussian basis function
+ * @return number of valid pixels in this dataset for the the selected band
+ **/
+double ImgRasterGdal::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
+  double minValue=0;
+  double maxValue=0;
+      
+  if(min>=max)
+    getMinMax(minValue,maxValue,theBand);
+  else{
+    minValue=min;
+    maxValue=max;
+  }
+  if(min<max&&min>minValue)
+    minValue=min;
+  if(min<max&&max<maxValue)
+    maxValue=max;
+  min=minValue;
+  max=maxValue;
+
+  double sigma=0;
+  if(kde){
+    double meanValue=0;
+    double stdDev=0;
+    GDALProgressFunc pfnProgress;
+    void* pProgressData;
+    GDALRasterBand* rasterBand;
+    rasterBand=getRasterBand(theBand);
+    rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+    //rest minvalue and MaxValue as ComputeStatistics does not account for nodata, scale and offset
+    minValue=min;
+    maxValue=max;
+
+    if(m_scale.size()>theBand){
+      stdDev*=m_scale[theBand];
+    }
+    sigma=1.06*stdDev*pow(getNvalid(theBand),-0.2);
+  }
+
+  double scale=0;
+  if(maxValue>minValue){
+    if(nbin==0)
+      nbin=maxValue-minValue+1;
+    scale=static_cast<double>(nbin-1)/(maxValue-minValue);
+  }
+  else
+    nbin=1;
+  assert(nbin>0);
+  if(histvector.size()!=nbin){
+    histvector.resize(nbin);
+    for(int i=0;i<nbin;histvector[i++]=0);
+  }
+  double nvalid=0;
+  unsigned long int nsample=0;
+  unsigned long int ninvalid=0;
+  std::vector<double> lineBuffer(nrOfCol());
+  for(int irow=0;irow<nrOfRow();++irow){
+    readData(lineBuffer,irow,theBand);
+    for(int icol=0;icol<nrOfCol();++icol){
+      if(isNoData(lineBuffer[icol]))
+        ++ninvalid;
+      else if(lineBuffer[icol]>maxValue)
+        ++ninvalid;
+      else if(lineBuffer[icol]<minValue)
+        ++ninvalid;
+      else if(nbin==1)
+	++histvector[0];
+      else{//scale to [0:nbin]
+	if(sigma>0){
+	  //create kde for Gaussian basis function
+	  //todo: speed up by calculating first and last bin with non-zero contriubtion...
+	  //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
+	  for(int ibin=0;ibin<nbin;++ibin){
+	    double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
+	    double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
+	    histvector[ibin]+=thePdf;
+	    nvalid+=thePdf;
+	  }
+	}
+	else{
+	  int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
+	  assert(theBin>=0);
+	  assert(theBin<nbin);
+	  ++histvector[theBin];
+	  ++nvalid;
+	}
+      // else if(lineBuffer[icol]==maxValue)
+      //   ++histvector[nbin-1];
+      // else
+      //   ++histvector[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*(nbin-1))];
+      }
+    }
+  }
+  // unsigned long int nvalid=nrOfCol()*nrOfRow()-ninvalid;
+  return nvalid;
+}
+
+/**
+ * @param range Sorted vector containing the range of image values
+ * @param band The band for which to calculate the range
+ **/
+void ImgRasterGdal::getRange(std::vector<short>& range, int band)
+{
+  std::vector<short> lineBuffer(nrOfCol());
+  range.clear();
+  for(int irow=0;irow<nrOfRow();++irow){
+    readData(lineBuffer,irow,band);
+    for(int icol=0;icol<nrOfCol();++icol){
+      if(find(range.begin(),range.end(),lineBuffer[icol])==range.end())
+        range.push_back(lineBuffer[icol]);
+    }
+  }
+  sort(range.begin(),range.end());
+}
+
+/**
+ * @param band The band for which to calculate the number of valid pixels
+ * @return number of valid pixels in this dataset for the the selected band
+ **/
+unsigned long int ImgRasterGdal::getNvalid(int band)
+{
+  unsigned long int nvalid=0;
+  if(m_noDataValues.size()){
+    std::vector<double> lineBuffer(nrOfCol());
+    for(int irow=0;irow<nrOfRow();++irow){
+      readData(lineBuffer,irow,band);
+      for(int icol=0;icol<nrOfCol();++icol){
+	if(isNoData(lineBuffer[icol]))
+	  continue;
+	else
+	  ++nvalid;
+      }
+    }
+    return nvalid;
+  }
+  else
+    return(nrOfCol()*nrOfRow());
+}
+
+/**
+ * @param refX, refY Calculated reference pixel position in geo-refererenced coordinates
+ * @param band The band for which to calculate the number of valid pixels
+ **/
+
+void ImgRasterGdal::getRefPix(double& refX, double &refY, int band)
+{
+  std::vector<double> lineBuffer(nrOfCol());
+  double validCol=0;
+  double validRow=0;
+  int nvalidCol=0;
+  int nvalidRow=0;
+  for(int irow=0;irow<nrOfRow();++irow){
+    readData(lineBuffer,irow,band);
+    for(int icol=0;icol<nrOfCol();++icol){
+      // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
+      // if(valid){
+      if(!isNoData(lineBuffer[icol])){
+        validCol+=icol+1;
+        ++nvalidCol;
+        validRow+=irow+1;
+        ++nvalidRow;
+      }
+    }
+  }
+  if(isGeoRef()){
+    //reference coordinate is lower left corner of pixel in center of gravity
+    //we need geo coordinates for exactly this location: validCol(Row)/nvalidCol(Row)-0.5
+    double cgravi=validCol/nvalidCol-0.5;
+    double cgravj=validRow/nvalidRow-0.5;
+    double refpixeli=floor(cgravi);
+    double refpixelj=ceil(cgravj-1);
+    //but image2geo provides location at center of pixel (shifted half pixel right down)
+    image2geo(refpixeli,refpixelj,refX,refY);
+    //refX and refY now refer to center of gravity pixel
+    refX-=0.5*getDeltaX();//shift to left corner
+    refY-=0.5*getDeltaY();//shift to lower left corner
+  }
+  else{
+    refX=floor(validCol/nvalidCol-0.5);//left corner
+    refY=floor(validRow/nvalidRow-0.5);//upper corner
+    //shift to lower left corner of pixel
+    refY+=1;
+  }
+}
+
+//from Writer
+/**
+ * @param row Write a new block for caching this row (if needed)
+ * @param band Band that must be written in cache
+ * @return true if write was successful
+ **/
+bool ImgRasterGdal::writeNewBlock(int row, int band)
+{
+  if(m_gds == NULL){
+    std::string errorString="Error in writeNewBlock";
+    throw(errorString);
+  }
+  //assert(row==m_end)
+  if(m_end[band]>nrOfRow())
+    m_end[band]=nrOfRow();
+  //fetch raster band
+  GDALRasterBand  *poBand;
+  assert(band<nrOfBand()+1);
+  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+  poBand->RasterIO(GF_Write,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
+  m_begin[band]+=m_blockSize;//m_begin points to first line in block that will be written next
+  m_end[band]=m_begin[band]+m_blockSize;//m_end points to last line in block that will be written next
+  return true;//new block was written
+}
+
+// /**
+//  * @param filename Open a raster dataset with this filename
+//  * @param imgSrc Use this source image as a template to copy image attributes
+//  * @param options Creation options
+//  **/
+// void ImgRasterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
+// {
+//   m_ncol=imgSrc.nrOfCol();
+//   m_nrow=imgSrc.nrOfRow();
+//   m_nband=imgSrc.nrOfBand();
+//   m_dataType=imgSrc.getDataType();
+//   setFile(filename,imgSrc,options);
+//   // m_filename=filename;
+//   // m_options=options;
+//   // setCodec(imgSrc);
+// }
+
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param memory Available memory to cache image raster data (in MB)
+ * @param options Creation options
+ **/
+void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options)
+{
+  m_ncol=imgSrc.nrOfCol();
+  m_nrow=imgSrc.nrOfRow();
+  m_nband=imgSrc.nrOfBand();
+  m_dataType=imgSrc.getDataType();
+  setFile(filename,imgSrc,memory,options);
+}
+
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param options Creation options
+ **/
+void ImgRasterGdal::open(const ImgRasterGdal& imgSrc)
+{
+  m_ncol=imgSrc.nrOfCol();
+  m_nrow=imgSrc.nrOfRow();
+  m_nband=imgSrc.nrOfBand();
+  m_dataType=imgSrc.getDataType();
+  initMem(0);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
+}
+
+// /**
+//  * @param filename Open a raster dataset with this filename
+//  * @param ncol Number of columns in image
+//  * @param nrow Number of rows in image
+//  * @param nband Number of bands in image
+//  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+//  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+//  * @param options Creation options
+//  **/
+// void ImgRasterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
+// {
+//   m_ncol = ncol;
+//   m_nrow = nrow;
+//   m_nband = nband;
+//   m_dataType = dataType;
+//   setFile(filename,imageType,options);
+//   // m_filename = filename;
+//   // m_options=options;
+//   // setCodec(imageType);
+// }
+
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param ncol Number of columns in image
+ * @param nrow Number of rows in image
+ * @param nband Number of bands in image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ * @param memory Available memory to cache image raster data (in MB)
+ * @param options Creation options
+ **/
+void ImgRasterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
+{
+  m_ncol = ncol;
+  m_nrow = nrow;
+  m_nband = nband;
+  m_dataType = dataType;
+  setFile(filename,imageType,memory,options);
+}
+
+/**
+ * @param ncol Number of columns in image
+ * @param nrow Number of rows in image
+ * @param nband Number of bands in image
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ **/
+void ImgRasterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
+{
+  m_ncol = ncol;
+  m_nrow = nrow;
+  m_nband = nband;
+  m_dataType = dataType;
+  initMem(0);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
+}
+
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ **/
+void ImgRasterGdal::setCodec(const ImgRasterGdal& imgSrc){
+  GDALAllRegister();
+  GDALDriver *poDriver;
+  poDriver = GetGDALDriverManager()->GetDriverByName(imgSrc.getDriverDescription().c_str());
+  if( poDriver == NULL ){
+    std::string errorString="FileOpenError";
+    throw(errorString);
+  }
+  char **papszMetadata;
+  papszMetadata = poDriver->GetMetadata();
+  //todo: try and catch if CREATE is not supported (as in PNG)
+  assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
+  char **papszOptions=NULL;
+  for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+    papszOptions=CSLAddString(papszOptions,optionIt->c_str());
+
+  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
+  double gt[6];
+  imgSrc.getGeoTransform(gt);
+  if(setGeoTransform(gt)!=CE_None)
+    std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
+  setProjection(imgSrc.getProjection());
+  if(setProjection(imgSrc.getProjection())!=CE_None)
+    std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
+
+  if(m_noDataValues.size()){
+    for(int iband=0;iband<nrOfBand();++iband)
+      GDALSetNoDataValue(m_noDataValues[0],iband);
+  }
+
+  m_gds->SetMetadata(imgSrc.getMetadata() ); 
+  m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
+  std::string versionString="pktools ";
+  versionString+=VERSION;
+  versionString+=" by Pieter Kempeneers";
+  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
+  time_t rawtime;
+  time ( &rawtime );
+
+  time_t tim=time(NULL);
+  tm *now=localtime(&tim);
+  std::ostringstream datestream;
+  //date std::string must be 20 characters long...
+  datestream << now->tm_year+1900;
+  if(now->tm_mon+1<10)
+    datestream << ":0" << now->tm_mon+1;
+  else
+    datestream << ":" << now->tm_mon+1;
+  if(now->tm_mday<10)
+    datestream << ":0" << now->tm_mday;
+  else
+    datestream << ":" << now->tm_mday;
+  if(now->tm_hour<10)
+    datestream << " 0" << now->tm_hour;
+  else
+    datestream << " " << now->tm_hour;
+  if(now->tm_min<10)
+    datestream << ":0" << now->tm_min;
+  else
+    datestream << ":" << now->tm_min;
+  if(now->tm_sec<10)
+    datestream << ":0" << now->tm_sec;
+  else
+    datestream << ":" << now->tm_sec;
+  m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
+  if(imgSrc.getColorTable()!=NULL)
+    setColorTable(imgSrc.getColorTable());
+}
+
+/**
+ * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ **/
+void ImgRasterGdal::setCodec(const std::string& imageType)
+{
+  GDALAllRegister();
+  GDALDriver *poDriver;
+  poDriver = GetGDALDriverManager()->GetDriverByName(imageType.c_str());
+  if( poDriver == NULL ){
+    std::ostringstream s;
+    s << "FileOpenError (" << imageType << ")";
+    throw(s.str());
+  }
+  char **papszMetadata;
+  papszMetadata = poDriver->GetMetadata();
+  //todo: try and catch if CREATE is not supported (as in PNG)
+  assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
+  char **papszOptions=NULL;
+  for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+    papszOptions=CSLAddString(papszOptions,optionIt->c_str());
+  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_dataType,papszOptions);
+  double gt[6];
+  getGeoTransform(gt);
+  if(setGeoTransform(gt)!=CE_None)
+    std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
+  if(setProjection(m_projection)!=CE_None)
+    std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
+  m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
+  std::string versionString="pktools ";
+  versionString+=VERSION;
+  versionString+=" by Pieter Kempeneers";
+  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
+  time_t rawtime;
+  time ( &rawtime );
+
+  time_t tim=time(NULL);
+  tm *now=localtime(&tim);
+  std::ostringstream datestream;
+  //date std::string must be 20 characters long...
+  datestream << now->tm_year+1900;
+  if(now->tm_mon+1<10)
+    datestream << ":0" << now->tm_mon+1;
+  else
+    datestream << ":" << now->tm_mon+1;
+  if(now->tm_mday<10)
+    datestream << ":0" << now->tm_mday;
+  else
+    datestream << ":" << now->tm_mday;
+  if(now->tm_hour<10)
+    datestream << " 0" << now->tm_hour;
+  else
+    datestream << " " << now->tm_hour;
+  if(now->tm_min<10)
+    datestream << ":0" << now->tm_min;
+  else
+    datestream << ":" << now->tm_min;
+  if(now->tm_sec<10)
+    datestream << ":0" << now->tm_sec;
+  else
+    datestream << ":" << now->tm_sec;
+  m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
+}
+
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ **/
+void ImgRasterGdal::setFile(const std::string& filename, const std::string& imageType, unsigned long int memory, const std::vector<std::string>& options)
+{
+  m_filename=filename;
+  m_options=options;
+  setCodec(imageType);
+  if(m_data.empty())
+    initMem(memory);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
+  m_writeMode=true;
+}
+
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
+ **/
+void ImgRasterGdal::setFile(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned long int memory, const std::vector<std::string>& options)
+{
+  m_filename=filename;
+  m_options=options;
+  setCodec(imgSrc);
+  if(m_data.empty())
+    initMem(memory);
+  for(int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+  }
+  m_writeMode=true;
+}
+
+/**
+ * @param metadata Set this metadata when writing the image (if supported byt the driver)
+ **/
+void ImgRasterGdal::setMetadata(char** metadata)
+{
+  if(m_gds)
+    m_gds->SetMetadata(metadata); 
+}
+
+//default projection: ETSR-LAEA
+// std::string ImgRasterGdal::setProjection(void)
+// {
+//   std::string theProjection;
+//   OGRSpatialReference oSRS;
+//   char *pszSRS_WKT = NULL;
+//   //// oSRS.importFromEPSG(3035);
+//   oSRS.SetGeogCS("ETRS89","European_Terrestrial_Reference_System_1989","GRS 1980",6378137,298.2572221010042,"Greenwich",0,"degree",0.0174532925199433);
+//   // cout << setprecision(16) << "major axis: " << oSRS.GetSemiMajor(NULL) << endl;//notice that major axis can be set to a different value than the default to the well known standard corresponding to the name (European_Terrestrial_Reference_System_1989), but that new value, while recognized by GetSemiMajor, will not be written in the geotiff tag!
+//   oSRS.SetProjCS( "ETRS89 / ETRS-LAEA" );
+//   oSRS.SetLAEA(52,10,4321000,3210000);
+//   oSRS.exportToWkt( &pszSRS_WKT );
+//   theProjection=pszSRS_WKT;
+//   CPLFree( pszSRS_WKT );
+//   assert(m_gds);
+//   m_gds->SetProjection(theProjection.c_str());
+//   return(theProjection);
+// }
+
+
+/**
+ * @param filename ASCII file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
+ * @param band band number to set color table (starting counting from 0)
+ **/
+void ImgRasterGdal::setColorTable(const std::string& filename, int band)
+{
+  //todo: fool proof table in file (no checking currently done...)
+  std::ifstream ftable(filename.c_str(),std::ios::in);
+  std::string line;
+//   poCT=new GDALColorTable();
+  GDALColorTable colorTable;
+  short nline=0;
+  while(getline(ftable,line)){
+    ++nline;
+    std::istringstream ist(line);
+    GDALColorEntry sEntry;
+    short id;
+    ist >> id >> sEntry.c1 >> sEntry.c2 >> sEntry.c3 >> sEntry.c4;
+    colorTable.SetColorEntry(id,&sEntry);
+  }
+  if(m_gds)
+    (m_gds->GetRasterBand(band+1))->SetColorTable(&colorTable);
+}
+
+/**
+ * @param colorTable Instance of the GDAL class GDALColorTable
+ * @param band band number to set color table (starting counting from 0)
+ **/
+void ImgRasterGdal::setColorTable(GDALColorTable* colorTable, int band)
+{
+  if(m_gds)
+    (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
+}
+
+// //write an entire image from memory to file
+// bool ImgRasterGdal::writeData(void* pdata, const GDALDataType& dataType, int band){
+//   //fetch raster band
+//   GDALRasterBand  *poBand;
+//   if(band>=nrOfBand()+1){
+//     std::ostringstream s;
+//     s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+//     throw(s.str());
+//   }
+//   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+//   poBand->RasterIO(GF_Write,0,0,nrOfCol(),nrOfRow(),pdata,nrOfCol(),nrOfRow(),dataType,0,0);
+//   return true;
+// }  
+
+/**
+ * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
+ * @param burnValues Values to burn into raster cells (one value for each band)
+ * @param controlOptions special options controlling rasterization (ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG)
+ * "ATTRIBUTE":
+ * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer. 
+ * "CHUNKYSIZE":
+ * The height in lines of the chunk to operate on. The larger the chunk size the less times we need to make a pass through all the shapes. If it is not set or set to zero the default chunk size will be used. Default size will be estimated based on the GDAL cache buffer size using formula: cache_size_bytes/scanline_size_bytes, so the chunk will not exceed the cache.
+ * "ALL_TOUCHED":
+ * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE. 
+ "BURN_VALUE_
+ * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future. 
+ * "MERGE_ALG":
+ * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
+ * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
+ **/
+void ImgRasterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
+  std::vector<int> bands;
+  if(burnValues.empty()&&controlOptions.empty()){
+    std::string errorString="Error: either burn values or control options must be provided";
+    throw(errorString);
+  }
+  for(int iband=0;iband<nrOfBand();++iband)
+    bands.push_back(iband+1);
+  std::vector<OGRLayerH> layers;
+  int nlayer=0;
+
+  std::vector<double> burnBands;//burn values for all bands in a single layer
+  std::vector<double> burnLayers;//burn values for all bands and all layers
+  if(burnValues.size()){
+    burnBands=burnValues;
+    while(burnBands.size()<nrOfBand())
+      burnBands.push_back(burnValues[0]);
+  }
+  for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
+    std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
+    if(layernames.size())
+      if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
+	continue;
+    std::cout << "processing layer " << currentLayername << std::endl;
+    layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
+    ++nlayer;
+    if(burnValues.size()){
+      for(int iband=0;iband<nrOfBand();++iband)
+        burnLayers.insert(burnLayers.end(),burnBands.begin(),burnBands.end());
+    }
+  }
+  void* pTransformArg;
+  GDALProgressFunc pfnProgress=NULL;
+  void* pProgressArg=NULL;
+
+  char **coptions=NULL;
+  for(std::vector<std::string>::const_iterator optionIt=controlOptions.begin();optionIt!=controlOptions.end();++optionIt)
+    coptions=CSLAddString(coptions,optionIt->c_str());
+
+  if(controlOptions.size()){
+    if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
+      std::string errorString(CPLGetLastErrorMsg());
+      throw(errorString);
+    }
+  }
+  else if(burnValues.size()){
+    if(GDALRasterizeLayers( (GDALDatasetH)m_gds,nrOfBand(),&(bands[0]),layers.size(),&(layers[0]),NULL,pTransformArg,&(burnLayers[0]),NULL,pfnProgress,pProgressArg)!=CE_None){
+      std::string errorString(CPLGetLastErrorMsg());
+      throw(errorString);
+    }
+  }
+  else{
+    std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
+    throw(errorString);
+  }
+}
+
+/**
+ * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
+ * @param burnValues Values to burn into raster cells (one value for each band)
+ * @param controlOptions special options controlling rasterization (ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG)
+ * "ATTRIBUTE":
+ * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer. 
+ * "ALL_TOUCHED":
+ * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE. 
+ "BURN_VALUE_FROM":
+ * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future. 
+ * "MERGE_ALG":
+ * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
+ * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
+ **/
+void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
+  if(m_blockSize<nrOfRow()){
+    std::ostringstream s;
+    s << "Error: increase memory to perform rasterize in entirely in buffer (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+    throw(s.str());
+  }
+  if(burnValues.empty()&&controlOptions.empty()){
+    std::string errorString="Error: either burn values or control options must be provided";
+    throw(errorString);
+  }
+
+  std::vector<OGRLayerH> layers;
+  int nlayer=0;
+
+  std::vector<double> burnBands;//burn values for all bands in a single layer
+   if(burnValues.size()){
+    burnBands=burnValues;
+    while(burnBands.size()<nrOfBand())
+      burnBands.push_back(burnValues[0]);
+  }
+  for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
+    std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
+    if(layernames.size())
+      if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
+	continue;
+    std::cout << "processing layer " << currentLayername << std::endl;
+    layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
+    ++nlayer;
+  }
+  void* pTransformArg;
+  GDALProgressFunc pfnProgress=NULL;
+  void* pProgressArg=NULL;
+
+  char **coptions=NULL;
+  for(std::vector<std::string>::const_iterator optionIt=controlOptions.begin();optionIt!=controlOptions.end();++optionIt)
+    coptions=CSLAddString(coptions,optionIt->c_str());
+
+  for(int iband=0;iband<nrOfBand();++iband){
+    double gt[6];
+    getGeoTransform(gt);
+    if(controlOptions.size()){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
+        std::string errorString(CPLGetLastErrorMsg());
+        throw(errorString);
+      }
+    }
+    else if(burnValues.size()){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
+        std::string errorString(CPLGetLastErrorMsg());
+        throw(errorString);
+      }
+    }
+    else{
+      std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
+        throw(errorString);
+    }
+  }
 }

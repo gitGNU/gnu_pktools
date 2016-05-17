@@ -29,7 +29,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include "ogrsf_frmts.h"
 #include "base/Vector2d.h"
-#include "ImgReaderGdal.h"
 
 //--------------------------------------------------------------------------
 class ImgReaderOgr
