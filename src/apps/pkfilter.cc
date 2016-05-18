@@ -39,7 +39,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ## SYNOPSIS
 
 <code>
-  Usage: pkfilter -i input -o ouptut [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]
+  Usage: pkfilter -i input -o output [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]
 </code>
 
 <code>
@@ -214,7 +214,7 @@ pkfilter -i lena.tif -o sobelx.tif -f sobelx -dx 5 -dy 5
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table | 
  | circ   | circular             | bool | false |circular disc kernel for dilation and erosion | 
 
-Usage: pkfilter -i input -o ouptut [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]
+Usage: pkfilter -i input -o output [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]
 
 
 Examples
@@ -343,7 +343,7 @@ int main(int argc,char **argv) {
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkfilter -i input -o ouptut [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]" << endl;
+    cout << "Usage: pkfilter -i input -o output [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
