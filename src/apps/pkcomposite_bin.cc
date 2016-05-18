@@ -1,5 +1,5 @@
 /**********************************************************************
-pkcomposite_app.cc: program to mosaic and composite geo-referenced images
+pkcomposite_bin.cc: program to mosaic and composite geo-referenced images
 Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
@@ -34,7 +34,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ## SYNOPSIS
 
 <code>
-  Usage: pkcomposite_app -i input [-i input]* -o output
+  Usage: pkcomposite -i input [-i input]* -o output
 </code>
 
 <code>
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  appfactory::AppFactory app;
+  app::AppFactory app;
   app.setOptions(argc,argv);
 
   vector<ImgRasterGdal> imgReader(input_opt.size());

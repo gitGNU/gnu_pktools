@@ -22,7 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include "ImgReaderOgr.h"
 #include "ImgWriterOgr.h"
-#include "ImgReaderGdal.h"
+#include "ImgRasterGdal.h"
 #include "cpl_string.h"
 //---------------------------------------------------------------------------
 ImgWriterOgr::ImgWriterOgr(void)
@@ -671,7 +671,7 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
   return getFeatureCount();
 }
 
-int ImgWriterOgr::addData(ImgReaderGdal& imgReader, int theLayer, bool verbose)
+int ImgWriterOgr::addData(ImgRasterGdal& imgReader, int theLayer, bool verbose)
 {
   OGRLayer  *poLayer;
   assert(m_datasource->GetLayerCount()>theLayer);

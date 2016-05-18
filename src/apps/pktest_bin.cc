@@ -79,46 +79,40 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  appfactory::AppFactory app;
+  app::AppFactory app;
+  app.setOption("dx","100");
+  app.setOption("dy","100");
+  
   filter2d::Filter2d filter;
 
-  app.setOptions(argc,argv);
+  vector<ImgRasterGdal> imgVector(1);
+  imgVector[0].open(input_opt[0]);//,GA_ReadOnly,memory_opt[0]);
 
-  vector<ImgRasterGdal> imgReader(1);
-  try{
-    imgReader[0].open(input_opt[0],GA_ReadOnly,memory_opt[0]);
-    for(int iband=0;iband<scale_opt.size();++iband)
-      imgReader[0].setScale(scale_opt[iband],iband);
-    for(int iband=0;iband<offset_opt.size();++iband)
-      imgReader[0].setOffset(offset_opt[iband],iband);
-  }
-  catch(string errorstring){
-    cerr << errorstring << " " << input_opt[0] << endl;
-  }
+  ImgRasterGdal imgRaster;
 
-  ImgRasterGdal imgRaster1;
+  //test
+  app.showOptions();
 
-  app.pkcrop(imgReader,imgRaster1);
-  //todo: try inplace?
-  filter.smooth(imgRaster1,imgRaster1,5);
-  filter.morphology(imgRaster1,imgRaster1,"erode",3,3);
-  filter.morphology(imgRaster1,imgRaster1,"dilate",3,3);
+  app.pkcrop(imgVector,imgRaster);
+  filter.smooth(imgRaster,imgRaster,5);
+  // filter.morphology(imgRaster,imgRaster,"erode",3,3);
+  // filter.morphology(imgRaster,imgRaster,"dilate",3,3);
+
   string imageType;
   if(oformat_opt.size())//default
     imageType=oformat_opt[0];
   else
-    imageType=imgReader[0].getImageType();
+    imageType=imgVector[0].getImageType();
 
   if(projection_opt.size())
-    imgRaster1.setProjectionProj4(projection_opt[0]);
-  else if(imgReader[0].getProjection()!="")
-    imgRaster1.setProjection(imgReader[0].getProjection());
+    imgRaster.setProjectionProj4(projection_opt[0]);
+  else if(imgVector[0].getProjection()!="")
+    imgRaster.setProjection(imgVector[0].getProjection());
 
-  imgRaster1.setFile(output_opt[0],imageType);
+  imgRaster.setFile(output_opt[0],imageType);
 
-  imgReader[0].close();
-
-  imgRaster1.close();
+  imgVector[0].close();
+  imgRaster.close();
   return 0;
 }
   

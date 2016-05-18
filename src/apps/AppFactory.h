@@ -30,28 +30,53 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
 
-namespace appfactory
+namespace app
 {
 
 namespace crule{
   enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
 }
   
-class AppFactory{
+  class AppFactory{
 
-public:
-  AppFactory(){};
-  virtual ~AppFactory(void){};
-  void setOptions(int argc, char* argv[]);
-  //todo: support arguments as list of arguments, class or struct and xml file?
-  bool pkcrop(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
-  bool pkcomposite(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
+  public:
+    AppFactory(void) : m_argc(1), m_argv(std::vector<std::string>(1,"appFactory")){};
+    virtual ~AppFactory(void){};
+    void setOptions(int argc, char* argv[]);
+    ///set bool option (used as flag)
+    void setOption(const std::string &key)
+    {
+      std::ostringstream os;
+      os << "--" << key;;
+      m_argv.push_back(os.str().c_str());
+      ++m_argc;
+    };
+    ///set key value option
+    void setOption(const std::string &key, const std::string &value)
+    {
+      std::ostringstream os;
+      os << "--" << key;
+      m_argv.push_back(os.str());
+      ++m_argc;
+      m_argv.push_back(value);
+      ++m_argc;
+    };
+    void getHelp() {setOption("help");};
+    void clearOptions() {m_argc=1;m_argv.clear();m_argv.push_back("appFactory");};
+    void showOptions() 
+    {
+      for(int iarg=1;iarg<m_argv.size();++iarg)
+        std::cout << m_argv[iarg] << " ";
+      std::cout << std::endl;
+    };
+    bool pkcrop(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
+    bool pkcomposite(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
 
-private:
-  //todo: create member attribute for pointer to memory buffer?
-  int m_argc;
-  std::vector<std::string> m_argv;
-};
+  private:
+    //todo: create member attribute for pointer to memory buffer?
+    int m_argc;
+    std::vector<std::string> m_argv;
+  };
 
 
 }

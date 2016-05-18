@@ -853,6 +853,7 @@ void filter2d::Filter2d::mrf(ImgRasterGdal& input, ImgRasterGdal& output, int di
   }
 }
 
+//todo: perform on ImgRasterGdal directly instead of copying into Vector2d
 void filter2d::Filter2d::shift(ImgRasterGdal& input, ImgRasterGdal& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
 {
   if(!output.isInit())
@@ -1167,6 +1168,7 @@ void filter2d::Filter2d::morphology(ImgRasterGdal& input, ImgRasterGdal& output,
   }
 }
 
+//todo: perform on ImgRasterGdal directly instead of copying into Vector2d
 void filter2d::Filter2d::shadowDsm(ImgRasterGdal& input, ImgRasterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
   if(!output.isInit())
     output.open(input);
@@ -1184,10 +1186,10 @@ void filter2d::Filter2d::dwtForward(ImgRasterGdal& input, ImgRasterGdal& output,
     output.open(input);
   output.setNoData(m_noDataValues);
 
-  Vector2d<float> theBuffer;
+  Vector2d<double> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
-    input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
     std::cout << "filtering band " << iband << std::endl << std::flush;
+    input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
     dwtForward(theBuffer, wavelet_type, family);
     output.writeDataBlock(theBuffer,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
   }

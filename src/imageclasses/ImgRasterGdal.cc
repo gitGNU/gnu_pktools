@@ -1,6 +1,6 @@
 /**********************************************************************
 ImgRasterGdal.cc: class to read raster files using GDAL API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -42,10 +42,11 @@ ImgRasterGdal::ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, c
 
 ImgRasterGdal::~ImgRasterGdal(void)
 {
-  if(m_data.size()&&m_filename.size()){
-    for(int iband=0;iband<m_nband;++iband)
-      free(m_data[iband]);
-  }
+//no need if using smart (stl shared or unique) pointers
+  // if(m_data.size()&&m_filename.size()){
+  //   for(int iband=0;iband<m_nband;++iband)
+  //     free(m_data[iband]);
+  // }
 }
 
 /**
@@ -67,8 +68,9 @@ void ImgRasterGdal::initMem(unsigned long int memory)
   m_data.resize(nrOfBand());
   m_begin.resize(nrOfBand());
   m_end.resize(nrOfBand());
-  for(int iband=0;iband<m_nband;++iband){
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+for(int iband=0;iband<m_nband;++iband){
+//todo: introduce smart pointers
+m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
   }
 }
 
@@ -244,7 +246,6 @@ CPLErr ImgRasterGdal::setGeoTransform(double* gt){
  **/
 void ImgRasterGdal::copyGeoTransform(const ImgRasterGdal& imgSrc)
 {
-  setProjection(imgSrc.getProjection());
   double gt[6];
   imgSrc.getGeoTransform(gt);
   setGeoTransform(gt);
@@ -1067,6 +1068,8 @@ void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSr
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
   m_dataType=imgSrc.getDataType();
+  setProjection(imgSrc.getProjection());
+  copyGeoTransform(imgSrc);
   setFile(filename,imgSrc,memory,options);
 }
 
@@ -1080,6 +1083,8 @@ void ImgRasterGdal::open(const ImgRasterGdal& imgSrc)
   m_nrow=imgSrc.nrOfRow();
   m_nband=imgSrc.nrOfBand();
   m_dataType=imgSrc.getDataType();
+  setProjection(imgSrc.getProjection());
+  copyGeoTransform(imgSrc);
   initMem(0);
   for(int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;

@@ -76,6 +76,8 @@ set(APP_H
 
 set(APP_CC
 	${APP_SRC_DIR}/AppFactory.cc 
+	${APP_SRC_DIR}/pkcrop_lib.cc 
+	${APP_SRC_DIR}/pkcomposite_lib.cc 
 	)
 
 ###############################################################################

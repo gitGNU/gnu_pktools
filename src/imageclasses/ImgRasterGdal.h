@@ -1,6 +1,6 @@
 /**********************************************************************
 ImgRasterGdal.h: class to read raster files using GDAL API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -27,6 +27,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <utility>
+#include <memory>
 #include <assert.h>
 #include "gdal_priv.h"
 #include "base/Vector2d.h"
@@ -176,6 +178,10 @@ public:
   double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
   ///Get the GDAL datatype for this dataset
   GDALDataType getDataType(int band=0) const;
+  ///Get the datapointer
+  void* getDataPointer(int band=0){return(m_data[band]);};
+  //todo: introduce smart pointer instead of void*
+  // std::unique_ptr<void> getDataPointer(int band=0){return(m_data[band]);};
   ///Get the GDAL rasterband for this dataset
   GDALRasterBand* getRasterBand(int band=0) const;
   ///Get the GDAL color table for this dataset as an instance of the GDALColorTable class
@@ -321,7 +327,7 @@ public:
   void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
 
-protected:
+private:
   ///filename of this dataset
   std::string m_filename;
   ///instance of the GDAL dataset of this dataset
@@ -348,7 +354,9 @@ protected:
   ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
   unsigned int m_blockSize;
   ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
-  std::vector<void *> m_data;
+  std::vector<void*> m_data;
+  //todo: use smart pointer
+  //std::vector<std::unique_ptr<void[]> > m_data;
   ///first line that has been read in cache for a specific band
   std::vector<unsigned int> m_begin;
   ///beyond last line read in cache for a specific band
@@ -367,7 +375,6 @@ protected:
   ///We are writing a physical file
   bool m_writeMode;
 
-private:
   //From Reader
   ///Read new block in cache (defined by m_begin and m_end)
   bool readNewBlock(int row, int band);

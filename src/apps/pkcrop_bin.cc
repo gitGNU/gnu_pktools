@@ -1,5 +1,5 @@
 /**********************************************************************
-pkcrop_app.cc: program to mosaic and composite geo-referenced images
+pkcrop_bin.cc: program to mosaic and composite geo-referenced images
 Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  appfactory::AppFactory app;
+  app::AppFactory app;
   app.setOptions(argc,argv);
 
   vector<ImgRasterGdal> imgReader(input_opt.size());
