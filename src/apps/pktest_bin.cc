@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
 
   app.pkcrop(imgVector,imgRaster);
   filter.smooth(imgRaster,imgRaster,5);
-  // filter.morphology(imgRaster,imgRaster,"erode",3,3);
-  // filter.morphology(imgRaster,imgRaster,"dilate",3,3);
+  filter.morphology(imgRaster,imgRaster,"erode",3,3);
+  filter.morphology(imgRaster,imgRaster,"dilate",3,3);
 
   string imageType;
   if(oformat_opt.size())//default

@@ -1059,6 +1059,22 @@ bool ImgRasterGdal::writeNewBlock(int row, int band)
 /**
  * @param filename Open a raster dataset with this filename
  * @param imgSrc Use this source image as a template to copy image attributes
+ * @param options Creation options
+ **/
+void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSrc, const std::vector<std::string>& options)
+{
+  m_ncol=imgSrc.nrOfCol();
+  m_nrow=imgSrc.nrOfRow();
+  m_nband=imgSrc.nrOfBand();
+  m_dataType=imgSrc.getDataType();
+  setProjection(imgSrc.getProjection());
+  copyGeoTransform(imgSrc);
+  setFile(filename,imgSrc,0,options);
+}
+
+/**
+ * @param filename Open a raster dataset with this filename
+ * @param imgSrc Use this source image as a template to copy image attributes
  * @param memory Available memory to cache image raster data (in MB)
  * @param options Creation options
  **/

@@ -296,7 +296,7 @@ public:
   ///Open an image for writing in memory, copying image attributes from a source image.
   void open(const ImgRasterGdal& imgSrc);
   ///Open an image for writing using an external data pointer (not tested yet)
-  void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  // void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the raster dataset
   ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};

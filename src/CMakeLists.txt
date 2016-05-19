@@ -6,6 +6,7 @@ set(FILECLASS_SRC_DIR fileclasses)
 set(IMGCLASS_SRC_DIR imageclasses)
 set(LASCLASS_SRC_DIR lasclasses)
 set(APP_SRC_DIR apps)
+set(SWIG_SRC_DIR swig)
 
 set(BASE_H
 	${BASE_SRC_DIR}/IndexValue.h
@@ -80,6 +81,15 @@ set(APP_CC
 	${APP_SRC_DIR}/pkcomposite_lib.cc 
 	)
 
+set(SWIG_CC
+	${SWIG_SRC_DIR}/ImgRaster_wrap.cc
+	)
+
+set(SWIG_I
+	${SWIG_SRC_DIR}/ImgRaster.i
+	)
+	
+
 ###############################################################################
 
 ###############################################################################
@@ -117,6 +127,9 @@ endif(BUILD_WITH_LIBLAS)
 add_library( ${PKTOOLS_APP_LIB_NAME} ${APP_CC} ${APP_H} )
 target_link_libraries(${PKTOOLS_APP_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} )
 
+if (BUILD_WITH_SWIG)
+  add_library( ${PKTOOLS_SWIG_LIB_NAME} ${SWIG_I} ${SWIG_CC} )
+endif(BUILD_WITH_SWIG)
 ###############################################################################
 
 ###############################################################################
@@ -152,6 +165,15 @@ if (BUILD_WITH_LIBLAS)
         VERSION ${PKTOOLS_LASCLASSES_VERSION}
 	)
 endif(BUILD_WITH_LIBLAS)
+
+if (BUILD_WITH_SWIG)
+SET_TARGET_PROPERTIES(${PKTOOLS_SWIG_LIB_NAME}
+  PROPERTIES
+  SOVERSION ${PKTOOLS_SWIG_VERSION}
+  VERSION ${PKTOOLS_SWIG_VERSION}
+)
+endif(BUILD_WITH_SWIG)
+
 ###############################################################################
 
 ###############################################################################
@@ -162,9 +184,15 @@ install (FILES ${BASE_H} DESTINATION ${PROJECT_INCLUDE_DIR}/base)
 install (FILES ${IMGCLASS_H} DESTINATION ${PROJECT_INCLUDE_DIR}/imageclasses)
 install (FILES ${ALGOR_H} DESTINATION ${PROJECT_INCLUDE_DIR}/algorithms)
 install (FILES ${FILECLASS_H} DESTINATION ${PROJECT_INCLUDE_DIR}/fileclasses)
+install (FILES ${FILECLASS_H} DESTINATION ${PROJECT_INCLUDE_DIR}/fileclasses)
 
 if (BUILD_WITH_LIBLAS)
 install (TARGETS ${PKTOOLS_LASCLASSES_LIB_NAME} DESTINATION lib)
 install (FILES ${LASCLASS_H} DESTINATION ${PROJECT_INCLUDE_DIR}/lasclasses)
 endif(BUILD_WITH_LIBLAS)
+
+if (BUILD_WITH_SWIG)
+install (TARGETS ${PKTOOLS_SWIG_LIB_NAME} DESTINATION lib)
+# todo install ImgRaster.py on system?
+endif(BUILD_WITH_SWIG)
 ###############################################################################

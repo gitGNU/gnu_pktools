@@ -70,10 +70,12 @@ set(PKTOOLS_FILECLASSES_LIB_NAME fileClasses)
 set(PKTOOLS_IMAGECLASSES_LIB_NAME imageClasses)
 set(PKTOOLS_LASCLASSES_LIB_NAME lasClasses)
 set(PKTOOLS_APP_LIB_NAME appClasses)
+set(PKTOOLS_SWIG_LIB_NAME pktoolsSwig)
 
 option (BUILD_SHARED_LIBS "Build with shared library" OFF)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
 set(BUILD_WITH_FANN FALSE CACHE BOOL "Choose if pktools is to be built with fann")
+set(BUILD_WITH_SWIG CACHE BOOL "Choose if pktools is to be built with SWIG support")
 # set(PKTOOLS_WITH_UTILITIES TRUE CACHE BOOL "Choose if pktools utilities should be built")
 set(PKTOOLS_WITH_APPS TRUE CACHE BOOL "Choose if pktools applications should be built")
 
@@ -161,7 +163,7 @@ else()
   # -Weffc++
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pg")
   set(PKTOOLS_COMMON_CXX_FLAGS
-    "-Wall -Wpointer-arith -Wcast-align -Wcast-qual -Wredundant-decls -Wno-long-long")
+    "-I/usr/include/python2.7 -Wall -Wpointer-arith -Wcast-align -Wcast-qual -Wredundant-decls -Wno-long-long")
 
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
