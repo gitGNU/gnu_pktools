@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
       exit(1);
   }
   try{
-    imgReader.open(image_opt[0],GA_ReadOnly,memory_opt[0]);
+    imgReader.open(image_opt[0],memory_opt[0]);
   }
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;

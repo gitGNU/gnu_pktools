@@ -87,7 +87,7 @@ pkstatprofile -i modis_ndvi_2010.tif -o modis_stats_2010.tif -f min -f max
  |class | class | std::string | | class value(s) to use for mode, proportion |
  |nodata | nodata | double | | nodata value(s) |
 
-Usage: pkstatprofile -i input -o ouptut [-f function]*
+Usage: pkstatprofile -i input -o output [-f function]*
 
 **/
 
@@ -133,7 +133,7 @@ int main(int argc,char **argv) {
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkstatprofile -i input -o ouptut [-function]*" << endl;
+    cout << "Usage: pkstatprofile -i input -o output [-function]*" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing

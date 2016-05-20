@@ -76,7 +76,8 @@ public:
   ///constructor opening an image in memory using an external data pointer (not tested yet)
   ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
   //from Reader
-  ImgRasterGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
+  ImgRasterGdal(const std::string& filename, unsigned long int memory=0) : m_writeMode(false) {open(filename, memory);};
+  // ImgRasterGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
   //from Writer
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   ImgRasterGdal(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : m_writeMode(false) {open(filename, imgSrc, memory, options);};
@@ -250,7 +251,8 @@ public:
 
   //From Reader
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
-  void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
+  void open(const std::string& filename, unsigned long int memory=0);
+  // void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
   ///Read a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
   template<typename T> void readData(T& value, int col, int row, int band=0);
   ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
@@ -364,7 +366,8 @@ private:
 
   //From Reader
   ///Set GDAL dataset number of columns, rows, bands and geotransform.
-  void setCodec(const GDALAccess& readMode=GA_ReadOnly);
+  void setCodec();
+  // void setCodec(const GDALAccess& readMode=GA_ReadOnly);
   //From Writer
   ///Register GDAL driver, setting the datatype, imagetype and some metadata
   void setCodec(const std::string& imageType);

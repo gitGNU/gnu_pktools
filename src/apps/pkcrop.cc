@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
   string projectionString;
   for(int iimg=0;iimg<input_opt.size();++iimg){
     try{
-    imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+    imgReader.open(input_opt[iimg],memory_opt[0]);
     }
     catch(string error){
       cerr << "Error: could not open file " << input_opt[iimg] << ": " << error << std::endl;
@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
   if(mask_opt.size()==1){
     try{
       //there is only a single mask
-      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
+      maskReader.open(mask_opt[0],memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
     if(verbose_opt[0])
       cout << "opening image " << input_opt[iimg] << endl;
     try{
-      imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
+      imgReader.open(input_opt[iimg],memory_opt[0]);
     }
     catch(string error){
       cerr << error << std::endl;

@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
   vector<ImgRasterGdal> imgReader(input_opt.size());
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
+      imgReader[ifile].open(input_opt[ifile],memory_opt[0]);
       for(int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
       for(int iband=0;iband<offset_opt.size();++iband)

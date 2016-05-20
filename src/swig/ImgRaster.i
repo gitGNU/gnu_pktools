@@ -1,4 +1,5 @@
 //SWIG interface for ImgRaster
+%include <std_string.i>
 %module ImgRaster
 %{
   #include "ImgRasterGdal.h"
@@ -70,4 +71,4 @@
 /* void *__dso_handle = 0; */
 /* } */
 /* g++ -fPIC -I.. -I../imageclasses -I/usr/include/python2.7 -c ImgRaster_wrap.cc $(python-config --cflags) -o ImgRaster_wrap.o */
-/* g++ -v -nostartfiles -L/usr/local/lib ImgRaster_wrap.o -limageClasses -ldl -lgdal $(python-config --ldflags) -limageClasses -o _ImgRaster.so */
+/* g++ -shared -v -nostartfiles -L/usr/local/lib ImgRaster_wrap.o -limageClasses -ldl -lgdal $(python-config --ldflags) -limageClasses -o _ImgRaster.so */

@@ -286,11 +286,8 @@ int main(int argc,char **argv) {
   gt[4]=0;
   gt[5]=-dy_opt[0];
   outputWriter.setGeoTransform(gt);
-  if(projection_opt.size()){
-    string projectionString=outputWriter.setProjectionProj4(projection_opt[0]);
-    if(verbose_opt[0])
-      cout << "projection: " << projectionString << endl;
-  }
+  if(projection_opt.size())
+    outputWriter.setProjectionProj4(projection_opt[0]);
   if(!outputWriter.isGeoRef())
     cout << "Warning: output image " << output_opt[0] << " is not georeferenced!" << endl;
   if(colorTable_opt.size())

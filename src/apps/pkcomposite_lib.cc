@@ -576,7 +576,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
     try{
       if(verbose_opt[0]>=1)
 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
+      maskReader.open(mask_opt[0],memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);

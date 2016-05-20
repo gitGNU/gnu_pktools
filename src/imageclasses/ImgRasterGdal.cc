@@ -579,13 +579,13 @@ int ImgRasterGdal::pushNoDataValue(double noDataValue)
 //From Reader
 /**
  * @param filename Open a raster dataset with this filename
- * @param readMode Open dataset in ReadOnly or Update mode
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRasterGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
+void ImgRasterGdal::open(const std::string& filename, unsigned long int memory)
+// void ImgRasterGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {
   m_filename = filename;
-  setCodec(readMode);
+  // setCodec(readMode);
   initMem(memory);
   for(int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
@@ -594,21 +594,22 @@ void ImgRasterGdal::open(const std::string& filename, const GDALAccess& readMode
 }
 
 /**
- * @param readMode Open dataset in ReadOnly or Update mode
  **/
-void ImgRasterGdal::setCodec(const GDALAccess& readMode)
+void ImgRasterGdal::setCodec()
+// void ImgRasterGdal::setCodec(const GDALAccess& readMode)
 {
   GDALAllRegister();
   // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #if GDAL_VERSION_MAJOR < 2
   GDALAllRegister();
-  m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
+  m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
+  // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #else
   GDALAllRegister();
-  if(readMode==GA_ReadOnly)
+  // if(readMode==GA_ReadOnly)
     m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY|GDAL_OF_RASTER, NULL, NULL, NULL);
-  else if(readMode==GA_Update)
-    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
+  // else if(readMode==GA_Update)
+  //   m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
 #endif
 
   if(m_gds == NULL){

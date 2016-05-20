@@ -351,7 +351,7 @@ bool AppFactory::pkcrop(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWrit
   if(mask_opt.size()==1){
     try{
       //there is only a single mask
-      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
+      maskReader.open(mask_opt[0],memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);

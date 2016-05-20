@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
   bool init=false;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      imgReader[ifile].open(input_opt[ifile],GA_ReadOnly,memory_opt[0]);
+      imgReader[ifile].open(input_opt[ifile],memory_opt[0]);
       // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
       for(int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
@@ -682,7 +682,7 @@ int main(int argc, char *argv[])
     try{
       if(verbose_opt[0]>=1)
 	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0],GA_ReadOnly,memory_opt[0]);
+      maskReader.open(mask_opt[0],memory_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
