@@ -74,7 +74,7 @@ public:
   ///default constructor
   ImgRasterGdal(void);
   ///constructor opening an image in memory using an external data pointer (not tested yet)
-  ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  //ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
   //from Reader
   ImgRasterGdal(const std::string& filename, unsigned long int memory=0) : m_writeMode(false) {open(filename, memory);};
   // ImgRasterGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
@@ -116,7 +116,7 @@ public:
   };
 
   ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
-  void open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  //void open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the image.
   void close(void);
   ///Get the filename of this dataset
@@ -183,6 +183,8 @@ public:
   GDALDataType getDataType(int band=0) const;
   ///Get the datapointer
   void* getDataPointer(int band=0){return(m_data[band]);};
+  ///free memory os data pointer
+  void freeMem();
   ///Copy data 
   void copyData(void* data, int band=0) const{
     memcpy(data,m_data[band],(GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
@@ -333,7 +335,6 @@ public:
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
   ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
   void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
-
 
 private:
   ///filename of this dataset

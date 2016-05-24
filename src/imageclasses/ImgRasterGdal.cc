@@ -26,7 +26,10 @@ extern "C" {
 #include "ImgRasterGdal.h"
 
 ImgRasterGdal::ImgRasterGdal(void)
-  : m_gds(0), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown), m_writeMode(false){}
+: m_gds(0), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown), m_writeMode(false){
+  //test
+  std::cout << "def constructor" << std::endl;
+}
 
 //not tested yet!!!
 /**
@@ -36,17 +39,17 @@ ImgRasterGdal::ImgRasterGdal(void)
  * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-ImgRasterGdal::ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
-  open(dataPointer,ncol,nrow,nband,dataType);
-}
+// ImgRasterGdal::ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+//   open(dataPointer,ncol,nrow,nband,dataType);
+// }
 
 ImgRasterGdal::~ImgRasterGdal(void)
 {
-//no need if using smart (stl shared or unique) pointers
-  // if(m_data.size()&&m_filename.size()){
-  //   for(int iband=0;iband<m_nband;++iband)
-  //     free(m_data[iband]);
-  // }
+  //test
+  std::cout << "destructor" << std::endl;
+  freeMem();
+  //test
+  std::cout << "freed mem" << std::endl;
 }
 
 /**
@@ -65,13 +68,26 @@ void ImgRasterGdal::initMem(unsigned long int memory)
     m_blockSize=1;
   if(m_blockSize>nrOfRow())
     m_blockSize=nrOfRow();
-  m_data.resize(nrOfBand());
   m_begin.resize(nrOfBand());
   m_end.resize(nrOfBand());
+  freeMem();
+  m_data.resize(nrOfBand());
 for(int iband=0;iband<m_nband;++iband){
 //todo: introduce smart pointers
 m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
   }
+}
+
+/**
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+void ImgRasterGdal::freeMem()
+{
+//no need if using smart (stl shared or unique) pointers
+//  if(m_data.size()&&m_filename.size()){
+  for(int iband=0;iband<m_data.size();++iband)
+    CPLFree(m_data[iband]);
+  m_data.clear();
 }
 
 /**
@@ -110,21 +126,21 @@ ImgRasterGdal ImgRasterGdal::operator=(const ImgRasterGdal& imgSrc)
  * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-void ImgRasterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
-  m_ncol=ncol;
-  m_nrow=nrow;
-  m_nband=nband;
-  m_dataType=dataType;
-  m_data.resize(nband);
-  m_begin.resize(nband);
-  m_end.resize(nband);
-  m_blockSize=nrow;//memory contains entire image and has been read already
-  for(int iband=0;iband<nband;++iband){
-    m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-  }
-}
+// void ImgRasterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+//   m_ncol=ncol;
+//   m_nrow=nrow;
+//   m_nband=nband;
+//   m_dataType=dataType;
+//   m_data.resize(nband);
+//   m_begin.resize(nband);
+//   m_end.resize(nband);
+//   m_blockSize=nrow;//memory contains entire image and has been read already
+//   for(int iband=0;iband<nband;++iband){
+//     m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
+//     m_begin[iband]=0;
+//     m_end[iband]=m_begin[iband]+m_blockSize;
+//   }
+// }
 
 void ImgRasterGdal::close(void)
 {
