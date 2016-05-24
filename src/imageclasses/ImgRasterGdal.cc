@@ -74,6 +74,34 @@ m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol
   }
 }
 
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param copyData Copy data from source image when true
+ **/
+ImgRasterGdal ImgRasterGdal::operator=(const ImgRasterGdal& imgSrc)
+{
+  bool copyData=true;
+  //check for assignment to self (of the form v=v)
+  if(this==&imgSrc)
+     return *this;
+  else{
+    m_ncol=imgSrc.nrOfCol();
+    m_nrow=imgSrc.nrOfRow();
+    m_nband=imgSrc.nrOfBand();
+    m_dataType=imgSrc.getDataType();
+    setProjection(imgSrc.getProjection());
+    copyGeoTransform(imgSrc);
+    initMem(0);
+    for(int iband=0;iband<m_nband;++iband){
+      m_begin[iband]=0;
+      m_end[iband]=m_begin[iband]+m_blockSize;
+      if(copyData)
+        imgSrc.copyData(m_data[iband],iband);
+    }
+    return *this;
+  }
+}
+
 //not tested yet!!!
 /**
  * @paramdataPointer External pointer to which the image data should be written in memory
@@ -585,7 +613,7 @@ void ImgRasterGdal::open(const std::string& filename, unsigned long int memory)
 // void ImgRasterGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {
   m_filename = filename;
-  // setCodec(readMode);
+  setCodec();
   initMem(memory);
   for(int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
@@ -1092,9 +1120,9 @@ void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSr
 
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
- * @param options Creation options
+ * @param copyData Copy data from source image when true
  **/
-void ImgRasterGdal::open(const ImgRasterGdal& imgSrc)
+void ImgRasterGdal::open(const ImgRasterGdal& imgSrc, bool copyData)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -1106,6 +1134,8 @@ void ImgRasterGdal::open(const ImgRasterGdal& imgSrc)
   for(int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
     m_end[iband]=m_begin[iband]+m_blockSize;
+    if(copyData)
+      imgSrc.copyData(m_data[iband],iband);
   }
 }
 

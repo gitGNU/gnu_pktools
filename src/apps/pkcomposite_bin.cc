@@ -135,10 +135,6 @@ FAQ
 Frequently asked questions on pkcomposite can be found \ref faq_pkcomposite "here
 **/
 
-namespace crule{
-  enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
-}
-
 using namespace std;
 
 int main(int argc, char *argv[])

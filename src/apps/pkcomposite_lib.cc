@@ -168,22 +168,22 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
   // ///verbose
   // vector<short> verbose_opt(0,1);
 
-  std::map<std::string, crule::CRULE_TYPE> cruleMap;
+  std::map<std::string, AppFactory::CRULE_TYPE> cruleMap;
   // //initialize cruleMap
   // enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8};
   
-  cruleMap["overwrite"]=crule::overwrite;
-  cruleMap["maxndvi"]=crule::maxndvi;
-  cruleMap["maxband"]=crule::maxband;
-  cruleMap["minband"]=crule::minband;
-  cruleMap["validband"]=crule::validband;
-  cruleMap["mean"]=crule::mean;
-  cruleMap["mode"]=crule::mode;
-  cruleMap["median"]=crule::median;
-  cruleMap["sum"]=crule::sum;
-  cruleMap["maxallbands"]=crule::maxallbands;
-  cruleMap["minallbands"]=crule::minallbands;
-  cruleMap["stdev"]=crule::stdev;
+  cruleMap["overwrite"]=AppFactory::overwrite;
+  cruleMap["maxndvi"]=AppFactory::maxndvi;
+  cruleMap["maxband"]=AppFactory::maxband;
+  cruleMap["minband"]=AppFactory::minband;
+  cruleMap["validband"]=AppFactory::validband;
+  cruleMap["mean"]=AppFactory::mean;
+  cruleMap["mode"]=AppFactory::mode;
+  cruleMap["median"]=AppFactory::median;
+  cruleMap["sum"]=AppFactory::sum;
+  cruleMap["maxallbands"]=AppFactory::maxallbands;
+  cruleMap["minallbands"]=AppFactory::minallbands;
+  cruleMap["stdev"]=AppFactory::stdev;
 
   if(srcnodata_opt.size()){
     while(srcnodata_opt.size()<bndnodata_opt.size())
@@ -337,40 +337,40 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
       if(verbose_opt[0]){
         switch(cruleMap[crule_opt[0]]){
         default:
-        case(crule::overwrite):
+        case(AppFactory::overwrite):
           cout << "Composite rule: overwrite" << endl;
           break;
-        case(crule::maxndvi):
+        case(AppFactory::maxndvi):
           cout << "Composite rule: max ndvi" << endl;
           break;
-        case(crule::maxband):
+        case(AppFactory::maxband):
           cout << "Composite rule: max band" << endl;
           break;
-        case(crule::minband):
+        case(AppFactory::minband):
           cout << "Composite rule: min band" << endl;
           break;
-        case(crule::validband):
+        case(AppFactory::validband):
           cout << "Composite rule: valid band" << endl;
           break;
-        case(crule::mean):
+        case(AppFactory::mean):
           cout << "Composite rule: mean value" << endl;
           break;
-        case(crule::mode):
+        case(AppFactory::mode):
           cout << "Composite rule: max voting (only for byte images)" << endl;
           break;
-        case(crule::median):
+        case(AppFactory::median):
           cout << "Composite rule: median" << endl;
           break;
-        case(crule::stdev):
+        case(AppFactory::stdev):
           cout << "Composite rule: stdev" << endl;
           break;
-        case(crule::sum):
+        case(AppFactory::sum):
           cout << "Composite rule: sum" << endl;
           break;
-        case(crule::minallbands):
+        case(AppFactory::minallbands):
           cout << "Composite rule: minallbands" << endl;
           break;
-        case(crule::maxallbands):
+        case(AppFactory::maxallbands):
           cout << "Composite rule: maxallbands" << endl;
           break;
         }
@@ -492,7 +492,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
   if(verbose_opt[0]){
     std::cout << weight_opt << std::endl;
   }
-  if(cruleMap[crule_opt[0]]==crule::mode){
+  if(cruleMap[crule_opt[0]]==AppFactory::mode){
     nwriteBand=(file_opt[0])? class_opt.size()+1:class_opt.size();
   }
   else
@@ -603,9 +603,9 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
   for(int ifile=0;ifile<imgReader.size();++ifile)
     readBuffer[ifile].resize(imgReader[ifile].nrOfBand());
   statfactory::StatFactory stat;
-  if(cruleMap[crule_opt[0]]==crule::maxndvi)//ndvi
+  if(cruleMap[crule_opt[0]]==AppFactory::maxndvi)//ndvi
     assert(ruleBand_opt.size()==2);
-  if(cruleMap[crule_opt[0]]==crule::mode){//max voting
+  if(cruleMap[crule_opt[0]]==AppFactory::mode){//max voting
     maxBuffer.resize(imgWriter.nrOfCol(),256);//use only byte images for max voting
     for(int iclass=0;iclass<class_opt.size();++iclass)
       assert(class_opt[iclass]<maxBuffer.size());
@@ -631,17 +631,17 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
     imgWriter.image2geo(0,irow,x,y);
 
 
-    if(cruleMap[crule_opt[0]]==crule::mean ||
-       cruleMap[crule_opt[0]]==crule::median ||
-       cruleMap[crule_opt[0]]==crule::sum ||
-       cruleMap[crule_opt[0]]==crule::minallbands ||
-       cruleMap[crule_opt[0]]==crule::maxallbands ||
-       cruleMap[crule_opt[0]]==crule::stdev)
+    if(cruleMap[crule_opt[0]]==AppFactory::mean ||
+       cruleMap[crule_opt[0]]==AppFactory::median ||
+       cruleMap[crule_opt[0]]==AppFactory::sum ||
+       cruleMap[crule_opt[0]]==AppFactory::minallbands ||
+       cruleMap[crule_opt[0]]==AppFactory::maxallbands ||
+       cruleMap[crule_opt[0]]==AppFactory::stdev)
       storeBuffer.resize(nband,ncol);
     for(int icol=0;icol<imgWriter.nrOfCol();++icol){
       writeValid[icol]=false;
       fileBuffer[icol]=0;
-      if(cruleMap[crule_opt[0]]==crule::mode){//max voting
+      if(cruleMap[crule_opt[0]]==AppFactory::mode){//max voting
         for(int iclass=0;iclass<256;++iclass)
           maxBuffer[icol][iclass]=0;
       }
@@ -821,7 +821,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
           if(writeValid[ib]){
             int iband=0;
 	    switch(cruleMap[crule_opt[0]]){
-	    case(crule::maxndvi):{//max ndvi
+	    case(AppFactory::maxndvi):{//max ndvi
               double red_current=writeBuffer[ruleBand_opt[0]][ib];
               double nir_current=writeBuffer[ruleBand_opt[1]][ib];
 	      double ndvi_current=0;
@@ -871,9 +871,9 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
               }
 	      break;
             }
-	    case(crule::maxband):
-            case(crule::minband):
-            case(crule::validband)://max,min,valid band
+	    case(AppFactory::maxband):
+            case(AppFactory::minband):
+            case(AppFactory::validband)://max,min,valid band
               val_current=writeBuffer[ruleBand_opt[0]][ib];
               switch(theResample){
               case(BILINEAR):
@@ -887,7 +887,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
                   upperCol=imgReader[ifile].nrOfCol()-1;
                 val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][ruleBand_opt[0]][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][ruleBand_opt[0]][lowerCol-startCol];
                 val_new*=weight_opt[ifile];
-                if((cruleMap[crule_opt[0]]==crule::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==crule::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==crule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
+                if((cruleMap[crule_opt[0]]==AppFactory::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==AppFactory::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==AppFactory::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
                     val_new=(readCol-0.5-lowerCol)*readBuffer[ifile][iband][upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[ifile][iband][lowerCol-startCol];
                     val_new*=weight_opt[ifile];
@@ -901,7 +901,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
                 readCol=static_cast<int>(readCol);
                 val_new=readBuffer[ifile][ruleBand_opt[0]][readCol-startCol];
                 val_new*=weight_opt[ifile];
-                if((cruleMap[crule_opt[0]]==crule::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==crule::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==crule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
+                if((cruleMap[crule_opt[0]]==AppFactory::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==AppFactory::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==AppFactory::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
                   for(iband=0;iband<nband;++iband){
                     val_new=readBuffer[ifile][iband][readCol-startCol];
                     val_new*=weight_opt[ifile];
@@ -913,7 +913,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
                 break;
               }
 	      break;
-            case(crule::mode)://max voting (only for Byte images)
+            case(AppFactory::mode)://max voting (only for Byte images)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -939,12 +939,12 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
                 break;
 	      }
               break;
-            case(crule::mean)://mean value
-	    case(crule::median)://median value
-	    case(crule::sum)://sum value
-	    case(crule::minallbands)://minimum for each and every band
-	    case(crule::maxallbands)://maximum for each and every band
-	    case(crule::stdev)://maximum for each and every band
+            case(AppFactory::mean)://mean value
+	    case(AppFactory::median)://median value
+	    case(AppFactory::sum)://sum value
+	    case(AppFactory::minallbands)://minimum for each and every band
+	    case(AppFactory::maxallbands)://maximum for each and every band
+	    case(AppFactory::stdev)://maximum for each and every band
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -976,7 +976,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
 	    if(file_opt[0]>1)
 	      fileBuffer[ib]=ifile;
 	      break;
-	    case(crule::overwrite):
+	    case(AppFactory::overwrite):
 	    default:
               switch(theResample){
               case(BILINEAR):
@@ -1012,12 +1012,12 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
             writeValid[ib]=true;//readValid was true
             int iband=0;
 	    switch(cruleMap[crule_opt[0]]){
-            case(crule::mean):
-            case(crule::median):
-            case(crule::sum):
-            case(crule::minallbands):
-            case(crule::maxallbands):
-            case(crule::stdev):
+            case(AppFactory::mean):
+            case(AppFactory::median):
+            case(AppFactory::sum):
+            case(AppFactory::minallbands):
+            case(AppFactory::maxallbands):
+            case(AppFactory::stdev):
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -1046,7 +1046,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
 	    if(file_opt[0]>1)
 	      fileBuffer[ib]=ifile;
 	    break;
-            case(crule::mode):
+            case(AppFactory::mode):
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
@@ -1109,7 +1109,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
       // imgReader.close();
       
     }
-    if(cruleMap[crule_opt[0]]==crule::mode){
+    if(cruleMap[crule_opt[0]]==AppFactory::mode){
       vector<short> classBuffer(imgWriter.nrOfCol());
       if(class_opt.size()>1){
         for(int iclass=0;iclass<class_opt.size();++iclass){
@@ -1150,27 +1150,27 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
         for(int icol=0;icol<imgWriter.nrOfCol();++icol){
 	  try{
 	    switch(cruleMap[crule_opt[0]]){
-	    case(crule::mean):
+	    case(AppFactory::mean):
 	      // writeBuffer[iband][icol]=stat.mean(storeBuffer[bands[iband]][icol]);
 	      writeBuffer[iband][icol]=stat.mean(storeBuffer[iband][icol]);
 	      break;
-	    case(crule::median):
+	    case(AppFactory::median):
 	      // writeBuffer[iband][icol]=stat.median(storeBuffer[bands[iband]][icol]);
 	      writeBuffer[iband][icol]=stat.median(storeBuffer[iband][icol]);
 	      break;
-	    case(crule::sum):
+	    case(AppFactory::sum):
 	      // writeBuffer[iband][icol]=stat.sum(storeBuffer[bands[iband]][icol]);
 	      writeBuffer[iband][icol]=stat.sum(storeBuffer[iband][icol]);
 	      break;
-	    case(crule::minallbands):
+	    case(AppFactory::minallbands):
 	      // writeBuffer[iband][icol]=stat.mymin(storeBuffer[bands[iband]][icol]);
 	      writeBuffer[iband][icol]=stat.mymin(storeBuffer[iband][icol]);
 	      break;
-	    case(crule::maxallbands):
+	    case(AppFactory::maxallbands):
 	      // writeBuffer[iband][icol]=stat.mymax(storeBuffer[bands[iband]][icol]);
 	      writeBuffer[iband][icol]=stat.mymax(storeBuffer[iband][icol]);
 	      break;
-	    case(crule::stdev):
+	    case(AppFactory::stdev):
 	      // writeBuffer[iband][icol]=sqrt(stat.var(storeBuffer[bands[iband]][icol]));
 	      writeBuffer[iband][icol]=sqrt(stat.var(storeBuffer[iband][icol]));
 	      break;

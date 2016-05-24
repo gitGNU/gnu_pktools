@@ -81,8 +81,8 @@ public:
   //from Writer
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   ImgRasterGdal(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : m_writeMode(false) {open(filename, imgSrc, memory, options);};
-  ///constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgRasterGdal(const ImgRasterGdal& imgSrc){open(imgSrc);};
+  ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
+  ImgRasterGdal(const ImgRasterGdal& imgSrc, bool copyData=true){open(imgSrc,copyData);};
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
   ImgRasterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : m_writeMode(true) {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
   ///constructor opening an image for writing in memory, defining all image attributes
@@ -93,6 +93,8 @@ public:
 
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned long int memory);
+  ///assignment operator
+  ImgRasterGdal operator=(const ImgRasterGdal& imgSrc);
   bool isInit(){return m_data.size();};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
   void setScale(double theScale, int band=0){
@@ -181,6 +183,10 @@ public:
   GDALDataType getDataType(int band=0) const;
   ///Get the datapointer
   void* getDataPointer(int band=0){return(m_data[band]);};
+  ///Copy data 
+  void copyData(void* data, int band=0) const{
+    memcpy(data,m_data[band],(GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+  };
   //todo: introduce smart pointer instead of void*
   // std::unique_ptr<void> getDataPointer(int band=0){return(m_data[band]);};
   ///Get the GDAL rasterband for this dataset
@@ -296,7 +302,7 @@ public:
   ///Open an image for writing in memory, defining image attributes.
   void open(int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(const ImgRasterGdal& imgSrc);
+  void open(const ImgRasterGdal& imgSrc,  bool copyData=false);
   ///Open an image for writing using an external data pointer (not tested yet)
   // void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the raster dataset

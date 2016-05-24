@@ -85,18 +85,34 @@ int main(int argc, char *argv[])
   
   filter2d::Filter2d filter;
 
+  //this is working
   vector<ImgRasterGdal> imgVector(1);
-  imgVector[0].open(input_opt[0]);//,GA_ReadOnly,memory_opt[0]);
+  try{
+    cout  <<  "debug12"<< endl;
+    imgVector[0].open(input_opt[0]);
+  }
+  catch(string  errorString){
+    cout  <<  errorString  << endl;
+  }
+
+  //this is not working!!!
+  // vector<ImgRasterGdal> imgVector;
+  // try{
+  //   ImgRasterGdal inputImg(input_opt[0]);
+  //   //the following line results in a segfault
+  //   imgVector.push_back(inputImg);
+  // }
+  // catch(string  errorString){
+  //   cout  <<  errorString  << endl;
+  // }
 
   ImgRasterGdal imgRaster;
 
-  //test
   app.showOptions();
-
   app.pkcrop(imgVector,imgRaster);
   filter.smooth(imgRaster,imgRaster,5);
-  filter.morphology(imgRaster,imgRaster,"erode",3,3);
-  filter.morphology(imgRaster,imgRaster,"dilate",3,3);
+  //  filter.morphology(imgRaster,imgRaster,"erode",3,3);
+  //  filter.morphology(imgRaster,imgRaster,"dilate",3,3);
 
   string imageType;
   if(oformat_opt.size())//default

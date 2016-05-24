@@ -58,12 +58,11 @@ extern "C" {
 namespace filter2d
 {
   enum FILTER_TYPE { median=100, var=101 , min=102, max=103, sum=104, mean=105, minmax=106, dilate=107, erode=108, close=109, open=110, homog=111, sobelx=112, sobely=113, sobelxy=114, sobelyx=115, smooth=116, density=117, mode=118, mixed=119, threshold=120, ismin=121, ismax=122, heterog=123, order=124, stdev=125, mrf=126, dwt=127, dwti=128, dwt_cut=129, scramble=130, shift=131, linearfeature=132, smoothnodata=133, countid=134, dwt_cut_from=135, savgolay=136, percentile=137, proportion=138, nvalid=139, sauvola=140};
-
-  enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   
 class Filter2d
 {
 public:
+  enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };//bicubic not supported yet...
   Filter2d(void);
   Filter2d(const Vector2d<double> &taps);
   virtual ~Filter2d(){};
@@ -121,7 +120,7 @@ public:
   template<class T> unsigned long int dsm2dtm_swne(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
   void shadowDsm(ImgRasterGdal& input, ImgRasterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
-  void dwt_texture(ImgRasterGdal& input, ImgRasterGdal& output, int dim, int scale, int down=1, int iband=0, bool verbose=false);
+  //  void dwt_texture(ImgRasterGdal& input, ImgRasterGdal& output, int dim, int scale, int down=1, int iband=0, bool verbose=false);
   void shift(ImgRasterGdal& input, ImgRasterGdal& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
   template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=NEAR, bool verbose=false);
   void linearFeature(const Vector2d<float>& input, std::vector< Vector2d<float> >& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, bool verbose=false);

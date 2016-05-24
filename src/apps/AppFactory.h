@@ -32,13 +32,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace app
 {
-
-namespace crule{
-  enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
-}
   
   class AppFactory{
 
+  enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
+  
   public:
     AppFactory(void) : m_argc(1), m_argv(std::vector<std::string>(1,"appFactory")){};
     virtual ~AppFactory(void){};

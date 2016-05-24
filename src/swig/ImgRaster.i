@@ -1,13 +1,14 @@
 //SWIG interface for ImgRaster
 %include <std_string.i>
-%module ImgRaster
+%module pktools
 %{
   #include "ImgRasterGdal.h"
+  #include "AppFactory.h"
   %}
 
 //Parse the header file
 %include "ImgRasterGdal.h"
-
+%include "AppFactory.h"
 // Instantiate some templates
 %template(getGDALDataType_char) getGDALDataType<char>;
 %template(getGDALDataType_uchar) getGDALDataType<unsigned char>;
