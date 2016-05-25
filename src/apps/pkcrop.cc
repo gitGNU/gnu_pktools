@@ -23,8 +23,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <list>
 #include <iostream>
 #include <algorithm>
-#include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgReaderGdal.h"
+//#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Optionpk.h"
 #include "algorithms/Egcs.h"
@@ -89,7 +89,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | off    | offset               | double |       |output=scale*input+offset | 
  | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
  | align  | align                | bool  |       |Align output bounding box to input image | 
- | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -246,8 +246,8 @@ int main(int argc, char *argv[])
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  ImgReaderGdal imgReader;
-  ImgWriterGdal imgWriter;
+  ImgRasterGdal imgReader;
+  ImgRasterGdal imgWriter;
   //open input images to extract number of bands and spatial resolution
   int ncropband=0;//total number of bands to write
   double dx=0;
@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
   int ncropcol=0;
   int ncroprow=0;
 
-  ImgWriterGdal maskWriter;
+  ImgRasterGdal maskWriter;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     if(mask_opt.size()){
       string errorString="Error: can only either mask or extent extent with cutline, not both";
@@ -428,7 +428,7 @@ int main(int argc, char *argv[])
       ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
       ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
       //todo: produce unique name
-      maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff",option_opt);
+      maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff");
       double gt[6];
       gt[0]=ulx_opt[0];
       gt[1]=dx;
@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
     mask_opt.clear();
     mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgReaderGdal maskReader;
+  ImgRasterGdal maskReader;
   if(mask_opt.size()==1){
     try{
       //there is only a single mask
@@ -627,9 +627,9 @@ int main(int argc, char *argv[])
       try{
         imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
 	if(nodata_opt.size()){
-	  imgWriter.setNoData(nodata_opt);
-	  // for(int iband=0;iband<ncropband;++iband)
-	  //   imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
+	  // imgWriter.setNoData(nodata_opt);
+	  for(int iband=0;iband<ncropband;++iband)
+	    imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
 	}
       }
       catch(string errorstring){
@@ -775,6 +775,8 @@ int main(int argc, char *argv[])
                 bool valid=true;
 		double geox=0;
 		double geoy=0;
+                //test
+                bool mydebug=false;
                 if(mask_opt.size()){
 		  //read mask
 		  double colMask=0;
@@ -782,6 +784,9 @@ int main(int argc, char *argv[])
 
 		  imgWriter.image2geo(icol,irow,geox,geoy);
 		  maskReader.geo2image(geox,geoy,colMask,rowMask);
+                  //test
+                  if(geox>510680&&geox<510690&&geoy>296620&&geoy<296630)
+                    mydebug=true;
 		  colMask=static_cast<int>(colMask);
 		  rowMask=static_cast<int>(rowMask);
 		  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
@@ -801,15 +806,32 @@ int main(int argc, char *argv[])
 		      }
 		      oldRowMask=rowMask;
 		    }
+                    //test
+                    if(mydebug){
+                      cout << "lineMask: " << endl;
+                      for(int ii=0;ii<lineMask.size();++ii)
+                        cout << lineMask[ii] << " " << endl;
+                      cout << " " << endl;
+                    }
                     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
                       if(lineMask[colMask]==msknodata_opt[ivalue]){
                         valid=false;
+                        //test
+                        std::cout << "not valid" << std::endl;
 			if(nodata_opt.size()>ivalue)
 			  nodataValue=nodata_opt[ivalue];
                       }
                     }
 		  }
 		}
+                //test
+                if(mydebug){
+                  std::cout << "nodataValue=" << nodataValue << std::endl;
+                  if(valid)
+                    std::cout << "valid" << std::endl;
+                  else
+                    std::cout << "not valid" << std::endl;
+                }
                 if(!valid)
                   writeBuffer.push_back(nodataValue);
                 else{

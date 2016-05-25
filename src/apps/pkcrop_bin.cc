@@ -87,7 +87,7 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | off    | offset               | double |       |output=scale*input+offset | 
  | nodata | nodata               | float |       |Nodata value to put in image if out of bounds. | 
  | align  | align                | bool  |       |Align output bounding box to input image | 
- | mem    | mem                  | unsigned long int | 1000 |Buffer size (in MB) to read image data blocks in memory | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
  | d      | description          | std::string |       |Set image description | 
 
 Examples

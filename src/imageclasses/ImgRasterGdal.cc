@@ -27,8 +27,6 @@ extern "C" {
 
 ImgRasterGdal::ImgRasterGdal(void)
 : m_gds(0), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown), m_writeMode(false){
-  //test
-  std::cout << "def constructor" << std::endl;
 }
 
 //not tested yet!!!
@@ -45,11 +43,7 @@ ImgRasterGdal::ImgRasterGdal(void)
 
 ImgRasterGdal::~ImgRasterGdal(void)
 {
-  //test
-  std::cout << "destructor" << std::endl;
   freeMem();
-  //test
-  std::cout << "freed mem" << std::endl;
 }
 
 /**
@@ -72,9 +66,9 @@ void ImgRasterGdal::initMem(unsigned long int memory)
   m_end.resize(nrOfBand());
   freeMem();
   m_data.resize(nrOfBand());
-for(int iband=0;iband<m_nband;++iband){
-//todo: introduce smart pointers
-m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+  for(int iband=0;iband<m_nband;++iband){
+    //todo: introduce smart pointers
+    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
   }
 }
 
@@ -94,26 +88,14 @@ void ImgRasterGdal::freeMem()
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-ImgRasterGdal ImgRasterGdal::operator=(const ImgRasterGdal& imgSrc)
+ImgRasterGdal& ImgRasterGdal::operator=(const ImgRasterGdal& imgSrc)
 {
   bool copyData=true;
   //check for assignment to self (of the form v=v)
   if(this==&imgSrc)
      return *this;
   else{
-    m_ncol=imgSrc.nrOfCol();
-    m_nrow=imgSrc.nrOfRow();
-    m_nband=imgSrc.nrOfBand();
-    m_dataType=imgSrc.getDataType();
-    setProjection(imgSrc.getProjection());
-    copyGeoTransform(imgSrc);
-    initMem(0);
-    for(int iband=0;iband<m_nband;++iband){
-      m_begin[iband]=0;
-      m_end[iband]=m_begin[iband]+m_blockSize;
-      if(copyData)
-        imgSrc.copyData(m_data[iband],iband);
-    }
+    open(imgSrc,copyData);
     return *this;
   }
 }
@@ -204,10 +186,12 @@ CPLErr ImgRasterGdal::setProjectionProj4(const std::string& projection)
 CPLErr ImgRasterGdal::setProjection(const std::string& projection)
 {
   m_projection=projection;
-  if(m_gds)
+  if(m_gds){
     return(m_gds->SetProjection(projection.c_str()));
-  else
+  }
+  else{
     return(CE_Failure);
+  }
 }
 
 /**
@@ -1146,12 +1130,20 @@ void ImgRasterGdal::open(const ImgRasterGdal& imgSrc, bool copyData)
   m_dataType=imgSrc.getDataType();
   setProjection(imgSrc.getProjection());
   copyGeoTransform(imgSrc);
+  imgSrc.getNoDataValues(m_noDataValues);
+  imgSrc.getScale(m_scale);
+  imgSrc.getOffset(m_offset);
+  m_writeMode=false;
   initMem(0);
   for(int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
     m_end[iband]=m_begin[iband]+m_blockSize;
     if(copyData)
       imgSrc.copyData(m_data[iband],iband);
+  }
+  if(imgSrc.getFileName()!=""){
+    m_filename=imgSrc.getFileName();
+    std::cout << "Warning: dataset not opened, open dataset manually" << std::endl;
   }
 }
 

@@ -30,136 +30,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "AppFactory.h"
 using namespace std;
 
-#include <stdlib.h>
-#include <string.h>
-#define MYSIZE 1000
-
-class ImgRasterGdalTest
-{
-public:
-
-	ImgRasterGdalTest(void)
-          : m_gds(0), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown), m_writeMode(false)
-
-	{
-	}
-
-
-	ImgRasterGdalTest(int number)
-	{
-		Open();
-	}
-
-
-	ImgRasterGdalTest(const ImgRasterGdalTest& imgSrc, bool copyData = true)
-	{
-		imgSrc.copyData(m_data);
-	}
-
-	
-	void copyData(std::vector<void*> &dst) const
-	{
-		dst.resize(m_data.size());
-		for (unsigned int i = 0;i<m_data.size();++i)
-		{
-			dst[i] = malloc(MYSIZE);
-			memcpy(dst[i], m_data[i], MYSIZE);
-		}
-	}
-
-
-	~ImgRasterGdalTest(void)
-	{
-		Reset();
- 	}
-
-	void Reset()
-	{
-		for (std::vector<void *>::iterator it = m_data.begin(); it != m_data.end(); ++it)
-		{
-			free((*it));
-		}
-		m_data.clear();
-	}
-
-	void Open()
-	{
-		Reset();
-                m_data.resize(4);
-                for(int iband=0;iband<m_data.size();++iband)
-                  m_data[iband]=(void*)(malloc(MYSIZE));
-	}
-
-	ImgRasterGdalTest operator=(const ImgRasterGdalTest& imgSrc)
-	{
-		if (this == &imgSrc)
-			return *this;
-		else{
-			Reset();
-			imgSrc.copyData(m_data);
-		}
-	
-		return *this;
-	}
-
-
-
-public:
-  ///filename of this dataset
-  std::string m_filename;
-  ///instance of the GDAL dataset of this dataset
-  GDALDataset *m_gds;
-  ///number of columns in this dataset
-  int m_ncol;
-  ///number of rows in this dataset
-  int m_nrow;
-  ///number of bands in this dataset
-  int m_nband;
-  ///GDAL data type for this dataset
-  GDALDataType m_dataType;
-  ///geotransform information of this dataset
-  double m_gt[6];
-  //projection string in wkt format
-  std::string m_projection;
-  ///no data values for this dataset
-  std::vector<double> m_noDataValues;
-  ///Vector containing the scale factor to be applied (one scale value for each band)
-  std::vector<double> m_scale;
-  ///Vector containing the offset factor to be applied (one offset value for each band)
-  std::vector<double> m_offset;
-
-  ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
-  unsigned int m_blockSize;
-  ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
-  std::vector<void*> m_data;
-  //todo: use smart pointer
-  //std::vector<std::unique_ptr<void[]> > m_data;
-  ///first line that has been read in cache for a specific band
-  std::vector<unsigned int> m_begin;
-  ///beyond last line read in cache for a specific band
-  std::vector<unsigned int> m_end;
-  //From Reader
-  ///Set GDAL dataset number of columns, rows, bands and geotransform.
-  void setCodec();
-  // void setCodec(const GDALAccess& readMode=GA_ReadOnly);
-  //From Writer
-  ///Register GDAL driver, setting the datatype, imagetype and some metadata
-  void setCodec(const std::string& imageType);
-  ///Register GDAL driver, setting the datatype, imagetype and some metadata
-  void setCodec(const ImgRasterGdal& ImgSrc);
-  ///Create options
-  std::vector<std::string> m_options;
-  ///We are writing a physical file
-  bool m_writeMode;
-
-  //From Reader
-  ///Read new block in cache (defined by m_begin and m_end)
-  bool readNewBlock(int row, int band);
-  //From Writer
-  ///Write new block from cache (defined by m_begin and m_end)
-  bool writeNewBlock(int row, int band);
-};
-
 int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
@@ -214,11 +84,9 @@ int main(int argc, char *argv[])
   app.setOption("dy","100");
   
   filter2d::Filter2d filter;
-
-  //this is working
+  //  this is working
   // vector<ImgRasterGdal> imgVector(1);
   // try{
-  //   cout  <<  "debug12"<< endl;
   //   imgVector[0].open(input_opt[0]);
   // }
   // catch(string  errorString){
@@ -229,36 +97,39 @@ int main(int argc, char *argv[])
   vector<ImgRasterGdal> imgVector;
   try{
     ImgRasterGdal inputImg;
-    //ImgRasterGdal inputImg(input_opt[0]);
-    //the following line results in a segfault
     imgVector.push_back(inputImg);
+    imgVector[0].open(input_opt[0]);
+
   }
   catch(string  errorString){
     cout  <<  errorString  << endl;
   }
+  double theMin=0;
+  double theMax=0;
+  imgVector[0].getMinMax(theMin,theMax,0);
+  cout << "min, max: " << theMin << ", " << theMax << endl;
+  ImgRasterGdal imgRaster;
+  app.showOptions();
+  app.pkcrop(imgVector,imgRaster);
+  filter.smooth(imgRaster,imgRaster,5);
+  // filter.morphology(imgRaster,imgRaster,"erode",3,3);
+  // filter.morphology(imgRaster,imgRaster,"dilate",3,3);
 
-  //ImgRasterGdal imgRaster;
-  //  app.showOptions();
-  //app.pkcrop(imgVector,imgRaster);
-  //filter.smooth(imgRaster,imgRaster,5);
-  //  filter.morphology(imgRaster,imgRaster,"erode",3,3);
-  //  filter.morphology(imgRaster,imgRaster,"dilate",3,3);
-
-  // string imageType;
-  // if(oformat_opt.size())//default
-  //   imageType=oformat_opt[0];
-  // else
-  //   imageType=imgVector[0].getImageType();
+  string imageType;
+  if(oformat_opt.size())//default
+    imageType=oformat_opt[0];
+  else
+    imageType=imgVector[0].getImageType();
 
   // if(projection_opt.size())
   //   imgRaster.setProjectionProj4(projection_opt[0]);
   // else if(imgVector[0].getProjection()!="")
   //   imgRaster.setProjection(imgVector[0].getProjection());
 
-  // imgRaster.setFile(output_opt[0],imageType);
+  imgRaster.setFile(output_opt[0],imageType);
+  imgRaster.close();
 
-  // imgVector[0].close();
-  // imgRaster.close();
+  imgVector[0].close();
   return 0;
 }
   

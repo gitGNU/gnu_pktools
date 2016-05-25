@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include "imageclasses/ImgReaderOgr.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
@@ -46,7 +47,7 @@ bool AppFactory::pkcrop(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWrit
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",1000,1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -642,6 +643,8 @@ bool AppFactory::pkcrop(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWrit
                 bool valid=true;
 		double geox=0;
 		double geoy=0;
+                //test
+                bool mydebug=false;
                 if(mask_opt.size()){
 		  //read mask
 		  double colMask=0;
@@ -649,6 +652,9 @@ bool AppFactory::pkcrop(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWrit
 
 		  imgWriter.image2geo(icol,irow,geox,geoy);
 		  maskReader.geo2image(geox,geoy,colMask,rowMask);
+                  //test
+                  if(geox>510680&&geox<510690&&geoy>296620&&geoy<296630)
+                    mydebug=true;
 		  colMask=static_cast<int>(colMask);
 		  rowMask=static_cast<int>(rowMask);
 		  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
@@ -677,6 +683,14 @@ bool AppFactory::pkcrop(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWrit
                     }
 		  }
 		}
+                //test
+                if(mydebug){
+                  std::cout << "nodataValue=" << nodataValue << std::endl;
+                  if(valid)
+                    std::cout << "valid" << std::endl;
+                  else
+                    std::cout << "not valid" << std::endl;
+                }
                 if(!valid)
                   writeBuffer.push_back(nodataValue);
                 else{

@@ -76,17 +76,19 @@ public:
   ///constructor opening an image in memory using an external data pointer (not tested yet)
   //ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
   //from Reader
-  ImgRasterGdal(const std::string& filename, unsigned long int memory=0) : m_writeMode(false) {open(filename, memory);};
+  ImgRasterGdal(const std::string& filename, unsigned long int memory=0) : ImgRasterGdal() {open(filename, memory);};
   // ImgRasterGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
   //from Writer
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
-  ImgRasterGdal(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : m_writeMode(false) {open(filename, imgSrc, memory, options);};
+  ImgRasterGdal(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRasterGdal() {open(filename, imgSrc, memory, options);};
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgRasterGdal(const ImgRasterGdal& imgSrc, bool copyData=true){open(imgSrc,copyData);};
+  ImgRasterGdal(const ImgRasterGdal& imgSrc, bool copyData=true) : ImgRasterGdal() {
+    open(imgSrc,copyData);
+  };
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
-  ImgRasterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : m_writeMode(true) {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
+  ImgRasterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRasterGdal() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgRasterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType) : m_writeMode(false) {open(ncol, nrow, nband, dataType);};
+  ImgRasterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType) : ImgRasterGdal() {open(ncol, nrow, nband, dataType);};
 
   ///destructor
   ~ImgRasterGdal(void);
@@ -94,7 +96,7 @@ public:
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned long int memory);
   ///assignment operator
-  ImgRasterGdal operator=(const ImgRasterGdal& imgSrc);
+  ImgRasterGdal& operator=(const ImgRasterGdal& imgSrc);
   bool isInit(){return m_data.size();};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
   void setScale(double theScale, int band=0){
@@ -157,6 +159,10 @@ public:
   double getLrx() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lrx);};
   ///Get the lower right corner y (georeferenced) coordinate of this dataset
   double getLry() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lry);};
+  ///Get the scale as a standard template library (stl) vector
+  int getScale(std::vector<double>& scale) const {scale=m_scale;};
+  ///Get the offset as a standard template library (stl) vector
+  int getOffset(std::vector<double>& offset) const {offset=m_offset;};
   ///Get the no data values of this dataset as a standard template library (stl) vector
   int getNoDataValues(std::vector<double>& noDataValues) const;
   ///Check if value is nodata in this dataset
