@@ -118,10 +118,10 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
 
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkcrop -i input -o output" << endl;
-    cout << endl;
-    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
-    exit(0);//help was invoked, stop processing
+    std::ostringstream helpStream;
+    helpStream << "Usage: pkcrop -i input -o output" << std::endl;
+    helpStream << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    throw(helpStream.str());//help was invoked, stop processing
   }
   // if(input_opt.empty()){
   if(imgReader.empty()){

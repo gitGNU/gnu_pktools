@@ -22,9 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include "base/Optionpk.h"
 #include "base/Vector2d.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgUpdaterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "algorithms/StatFactory.h"
 
 /******************************************************************************/
@@ -81,6 +79,7 @@ The utilty pkkalman will complement a time series of observations (option -obs) 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
  | v      | verbose              | short | 0     |verbose mode when positive | 
 
 Examples
@@ -123,6 +122,7 @@ int main(int argc,char **argv) {
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff",2);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0);
 
   observationmask_opt.setHide(1);
@@ -143,6 +143,7 @@ int main(int argc,char **argv) {
   otype_opt.setHide(1);
   oformat_opt.setHide(1);
   option_opt.setHide(1);
+  memory_opt.setHide(1);
   verbose_opt.setHide(1);
   gain_opt.setHide(2);
 
@@ -178,6 +179,7 @@ int main(int argc,char **argv) {
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -258,14 +260,14 @@ int main(int argc,char **argv) {
 
   statfactory::StatFactory stat;
   stat.setNoDataValues(modnodata_opt);
-  ImgReaderGdal imgReaderModel1;
-  ImgReaderGdal imgReaderModel2;
-  ImgReaderGdal imgReaderModel1Mask;
-  ImgReaderGdal imgReaderModel2Mask;
-  ImgReaderGdal imgReaderObs;
-  ImgReaderGdal imgReaderObsMask;
+  ImgRaster imgReaderModel1;
+  ImgRaster imgReaderModel2;
+  ImgRaster imgReaderModel1Mask;
+  ImgRaster imgReaderModel2Mask;
+  ImgRaster imgReaderObs;
+  ImgRaster imgReaderObsMask;
   //test
-  ImgWriterGdal imgWriterGain;
+  ImgRaster imgWriterGain;
 
   imgReaderModel1.open(model_opt[0]);
   imgReaderModel1.setNoData(modnodata_opt);
@@ -401,20 +403,20 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	cout << "Opening image " << outputfw_opt[0] << " for writing " << endl << flush;
     
-      ImgWriterGdal imgWriterEst;
-      ImgWriterGdal imgWriterUncert;
-      imgWriterEst.open(outputfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
+      ImgRaster imgWriterEst;
+      ImgRaster imgWriterUncert;
+      imgWriterEst.open(outputfw_opt[0],ncol,nrow,nmodel,theType,imageType,memory_opt[0],option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
       imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
-      imgWriterUncert.open(uncertfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
+      imgWriterUncert.open(uncertfw_opt[0],ncol,nrow,nmodel,theType,imageType,memory_opt[0],option_opt);
       imgWriterUncert.setProjectionProj4(projection_opt[0]);
       imgWriterUncert.setGeoTransform(geotransform);
 
       try{
 	//test
 	if(gain_opt.size()){
-	  imgWriterGain.open(gain_opt[0],ncol,nrow,nmodel,GDT_Float64,imageType,option_opt);
+	  imgWriterGain.open(gain_opt[0],ncol,nrow,nmodel,GDT_Float64,imageType,memory_opt[0],option_opt);
 	  imgWriterGain.setProjectionProj4(projection_opt[0]);
 	  imgWriterGain.setGeoTransform(geotransform);
 	  imgWriterGain.GDALSetNoDataValue(obsnodata_opt[0]);
@@ -709,8 +711,8 @@ int main(int argc,char **argv) {
       imgWriterEst.close();
       imgWriterUncert.close();
 
-      ImgUpdaterGdal imgUpdaterEst;
-      ImgUpdaterGdal imgUpdaterUncert;
+      ImgRaster imgUpdaterEst;
+      ImgRaster imgUpdaterUncert;
       for(int modindex=1;modindex<nmodel;++modindex){
 	imgUpdaterEst.open(outputfw_opt[0]);
 	imgUpdaterEst.setNoData(obsnodata_opt);
@@ -1065,13 +1067,13 @@ int main(int argc,char **argv) {
       if(verbose_opt[0])
 	cout << "Opening image " << outputbw_opt[0] << " for writing " << endl;
 
-      ImgWriterGdal imgWriterEst;
-      ImgWriterGdal imgWriterUncert;
-      imgWriterEst.open(outputbw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
+      ImgRaster imgWriterEst;
+      ImgRaster imgWriterUncert;
+      imgWriterEst.open(outputbw_opt[0],ncol,nrow,nmodel,theType,imageType,memory_opt[0],option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
       imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
-      imgWriterUncert.open(uncertbw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
+      imgWriterUncert.open(uncertbw_opt[0],ncol,nrow,nmodel,theType,imageType,memory_opt[0],option_opt);
       imgWriterUncert.setProjectionProj4(projection_opt[0]);
       imgWriterUncert.setGeoTransform(geotransform);
 
@@ -1374,8 +1376,8 @@ int main(int argc,char **argv) {
       imgWriterEst.close();
       imgWriterUncert.close();
 
-      ImgUpdaterGdal imgUpdaterEst;
-      ImgUpdaterGdal imgUpdaterUncert;
+      ImgRaster imgUpdaterEst;
+      ImgRaster imgUpdaterUncert;
       for(int modindex=nmodel-2;modindex>=0;--modindex){
 	imgUpdaterEst.open(outputbw_opt[0]);
 	imgUpdaterEst.setNoData(obsnodata_opt);
@@ -1728,10 +1730,10 @@ int main(int argc,char **argv) {
     cout << "Running smooth model" << endl;
     obsindex=0;
 
-    ImgReaderGdal imgReaderForward(outputfw_opt[0]);
-    ImgReaderGdal imgReaderBackward(outputbw_opt[0]);
-    ImgReaderGdal imgReaderForwardUncert(uncertfw_opt[0]);
-    ImgReaderGdal imgReaderBackwardUncert(uncertbw_opt[0]);
+    ImgRaster imgReaderForward(outputfw_opt[0]);
+    ImgRaster imgReaderBackward(outputbw_opt[0]);
+    ImgRaster imgReaderForwardUncert(uncertfw_opt[0]);
+    ImgRaster imgReaderBackwardUncert(uncertbw_opt[0]);
     imgReaderForward.setNoData(obsnodata_opt);
     imgReaderBackward.setNoData(obsnodata_opt);
       
@@ -1739,15 +1741,15 @@ int main(int argc,char **argv) {
     assert(imgReaderForwardUncert.nrOfBand()==nmodel);
     assert(imgReaderBackward.nrOfBand()==nmodel);
     assert(imgReaderBackwardUncert.nrOfBand()==nmodel);
-    ImgWriterGdal imgWriterEst;
+    ImgRaster imgWriterEst;
     imgWriterEst.setNoData(obsnodata_opt);
-    ImgWriterGdal imgWriterUncert;
-    imgWriterEst.open(outputfb_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
+    ImgRaster imgWriterUncert;
+    imgWriterEst.open(outputfb_opt[0],ncol,nrow,nmodel,theType,imageType,memory_opt[0],option_opt);
     imgWriterEst.setProjectionProj4(projection_opt[0]);
     imgWriterEst.setGeoTransform(geotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
-    imgWriterUncert.open(uncertfb_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
+    imgWriterUncert.open(uncertfb_opt[0],ncol,nrow,nmodel,theType,imageType,memory_opt[0],option_opt);
     imgWriterUncert.setProjectionProj4(projection_opt[0]);
     imgWriterUncert.setGeoTransform(geotransform);
     for(int modindex=0;modindex<nmodel;++modindex){

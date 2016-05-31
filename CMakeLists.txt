@@ -283,6 +283,7 @@ set(PKLIBS ${PKTOOLS_APPCLASSES_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMA
 set(PKAPPS
   pkcrop_bin
   pkcomposite_bin
+  pkkalman
   pktest_bin
   )
 
