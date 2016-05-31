@@ -52,7 +52,7 @@ extern "C" {
 }
 #include "base/Vector2d.h"
 #include "Filter.h"
-#include "imageclasses/ImgRasterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "algorithms/StatFactory.h"
 
 namespace filter2d
@@ -89,42 +89,42 @@ public:
   void pushThreshold(double theThreshold){m_threshold.push_back(theThreshold);};
   void setThresholds(const std::vector<double>& theThresholds){m_threshold=theThresholds;};
   void setClasses(const std::vector<short>& theClasses){m_class=theClasses;};
-  void filter(ImgRasterGdal& input, ImgRasterGdal& output, bool absolute=false, bool normalize=false, bool noData=false);
-  void smooth(ImgRasterGdal& input, ImgRasterGdal& output,int dim);
-  void smooth(ImgRasterGdal& input, ImgRasterGdal& output,int dimX, int dimY);
-  void smoothNoData(ImgRasterGdal& input, ImgRasterGdal& output,int dim);
-  void smoothNoData(ImgRasterGdal& input, ImgRasterGdal& output,int dimX, int dimY);
+  void filter(ImgRaster& input, ImgRaster& output, bool absolute=false, bool normalize=false, bool noData=false);
+  void smooth(ImgRaster& input, ImgRaster& output,int dim);
+  void smooth(ImgRaster& input, ImgRaster& output,int dimX, int dimY);
+  void smoothNoData(ImgRaster& input, ImgRaster& output,int dim);
+  void smoothNoData(ImgRaster& input, ImgRaster& output,int dimX, int dimY);
   template<class T1, class T2> void filter(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector);
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dim);
   template<class T1, class T2> void smooth(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector,int dimX, int dimY);
-  void dwtForward(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family);
-  void dwtInverse(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family);
-  void dwtCut(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose=false);
+  void dwtForward(ImgRaster& input, ImgRaster& output, const std::string& wavelet_type, int family);
+  void dwtInverse(ImgRaster& input, ImgRaster& output, const std::string& wavelet_type, int family);
+  void dwtCut(ImgRaster& input, ImgRaster& output, const std::string& wavelet_type, int family, double cut, bool verbose=false);
   template<class T> void dwtForward(Vector2d<T>& data, const std::string& wavelet_type, int family);
   template<class T> void dwtInverse(Vector2d<T>& data, const std::string& wavelet_type, int family);
   template<class T> void dwtCut(Vector2d<T>& data, const std::string& wavelet_type, int family, double cut);
-  void majorVoting(ImgRasterGdal& input, ImgRasterGdal& output, int dim=0,const std::vector<int> &prior=std::vector<int>());
+  void majorVoting(ImgRaster& input, ImgRaster& output, int dim=0,const std::vector<int> &prior=std::vector<int>());
   /* void homogeneousSpatial(const std::string& inputFilename, const std::string& outputFilename, int dim, bool disc=false, int noValue=0); */
-  void doit(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dim, short down=1, bool disc=false);
-  void doit(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
-  void mrf(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity=true, short down=1, bool verbose=false);
-  void mrf(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity=true, short down=1, bool verbose=false);
+  void doit(ImgRaster& input, ImgRaster& output, const std::string& method, int dim, short down=1, bool disc=false);
+  void doit(ImgRaster& input, ImgRaster& output, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
+  void mrf(ImgRaster& input, ImgRaster& output, int dimX, int dimY, double beta, bool eightConnectivity=true, short down=1, bool verbose=false);
+  void mrf(ImgRaster& input, ImgRaster& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity=true, short down=1, bool verbose=false);
   template<class T1, class T2> void doit(const Vector2d<T1>& inputVector, Vector2d<T2>& outputVector, const std::string& method, int dimX, int dimY, short down=1, bool disc=false);
-  void median(ImgRasterGdal& input, ImgRasterGdal& output, int dim, bool disc=false);
-  void var(ImgRasterGdal& input, ImgRasterGdal& output, int dim, bool disc=false);
-  void morphology(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle=std::vector<double>(), bool disc=false);
+  void median(ImgRaster& input, ImgRaster& output, int dim, bool disc=false);
+  void var(ImgRaster& input, ImgRaster& output, int dim, bool disc=false);
+  void morphology(ImgRaster& input, ImgRaster& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle=std::vector<double>(), bool disc=false);
   template<class T> unsigned long int morphology(const Vector2d<T>& input, Vector2d<T>& output, const std::string& method, int dimX, int dimY, bool disc=false, double hThreshold=0);
   template<class T> unsigned long int dsm2dtm_nwse(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> unsigned long int dsm2dtm_nesw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> unsigned long int dsm2dtm_senw(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> unsigned long int dsm2dtm_swne(const Vector2d<T>& inputDSM, Vector2d<T>& outputMask, double hThreshold, int nlimit, int dim=3);
   template<class T> void shadowDsm(const Vector2d<T>& input, Vector2d<T>& output, double sza, double saa, double pixelSize, short shadowFlag=1);
-  void shadowDsm(ImgRasterGdal& input, ImgRasterGdal& output, double sza, double saa, double pixelSize, short shadowFlag=1);
-  //  void dwt_texture(ImgRasterGdal& input, ImgRasterGdal& output, int dim, int scale, int down=1, int iband=0, bool verbose=false);
-  void shift(ImgRasterGdal& input, ImgRasterGdal& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
+  void shadowDsm(ImgRaster& input, ImgRaster& output, double sza, double saa, double pixelSize, short shadowFlag=1);
+  //  void dwt_texture(ImgRaster& input, ImgRaster& output, int dim, int scale, int down=1, int iband=0, bool verbose=false);
+  void shift(ImgRaster& input, ImgRaster& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=BILINEAR, bool verbose=false);
   template<class T> void shift(const Vector2d<T>& input, Vector2d<T>& output, double offsetX=0, double offsetY=0, double randomSigma=0, RESAMPLE resample=NEAR, bool verbose=false);
   void linearFeature(const Vector2d<float>& input, std::vector< Vector2d<float> >& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, bool verbose=false);
-  void linearFeature(ImgRasterGdal& input, ImgRasterGdal& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, int band=0, bool verbose=false);
+  void linearFeature(ImgRaster& input, ImgRaster& output, float angle=361, float angleStep=1, float maxDistance=0, float eps=0, bool l1=true, bool a1=true, bool l2=true, bool a2=true, int band=0, bool verbose=false);
   
 private:
   static void initMap(std::map<std::string, FILTER_TYPE>& m_filterMap){

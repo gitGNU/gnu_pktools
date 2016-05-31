@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <string>
-#include "imageclasses/ImgRasterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
   
   filter2d::Filter2d filter;
   //  this is working
-  // vector<ImgRasterGdal> imgVector(1);
+  // vector<ImgRaster> imgVector(1);
   // try{
   //   imgVector[0].open(input_opt[0]);
   // }
@@ -94,9 +94,9 @@ int main(int argc, char *argv[])
   // }
 
   //this is not working!!!
-  vector<ImgRasterGdal> imgVector;
+  vector<ImgRaster> imgVector;
   try{
-    ImgRasterGdal inputImg;
+    ImgRaster inputImg;
     imgVector.push_back(inputImg);
     imgVector[0].open(input_opt[0]);
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
   double theMax=0;
   imgVector[0].getMinMax(theMin,theMax,0);
   cout << "min, max: " << theMin << ", " << theMax << endl;
-  ImgRasterGdal imgRaster;
+  ImgRaster imgRaster;
   app.showOptions();
   app.pkcrop(imgVector,imgRaster);
   filter.smooth(imgRaster,imgRaster,5);

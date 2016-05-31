@@ -24,7 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <algorithm>
 //#include "imageclasses/ImgWriterGdal.h"
-#include "imageclasses/ImgRasterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Optionpk.h"
 #include "algorithms/Egcs.h"
@@ -246,8 +246,8 @@ int main(int argc, char *argv[])
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  ImgRasterGdal imgReader;
-  ImgRasterGdal imgWriter;
+  ImgRaster imgReader;
+  ImgRaster imgWriter;
   //open input images to extract number of bands and spatial resolution
   int ncropband=0;//total number of bands to write
   double dx=0;
@@ -418,7 +418,7 @@ int main(int argc, char *argv[])
   int ncropcol=0;
   int ncroprow=0;
 
-  ImgRasterGdal maskWriter;
+  ImgRaster maskWriter;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     if(mask_opt.size()){
       string errorString="Error: can only either mask or extent extent with cutline, not both";
@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
     mask_opt.clear();
     mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgRasterGdal maskReader;
+  ImgRaster maskReader;
   if(mask_opt.size()==1){
     try{
       //there is only a single mask

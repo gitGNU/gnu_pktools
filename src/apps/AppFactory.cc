@@ -13,6 +13,7 @@ using namespace app;
 
 void AppFactory::setOptions(int argc, char* argv[]){
   m_argc=argc;
+  m_argv.clear();
   for(int iarg=0;iarg<argc;++iarg)
     m_argv.push_back(argv[iarg]);
 }

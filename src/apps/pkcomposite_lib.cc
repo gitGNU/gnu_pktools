@@ -11,7 +11,7 @@
 using namespace std;
 using namespace app;
 
-bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& imgWriter){
+bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
@@ -535,7 +535,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
   //     imgWriter.setColorTable(theColorTable);
   // }
 
-  ImgRasterGdal maskWriter;
+  ImgRaster maskWriter;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     try{
       //todo: support unique filename using boost
@@ -571,7 +571,7 @@ bool AppFactory::pkcomposite(vector<ImgRasterGdal>& imgReader, ImgRasterGdal& im
     mask_opt.clear();
     mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgRasterGdal maskReader;
+  ImgRaster maskReader;
   if(mask_opt.size()){
     try{
       if(verbose_opt[0]>=1)

@@ -24,7 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <string>
-#include "imageclasses/ImgRasterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -53,7 +53,7 @@ namespace app
     void setOption(const std::string &key, const std::string &value)
     {
       std::ostringstream os;
-      os << "--" << key;
+      os << "-" << key;
       m_argv.push_back(os.str());
       ++m_argc;
       m_argv.push_back(value);
@@ -67,8 +67,8 @@ namespace app
         std::cout << m_argv[iarg] << " ";
       std::cout << std::endl;
     };
-    bool pkcrop(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
-    bool pkcomposite(std::vector<ImgRasterGdal>& input, ImgRasterGdal& imgWriter);   
+    bool pkcrop(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
+    bool pkcomposite(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
 
   private:
     //todo: create member attribute for pointer to memory buffer?

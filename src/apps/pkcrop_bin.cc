@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <string>
-#include "imageclasses/ImgRasterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -107,6 +107,8 @@ int main(int argc, char *argv[])
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
   Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
+  //test
+  Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
 
   option_opt.setHide(1);
   scale_opt.setHide(1);
@@ -123,6 +125,8 @@ int main(int argc, char *argv[])
     scale_opt.retrieveOption(argc,argv);
     offset_opt.retrieveOption(argc,argv);
     memory_opt.retrieveOption(argc,argv);
+    //test
+    cut_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -136,15 +140,23 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
+
+  //test
+  for(int iarg=1;iarg<argc;++iarg)
+    std::cout << argv[iarg] << " ";
+  std::cout << std::endl;
+  std::cout << "bin cut:" << cut_opt << std::endl;  
+
   if(output_opt.empty()){
     std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
     exit(0);
   }
 
+
   app::AppFactory app;
   app.setOptions(argc,argv);
 
-  vector<ImgRasterGdal> imgReader(input_opt.size());
+  vector<ImgRaster> imgReader(input_opt.size());
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
       imgReader[ifile].open(input_opt[ifile],memory_opt[0]);
@@ -158,7 +170,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  ImgRasterGdal imgWriter;
+  ImgRaster imgWriter;
 
   app.pkcrop(imgReader,imgWriter);
 

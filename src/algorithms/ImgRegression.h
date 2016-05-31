@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #define _IMGREGRESSION_H_
 
 #include <vector>
-#include "imageclasses/ImgRasterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "StatFactory.h"
 
 namespace imgregression
@@ -30,12 +30,12 @@ namespace imgregression
   public:
     ImgRegression(void);
     ~ImgRegression(void);
-    double getRMSE(ImgRasterGdal& imgReader1, ImgRasterGdal& imgReader2, double &c0, double &c1, unsigned short b1=0, unsigned short b2=0, short verbose=0) const;
-    double getRMSE(ImgRasterGdal& imgReader, unsigned short b1, unsigned short b2, double& c0, double& c1, short verbose=0) const;
-    double getR2(ImgRasterGdal& imgReader1, ImgRasterGdal& imgReader2, double &c0, double &c1, unsigned short b1=0, unsigned short b2=0, short verbose=0) const;
-    double pgetR2(ImgRasterGdal& imgReader1, ImgRasterGdal& imgReader2, double& c0, double& c1, unsigned short band1, unsigned short band2, short verbose=0) const;
-    double getR2(ImgRasterGdal& imgReader, unsigned short b1, unsigned short b2, double& c0, double& c1, short verbose=0) const;
-    double pgetR2(ImgRasterGdal& imgReader, unsigned short band1, unsigned short band2, double& c0, double& c1, short verbose=0) const;
+    double getRMSE(ImgRaster& imgReader1, ImgRaster& imgReader2, double &c0, double &c1, unsigned short b1=0, unsigned short b2=0, short verbose=0) const;
+    double getRMSE(ImgRaster& imgReader, unsigned short b1, unsigned short b2, double& c0, double& c1, short verbose=0) const;
+    double getR2(ImgRaster& imgReader1, ImgRaster& imgReader2, double &c0, double &c1, unsigned short b1=0, unsigned short b2=0, short verbose=0) const;
+    double pgetR2(ImgRaster& imgReader1, ImgRaster& imgReader2, double& c0, double& c1, unsigned short band1, unsigned short band2, short verbose=0) const;
+    double getR2(ImgRaster& imgReader, unsigned short b1, unsigned short b2, double& c0, double& c1, short verbose=0) const;
+    double pgetR2(ImgRaster& imgReader, unsigned short band1, unsigned short band2, double& c0, double& c1, short verbose=0) const;
 
     void setThreshold(double theThreshold){m_threshold=theThreshold;};
     void setDown(int theDown){m_down=theDown;};

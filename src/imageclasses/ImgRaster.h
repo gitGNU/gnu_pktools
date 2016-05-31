@@ -1,5 +1,5 @@
 /**********************************************************************
-ImgRasterGdal.h: class to read raster files using GDAL API library
+ImgRaster.h: class to read raster files using GDAL API library
 Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
@@ -17,8 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
-#ifndef _IMGRASTERGDAL_H_
-#define _IMGRASTERGDAL_H_
+#ifndef _IMGRASTER_H_
+#define _IMGRASTER_H_
 
 #include <typeinfo>
 #include <fstream>
@@ -68,35 +68,38 @@ template<typename T1> GDALDataType getGDALDataType(){
 /**
    Base class for raster dataset (read and write) in a format supported by GDAL. This general raster class is used to store e.g., filename, number of columns, rows and bands of the dataset. 
 **/
-class ImgRasterGdal
+class ImgRaster
 {
 public:
   ///default constructor
-  ImgRasterGdal(void);
+  ImgRaster(void);
+  ///reset all member variables
+  void reset(void);
   ///constructor opening an image in memory using an external data pointer (not tested yet)
-  //ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  //ImgRaster(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
   //from Reader
-  ImgRasterGdal(const std::string& filename, unsigned long int memory=0) : ImgRasterGdal() {open(filename, memory);};
-  // ImgRasterGdal(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
+  ImgRaster(const std::string& filename, unsigned long int memory=0) : ImgRaster() {open(filename, memory);};
+  // ImgRaster(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
   //from Writer
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
-  ImgRasterGdal(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRasterGdal() {open(filename, imgSrc, memory, options);};
+  ImgRaster(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, imgSrc, memory, options);};
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgRasterGdal(const ImgRasterGdal& imgSrc, bool copyData=true) : ImgRasterGdal() {
+  ImgRaster(const ImgRaster& imgSrc, bool copyData=true) : ImgRaster() {
     open(imgSrc,copyData);
   };
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
-  ImgRasterGdal(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRasterGdal() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
+  ImgRaster(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgRasterGdal(int ncol, int nrow, int nband, const GDALDataType& dataType) : ImgRasterGdal() {open(ncol, nrow, nband, dataType);};
+  ImgRaster(int ncol, int nrow, int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);};
 
   ///destructor
-  ~ImgRasterGdal(void);
+  ~ImgRaster(void);
 
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned long int memory);
   ///assignment operator
-  ImgRasterGdal& operator=(const ImgRasterGdal& imgSrc);
+  ImgRaster& operator=(const ImgRaster& imgSrc);
+  bool writeMode(){return m_writeMode;};
   bool isInit(){return m_data.size();};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
   void setScale(double theScale, int band=0){
@@ -142,7 +145,7 @@ public:
   ///Set the geotransform data for this dataset
   CPLErr setGeoTransform(double* gt);
   ///Copy geotransform information from another georeferenced image
-  void copyGeoTransform(const ImgRasterGdal& imgSrc);
+  void copyGeoTransform(const ImgRaster& imgSrc);
   ///Set the projection for this dataset in well known text (wkt) format
   CPLErr setProjection(const std::string& projection);
   ///Set the projection for this dataset from user input (supports epsg:<number> format)
@@ -300,9 +303,9 @@ public:
 
   //From Writer
   ///Open an image for writing, copying image attributes from a source image. Image is directly written to file. Use the constructor with memory>0 to support caching
-  void open(const std::string& filename, const ImgRasterGdal& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
+  void open(const std::string& filename, const ImgRaster& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
-  void open(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
+  void open(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
   // void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
@@ -310,7 +313,7 @@ public:
   ///Open an image for writing in memory, defining image attributes.
   void open(int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(const ImgRasterGdal& imgSrc,  bool copyData=false);
+  void open(const ImgRaster& imgSrc,  bool copyData=false);
   ///Open an image for writing using an external data pointer (not tested yet)
   // void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the raster dataset
@@ -330,7 +333,7 @@ public:
   ///Prepare image writer to write to file
   void setFile(const std::string& filename, const std::string& imageType, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Prepare image writer to write to file
-  void setFile(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  void setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
   void setColorTable(const std::string& filename, int band=0);
   ///Set the color table using the GDAL class GDALColorTable
@@ -385,7 +388,7 @@ private:
   ///Register GDAL driver, setting the datatype, imagetype and some metadata
   void setCodec(const std::string& imageType);
   ///Register GDAL driver, setting the datatype, imagetype and some metadata
-  void setCodec(const ImgRasterGdal& ImgSrc);
+  void setCodec(const ImgRaster& ImgSrc);
   ///Create options
   std::vector<std::string> m_options;
   ///We are writing a physical file
@@ -405,7 +408,7 @@ private:
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRasterGdal::readData(T& value, int col, int row, int band)
+template<typename T> void ImgRaster::readData(T& value, int col, int row, int band)
 {
   assert(band<nrOfBand()+1);
   assert(col<nrOfCol());
@@ -479,7 +482,7 @@ template<typename T> void ImgRasterGdal::readData(T& value, int col, int row, in
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
 {
   assert(band<nrOfBand()+1);
   assert(minCol<nrOfCol());
@@ -572,7 +575,7 @@ template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int mi
  * @param[in] band The band number to read (counting starts from 0)
  * @param[in] resample The resampling method (currently only BILINEAR and NEAR are supported)
  **/
-template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band, RESAMPLE resample)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band, RESAMPLE resample)
 {
   std::vector<T> readBuffer_upper;
   std::vector<T> readBuffer_lower;
@@ -609,7 +612,7 @@ template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int mi
  * @param[in] maxRow Last row that must be read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRasterGdal::readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
+template<typename T> void ImgRaster::readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
   buffer2d.resize(maxRow-minRow+1);
   typename std::vector<T> buffer;
@@ -632,7 +635,7 @@ template<typename T> void ImgRasterGdal::readDataBlock(Vector2d<T>& buffer2d, in
  * @param[in] maxRow Last row that must be read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRasterGdal::readDataBlock(std::vector<T>& buffer, int minCol, int maxCol, int minRow, int maxRow, int band)
+template<typename T> void ImgRaster::readDataBlock(std::vector<T>& buffer, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
   double theScale=1;
   double theOffset=0;
@@ -729,7 +732,7 @@ template<typename T> void ImgRasterGdal::readDataBlock(std::vector<T>& buffer, i
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int row, int band)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int row, int band)
 {
   readData(buffer,0,nrOfCol()-1,row,band);
 }
@@ -740,7 +743,7 @@ template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, int ro
  * @param[in] band The band number to read (counting starts from 0)
  * @param[in] resample The resampling method (currently only BILINEAR and NEAR are supported).
  **/
-template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, double row, int band, RESAMPLE resample)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, double row, int band, RESAMPLE resample)
 {
   readData(buffer,0,nrOfCol()-1,row,band,resample);
 }
@@ -753,7 +756,7 @@ template<typename T> void ImgRasterGdal::readData(std::vector<T>& buffer, double
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRasterGdal::writeData(T& value, int col, int row, int band)
+template<typename T> bool ImgRaster::writeData(T& value, int col, int row, int band)
 {
   if(band>=nrOfBand()+1){
     std::ostringstream s;
@@ -842,7 +845,7 @@ template<typename T> bool ImgRasterGdal::writeData(T& value, int col, int row, i
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRasterGdal::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
+template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
 {
   if(buffer.size()!=maxCol-minCol+1){
     std::string errorstring="invalid size of buffer";
@@ -955,7 +958,7 @@ template<typename T> bool ImgRasterGdal::writeData(std::vector<T>& buffer, int m
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRasterGdal::writeData(std::vector<T>& buffer, int row, int band)
+template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, int row, int band)
 {
   return writeData(buffer,0,nrOfCol()-1,row,band);
 }
@@ -968,7 +971,7 @@ template<typename T> bool ImgRasterGdal::writeData(std::vector<T>& buffer, int r
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRasterGdal::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
+template<typename T> bool ImgRaster::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
 {
   double theScale=1;
   double theOffset=0;
@@ -1087,4 +1090,4 @@ template<typename T> bool ImgRasterGdal::writeDataBlock(Vector2d<T>& buffer2d, i
   return true;
 }
 
-#endif // _IMGRASTERGDAL_H_
+#endif // _IMGRASTER_H_

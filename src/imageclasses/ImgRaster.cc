@@ -1,5 +1,5 @@
 /**********************************************************************
-ImgRasterGdal.cc: class to read raster files using GDAL API library
+ImgRaster.cc: class to read raster files using GDAL API library
 Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
@@ -23,12 +23,31 @@ extern "C" {
 #include "gdal_alg.h"
 }
 #include <config.h>
-#include "ImgRasterGdal.h"
+#include "ImgRaster.h"
 
-ImgRasterGdal::ImgRasterGdal(void)
-: m_gds(0), m_ncol(0), m_nrow(0), m_nband(0), m_dataType(GDT_Unknown), m_writeMode(false){
+ImgRaster::ImgRaster(void){
+  reset();
 }
 
+void ImgRaster::reset(void)
+{
+  m_gds=0;
+  m_ncol=0;
+  m_nrow=0;
+  m_nband=0;
+  m_dataType=GDT_Unknown;
+  m_projection="";
+  m_noDataValues.clear();
+  m_scale.clear();
+  m_offset.clear();
+  m_blockSize=0;
+  m_begin.clear();
+  m_end.clear();
+  m_options.clear();
+  m_writeMode=false;
+  m_filename.clear();
+  m_data.clear();
+}
 //not tested yet!!!
 /**
  * @paramdataPointer External pointer to which the image data should be written in memory
@@ -37,11 +56,11 @@ ImgRasterGdal::ImgRasterGdal(void)
  * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-// ImgRasterGdal::ImgRasterGdal(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+// ImgRaster::ImgRaster(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
 //   open(dataPointer,ncol,nrow,nband,dataType);
 // }
 
-ImgRasterGdal::~ImgRasterGdal(void)
+ImgRaster::~ImgRaster(void)
 {
   freeMem();
 }
@@ -49,7 +68,7 @@ ImgRasterGdal::~ImgRasterGdal(void)
 /**
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRasterGdal::initMem(unsigned long int memory)
+void ImgRaster::initMem(unsigned long int memory)
 {
   if(memory<=0)
     m_blockSize=nrOfRow();
@@ -75,7 +94,7 @@ void ImgRasterGdal::initMem(unsigned long int memory)
 /**
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRasterGdal::freeMem()
+void ImgRaster::freeMem()
 {
 //no need if using smart (stl shared or unique) pointers
 //  if(m_data.size()&&m_filename.size()){
@@ -88,7 +107,7 @@ void ImgRasterGdal::freeMem()
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-ImgRasterGdal& ImgRasterGdal::operator=(const ImgRasterGdal& imgSrc)
+ImgRaster& ImgRaster::operator=(const ImgRaster& imgSrc)
 {
   bool copyData=true;
   //check for assignment to self (of the form v=v)
@@ -108,7 +127,7 @@ ImgRasterGdal& ImgRasterGdal::operator=(const ImgRasterGdal& imgSrc)
  * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-// void ImgRasterGdal::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+// void ImgRaster::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
 //   m_ncol=ncol;
 //   m_nrow=nrow;
 //   m_nband=nband;
@@ -124,7 +143,7 @@ ImgRasterGdal& ImgRasterGdal::operator=(const ImgRasterGdal& imgSrc)
 //   }
 // }
 
-void ImgRasterGdal::close(void)
+void ImgRaster::close(void)
 {
   if(m_writeMode){
     if(m_data.size()&&m_filename.size()){
@@ -138,13 +157,13 @@ void ImgRasterGdal::close(void)
       CSLDestroy(papszOptions);
   }
   GDALClose(m_gds);
-  m_filename.clear();
+  reset();
 }
 
 /**
  * @return the projection of this data set in string format
  **/
-std::string ImgRasterGdal::getProjection(void) const 
+std::string ImgRaster::getProjection(void) const 
 {
   // if(m_gds)
   //   return(m_gds->GetProjectionRef());
@@ -155,7 +174,7 @@ std::string ImgRasterGdal::getProjection(void) const
 /**
  * @return the projection of this data set in string format
  **/
-std::string ImgRasterGdal::getProjectionRef(void) const 
+std::string ImgRaster::getProjectionRef(void) const 
 {
   // if(m_gds)
   //   return(m_gds->GetProjectionRef());
@@ -167,7 +186,7 @@ std::string ImgRasterGdal::getProjectionRef(void) const
  * @param projection projection string to be used for this dataset
  * @return the projection of this data set in string format
  **/
-CPLErr ImgRasterGdal::setProjectionProj4(const std::string& projection)
+CPLErr ImgRaster::setProjectionProj4(const std::string& projection)
 {
   OGRSpatialReference theRef;
   theRef.SetFromUserInput(projection.c_str());
@@ -183,7 +202,7 @@ CPLErr ImgRasterGdal::setProjectionProj4(const std::string& projection)
 /**
  * @param projection projection string to be used for this dataset
  **/
-CPLErr ImgRasterGdal::setProjection(const std::string& projection)
+CPLErr ImgRaster::setProjection(const std::string& projection)
 {
   m_projection=projection;
   if(m_gds){
@@ -198,7 +217,7 @@ CPLErr ImgRasterGdal::setProjection(const std::string& projection)
  * @param band get data type for this band (start counting from 0)
  * @return the GDAL data type of this data set for the selected band
  **/
-GDALDataType ImgRasterGdal::getDataType(int band) const
+GDALDataType ImgRaster::getDataType(int band) const
 {
   assert(band<m_nband+1);
   if(getRasterBand(band))
@@ -211,7 +230,7 @@ GDALDataType ImgRasterGdal::getDataType(int band) const
  * @param band get GDAL raster band for this band (start counting from 0)
  * @return the GDAL raster band of this data set for the selected band
  **/
-GDALRasterBand* ImgRasterGdal::getRasterBand(int band) const
+GDALRasterBand* ImgRaster::getRasterBand(int band) const
 {
   assert(band<m_nband+1);
   if(m_gds)
@@ -224,7 +243,7 @@ GDALRasterBand* ImgRasterGdal::getRasterBand(int band) const
  * @param band get GDAL color table for this band (start counting from 0)
  * @return the GDAL color table of this data set for the selected band
  **/
-GDALColorTable* ImgRasterGdal::getColorTable(int band) const
+GDALColorTable* ImgRaster::getColorTable(int band) const
 {
   assert(band<m_nband+1);
   GDALRasterBand* theRasterBand=getRasterBand(band);
@@ -237,7 +256,7 @@ GDALColorTable* ImgRasterGdal::getColorTable(int band) const
 /**
  * @return the driver description of this data set in string format
  **/
-std::string ImgRasterGdal::getDriverDescription() const
+std::string ImgRaster::getDriverDescription() const
 {
   std::string driverDescription;
   if(m_gds)
@@ -254,7 +273,7 @@ std::string ImgRasterGdal::getDriverDescription() const
  * @param GeoTransform[4] rotation, 0 if image is "north up"
  * @param GeoTransform[5] n-s pixel resolution
  **/
-CPLErr ImgRasterGdal::setGeoTransform(double* gt){
+CPLErr ImgRaster::setGeoTransform(double* gt){
   // m_isGeoRef=true;
   m_gt[0]=gt[0];
   m_gt[1]=gt[1];
@@ -272,7 +291,7 @@ CPLErr ImgRasterGdal::setGeoTransform(double* gt){
 /**
  * @param imgSrc Use this source image as a template to copy geotranform information
  **/
-void ImgRasterGdal::copyGeoTransform(const ImgRasterGdal& imgSrc)
+void ImgRaster::copyGeoTransform(const ImgRaster& imgSrc)
 {
   double gt[6];
   imgSrc.getGeoTransform(gt);
@@ -288,7 +307,7 @@ void ImgRasterGdal::copyGeoTransform(const ImgRasterGdal& imgSrc)
  * @param GeoTransform[4] rotation, 0 if image is "north up"
  * @param GeoTransform[5] n-s pixel resolution
  **/
-void ImgRasterGdal::getGeoTransform(double* gt) const{
+void ImgRaster::getGeoTransform(double* gt) const{
   // if(m_gds){
   //   m_gds->GetGeoTransform(gt);
   // }
@@ -305,7 +324,7 @@ void ImgRasterGdal::getGeoTransform(double* gt) const{
 /**
  * @return the geotransform of this data set in string format
  **/
-std::string ImgRasterGdal::getGeoTransform() const
+std::string ImgRaster::getGeoTransform() const
 {
   std::string gtString;
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
@@ -319,7 +338,7 @@ std::string ImgRasterGdal::getGeoTransform() const
 /**
  * @return the metadata of this data set in string format
  **/
-char** ImgRasterGdal::getMetadata()
+char** ImgRaster::getMetadata()
 {
   if(m_gds){
     if(m_gds->GetMetadata()!=NULL)
@@ -332,7 +351,7 @@ char** ImgRasterGdal::getMetadata()
 /**
  * @return the metadata of this data set in C style string format (const version)
  **/
-char** ImgRasterGdal::getMetadata() const
+char** ImgRaster::getMetadata() const
 {
   if(m_gds){
     if(m_gds->GetMetadata()!=NULL)
@@ -345,7 +364,7 @@ char** ImgRasterGdal::getMetadata() const
 /**
  * @return the metadata of this data set in standard template library (stl) string format
  **/
-void ImgRasterGdal::getMetadata(std::list<std::string>& metadata) const
+void ImgRaster::getMetadata(std::list<std::string>& metadata) const
 {
   if(m_gds){
     char** cmetadata=m_gds->GetMetadata();
@@ -359,7 +378,7 @@ void ImgRasterGdal::getMetadata(std::list<std::string>& metadata) const
 /**
  * @return the description of this data set in string format
  **/
-std::string ImgRasterGdal::getDescription() const
+std::string ImgRaster::getDescription() const
 {
   if(m_gds){
     if(m_gds->GetDriver()->GetDescription()!=NULL)
@@ -372,7 +391,7 @@ std::string ImgRasterGdal::getDescription() const
 /**
  * @return the meta data item of this data set in string format
  **/
-std::string ImgRasterGdal::getMetadataItem() const 
+std::string ImgRaster::getMetadataItem() const 
 {
   if(m_gds){
     if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
@@ -385,7 +404,7 @@ std::string ImgRasterGdal::getMetadataItem() const
 /**
  * @return the image description (TIFFTAG) of this data set in string format
  **/
-std::string ImgRasterGdal::getImageDescription() const 
+std::string ImgRaster::getImageDescription() const 
 {
   if(m_gds){
     if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
@@ -398,7 +417,7 @@ std::string ImgRasterGdal::getImageDescription() const
 /**
  * @return the band coding interleave of this data set in string format
  **/
-std::string ImgRasterGdal::getInterleave() const
+std::string ImgRaster::getInterleave() const
 {
   if(m_gds){
     if(m_gds->GetMetadataItem( "INTERLEAVE", "IMAGE_STRUCTURE"))
@@ -413,7 +432,7 @@ std::string ImgRasterGdal::getInterleave() const
 /**
  * @return the compression meta data of this data set in string format
  **/
-std::string ImgRasterGdal::getCompression() const
+std::string ImgRaster::getCompression() const
 {
   if(m_gds){
     if(m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE"))
@@ -438,7 +457,7 @@ std::string ImgRasterGdal::getCompression() const
  * @param lry lower left coordinate in y
  * @return true if image is georeferenced
  **/
-bool ImgRasterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
+bool ImgRaster::getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   getGeoTransform(gt);
@@ -464,7 +483,7 @@ bool ImgRasterGdal::getBoundingBox(double& ulx, double& uly, double& lrx, double
  * @param x, y centre coordinates in x and y
  * @return true if image is georeferenced
  **/
-bool ImgRasterGdal::getCenterPos(double& x, double& y) const
+bool ImgRaster::getCenterPos(double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   getGeoTransform(gt);
@@ -492,7 +511,7 @@ bool ImgRasterGdal::getCenterPos(double& x, double& y) const
  * @param i,j image coordinates (can be fraction of pixels)
  * @return true if image is georeferenced
  **/
-bool ImgRasterGdal::geo2image(double x, double y, double& i, double& j) const
+bool ImgRaster::geo2image(double x, double y, double& i, double& j) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   getGeoTransform(gt);
@@ -521,7 +540,7 @@ bool ImgRasterGdal::geo2image(double x, double y, double& i, double& j) const
  * @param x,y georeferenced coordinates in x and y (can be fraction of pixels)
  * @return true if image is georeferenced
  **/
-bool ImgRasterGdal::image2geo(double i, double j, double& x, double& y) const
+bool ImgRaster::image2geo(double i, double j, double& x, double& y) const
 {
   double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
   getGeoTransform(gt);
@@ -548,7 +567,7 @@ bool ImgRasterGdal::image2geo(double i, double j, double& x, double& y) const
  * @param x,y georeferenced coordinates in x and y
  * @return true if image covers the georeferenced location
  **/
-bool ImgRasterGdal::covers(double x, double  y) const
+bool ImgRaster::covers(double x, double  y) const
 {
   double theULX, theULY, theLRX, theLRY;
   getBoundingBox(theULX,theULY,theLRX,theLRY);
@@ -572,7 +591,7 @@ bool ImgRasterGdal::covers(double x, double  y) const
  * @param lry lower left coordinate in y
  * @return true if image (partially) covers the bounding box
  **/
-bool ImgRasterGdal::covers(double ulx, double  uly, double lrx, double lry) const
+bool ImgRaster::covers(double ulx, double  uly, double lrx, double lry) const
 {
   double theULX, theULY, theLRX, theLRY;
   getBoundingBox(theULX,theULY,theLRX,theLRY);
@@ -583,7 +602,7 @@ bool ImgRasterGdal::covers(double ulx, double  uly, double lrx, double lry) cons
  * @param noDataValues standard template library (stl) vector containing no data values
  * @return number of no data values in this dataset
  **/
-int ImgRasterGdal::getNoDataValues(std::vector<double>& noDataValues) const
+int ImgRaster::getNoDataValues(std::vector<double>& noDataValues) const
 {
   if(m_noDataValues.size()){
     noDataValues=m_noDataValues;
@@ -597,7 +616,7 @@ int ImgRasterGdal::getNoDataValues(std::vector<double>& noDataValues) const
  * @param noDataValue no data value to be pushed for this dataset
  * @return number of no data values in this dataset
  **/
-int ImgRasterGdal::pushNoDataValue(double noDataValue)
+int ImgRaster::pushNoDataValue(double noDataValue)
 {
   if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
     m_noDataValues.push_back(noDataValue);
@@ -609,8 +628,8 @@ int ImgRasterGdal::pushNoDataValue(double noDataValue)
  * @param filename Open a raster dataset with this filename
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRasterGdal::open(const std::string& filename, unsigned long int memory)
-// void ImgRasterGdal::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
+void ImgRaster::open(const std::string& filename, unsigned long int memory)
+// void ImgRaster::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {
   m_filename = filename;
   setCodec();
@@ -623,8 +642,8 @@ void ImgRasterGdal::open(const std::string& filename, unsigned long int memory)
 
 /**
  **/
-void ImgRasterGdal::setCodec()
-// void ImgRasterGdal::setCodec(const GDALAccess& readMode)
+void ImgRaster::setCodec()
+// void ImgRaster::setCodec(const GDALAccess& readMode)
 {
   GDALAllRegister();
   // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
@@ -663,7 +682,7 @@ void ImgRasterGdal::setCodec()
  * @param band Band that must be read to cache
  * @return true if block was read
  **/
-bool ImgRasterGdal::readNewBlock(int row, int band)
+bool ImgRaster::readNewBlock(int row, int band)
 {
   if(m_gds == NULL){
     std::string errorString="Error in readNewBlock";
@@ -693,7 +712,7 @@ bool ImgRasterGdal::readNewBlock(int row, int band)
  * @param band Search mininum value in image for this band
  * @return minimum value in image for the selected band
  **/
-double ImgRasterGdal::getMin(int& x, int& y, int band){
+double ImgRaster::getMin(int& x, int& y, int band){
   double minValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
@@ -729,7 +748,7 @@ double ImgRasterGdal::getMin(int& x, int& y, int band){
  * @param band Search mininum value in image for this band
  * @return maximum value in image for the selected band
  **/
-double ImgRasterGdal::getMax(int& x, int& y, int band){
+double ImgRaster::getMax(int& x, int& y, int band){
   double maxValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
@@ -765,7 +784,7 @@ double ImgRasterGdal::getMax(int& x, int& y, int band){
  * @param minValue Reported minimum value within searched region
  * @param maxValue Reported maximum value within searched region
  **/
-void ImgRasterGdal::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue)
+void ImgRaster::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue)
 {
   bool isConstraint=(maxValue>minValue);
   double minConstraint=minValue;
@@ -812,7 +831,7 @@ void ImgRasterGdal::getMinMax(int startCol, int endCol, int startRow, int endRow
  * @param maxValue Reported maximum value in image
  * @param band Search extreme value in image for this band
  **/
-void ImgRasterGdal::getMinMax(double& minValue, double& maxValue, int band)
+void ImgRaster::getMinMax(double& minValue, double& maxValue, int band)
 {
   bool isConstraint=(maxValue>minValue);
   double minConstraint=minValue;
@@ -861,7 +880,7 @@ void ImgRasterGdal::getMinMax(double& minValue, double& maxValue, int band)
  * @param kde Apply kernel density function for a Gaussian basis function
  * @return number of valid pixels in this dataset for the the selected band
  **/
-double ImgRasterGdal::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
+double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
   double minValue=0;
   double maxValue=0;
       
@@ -959,7 +978,7 @@ double ImgRasterGdal::getHistogram(std::vector<double>& histvector, double& min,
  * @param range Sorted vector containing the range of image values
  * @param band The band for which to calculate the range
  **/
-void ImgRasterGdal::getRange(std::vector<short>& range, int band)
+void ImgRaster::getRange(std::vector<short>& range, int band)
 {
   std::vector<short> lineBuffer(nrOfCol());
   range.clear();
@@ -977,7 +996,7 @@ void ImgRasterGdal::getRange(std::vector<short>& range, int band)
  * @param band The band for which to calculate the number of valid pixels
  * @return number of valid pixels in this dataset for the the selected band
  **/
-unsigned long int ImgRasterGdal::getNvalid(int band)
+unsigned long int ImgRaster::getNvalid(int band)
 {
   unsigned long int nvalid=0;
   if(m_noDataValues.size()){
@@ -1002,7 +1021,7 @@ unsigned long int ImgRasterGdal::getNvalid(int band)
  * @param band The band for which to calculate the number of valid pixels
  **/
 
-void ImgRasterGdal::getRefPix(double& refX, double &refY, int band)
+void ImgRaster::getRefPix(double& refX, double &refY, int band)
 {
   std::vector<double> lineBuffer(nrOfCol());
   double validCol=0;
@@ -1049,7 +1068,7 @@ void ImgRasterGdal::getRefPix(double& refX, double &refY, int band)
  * @param band Band that must be written in cache
  * @return true if write was successful
  **/
-bool ImgRasterGdal::writeNewBlock(int row, int band)
+bool ImgRaster::writeNewBlock(int row, int band)
 {
   if(m_gds == NULL){
     std::string errorString="Error in writeNewBlock";
@@ -1073,7 +1092,7 @@ bool ImgRasterGdal::writeNewBlock(int row, int band)
 //  * @param imgSrc Use this source image as a template to copy image attributes
 //  * @param options Creation options
 //  **/
-// void ImgRasterGdal::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
+// void ImgRaster::open(const std::string& filename, const ImgReaderGdal& imgSrc, const std::vector<std::string>& options)
 // {
 //   m_ncol=imgSrc.nrOfCol();
 //   m_nrow=imgSrc.nrOfRow();
@@ -1090,7 +1109,7 @@ bool ImgRasterGdal::writeNewBlock(int row, int band)
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param options Creation options
  **/
-void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSrc, const std::vector<std::string>& options)
+void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, const std::vector<std::string>& options)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -1107,7 +1126,7 @@ void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSr
  * @param memory Available memory to cache image raster data (in MB)
  * @param options Creation options
  **/
-void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned int memory, const std::vector<std::string>& options)
+void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -1122,7 +1141,7 @@ void ImgRasterGdal::open(const std::string& filename, const ImgRasterGdal& imgSr
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-void ImgRasterGdal::open(const ImgRasterGdal& imgSrc, bool copyData)
+void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -1156,7 +1175,7 @@ void ImgRasterGdal::open(const ImgRasterGdal& imgSrc, bool copyData)
 //  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
 //  * @param options Creation options
 //  **/
-// void ImgRasterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
+// void ImgRaster::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 // {
 //   m_ncol = ncol;
 //   m_nrow = nrow;
@@ -1178,7 +1197,7 @@ void ImgRasterGdal::open(const ImgRasterGdal& imgSrc, bool copyData)
  * @param memory Available memory to cache image raster data (in MB)
  * @param options Creation options
  **/
-void ImgRasterGdal::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
+void ImgRaster::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
   m_ncol = ncol;
   m_nrow = nrow;
@@ -1193,7 +1212,7 @@ void ImgRasterGdal::open(const std::string& filename, int ncol, int nrow, int nb
  * @param nband Number of bands in image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-void ImgRasterGdal::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
+void ImgRaster::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
 {
   m_ncol = ncol;
   m_nrow = nrow;
@@ -1209,7 +1228,7 @@ void ImgRasterGdal::open(int ncol, int nrow, int nband, const GDALDataType& data
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
  **/
-void ImgRasterGdal::setCodec(const ImgRasterGdal& imgSrc){
+void ImgRaster::setCodec(const ImgRaster& imgSrc){
   GDALAllRegister();
   GDALDriver *poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(imgSrc.getDriverDescription().c_str());
@@ -1217,6 +1236,7 @@ void ImgRasterGdal::setCodec(const ImgRasterGdal& imgSrc){
     std::string errorString="FileOpenError";
     throw(errorString);
   }
+
   char **papszMetadata;
   papszMetadata = poDriver->GetMetadata();
   //todo: try and catch if CREATE is not supported (as in PNG)
@@ -1282,8 +1302,7 @@ void ImgRasterGdal::setCodec(const ImgRasterGdal& imgSrc){
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRasterGdal::setCodec(const std::string& imageType)
-{
+void ImgRaster::setCodec(const std::string& imageType){
   GDALAllRegister();
   GDALDriver *poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(imageType.c_str());
@@ -1299,6 +1318,7 @@ void ImgRasterGdal::setCodec(const std::string& imageType)
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
+
   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_dataType,papszOptions);
   double gt[6];
   getGeoTransform(gt);
@@ -1306,6 +1326,13 @@ void ImgRasterGdal::setCodec(const std::string& imageType)
     std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
   if(setProjection(m_projection)!=CE_None)
     std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
+
+
+  if(m_noDataValues.size()){
+    for(int iband=0;iband<nrOfBand();++iband)
+      GDALSetNoDataValue(m_noDataValues[0],iband);
+  }
+
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
   versionString+=VERSION;
@@ -1346,7 +1373,7 @@ void ImgRasterGdal::setCodec(const std::string& imageType)
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRasterGdal::setFile(const std::string& filename, const std::string& imageType, unsigned long int memory, const std::vector<std::string>& options)
+void ImgRaster::setFile(const std::string& filename, const std::string& imageType, unsigned long int memory, const std::vector<std::string>& options)
 {
   m_filename=filename;
   m_options=options;
@@ -1364,7 +1391,7 @@ void ImgRasterGdal::setFile(const std::string& filename, const std::string& imag
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRasterGdal::setFile(const std::string& filename, const ImgRasterGdal& imgSrc, unsigned long int memory, const std::vector<std::string>& options)
+void ImgRaster::setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory, const std::vector<std::string>& options)
 {
   m_filename=filename;
   m_options=options;
@@ -1381,14 +1408,14 @@ void ImgRasterGdal::setFile(const std::string& filename, const ImgRasterGdal& im
 /**
  * @param metadata Set this metadata when writing the image (if supported byt the driver)
  **/
-void ImgRasterGdal::setMetadata(char** metadata)
+void ImgRaster::setMetadata(char** metadata)
 {
   if(m_gds)
     m_gds->SetMetadata(metadata); 
 }
 
 //default projection: ETSR-LAEA
-// std::string ImgRasterGdal::setProjection(void)
+// std::string ImgRaster::setProjection(void)
 // {
 //   std::string theProjection;
 //   OGRSpatialReference oSRS;
@@ -1411,7 +1438,7 @@ void ImgRasterGdal::setMetadata(char** metadata)
  * @param filename ASCII file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
  * @param band band number to set color table (starting counting from 0)
  **/
-void ImgRasterGdal::setColorTable(const std::string& filename, int band)
+void ImgRaster::setColorTable(const std::string& filename, int band)
 {
   //todo: fool proof table in file (no checking currently done...)
   std::ifstream ftable(filename.c_str(),std::ios::in);
@@ -1435,14 +1462,14 @@ void ImgRasterGdal::setColorTable(const std::string& filename, int band)
  * @param colorTable Instance of the GDAL class GDALColorTable
  * @param band band number to set color table (starting counting from 0)
  **/
-void ImgRasterGdal::setColorTable(GDALColorTable* colorTable, int band)
+void ImgRaster::setColorTable(GDALColorTable* colorTable, int band)
 {
   if(m_gds)
     (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
 }
 
 // //write an entire image from memory to file
-// bool ImgRasterGdal::writeData(void* pdata, const GDALDataType& dataType, int band){
+// bool ImgRaster::writeData(void* pdata, const GDALDataType& dataType, int band){
 //   //fetch raster band
 //   GDALRasterBand  *poBand;
 //   if(band>=nrOfBand()+1){
@@ -1471,7 +1498,7 @@ void ImgRasterGdal::setColorTable(GDALColorTable* colorTable, int band)
  * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
  * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
  **/
-void ImgRasterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
+void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
   std::vector<int> bands;
   if(burnValues.empty()&&controlOptions.empty()){
     std::string errorString="Error: either burn values or control options must be provided";
@@ -1526,6 +1553,8 @@ void ImgRasterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
     std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
     throw(errorString);
   }
+  //do not overwrite m_gds with what is in m_data
+  m_writeMode=false;
 }
 
 /**
@@ -1542,7 +1571,7 @@ void ImgRasterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
  * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
  * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
  **/
-void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
+void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
   if(m_blockSize<nrOfRow()){
     std::ostringstream s;
     s << "Error: increase memory to perform rasterize in entirely in buffer (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
@@ -1583,13 +1612,13 @@ void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<doub
     double gt[6];
     getGeoTransform(gt);
     if(controlOptions.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType()),0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
         std::string errorString(CPLGetLastErrorMsg());
         throw(errorString);
       }
     }
     else if(burnValues.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),0,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSizeBytes(getDataType()),0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
         std::string errorString(CPLGetLastErrorMsg());
         throw(errorString);
       }

@@ -27,7 +27,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <vector>
 #include "ogrsf_frmts.h"
-#include "ImgRasterGdal.h"
+#include "ImgRaster.h"
 #include "ImgReaderOgr.h"
 
 //--------------------------------------------------------------------------
@@ -56,7 +56,7 @@ public:
   void addLineString(std::vector<OGRPoint*>& points, const std::string& fieldName, int theId, int layer=0);
   void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, const std::string& theId, int layer=0);
   void addPoint(double x, double y, const std::map<std::string,double>& pointAttributes, std::string fieldName, int theId, int layer=0);
-  int addData(ImgRasterGdal& imgReader, int layer=0, bool verbose=false);
+  int addData(ImgRaster& imgReader, int layer=0, bool verbose=false);
   OGRFeature* createFeature(int layer=0);
   OGRErr createFeature(OGRFeature* theFeature, int layer=0);
   int getFieldCount(int layer=0) const;

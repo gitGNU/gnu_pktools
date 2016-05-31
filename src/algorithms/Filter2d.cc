@@ -46,17 +46,17 @@ void filter2d::Filter2d::setTaps(const Vector2d<double> &taps)
   m_taps=taps;
 }
 
-void filter2d::Filter2d::smoothNoData(ImgRasterGdal& input, ImgRasterGdal& output, int dim)
+void filter2d::Filter2d::smoothNoData(ImgRaster& input, ImgRaster& output, int dim)
 {
   smoothNoData(input, output,dim,dim);
 }
 
-void filter2d::Filter2d::smooth(ImgRasterGdal& input, ImgRasterGdal& output, int dim)
+void filter2d::Filter2d::smooth(ImgRaster& input, ImgRaster& output, int dim)
 {
   smooth(input, output,dim,dim);
 }
 
-void filter2d::Filter2d::smoothNoData(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smoothNoData(ImgRaster& input, ImgRaster& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -67,7 +67,7 @@ void filter2d::Filter2d::smoothNoData(ImgRasterGdal& input, ImgRasterGdal& outpu
   filter(input,output,false,true,true);
 }
 
-void filter2d::Filter2d::smooth(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smooth(ImgRaster& input, ImgRaster& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -79,7 +79,7 @@ void filter2d::Filter2d::smooth(ImgRasterGdal& input, ImgRasterGdal& output, int
 }
 
     
-void filter2d::Filter2d::filter(ImgRasterGdal& input, ImgRasterGdal& output, bool absolute, bool normalize, bool noData)
+void filter2d::Filter2d::filter(ImgRaster& input, ImgRaster& output, bool absolute, bool normalize, bool noData)
 {
   if(!output.isInit())
     output.open(input);
@@ -201,7 +201,7 @@ void filter2d::Filter2d::filter(ImgRasterGdal& input, ImgRasterGdal& output, boo
 }
 
 
-void filter2d::Filter2d::majorVoting(ImgRasterGdal& input, ImgRasterGdal& output, int dim, const std::vector<int> &prior)
+void filter2d::Filter2d::majorVoting(ImgRaster& input, ImgRaster& output, int dim, const std::vector<int> &prior)
 {
   if(!output.isInit())
     output.open(input);
@@ -225,8 +225,8 @@ void filter2d::Filter2d::majorVoting(ImgRasterGdal& input, ImgRasterGdal& output
     std::cout << std::endl;    
   }  
 
-  // ImgRasterGdal input;
-  // ImgRasterGdal output;
+  // ImgRaster input;
+  // ImgRaster output;
   // input.open(inputFilename);
   // output.open(outputFilename,input);
   int dimX=0;//horizontal!!!
@@ -341,22 +341,22 @@ void filter2d::Filter2d::majorVoting(ImgRasterGdal& input, ImgRasterGdal& output
   output.close();
 }
 
-void filter2d::Filter2d::median(ImgRasterGdal& input, ImgRasterGdal& output, int dim, bool disc)
+void filter2d::Filter2d::median(ImgRaster& input, ImgRaster& output, int dim, bool disc)
 {
   doit(input,output,"median",dim,disc);
 }
 
-void filter2d::Filter2d::var(ImgRasterGdal& input, ImgRasterGdal& output, int dim, bool disc)
+void filter2d::Filter2d::var(ImgRaster& input, ImgRaster& output, int dim, bool disc)
 {
   doit(input,output,"var",dim,disc);
 }
 
-void filter2d::Filter2d::doit(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dim, short down, bool disc)
+void filter2d::Filter2d::doit(ImgRaster& input, ImgRaster& output, const std::string& method, int dim, short down, bool disc)
 {
   doit(input,output,method,dim,dim,down,disc);
 }
 
-void filter2d::Filter2d::doit(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
+void filter2d::Filter2d::doit(ImgRaster& input, ImgRaster& output, const std::string& method, int dimX, int dimY, short down, bool disc)
 {
   if(!output.isInit())
     output.open(input);
@@ -707,7 +707,7 @@ void filter2d::Filter2d::doit(ImgRasterGdal& input, ImgRasterGdal& output, const
   pfnProgress(1.0,pszMessage,pProgressArg);
 }
 
-void filter2d::Filter2d::mrf(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
+void filter2d::Filter2d::mrf(ImgRaster& input, ImgRaster& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
   assert(m_class.size()>1);
   Vector2d<double> fullBeta(m_class.size(),m_class.size());
   for(int iclass1=0;iclass1<m_class.size();++iclass1)
@@ -717,7 +717,7 @@ void filter2d::Filter2d::mrf(ImgRasterGdal& input, ImgRasterGdal& output, int di
 }
 
 //beta[classTo][classFrom]
-void filter2d::Filter2d::mrf(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
+void filter2d::Filter2d::mrf(ImgRaster& input, ImgRaster& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
 {
   if(!output.isInit())
     output.open(input);
@@ -853,8 +853,8 @@ void filter2d::Filter2d::mrf(ImgRasterGdal& input, ImgRasterGdal& output, int di
   }
 }
 
-//todo: perform on ImgRasterGdal directly instead of copying into Vector2d
-void filter2d::Filter2d::shift(ImgRasterGdal& input, ImgRasterGdal& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
+//todo: perform on ImgRaster directly instead of copying into Vector2d
+void filter2d::Filter2d::shift(ImgRaster& input, ImgRaster& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
 {
   if(!output.isInit())
     output.open(input);
@@ -881,8 +881,8 @@ void filter2d::Filter2d::shift(ImgRasterGdal& input, ImgRasterGdal& output, doub
 //todo: re-implement without dependency of CImg and reg libraries
 // void filter2d::Filter2d::dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down, int iband, bool verbose)
 // {
-//   ImgRasterGdal input;
-//   ImgRasterGdal output;
+//   ImgRaster input;
+//   ImgRaster output;
 //   if(verbose)
 //     std::cout << "opening file " << inputFilename << std::endl;
 //   input.open(inputFilename);
@@ -985,7 +985,7 @@ void filter2d::Filter2d::shift(ImgRasterGdal& input, ImgRasterGdal& output, doub
 //   output.close();
 // }
 
-void filter2d::Filter2d::morphology(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc)
+void filter2d::Filter2d::morphology(ImgRaster& input, ImgRaster& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc)
 {
   if(!output.isInit())
     output.open(input);
@@ -1168,8 +1168,8 @@ void filter2d::Filter2d::morphology(ImgRasterGdal& input, ImgRasterGdal& output,
   }
 }
 
-//todo: perform on ImgRasterGdal directly instead of copying into Vector2d
-void filter2d::Filter2d::shadowDsm(ImgRasterGdal& input, ImgRasterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
+//todo: perform on ImgRaster directly instead of copying into Vector2d
+void filter2d::Filter2d::shadowDsm(ImgRaster& input, ImgRaster& output, double sza, double saa, double pixelSize, short shadowFlag){
   if(!output.isInit())
     output.open(input);
   output.setNoData(m_noDataValues);
@@ -1181,7 +1181,7 @@ void filter2d::Filter2d::shadowDsm(ImgRasterGdal& input, ImgRasterGdal& output, 
   output.writeDataBlock(outputBuffer,0,output.nrOfCol()-1,0,output.nrOfRow()-1,0);
 }
 
-void filter2d::Filter2d::dwtForward(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family){
+void filter2d::Filter2d::dwtForward(ImgRaster& input, ImgRaster& output, const std::string& wavelet_type, int family){
   if(!output.isInit())
     output.open(input);
   output.setNoData(m_noDataValues);
@@ -1195,7 +1195,7 @@ void filter2d::Filter2d::dwtForward(ImgRasterGdal& input, ImgRasterGdal& output,
   }
 }
 
-void filter2d::Filter2d::dwtInverse(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family){
+void filter2d::Filter2d::dwtInverse(ImgRaster& input, ImgRaster& output, const std::string& wavelet_type, int family){
   if(!output.isInit())
     output.open(input);
   output.setNoData(m_noDataValues);
@@ -1209,7 +1209,7 @@ void filter2d::Filter2d::dwtInverse(ImgRasterGdal& input, ImgRasterGdal& output,
   }
 }
 
-void filter2d::Filter2d::dwtCut(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose){
+void filter2d::Filter2d::dwtCut(ImgRaster& input, ImgRaster& output, const std::string& wavelet_type, int family, double cut, bool verbose){
   if(!output.isInit())
     output.open(input);
   output.setNoData(m_noDataValues);
@@ -1223,7 +1223,7 @@ void filter2d::Filter2d::dwtCut(ImgRasterGdal& input, ImgRasterGdal& output, con
   }
 }
 
-void filter2d::Filter2d::linearFeature(ImgRasterGdal& input, ImgRasterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
+void filter2d::Filter2d::linearFeature(ImgRaster& input, ImgRaster& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
   if(!output.isInit())
     output.open(input);
   output.setNoData(m_noDataValues);
