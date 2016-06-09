@@ -24,7 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <fstream>
 #include "base/Optionpk.h"
-#include <armadillo>
+//#include <armadillo>
 
 //--------------------------------------------------------------------------
 class FileReaderAscii

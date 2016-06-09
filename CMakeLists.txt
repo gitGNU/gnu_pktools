@@ -125,13 +125,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 ###############################################################################
 
 ###############################################################################
-# Setup configure file
-configure_file ( "cmake-config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/base/config.h" @ONLY)
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/base")
-add_definitions(-DHAVE_CONFIG_H)
-###############################################################################
-
-###############################################################################
 # Documentation
 #file(READ "doc/index.txt" README )
 file(WRITE "README.txt" "${README}")
@@ -217,10 +210,10 @@ if(GSL_FOUND)
   add_definitions(-DGSL_DLL)
 endif()
 
-find_package(Armadillo REQUIRED)
-if(ARMADILLO_FOUND)
-	include_directories(${ARMADILLO_INCLUDE_DIRS})
-endif()
+# find_package(Armadillo REQUIRED)
+# if(ARMADILLO_FOUND)
+#   include_directories(${ARMADILLO_INCLUDE_DIRS})
+# endif()
 
 if (BUILD_WITH_LIBLAS)
 	find_package(LIBLAS)
@@ -262,6 +255,13 @@ endif(BUILD_WITH_PYTHON)
 ###############################################################################
 
 ###############################################################################
+# Setup configure file
+configure_file ( "cmake-config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/base/config.h" @ONLY)
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/base")
+add_definitions(-DHAVE_CONFIG_H)
+###############################################################################
+
+###############################################################################
 # Build libraries
 include_directories("${PROJECT_SOURCE_DIR}")
 add_subdirectory ("${PROJECT_SOURCE_DIR}")
@@ -278,13 +278,24 @@ configure_file ( "cmake.pc.in" "pktools.pc"  @ONLY)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(PKLIBS ${PKTOOLS_APPCLASSES_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
+#set(PKLIBS ${PKTOOLS_APPCLASSES_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
+
+set(PKLIBS ${PKTOOLS_APPCLASSES_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${Boost_LIBRARIES})
 
 set(PKAPPS
   pkcrop_bin
   pkcomposite_bin
-  pkkalman
   pktest_bin
+  pkkalman
+  pkinfo
+  pkdiff
+  pkgetmask
+  pksetmask
+  pkcreatect 
+  pkdumpimg 
+  pkdumpogr 
+  pksieve 
+  pkstat
   )
 
 set(PKUTILITIES

@@ -20,9 +20,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "cpl_string.h"
 #include "gdal_priv.h"
 #include "gdal.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
-// #include "imageclasses/ImgWriterOgr.h"
+#include "imageclasses/ImgRaster.h"
 #include "base/Optionpk.h"
 #include "ogrsf_frmts.h"
 extern "C" {
@@ -60,6 +58,7 @@ The utility pksieve filters small objects (maximum size defined with the option 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pksieve -i input [-s size] -o output
 
@@ -81,6 +80,7 @@ int main(int argc,char **argv) {
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -94,6 +94,7 @@ int main(int argc,char **argv) {
     otype_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -116,26 +117,26 @@ int main(int argc,char **argv) {
   GDALProgressFunc pfnProgress=GDALTermProgress;
   pfnProgress(dfComplete,pszMessage,pProgressArg);
   
-  ImgReaderGdal maskReader;
+  ImgRaster maskReader;
   GDALRasterBand *maskBand=NULL;
   if(mask_opt.size()){
     if(verbose_opt[0])
       cout << "opening mask file " << mask_opt[0] << endl;
-    maskReader.open(mask_opt[0]);
+    maskReader.open(mask_opt[0],memory_opt[0]);
     maskBand = maskReader.getRasterBand(0);
   }
 
   assert(input_opt.size());
   assert(output_opt.size());
-  ImgReaderGdal inputReader(input_opt[0]);
+  ImgRaster inputReader(input_opt[0],memory_opt[0]);
   GDALRasterBand  *inputBand;
   inputBand=inputReader.getRasterBand(band_opt[0]);
 
-  ImgWriterGdal outputWriter;
+  ImgRaster outputWriter;
   GDALRasterBand *outputBand=NULL;
   if(verbose_opt[0])
     cout << "opening output file " << output_opt[0] << endl;
-  outputWriter.open(output_opt[0],inputReader);
+  outputWriter.open(output_opt[0],inputReader,memory_opt[0]);
   if(colorTable_opt.size()){
     if(colorTable_opt[0]!="none")
       outputWriter.setColorTable(colorTable_opt[0]);

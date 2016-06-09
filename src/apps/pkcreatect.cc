@@ -18,8 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <iostream>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "base/Optionpk.h"
 
 /******************************************************************************/
@@ -59,6 +58,7 @@ Utility to include a color table to a raster dataset. You can either define an e
  | d      | description          | std::string |       |Set image description | 
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkcreatect -i input.txt -o output [-ct colortable | -min value -max value]
 
@@ -87,10 +87,12 @@ int main(int argc,char **argv) {
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate).", "GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  description_opt("d", "description", "Set image description");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<bool>  verbose_opt("v", "verbose", "verbose", false,2);
   
   legend_opt.setHide(1);
   dim_opt.setHide(1);
+  memory_opt.setHide(1);
   
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -105,6 +107,7 @@ int main(int argc,char **argv) {
     description_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -156,7 +159,7 @@ int main(int argc,char **argv) {
         cout << i << " " << sEntry.c1 << " " << sEntry.c2 << " " << sEntry.c3 << " " << sEntry.c4 << endl;
     }
   }
-  ImgWriterGdal legendWriter;
+  ImgRaster legendWriter;
   short ncol=dim_opt[0];
   short nrow;
   if(legend_opt.size()){
@@ -169,7 +172,7 @@ int main(int argc,char **argv) {
     vector<string> pngOption;
     // pngOption.push_back("-co worldfile=no");
     pngOption.push_back("");
-    legendWriter.open(legend_opt[0],ncol,nrow,1,GDT_Byte,oformat_opt[0],option_opt);
+    legendWriter.open(legend_opt[0],ncol,nrow,1,GDT_Byte,oformat_opt[0],memory_opt[0],option_opt);
     if(colorTable_opt.size()){
       if(colorTable_opt[0]!="none")
         legendWriter.setColorTable(colorTable_opt[0]);
@@ -192,15 +195,15 @@ int main(int argc,char **argv) {
   // double progress=0;
   // pfnProgress(progress,pszMessage,pProgressArg);
   if(input_opt.size()&&output_opt.size()){
-    ImgReaderGdal imgReader(input_opt[0]);
-    ImgWriterGdal imgWriter;
+    ImgRaster imgReader(input_opt[0],memory_opt[0]);
+    ImgRaster imgWriter;
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
       string theInterleave="INTERLEAVE=";
       theInterleave+=imgReader.getInterleave();
       option_opt.push_back(theInterleave);
     }
 
-    imgWriter.open(output_opt[0],imgReader.nrOfCol(),imgReader.nrOfRow(),1,GDT_Byte,oformat_opt[0],option_opt);
+    imgWriter.open(output_opt[0],imgReader.nrOfCol(),imgReader.nrOfRow(),1,GDT_Byte,oformat_opt[0],memory_opt[0],option_opt);
 
     imgWriter.copyGeoTransform(imgReader);
     if(colorTable_opt.size()){

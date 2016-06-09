@@ -92,7 +92,7 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | o      | output               | std::string |       |Output sample dataset | 
  | c      | class                | int  |       |Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count | 
  | t      | threshold            | float | 100   |Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold per vector sample layer | 
- | perc   | perc                 | double | 95    |Percentile value used for rule percentile | 
+ | perc   | perc                 | double | 95    |Percentile value(s) used for rule percentile | 
  | f      | f                    | std::string | SQLite |Output sample dataset format | 
  | ft     | ftype                | std::string | Real  |Field type (only Real or Integer) | 
  | b      | band                 | int  |       |Band index(es) to extract (0 based). Leave empty to use all bands | 
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
   Optionpk<string> output_opt("o", "output", "Output sample dataset");
   Optionpk<int> class_opt("c", "class", "Class(es) to extract from input sample image. Leave empty to extract all valid data pixels from sample dataset. Make sure to set classes if rule is set to mode, proportion or count");
   Optionpk<float> threshold_opt("t", "threshold", "Probability threshold for selecting samples (randomly). Provide probability in percentage (>0) or absolute (<0). Use a single threshold per vector sample layer. If using raster land cover maps as a sample dataset, you can provide a threshold value for each class (e.g. -t 80 -t 60). Use value 100 to select all pixels for selected class(es)", 100);
-  Optionpk<double> percentile_opt("perc","perc","Percentile value used for rule percentile",95);
+  Optionpk<double> percentile_opt("perc","perc","Percentile value(s) used for rule percentile",95);
   Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<int> band_opt("b", "band", "Band index(es) to extract (0 based). Leave empty to use all bands");
@@ -614,16 +614,28 @@ int main(int argc, char *argv[])
       for(int irule=0;irule<rule_opt.size();++irule){
         for(int iband=0;iband<nband;++iband){
           int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+	  ostringstream fs;
+	  if(rule_opt.size()>1||nband==1)
+	    fs << rule_opt[irule];
+	  if(nband>1)
+	    fs << "b" << theBand;
           switch(ruleMap[rule_opt[irule]]){
           case(rule::proportion):
           case(rule::count):{//count for each class
             for(int iclass=0;iclass<class_opt.size();++iclass){
-              ostringstream fs;
-              fs << class_opt[iclass];
-              if(nband>1)
-                fs << "b" << theBand;
-              string fieldname=fs.str();
-              ogrWriter.createField(fieldname,fieldType,ilayerWrite);
+              ostringstream fsclass;
+	      fsclass << fs.str() << "class" << class_opt[index];
+              ogrWriter.createField(fsclass.str(),fieldType,ilayerWrite);
+            }
+            break;
+          }
+          case(rule::percentile):{//for each percentile
+            for(int iperc=0;iclass<class_opt.size();++iclass){
+	      ostringstream fsperc;
+	      fsperc << fs.str() << "class" << class_opt[index];
+	      fsperc << percentile_opt[iperc];
+              fs << percentile_opt[iperc];
+              ogrWriter.createField(fsperc.str(),fieldType,ilayerWrite);
             }
             break;
           }
@@ -1081,25 +1093,22 @@ int main(int argc, char *argv[])
                     continue;
                   for(int iband=0;iband<nband;++iband){
                     int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-                    double theValue=0;
-                    string fieldname;
+                    vector<double> theValue;
+                    vector<string> fieldname;
                     ostringstream fs;
                     if(rule_opt.size()>1||nband==1)
                       fs << rule_opt[irule];
                     if(nband>1)
                       fs << "b" << theBand;
-                    fieldname=fs.str();
                     switch(ruleMap[rule_opt[irule]]){
-                    case(rule::proportion):
+                    case(rule::proportion)://deliberate fall through
                       stat.normalize_pct(polyClassValues);
                     case(rule::count):{//count for each class
                       for(int index=0;index<polyClassValues.size();++index){
-                        theValue=polyClassValues[index];
-                        ostringstream fs;
-                        fs << class_opt[index];
-                        if(nband>1)
-                          fs << "b" << theBand;
-                        fieldname=fs.str();
+                        theValue.push_back(polyClassValues[index]);
+			ostringstream fsclass;
+			fsclass << fs.str() << "class" << class_opt[index];
+                        fieldname.push_back(fsclass.str());
                       }
                       break;
                     }
@@ -1115,55 +1124,71 @@ int main(int argc, char *argv[])
                       maxClass=class_opt[maxIndex];
                       if(verbose_opt[0]>0)
                         std::cout << "maxClass: " << maxClass << std::endl;
-                      theValue=maxClass;
+                      theValue.push_back(maxClass);
+		      fieldname.push_back(fs.str());
                     }
                     case(rule::mean):
-                      theValue=stat.mean(polyValues[iband]);
+                      theValue.push_back(stat.mean(polyValues[iband]));
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::median):
-                      theValue=stat.median(polyValues[iband]);
+                      theValue.push_back(stat.median(polyValues[iband]));
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::stdev):
-                      theValue=sqrt(stat.var(polyValues[iband]));
+                      theValue.push_back(sqrt(stat.var(polyValues[iband])));
+		      fieldname.push_back(fs.str());
                       break;
-                    case(rule::percentile):
-                      theValue=stat.percentile(polyValues[iband],polyValues[iband].begin(),polyValues[iband].end(),percentile_opt[0]);
+                    case(rule::percentile):{
+		      for(int iperc=0;iperc<percentile_opt.size();++iperc){
+			theValue.push_back(stat.percentile(polyValues[iband],polyValues[iband].begin(),polyValues[iband].end(),percentile_opt[iperc]));
+			ostringstream fsperc;
+			fsperc << fs.str() << "class" << class_opt[index];
+                        fsperc << percentile_opt[iperc];
+                        fieldname.push_back(fsperc.str());
+					      }
                       break;
+		    }
                     case(rule::sum):
-                      theValue=stat.sum(polyValues[iband]);
+                      theValue.push_back(stat.sum(polyValues[iband]));
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::max):
-                      theValue=stat.mymax(polyValues[iband]);
+                      theValue.push_back(stat.mymax(polyValues[iband]));
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::min):
-                      theValue=stat.mymin(polyValues[iband]);
+                      theValue.push_back(stat.mymin(polyValues[iband]));
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::centroid):
-                      theValue=polyValues[iband].back();
+                      theValue.push_back(polyValues[iband].back());
+		      fieldname.push_back(fs.str());
                       break;
                     default://not supported
                       break;
-                    }
-                  
-                    switch( fieldType ){
-                    case OFTInteger:
-                      writePolygonFeature->SetField(fieldname.c_str(),static_cast<int>(theValue));
-                      break;
-                    case OFTReal:
-                      writePolygonFeature->SetField(fieldname.c_str(),theValue);
-                      break;
-                    case OFTString:
-                      writePolygonFeature->SetField(fieldname.c_str(),type2string<double>(theValue).c_str());
-                      break;
-                    default://not supported
-                      std::string errorString="field type not supported";
-                      throw(errorString);
-                      break;
-                    }
-                  }
-                }
-              }
-            }
+		    }
+		    for(int ivalue=0;ivalue<theValue.size();++ivalue){
+		      switch( fieldType ){
+		      case OFTInteger:
+			writePolygonFeature->SetField(fieldname[ivalue].c_str(),static_cast<int>(theValue[ivalue]));
+			break;
+		      case OFTReal:
+			writePolygonFeature->SetField(fieldname[ivalue].c_str(),theValue[ivalue]);
+			break;
+		      case OFTString:
+			writePolygonFeature->SetField(fieldname[ivalue].c_str(),type2string<double>(theValue[ivalue]).c_str());
+			break;
+		      default://not supported
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
+		    }
+		  }
+		}
+	      }
+	    }
 	    //test
             if(createPolygon&&validFeature){
             // if(createPolygon){
@@ -1585,25 +1610,22 @@ int main(int argc, char *argv[])
                     continue;
                   for(int iband=0;iband<nband;++iband){
                     int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-                    double theValue=0;
-                    string fieldname;
+                    vector<double> theValue;
+                    vector<string> fieldname;
                     ostringstream fs;
                     if(rule_opt.size()>1||nband==1)
                       fs << rule_opt[irule];
                     if(nband>1)
                       fs << "b" << theBand;
-                    fieldname=fs.str();
                     switch(ruleMap[rule_opt[irule]]){
                     case(rule::proportion):
                       stat.normalize_pct(polyClassValues);
                     case(rule::count):{//count for each class
                       for(int index=0;index<polyClassValues.size();++index){
-                        theValue=polyClassValues[index];
-                        ostringstream fs;
-                        fs << class_opt[index];
-                        if(nband>1)
-                          fs << "b" << theBand;
-                        fieldname=fs.str();
+                        theValue.push_back(polyClassValues[index]);
+                        ostringstream fsclass;
+                        fsclass << fs.str() << "class" << class_opt[index];
+                        fieldname.push_back(fsclass.str());
                       }
                       break;
                     }
@@ -1620,49 +1642,64 @@ int main(int argc, char *argv[])
                       if(verbose_opt[0]>0)
                         std::cout << "maxClass: " << maxClass << std::endl;
                       theValue=maxClass;
+		      fieldname.push_back(fs.str());
                     }
                     case(rule::mean):
                       theValue=stat.mean(polyValues[iband]);
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::median):
                       theValue=stat.median(polyValues[iband]);
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::stdev):
                       theValue=sqrt(stat.var(polyValues[iband]));
+		      fieldname.push_back(fs.str());
                       break;
-                    case(rule::percentile):
-                      theValue=stat.percentile(polyValues[iband],polyValues[iband].begin(),polyValues[iband].end(),percentile_opt[0]);
+                    case(rule::percentile):{
+		      for(int iperc=0;iperc<percentile_opt.size();++iperc){
+			theValue.push_back(stat.percentile(polyValues[iband],polyValues[iband].begin(),polyValues[iband].end(),percentile_opt[iperc]));
+			ostringstream fsperc;
+			fsperc << fs.str() << "class" << class_opt[index];
+                        fsperc << percentile_opt[iperc];
+                        fieldname.push_back(fsperc.str());
+		      }
                       break;
                     case(rule::sum):
                       theValue=stat.sum(polyValues[iband]);
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::max):
                       theValue=stat.mymax(polyValues[iband]);
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::min):
                       theValue=stat.mymin(polyValues[iband]);
+		      fieldname.push_back(fs.str());
                       break;
                     case(rule::centroid):
                       theValue=polyValues[iband].back();
+		      fieldname.push_back(fs.str());
                       break;
                     default://not supported
                       break;
                     }
-                  
-                    switch( fieldType ){
-                    case OFTInteger:
-                      writePolygonFeature->SetField(fieldname.c_str(),static_cast<int>(theValue));
+		    for(int ivalue=0;ivalue<theValue.size();++ivalue){
+		      switch( fieldType ){
+		      case OFTInteger:
+			writePolygonFeature->SetField(fieldname[ivalue].c_str(),static_cast<int>(theValue[ivalue]));
                       break;
-                    case OFTReal:
-                      writePolygonFeature->SetField(fieldname.c_str(),theValue);
+		      case OFTReal:
+			writePolygonFeature->SetField(fieldname[ivalue].c_str(),theValue[ivalue]);
                       break;
                     case OFTString:
-                      writePolygonFeature->SetField(fieldname.c_str(),type2string<double>(theValue).c_str());
+                      writePolygonFeature->SetField(fieldname[ivalue].c_str(),type2string<double>(theValue[ivalue]).c_str());
                       break;
-                    default://not supported
-                      std::string errorString="field type not supported";
-                      throw(errorString);
-                      break;
+		      default://not supported
+			std::string errorString="field type not supported";
+			throw(errorString);
+			break;
+		      }
                     }
                   }
                 }

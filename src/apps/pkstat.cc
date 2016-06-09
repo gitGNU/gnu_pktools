@@ -69,6 +69,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  | src_min | src_min              | double |       |start reading source from this minimum value | 
  | src_max | src_max              | double |       |stop reading source from this maximum value | 
  | kde    | kde                  | bool | false |Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkstat -i input
 
@@ -119,6 +120,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> reg_opt("reg","regression","calculate linear regression between two raster datasets and get correlation coefficient",false);
   Optionpk<bool> regerr_opt("regerr","regerr","calculate linear regression between two raster datasets and get root mean square error",false);
   Optionpk<bool> preg_opt("preg","preg","calculate perpendicular regression between two raster datasets and get correlation coefficient",false);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode when positive", 0,2);
   fstat_opt.setHide(1);
   ulx_opt.setHide(1);
@@ -131,6 +133,7 @@ int main(int argc, char *argv[])
   offset_opt.setHide(1);
   src_min_opt.setHide(1);
   src_max_opt.setHide(1);
+  memory_opt.setHide(1);
   kde_opt.setHide(1);
 
   // range_opt.setHide(1);
@@ -173,6 +176,7 @@ int main(int argc, char *argv[])
     src_min_opt.retrieveOption(argc,argv);
     src_max_opt.retrieveOption(argc,argv);
     kde_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -218,7 +222,7 @@ int main(int argc, char *argv[])
   std::vector<double> histogramOutput;
   double nsample=0;
 
-  ImgReaderGdal imgReader;
+  ImgRaster imgReader;
 
   if(scale_opt.size()){
     while(scale_opt.size()<input_opt.size())
@@ -234,7 +238,7 @@ int main(int argc, char *argv[])
   }
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
-      imgReader.open(input_opt[ifile]);
+      imgReader.open(input_opt[ifile],memory_opt[0]);
     }
     catch(std::string errorstring){
       std::cout << errorstring << std::endl;
@@ -592,8 +596,8 @@ int main(int argc, char *argv[])
   //     while(src_max_opt.size()<input_opt.size())
   // 	src_max_opt.push_back(src_max_opt[0]);
   //   }
-  //   ImgReaderGdal imgReader1(input_opt[0]);
-  //   ImgReaderGdal imgReader2(input_opt[1]);
+  //   ImgRaster imgReader1(input_opt[0]);
+  //   ImgRaster imgReader2(input_opt[1]);
 
   //   if(offset_opt.size())
   //     imgReader1.setOffset(offset_opt[0],band_opt[0]);
@@ -663,8 +667,8 @@ int main(int argc, char *argv[])
       while(src_max_opt.size()<input_opt.size())
 	src_max_opt.push_back(src_max_opt[0]);
     }
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
+    ImgRaster imgReader1(input_opt[0]);
+    ImgRaster imgReader2(input_opt[1]);
 
     if(offset_opt.size())
       imgReader1.setOffset(offset_opt[0],band_opt[0]);
@@ -704,8 +708,8 @@ int main(int argc, char *argv[])
       while(src_max_opt.size()<input_opt.size())
 	src_max_opt.push_back(src_max_opt[0]);
     }
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
+    ImgRaster imgReader1(input_opt[0]);
+    ImgRaster imgReader2(input_opt[1]);
 
     if(offset_opt.size())
       imgReader1.setOffset(offset_opt[0],band_opt[0]);
@@ -745,8 +749,8 @@ int main(int argc, char *argv[])
       while(src_max_opt.size()<input_opt.size())
 	src_max_opt.push_back(src_max_opt[0]);
     }
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
+    ImgRaster imgReader1(input_opt[0]);
+    ImgRaster imgReader2(input_opt[1]);
 
     if(offset_opt.size())
       imgReader1.setOffset(offset_opt[0],band_opt[0]);
@@ -786,8 +790,8 @@ int main(int argc, char *argv[])
       while(src_max_opt.size()<input_opt.size())
 	src_max_opt.push_back(src_max_opt[0]);
     }
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
+    ImgRaster imgReader1(input_opt[0]);
+    ImgRaster imgReader2(input_opt[1]);
 
     if(offset_opt.size())
       imgReader1.setOffset(offset_opt[0],band_opt[0]);
@@ -823,8 +827,8 @@ int main(int argc, char *argv[])
       while(src_max_opt.size()<input_opt.size())
 	src_max_opt.push_back(src_max_opt[0]);
     }
-    ImgReaderGdal imgReader1(input_opt[0]);
-    ImgReaderGdal imgReader2(input_opt[1]);
+    ImgRaster imgReader1(input_opt[0]);
+    ImgRaster imgReader2(input_opt[1]);
 
     if(offset_opt.size())
       imgReader1.setOffset(offset_opt[0],band_opt[0]);

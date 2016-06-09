@@ -18,8 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <assert.h>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
@@ -81,6 +80,7 @@ A typical use of the utility is to assess the accuracy of an input raster land c
  | ct     | ct                   | std::string |       |Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid). | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  |        | commission           | short | 2     |Value for commission errors: input label < reference label | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkdiff -i input -ref reference
 
@@ -122,6 +122,7 @@ int main(int argc, char *argv[])
   Optionpk<short> valueE_opt("\0", "correct", "Value for correct pixels", 0,2);
   Optionpk<short> valueO_opt("\0", "omission", "Value for omission errors: input label > reference label", 1,2);
   Optionpk<short> valueC_opt("\0", "commission", "Value for commission errors: input label < reference label", 2,1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "Verbose level", 0,2);
 
   output_opt.setHide(1);
@@ -133,6 +134,7 @@ int main(int argc, char *argv[])
   disc_opt.setHide(1);
   colorTable_opt.setHide(1);
   option_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -164,6 +166,7 @@ int main(int argc, char *argv[])
     valueE_opt.retrieveOption(argc,argv);
     valueO_opt.retrieveOption(argc,argv);
     valueC_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -178,8 +181,8 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  ImgReaderGdal inputReader;
-  ImgReaderGdal maskReader;
+  ImgRaster inputReader;
+  ImgRaster maskReader;
 
   if(verbose_opt[0]){
     cout << "flag(s) set to";
@@ -229,7 +232,7 @@ int main(int argc, char *argv[])
       try{
         if(verbose_opt[0])
           cout << "opening input image file " << input_opt[0] << endl;
-        inputReader.open(input_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
+        inputReader.open(input_opt[0],memory_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
       }
       catch(string error){
         cerr << error << endl;
@@ -309,9 +312,9 @@ int main(int argc, char *argv[])
 	cout << "reference " << reference_opt[iref] << endl;
         // assert(reference_opt[iref].find(".shp")!=string::npos);
         try{
-          inputReader.open(input_opt[iinput]);//,imagicX_opt[0],imagicY_opt[0]);
+          inputReader.open(input_opt[iinput],memory_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
           if(mask_opt.size()){
-            maskReader.open(mask_opt[iinput]);
+            maskReader.open(mask_opt[iinput],memory_opt[0]);
             assert(inputReader.nrOfCol()==maskReader.nrOfCol());
             assert(inputReader.nrOfRow()==maskReader.nrOfRow());
           }
@@ -666,11 +669,11 @@ int main(int argc, char *argv[])
     pfnProgress(1.0,pszMessage,pProgressArg);
   }//reference is OGR vector
   else{//reference is GDAL raster
-    ImgWriterGdal gdalWriter;
+    ImgRaster gdalWriter;
     try{
-      inputReader.open(input_opt[0]);
+      inputReader.open(input_opt[0],memory_opt[0]);
       if(mask_opt.size())
-        maskReader.open(mask_opt[0]);
+        maskReader.open(mask_opt[0],memory_opt[0]);
       if(output_opt.size()){
         if(verbose_opt[0])
           cout << "opening output image " << output_opt[0] << endl;
@@ -679,7 +682,7 @@ int main(int argc, char *argv[])
           theInterleave+=inputReader.getInterleave();
           option_opt.push_back(theInterleave);
         }
-        gdalWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),oformat_opt[0],option_opt);
+        gdalWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),1,inputReader.getDataType(),oformat_opt[0],memory_opt[0],option_opt);
 	if(nodata_opt.size())
 	  gdalWriter.GDALSetNoDataValue(nodata_opt[0]);
 	gdalWriter.copyGeoTransform(inputReader);
@@ -712,7 +715,7 @@ int main(int argc, char *argv[])
     int icol=0;
     double oldreferencerow=-1;
     double oldmaskrow=-1;
-    ImgReaderGdal referenceReaderGdal;
+    ImgRaster referenceReaderGdal;
     try{
       referenceReaderGdal.open(reference_opt[0]);//,rmagicX_opt[0],rmagicY_opt[0]);
     }

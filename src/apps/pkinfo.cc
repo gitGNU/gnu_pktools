@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <list>
 #include "base/Optionpk.h"
 #include "algorithms/Egcs.h"
-#include "imageclasses/ImgReaderGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 
 /******************************************************************************/
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  ImgReaderGdal imgReader;
+  ImgRaster imgReader;
   for(int ifile=0;ifile<input_opt.size();++ifile){
     imgReader.open(input_opt[ifile]);
     for(int inodata=0;inodata<nodata_opt.size();++inodata){

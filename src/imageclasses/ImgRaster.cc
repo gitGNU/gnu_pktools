@@ -1612,13 +1612,13 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
     double gt[6];
     getGeoTransform(gt);
     if(controlOptions.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType()),0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
         std::string errorString(CPLGetLastErrorMsg());
         throw(errorString);
       }
     }
     else if(burnValues.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSizeBytes(getDataType()),0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
         std::string errorString(CPLGetLastErrorMsg());
         throw(errorString);
       }

@@ -24,8 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
-#include "imageclasses/ImgWriterGdal.h"
-// #include "imageclasses/ImgWriterOgr.h"
+#include "imageclasses/ImgRaster.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -72,6 +71,7 @@ The utility pkdumpimg dumps the content of a raster dataset to (standard) output
  | r      | resampling-method    | std::string | near  |Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation). | 
  | srcnodata | srcnodata            | double |       |set no data value(s) for input image | 
  | dstnodata | dstnodata            | short | 0     |nodata value for output if out of bounds. | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkdumpimg -i input.txt [-o output]
 
@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
   Optionpk<string> resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbour, bilinear: bi-linear interpolation).", "near");
   Optionpk<short> dstnodata_opt("dstnodata", "dstnodata", "nodata value for output if out of bounds.", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "set no data value(s) for input image");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose (Default: 0)", 0,2);
 
   dx_opt.setHide(1);
@@ -106,6 +107,7 @@ int main(int argc, char *argv[])
   resample_opt.setHide(1);
   srcnodata_opt.setHide(1);
   dstnodata_opt.setHide(1);
+  memory_opt.setHide(1);
   
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -123,6 +125,7 @@ int main(int argc, char *argv[])
     resample_opt.retrieveOption(argc,argv);
     srcnodata_opt.retrieveOption(argc,argv);
     dstnodata_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -165,7 +168,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  ImgReaderGdal imgReader(input_opt[0]);
+  ImgRaster imgReader(input_opt[0],memory_opt[0]);
   for(int inodata=0;inodata<srcnodata_opt.size();++inodata)
     imgReader.pushNoDataValue(srcnodata_opt[inodata]);
 

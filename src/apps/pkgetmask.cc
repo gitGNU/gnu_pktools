@@ -19,8 +19,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <assert.h>
 #include <vector>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "base/Optionpk.h"
 
 /******************************************************************************/
@@ -59,6 +58,7 @@ The utility pkgetmask creates a mask raster dataset from an input raster dataset
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkgetmask -i input -o output
 
@@ -82,6 +82,7 @@ int main(int argc,char **argv) {
   Optionpk<string> oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0,2);
 
   band_opt.setHide(1);
@@ -90,6 +91,7 @@ int main(int argc,char **argv) {
   oformat_opt.setHide(1);
   option_opt.setHide(1);
   colorTable_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -105,6 +107,7 @@ int main(int argc,char **argv) {
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -144,7 +147,7 @@ int main(int argc,char **argv) {
   }
 
   assert(input_opt.size());
-  ImgReaderGdal imgReader(input_opt[0]);
+  ImgRaster imgReader(input_opt[0],memory_opt[0]);
   assert(band_opt.size()>=0);
   assert(band_opt.size()<=imgReader.nrOfBand());
 
@@ -180,7 +183,7 @@ int main(int argc,char **argv) {
   vector< vector<float> > lineBuffer(band_opt.size());
   for(int iband=0;iband<band_opt.size();++iband)
     lineBuffer.resize(imgReader.nrOfCol());
-  ImgWriterGdal imgWriter;
+  ImgRaster imgWriter;
   //if output type not set, get type from input image
   if(theType==GDT_Unknown){
     theType=imgReader.getDataType();
@@ -196,7 +199,7 @@ int main(int argc,char **argv) {
     option_opt.push_back(theInterleave);
   }
   assert(output_opt.size());
-  imgWriter.open(output_opt[0],imgReader.nrOfCol(),imgReader.nrOfRow(),1,theType,imageType,option_opt);
+  imgWriter.open(output_opt[0],imgReader.nrOfCol(),imgReader.nrOfRow(),1,theType,imageType,memory_opt[0],option_opt);
   if(colorTable_opt.size()){
     if(colorTable_opt[0]!="none")
       imgWriter.setColorTable(colorTable_opt[0]);

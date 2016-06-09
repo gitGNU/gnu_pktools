@@ -19,8 +19,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <assert.h>
 
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "base/Optionpk.h"
 /******************************************************************************/
 /*! \page pksetmask pksetmask
@@ -57,6 +56,7 @@ The utility pksetmask sets a mask provided with option -m to an input raster dat
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate)| 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pksetmask -i input -m mask [-m mask]* [-msknodata value -nodata value]* -o output
 
@@ -84,6 +84,7 @@ int main(int argc, char *argv[])
   Optionpk<char> operator_opt("p", "operator", "Operator: < = > !. Use operator for each msknodata option", '=');
   Optionpk<int> nodata_opt("nodata", "nodata", "nodata value to put in image if not valid", 0);
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0,2);
 
   otype_opt.setHide(1);
@@ -91,6 +92,7 @@ int main(int argc, char *argv[])
   option_opt.setHide(1);
   colorTable_opt.setHide(1);
   mskband_opt.setHide(1);
+  memory_opt.setHide(1);
   
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -105,6 +107,7 @@ int main(int argc, char *argv[])
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -126,17 +129,17 @@ int main(int argc, char *argv[])
   while(mskband_opt.size()<mask_opt.size())
     mskband_opt.push_back(mskband_opt[0]);
 
-  vector<ImgReaderGdal> maskReader(mask_opt.size()); 
+  vector<ImgRaster> maskReader(mask_opt.size()); 
   for(int imask=0;imask<mask_opt.size();++imask){
     if(verbose_opt[0])
       cout << "opening mask image file " << mask_opt[imask] << endl;
-    maskReader[imask].open(mask_opt[imask]);
+    maskReader[imask].open(mask_opt[imask],memory_opt[0]);
   }
   assert(input_opt.size());
   if(verbose_opt[0])
     cout << "opening input image file " << input_opt[0] << endl;
-  ImgReaderGdal inputReader;
-  inputReader.open(input_opt[0]);
+  ImgRaster inputReader;
+  inputReader.open(input_opt[0],memory_opt[0]);
   string imageType;//=inputReader.getImageType();
   if(oformat_opt.size())//default
     imageType=oformat_opt[0];
@@ -161,14 +164,14 @@ int main(int argc, char *argv[])
     std::cout << std::endl << "Output data type:  " << GDALGetDataTypeName(theType) << std::endl;
     std::cout << "opening output image for writing: " << output_opt[0] << std::endl;
   }
-  ImgWriterGdal outputWriter;
+  ImgRaster outputWriter;
   try{
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
       string theInterleave="INTERLEAVE=";
       theInterleave+=inputReader.getInterleave();
       option_opt.push_back(theInterleave);
     }
-    outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,imageType,option_opt);
+    outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,imageType,memory_opt[0],option_opt);
     for(int iband=0;iband<inputReader.nrOfBand();++iband)
       outputWriter.GDALSetNoDataValue(nodata_opt[0],iband);
     outputWriter.setProjection(inputReader.getProjection());
