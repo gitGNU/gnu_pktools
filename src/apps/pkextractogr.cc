@@ -1701,7 +1701,7 @@ int main(int argc, char *argv[])
                   }
                 }
               }
-	      }
+            }
             if(createPolygon&&validFeature){
 	      //todo: only create if valid feature?
               //write polygon feature
