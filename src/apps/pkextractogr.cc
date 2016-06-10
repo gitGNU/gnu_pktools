@@ -624,17 +624,15 @@ int main(int argc, char *argv[])
           case(rule::count):{//count for each class
             for(int iclass=0;iclass<class_opt.size();++iclass){
               ostringstream fsclass;
-	      fsclass << fs.str() << "class" << class_opt[index];
+	      fsclass << fs.str() << "class" << class_opt[iclass];
               ogrWriter.createField(fsclass.str(),fieldType,ilayerWrite);
             }
             break;
           }
           case(rule::percentile):{//for each percentile
-            for(int iperc=0;iclass<class_opt.size();++iclass){
+            for(int iperc=0;iperc<percentile_opt.size();++iperc){
 	      ostringstream fsperc;
-	      fsperc << fs.str() << "class" << class_opt[index];
-	      fsperc << percentile_opt[iperc];
-              fs << percentile_opt[iperc];
+	      fsperc << fs.str() << percentile_opt[iperc];
               ogrWriter.createField(fsperc.str(),fieldType,ilayerWrite);
             }
             break;
@@ -1143,10 +1141,9 @@ int main(int argc, char *argv[])
 		      for(int iperc=0;iperc<percentile_opt.size();++iperc){
 			theValue.push_back(stat.percentile(polyValues[iband],polyValues[iband].begin(),polyValues[iband].end(),percentile_opt[iperc]));
 			ostringstream fsperc;
-			fsperc << fs.str() << "class" << class_opt[index];
-                        fsperc << percentile_opt[iperc];
+			fsperc << fs.str() << percentile_opt[iperc];
                         fieldname.push_back(fsperc.str());
-					      }
+		      }
                       break;
 		    }
                     case(rule::sum):
@@ -1254,7 +1251,7 @@ int main(int argc, char *argv[])
               if(verbose_opt[0]>1)
                 std::cout << "copying new fields write polygon " << std::endl;
               if(verbose_opt[0]>1)
-                std::cout << "write feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
+                std::cout << "write polygon feature has " << writePolygonFeature->GetFieldCount() << " fields" << std::endl;
 	    }
 
             OGRPoint readPoint;
@@ -1513,7 +1510,7 @@ int main(int argc, char *argv[])
                     writePointFeature->SetGeometry(&thePoint);
                     assert(wkbFlatten(writePointFeature->GetGeometryRef()->getGeometryType()) == wkbPoint);
                     if(verbose_opt[0]>1){
-                      std::cout << "write feature has " << writePointFeature->GetFieldCount() << " fields:" << std::endl;
+                      std::cout << "write point feature has " << writePointFeature->GetFieldCount() << " fields:" << std::endl;
                       for(int iField=0;iField<writePointFeature->GetFieldCount();++iField){
                         std::string fieldname=writeLayer->GetLayerDefn()->GetFieldDefn(iField)->GetNameRef();
                         cout << fieldname << endl;
@@ -1641,49 +1638,49 @@ int main(int argc, char *argv[])
                       maxClass=class_opt[maxIndex];
                       if(verbose_opt[0]>0)
                         std::cout << "maxClass: " << maxClass << std::endl;
-                      theValue=maxClass;
+                      theValue.push_back(maxClass);
 		      fieldname.push_back(fs.str());
                     }
                     case(rule::mean):
-                      theValue=stat.mean(polyValues[iband]);
+                      theValue.push_back(stat.mean(polyValues[iband]));
 		      fieldname.push_back(fs.str());
                       break;
                     case(rule::median):
-                      theValue=stat.median(polyValues[iband]);
+                      theValue.push_back(stat.median(polyValues[iband]));
 		      fieldname.push_back(fs.str());
                       break;
                     case(rule::stdev):
-                      theValue=sqrt(stat.var(polyValues[iband]));
+                      theValue.push_back(sqrt(stat.var(polyValues[iband])));
 		      fieldname.push_back(fs.str());
                       break;
                     case(rule::percentile):{
 		      for(int iperc=0;iperc<percentile_opt.size();++iperc){
 			theValue.push_back(stat.percentile(polyValues[iband],polyValues[iband].begin(),polyValues[iband].end(),percentile_opt[iperc]));
 			ostringstream fsperc;
-			fsperc << fs.str() << "class" << class_opt[index];
-                        fsperc << percentile_opt[iperc];
+			fsperc << fs.str() << percentile_opt[iperc];
                         fieldname.push_back(fsperc.str());
 		      }
                       break;
+		    }
                     case(rule::sum):
-                      theValue=stat.sum(polyValues[iband]);
+                      theValue.push_back(stat.sum(polyValues[iband]));
 		      fieldname.push_back(fs.str());
                       break;
                     case(rule::max):
-                      theValue=stat.mymax(polyValues[iband]);
+                      theValue.push_back(stat.mymax(polyValues[iband]));
 		      fieldname.push_back(fs.str());
                       break;
                     case(rule::min):
-                      theValue=stat.mymin(polyValues[iband]);
+                      theValue.push_back(stat.mymin(polyValues[iband]));
 		      fieldname.push_back(fs.str());
                       break;
                     case(rule::centroid):
-                      theValue=polyValues[iband].back();
+                      theValue.push_back(polyValues[iband].back());
 		      fieldname.push_back(fs.str());
                       break;
                     default://not supported
                       break;
-                    }
+		    }
 		    for(int ivalue=0;ivalue<theValue.size();++ivalue){
 		      switch( fieldType ){
 		      case OFTInteger:
@@ -1704,8 +1701,7 @@ int main(int argc, char *argv[])
                   }
                 }
               }
-	    }
-	    //hiero
+            }
             if(createPolygon&&validFeature){
 	      //todo: only create if valid feature?
               //write polygon feature

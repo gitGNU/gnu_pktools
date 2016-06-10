@@ -1017,6 +1017,30 @@ unsigned long int ImgRaster::getNvalid(int band)
 }
 
 /**
+ * @param band The band for which to calculate the number of valid pixels
+ * @return number of invalid pixels in this dataset for the the selected band
+ **/
+unsigned long int ImgRaster::getNinvalid(int band)
+{
+  unsigned long int nvalid=0;
+  if(m_noDataValues.size()){
+    std::vector<double> lineBuffer(nrOfCol());
+    for(int irow=0;irow<nrOfRow();++irow){
+      readData(lineBuffer,irow,band);
+      for(int icol=0;icol<nrOfCol();++icol){
+	if(isNoData(lineBuffer[icol]))
+	  continue;
+	else
+	  ++nvalid;
+      }
+    }
+    return (nrOfCol()*nrOfRow())-nvalid;
+  }
+  else
+    return(0);
+}
+
+/**
  * @param refX, refY Calculated reference pixel position in geo-refererenced coordinates
  * @param band The band for which to calculate the number of valid pixels
  **/

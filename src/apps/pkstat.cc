@@ -40,6 +40,8 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  | i      | input                | std::string |       |name of the input raster dataset | 
  | b      | band                 | unsigned short | 0     |band(s) on which to calculate statistics | 
  | f      | filename             | bool | false |Shows image filename  | 
+ | invalid | invalid           | bool | false |Report number of nodata values in image |
+ | valid | valid           | bool | false |Report number of valid data values (i.e., not nodata) in image |
  | stats  | statistics           | bool | false |Shows basic statistics (min,max, mean and stdDev of the raster datasets) | 
  | nodata | nodata               | double |       |Set nodata value(s) | 
  | mean   | mean                 | bool | false |calculate mean | 
@@ -82,6 +84,8 @@ int main(int argc, char *argv[])
 {
   Optionpk<string> input_opt("i","input","name of the input raster dataset");
   Optionpk<unsigned short> band_opt("b","band","band(s) on which to calculate statistics",0);
+  Optionpk<bool> invalid_opt("invalid","invalid","Report number of nodata values in image",false);
+  Optionpk<bool> valid_opt("valid","valid","Report number of nodata values (i.e., not nodata) in image",false);
   Optionpk<bool>  filename_opt("f", "filename", "Shows image filename ", false);
   Optionpk<bool>  stat_opt("stats", "statistics", "Shows basic statistics (calculate in memory) (min,max, mean and stdDev of the raster datasets)", false);
   Optionpk<bool>  fstat_opt("fstats", "fstatistics", "Shows basic statistics using GDAL computeStatistics  (min,max, mean and stdDev of the raster datasets)", false);
@@ -145,6 +149,8 @@ int main(int argc, char *argv[])
     doProcess=input_opt.retrieveOption(argc,argv);
     //optional options
     band_opt.retrieveOption(argc,argv);
+    valid_opt.retrieveOption(argc,argv);
+    invalid_opt.retrieveOption(argc,argv);
     filename_opt.retrieveOption(argc,argv);
     stat_opt.retrieveOption(argc,argv);
     fstat_opt.retrieveOption(argc,argv);
@@ -265,6 +271,10 @@ int main(int argc, char *argv[])
       if(scale_opt.size()>ifile)
         imgReader.setScale(scale_opt[ifile],band_opt[iband]);
 
+      if(valid_opt[0])
+	cout << "--nvalid " << imgReader.getNvalid(band_opt[0]) << endl;
+      if(invalid_opt[0])
+	cout << "--ninvalid " << imgReader.getNinvalid(band_opt[0]) << endl;
       if(stat_opt[0]||mean_opt[0]||median_opt[0]||var_opt[0]||stdev_opt[0]){//the hard way (in memory)
 	statfactory::StatFactory stat;
 	vector<double> readBuffer;

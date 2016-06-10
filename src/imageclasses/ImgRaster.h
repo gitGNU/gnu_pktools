@@ -300,6 +300,8 @@ public:
   void getRange(std::vector<short>& range, int Band=0);
   ///Calculate the number of valid pixels (with a value not defined as no data).
   unsigned long int getNvalid(int band);
+  ///Calculate the number of invalid pixels (with a value defined as no data).
+  unsigned long int getNinvalid(int band);
 
   //From Writer
   ///Open an image for writing, copying image attributes from a source image. Image is directly written to file. Use the constructor with memory>0 to support caching
