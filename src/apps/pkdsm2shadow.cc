@@ -27,8 +27,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "base/Vector2d.h"
 #include "algorithms/Filter2d.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 
 /******************************************************************************/
 /*! \page pkdsm2shadow pkdsm2shadow
@@ -67,6 +66,7 @@ Utility to create a binary shadow mask from a digital surface model, based on Su
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+  | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkdsm2shadow -i input.txt -o output [-sza angle] [-saa angle]
 
@@ -93,10 +93,12 @@ int main(int argc,char **argv) {
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<double> scale_opt("s", "scale", "scale used for input dsm: height=scale*input+offset");
   Optionpk<double> offset_opt("off", "offset", "offset used for input dsm: height=scale*input+offset");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   scale_opt.setHide(1);
   offset_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -111,6 +113,7 @@ int main(int argc,char **argv) {
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -125,11 +128,11 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
-  ImgReaderGdal input;
-  ImgWriterGdal output;
+  ImgRaster input;
+  ImgRaster output;
   assert(input_opt.size());
   assert(output_opt.size());
-  input.open(input_opt[0]);
+  input.open(input_opt[0],memory_opt[0]);
   if(scale_opt.size())
     input.setScale(scale_opt[0]);
   if(offset_opt.size())
@@ -163,7 +166,7 @@ int main(int argc,char **argv) {
     option_opt.push_back(theInterleave);
   }
   try{
-    output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),theType,imageType,option_opt);
+    output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),theType,imageType,memory_opt[0],option_opt);
   }
   catch(string errorstring){
     cout << errorstring << endl;

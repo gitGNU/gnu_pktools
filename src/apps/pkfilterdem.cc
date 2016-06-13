@@ -23,8 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "base/Vector2d.h"
 #include "algorithms/Filter2d.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 
 /******************************************************************************/
 /*! \page pkfilterdem pkfilterdem
@@ -63,6 +62,7 @@ The utility pkfilterdem can be used to filter digital elevation models. It is ty
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table | 
  | nodata | nodata               | short |       |nodata value | 
+  | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkfilterdem -i input.txt -o output
 
@@ -88,6 +88,7 @@ int main(int argc,char **argv) {
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> nodata_opt("nodata", "nodata", "nodata value");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   disc_opt.setHide(1);
@@ -98,6 +99,7 @@ int main(int argc,char **argv) {
   oformat_opt.setHide(1);
   colorTable_opt.setHide(1);
   nodata_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -114,6 +116,7 @@ int main(int argc,char **argv) {
     oformat_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -128,8 +131,8 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
-  ImgReaderGdal input;
-  ImgWriterGdal outputWriter;
+  ImgRaster input;
+  ImgRaster outputWriter;
   if(input_opt.empty()){
     cerr << "Error: no input file selected, use option -i" << endl;
     exit(1);
@@ -142,7 +145,7 @@ int main(int argc,char **argv) {
     cerr << "Error: no filter selected, use option -f" << endl;
     exit(1);
   }
-  input.open(input_opt[0]);
+  input.open(input_opt[0],memory_opt[0]);
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
     cout << "possible output data types: ";
@@ -172,7 +175,7 @@ int main(int argc,char **argv) {
 
   if(verbose_opt[0])
     cout << "opening output file " << output_opt[0] << endl;
-  outputWriter.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),1,theType,imageType,option_opt);
+  outputWriter.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),1,theType,imageType,memory_opt[0],option_opt);
   //set projection
   outputWriter.setProjection(input.getProjection());
   outputWriter.copyGeoTransform(input);
@@ -417,7 +420,7 @@ int main(int argc,char **argv) {
     }
   }
   //write outputData to outputWriter
-  outputWriter.writeDataBlock(outputData,GDT_Float64,0,outputData.nCols()-1,0,outputData.nRows()-1);
+  outputWriter.writeDataBlock(outputData,0,outputData.nCols()-1,0,outputData.nRows()-1);
 
   // progress=1;
   // pfnProgress(progress,pszMessage,pProgressArg);

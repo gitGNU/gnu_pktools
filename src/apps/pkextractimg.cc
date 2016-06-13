@@ -25,7 +25,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <ctime>
 #include <vector>
-#include "imageclasses/ImgReaderGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"
@@ -76,6 +76,7 @@ The utility pkextractimg extracts pixel values from an input raster dataset, bas
  | bn     | bname                | std::string | b     |For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.) | 
  | cn     | cname                | std::string | label |Name of the class label in the output vector dataset | 
  | down   | down                 | short | 1     |Down sampling factor | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkextractimg -i input [-s sample] -o output
 
@@ -105,6 +106,7 @@ int main(int argc, char *argv[])
   Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
   Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector dataset", "label");
   Optionpk<short> down_opt("down", "down", "Down sampling factor", 1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "Verbose mode if > 0", 0,2);
 
   bstart_opt.setHide(1);
@@ -114,6 +116,7 @@ int main(int argc, char *argv[])
   fieldname_opt.setHide(1);
   label_opt.setHide(1);
   down_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -133,6 +136,7 @@ int main(int argc, char *argv[])
     fieldname_opt.retrieveOption(argc,argv);
     label_opt.retrieveOption(argc,argv);
     down_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -181,7 +185,7 @@ int main(int argc, char *argv[])
     classmap[class_opt[iclass]]=iclass;
   }
 
-  ImgReaderGdal imgReader;
+  ImgRaster imgReader;
   if(image_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
       exit(0);
@@ -191,7 +195,7 @@ int main(int argc, char *argv[])
       exit(0);
   }
   try{
-    imgReader.open(image_opt[0]);
+    imgReader.open(image_opt[0],memory_opt[0]);
   }
   catch(std::string errorstring){
     std::cout << errorstring << std::endl;
@@ -293,28 +297,28 @@ int main(int argc, char *argv[])
 
   bool sampleIsRaster=true;
 
-  ImgReaderGdal classReader;
+  ImgRaster classReader;
   ImgWriterOgr sampleWriterOgr;
 
-  if(sample_opt.size()){
-    try{
-      classReader.open(sample_opt[0]);
-    }
-    catch(string errorString){
-      //todo: sampleIsRaster will not work from GDAL 2.0!!?? (unification of driver for raster and vector datasets)
-      sampleIsRaster=false;
-    }
-  }
-  else{
-    std::cerr << "No raster sample dataset provided (use option -s filename). Use --help for help information";
-    exit(1);
-  }
+  // if(sample_opt.size()){
+  //   try{
+  //     classReader.open(sample_opt[0],memory_opt[0]);
+  //   }
+  //   catch(string errorString){
+  //     //todo: sampleIsRaster will not work from GDAL 2.0!!?? (unification of driver for raster and vector datasets)
+  //     sampleIsRaster=false;
+  //   }
+  // }
+  // else{
+  //   std::cerr << "No raster sample dataset provided (use option -s filename). Use --help for help information";
+  //   exit(1);
+  // }
 
   if(sampleIsRaster){
     if(class_opt.empty()){
       ImgWriterOgr ogrWriter;
       assert(sample_opt.size());
-      classReader.open(sample_opt[0]);
+      classReader.open(sample_opt[0],memory_opt[0]);
       // vector<int> classBuffer(classReader.nrOfCol());
       vector<double> classBuffer(classReader.nrOfCol());
       Vector2d<double> imgBuffer(nband,imgReader.nrOfCol());//[band][col]
@@ -531,7 +535,7 @@ int main(int argc, char *argv[])
       assert(class_opt[0]);
       //   if(class_opt[0]){
       assert(threshold_opt.size()==1||threshold_opt.size()==class_opt.size());
-      ImgReaderGdal classReader;
+      ImgRaster classReader;
       ImgWriterOgr ogrWriter;
       if(verbose_opt[0]>1){
         std::cout << "reading position from sample dataset " << std::endl;
@@ -543,7 +547,7 @@ int main(int argc, char *argv[])
             std::cout << class_opt[iclass] << ": " << threshold_opt[0] << std::endl;
         }
       }
-      classReader.open(sample_opt[0]);
+      classReader.open(sample_opt[0],memory_opt[0]);
       vector<int> classBuffer(classReader.nrOfCol());
       // vector<double> classBuffer(classReader.nrOfCol());
       Vector2d<double> imgBuffer(nband,imgReader.nrOfCol());//[band][col]

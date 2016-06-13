@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include "base/Optionpk.h"
-#include "imageclasses/ImgReaderGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "algorithms/Egcs.h"
 
 /******************************************************************************/
@@ -45,6 +45,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  | dx     | dx                   | int  | 250   |resolution | 
  | x      | x                    | double | 0     |x coordinate in epsg:3035 | 
  | y      | y                    | double | 0     |y coordinate in epsg:3035 | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 **/
 
@@ -61,6 +62,7 @@ int main(int argc, char *argv[])
   Optionpk<bool> geo2cell_opt("g2c", "geo2cell", "get cell code for coordinates in x_opt and y_opt given the resolution in dx_opt", false);
   Optionpk<double> x_opt("x","x","x coordinate in epsg:3035",0);
   Optionpk<double> y_opt("y","y","y coordinate in epsg:3035",0);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
 
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -75,6 +77,7 @@ int main(int argc, char *argv[])
     dx_opt.retrieveOption(argc,argv);
     x_opt.retrieveOption(argc,argv);
     y_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
   }
   catch(std::string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -103,8 +106,8 @@ int main(int argc, char *argv[])
     std::cout << egcs.geo2cell(x_opt[0],y_opt[0]) << std::endl;
   }
   if(image_opt[0]!=""){
-    ImgReaderGdal imgReader;
-    imgReader.open(image_opt[0]);
+    ImgRaster imgReader;
+    imgReader.open(image_opt[0],memory_opt[0]);
     if(refpixel_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());
       for(int inodata=0;inodata<maskValue_opt.size();++inodata)

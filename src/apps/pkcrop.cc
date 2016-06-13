@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
     try{
       ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
       ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
-      //todo: produce unique name
+      //todo: produce unique name or perform in memory solving issue on flush memory buffer (check gdal development list on how to retrieve gdal mem buffer)
       maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff");
       double gt[6];
       gt[0]=ulx_opt[0];

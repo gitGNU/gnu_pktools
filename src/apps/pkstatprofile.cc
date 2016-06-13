@@ -28,8 +28,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Vector2d.h"
 #include "algorithms/Filter2d.h"
 #include "algorithms/Filter.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "algorithms/StatFactory.h"
 
 /******************************************************************************/
@@ -86,6 +85,7 @@ pkstatprofile -i modis_ndvi_2010.tif -o modis_stats_2010.tif -f min -f max
  | perc   | percentile           | double |  |percentile value(s) for percentile function | 
  |class | class | std::string | | class value(s) to use for mode, proportion |
  |nodata | nodata | double | | nodata value(s) |
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkstatprofile -i input -o output [-f function]*
 
@@ -107,6 +107,7 @@ int main(int argc,char **argv) {
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   // Optionpk<short> down_opt("d", "down", "down sampling factor. Use value 1 for no downsampling). Use value n>1 for downsampling (aggregation)", 1);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   percentile_opt.setHide(1);
@@ -114,6 +115,7 @@ int main(int argc,char **argv) {
   otype_opt.setHide(1);
   oformat_opt.setHide(1);
   colorTable_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -125,6 +127,7 @@ int main(int argc,char **argv) {
     otype_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -151,8 +154,8 @@ int main(int argc,char **argv) {
 
   filter1d.setThresholds(percentile_opt);
 
-  ImgReaderGdal input;
-  ImgWriterGdal output;
+  ImgRaster input;
+  ImgRaster output;
   if(input_opt.empty()){
     cerr << "Error: no input file selected, use option -i" << endl;
     exit(1);
@@ -162,7 +165,7 @@ int main(int argc,char **argv) {
     exit(1);
   }
   try{
-    input.open(input_opt[0]);
+    input.open(input_opt[0],memory_opt[0]);
   }
   catch(string errorstring){
     cout << errorstring << endl;
@@ -198,7 +201,7 @@ int main(int argc,char **argv) {
   if(verbose_opt[0])
     cout << "Calculating statistic metrics: " << function_opt.size() << endl;
   try{
-    output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),function_opt.size(),theType,imageType,option_opt);
+    output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),function_opt.size(),theType,imageType,memory_opt[0],option_opt);
   }
   catch(string errorstring){
     cout << errorstring << endl;

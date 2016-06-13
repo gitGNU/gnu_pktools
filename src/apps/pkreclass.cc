@@ -22,8 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterOgr.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 
 /******************************************************************************/
 /*! \page pkreclass pkreclass
@@ -54,6 +53,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  | n      | fname                | std::string | label |field name of the shape file to be replaced | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | d      | description          | std::string |       |Set image description | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
  | v      | verbose              | short | 0     |verbose | 
 
 Usage: pkreclass -i input [-c from -r to]* -o output
@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
   Optionpk<string> fieldname_opt("n", "fname", "field name of the shape file to be replaced", "label");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> description_opt("d", "description", "Set image description");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose", 0);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -102,6 +103,7 @@ int main(int argc, char *argv[])
     fieldname_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -219,16 +221,16 @@ int main(int argc, char *argv[])
     ogrWriter.close();
   }
   else{//image file
-    ImgReaderGdal inputReader;
-    vector<ImgReaderGdal> maskReader(mask_opt.size()); 
-    ImgWriterGdal outputWriter;
+    ImgRaster inputReader;
+    vector<ImgRaster> maskReader(mask_opt.size()); 
+    ImgRaster outputWriter;
     if(verbose_opt[0])
       cout << "opening input image file " << input_opt[0] << endl;
-    inputReader.open(input_opt[0]);
+    inputReader.open(input_opt[0],memory_opt[0]);
     for(int imask=0;imask<mask_opt.size();++imask){
       if(verbose_opt[0])
         cout << "opening mask image file " << mask_opt[imask] << endl;
-      maskReader[imask].open(mask_opt[imask]);
+      maskReader[imask].open(mask_opt[imask],memory_opt[0]);
     }
     if(verbose_opt[0]){
       cout << "opening output image file " << output_opt[0] << endl;
@@ -255,7 +257,7 @@ int main(int argc, char *argv[])
       theInterleave+=inputReader.getInterleave();
       option_opt.push_back(theInterleave);
     }
-    outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,oformat_opt[0],option_opt);
+    outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,oformat_opt[0],memory_opt[0],option_opt);
     for(int iband=0;iband<inputReader.nrOfBand();++iband)
       outputWriter.GDALSetNoDataValue(nodata_opt[0],iband);
     if(description_opt.size())

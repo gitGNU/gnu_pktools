@@ -72,7 +72,7 @@ void filter::Filter::dwtForward(ImgRaster& input, ImgRaster& output, const std::
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
@@ -82,7 +82,7 @@ void filter::Filter::dwtForward(ImgRaster& input, ImgRaster& output, const std::
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -103,7 +103,7 @@ void filter::Filter::dwtInverse(ImgRaster& input, ImgRaster& output, const std::
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
@@ -113,7 +113,7 @@ void filter::Filter::dwtInverse(ImgRaster& input, ImgRaster& output, const std::
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -134,7 +134,7 @@ void filter::Filter::dwtCut(ImgRaster& input, ImgRaster& output, const std::stri
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
@@ -144,7 +144,7 @@ void filter::Filter::dwtCut(ImgRaster& input, ImgRaster& output, const std::stri
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -165,7 +165,7 @@ void filter::Filter::dwtCutFrom(ImgRaster& input, ImgRaster& output, const std::
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
@@ -180,7 +180,7 @@ void filter::Filter::dwtCutFrom(ImgRaster& input, ImgRaster& output, const std::
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -262,14 +262,26 @@ void filter::Filter::morphology(ImgRaster& input, ImgRaster& output, const std::
   // bool bverbose=(verbose>1)? true:false;
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
+  if(verbose)
+    std::cout << "Number of bands in input: " << lineInput.size() << std::endl;
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+    try{
+      for(int iband=0;iband<input.nrOfBand();++iband){
+        input.readData(lineInput[iband],y,iband);
+      }
+    }
+    catch(string errorString){
+      std::cerr << "Error: could not read data from input" << endl;
+      exit(1);
+    }
+    catch(...){
+      std::cerr << "Error: " << std::endl;
+    }
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
@@ -281,7 +293,7 @@ void filter::Filter::morphology(ImgRaster& input, ImgRaster& output, const std::
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -303,7 +315,7 @@ void filter::Filter::smoothNoData(ImgRaster& input, const std::string& interpola
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
@@ -314,7 +326,7 @@ void filter::Filter::smoothNoData(ImgRaster& input, const std::string& interpola
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -345,7 +357,7 @@ void filter::Filter::filter(ImgRaster& input, ImgRaster& output)
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
@@ -356,7 +368,7 @@ void filter::Filter::filter(ImgRaster& input, ImgRaster& output)
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;
@@ -381,7 +393,7 @@ void filter::Filter::stat(ImgRaster& input, ImgRaster& output, const std::string
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
@@ -418,7 +430,7 @@ void filter::Filter::stat(ImgRaster& input, ImgRaster& output, const std::string
       }
     }
     try{
-      output.writeData(lineOutput,GDT_Float64,y);
+      output.writeData(lineOutput,y);
     }
     catch(string errorstring){
       cerr << errorstring << "in line " << y << endl;
@@ -443,7 +455,7 @@ void filter::Filter::stats(ImgRaster& input, ImgRaster& output, const vector<std
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     for(int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
@@ -490,7 +502,7 @@ void filter::Filter::stats(ImgRaster& input, ImgRaster& output, const vector<std
     }
     for(int imethod=0;imethod<methods.size();++imethod){
       try{
-	output.writeData(lineOutput[imethod],GDT_Float64,y,imethod);
+	output.writeData(lineOutput[imethod],y,imethod);
       }
       catch(string errorstring){
 	cerr << errorstring << "in line " << y << endl;
@@ -512,7 +524,7 @@ void filter::Filter::filter(ImgRaster& input, ImgRaster& output, const std::stri
   pfnProgress(progress,pszMessage,pProgressArg);
   for(int y=0;y<input.nrOfRow();++y){
     for(int iband=0;iband<input.nrOfBand();++iband)
-      input.readData(lineInput[iband],GDT_Float64,y,iband);
+      input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput;
     for(int x=0;x<input.nrOfCol();++x){
@@ -526,7 +538,7 @@ void filter::Filter::filter(ImgRaster& input, ImgRaster& output, const std::stri
     }
     for(int iband=0;iband<input.nrOfBand();++iband){
       try{
-        output.writeData(lineOutput[iband],GDT_Float64,y,iband);
+        output.writeData(lineOutput[iband],y,iband);
       }
       catch(string errorstring){
         cerr << errorstring << "in band " << iband << ", line " << y << endl;

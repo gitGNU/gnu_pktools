@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include "base/Optionpk.h"
 #include <assert.h>
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 
 /******************************************************************************/
 /*! \page pkascii2img pkascii2img
@@ -60,6 +60,7 @@ The utility pkascii2img creates a raster dataset from an ASCII textfile. The tex
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
  | a_srs  | a_srs                | std::string |       |Override the projection for the output file | 
  | d      | description          | std::string |       |Set image description | 
+  | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkascii2img -i input.txt -o output
 
@@ -85,6 +86,7 @@ int main(int argc, char *argv[])
   Optionpk<string> projection_opt("a_srs", "a_srs", "Override the projection for the output file");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> description_opt("d", "description", "Set image description");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<bool> verbose_opt("v", "verbose", "verbose", false,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -101,6 +103,7 @@ int main(int argc, char *argv[])
     colorTable_opt.retrieveOption(argc,argv);
     projection_opt.retrieveOption(argc,argv);
     description_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -117,7 +120,7 @@ int main(int argc, char *argv[])
 
   assert(input_opt.size());
   assert(output_opt.size());
-  ImgWriterGdal imgWriter;
+  ImgRaster imgWriter;
   ifstream ifile(input_opt[0].c_str(),ios::in);
   //get number of lines
   string line;
@@ -180,7 +183,7 @@ int main(int argc, char *argv[])
       cout << "Output pixel type:  " << GDALGetDataTypeName(dataType) << endl;
   }
 
-  imgWriter.open(output_opt[0],ncol,nrow,1,dataType,imageType_opt[0],option_opt);
+  imgWriter.open(output_opt[0],ncol,nrow,1,dataType,imageType_opt[0],memory_opt[0],option_opt);
   if(description_opt.size())
     imgWriter.setImageDescription(description_opt[0]);
   if(projection_opt.size()){

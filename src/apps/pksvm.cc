@@ -21,8 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <map>
 #include <algorithm>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
@@ -106,6 +105,7 @@ Both raster and vector files are supported as input. The output will contain the
  | active | active               | std::string |       |Ogr output for active training sample. | 
  | na     | nactive              | unsigned int | 1     |Number of active training points | 
  | random | random               | bool | true  |Randomize training data for balancing and bagging | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pksvm -t training [-i input -o output] [-cv value]
 
@@ -176,7 +176,8 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> nactive_opt("na", "nactive", "Number of active training points",1);
   Optionpk<string> classname_opt("c", "class", "List of class names."); 
   Optionpk<short> classvalue_opt("r", "reclass", "List of class values (use same order as in class opt)."); 
-  Optionpk<short> verbose_opt("v", "verbose", "Verbose level",0,2);
+  Optionpk<unsigned long int> memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
+ Optionpk<short> verbose_opt("v", "verbose", "Verbose level",0,2);
 
   oformat_opt.setHide(1);
   option_opt.setHide(1);
@@ -207,7 +208,7 @@ int main(int argc, char *argv[])
   active_opt.setHide(1);
   nactive_opt.setHide(1);
   random_opt.setHide(1);
-
+  memory_opt.setHide(1);
   verbose_opt.setHide(2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -260,6 +261,7 @@ int main(int argc, char *argv[])
     nactive_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
     random_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
@@ -753,6 +755,7 @@ int main(int argc, char *argv[])
   //-------------------------------- open image file ------------------------------------
   bool inputIsRaster=false;
   ImgReaderOgr imgReaderOgr;
+  //todo: will not work in GDAL v2.0
   try{
     imgReaderOgr.open(input_opt[0]);
     imgReaderOgr.close();
@@ -761,22 +764,22 @@ int main(int argc, char *argv[])
     inputIsRaster=true;
   }
   if(inputIsRaster){
-    ImgReaderGdal testImage;
+    ImgRaster testImage;
     try{
       if(verbose_opt[0]>=1)
         std::cout << "opening image " << input_opt[0] << std::endl; 
-      testImage.open(input_opt[0]);
+      testImage.open(input_opt[0],memory_opt[0]);
     }
     catch(string error){
       cerr << error << std::endl;
       exit(2);
     }
-    ImgReaderGdal priorReader;
+    ImgRaster priorReader;
     if(priorimg_opt.size()){
       try{
 	if(verbose_opt[0]>=1)
           std::cout << "opening prior image " << priorimg_opt[0] << std::endl;
-        priorReader.open(priorimg_opt[0]);
+        priorReader.open(priorimg_opt[0],memory_opt[0]);
         assert(priorReader.nrOfCol()==testImage.nrOfCol());
         assert(priorReader.nrOfRow()==testImage.nrOfRow());
       }
@@ -800,10 +803,10 @@ int main(int argc, char *argv[])
     vector<char> classOut(ncol);//classified line for writing to image file
 
     //   assert(nband==testImage.nrOfBand());
-    ImgWriterGdal classImageBag;
-    ImgWriterGdal classImageOut;
-    ImgWriterGdal probImage;
-    ImgWriterGdal entropyImage;
+    ImgRaster classImageBag;
+    ImgRaster classImageOut;
+    ImgRaster probImage;
+    ImgRaster entropyImage;
 
     string imageType=testImage.getImageType();
     if(oformat_opt.size())//default
@@ -813,25 +816,25 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>=1)
         std::cout << "opening class image for writing output " << output_opt[0] << std::endl;
       if(classBag_opt.size()){
-        classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,option_opt);
+        classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType,memory_opt[0],option_opt);
 	classImageBag.GDALSetNoDataValue(nodata_opt[0]);
         classImageBag.copyGeoTransform(testImage);
         classImageBag.setProjection(testImage.getProjection());
       }
-      classImageOut.open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,option_opt);
+      classImageOut.open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,memory_opt[0],option_opt);
       classImageOut.GDALSetNoDataValue(nodata_opt[0]);
       classImageOut.copyGeoTransform(testImage);
       classImageOut.setProjection(testImage.getProjection());
       if(colorTable_opt.size())
         classImageOut.setColorTable(colorTable_opt[0],0);
       if(prob_opt.size()){
-        probImage.open(prob_opt[0],ncol,nrow,nclass,GDT_Byte,imageType,option_opt);
+        probImage.open(prob_opt[0],ncol,nrow,nclass,GDT_Byte,imageType,memory_opt[0],option_opt);
 	probImage.GDALSetNoDataValue(nodata_opt[0]);
         probImage.copyGeoTransform(testImage);
         probImage.setProjection(testImage.getProjection());
       }
       if(entropy_opt.size()){
-        entropyImage.open(entropy_opt[0],ncol,nrow,1,GDT_Byte,imageType,option_opt);
+        entropyImage.open(entropy_opt[0],ncol,nrow,1,GDT_Byte,imageType,memory_opt[0],option_opt);
 	entropyImage.GDALSetNoDataValue(nodata_opt[0]);
         entropyImage.copyGeoTransform(testImage);
         entropyImage.setProjection(testImage.getProjection());
@@ -841,11 +844,12 @@ int main(int argc, char *argv[])
       cerr << error << std::endl;
     }
   
-    ImgWriterGdal maskWriter;
+    ImgRaster maskWriter;
 
     if(maskIsVector){
       try{
-	maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,imageType,option_opt);
+      //todo: produce unique name or perform in memory solving issue on flush memory buffer (check gdal development list on how to retrieve gdal mem buffer)
+	maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,imageType,memory_opt[0],option_opt);
 	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
         maskWriter.copyGeoTransform(testImage);
         maskWriter.setProjection(testImage.getProjection());
@@ -865,12 +869,12 @@ int main(int argc, char *argv[])
       mask_opt.clear();
       mask_opt.push_back("/vsimem/mask.tif");
     }
-    ImgReaderGdal maskReader;
+    ImgRaster maskReader;
     if(mask_opt.size()){
       try{
         if(verbose_opt[0]>=1)
           std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-        maskReader.open(mask_opt[0]);
+        maskReader.open(mask_opt[0],memory_opt[0]);
       }
       catch(string error){
         cerr << error << std::endl;

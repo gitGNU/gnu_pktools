@@ -29,8 +29,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/Filter2d.h"
 #include "algorithms/Filter.h"
 #include "fileclasses/FileReaderAscii.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "algorithms/StatFactory.h"
 
 /******************************************************************************/
@@ -213,6 +212,7 @@ pkfilter -i lena.tif -o sobelx.tif -f sobelx -dx 5 -dy 5
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table | 
  | circ   | circular             | bool | false |circular disc kernel for dilation and erosion | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 Usage: pkfilter -i input -o output [-f filter | -perc value | -srf file [-srf file]* -win wavelength [-win wavelength]* | -wout wavelength -fwhm value [-wout wavelength -fwhm value]* -win wavelength [-win wavelength]*]
 
@@ -264,6 +264,7 @@ int main(int argc,char **argv) {
   // Optionpk<bool> l2_opt("l2","l2", "obtain shortest object length for linear feature",false,2);
   // Optionpk<bool> a1_opt("a1","a1", "obtain angle found for longest object length for linear feature",false);
   // Optionpk<bool> a2_opt("a2","a2", "obtain angle found for shortest object length for linear feature",false);
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   resample_opt.setHide(1);
@@ -293,6 +294,7 @@ int main(int argc,char **argv) {
   oformat_opt.setHide(1);
   colorTable_opt.setHide(1);
   disc_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -334,6 +336,7 @@ int main(int argc,char **argv) {
     oformat_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
     disc_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -351,8 +354,8 @@ int main(int argc,char **argv) {
   //not implemented yet, must debug first...
   vector<double> angle_opt;
 
-  ImgReaderGdal input;
-  ImgWriterGdal output;
+  ImgRaster input;
+  ImgRaster output;
   if(input_opt.empty()){
     cerr << "Error: no input file selected, use option -i" << endl;
     exit(1);
@@ -361,7 +364,7 @@ int main(int argc,char **argv) {
     cerr << "Error: no output file selected, use option -o" << endl;
     exit(1);
   }
-  input.open(input_opt[0]);
+  input.open(input_opt[0],memory_opt[0]);
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
     cout << "possible output data types: ";
@@ -495,7 +498,7 @@ int main(int argc,char **argv) {
       }
     }
     std::cout << "opening output image " << output_opt[0] << " with " << nband << " bands" << std::endl;
-    output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,option_opt);
+    output.open(output_opt[0],(input.nrOfCol()+down_opt[0]-1)/down_opt[0],(input.nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,memory_opt[0],option_opt);
   }
   catch(string errorstring){
     cerr << errorstring << endl;
@@ -678,7 +681,7 @@ int main(int argc,char **argv) {
         if(verbose_opt[0])
           std::cout << "centre wavelength srf " << isrf << ": " << centreWavelength << std::endl;
         try{
-          output.writeData(lineOutput,GDT_Float64,y/down_opt[0],isrf);
+          output.writeData(lineOutput,y/down_opt[0],isrf);
         }
         catch(string errorstring){
           cerr << errorstring << "in srf " << srf_opt[isrf] << ", line " << y << endl;
@@ -718,8 +721,8 @@ int main(int argc,char **argv) {
       try{
 	if(dimZ_opt.size()>0){
 	  if(verbose_opt[0])
-	    std::cout<< "1-D filtering: dilate" << std::endl;
-	  filter1d.morphology(input,output,"erode",dimZ_opt[0]);
+	    std::cout<< "1-D filtering: erode" << std::endl;
+	  filter1d.morphology(input,output,"erode",dimZ_opt[0],verbose_opt[0]);
 	}
 	else{
 	  filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
@@ -735,35 +738,39 @@ int main(int argc,char **argv) {
 	exit(1);
       }
 
-      ImgWriterGdal tmpout;
-      tmpout.open("/vsimem/dilation.tif",input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),input.getDataType(),input.getImageType());
+      ImgRaster tmpout;
+      // tmpout.open("/vsimem/dilation.tif",input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),input.getDataType(),input.getImageType());
       try{
         if(dimZ_opt.size()){
-          filter1d.morphology(input,tmpout,"dilate",dimZ_opt[0]);
+          // filter1d.morphology(input,tmpout,"dilate",dimZ_opt[0]);
+          filter1d.morphology(input,output,"dilate",dimZ_opt[0]);
         }
         else{
-	  filter2d.morphology(input,tmpout,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  // filter2d.morphology(input,tmpout,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
         }
       }
       catch(std::string errorString){
 	std::cout<< errorString;
 	exit(1);
       }
-      tmpout.close();
-      ImgReaderGdal tmpin;
-      tmpin.open("/vsimem/dilation.tif");
+      // tmpout.close();
+      // ImgRaster tmpin;
+      // tmpin.open("/vsimem/dilation.tif");
       try{
 	if(dimZ_opt.size()){
-	  filter1d.morphology(tmpin,output,"erode",dimZ_opt[0]);
+	  // filter1d.morphology(tmpin,output,"erode",dimZ_opt[0]);
+	  filter1d.morphology(output,output,"erode",dimZ_opt[0]);
 	}
 	else{
-	  filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  // filter2d.morphology(tmpin,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  filter2d.morphology(output,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
 	}
       }
       catch(string errorstring){
 	cerr << errorstring << endl;
       }
-      tmpin.close();
+      // tmpin.close();
       break;
     }
     case(filter2d::open):{//opening
@@ -771,32 +778,36 @@ int main(int argc,char **argv) {
 	std::cerr << "Error: down option not supported for morphological operator" << std::endl;
 	exit(1);
       }
-      ImgWriterGdal tmpout;
-      tmpout.open("/vsimem/erosion.tif",input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),input.getDataType(),input.getImageType());
+      // ImgRaster tmpout;
+      // tmpout.open("/vsimem/erosion.tif",input.nrOfCol(),input.nrOfRow(),input.nrOfBand(),input.getDataType(),input.getImageType());
       try{
 	if(dimZ_opt.size()){
-	  filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
+	  // filter1d.morphology(input,tmpout,"erode",dimZ_opt[0]);
+	  filter1d.morphology(input,output,"erode",dimZ_opt[0],verbose_opt[0]);
 	}
 	else{
-	  filter2d.morphology(input,tmpout,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  // filter2d.morphology(input,tmpout,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
 	}
       }
       catch(std::string errorString){
 	std::cout<< errorString;
 	exit(1);
       }
-      tmpout.close();
-      ImgReaderGdal tmpin;
+      // tmpout.close();
+      // ImgRaster tmpin;
       try{
-	tmpin.open("/vsimem/erosion.tif");
+	// tmpin.open("/vsimem/erosion.tif");
 	if(dimZ_opt.size()){
-	  filter1d.morphology(tmpin,output,"dilate",dimZ_opt[0]);
+	  // filter1d.morphology(tmpin,output,"dilate",dimZ_opt[0]);
+	  filter1d.morphology(output,output,"dilate",dimZ_opt[0]);
 	}
 	else{
-	  filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  // filter2d.morphology(tmpin,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+	  filter2d.morphology(output,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
 	}
-	tmpin.close();
-	tmpout.close();
+	// tmpin.close();
+	// tmpout.close();
       }
       catch(string errorstring){
 	cerr << errorstring << endl;

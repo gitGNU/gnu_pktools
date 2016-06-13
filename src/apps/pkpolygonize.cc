@@ -20,8 +20,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "cpl_string.h"
 #include "gdal_priv.h"
 #include "gdal.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "ogrsf_frmts.h"
@@ -64,7 +63,8 @@ The utility pkpolygonize converts a raster to a vector dataset. All pixels in th
  | b      | band                 | int  | 0     |the band to be used from input file | 
  | nodata | nodata               | double |       |Disgard this nodata value when creating polygons. | 
  | n      | name                 | std::string | DN    |the field name of the output layer | 
-
+  | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
+  | 
 Usage: pkpolygonize -i input [-m mask] -o output
 
 
@@ -83,6 +83,7 @@ int main(int argc,char **argv) {
   Optionpk<int> band_opt("b", "band", "the band to be used from input file", 0);
   Optionpk<string> fname_opt("n", "name", "the field name of the output layer", "DN");
   Optionpk<double> nodata_opt("nodata", "nodata", "Disgard this nodata value when creating polygons.");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -94,6 +95,7 @@ int main(int argc,char **argv) {
     band_opt.retrieveOption(argc,argv);
     nodata_opt.retrieveOption(argc,argv);
     fname_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -125,7 +127,7 @@ int main(int argc,char **argv) {
   pfnProgress(dfComplete,pszMessage,pProgressArg);
   
 
-  ImgReaderGdal maskReader;
+  ImgRaster maskReader;
   GDALRasterBand *maskBand=NULL;
   if(mask_opt.size()){
     if(verbose_opt[0])
@@ -134,7 +136,7 @@ int main(int argc,char **argv) {
     maskBand = maskReader.getRasterBand(0);
   }
 
-  ImgReaderGdal inputReader(input_opt[0]);
+  ImgRaster inputReader(input_opt[0],memory_opt[0]);
   GDALRasterBand  *inputBand;
   inputBand=inputReader.getRasterBand(0);
   if(nodata_opt.size())
