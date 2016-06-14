@@ -93,7 +93,7 @@ void filter2d::Filter2d::filter(ImgRaster& input, ImgRaster& output, bool absolu
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int iband=0;iband<input.nrOfBand();++iband){
+  for(unsigned int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     std::vector<double> outBuffer(input.nrOfCol());
     int indexI=0;
@@ -101,7 +101,7 @@ void filter2d::Filter2d::filter(ImgRaster& input, ImgRaster& output, bool absolu
     //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-        input.readData(inBuffer[indexJ],abs(j),iband);
+        input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)),iband);
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
@@ -109,7 +109,7 @@ void filter2d::Filter2d::filter(ImgRaster& input, ImgRaster& output, bool absolu
       ++indexJ;
     }
 
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	if(dimY>1)
@@ -250,7 +250,7 @@ void filter2d::Filter2d::majorVoting(ImgRaster& input, ImgRaster& output, int di
   //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-        input.readData(inBuffer[indexJ],abs(j));
+        input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)));
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
@@ -258,7 +258,7 @@ void filter2d::Filter2d::majorVoting(ImgRaster& input, ImgRaster& output, int di
       ++indexJ;
     }
 
-  for(int y=0;y<input.nrOfRow();++y){
+  for(unsigned int y=0;y<input.nrOfRow();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
       if(dimY>1)
@@ -283,7 +283,7 @@ void filter2d::Filter2d::majorVoting(ImgRaster& input, ImgRaster& output, int di
         inBuffer.push_back(inBuffer[index]);
       }
     }
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       outBuffer[x]=0;
       std::map<int,int> occurrence;
       int centre=dimX*(dimY-1)/2+(dimX-1)/2;
@@ -372,7 +372,7 @@ void filter2d::Filter2d::doit(ImgRaster& input, ImgRaster& output, const std::st
   assert(dimY);
 
   statfactory::StatFactory stat;
-  for(int iband=0;iband<input.nrOfBand();++iband){
+  for(unsigned int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     std::vector<double> outBuffer((input.nrOfCol()+down-1)/down);
     int indexI=0;
@@ -380,14 +380,14 @@ void filter2d::Filter2d::doit(ImgRaster& input, ImgRaster& output, const std::st
     //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-        input.readData(inBuffer[indexJ],abs(j),iband);
+        input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)),iband);
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
       ++indexJ;
     }
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	if(dimY>1)
@@ -414,7 +414,7 @@ void filter2d::Filter2d::doit(ImgRaster& input, ImgRaster& output, const std::st
       }
       if((y+1+down/2)%down)
         continue;
-      for(int x=0;x<input.nrOfCol();++x){
+      for(unsigned int x=0;x<input.nrOfCol();++x){
         if((x+1+down/2)%down)
           continue;
 	outBuffer[x/down]=0;
@@ -743,14 +743,14 @@ void filter2d::Filter2d::mrf(ImgRaster& input, ImgRaster& output, int dimX, int 
   //initialize last half of inBuffer
   for(int j=-(dimY-1)/2;j<=dimY/2;++j){
     try{
-      input.readData(inBuffer[indexJ],abs(j));
+      input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)));
     }
     catch(std::string errorstring){
       std::cerr << errorstring << "in line " << indexJ << std::endl;
     }
     ++indexJ;
   }
-  for(int y=0;y<input.nrOfRow();++y){
+  for(unsigned int y=0;y<input.nrOfRow();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
       if(dimY>1)
@@ -777,7 +777,7 @@ void filter2d::Filter2d::mrf(ImgRaster& input, ImgRaster& output, int dimX, int 
     }
     if((y+1+down/2)%down)
       continue;
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       if((x+1+down/2)%down)
         continue;
       std::vector<short> potential(m_class.size());
@@ -1001,7 +1001,7 @@ void filter2d::Filter2d::morphology(ImgRaster& input, ImgRaster& output, const s
   assert(dimY);
 
   statfactory::StatFactory stat;
-  for(int iband=0;iband<input.nrOfBand();++iband){
+  for(unsigned int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     std::vector<double> outBuffer(input.nrOfCol());
     int indexI=0;
@@ -1009,14 +1009,14 @@ void filter2d::Filter2d::morphology(ImgRaster& input, ImgRaster& output, const s
     //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-	input.readData(inBuffer[indexJ],abs(j),iband);
+	input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)),iband);
 	++indexJ;
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
     }
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	if(dimY>1)
@@ -1041,7 +1041,7 @@ void filter2d::Filter2d::morphology(ImgRaster& input, ImgRaster& output, const s
           inBuffer.push_back(inBuffer[index]);
         }
       }
-      for(int x=0;x<input.nrOfCol();++x){
+      for(unsigned int x=0;x<input.nrOfCol();++x){
         double currentValue=inBuffer[(dimY-1)/2][x];
 	outBuffer[x]=currentValue;
 	std::vector<double> statBuffer;
@@ -1262,8 +1262,8 @@ void filter2d::Filter2d::linearFeature(const Vector2d<float>& input, std::vector
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nRows();++y){
-    for(int x=0;x<input.nCols();++x){
+  for(unsigned int y=0;y<input.nRows();++y){
+    for(unsigned int x=0;x<input.nCols();++x){
       float currentValue=input[y][x];
       //find values equal to current value with some error margin
       //todo: add distance for two opposite directions

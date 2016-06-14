@@ -56,7 +56,7 @@ void ImgRaster::reset(void)
  * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-// ImgRaster::ImgRaster(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+// ImgRaster::ImgRaster(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned unsigned int nband, const GDALDataType& dataType){
 //   open(dataPointer,ncol,nrow,nband,dataType);
 // }
 
@@ -85,7 +85,7 @@ void ImgRaster::initMem(unsigned long int memory)
   m_end.resize(nrOfBand());
   freeMem();
   m_data.resize(nrOfBand());
-  for(int iband=0;iband<m_nband;++iband){
+  for(unsigned int iband=0;iband<m_nband;++iband){
     //todo: introduce smart pointers
     m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
   }
@@ -98,7 +98,7 @@ void ImgRaster::freeMem()
 {
 //no need if using smart (stl shared or unique) pointers
 //  if(m_data.size()&&m_filename.size()){
-  for(int iband=0;iband<m_data.size();++iband)
+  for(unsigned int iband=0;iband<m_data.size();++iband)
     CPLFree(m_data[iband]);
   m_data.clear();
 }
@@ -127,7 +127,7 @@ ImgRaster& ImgRaster::operator=(const ImgRaster& imgSrc)
  * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-// void ImgRaster::open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType){
+// void ImgRaster::open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned unsigned int nband, const GDALDataType& dataType){
 //   m_ncol=ncol;
 //   m_nrow=nrow;
 //   m_nband=nband;
@@ -136,7 +136,7 @@ ImgRaster& ImgRaster::operator=(const ImgRaster& imgSrc)
 //   m_begin.resize(nband);
 //   m_end.resize(nband);
 //   m_blockSize=nrow;//memory contains entire image and has been read already
-//   for(int iband=0;iband<nband;++iband){
+//   for(unsigned int iband=0;iband<nband;++iband){
 //     m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
 //     m_begin[iband]=0;
 //     m_end[iband]=m_begin[iband]+m_blockSize;
@@ -147,7 +147,7 @@ void ImgRaster::close(void)
 {
   if(m_writeMode){
     if(m_data.size()&&m_filename.size()){
-      for(int iband=0;iband<nrOfBand();++iband) 
+      for(unsigned int iband=0;iband<nrOfBand();++iband) 
         writeNewBlock(nrOfRow(),iband);
     }
     char **papszOptions=NULL;
@@ -217,7 +217,7 @@ CPLErr ImgRaster::setProjection(const std::string& projection)
  * @param band get data type for this band (start counting from 0)
  * @return the GDAL data type of this data set for the selected band
  **/
-GDALDataType ImgRaster::getDataType(int band) const
+GDALDataType ImgRaster::getDataType(unsigned int band) const
 {
   assert(band<m_nband+1);
   if(getRasterBand(band))
@@ -230,7 +230,7 @@ GDALDataType ImgRaster::getDataType(int band) const
  * @param band get GDAL raster band for this band (start counting from 0)
  * @return the GDAL raster band of this data set for the selected band
  **/
-GDALRasterBand* ImgRaster::getRasterBand(int band) const
+GDALRasterBand* ImgRaster::getRasterBand(unsigned int band) const
 {
   assert(band<m_nband+1);
   if(m_gds)
@@ -243,7 +243,7 @@ GDALRasterBand* ImgRaster::getRasterBand(int band) const
  * @param band get GDAL color table for this band (start counting from 0)
  * @return the GDAL color table of this data set for the selected band
  **/
-GDALColorTable* ImgRaster::getColorTable(int band) const
+GDALColorTable* ImgRaster::getColorTable(unsigned int band) const
 {
   assert(band<m_nband+1);
   GDALRasterBand* theRasterBand=getRasterBand(band);
@@ -602,7 +602,7 @@ bool ImgRaster::covers(double ulx, double  uly, double lrx, double lry) const
  * @param noDataValues standard template library (stl) vector containing no data values
  * @return number of no data values in this dataset
  **/
-int ImgRaster::getNoDataValues(std::vector<double>& noDataValues) const
+unsigned int ImgRaster::getNoDataValues(std::vector<double>& noDataValues) const
 {
   if(m_noDataValues.size()){
     noDataValues=m_noDataValues;
@@ -616,7 +616,7 @@ int ImgRaster::getNoDataValues(std::vector<double>& noDataValues) const
  * @param noDataValue no data value to be pushed for this dataset
  * @return number of no data values in this dataset
  **/
-int ImgRaster::pushNoDataValue(double noDataValue)
+unsigned int ImgRaster::pushNoDataValue(double noDataValue)
 {
   if(find(m_noDataValues.begin(),m_noDataValues.end(),noDataValue)==m_noDataValues.end())
     m_noDataValues.push_back(noDataValue);
@@ -634,7 +634,7 @@ void ImgRaster::open(const std::string& filename, unsigned long int memory)
   m_filename = filename;
   setCodec();
   initMem(memory);
-  for(int iband=0;iband<m_nband;++iband){
+  for(unsigned int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
     m_end[iband]=0;
   }
@@ -682,7 +682,7 @@ void ImgRaster::setCodec()
  * @param band Band that must be read to cache
  * @return true if block was read
  **/
-bool ImgRaster::readNewBlock(int row, int band)
+bool ImgRaster::readNewBlock(unsigned int row, unsigned int band)
 {
   if(m_gds == NULL){
     std::string errorString="Error in readNewBlock";
@@ -696,7 +696,7 @@ bool ImgRaster::readNewBlock(int row, int band)
   }
   if(m_end[band]>nrOfRow())
     m_end[band]=nrOfRow();
-  for(int iband=0;iband<m_nband;++iband){
+  for(unsigned int iband=0;iband<m_nband;++iband){
     //fetch raster band
     GDALRasterBand  *poBand;
     assert(iband<nrOfBand()+1);
@@ -712,13 +712,13 @@ bool ImgRaster::readNewBlock(int row, int band)
  * @param band Search mininum value in image for this band
  * @return minimum value in image for the selected band
  **/
-double ImgRaster::getMin(int& x, int& y, int band){
+double ImgRaster::getMin(int& x, int& y, unsigned int band){
   double minValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
-  for(int irow=0;irow<nrOfRow();++irow){
+  for(unsigned int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,irow,band);
-    for(int icol=0;icol<nrOfCol();++icol){
+    for(unsigned int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
       if(isValid){
@@ -748,13 +748,13 @@ double ImgRaster::getMin(int& x, int& y, int band){
  * @param band Search mininum value in image for this band
  * @return maximum value in image for the selected band
  **/
-double ImgRaster::getMax(int& x, int& y, int band){
+double ImgRaster::getMax(int& x, int& y, unsigned int band){
   double maxValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
-  for(int irow=0;irow<nrOfRow();++irow){
+  for(unsigned int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,irow,band);
-    for(int icol=0;icol<nrOfCol();++icol){
+    for(unsigned int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
       if(isValid){
@@ -784,7 +784,7 @@ double ImgRaster::getMax(int& x, int& y, int band){
  * @param minValue Reported minimum value within searched region
  * @param maxValue Reported maximum value within searched region
  **/
-void ImgRaster::getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue)
+void ImgRaster::getMinMax(int startCol, int endCol, int startRow, int endRow, unsigned int band, double& minValue, double& maxValue)
 {
   bool isConstraint=(maxValue>minValue);
   double minConstraint=minValue;
@@ -792,9 +792,9 @@ void ImgRaster::getMinMax(int startCol, int endCol, int startRow, int endRow, in
   std::vector<double> lineBuffer(endCol-startCol+1);
   bool isValid=false;
   assert(endRow<nrOfRow());
-  for(int irow=startCol;irow<endRow+1;++irow){
+  for(unsigned int irow=startCol;irow<endRow+1;++irow){
     readData(lineBuffer,startCol,endCol,irow,band);
-    for(int icol=0;icol<lineBuffer.size();++icol){
+    for(unsigned int icol=0;icol<lineBuffer.size();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
       if(isValid){
@@ -831,16 +831,16 @@ void ImgRaster::getMinMax(int startCol, int endCol, int startRow, int endRow, in
  * @param maxValue Reported maximum value in image
  * @param band Search extreme value in image for this band
  **/
-void ImgRaster::getMinMax(double& minValue, double& maxValue, int band)
+void ImgRaster::getMinMax(double& minValue, double& maxValue, unsigned int band)
 {
   bool isConstraint=(maxValue>minValue);
   double minConstraint=minValue;
   double maxConstraint=maxValue;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
-  for(int irow=0;irow<nrOfRow();++irow){
+  for(unsigned int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,irow,band);
-    for(int icol=0;icol<nrOfCol();++icol){
+    for(unsigned int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
 	continue;
       if(isValid){
@@ -933,9 +933,9 @@ double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, dou
   unsigned long int nsample=0;
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());
-  for(int irow=0;irow<nrOfRow();++irow){
+  for(unsigned int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,irow,theBand);
-    for(int icol=0;icol<nrOfCol();++icol){
+    for(unsigned int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
         ++ninvalid;
       else if(lineBuffer[icol]>maxValue)
@@ -978,13 +978,13 @@ double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, dou
  * @param range Sorted vector containing the range of image values
  * @param band The band for which to calculate the range
  **/
-void ImgRaster::getRange(std::vector<short>& range, int band)
+void ImgRaster::getRange(std::vector<short>& range, unsigned int band)
 {
   std::vector<short> lineBuffer(nrOfCol());
   range.clear();
-  for(int irow=0;irow<nrOfRow();++irow){
+  for(unsigned int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,irow,band);
-    for(int icol=0;icol<nrOfCol();++icol){
+    for(unsigned int icol=0;icol<nrOfCol();++icol){
       if(find(range.begin(),range.end(),lineBuffer[icol])==range.end())
         range.push_back(lineBuffer[icol]);
     }
@@ -996,14 +996,14 @@ void ImgRaster::getRange(std::vector<short>& range, int band)
  * @param band The band for which to calculate the number of valid pixels
  * @return number of valid pixels in this dataset for the the selected band
  **/
-unsigned long int ImgRaster::getNvalid(int band)
+unsigned long int ImgRaster::getNvalid(unsigned int band)
 {
   unsigned long int nvalid=0;
   if(m_noDataValues.size()){
     std::vector<double> lineBuffer(nrOfCol());
-    for(int irow=0;irow<nrOfRow();++irow){
+    for(unsigned int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,irow,band);
-      for(int icol=0;icol<nrOfCol();++icol){
+      for(unsigned int icol=0;icol<nrOfCol();++icol){
 	if(isNoData(lineBuffer[icol]))
 	  continue;
 	else
@@ -1020,14 +1020,14 @@ unsigned long int ImgRaster::getNvalid(int band)
  * @param band The band for which to calculate the number of valid pixels
  * @return number of invalid pixels in this dataset for the the selected band
  **/
-unsigned long int ImgRaster::getNinvalid(int band)
+unsigned long int ImgRaster::getNinvalid(unsigned int band)
 {
   unsigned long int nvalid=0;
   if(m_noDataValues.size()){
     std::vector<double> lineBuffer(nrOfCol());
-    for(int irow=0;irow<nrOfRow();++irow){
+    for(unsigned int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,irow,band);
-      for(int icol=0;icol<nrOfCol();++icol){
+      for(unsigned int icol=0;icol<nrOfCol();++icol){
 	if(isNoData(lineBuffer[icol]))
 	  continue;
 	else
@@ -1045,16 +1045,16 @@ unsigned long int ImgRaster::getNinvalid(int band)
  * @param band The band for which to calculate the number of valid pixels
  **/
 
-void ImgRaster::getRefPix(double& refX, double &refY, int band)
+void ImgRaster::getRefPix(double& refX, double &refY, unsigned int band)
 {
   std::vector<double> lineBuffer(nrOfCol());
   double validCol=0;
   double validRow=0;
   int nvalidCol=0;
   int nvalidRow=0;
-  for(int irow=0;irow<nrOfRow();++irow){
+  for(unsigned int irow=0;irow<nrOfRow();++irow){
     readData(lineBuffer,irow,band);
-    for(int icol=0;icol<nrOfCol();++icol){
+    for(unsigned int icol=0;icol<nrOfCol();++icol){
       // bool valid=(find(m_noDataValues.begin(),m_noDataValues.end(),lineBuffer[icol])==m_noDataValues.end());
       // if(valid){
       if(!isNoData(lineBuffer[icol])){
@@ -1092,7 +1092,7 @@ void ImgRaster::getRefPix(double& refX, double &refY, int band)
  * @param band Band that must be written in cache
  * @return true if write was successful
  **/
-bool ImgRaster::writeNewBlock(int row, int band)
+bool ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
 {
   if(m_gds == NULL){
     std::string errorString="Error in writeNewBlock";
@@ -1178,7 +1178,7 @@ void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
   imgSrc.getOffset(m_offset);
   m_writeMode=false;
   initMem(0);
-  for(int iband=0;iband<m_nband;++iband){
+  for(unsigned int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
     m_end[iband]=m_begin[iband]+m_blockSize;
     if(copyData)
@@ -1199,7 +1199,7 @@ void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
 //  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
 //  * @param options Creation options
 //  **/
-// void ImgRaster::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
+// void ImgRaster::open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned unsigned int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options)
 // {
 //   m_ncol = ncol;
 //   m_nrow = nrow;
@@ -1221,7 +1221,7 @@ void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
  * @param memory Available memory to cache image raster data (in MB)
  * @param options Creation options
  **/
-void ImgRaster::open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
+void ImgRaster::open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
   m_ncol = ncol;
   m_nrow = nrow;
@@ -1236,14 +1236,14 @@ void ImgRaster::open(const std::string& filename, int ncol, int nrow, int nband,
  * @param nband Number of bands in image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-void ImgRaster::open(int ncol, int nrow, int nband, const GDALDataType& dataType)
+void ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType)
 {
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
   m_dataType = dataType;
   initMem(0);
-  for(int iband=0;iband<m_nband;++iband){
+  for(unsigned int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
     m_end[iband]=m_begin[iband]+m_blockSize;
   }
@@ -1279,7 +1279,7 @@ void ImgRaster::setCodec(const ImgRaster& imgSrc){
     std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
 
   if(m_noDataValues.size()){
-    for(int iband=0;iband<nrOfBand();++iband)
+    for(unsigned int iband=0;iband<nrOfBand();++iband)
       GDALSetNoDataValue(m_noDataValues[0],iband);
   }
 
@@ -1353,7 +1353,7 @@ void ImgRaster::setCodec(const std::string& imageType){
 
 
   if(m_noDataValues.size()){
-    for(int iband=0;iband<nrOfBand();++iband)
+    for(unsigned int iband=0;iband<nrOfBand();++iband)
       GDALSetNoDataValue(m_noDataValues[0],iband);
   }
 
@@ -1404,7 +1404,7 @@ void ImgRaster::setFile(const std::string& filename, const std::string& imageTyp
   setCodec(imageType);
   if(m_data.empty())
     initMem(memory);
-  for(int iband=0;iband<m_nband;++iband){
+  for(unsigned int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
     m_end[iband]=m_begin[iband]+m_blockSize;
   }
@@ -1422,7 +1422,7 @@ void ImgRaster::setFile(const std::string& filename, const ImgRaster& imgSrc, un
   setCodec(imgSrc);
   if(m_data.empty())
     initMem(memory);
-  for(int iband=0;iband<m_nband;++iband){
+  for(unsigned int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
     m_end[iband]=m_begin[iband]+m_blockSize;
   }
@@ -1462,7 +1462,7 @@ void ImgRaster::setMetadata(char** metadata)
  * @param filename ASCII file containing 5 columns: index R G B ALFA (0:transparent, 255:solid)
  * @param band band number to set color table (starting counting from 0)
  **/
-void ImgRaster::setColorTable(const std::string& filename, int band)
+void ImgRaster::setColorTable(const std::string& filename, unsigned int band)
 {
   //todo: fool proof table in file (no checking currently done...)
   std::ifstream ftable(filename.c_str(),std::ios::in);
@@ -1486,14 +1486,14 @@ void ImgRaster::setColorTable(const std::string& filename, int band)
  * @param colorTable Instance of the GDAL class GDALColorTable
  * @param band band number to set color table (starting counting from 0)
  **/
-void ImgRaster::setColorTable(GDALColorTable* colorTable, int band)
+void ImgRaster::setColorTable(GDALColorTable* colorTable, unsigned int band)
 {
   if(m_gds)
     (m_gds->GetRasterBand(band+1))->SetColorTable(colorTable);
 }
 
 // //write an entire image from memory to file
-// bool ImgRaster::writeData(void* pdata, const GDALDataType& dataType, int band){
+// bool ImgRaster::writeData(void* pdata, const GDALDataType& dataType, unsigned int band){
 //   //fetch raster band
 //   GDALRasterBand  *poBand;
 //   if(band>=nrOfBand()+1){
@@ -1528,7 +1528,7 @@ void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>&
     std::string errorString="Error: either burn values or control options must be provided";
     throw(errorString);
   }
-  for(int iband=0;iband<nrOfBand();++iband)
+  for(unsigned int iband=0;iband<nrOfBand();++iband)
     bands.push_back(iband+1);
   std::vector<OGRLayerH> layers;
   int nlayer=0;
@@ -1549,7 +1549,7 @@ void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>&
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
     if(burnValues.size()){
-      for(int iband=0;iband<nrOfBand();++iband)
+      for(unsigned int iband=0;iband<nrOfBand();++iband)
         burnLayers.insert(burnLayers.end(),burnBands.begin(),burnBands.end());
     }
   }
@@ -1632,7 +1632,7 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
   for(std::vector<std::string>::const_iterator optionIt=controlOptions.begin();optionIt!=controlOptions.end();++optionIt)
     coptions=CSLAddString(coptions,optionIt->c_str());
 
-  for(int iband=0;iband<nrOfBand();++iband){
+  for(unsigned int iband=0;iband<nrOfBand();++iband){
     double gt[6];
     getGeoTransform(gt);
     if(controlOptions.size()){

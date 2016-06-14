@@ -20,7 +20,7 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
-  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -33,9 +33,9 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
   Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
   Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
-  Optionpk<unsigned short>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
-  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
-  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<unsigned int>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
+  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> autoscale_opt("as", "autoscale", "scale output to min and max, e.g., --autoscale 0 --autoscale 255");
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
@@ -558,13 +558,10 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
     else if(lrj>=imgReader[iimg].nrOfRow())
       endRow=imgReader[iimg].nrOfRow()-1;
 
-
-
-    int readncol=endCol-startCol+1;
     vector<double> readBuffer;
-    int nband=(band_opt.size())?band_opt.size() : imgReader[iimg].nrOfBand();
-    for(int iband=0;iband<nband;++iband){
-      int readBand=(band_opt.size()>iband)?band_opt[iband]:iband;
+    unsigned int nband=(band_opt.size())?band_opt.size() : imgReader[iimg].nrOfBand();
+    for(unsigned int iband=0;iband<nband;++iband){
+      unsigned int readBand=(band_opt.size()>iband)?band_opt[iband]:iband;
       if(verbose_opt[0]){
 	cout << "extracting band " << readBand << endl;
 	pfnProgress(progress,pszMessage,pProgressArg);
@@ -652,7 +649,7 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
 
 		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 		      try{
-			maskReader.readData(lineMask,static_cast<int>(rowMask),mskband_opt[0]);
+			maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
 		      }
 		      catch(string errorstring){
 			cerr << errorstring << endl;

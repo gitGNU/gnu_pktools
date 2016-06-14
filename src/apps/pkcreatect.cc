@@ -180,9 +180,9 @@ int main(int argc,char **argv) {
     else
       legendWriter.setColorTable(&colorTable);
     if(legend_opt.size()){
-      for(int irow=0;irow<legendWriter.nrOfRow();++irow){
+      for(unsigned int irow=0;irow<legendWriter.nrOfRow();++irow){
         vector<char> buffer(legendWriter.nrOfCol());
-        for(int icol=0;icol<legendWriter.nrOfCol();++icol)
+        for(unsigned int icol=0;icol<legendWriter.nrOfCol();++icol)
           buffer[icol]=min_opt[0]+irow*static_cast<short>(max_opt[0]-min_opt[0]+1)/legendWriter.nrOfRow();
         legendWriter.writeData(buffer,legendWriter.nrOfRow()-1-irow);
       }
@@ -217,7 +217,7 @@ int main(int argc,char **argv) {
     switch(imgReader.getDataType()){
     case(GDT_Byte):{
       vector<char> buffer;
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
+      for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
         imgReader.readData(buffer,irow);
         imgWriter.writeData(buffer,irow);
       }
@@ -226,17 +226,17 @@ int main(int argc,char **argv) {
     case(GDT_Int16):{
       vector<short> buffer;
       cout << "Warning: copying short to unsigned short without conversion, use gdal_translate -scale if needed..." << endl;
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
-        imgReader.readData(buffer,irow,0);
-        imgWriter.writeData(buffer,irow,0);
+      for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
+        imgReader.readData(buffer,irow);
+        imgWriter.writeData(buffer,irow);
       }
       break;
     }
     case(GDT_UInt16):{
       vector<unsigned short> buffer;
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
-        imgReader.readData(buffer,irow,0);
-        imgWriter.writeData(buffer,irow,0);
+      for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
+        imgReader.readData(buffer,irow);
+        imgWriter.writeData(buffer,irow);
       }
       break;
     }

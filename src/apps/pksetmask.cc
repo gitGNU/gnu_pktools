@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
       option_opt.push_back(theInterleave);
     }
     outputWriter.open(output_opt[0],inputReader.nrOfCol(),inputReader.nrOfRow(),inputReader.nrOfBand(),theType,imageType,memory_opt[0],option_opt);
-    for(int iband=0;iband<inputReader.nrOfBand();++iband)
+    for(unsigned int iband=0;iband<inputReader.nrOfBand();++iband)
       outputWriter.GDALSetNoDataValue(nodata_opt[0],iband);
     outputWriter.setProjection(inputReader.getProjection());
     outputWriter.copyGeoTransform(inputReader);
@@ -215,8 +215,8 @@ int main(int argc, char *argv[])
       cout << "mask " << imask << " has " << maskReader[imask].nrOfCol() << " columns and " << maskReader[imask].nrOfRow() << " rows" << endl;
     lineMask[imask].resize(maskReader[imask].nrOfCol());
   }
-  int irow=0;
-  int icol=0;
+  unsigned int irow=0;
+  unsigned int icol=0;
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
     oldRowMask[imask]=-1;
   for(irow=0;irow<inputReader.nrOfRow();++irow){
     //read line in lineInput buffer
-    for(int iband=0;iband<inputReader.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<inputReader.nrOfBand();++iband){
       try{
         inputReader.readData(lineInput[iband],irow,iband);
       }
@@ -245,15 +245,15 @@ int main(int argc, char *argv[])
         for(int imask=0;imask<mask_opt.size();++imask){
 	  inputReader.image2geo(icol,irow,x,y);
 	  maskReader[imask].geo2image(x,y,colMask,rowMask);
-	  colMask=static_cast<int>(colMask);
-	  rowMask=static_cast<int>(rowMask);
+	  colMask=static_cast<unsigned int>(colMask);
+	  rowMask=static_cast<unsigned int>(rowMask);
           bool masked=false;
           if(rowMask>=0&&rowMask<maskReader[imask].nrOfRow()&&colMask>=0&&colMask<maskReader[imask].nrOfCol()){
-	    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask[imask])){
+	    if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask[imask])){
 	      assert(rowMask>=0&&rowMask<maskReader[imask].nrOfRow());
 	      try{
-		// maskReader[imask].readData(lineMask[imask],static_cast<int>(rowMask));
-		maskReader[imask].readData(lineMask[imask],static_cast<int>(rowMask),mskband_opt[imask]);
+		// maskReader[imask].readData(lineMask[imask],static_cast<unsigned int>(rowMask));
+		maskReader[imask].readData(lineMask[imask],static_cast<unsigned int>(rowMask),mskband_opt[imask]);
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;
@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
 	  if(masked){
             if(verbose_opt[0]>1)
               cout << "image masked at (col=" << icol << ",row=" << irow <<") with mask " << mask_opt[imask] << " and value " << ivalue << endl;
-	    for(int iband=0;iband<inputReader.nrOfBand();++iband){
+	    for(unsigned int iband=0;iband<inputReader.nrOfBand();++iband){
               if(mask_opt.size()==nodata_opt.size())//one flag value for each mask
                 lineInput[iband][icol]=nodata_opt[imask];
               else                
@@ -306,15 +306,15 @@ int main(int argc, char *argv[])
       else{//potentially more invalid values for single mask
 	inputReader.image2geo(icol,irow,x,y);
 	maskReader[0].geo2image(x,y,colMask,rowMask);
-	colMask=static_cast<int>(colMask);
-	rowMask=static_cast<int>(rowMask);
+	colMask=static_cast<unsigned int>(colMask);
+	rowMask=static_cast<unsigned int>(rowMask);
         bool masked=false;
         if(rowMask>=0&&rowMask<maskReader[0].nrOfRow()&&colMask>=0&&colMask<maskReader[0].nrOfCol()){
-          if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask[0])){
+          if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask[0])){
             assert(rowMask>=0&&rowMask<maskReader[0].nrOfRow());
             try{
-              // maskReader[0].readData(lineMask[0],static_cast<int>(rowMask));
-              maskReader[0].readData(lineMask[0],static_cast<int>(rowMask),mskband_opt[0]);
+              // maskReader[0].readData(lineMask[0],static_cast<unsigned int>(rowMask));
+              maskReader[0].readData(lineMask[0],static_cast<unsigned int>(rowMask),mskband_opt[0]);
 	    }
             catch(string errorstring){
               cerr << errorstring << endl;
@@ -345,7 +345,7 @@ int main(int argc, char *argv[])
               break;
             }
             if(masked){
-              for(int iband=0;iband<inputReader.nrOfBand();++iband)
+              for(unsigned int iband=0;iband<inputReader.nrOfBand();++iband)
                 lineInput[iband][icol]=nodata_opt[ivalue];
               masked=false;
               break;
@@ -353,11 +353,11 @@ int main(int argc, char *argv[])
           }
 	}
       }
-      for(int iband=0;iband<lineOutput.size();++iband)
+      for(unsigned int iband=0;iband<lineOutput.size();++iband)
         lineOutput[iband][icol]=lineInput[iband][icol];
     }
     //write buffer lineOutput to output file
-    for(int iband=0;iband<outputWriter.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<outputWriter.nrOfBand();++iband){
       try{
         outputWriter.writeData(lineOutput[iband],irow,iband);
       }

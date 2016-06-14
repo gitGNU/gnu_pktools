@@ -97,9 +97,7 @@ public:
   };
 
   static gsl_rng* getRandomGenerator(unsigned long int theSeed){
-    const gsl_rng_type * T;
     gsl_rng * r;
-  
     // select random number generator 
     r = gsl_rng_alloc (gsl_rng_mt19937);
     gsl_rng_set(r,theSeed);

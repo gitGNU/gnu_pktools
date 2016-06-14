@@ -448,12 +448,12 @@ int main(int argc, char *argv[])
       vector<double> inputX(imgReader.nrOfCol());
       vector<double> inputY(imgReader.nrOfCol());
       unsigned long int nvalid=0;
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
+      for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
         if(irow%down_opt[0])
           continue;
 	imgReader.readData(inputX,irow,band_opt[0]);
 	imgReader.readData(inputY,irow,band_opt[1]);
-	for(int icol=0;icol<imgReader.nrOfCol();++icol){
+	for(unsigned int icol=0;icol<imgReader.nrOfCol();++icol){
           if(icol%down_opt[0])
             continue;
 	  if(random_opt[0]>0){
@@ -557,10 +557,10 @@ int main(int argc, char *argv[])
       double mse=0;
       double nValid=0;
       double nPixel=imgReader.nrOfCol()/down_opt[0]*imgReader.nrOfRow()/down_opt[0];
-      for(int irow;irow<imgReader.nrOfRow();irow+=down_opt[0]){
+      for(unsigned int irow;irow<imgReader.nrOfRow();irow+=down_opt[0]){
 	imgReader.readData(xBuffer,irow,band_opt[0]);
 	imgReader.readData(yBuffer,irow,band_opt[1]);
-	for(int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
+	for(unsigned int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
 	  double xValue=xBuffer[icol];
 	  double yValue=yBuffer[icol];
 	  if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
@@ -627,7 +627,7 @@ int main(int argc, char *argv[])
   //   double mse=0;
   //   double nValid=0;
   //   double nPixel=imgReader.nrOfCol()/imgReader.nrOfRow()/down_opt[0]/down_opt[0];
-  //   for(int irow;irow<imgReader1.nrOfRow();irow+=down_opt[0]){
+  //   for(unsigned int irow;irow<imgReader1.nrOfRow();irow+=down_opt[0]){
   //     double irow1=irow;
   //     double irow2=0;
   //     double icol1=0;
@@ -639,7 +639,7 @@ int main(int argc, char *argv[])
   //     irow2=static_cast<int>(irow2);
   //     imgReader1.readData(xBuffer,irow1,band_opt[0]);
   //     imgReader2.readData(yBuffer,irow2,band_opt[1]);
-  //     for(int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
+  //     for(unsigned int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
   // 	icol1=icol;
   // 	imgReader1.image2geo(icol1,irow1,geoX,geoY);
   // 	imgReader2.geo2image(geoX,geoY,icol2,irow2);
@@ -962,7 +962,7 @@ int main(int argc, char *argv[])
     double irow1=0;
     double icol2=0;
     double irow2=0;
-    for(int irow=0;irow<imgReader1.nrOfRow();++irow){
+    for(unsigned int irow=0;irow<imgReader1.nrOfRow();++irow){
       if(irow%down_opt[0])
 	continue;
       irow1=irow;
@@ -971,7 +971,7 @@ int main(int argc, char *argv[])
       irow2=static_cast<int>(irow2);
       imgReader1.readData(inputX,irow1,band_opt[0]);
       imgReader2.readData(inputY,irow2,band_opt[1]);
-      for(int icol=0;icol<imgReader.nrOfCol();++icol){
+      for(unsigned int icol=0;icol<imgReader.nrOfCol();++icol){
 	if(icol%down_opt[0])
 	  continue;
 	icol1=icol;

@@ -20,7 +20,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
-  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -731,7 +731,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 
 	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
-		maskReader.readData(lineMask,static_cast<int>(rowMask),mskband_opt[0]);
+		maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;

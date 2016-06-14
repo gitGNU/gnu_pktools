@@ -1,3 +1,2 @@
 /* Version number of package */
 #define VERSION "@PKTOOLS_VERSION@"
-#cmakedefine ARMADILLO_FOUND

@@ -98,11 +98,11 @@ int main(int argc, char *argv[])
   Optionpk<string> ogrformat_opt("f", "f", "Output sample dataset format","SQLite");
   Optionpk<string> ftype_opt("ft", "ftype", "Field type (only Real or Integer)", "Real");
   Optionpk<string> ltype_opt("lt", "ltype", "Label type: In16 or String", "Integer");
-  Optionpk<int> band_opt("b", "band", "Band index(es) to extract (0 based). Leave empty to use all bands");
+  Optionpk<unsigned int> band_opt("b", "band", "Band index(es) to extract (0 based). Leave empty to use all bands");
   Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
   Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "Invalid value(s) for input image");
-  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band in input image to check if pixel is valid (used for srcnodata)", 0);
+  Optionpk<unsigned int> bndnodata_opt("bndnodata", "bndnodata", "Band in input image to check if pixel is valid (used for srcnodata)", 0);
   Optionpk<string> fieldname_opt("bn", "bname", "For single band input data, this extra attribute name will correspond to the raster values. For multi-band input data, multiple attributes with this prefix will be added (e.g. b0, b1, b2, etc.)", "b");
   Optionpk<string> label_opt("cn", "cname", "Name of the class label in the output vector dataset", "label");
   Optionpk<short> down_opt("down", "down", "Down sampling factor", 1);
@@ -329,8 +329,8 @@ int main(int argc, char *argv[])
       vector<int> selectedClass;
       Vector2d<double> selectedBuffer;
       double oldimgrow=-1;
-      int irow=0;
-      int icol=0;
+      unsigned int irow=0;
+      unsigned int icol=0;
       if(verbose_opt[0]>1)
         std::cout << "extracting sample from image..." << std::endl;
       progress=0;
@@ -348,24 +348,24 @@ int main(int argc, char *argv[])
         classReader.image2geo(icol,irow,x,y);
         imgReader.geo2image(x,y,iimg,jimg);
         //nearest neighbour
-        if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
+        if(static_cast<unsigned int>(jimg)<0||static_cast<unsigned int>(jimg)>=imgReader.nrOfRow())
           continue;
-        for(int iband=0;iband<nband;++iband){
-          int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-          imgReader.readData(imgBuffer[iband],static_cast<int>(jimg),theBand);
+        for(unsigned int iband=0;iband<nband;++iband){
+          unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+          imgReader.readData(imgBuffer[iband],static_cast<unsigned int>(jimg),theBand);
         }
         for(icol=0;icol<classReader.nrOfCol();++icol){
           if(icol%down_opt[0])
             continue;
-          int theClass=classBuffer[icol];
-          int processClass=0;
+          unsigned int theClass=classBuffer[icol];
+          unsigned int processClass=0;
           bool valid=false;
           if(class_opt.empty()){
             valid=true;//process every class
             processClass=theClass;
           }
           else{
-            for(int iclass=0;iclass<class_opt.size();++iclass){
+            for(unsigned int iclass=0;iclass<class_opt.size();++iclass){
               if(classBuffer[icol]==class_opt[iclass]){
                 processClass=iclass;
                 theClass=class_opt[iclass];
@@ -384,15 +384,15 @@ int main(int argc, char *argv[])
           //find col in img
           imgReader.geo2image(x,y,iimg,jimg);
           //nearest neighbour
-          iimg=static_cast<int>(iimg);
-          if(static_cast<int>(iimg)<0||static_cast<int>(iimg)>=imgReader.nrOfCol())
+          iimg=static_cast<unsigned int>(iimg);
+          if(static_cast<unsigned int>(iimg)<0||static_cast<unsigned int>(iimg)>=imgReader.nrOfCol())
             continue;
 
-          for(int iband=0;iband<nband&&valid;++iband){
-            int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+          for(unsigned int iband=0;iband<nband&&valid;++iband){
+            unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
             if(srcnodata_opt.size()&&theBand==bndnodata_opt[0]){
-              // vector<int>::const_iterator bndit=bndnodata_opt.begin();
-              for(int inodata=0;inodata<srcnodata_opt.size()&&valid;++inodata){
+              // vector<unsigned int>::const_iterator bndit=bndnodata_opt.begin();
+              for(unsigned int inodata=0;inodata<srcnodata_opt.size()&&valid;++inodata){
                 if(imgBuffer[iband][iimg]==srcnodata_opt[inodata])
                   valid=false;
               }
@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
           // oldimgrow=jimg;
 
           if(valid){
-            for(int iband=0;iband<imgBuffer.size();++iband){
+            for(unsigned int iband=0;iband<imgBuffer.size();++iband){
               sample[iband+2]=imgBuffer[iband][iimg];
             }
             float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
@@ -450,8 +450,8 @@ int main(int argc, char *argv[])
         ogrWriter.createField(fieldname,OFTInteger);
         map<std::string,double> pointAttributes;
         ogrWriter.createField(label_opt[0],labelType);
-        for(int iband=0;iband<nband;++iband){
-	  int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+        for(unsigned int iband=0;iband<nband;++iband){
+	  unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
           ogrWriter.createField(fieldname_opt[iband],fieldType);
         }
         progress=0;
@@ -469,8 +469,8 @@ int main(int argc, char *argv[])
 
           cout << "ncopied.size(): " << ncopied.size() << endl;
           while(classDone.size()<nvalid.size()){
-            int index=rand()%writeBufferClass.size();
-            int theClass=writeBufferClass[index];
+            unsigned int index=rand()%writeBufferClass.size();
+            unsigned int theClass=writeBufferClass[index];
             float theThreshold=threshold_opt[0];
             if(threshold_opt.size()>1&&class_opt.size())
               theThreshold=threshold_opt[classmap[theClass]];
@@ -492,8 +492,8 @@ int main(int argc, char *argv[])
           writeBufferClass=writeBufferClassTmp;
 
           //   while(classDone.size()<nvalid.size()){
-          //     int index=rand()%writeBufferClass.size();
-          //     int theClass=writeBufferClass[index];
+          //     unsigned int index=rand()%writeBufferClass.size();
+          //     unsigned int theClass=writeBufferClass[index];
           //     float theThreshold=threshold_opt[0];
           //     if(threshold_opt.size()>1&&class_opt.size())
           //       theThreshold=threshold_opt[classmap[theClass]];
@@ -507,12 +507,12 @@ int main(int argc, char *argv[])
           //       classDone[theClass]=1;
           //   }
         }
-        for(int isample=0;isample<writeBuffer.size();++isample){
+        for(unsigned int isample=0;isample<writeBuffer.size();++isample){
           if(verbose_opt[0]>1)
             std::cout << "writing sample " << isample << std::endl;
           pointAttributes[label_opt[0]]=writeBufferClass[isample];
-          for(int iband=0;iband<writeBuffer[0].size()-2;++iband){
-	    int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+          for(unsigned int iband=0;iband<writeBuffer[0].size()-2;++iband){
+	    unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
             pointAttributes[fieldname_opt[iband]]=writeBuffer[isample][iband+2];
           }
           if(verbose_opt[0]>1)
@@ -540,7 +540,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]>1){
         std::cout << "reading position from sample dataset " << std::endl;
         std::cout << "class thresholds: " << std::endl;
-        for(int iclass=0;iclass<class_opt.size();++iclass){
+        for(unsigned int iclass=0;iclass<class_opt.size();++iclass){
           if(threshold_opt.size()>1)
             std::cout << class_opt[iclass] << ": " << threshold_opt[iclass] << std::endl;
           else
@@ -558,8 +558,8 @@ int main(int argc, char *argv[])
       vector<int> selectedClass;
       Vector2d<double> selectedBuffer;
       double oldimgrow=-1;
-      int irow=0;
-      int icol=0;
+      unsigned int irow=0;
+      unsigned int icol=0;
       if(verbose_opt[0]>1)
         std::cout << "extracting sample from image..." << std::endl;
       progress=0;
@@ -577,19 +577,19 @@ int main(int argc, char *argv[])
         classReader.image2geo(icol,irow,x,y);
         imgReader.geo2image(x,y,iimg,jimg);
         //nearest neighbour
-        if(static_cast<int>(jimg)<0||static_cast<int>(jimg)>=imgReader.nrOfRow())
+        if(static_cast<unsigned int>(jimg)<0||static_cast<unsigned int>(jimg)>=imgReader.nrOfRow())
           continue;
-        for(int iband=0;iband<nband;++iband){
-          int theBand=(band_opt.size()) ? band_opt[iband] : iband;
-          imgReader.readData(imgBuffer[iband],static_cast<int>(jimg),theBand);
+        for(unsigned int iband=0;iband<nband;++iband){
+          unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+          imgReader.readData(imgBuffer[iband],static_cast<unsigned int>(jimg),theBand);
         }
 
         for(icol=0;icol<classReader.nrOfCol();++icol){
           if(icol%down_opt[0])
             continue;
-          int theClass=0;
+          unsigned int theClass=0;
           // double theClass=0;
-          int processClass=-1;
+          unsigned int processClass=-1;
           if(class_opt.empty()){//process every class
             if(classBuffer[icol]){
               processClass=0;
@@ -597,7 +597,7 @@ int main(int argc, char *argv[])
             }
           }
           else{
-            for(int iclass=0;iclass<class_opt.size();++iclass){
+            for(unsigned int iclass=0;iclass<class_opt.size();++iclass){
               if(classBuffer[icol]==class_opt[iclass]){
                 processClass=iclass;
                 theClass=class_opt[iclass];
@@ -616,23 +616,23 @@ int main(int argc, char *argv[])
             //find col in img
             imgReader.geo2image(x,y,iimg,jimg);
             //nearest neighbour
-            iimg=static_cast<int>(iimg);
-            if(static_cast<int>(iimg)<0||static_cast<int>(iimg)>=imgReader.nrOfCol())
+            iimg=static_cast<unsigned int>(iimg);
+            if(static_cast<unsigned int>(iimg)<0||static_cast<unsigned int>(iimg)>=imgReader.nrOfCol())
               continue;
             bool valid=true;
 
-            for(int iband=0;iband<nband;++iband){
-              int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+            for(unsigned int iband=0;iband<nband;++iband){
+              unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
               if(srcnodata_opt.size()&&theBand==bndnodata_opt[0]){
                 // vector<int>::const_iterator bndit=bndnodata_opt.begin();
-                for(int inodata=0;inodata<srcnodata_opt.size()&&valid;++inodata){
+                for(unsigned int inodata=0;inodata<srcnodata_opt.size()&&valid;++inodata){
                   if(imgBuffer[iband][iimg]==srcnodata_opt[inodata])
                     valid=false;
                 }
               }
             }
             if(valid){
-              for(int iband=0;iband<imgBuffer.size();++iband){
+              for(unsigned int iband=0;iband<imgBuffer.size();++iband){
                 sample[iband+2]=imgBuffer[iband][iimg];
               }
               float theThreshold=(threshold_opt.size()>1)?threshold_opt[processClass]:threshold_opt[0];
@@ -680,8 +680,8 @@ int main(int argc, char *argv[])
         ogrWriter.createField(fieldname,OFTInteger);
         map<std::string,double> pointAttributes;
         ogrWriter.createField(label_opt[0],labelType);
-        for(int iband=0;iband<nband;++iband){
-	  int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+        for(unsigned int iband=0;iband<nband;++iband){
+	  unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
           ogrWriter.createField(fieldname_opt[iband],fieldType);
         }
         pfnProgress(progress,pszMessage,pProgressArg);
@@ -699,8 +699,8 @@ int main(int argc, char *argv[])
             ncopied[mapit->first]=0;
 
           while(classDone.size()<nvalid.size()){
-            int index=rand()%writeBufferClass.size();
-            int theClass=writeBufferClass[index];
+            unsigned int index=rand()%writeBufferClass.size();
+            unsigned int theClass=writeBufferClass[index];
             float theThreshold=threshold_opt[0];
             if(threshold_opt.size()>1&&class_opt.size())
               theThreshold=threshold_opt[classmap[theClass]];
@@ -721,8 +721,8 @@ int main(int argc, char *argv[])
           writeBuffer=writeBufferTmp;
           writeBufferClass=writeBufferClassTmp;
           // while(classDone.size()<nvalid.size()){
-          //   int index=rand()%writeBufferClass.size();
-          //   int theClass=writeBufferClass[index];
+          //   unsigned int index=rand()%writeBufferClass.size();
+          //   unsigned int theClass=writeBufferClass[index];
           //   float theThreshold=threshold_opt[0];
           //   if(threshold_opt.size()>1&&class_opt.size())
           //     theThreshold=threshold_opt[classmap[theClass]];
@@ -737,10 +737,10 @@ int main(int argc, char *argv[])
           // }
         }          
 
-        for(int isample=0;isample<writeBuffer.size();++isample){
+        for(unsigned int isample=0;isample<writeBuffer.size();++isample){
           pointAttributes[label_opt[0]]=writeBufferClass[isample];
-          for(int iband=0;iband<writeBuffer[0].size()-2;++iband){
-	    int theBand=(band_opt.size()) ? band_opt[iband] : iband;
+          for(unsigned int iband=0;iband<writeBuffer[0].size()-2;++iband){
+	    unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
             pointAttributes[fieldname_opt[iband]]=writeBuffer[isample][iband+2];
           }
           ogrWriter.addPoint(writeBuffer[isample][0],writeBuffer[isample][1],pointAttributes,fieldname,isample);
@@ -757,7 +757,7 @@ int main(int argc, char *argv[])
       if(verbose_opt[0]){
         std::cout << "total number of samples written: " << nsample << std::endl;
         if(nvalid.size()==class_opt.size()){
-          for(int iclass=0;iclass<class_opt.size();++iclass)
+          for(unsigned int iclass=0;iclass<class_opt.size();++iclass)
             std::cout << "class " << class_opt[iclass] << " has " << nvalid[iclass] << " samples" << std::endl;
         }
       }

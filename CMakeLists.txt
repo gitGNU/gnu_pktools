@@ -99,7 +99,6 @@ option (BUILD_SHARED_LIBS "Build with shared library" OFF)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
 set(BUILD_WITH_FANN FALSE CACHE BOOL "Choose if pktools is to be built with fann")
 set(BUILD_WITH_PYTHON CACHE BOOL "Choose if pktools is to be built with PYTHON support")
-# set(PKTOOLS_WITH_UTILITIES TRUE CACHE BOOL "Choose if pktools utilities should be built")
 set(PKTOOLS_WITH_APPS TRUE CACHE BOOL "Choose if pktools applications should be built")
 
 set(GSL_INCLUDE_DIR /usr/include CACHE PATH "Include PATH for GSL")
@@ -286,6 +285,13 @@ set(PKAPPS
   pkcrop_bin
   pkcomposite_bin
   pktest_bin
+  pkextractogr
+  pkextractimg
+  pkstatprofile
+  pkfilter 
+  pksvm 
+  pkfssvm 
+  pkoptsvm
   pkkalman
   pkinfo
   pkdiff
@@ -298,62 +304,25 @@ set(PKAPPS
   pkstat
   pkstatascii
   pkstatogr
-  pkstatprofile
   pkegcs 
-  pkextractimg
-  pkextractogr
   pkfillnodata 
-  pkfilter 
   pkfilterdem 
   pkfilterascii
   pkdsm2shadow 
   pkpolygonize 
   pkascii2img 
-  pksvm 
-  pkfssvm 
-  pkoptsvm
   pkascii2ogr
   pkreclass
   )
 
-set(PKUTILITIES
-  pkinfo
-  pkcrop
-  pkdiff
-  pkgetmask
-  pksetmask
-  pkcreatect 
-  pkdumpimg 
-  pkdumpogr 
-  pksieve 
-  pkstat
-  pkstatascii 
-  pkstatogr 
-  pkstatprofile
-  pkegcs 
-  pkextractimg
-  pkextractogr
-  pkfillnodata 
-  pkfilter 
-  pkfilterdem 
-  pkfilterascii 
-  pkdsm2shadow 
-  pkcomposite
-  pkcomposite_app
-  pkpolygonize 
-  pkascii2img 
-  pksvm 
-  pkfssvm 
-  pkoptsvm
-  pkascii2ogr 
-  pkreclass 
-  pkkalman
-  )
-
-set(PKFANNUTILITIES
+set(PKFANNAPPS
 	pkann
 	pkfsann
 	pkregann
+)
+
+set(PKLASAPPS
+	pklas2img
 )
 
 if (PKTOOLS_WITH_APPS)
@@ -361,47 +330,30 @@ if (PKTOOLS_WITH_APPS)
     		add_executable(${APP} src/apps/${APP}.cc)
     		target_link_libraries(${APP} ${PKLIBS})
     		set_target_properties(${APP} PROPERTIES FOLDER apps)
-#    		set_target_properties(${APP} PROPERTIES FOLDER utilities)
 	endforeach()
-	
-	add_custom_target(apps DEPENDS ${PKAPPS})
+
+	if (BUILD_WITH_LIBLAS)
+		set(PKLIBS ${PKLIBS} ${PKTOOLS_LASCLASSES_LIB_NAME})
+		foreach(PKLASAPP ${PKLASAPPS})
+		add_executable(${PKLASAPP} src/apps/${PKLASAPP}.cc)
+		target_link_libraries (${PKLASAPP} 
+		${PKLIBS} ${LIBLAS_LIBRARIES})
+    		set_target_properties(${PKLASAPP} PROPERTIES FOLDER apps)
+		endforeach()
+	endif()
+	if (BUILD_WITH_FANN)
+		set(PKLIBS ${PKLIBS} ${FANN_LIBRARIES})
+		foreach(PKFANNAPP ${PKFANNAPPS})
+		add_executable(${PKFANNAPP} src/apps/${PKFANNAPP}.cc)
+		target_link_libraries (${PKFANNAPP} ${PKLIBS})
+    		set_target_properties(${PKFANNAPP} PROPERTIES FOLDER apps)
+		endforeach()
+	endif()
+	add_custom_target(apps DEPENDS ${PKAPPS} ${PKLASAPPS} ${PKFANNAPPS})
 	set_target_properties(apps PROPERTIES FOLDER 
-	  phony)
+	phony)
 endif (PKTOOLS_WITH_APPS)
 
-# if (PKTOOLS_WITH_UTILITIES)
-# 	foreach(UTILITY ${PKUTILITIES})
-#     		add_executable(${UTILITY} src/apps/${UTILITY}.cc)
-#     		target_link_libraries(${UTILITY} ${PKLIBS})
-#     		set_target_properties(${UTILITY} PROPERTIES FOLDER utilities)
-# 	endforeach()
-
-# 	if (BUILD_WITH_LIBLAS)
-# 		set(PKLIBS ${PKLIBS} ${PKTOOLS_LASCLASSES_LIB_NAME})
-# 		foreach(PKLASUTILITY ${PKLASUTILITIES})
-# 		add_executable(${PKLASUTILITY} src/apps/${PKLASUTILITY}.cc)
-# 		target_link_libraries (${PKLASUTILITY} 
-# 		${PKLIBS} ${LIBLAS_LIBRARIES})
-#     		set_target_properties(${PKLASUTILITY} PROPERTIES FOLDER utilities)
-# 		endforeach()
-# 	endif()
-# 	if (BUILD_WITH_FANN)
-# 		set(PKLIBS ${PKLIBS} ${FANN_LIBRARIES})
-# 		foreach(PKFANNUTILITY ${PKFANNUTILITIES})
-# 		add_executable(${PKFANNUTILITY} src/apps/${PKFANNUTILITY}.cc)
-# 		message(${PKLIBS})
-# 		target_link_libraries (${PKFANNUTILITY} ${PKLIBS})
-#     		set_target_properties(${PKFANNUTILITY} PROPERTIES FOLDER utilities)
-# 		endforeach()
-# 	endif()
-# 	add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES})
-# 	set_target_properties(utilities PROPERTIES FOLDER 
-# 	phony)
-
-# endif()
-
-
-	
 ###############################################################################
 
 ###############################################################################
@@ -413,18 +365,14 @@ install (FILES "${CMAKE_CURRENT_BINARY_DIR}/pktools-config" DESTINATION bin PERM
 install (FILES "pktools.pc" DESTINATION lib/pkgconfig PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
 
 if (PKTOOLS_WITH_APPS)
-	install (TARGETS ${PKAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
+  install (TARGETS ${PKAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
+  if (BUILD_WITH_LIBLAS)
+    install (TARGETS ${PKLASAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  endif(BUILD_WITH_LIBLAS)
+  if (BUILD_WITH_FANN)
+    install (TARGETS ${PKFANNAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  endif(BUILD_WITH_FANN)
 endif(PKTOOLS_WITH_APPS)
-
-# if (PKTOOLS_WITH_UTILITIES)
-#   install (TARGETS ${PKUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
-#   if (BUILD_WITH_LIBLAS)
-#     install (TARGETS ${PKLASUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-#   endif(BUILD_WITH_LIBLAS)
-#   if (BUILD_WITH_FANN)
-#     install (TARGETS ${PKFANNUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-#   endif(BUILD_WITH_FANN)
-# endif(PKTOOLS_WITH_UTILITIES)
 
 ###############################################################################
 

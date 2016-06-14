@@ -394,7 +394,7 @@ int main(int argc,char **argv) {
 
   try{
     string errorString;
-    int nband=input.nrOfBand();
+    unsigned int nband=input.nrOfBand();
 
     if(fwhm_opt.size())
       nband=fwhm_opt.size();
@@ -523,7 +523,7 @@ int main(int argc,char **argv) {
     output.setColorTable(input.getColorTable());
   
   if(nodata_opt.size()){
-      for(int iband=0;iband<output.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<output.nrOfBand();++iband)
 	output.GDALSetNoDataValue(nodata_opt[0],iband);
   }
 
@@ -550,7 +550,7 @@ int main(int argc,char **argv) {
   if(nodata_opt.size()){
     if(verbose_opt[0])
       std::cout<< "mask values: ";
-    for(int imask=0;imask<nodata_opt.size();++imask){
+    for(unsigned int imask=0;imask<nodata_opt.size();++imask){
       if(verbose_opt[0])
         std::cout<< nodata_opt[imask] << " ";
       filter1d.pushNoDataValue(nodata_opt[imask]);
@@ -567,15 +567,15 @@ int main(int argc,char **argv) {
     assert(tapfile);
     Vector2d<double> taps(dimY_opt[0],dimX_opt[0]);
 
-    for(int j=0;j<dimY_opt[0];++j){
-      for(int i=0;i<dimX_opt[0];++i){
+    for(unsigned int j=0;j<dimY_opt[0];++j){
+      for(unsigned int i=0;i<dimX_opt[0];++i){
         tapfile >> taps[j][i];
       }
     }
     if(verbose_opt[0]){
       std::cout << "taps: ";
-      for(int j=0;j<dimY_opt[0];++j){
-        for(int i=0;i<dimX_opt[0];++i){
+      for(unsigned int j=0;j<dimY_opt[0];++j){
+        for(unsigned int i=0;i<dimX_opt[0];++i){
           std::cout<< taps[j][i] << " ";
         }
         std::cout<< std::endl;
@@ -613,13 +613,13 @@ int main(int argc,char **argv) {
     GDALProgressFunc pfnProgress=GDALTermProgress;
     double progress=0;
     pfnProgress(progress,pszMessage,pProgressArg);
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if((y+1+down_opt[0]/2)%down_opt[0])
         continue;
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
         input.readData(lineInput[iband],y,iband);
       filter1d.applyFwhm<double>(wavelengthIn_opt,lineInput,wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], lineOutput, down_opt[0], verbose_opt[0]);
-      for(int iband=0;iband<output.nrOfBand();++iband){
+      for(unsigned int iband=0;iband<output.nrOfBand();++iband){
         try{
           output.writeData(lineOutput[iband],y/down_opt[0],iband);
         }
@@ -668,12 +668,12 @@ int main(int argc,char **argv) {
     GDALProgressFunc pfnProgress=GDALTermProgress;
     double progress=0;
     pfnProgress(progress,pszMessage,pProgressArg);
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if((y+1+down_opt[0]/2)%down_opt[0])
         continue;
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
         input.readData(lineInput[iband],y,iband);
-      for(int isrf=0;isrf<srf.size();++isrf){
+      for(unsigned int isrf=0;isrf<srf.size();++isrf){
         vector<double> lineOutput(output.nrOfCol());
         double delta=1.0;
         bool normalize=true;
@@ -836,7 +836,7 @@ int main(int argc,char **argv) {
 
   //test
       Vector2d<unsigned short> inBuffer;
-      for(int iband=0;iband<input.nrOfBand();++iband){
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband){
         input.readDataBlock(inBuffer,0,input.nrOfCol()-1,0,input.nrOfRow()-1,iband);
       }
       try{

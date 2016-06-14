@@ -76,7 +76,7 @@ public:
   ///reset all member variables
   void reset(void);
   ///constructor opening an image in memory using an external data pointer (not tested yet)
-  //ImgRaster(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  //ImgRaster(void* dataPointer, unsigned int ncol, unsigned int nrow, int nband, const GDALDataType& dataType);
   //from Reader
   ImgRaster(const std::string& filename, unsigned long int memory=0) : ImgRaster() {open(filename, memory);};
   // ImgRaster(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
@@ -88,9 +88,9 @@ public:
     open(imgSrc,copyData);
   };
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
-  ImgRaster(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
+  ImgRaster(const std::string& filename, unsigned int ncol, unsigned int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgRaster(int ncol, int nrow, int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);};
+  ImgRaster(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);};
 
   ///destructor
   ~ImgRaster(void);
@@ -105,7 +105,7 @@ public:
   void setScale(double theScale, int band=0){
     if(m_scale.size()!=nrOfBand()){//initialize
       m_scale.resize(nrOfBand());
-      for(int iband=0;iband<nrOfBand();++iband)
+      for(unsigned int iband=0;iband<nrOfBand();++iband)
        m_scale[iband]=1.0;
     }
     m_scale[band]=theScale;
@@ -114,24 +114,24 @@ public:
   void setOffset(double theOffset, int band=0){
     if(m_offset.size()!=nrOfBand()){
       m_offset.resize(nrOfBand());
-      for(int iband=0;iband<nrOfBand();++iband)
+      for(unsigned int iband=0;iband<nrOfBand();++iband)
        m_offset[iband]=0.0;
     }
       m_offset[band]=theOffset;
   };
 
   ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
-  //void open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  //void open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Close the image.
   void close(void);
   ///Get the filename of this dataset
   std::string getFileName() const {return m_filename;};
   ///Get the number of columns of this dataset
-  int nrOfCol(void) const { return m_ncol;};
+  unsigned int nrOfCol(void) const { return m_ncol;};
   ///Get the number of rows of this dataset
-  int nrOfRow(void) const { return m_nrow;};
+  unsigned int nrOfRow(void) const { return m_nrow;};
   ///Get the number of bands of this dataset
-  int nrOfBand(void) const { return m_nband;};
+  unsigned int nrOfBand(void) const { return m_nband;};
   ///Is this dataset georeferenced (pixel size in y must be negative) ?
   bool isGeoRef() const {double gt[6];getGeoTransform(gt);if(gt[5]<0) return true;else return false;};
   ///Get the projection string (deprecated, use getProjectionRef instead)
@@ -163,19 +163,19 @@ public:
   ///Get the lower right corner y (georeferenced) coordinate of this dataset
   double getLry() const {double ulx, uly, lrx,lry;getBoundingBox(ulx,uly,lrx,lry);return(lry);};
   ///Get the scale as a standard template library (stl) vector
-  int getScale(std::vector<double>& scale) const {scale=m_scale;};
+  void getScale(std::vector<double>& scale) const {scale=m_scale;};
   ///Get the offset as a standard template library (stl) vector
-  int getOffset(std::vector<double>& offset) const {offset=m_offset;};
+  void getOffset(std::vector<double>& offset) const {offset=m_offset;};
   ///Get the no data values of this dataset as a standard template library (stl) vector
-  int getNoDataValues(std::vector<double>& noDataValues) const;
+  unsigned int getNoDataValues(std::vector<double>& noDataValues) const;
   ///Check if value is nodata in this dataset
   bool isNoData(double value) const{if(m_noDataValues.empty()) return false;else return find(m_noDataValues.begin(),m_noDataValues.end(),value)!=m_noDataValues.end();};
   ///Push a no data value for this dataset
-  int pushNoDataValue(double noDataValue);
+  unsigned int pushNoDataValue(double noDataValue);
   ///Set the no data values of this dataset using a standard template library (stl) vector as input
-  int setNoData(const std::vector<double> nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
+  unsigned int setNoData(const std::vector<double> nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
   ///Set the GDAL (internal) no data value for this data set. Only a single no data value per band is supported.
-  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
+  CPLErr GDALSetNoDataValue(double noDataValue, unsigned int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
   ///Check if a geolocation is covered by this dataset. Only the bounding box is checked, irrespective of no data values.
   bool covers(double x, double y) const;
   ///Check if a region of interest is (partially) covered by this dataset. Only the bounding box is checked, irrespective of no data values.
@@ -189,21 +189,21 @@ public:
   ///Get the pixel cell spacing in y
   double getDeltaY(void) const {double gt[6];getGeoTransform(gt);return -gt[5];};
   ///Get the GDAL datatype for this dataset
-  GDALDataType getDataType(int band=0) const;
+  GDALDataType getDataType(unsigned int band=0) const;
   ///Get the datapointer
-  void* getDataPointer(int band=0){return(m_data[band]);};
+  void* getDataPointer(unsigned int band=0){return(m_data[band]);};
   ///free memory os data pointer
   void freeMem();
   ///Copy data 
-  void copyData(void* data, int band=0) const{
+  void copyData(void* data, unsigned int band=0) const{
     memcpy(data,m_data[band],(GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
   };
   //todo: introduce smart pointer instead of void*
-  // std::unique_ptr<void> getDataPointer(int band=0){return(m_data[band]);};
+  // std::unique_ptr<void> getDataPointer(unsigned int band=0){return(m_data[band]);};
   ///Get the GDAL rasterband for this dataset
-  GDALRasterBand* getRasterBand(int band=0) const;
+  GDALRasterBand* getRasterBand(unsigned int band=0) const;
   ///Get the GDAL color table for this dataset as an instance of the GDALColorTable class
-  GDALColorTable* getColorTable(int band=0) const;
+  GDALColorTable* getColorTable(unsigned int band=0) const;
   ///Get the GDAL driver description of this dataset
   std::string getDriverDescription() const;
   ///Get the image type (implemented as the driver description)
@@ -227,7 +227,7 @@ public:
   ///Get the image description from the metadata of this dataset
   std::string getImageDescription() const;
   unsigned int getBlockSize() const{return m_blockSize;};
-  int getBlockSizeX(int band=0)
+  int getBlockSizeX(unsigned int band=0)
   {
     int blockSizeX=0;
     int blockSizeY=0;
@@ -235,7 +235,7 @@ public:
       getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
     return blockSizeX;
   }
-  int getBlockSizeY(int band=0)
+  int getBlockSizeY(unsigned int band=0)
   {
     int blockSizeX=0;
     int blockSizeY=0;
@@ -243,7 +243,7 @@ public:
       getRasterBand(band)->GetBlockSize( &blockSizeX, &blockSizeY );
     return blockSizeY;
   }
-  int nrOfBlockX(int band=0)
+  int nrOfBlockX(unsigned int band=0)
   {
     int blockSizeX=0;
     int blockSizeY=0;
@@ -254,7 +254,7 @@ public:
     }
     return nXBlocks;
   }
-  int nrOfBlockY(int band=0)
+  int nrOfBlockY(unsigned int band=0)
   {
     int blockSizeX=0;
     int blockSizeY=0;
@@ -271,37 +271,37 @@ public:
   void open(const std::string& filename, unsigned long int memory=0);
   // void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
   ///Read a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
-  template<typename T> void readData(T& value, int col, int row, int band=0);
+  template<typename T> void readData(T& value, unsigned int col, unsigned int row, unsigned int band=0);
   ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
-  template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
+  template<typename T> void readData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, unsigned int row, unsigned int band=0);
   ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
-  template<typename T> void readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band=0, RESAMPLE resample=NEAR);
+  template<typename T> void readData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, double row, unsigned int band=0, RESAMPLE resample=NEAR);
   ///Read pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
-  template<typename T> void readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  template<typename T> void readDataBlock(Vector2d<T>& buffer2d, unsigned int minCol, unsigned int maxCol, int minRow, int maxRow, unsigned int band=0);
   ///Read pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a one dimensional stl vector representing all pixel values read starting from upper left to lower right.
-  template<typename T> void readDataBlock(std::vector<T>& buffer , int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  template<typename T> void readDataBlock(std::vector<T>& buffer , unsigned int minCol, unsigned int maxCol, int minRow, int maxRow, unsigned int band=0);
   ///Read pixel cell values for an entire row for a specific band (all indices start counting from 0)
-  template<typename T> void readData(std::vector<T>& buffer, int row, int band=0);
+  template<typename T> void readData(std::vector<T>& buffer, unsigned int row, unsigned int band=0);
   ///Read pixel cell values for an entire row for a specific band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (see http://www.gdal.org/structGDALRasterIOExtraArg.html)
-  template<typename T> void readData(std::vector<T>& buffer, double row, int band=0, RESAMPLE resample=NEAR);
+  template<typename T> void readData(std::vector<T>& buffer, double row, unsigned int band=0, RESAMPLE resample=NEAR);
   ///Get the minimum and maximum cell values for a specific band in a region of interest defined by startCol, endCol, startRow and endRow (all indices start counting from 0).
-  void getMinMax(int startCol, int endCol, int startRow, int endRow, int band, double& minValue, double& maxValue);
+  void getMinMax(int startCol, int endCol, int startRow, int endRow, unsigned int band, double& minValue, double& maxValue);
   ///Get the minimum and maximum cell values for a specific band (all indices start counting from 0).
-  void getMinMax(double& minValue, double& maxValue, int band=0);
+  void getMinMax(double& minValue, double& maxValue, unsigned int band=0);
   ///Get the minimum cell values for a specific band and report the column and row in which the minimum value was found (all indices start counting from 0).
-  double getMin(int& col, int& row, int band=0);
+  double getMin(int& col, int& row, unsigned int band=0);
   ///Get the maximum cell values for a specific band and report the column and row in which the maximum value was found (all indices start counting from 0).
-  double getMax(int& col, int& row, int band=0);
+  double getMax(int& col, int& row, unsigned int band=0);
   ///Calculate the image histogram for a specific band using a defined number of bins and constrained   by a minimum and maximum value. A kernel density function can also be applied (default is false).
   double getHistogram(std::vector<double>& histvector, double& min, double& max,unsigned int& nbin, int theBand=0, bool kde=false);
   ///Calculate the reference pixel as the centre of gravity pixel (weighted average of all values not taking into account no data values) for a specific band (start counting from 0).
-  void getRefPix(double& refX, double &refY, int band=0);
+  void getRefPix(double& refX, double &refY, unsigned int band=0);
   ///Calculate the range of cell values in the image for a specific band (start counting from 0).
-  void getRange(std::vector<short>& range, int Band=0);
+  void getRange(std::vector<short>& range, unsigned int band=0);
   ///Calculate the number of valid pixels (with a value not defined as no data).
-  unsigned long int getNvalid(int band);
+  unsigned long int getNvalid(unsigned int band);
   ///Calculate the number of invalid pixels (with a value defined as no data).
-  unsigned long int getNinvalid(int band);
+  unsigned long int getNinvalid(unsigned int band);
 
   //From Writer
   ///Open an image for writing, copying image attributes from a source image. Image is directly written to file. Use the constructor with memory>0 to support caching
@@ -309,37 +309,37 @@ public:
   ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   void open(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
-  // void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
+  // void open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
-  void open(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  void open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing in memory, defining image attributes.
-  void open(int ncol, int nrow, int nband, const GDALDataType& dataType);
+  void open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory, copying image attributes from a source image.
   void open(const ImgRaster& imgSrc,  bool copyData=false);
   ///Open an image for writing using an external data pointer (not tested yet)
-  // void open(void* dataPointer, const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType);
+  // void open(void* dataPointer, const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Close the raster dataset
   ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
 
   ///Write a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
-  template<typename T> bool writeData(T& value, int col, int row, int band=0);
+  template<typename T> bool writeData(T& value, unsigned int col, unsigned int row, unsigned int band=0);
   ///Write pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
-  template<typename T> bool writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band=0);
+  template<typename T> bool writeData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, unsigned int row, unsigned int band=0);
   ///Write pixel cell values for an entire row for a specific band (all indices start counting from 0)
-  template<typename T> bool writeData(std::vector<T>& buffer, int row, int band=0);
+  template<typename T> bool writeData(std::vector<T>& buffer, unsigned int row, unsigned int band=0);
   // deprecated? Write an entire image from memory to file
-  // bool writeData(void* pdata, const GDALDataType& dataType, int band=0);
+  // bool writeData(void* pdata, const GDALDataType& dataType, unsigned int band=0);
   ///Write pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
-  template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
+  template<typename T> bool writeDataBlock(Vector2d<T>& buffer2d, unsigned int minCol, unsigned int maxCol, int minRow, int maxRow, unsigned int band=0);
   ///Prepare image writer to write to file
   void setFile(const std::string& filename, const std::string& imageType, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Prepare image writer to write to file
   void setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
-  void setColorTable(const std::string& filename, int band=0);
+  void setColorTable(const std::string& filename, unsigned int band=0);
   ///Set the color table using the GDAL class GDALColorTable
-  void setColorTable(GDALColorTable* colorTable, int band=0);
+  void setColorTable(GDALColorTable* colorTable, unsigned int band=0);
   ///Set specific metadata (driver specific)
   void setMetadata(char** metadata);
   ///Rasterize an OGR vector dataset using the gdal algorithm "GDALRasterizeLayers"
@@ -353,11 +353,11 @@ private:
   ///instance of the GDAL dataset of this dataset
   GDALDataset *m_gds;
   ///number of columns in this dataset
-  int m_ncol;
+  unsigned int m_ncol;
   ///number of rows in this dataset
-  int m_nrow;
+  unsigned int m_nrow;
   ///number of bands in this dataset
-  int m_nband;
+  unsigned int m_nband;
   ///GDAL data type for this dataset
   GDALDataType m_dataType;
   ///geotransform information of this dataset
@@ -398,10 +398,10 @@ private:
 
   //From Reader
   ///Read new block in cache (defined by m_begin and m_end)
-  bool readNewBlock(int row, int band);
+  bool readNewBlock(unsigned int row, unsigned int band);
   //From Writer
   ///Write new block from cache (defined by m_begin and m_end)
-  bool writeNewBlock(int row, int band);
+  bool writeNewBlock(unsigned int row, unsigned int band);
 };
 
 /**
@@ -410,7 +410,7 @@ private:
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRaster::readData(T& value, int col, int row, int band)
+template<typename T> void ImgRaster::readData(T& value, unsigned int col, unsigned int row, unsigned int band)
 {
   assert(band<nrOfBand()+1);
   assert(col<nrOfCol());
@@ -484,7 +484,7 @@ template<typename T> void ImgRaster::readData(T& value, int col, int row, int ba
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, unsigned int row, unsigned int band)
 {
   assert(band<nrOfBand()+1);
   assert(minCol<nrOfCol());
@@ -577,31 +577,31 @@ template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int minCol
  * @param[in] band The band number to read (counting starts from 0)
  * @param[in] resample The resampling method (currently only BILINEAR and NEAR are supported)
  **/
-template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int minCol, int maxCol, double row, int band, RESAMPLE resample)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, double row, unsigned int band, RESAMPLE resample)
 {
   std::vector<T> readBuffer_upper;
   std::vector<T> readBuffer_lower;
   if(buffer.size()!=maxCol-minCol+1)
     buffer.resize(maxCol-minCol+1);
   double upperRow=row-0.5;
-  upperRow=static_cast<int>(upperRow);
+  upperRow=static_cast<unsigned int>(upperRow);
   double lowerRow=row+0.5;
-  lowerRow=static_cast<int>(lowerRow);
+  lowerRow=static_cast<unsigned int>(lowerRow);
   switch(resample){
   case(BILINEAR):
     if(lowerRow>=nrOfRow())
       lowerRow=nrOfRow()-1;
     if(upperRow<0)
       upperRow=0;
-    readData(readBuffer_upper,minCol,maxCol,static_cast<int>(upperRow),band);
-    readData(readBuffer_lower,minCol,maxCol,static_cast<int>(lowerRow),band);
+    readData(readBuffer_upper,minCol,maxCol,static_cast<unsigned int>(upperRow),band);
+    readData(readBuffer_lower,minCol,maxCol,static_cast<unsigned int>(lowerRow),band);
     //do interpolation in y
     for(int icol=0;icol<maxCol-minCol+1;++icol){
       buffer[icol]=(lowerRow-row+0.5)*readBuffer_upper[icol]+(1-lowerRow+row-0.5)*readBuffer_lower[icol];
     }
     break;
   default:
-    readData(buffer,minCol,maxCol,static_cast<int>(row),band);
+    readData(buffer,minCol,maxCol,static_cast<unsigned int>(row),band);
     break;
   }
 }
@@ -614,7 +614,7 @@ template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int minCol
  * @param[in] maxRow Last row that must be read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRaster::readDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
+template<typename T> void ImgRaster::readDataBlock(Vector2d<T>& buffer2d, unsigned int minCol, unsigned int maxCol, int minRow, int maxRow, unsigned int band)
 {
   buffer2d.resize(maxRow-minRow+1);
   typename std::vector<T> buffer;
@@ -637,7 +637,7 @@ template<typename T> void ImgRaster::readDataBlock(Vector2d<T>& buffer2d, int mi
  * @param[in] maxRow Last row that must be read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRaster::readDataBlock(std::vector<T>& buffer, int minCol, int maxCol, int minRow, int maxRow, int band)
+template<typename T> void ImgRaster::readDataBlock(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, int minRow, int maxRow, unsigned int band)
 {
   double theScale=1;
   double theOffset=0;
@@ -734,7 +734,7 @@ template<typename T> void ImgRaster::readDataBlock(std::vector<T>& buffer, int m
  * @param[in] row The row number to read (counting starts from 0)
  * @param[in] band The band number to read (counting starts from 0)
  **/
-template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int row, int band)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, unsigned int row, unsigned int band)
 {
   readData(buffer,0,nrOfCol()-1,row,band);
 }
@@ -745,7 +745,7 @@ template<typename T> void ImgRaster::readData(std::vector<T>& buffer, int row, i
  * @param[in] band The band number to read (counting starts from 0)
  * @param[in] resample The resampling method (currently only BILINEAR and NEAR are supported).
  **/
-template<typename T> void ImgRaster::readData(std::vector<T>& buffer, double row, int band, RESAMPLE resample)
+template<typename T> void ImgRaster::readData(std::vector<T>& buffer, double row, unsigned int band, RESAMPLE resample)
 {
   readData(buffer,0,nrOfCol()-1,row,band,resample);
 }
@@ -758,7 +758,7 @@ template<typename T> void ImgRaster::readData(std::vector<T>& buffer, double row
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRaster::writeData(T& value, int col, int row, int band)
+template<typename T> bool ImgRaster::writeData(T& value, unsigned int col, unsigned int row, unsigned int band)
 {
   if(band>=nrOfBand()+1){
     std::ostringstream s;
@@ -847,7 +847,7 @@ template<typename T> bool ImgRaster::writeData(T& value, int col, int row, int b
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, int minCol, int maxCol, int row, int band)
+template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, unsigned int row, unsigned int band)
 {
   if(buffer.size()!=maxCol-minCol+1){
     std::string errorstring="invalid size of buffer";
@@ -960,7 +960,7 @@ template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, int minCo
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, int row, int band)
+template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, unsigned int row, unsigned int band)
 {
   return writeData(buffer,0,nrOfCol()-1,row,band);
 }
@@ -973,7 +973,7 @@ template<typename T> bool ImgRaster::writeData(std::vector<T>& buffer, int row, 
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> bool ImgRaster::writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band)
+template<typename T> bool ImgRaster::writeDataBlock(Vector2d<T>& buffer2d, unsigned int minCol, unsigned int maxCol, int minRow, int maxRow, unsigned int band)
 {
   double theScale=1;
   double theOffset=0;

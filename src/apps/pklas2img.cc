@@ -19,8 +19,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <iostream>
 #include "base/Optionpk.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "lasclasses/FileReaderLas.h"
 #include "algorithms/StatFactory.h"
@@ -74,6 +73,7 @@ The utility pklas2img converts a las/laz point cloud into a gridded raster datas
  | nodata | nodata               | short | 0     |nodata value to put in image | 
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
+ | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
 
 pklas2img -i lasfile -o output
 
@@ -113,6 +113,7 @@ int main(int argc,char **argv) {
   Optionpk<short> nodata_opt("nodata", "nodata", "nodata value to put in image", 0);
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string> colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode", 0,2);
 
   nbin_opt.setHide(1);
@@ -120,6 +121,7 @@ int main(int argc,char **argv) {
   nodata_opt.setHide(1);
   option_opt.setHide(1);
   colorTable_opt.setHide(1);
+  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -146,6 +148,7 @@ int main(int argc,char **argv) {
     nodata_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
     colorTable_opt.retrieveOption(argc,argv);
+    memory_opt.retrieveOption(argc,argv);
     verbose_opt.retrieveOption(argc,argv);
   }
   catch(string predefinedString){
@@ -172,8 +175,8 @@ int main(int argc,char **argv) {
   Vector2d<vector<double> > inputData;//row,col,point
 
    
-  ImgReaderGdal maskReader;
-  ImgWriterGdal outputWriter;
+  ImgRaster maskReader;
+  ImgRaster outputWriter;
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
     cout << "possible output data types: ";
@@ -275,7 +278,7 @@ int main(int argc,char **argv) {
   }
   if(verbose_opt[0])
     cout << "opening output file " << output_opt[0] << endl;
-  outputWriter.open(output_opt[0],ncol,nrow,nband,theType,oformat_opt[0],option_opt);
+  outputWriter.open(output_opt[0],ncol,nrow,nband,theType,oformat_opt[0],memory_opt[0],option_opt);
   outputWriter.GDALSetNoDataValue(nodata_opt[0]);
   //set projection
   double gt[6];

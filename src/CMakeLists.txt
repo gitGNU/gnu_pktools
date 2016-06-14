@@ -14,7 +14,6 @@ set(BASE_H
 	${BASE_SRC_DIR}/PosValue.h
 	${BASE_SRC_DIR}/Vector2d.h
 	${BASE_SRC_DIR}/Vector2d.cc
-#	${BASE_SRC_DIR}/config.h
 	)
 
 set(ALGOR_H
@@ -29,7 +28,6 @@ set(ALGOR_H
 	${ALGOR_SRC_DIR}/StatFactory.h
 	${ALGOR_SRC_DIR}/myfann_cpp.h
 	${ALGOR_SRC_DIR}/svm.h
-#	${ALGOR_SRC_DIR}/OptFactory.h
 	)
 
 set(ALGOR_CC

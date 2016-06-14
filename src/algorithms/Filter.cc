@@ -70,17 +70,17 @@ void filter::Filter::dwtForward(ImgRaster& input, ImgRaster& output, const std::
   pfnProgress(progress,pszMessage,pProgressArg);
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       dwtForward(pixelInput,wavelet_type,family);
       for(int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelInput[iband];
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -101,17 +101,17 @@ void filter::Filter::dwtInverse(ImgRaster& input, ImgRaster& output, const std::
   pfnProgress(progress,pszMessage,pProgressArg);
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       dwtInverse(pixelInput,wavelet_type,family);
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelInput[iband];
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -132,17 +132,17 @@ void filter::Filter::dwtCut(ImgRaster& input, ImgRaster& output, const std::stri
   pfnProgress(progress,pszMessage,pProgressArg);
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       dwtCut(pixelInput,wavelet_type,family,cut);
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelInput[iband];
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -163,22 +163,22 @@ void filter::Filter::dwtCutFrom(ImgRaster& input, ImgRaster& output, const std::
   pfnProgress(progress,pszMessage,pProgressArg);
   Vector2d<double> lineInput(input.nrOfBand(),input.nrOfCol());
   Vector2d<double> lineOutput(input.nrOfBand(),input.nrOfCol());
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       dwtForward(pixelInput,wavelet_type,family);
-      for(int iband=0;iband<input.nrOfBand();++iband){
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband){
 	if(iband>=band)
 	  pixelInput[iband]=0;
       }
       dwtInverse(pixelInput,wavelet_type,family);
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
 	lineOutput[iband][x]=pixelInput[iband];
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -269,9 +269,9 @@ void filter::Filter::morphology(ImgRaster& input, ImgRaster& output, const std::
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nrOfRow();++y){
+  for(unsigned int y=0;y<input.nrOfRow();++y){
     try{
-      for(int iband=0;iband<input.nrOfBand();++iband){
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband){
         input.readData(lineInput[iband],y,iband);
       }
     }
@@ -284,14 +284,14 @@ void filter::Filter::morphology(ImgRaster& input, ImgRaster& output, const std::
     }
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       filter(pixelInput,pixelOutput,method,dim);
       // morphology(pixelInput,pixelOutput,method,dim,bverbose);
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -313,18 +313,18 @@ void filter::Filter::smoothNoData(ImgRaster& input, const std::string& interpola
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       smoothNoData(pixelInput,interpolationType,pixelOutput);
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -355,18 +355,18 @@ void filter::Filter::filter(ImgRaster& input, ImgRaster& output)
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       filter(pixelInput,pixelOutput);
-      for(int iband=0;iband<input.nrOfBand();++iband)
+      for(unsigned int iband=0;iband<input.nrOfBand();++iband)
         lineOutput[iband][x]=pixelOutput[iband];
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -391,11 +391,11 @@ void filter::Filter::stat(ImgRaster& input, ImgRaster& output, const std::string
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       switch(getFilterType(method)){
       case(filter::median):
@@ -453,11 +453,11 @@ void filter::Filter::stats(ImgRaster& input, ImgRaster& output, const vector<std
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       int ithreshold=0;//threshold to use for percentiles
       for(int imethod=0;imethod<methods.size();++imethod){
@@ -522,21 +522,21 @@ void filter::Filter::filter(ImgRaster& input, ImgRaster& output, const std::stri
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nrOfRow();++y){
-    for(int iband=0;iband<input.nrOfBand();++iband)
+  for(unsigned int y=0;y<input.nrOfRow();++y){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband)
       input.readData(lineInput[iband],y,iband);
     vector<double> pixelInput(input.nrOfBand());
     vector<double> pixelOutput;
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       pixelInput=lineInput.selectCol(x);
       filter(pixelInput,pixelOutput,method,dim);
-      for(int iband=0;iband<pixelOutput.size();++iband){
+      for(unsigned int iband=0;iband<pixelOutput.size();++iband){
         lineOutput[iband][x]=pixelOutput[iband];
 	// if(pixelInput[iband]!=0)
 	//   assert(pixelOutput[iband]!=0);
       }
     }
-    for(int iband=0;iband<input.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<input.nrOfBand();++iband){
       try{
         output.writeData(lineOutput[iband],y,iband);
       }
@@ -731,7 +731,7 @@ double filter::Filter::getCentreWavelength(const std::vector<double> &wavelength
 
   std::vector<double> wavelengthOut(wavelength_fine.size());
 
-  for(int iband=0;iband<wavelengthOut.size();++iband)
+  for(unsigned int iband=0;iband<wavelengthOut.size();++iband)
     wavelengthOut[iband]=wavelength_fine[iband]*srf_fine[iband];
 
   stat.initSpline(splineOut,&(wavelength_fine[0]),&(wavelengthOut[0]),wavelength_fine.size());
@@ -751,11 +751,11 @@ double filter::Filter::getCentreWavelength(const std::vector<double> &wavelength
 //   GDALProgressFunc pfnProgress=GDALTermProgress;
 //   double progress=0;
 //   pfnProgress(progress,pszMessage,pProgressArg);
-//   for(int y=0;y<input.nrOfRow();++y){
-//     for(int iband=0;iband<input.nrOfBand();++iband)
+//   for(unsigned int y=0;y<input.nrOfRow();++y){
+//     for(unsigned int iband=0;iband<input.nrOfBand();++iband)
 //       input.readData(lineInput[iband],GDT_Float64,y,iband);
 //     applyFwhm<double>(wavelengthIn,lineInput,wavelengthOut,fwhm, interpolationType, lineOutput, verbose);
-//     for(int iband=0;iband<output.nrOfBand();++iband){
+//     for(unsigned int iband=0;iband<output.nrOfBand();++iband){
 //       try{
 //         output.writeData(lineOutput[iband],GDT_Float64,y,iband);
 //       }
@@ -777,13 +777,13 @@ double filter::Filter::getCentreWavelength(const std::vector<double> &wavelength
 //   GDALProgressFunc pfnProgress=GDALTermProgress;
 //   double progress=0;
 //   pfnProgress(progress,pszMessage,pProgressArg);
-//   for(int y=0;y<input.nrOfRow();++y){
-//     for(int iband=0;iband<input.nrOfBand();++iband)
+//   for(unsigned int y=0;y<input.nrOfRow();++y){
+//     for(unsigned int iband=0;iband<input.nrOfBand();++iband)
 //       input.readData(lineInput[iband],GDT_Float64,y,iband);
 //     for(int isrf=0;isrf<srf.size();++isrf){
 //       vector<double> lineOutput(input.nrOfCol());
 //       centreWavelength=applySrf<double>(wavelengthIn,lineInput,srf[isrf], interpolationType, lineOutput, verbose);
-//       for(int iband=0;iband<output.nrOfBand();++iband){
+//       for(unsigned int iband=0;iband<output.nrOfBand();++iband){
 //         try{
 //           output.writeData(lineOutput,GDT_Float64,y,isrf);
 //         }

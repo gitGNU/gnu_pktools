@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
   Optionpk<double> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
-  Optionpk<short> band_opt("b", "band", "Input (reference) raster band. Optionally, you can define different bands for input and reference bands respectively: -b 1 -b 0.", 0);
+  Optionpk<unsigned int> band_opt("b", "band", "Input (reference) raster band. Optionally, you can define different bands for input and reference bands respectively: -b 1 -b 0.", 0);
   Optionpk<bool> rmse_opt("rmse", "rmse", "Report root mean squared error", false);
   Optionpk<bool> regression_opt("reg", "reg", "Report linear regression (Input = c0+c1*Reference)", false);
   Optionpk<bool> confusion_opt("cm", "confusion", "Create confusion matrix (to std out)", false);
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
   unsigned int ntotalValidation=0;
   unsigned int nflagged=0;
-  Vector2d<int> resultClass;
+  Vector2d<unsigned int> resultClass;
   vector<float> user;
   vector<float> producer;
   vector<unsigned int> nvalidation;
@@ -454,13 +454,13 @@ int main(int argc, char *argv[])
 	    //         j_centre=y;
 	    //       }
 	    //nearest neighbour
-	    j_centre=static_cast<int>(j_centre);
-	    i_centre=static_cast<int>(i_centre);
+	    j_centre=static_cast<unsigned int>(j_centre);
+	    i_centre=static_cast<unsigned int>(i_centre);
 	    //check if j_centre is out of bounds
-	    if(static_cast<int>(j_centre)<0||static_cast<int>(j_centre)>=inputReader.nrOfRow())
+	    if(static_cast<unsigned int>(j_centre)<0||static_cast<unsigned int>(j_centre)>=inputReader.nrOfRow())
 	      continue;
 	    //check if i_centre is out of bounds
-	    if(static_cast<int>(i_centre)<0||static_cast<int>(i_centre)>=inputReader.nrOfCol())
+	    if(static_cast<unsigned int>(i_centre)<0||static_cast<unsigned int>(i_centre)>=inputReader.nrOfCol())
 	      continue;
 
 	    if(output_opt.size()){
@@ -473,8 +473,8 @@ int main(int argc, char *argv[])
 	      assert(readFeature);
 	      assert(writeFeature);
 	      vector<int> panMap(nfield);
-	      vector<int>::iterator panit=panMap.begin();
-	      for(int ifield=0;ifield<nfield;++ifield)
+	      vector< int>::iterator panit=panMap.begin();
+	      for(unsigned int ifield=0;ifield<nfield;++ifield)
 	      	panMap[ifield]=ifield;
 	      writeFeature->SetFieldsFrom(readFeature,&(panMap[0]));
 	      // if(writeFeature->SetFrom(readFeature)!= OGRERR_NONE)
@@ -491,11 +491,11 @@ int main(int argc, char *argv[])
 		  continue;
 		int j=j_centre+windowJ;
 		//check if j is out of bounds
-		if(static_cast<int>(j)<0||static_cast<int>(j)>=inputReader.nrOfRow())
+		if(static_cast<unsigned int>(j)<0||static_cast<unsigned int>(j)>=inputReader.nrOfRow())
 		  continue;
 		int i=i_centre+windowI;
 		//check if i is out of bounds
-		if(static_cast<int>(i)<0||static_cast<int>(i)>=inputReader.nrOfCol())
+		if(static_cast<unsigned int>(i)<0||static_cast<unsigned int>(i)>=inputReader.nrOfCol())
 		  continue;
 		if(verbose_opt[0])
 		  cout << setprecision(12) << "reading image value at x,y " << x << "," << y << " (" << i << "," << j << "), ";
@@ -588,11 +588,11 @@ int main(int argc, char *argv[])
 		    continue;
 		  int j=j_centre+windowJ;
 		  //check if j is out of bounds
-		  if(static_cast<int>(j)<0||static_cast<int>(j)>=inputReader.nrOfRow())
+		  if(static_cast<unsigned int>(j)<0||static_cast<unsigned int>(j)>=inputReader.nrOfRow())
 		    continue;
 		  int i=i_centre+windowI;
 		  //check if i is out of bounds
-		  if(static_cast<int>(i)<0||static_cast<int>(i)>=inputReader.nrOfCol())
+		  if(static_cast<unsigned int>(i)<0||static_cast<unsigned int>(i)>=inputReader.nrOfCol())
 		    continue;
 		  if(!windowAllFlagged){
 		    ostringstream fs;
@@ -711,8 +711,8 @@ int main(int argc, char *argv[])
     if(output_opt.size())
       lineOutput.resize(inputReader.nrOfCol());
 
-    int irow=0;
-    int icol=0;
+    unsigned int irow=0;
+    unsigned int icol=0;
     double oldreferencerow=-1;
     double oldmaskrow=-1;
     ImgRaster referenceReaderGdal;
@@ -788,7 +788,7 @@ int main(int argc, char *argv[])
 	    }
           }
           else{
-            referenceReaderGdal.readData(lineReference,static_cast<int>(jreference),band_opt[1]);
+            referenceReaderGdal.readData(lineReference,static_cast<unsigned int>(jreference),band_opt[1]);
             oldreferencerow=jreference;
           }
         }

@@ -78,9 +78,9 @@ Both raster and vector files are supported as input. The output will contain the
  | m      | mask                 | std::string |       |Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata. | 
  | msknodata | msknodata            | short | 0     |Mask value(s) not to consider for classification. Values will be taken over in classification image. | 
  | nodata | nodata               | unsigned short | 0     |Nodata value to put where image is masked as nodata | 
- | b      | band                 | short |       |Band index (starting from 0, either use band option or use start to end) | 
- | sband  | startband            | unsigned short |      |Start band sequence number | 
- | eband  | endband              | unsigned short |      |End band sequence number   | 
+ | b      | band                 | unsigened int |       |Band index (starting from 0, either use band option or use start to end) | 
+ | sband  | startband            | unsigned int |      |Start band sequence number | 
+ | eband  | endband              | unsigned int |      |End band sequence number   | 
  | bal    | balance              | unsigned int | 0     |Balance the input data to this number of samples for each class | 
  | min    | min                  | int  | 0     |If number of training pixels is less then min, do not take this class into account (0: consider all classes) | 
  | bag    | bag                  | unsigned short | 1     |Number of bootstrap aggregations | 
@@ -135,10 +135,10 @@ int main(int argc, char *argv[])
   Optionpk<string> label_opt("label", "label", "Attribute name for class label in training vector file.","label"); 
   Optionpk<unsigned int> balance_opt("bal", "balance", "Balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "Randomize training data for balancing and bagging", true, 2);
-  Optionpk<int> minSize_opt("min", "min", "If number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
-  Optionpk<unsigned short> band_opt("b", "band", "Band index (starting from 0, either use band option or use start to end)");
-  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
-  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<unsigned int> minSize_opt("min", "min", "If number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
+  Optionpk<unsigned int> band_opt("b", "band", "Band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> offset_opt("offset", "offset", "Offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("scale", "scale", "Scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<double> priors_opt("prior", "prior", "Prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 ). Used for input only (ignored for cross validation)", 0.0); 
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
     if(mask_opt.size())
       std::cout << "mask filename: " << mask_opt[0] << std::endl;
     std::cout << "training vector file: " << std::endl;
-    for(int ifile=0;ifile<training_opt.size();++ifile)
+    for(unsigned int ifile=0;ifile<training_opt.size();++ifile)
       std::cout << training_opt[ifile] << std::endl;
     std::cout << "verbose: " << verbose_opt[0] << std::endl;
   }
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
     activeWriter.copyFields(trainingReader);
   }
   vector<PosValue> activePoints(nactive_opt[0]);
-  for(int iactive=0;iactive<activePoints.size();++iactive){
+  for(unsigned int iactive=0;iactive<activePoints.size();++iactive){
     activePoints[iactive].value=1.0;
     activePoints[iactive].posx=0.0;
     activePoints[iactive].posy=0.0;
@@ -358,20 +358,20 @@ int main(int argc, char *argv[])
   vector<struct svm_model*> svm(nbag);
   vector<struct svm_parameter> param(nbag);
 
-  short nclass=0;
-  int nband=0;
-  int startBand=2;//first two bands represent X and Y pos
+  unsigned int nclass=0;
+  unsigned int nband=0;
+  unsigned int startBand=2;//first two bands represent X and Y pos
 
   //normalize priors from command line
   if(priors_opt.size()>1){//priors from argument list
     priors.resize(priors_opt.size());
     double normPrior=0;
-    for(short iclass=0;iclass<priors_opt.size();++iclass){
+    for(unsigned short iclass=0;iclass<priors_opt.size();++iclass){
       priors[iclass]=priors_opt[iclass];
       normPrior+=priors[iclass];
     }
     //normalize
-    for(short iclass=0;iclass<priors_opt.size();++iclass)
+    for(unsigned short iclass=0;iclass<priors_opt.size();++iclass)
       priors[iclass]/=normPrior;
   }
 
@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
 	  string errorstring="Error: index for end band must be smaller then start band";
 	  throw(errorstring);
 	}
-	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	for(unsigned int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
 	  band_opt.push_back(iband);
       }
     }
@@ -405,7 +405,7 @@ int main(int argc, char *argv[])
   vector<std::string> nameVector;
   if(classname_opt.size()){
     assert(classname_opt.size()==classvalue_opt.size());
-    for(int iclass=0;iclass<classname_opt.size();++iclass)
+    for(unsigned int iclass=0;iclass<classname_opt.size();++iclass)
       classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
   }
 
@@ -886,7 +886,7 @@ int main(int argc, char *argv[])
       }
     }
 
-    for(int iline=0;iline<nrow;++iline){
+    for(unsigned int iline=0;iline<nrow;++iline){
       vector<float> buffer(ncol);
       vector<short> lineMask;
       Vector2d<float> linePrior;
@@ -900,24 +900,24 @@ int main(int argc, char *argv[])
         classBag.resize(nbag,ncol);
       try{
         if(band_opt.size()){
-          for(int iband=0;iband<band_opt.size();++iband){
+          for(unsigned int iband=0;iband<band_opt.size();++iband){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << band_opt[iband] << std::endl;
             assert(band_opt[iband]>=0);
             assert(band_opt[iband]<testImage.nrOfBand());
             testImage.readData(buffer,iline,band_opt[iband]);
-            for(int icol=0;icol<ncol;++icol)
+            for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
         }
         else{
-          for(int iband=0;iband<nband;++iband){
+          for(unsigned int iband=0;iband<nband;++iband){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);
             assert(iband<testImage.nrOfBand());
             testImage.readData(buffer,iline,iband);
-            for(int icol=0;icol<ncol;++icol)
+            for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
         }
@@ -936,7 +936,7 @@ int main(int argc, char *argv[])
       //read prior
       if(priorimg_opt.size()){
         try{
-	  for(short iclass=0;iclass<nclass;++iclass){
+	  for(unsigned int iclass=0;iclass<nclass;++iclass){
 	    if(verbose_opt.size()>1)
 	      std::cout << "Reading " << priorimg_opt[0] << " band " << iclass << " line " << iline << std::endl;
 	    priorReader.readData(linePrior[iclass],iline,iclass);
@@ -981,7 +981,7 @@ int main(int argc, char *argv[])
 	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
 		// maskReader.readData(lineMask[imask],GDT_Int32,static_cast<int>(rowMask));
-		maskReader.readData(lineMask,static_cast<int>(rowMask));
+		maskReader.readData(lineMask,static_cast<unsigned int>(rowMask));
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;

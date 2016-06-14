@@ -52,7 +52,7 @@ The utility pkinfo retrieves basic information about a raster data set. An impor
  | ns     | nsample              | bool | false |Number of samples in image  | 
  | nl     | nline                | bool | false |Number of lines in image  | 
  | nb     | nband                | bool | false |Show number of bands in image | 
- | b      | band                 | short | 0     |Band specific information | 
+ | b      | band                 | unsigned int | 0     |Band specific information | 
  | dx     | dx                   | bool | false |Gets resolution in x (in m) | 
  | dy     | dy                   | bool | false |Gets resolution in y (in m) | 
  | mm     | minmax               | bool | false |Shows min and max value of the image  | 
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
   Optionpk<bool>  samples_opt("ns", "nsample", "Number of samples in image ", false,0);
   Optionpk<bool>  lines_opt("nl", "nline", "Number of lines in image ", false,0);
   Optionpk<bool>  nband_opt("nb", "nband", "Show number of bands in image", false,0);
-  Optionpk<short>  band_opt("b", "band", "Band specific information", 0,0);
+  Optionpk<unsigned int>  band_opt("b", "band", "Band specific information", 0,0);
   Optionpk<bool>  dx_opt("dx", "dx", "Gets resolution in x (in m)", false,0);
   Optionpk<bool>  dy_opt("dy", "dy", "Gets resolution in y (in m)", false,0);
   Optionpk<bool>  minmax_opt("mm", "minmax", "Shows min and max value of the image ", false,0);
@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
     if(band_opt[0]<0)
       nband=imgReader.nrOfBand();
     for(int iband=0;iband<nband;++iband){
-      unsigned short theBand=(band_opt[0]<0)? iband : band_opt[iband];
+      unsigned int theBand=(band_opt[0]<0)? iband : band_opt[iband];
       if(stat_opt[0]){
 	assert(theBand<imgReader.nrOfBand());
 	GDALProgressFunc pfnProgress;
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 	  double uli,ulj,lri,lrj;
 	  imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
 	  imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
-	  imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),theBand,minValue,maxValue);
+	  imgReader.getMinMax(static_cast<unsigned int>(uli),static_cast<unsigned int>(lri),static_cast<unsigned int>(ulj),static_cast<unsigned int>(lrj),theBand,minValue,maxValue);
 	}
 	else
 	  imgReader.getMinMax(minValue,maxValue,theBand);
@@ -400,7 +400,7 @@ int main(int argc, char *argv[])
       //   nband=imgReader.nrOfBand();
       std::cout.precision(12);
       for(int iband=0;iband<nband;++iband){
-        unsigned short theBand=(band_opt[0]<0)? iband : band_opt[iband];
+        unsigned int theBand=(band_opt[0]<0)? iband : band_opt[iband];
         std::vector<float> rowBuffer;//buffer will be resized in readdata
         for(int iy=0;iy<y_opt.size();++iy){
 	  double theRow=y_opt[iy];
@@ -415,9 +415,9 @@ int main(int argc, char *argv[])
 	    }
             assert(theRow>=0);
             assert(theRow<imgReader.nrOfRow());
-            imgReader.readData(rowBuffer, static_cast<int>(theRow), theBand);
+            imgReader.readData(rowBuffer, static_cast<unsigned int>(theRow), theBand);
 	    assert(theCol<rowBuffer.size());
-	    std::cout << rowBuffer[static_cast<int>(theCol)] << " ";
+	    std::cout << rowBuffer[static_cast<unsigned int>(theCol)] << " ";
 	  }
           std::cout << std::endl;
         }
