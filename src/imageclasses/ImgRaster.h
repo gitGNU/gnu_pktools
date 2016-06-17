@@ -333,7 +333,7 @@ public:
   ///Prepare image writer to write to file
   void setFile(const std::string& filename, const std::string& imageType, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Prepare image writer to write to file
-  void setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  // void setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
   void setColorTable(const std::string& filename, unsigned int band=0);
   ///Set the color table using the GDAL class GDALColorTable
@@ -358,6 +358,8 @@ private:
   unsigned int m_nband;
   ///GDAL data type for this dataset
   GDALDataType m_dataType;
+  ///image type for this dataset
+  std::string m_imageType;
   ///geotransform information of this dataset
   double m_gt[6];
   //projection string in wkt format
@@ -381,14 +383,8 @@ private:
   std::vector<unsigned int> m_end;
 
   //From Reader
-  ///Set GDAL dataset number of columns, rows, bands and geotransform.
-  void setDriver();
-  // void setDriver(const GDALAccess& readMode=GA_ReadOnly);
-  //From Writer
-  ///Register GDAL driver, setting the datatype, imagetype and some metadata
-  void setDriver(const std::string& imageType);
-  ///Register GDAL driver, setting the datatype, imagetype and some metadata
-  void setDriver(const ImgRaster& ImgSrc);
+  ///register driver for GDAl
+  void registerDriver();
   ///Create options
   std::vector<std::string> m_options;
   ///We are writing a physical file

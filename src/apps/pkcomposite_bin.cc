@@ -75,29 +75,21 @@ int main(int argc, char *argv[])
   try{
     vector<ImgRaster> imgReader(input_opt.size());
     ImgRaster imgWriter;
+    string imageType;
+    if(oformat_opt.size())//default
+      imageType=oformat_opt[0];
+    else
+      imageType=imgReader[0].getImageType();
+    imgWriter.setFile(output_opt[0],imageType);
+
     for(int ifile=0;ifile<input_opt.size();++ifile){
       imgReader[ifile].open(input_opt[ifile],memory_opt[0]);
       for(int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
       for(int iband=0;iband<offset_opt.size();++iband)
         imgReader[ifile].setOffset(offset_opt[iband],iband);
-    }
-
- 
+    } 
     app.pkcomposite(imgReader,imgWriter);
-
-    string imageType;
-    if(oformat_opt.size())//default
-      imageType=oformat_opt[0];
-    else
-      imageType=imgReader[0].getImageType();
-
-    if(projection_opt.size())
-      imgWriter.setProjectionProj4(projection_opt[0]);
-    else if(imgReader[0].getProjection()!="")
-      imgWriter.setProjection(imgReader[0].getProjection());
-
-    imgWriter.setFile(output_opt[0],imageType);
 
     for(int ifile=0;ifile<imgReader.size();++ifile)
       imgReader[ifile].close();

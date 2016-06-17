@@ -627,8 +627,9 @@ unsigned int ImgRaster::pushNoDataValue(double noDataValue)
 void ImgRaster::open(const std::string& filename, unsigned long int memory)
 // void ImgRaster::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {
+  m_writeMode=false;
   m_filename = filename;
-  setDriver();
+  registerDriver();
   initMem(memory);
   for(unsigned int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
@@ -638,39 +639,110 @@ void ImgRaster::open(const std::string& filename, unsigned long int memory)
 
 /**
  **/
-void ImgRaster::setDriver()
-// void ImgRaster::setDriver(const GDALAccess& readMode)
+void ImgRaster::registerDriver()
 {
-  GDALAllRegister();
-  // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
+  if(writeMode()){
+    GDALAllRegister();
+    GDALDriver *poDriver;
+    poDriver = GetGDALDriverManager()->GetDriverByName(m_imageType.c_str());
+    if( poDriver == NULL ){
+      std::ostringstream s;
+      s << "FileOpenError (" << m_imageType << ")";
+      throw(s.str());
+    }
+    char **papszMetadata;
+    papszMetadata = poDriver->GetMetadata();
+    //todo: try and catch if CREATE is not supported (as in PNG)
+    if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
+      std::ostringstream s;
+      s << "Error: image type " << m_imageType << " not supported";
+      throw(s.str());
+    }
+    char **papszOptions=NULL;
+    for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+      papszOptions=CSLAddString(papszOptions,optionIt->c_str());
+
+    m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_dataType,papszOptions);
+    double gt[6];
+    getGeoTransform(gt);
+    if(setGeoTransform(gt)!=CE_None)
+      std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
+    if(setProjection(m_projection)!=CE_None)
+      std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
+
+
+    if(m_noDataValues.size()){
+      for(unsigned int iband=0;iband<nrOfBand();++iband)
+        GDALSetNoDataValue(m_noDataValues[0],iband);
+    }
+
+    m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
+    std::string versionString="pktools ";
+    versionString+=VERSION;
+    versionString+=" by Pieter Kempeneers";
+    m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
+    time_t rawtime;
+    time ( &rawtime );
+
+    time_t tim=time(NULL);
+    tm *now=localtime(&tim);
+    std::ostringstream datestream;
+    //date std::string must be 20 characters long...
+    datestream << now->tm_year+1900;
+    if(now->tm_mon+1<10)
+      datestream << ":0" << now->tm_mon+1;
+    else
+      datestream << ":" << now->tm_mon+1;
+    if(now->tm_mday<10)
+      datestream << ":0" << now->tm_mday;
+    else
+      datestream << ":" << now->tm_mday;
+    if(now->tm_hour<10)
+      datestream << " 0" << now->tm_hour;
+    else
+      datestream << " " << now->tm_hour;
+    if(now->tm_min<10)
+      datestream << ":0" << now->tm_min;
+    else
+      datestream << ":" << now->tm_min;
+    if(now->tm_sec<10)
+      datestream << ":0" << now->tm_sec;
+    else
+      datestream << ":" << now->tm_sec;
+    m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
+  }
+  else{
+    GDALAllRegister();
+    // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #if GDAL_VERSION_MAJOR < 2
-  GDALAllRegister();
-  m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
-  // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
+    GDALAllRegister();
+    m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
+    // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #else
-  GDALAllRegister();
-  // if(readMode==GA_ReadOnly)
+    GDALAllRegister();
+    // if(readMode==GA_ReadOnly)
     m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY|GDAL_OF_RASTER, NULL, NULL, NULL);
-  // else if(readMode==GA_Update)
-  //   m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
+    // else if(readMode==GA_Update)
+    //   m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
 #endif
 
-  if(m_gds == NULL){
-    std::string errorString="FileOpenError";
-    throw(errorString);
-  }
-  m_ncol= m_gds->GetRasterXSize();
-  m_nrow= m_gds->GetRasterYSize();
-  m_nband= m_gds->GetRasterCount();
-  double adfGeoTransform[6];
-  m_gds->GetGeoTransform( adfGeoTransform );
-  m_gt[0]=adfGeoTransform[0];
-  m_gt[1]=adfGeoTransform[1];
-  m_gt[2]=adfGeoTransform[2];
-  m_gt[3]=adfGeoTransform[3];
-  m_gt[4]=adfGeoTransform[4];
-  m_gt[5]=adfGeoTransform[5];
-  m_projection=m_gds->GetProjectionRef();
+    if(m_gds == NULL){
+      std::string errorString="FileOpenError";
+      throw(errorString);
+    }
+    m_ncol= m_gds->GetRasterXSize();
+    m_nrow= m_gds->GetRasterYSize();
+    m_nband= m_gds->GetRasterCount();
+    double adfGeoTransform[6];
+    m_gds->GetGeoTransform( adfGeoTransform );
+    m_gt[0]=adfGeoTransform[0];
+    m_gt[1]=adfGeoTransform[1];
+    m_gt[2]=adfGeoTransform[2];
+    m_gt[3]=adfGeoTransform[3];
+    m_gt[4]=adfGeoTransform[4];
+    m_gt[5]=adfGeoTransform[5];
+    m_projection=m_gds->GetProjectionRef();
+  }  
 }
 
 /**
@@ -1132,13 +1204,7 @@ CPLErr ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
  **/
 void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, const std::vector<std::string>& options)
 {
-  m_ncol=imgSrc.nrOfCol();
-  m_nrow=imgSrc.nrOfRow();
-  m_nband=imgSrc.nrOfBand();
-  m_dataType=imgSrc.getDataType();
-  setProjection(imgSrc.getProjection());
-  copyGeoTransform(imgSrc);
-  setFile(filename,imgSrc,0,options);
+  open(filename,imgSrc,0,options);
 }
 
 /**
@@ -1155,7 +1221,10 @@ void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, unsig
   m_dataType=imgSrc.getDataType();
   setProjection(imgSrc.getProjection());
   copyGeoTransform(imgSrc);
-  setFile(filename,imgSrc,memory,options);
+  setFile(filename,imgSrc.getImageType(),memory,options);
+  m_gds->SetMetadata(imgSrc.getMetadata());
+  if(imgSrc.getColorTable()!=NULL)
+    setColorTable(imgSrc.getColorTable());
 }
 
 /**
@@ -1173,17 +1242,23 @@ void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
   imgSrc.getNoDataValues(m_noDataValues);
   imgSrc.getScale(m_scale);
   imgSrc.getOffset(m_offset);
-  m_writeMode=false;
-  initMem(0);
-  for(unsigned int iband=0;iband<m_nband;++iband){
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-    if(copyData)
-      imgSrc.copyData(m_data[iband],iband);
+  if(m_filename!=""){
+    m_writeMode=true;
+    registerDriver();
   }
-  if(imgSrc.getFileName()!=""){
-    m_filename=imgSrc.getFileName();
-    std::cout << "Warning: dataset not opened, open dataset manually" << std::endl;
+  else{
+    m_writeMode=false;
+    initMem(0);
+    for(unsigned int iband=0;iband<m_nband;++iband){
+      m_begin[iband]=0;
+      m_end[iband]=m_begin[iband]+m_blockSize;
+      if(copyData)
+        imgSrc.copyData(m_data[iband],iband);
+    }
+    if(imgSrc.getFileName()!=""){
+      m_filename=imgSrc.getFileName();
+      std::cout << "Warning: dataset not opened, open dataset manually" << std::endl;
+    }
   }
 }
 
@@ -1244,158 +1319,162 @@ void ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, c
     m_begin[iband]=0;
     m_end[iband]=m_begin[iband]+m_blockSize;
   }
+  if(m_filename!=""){
+    m_writeMode=true;
+    registerDriver();
+  }
 }
 
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
  **/
-void ImgRaster::setDriver(const ImgRaster& imgSrc){
-  GDALAllRegister();
-  GDALDriver *poDriver;
-  poDriver = GetGDALDriverManager()->GetDriverByName(imgSrc.getDriverDescription().c_str());
-  if( poDriver == NULL ){
-    std::string errorString="FileOpenError";
-    throw(errorString);
-  }
+// void ImgRaster::setDriver(const ImgRaster& imgSrc){
+//   GDALAllRegister();
+//   GDALDriver *poDriver;
+//   poDriver = GetGDALDriverManager()->GetDriverByName(imgSrc.getDriverDescription().c_str());
+//   if( poDriver == NULL ){
+//     std::string errorString="FileOpenError";
+//     throw(errorString);
+//   }
   
-  char **papszMetadata = poDriver->GetMetadata();
-  //todo: try and catch if CREATE is not supported (as in PNG)
-  if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
-    std::ostringstream s;
-    s << "Error: image type " << imgSrc.getImageType() << " not supported";
-    throw(s.str());
-  }
-  char **papszOptions=NULL;
-  for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
-    papszOptions=CSLAddString(papszOptions,optionIt->c_str());
+//   char **papszMetadata = poDriver->GetMetadata();
+//   //todo: try and catch if CREATE is not supported (as in PNG)
+//   if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
+//     std::ostringstream s;
+//     s << "Error: image type " << imgSrc.getImageType() << " not supported";
+//     throw(s.str());
+//   }
+//   char **papszOptions=NULL;
+//   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+//     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
 
-  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
-  double gt[6];
-  imgSrc.getGeoTransform(gt);
-  if(setGeoTransform(gt)!=CE_None)
-    std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
-  setProjection(imgSrc.getProjection());
-  if(setProjection(imgSrc.getProjection())!=CE_None)
-    std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
+//   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,imgSrc.getDataType(),papszOptions);
+//   double gt[6];
+//   imgSrc.getGeoTransform(gt);
+//   if(setGeoTransform(gt)!=CE_None)
+//     std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
+//   setProjection(imgSrc.getProjection());
+//   if(setProjection(imgSrc.getProjection())!=CE_None)
+//     std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
 
-  if(m_noDataValues.size()){
-    for(unsigned int iband=0;iband<nrOfBand();++iband)
-      GDALSetNoDataValue(m_noDataValues[0],iband);
-  }
+//   if(m_noDataValues.size()){
+//     for(unsigned int iband=0;iband<nrOfBand();++iband)
+//       GDALSetNoDataValue(m_noDataValues[0],iband);
+//   }
 
-  m_gds->SetMetadata(imgSrc.getMetadata()); 
-  m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
-  std::string versionString="pktools ";
-  versionString+=VERSION;
-  versionString+=" by Pieter Kempeneers";
-  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
-  time_t rawtime;
-  time ( &rawtime );
+//   m_gds->SetMetadata(imgSrc.getMetadata()); 
+//   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
+//   std::string versionString="pktools ";
+//   versionString+=VERSION;
+//   versionString+=" by Pieter Kempeneers";
+//   m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
+//   time_t rawtime;
+//   time ( &rawtime );
 
-  time_t tim=time(NULL);
-  tm *now=localtime(&tim);
-  std::ostringstream datestream;
-  //date std::string must be 20 characters long...
-  datestream << now->tm_year+1900;
-  if(now->tm_mon+1<10)
-    datestream << ":0" << now->tm_mon+1;
-  else
-    datestream << ":" << now->tm_mon+1;
-  if(now->tm_mday<10)
-    datestream << ":0" << now->tm_mday;
-  else
-    datestream << ":" << now->tm_mday;
-  if(now->tm_hour<10)
-    datestream << " 0" << now->tm_hour;
-  else
-    datestream << " " << now->tm_hour;
-  if(now->tm_min<10)
-    datestream << ":0" << now->tm_min;
-  else
-    datestream << ":" << now->tm_min;
-  if(now->tm_sec<10)
-    datestream << ":0" << now->tm_sec;
-  else
-    datestream << ":" << now->tm_sec;
-  m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
-  if(imgSrc.getColorTable()!=NULL)
-    setColorTable(imgSrc.getColorTable());
-}
+//   time_t tim=time(NULL);
+//   tm *now=localtime(&tim);
+//   std::ostringstream datestream;
+//   //date std::string must be 20 characters long...
+//   datestream << now->tm_year+1900;
+//   if(now->tm_mon+1<10)
+//     datestream << ":0" << now->tm_mon+1;
+//   else
+//     datestream << ":" << now->tm_mon+1;
+//   if(now->tm_mday<10)
+//     datestream << ":0" << now->tm_mday;
+//   else
+//     datestream << ":" << now->tm_mday;
+//   if(now->tm_hour<10)
+//     datestream << " 0" << now->tm_hour;
+//   else
+//     datestream << " " << now->tm_hour;
+//   if(now->tm_min<10)
+//     datestream << ":0" << now->tm_min;
+//   else
+//     datestream << ":" << now->tm_min;
+//   if(now->tm_sec<10)
+//     datestream << ":0" << now->tm_sec;
+//   else
+//     datestream << ":" << now->tm_sec;
+//   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
+//   if(imgSrc.getColorTable()!=NULL)
+//     setColorTable(imgSrc.getColorTable());
+// }
 
 /**
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRaster::setDriver(const std::string& imageType){
-  GDALAllRegister();
-  GDALDriver *poDriver;
-  poDriver = GetGDALDriverManager()->GetDriverByName(imageType.c_str());
-  if( poDriver == NULL ){
-    std::ostringstream s;
-    s << "FileOpenError (" << imageType << ")";
-    throw(s.str());
-  }
-  char **papszMetadata;
-  papszMetadata = poDriver->GetMetadata();
-  //todo: try and catch if CREATE is not supported (as in PNG)
-  if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
-    std::ostringstream s;
-    s << "Error: image type " << imageType << " not supported";
-    throw(s.str());
-  }
-  char **papszOptions=NULL;
-  for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
-    papszOptions=CSLAddString(papszOptions,optionIt->c_str());
+// void ImgRaster::setDriver(const std::string& imageType){
+//   GDALAllRegister();
+//   GDALDriver *poDriver;
+//   poDriver = GetGDALDriverManager()->GetDriverByName(imageType.c_str());
+//   if( poDriver == NULL ){
+//     std::ostringstream s;
+//     s << "FileOpenError (" << imageType << ")";
+//     throw(s.str());
+//   }
+//   char **papszMetadata;
+//   papszMetadata = poDriver->GetMetadata();
+//   //todo: try and catch if CREATE is not supported (as in PNG)
+//   if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
+//     std::ostringstream s;
+//     s << "Error: image type " << imageType << " not supported";
+//     throw(s.str());
+//   }
+//   char **papszOptions=NULL;
+//   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
+//     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
 
-  m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_dataType,papszOptions);
-  double gt[6];
-  getGeoTransform(gt);
-  if(setGeoTransform(gt)!=CE_None)
-    std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
-  if(setProjection(m_projection)!=CE_None)
-    std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
+//   m_gds=poDriver->Create(m_filename.c_str(),m_ncol,m_nrow,m_nband,m_dataType,papszOptions);
+//   double gt[6];
+//   getGeoTransform(gt);
+//   if(setGeoTransform(gt)!=CE_None)
+//     std::cerr << "Warning: could not write geotransform information in " << m_filename << std::endl;
+//   if(setProjection(m_projection)!=CE_None)
+//     std::cerr << "Warning: could not write projection information in " << m_filename << std::endl;
 
 
-  if(m_noDataValues.size()){
-    for(unsigned int iband=0;iband<nrOfBand();++iband)
-      GDALSetNoDataValue(m_noDataValues[0],iband);
-  }
+//   if(m_noDataValues.size()){
+//     for(unsigned int iband=0;iband<nrOfBand();++iband)
+//       GDALSetNoDataValue(m_noDataValues[0],iband);
+//   }
 
-  m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
-  std::string versionString="pktools ";
-  versionString+=VERSION;
-  versionString+=" by Pieter Kempeneers";
-  m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
-  time_t rawtime;
-  time ( &rawtime );
+//   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
+//   std::string versionString="pktools ";
+//   versionString+=VERSION;
+//   versionString+=" by Pieter Kempeneers";
+//   m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
+//   time_t rawtime;
+//   time ( &rawtime );
 
-  time_t tim=time(NULL);
-  tm *now=localtime(&tim);
-  std::ostringstream datestream;
-  //date std::string must be 20 characters long...
-  datestream << now->tm_year+1900;
-  if(now->tm_mon+1<10)
-    datestream << ":0" << now->tm_mon+1;
-  else
-    datestream << ":" << now->tm_mon+1;
-  if(now->tm_mday<10)
-    datestream << ":0" << now->tm_mday;
-  else
-    datestream << ":" << now->tm_mday;
-  if(now->tm_hour<10)
-    datestream << " 0" << now->tm_hour;
-  else
-    datestream << " " << now->tm_hour;
-  if(now->tm_min<10)
-    datestream << ":0" << now->tm_min;
-  else
-    datestream << ":" << now->tm_min;
-  if(now->tm_sec<10)
-    datestream << ":0" << now->tm_sec;
-  else
-    datestream << ":" << now->tm_sec;
-  m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
-}
+//   time_t tim=time(NULL);
+//   tm *now=localtime(&tim);
+//   std::ostringstream datestream;
+//   //date std::string must be 20 characters long...
+//   datestream << now->tm_year+1900;
+//   if(now->tm_mon+1<10)
+//     datestream << ":0" << now->tm_mon+1;
+//   else
+//     datestream << ":" << now->tm_mon+1;
+//   if(now->tm_mday<10)
+//     datestream << ":0" << now->tm_mday;
+//   else
+//     datestream << ":" << now->tm_mday;
+//   if(now->tm_hour<10)
+//     datestream << " 0" << now->tm_hour;
+//   else
+//     datestream << " " << now->tm_hour;
+//   if(now->tm_min<10)
+//     datestream << ":0" << now->tm_min;
+//   else
+//     datestream << ":" << now->tm_min;
+//   if(now->tm_sec<10)
+//     datestream << ":0" << now->tm_sec;
+//   else
+//     datestream << ":" << now->tm_sec;
+//   m_gds->SetMetadataItem( "TIFFTAG_DATETIME", datestream.str().c_str());
+// }
 
 /**
  * @param filename Open a raster dataset with this filename
@@ -1403,35 +1482,38 @@ void ImgRaster::setDriver(const std::string& imageType){
  **/
 void ImgRaster::setFile(const std::string& filename, const std::string& imageType, unsigned long int memory, const std::vector<std::string>& options)
 {
+  m_writeMode=true;
   m_filename=filename;
   m_options=options;
-  setDriver(imageType);
-  if(m_data.empty())
-    initMem(memory);
-  for(unsigned int iband=0;iband<m_nband;++iband){
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
+  m_imageType=imageType;
+  if(nrOfCol()&&nrOfRow()&&nrOfBand()){
+    registerDriver();
+    if(m_data.empty())
+      initMem(memory);
+    for(unsigned int iband=0;iband<nrOfBand();++iband){
+      m_begin[iband]=0;
+      m_end[iband]=m_begin[iband]+m_blockSize;
+    }
   }
-  m_writeMode=true;
 }
 
 /**
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRaster::setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory, const std::vector<std::string>& options)
-{
-  m_filename=filename;
-  m_options=options;
-  setDriver(imgSrc);
-  if(m_data.empty())
-    initMem(memory);
-  for(unsigned int iband=0;iband<m_nband;++iband){
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-  }
-  m_writeMode=true;
-}
+// void ImgRaster::setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory, const std::vector<std::string>& options)
+// {
+//   m_filename=filename;
+//   m_options=options;
+//   setDriver(imgSrc);
+//   if(m_data.empty())
+//     initMem(memory);
+//   for(unsigned int iband=0;iband<m_nband;++iband){
+//     m_begin[iband]=0;
+//     m_end[iband]=m_begin[iband]+m_blockSize;
+//   }
+//   m_writeMode=true;
+// }
 
 /**
  * @param metadata Set this metadata when writing the image (if supported byt the driver)

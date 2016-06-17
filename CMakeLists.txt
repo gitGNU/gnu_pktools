@@ -284,9 +284,10 @@ set(PKLIBS ${GSL_LIBRARIES} ${PKTOOLS_APPCLASSES_LIB_NAME} ${PKTOOLS_BASE_LIB_NA
 set(PKAPPS
   pkcrop
   pkcomposite
-  pkcrop_bin
-  pkcomposite_bin
-  pktest_bin
+  pktest
+  )
+
+set(PKUTILS
   pkextractogr
   pkextractimg
   pkstatprofile
@@ -315,7 +316,7 @@ set(PKAPPS
   pkascii2img 
   pkascii2ogr
   pkreclass
-  )
+)
 
 set(PKFANNAPPS
 	pkann
@@ -329,9 +330,15 @@ set(PKLASAPPS
 
 if (PKTOOLS_WITH_APPS)
 	foreach(APP ${PKAPPS})
-    		add_executable(${APP} src/apps/${APP}.cc)
+    		add_executable(${APP} src/apps/${APP}_bin.cc)
     		target_link_libraries(${APP} ${PKLIBS})
     		set_target_properties(${APP} PROPERTIES FOLDER apps)
+	endforeach()
+
+	foreach(UTIL ${PKUTILS})
+    		add_executable(${UTIL} src/apps/${UTIL}.cc)
+    		target_link_libraries(${UTIL} ${PKLIBS})
+    		set_target_properties(${UTIL} PROPERTIES FOLDER apps)
 	endforeach()
 
 	if (BUILD_WITH_LIBLAS)
@@ -351,7 +358,7 @@ if (PKTOOLS_WITH_APPS)
     		set_target_properties(${PKFANNAPP} PROPERTIES FOLDER apps)
 		endforeach()
 	endif()
-	add_custom_target(apps DEPENDS ${PKAPPS} ${PKLASAPPS} ${PKFANNAPPS})
+	add_custom_target(apps DEPENDS ${PKAPPS} ${PKTUTILS} ${PKLASAPPS} ${PKFANNAPPS})
 	set_target_properties(apps PROPERTIES FOLDER 
 	phony)
 endif (PKTOOLS_WITH_APPS)
@@ -368,6 +375,7 @@ install (FILES "pktools.pc" DESTINATION lib/pkgconfig PERMISSIONS OWNER_READ OWN
 
 if (PKTOOLS_WITH_APPS)
   install (TARGETS ${PKAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
+  install (TARGETS ${PKUTILS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
   if (BUILD_WITH_LIBLAS)
     install (TARGETS ${PKLASAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif(BUILD_WITH_LIBLAS)
