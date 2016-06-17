@@ -1,6 +1,27 @@
+/**********************************************************************
+pkcomposite_lib.cc: program to mosaic and composite geo-referenced images
+Copyright (C) 2008-2016 Pieter Kempeneers
+
+This file is part of pktools
+
+pktools is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+pktools is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with pktools.  If not, see <http://www.gnu.org/licenses/>.
+***********************************************************************/
 #include <algorithm>
+#include <vector>
 #include <iostream>
 #include <string>
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -11,24 +32,24 @@
 using namespace std;
 using namespace app;
 
-bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
-  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
+int AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
+  Optionpk<unsigned int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
-  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
   Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev", "overwrite");
-  Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
+  Optionpk<unsigned int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value(s) for input raster dataset");
-  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
+  Optionpk<unsigned int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
   Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
   Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
   Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output raster dataset if not valid or out of bounds.", 0);
@@ -100,10 +121,14 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkcomposite -i input [-i input]* -o output" << endl;
-    cout << endl;
-    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
-    exit(0);//help was invoked, stop processing
+    std::ostringstream helpStream;
+    helpStream << "Usage: pkcomposite -i input [-i input]* -o output" << std::endl;
+    helpStream << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    throw(helpStream.str());//help was invoked, stop processing
+  }
+  if(imgReader.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
   }
   // ///band index(es) to crop (leave empty if all bands must be retained)
   // vector<int>  band_opt;
@@ -203,6 +228,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
     while(bndnodata_opt.size()<maxValue_opt.size())
       bndnodata_opt.push_back(bndnodata_opt[0]);
   }
+
   RESAMPLE theResample;
   if(resample_opt[0]=="near"){
     theResample=NEAR;
@@ -218,14 +244,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
     std::cout << "Error: resampling method " << resample_opt[0] << " not supported" << std::endl;
     exit(1);
   }
-  
-  if(imgReader.empty()){
-    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
-    exit(0);
-  }
+
   int nband=0;
   int nwriteBand=0;
-  int writeBand=0;
   vector<short> bands;
 
   //get bounding box
@@ -304,14 +325,14 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 
 
   string theProjection="";
-  GDALColorTable* theColorTable=NULL;
+  // GDALColorTable* theColorTable=NULL;
   bool init=false;
 
   for(int ifile=0;ifile<imgReader.size();++ifile){
     //todo: must be in init part only?
     if(colorTable_opt.empty())
-      if(imgReader[ifile].getColorTable())
-	theColorTable=(imgReader[ifile].getColorTable()->Clone());
+      // if(imgReader[ifile].getColorTable())
+      //   theColorTable=(imgReader[ifile].getColorTable()->Clone());
     if(projection_opt.empty())
       theProjection=imgReader[ifile].getProjection();
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
@@ -378,7 +399,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
       if(band_opt.size()){
 	nband=band_opt.size();
         bands.resize(band_opt.size());
-        for(int iband=0;iband<band_opt.size();++iband){
+        for(unsigned int iband=0;iband<band_opt.size();++iband){
           bands[iband]=band_opt[iband];
           assert(bands[iband]<imgReader[ifile].nrOfBand());
         }
@@ -386,10 +407,10 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
       else{
 	nband=imgReader[ifile].nrOfBand();
         bands.resize(nband);
-        for(int iband=0;iband<nband;++iband)
+        for(unsigned int iband=0;iband<nband;++iband)
           bands[iband]=iband;
       }
-      for(int iband=0;iband<bndnodata_opt.size();++iband){
+      for(unsigned int iband=0;iband<bndnodata_opt.size();++iband){
         assert(bndnodata_opt[iband]>=0&&bndnodata_opt[iband]<nband);
       }
       //if output type not set, get type from input image
@@ -441,17 +462,17 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
   if(forceEUgrid){
     //force to LAEA grid
     minULX=floor(minULX);
-    minULX-=static_cast<int>(minULX)%(static_cast<int>(dx));
+    minULX-=static_cast<unsigned int>(minULX)%(static_cast<unsigned int>(dx));
     maxULY=ceil(maxULY);
-    if(static_cast<int>(maxULY)%static_cast<int>(dy))
+    if(static_cast<unsigned int>(maxULY)%static_cast<unsigned int>(dy))
       maxULY+=dy;
-    maxULY-=static_cast<int>(maxULY)%(static_cast<int>(dy));
+    maxULY-=static_cast<unsigned int>(maxULY)%(static_cast<unsigned int>(dy));
     maxLRX=ceil(maxLRX);
-    if(static_cast<int>(maxLRX)%static_cast<int>(dx))
+    if(static_cast<unsigned int>(maxLRX)%static_cast<unsigned int>(dx))
       maxLRX+=dx;
-    maxLRX-=static_cast<int>(maxLRX)%(static_cast<int>(dx));
+    maxLRX-=static_cast<unsigned int>(maxLRX)%(static_cast<unsigned int>(dx));
     minLRY=floor(minLRY);
-    minLRY-=static_cast<int>(minLRY)%(static_cast<int>(dy));
+    minLRY-=static_cast<unsigned int>(minLRY)%(static_cast<unsigned int>(dy));
   }
   else if(align_opt[0]){
     if(minULX>imgReader[0].getUlx())
@@ -479,8 +500,8 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
     cout << "initializing composite image..." << endl;
 //   double dcol=(maxLRX-minULX+dx-1)/dx;
 //   double drow=(maxULY-minLRY+dy-1)/dy;
-//   int ncol=static_cast<int>(dcol);
-//   int nrow=static_cast<int>(drow);
+//   int ncol=static_cast<unsigned int>(dcol);
+//   int nrow=static_cast<unsigned int>(drow);
 
   int ncol=ceil((maxLRX-minULX)/dx);
   int nrow=ceil((maxULY-minLRY)/dy);
@@ -513,7 +534,6 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
   gt[3]=maxULY;
   gt[4]=0;
   gt[5]=-dy;
-
   imgWriter.setGeoTransform(gt);
 
   if(projection_opt.size()){
@@ -526,20 +546,15 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
       cout << "projection: " << theProjection << endl;
     imgWriter.setProjection(theProjection);
   }
-  // if(imgWriter.getDataType()==GDT_Byte){
-  //   if(colorTable_opt.size()){
-  //     if(colorTable_opt[0]!="none")
-  //       imgWriter.setColorTable(colorTable_opt[0]);
-  //   }
-  //   else if(theColorTable)
-  //     imgWriter.setColorTable(theColorTable);
-  // }
 
-  ImgRaster maskWriter;
+  ImgRaster maskReader;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
+    if(mask_opt.size()){
+      string errorString="Error: can only either mask or extent extent with cutline, not both";
+      throw(errorString);
+    }
     try{
-      //todo: support unique filename using boost
-      maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,"GTiff");
+      maskReader.open(ncol,nrow,1,GDT_Float64);
       double gt[6];
       gt[0]=minULX;
       gt[1]=dx;
@@ -547,17 +562,16 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
       gt[3]=maxULY;
       gt[4]=0;
       gt[5]=-dy;
-      maskWriter.setGeoTransform(gt);
+      maskReader.setGeoTransform(gt);
       if(projection_opt.size())
-	maskWriter.setProjectionProj4(projection_opt[0]);
+	maskReader.setProjectionProj4(projection_opt[0]);
       else if(theProjection!=""){
 	if(verbose_opt[0])
 	  cout << "projection: " << theProjection << endl;
-	maskWriter.setProjection(theProjection);
+	maskReader.setProjection(theProjection);
       }
       vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskWriter.rasterizeOgr(extentReader,burnValues,eoption_opt);
-      maskWriter.close();
+      maskReader.rasterizeOgr(extentReader,burnValues,eoption_opt);
     }
     catch(string error){
       cerr << error << std::endl;
@@ -568,15 +582,11 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
       exit(1);
     }
     //todo: support multiple masks
-    mask_opt.clear();
-    mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgRaster maskReader;
-  if(mask_opt.size()){
+  else if(mask_opt.size()==1){
     try{
-      if(verbose_opt[0]>=1)
-	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0],memory_opt[0]);
+      //there is only a single mask
+      maskReader.open(mask_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -585,10 +595,6 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
     catch(string error){
       cerr << error << std::endl;
       exit(2);
-    }
-    catch(...){
-      cerr << "error caught" << std::endl;
-      exit(1);
     }
   }
 
@@ -610,7 +616,6 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
     for(int iclass=0;iclass<class_opt.size();++iclass)
       assert(class_opt[iclass]<maxBuffer.size());
   }
-  int jb=0;
   double readRow=0;
   double readCol=0;
   double lowerCol=0;
@@ -620,7 +625,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int irow=0;irow<imgWriter.nrOfRow();++irow){
+  for(unsigned int irow=0;irow<imgWriter.nrOfRow();++irow){
     vector<float> lineMask;
     Vector2d< vector<double> > storeBuffer;
     vector<bool> writeValid(ncol);
@@ -638,7 +643,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
        cruleMap[crule_opt[0]]==AppFactory::maxallbands ||
        cruleMap[crule_opt[0]]==AppFactory::stdev)
       storeBuffer.resize(nband,ncol);
-    for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+    for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
       writeValid[icol]=false;
       fileBuffer[icol]=0;
       if(cruleMap[crule_opt[0]]==AppFactory::mode){//max voting
@@ -646,15 +651,14 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
           maxBuffer[icol][iclass]=0;
       }
       else{
-        for(int iband=0;iband<nband;++iband)
+        for(unsigned int iband=0;iband<nband;++iband)
           writeBuffer[iband][icol]=dstnodata_opt[0];
       }
     }
 
     double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 
-    for(int ifile=0;ifile<imgReader.size();++ifile){
-
+    for(unsigned int ifile=0;ifile<imgReader.size();++ifile){
       //imgReader already open...
       // try{
       //   imgReader.open(imgReader[ifile]);
@@ -686,7 +690,6 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
         endCol=0;
       else if(lri>=imgReader[ifile].nrOfCol())
         endCol=imgReader[ifile].nrOfCol()-1;
-      int readncol=endCol-startCol+1;
 
       //lookup corresponding row for irow in this file
       imgReader[ifile].geo2image(x,y,readCol,readRow);
@@ -694,16 +697,15 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
         // imgReader.close();
         continue;
       }
-
       // for(int iband=0;iband<imgReader.nrOfBand();++iband){
-      for(int iband=0;iband<nband;++iband){
-	int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
+      for(unsigned int iband=0;iband<nband;++iband){
+	unsigned int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
         // readBuffer[iband].resize(readncol);
 	try{
 
           imgReader[ifile].readData(readBuffer[ifile][iband],startCol,endCol,readRow,readBand,theResample);
 	  // if(readRow==0&&iband==0){
-	  //   for(int icol=0;icol<10;++icol)
+	  //   for(unsigned int icol=0;icol<10;++icol)
 	  //     cout << readBuffer[0][0][icol] << " ";
 	  //   cout << endl;
 	  // }
@@ -713,23 +715,21 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 	  throw;
 	}
       }
-
       for(int ib=0;ib<ncol;++ib){
         imgWriter.image2geo(ib,irow,x,y);
 	//check mask first
 	bool valid=true;
-	if(mask_opt.size()){
+	if(maskReader.isInit()){
 	  //read mask
 	  double colMask=0;
 	  double rowMask=0;
 
 	  maskReader.geo2image(x,y,colMask,rowMask);
-	  colMask=static_cast<int>(colMask);
-	  rowMask=static_cast<int>(rowMask);
+	  colMask=static_cast<unsigned int>(colMask);
+	  rowMask=static_cast<unsigned int>(rowMask);
 	  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	    if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
 
-	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
 		maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
 	      }
@@ -743,11 +743,13 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 	      }
 	      oldRowMask=rowMask;
 	    }
-	    if(lineMask[colMask]==msknodata_opt[0])
-	      valid=false;
+            for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+              if(lineMask[colMask]==msknodata_opt[ivalue]){
+                valid=false;
+              }
+            }
 	  }
 	}
-
 	if(!valid)
 	  continue;
 
@@ -761,9 +763,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
         switch(theResample){
         case(BILINEAR):
           lowerCol=readCol-0.5;
-          lowerCol=static_cast<int>(lowerCol);
+          lowerCol=static_cast<unsigned int>(lowerCol);
           upperCol=readCol+0.5;
-          upperCol=static_cast<int>(upperCol);
+          upperCol=static_cast<unsigned int>(upperCol);
           if(lowerCol<0)
             lowerCol=0;
           if(upperCol>=imgReader[ifile].nrOfCol())
@@ -791,7 +793,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 	  }
           break;
         default:
-          readCol=static_cast<int>(readCol);
+          readCol=static_cast<unsigned int>(readCol);
           for(int vband=0;vband<bndnodata_opt.size();++vband){
             val_new=readBuffer[ifile][bndnodata_opt[vband]][readCol-startCol];
 	    if(minValue_opt.size()>vband){
@@ -819,7 +821,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 	  if(file_opt[0]==1)
 	    ++fileBuffer[ib];
           if(writeValid[ib]){
-            int iband=0;
+            unsigned int iband=0;
 	    switch(cruleMap[crule_opt[0]]){
 	    case(AppFactory::maxndvi):{//max ndvi
               double red_current=writeBuffer[ruleBand_opt[0]][ib];
@@ -833,9 +835,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -854,7 +856,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 red_new=readBuffer[ifile][ruleBand_opt[0]][readCol-startCol];
                 nir_new=readBuffer[ifile][ruleBand_opt[1]][readCol-startCol];
                 if(red_new+nir_new>0&&red_new>=0&&nir_new>=0)
@@ -878,9 +880,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -898,7 +900,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 val_new=readBuffer[ifile][ruleBand_opt[0]][readCol-startCol];
                 val_new*=weight_opt[ifile];
                 if((cruleMap[crule_opt[0]]==AppFactory::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==AppFactory::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==AppFactory::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
@@ -917,9 +919,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -931,7 +933,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
@@ -948,9 +950,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -962,7 +964,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -981,9 +983,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -995,7 +997,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -1010,7 +1012,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 	  }
 	  else{
             writeValid[ib]=true;//readValid was true
-            int iband=0;
+            unsigned int iband=0;
 	    switch(cruleMap[crule_opt[0]]){
             case(AppFactory::mean):
             case(AppFactory::median):
@@ -1021,9 +1023,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1035,7 +1037,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -1050,9 +1052,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1064,7 +1066,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
 		}
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
 		  val_new=readBuffer[ifile][iband][readCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
@@ -1077,9 +1079,9 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1091,7 +1093,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -1107,13 +1109,12 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
         }
       }
       // imgReader.close();
-      
     }
     if(cruleMap[crule_opt[0]]==AppFactory::mode){
       vector<short> classBuffer(imgWriter.nrOfCol());
       if(class_opt.size()>1){
         for(int iclass=0;iclass<class_opt.size();++iclass){
-          for(int icol=0;icol<imgWriter.nrOfCol();++icol)
+          for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol)
             classBuffer[icol]=maxBuffer[icol][class_opt[iclass]];
           try{
             imgWriter.writeData(classBuffer,irow,iclass);
@@ -1125,7 +1126,7 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
         }
       }
       else{
-        for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+        for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
           vector<short>::iterator maxit=maxBuffer[icol].begin();
           maxit=stat.mymax(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
           writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
@@ -1144,10 +1145,10 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
       }
     }
     else{
-      for(int iband=0;iband<bands.size();++iband){
+      for(unsigned int iband=0;iband<bands.size();++iband){
         // assert(writeBuffer[bands[iband]].size()==imgWriter.nrOfCol());
         assert(writeBuffer[iband].size()==imgWriter.nrOfCol());
-        for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+        for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
 	  try{
 	    switch(cruleMap[crule_opt[0]]){
 	    case(AppFactory::mean):
@@ -1203,15 +1204,13 @@ bool AppFactory::pkcomposite(vector<ImgRaster>& imgReader, ImgRaster& imgWriter)
         }
       }
     }
-
     progress=static_cast<float>(irow+1.0)/imgWriter.nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
   }
-
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     extentReader.close();
   }
-
-  if(mask_opt.size())
+  if(maskReader.isInit())
     maskReader.close();
+  return(0);
 }

@@ -1,6 +1,6 @@
 /**********************************************************************
 pkcomposite.cc: program to mosaic and composite geo-referenced images
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -21,8 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <iostream>
 #include <string>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -146,7 +145,7 @@ int main(int argc, char *argv[])
 {
   Optionpk<string>  input_opt("i", "input", "Input image file(s). If input contains multiple images, a multi-band output is created");
   Optionpk<string>  output_opt("o", "output", "Output image file");
-  Optionpk<int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
+  Optionpk<unsigned int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
@@ -154,15 +153,15 @@ int main(int argc, char *argv[])
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
-  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
   Optionpk<double>  lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<string> crule_opt("cr", "crule", "Composite rule (overwrite, maxndvi, maxband, minband, mean, mode (only for byte images), median, sum, maxallbands, minallbands, stdev", "overwrite");
-  Optionpk<int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
+  Optionpk<unsigned int> ruleBand_opt("cb", "cband", "band index used for the composite rule (e.g., for ndvi, use --cband=0 --cband=1 with 0 and 1 indices for red and nir band respectively", 0);
   Optionpk<double> srcnodata_opt("srcnodata", "srcnodata", "invalid value(s) for input raster dataset");
-  Optionpk<int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
+  Optionpk<unsigned int> bndnodata_opt("bndnodata", "bndnodata", "Band(s) in input image to check if pixel is valid (used for srcnodata, min and max options)", 0);
   Optionpk<double> minValue_opt("min", "min", "flag values smaller or equal to this value as invalid.");
   Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
   Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output raster dataset if not valid or out of bounds.", 0);
@@ -249,6 +248,10 @@ int main(int argc, char *argv[])
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
   }
+  if(input_opt.empty()){
+    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(0);
+  }
 
   std::map<std::string, crule::CRULE_TYPE> cruleMap;
   // //initialize cruleMap
@@ -302,13 +305,8 @@ int main(int argc, char *argv[])
     exit(1);
   }
   
-  if(input_opt.empty()){
-    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
-    exit(0);
-  }
   int nband=0;
   int nwriteBand=0;
-  int writeBand=0;
   vector<short> bands;
   
   //get bounding box
@@ -385,19 +383,19 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     cout << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
-  vector<ImgReaderGdal> imgReader(input_opt.size());
-  // vector<ImgReaderGdal> imgReader(input_opt.size());
+  vector<ImgRaster> imgReader(input_opt.size());
+  // vector<ImgRaster> imgReader(input_opt.size());
   string theProjection="";
   GDALColorTable* theColorTable=NULL;
   string imageType;
   bool init=false;
-  for(int ifile=0;ifile<input_opt.size();++ifile){
+  for(unsigned int ifile=0;ifile<input_opt.size();++ifile){
     try{
       imgReader[ifile].open(input_opt[ifile],memory_opt[0]);
       // imgReader[ifile].open(input_opt[ifile],GA_ReadOnly);
-      for(int iband=0;iband<scale_opt.size();++iband)
+      for(unsigned int iband=0;iband<scale_opt.size();++iband)
         imgReader[ifile].setScale(scale_opt[iband],iband);
-      for(int iband=0;iband<offset_opt.size();++iband)
+      for(unsigned int iband=0;iband<offset_opt.size();++iband)
         imgReader[ifile].setOffset(offset_opt[iband],iband);
     }
     catch(string errorstring){
@@ -405,8 +403,8 @@ int main(int argc, char *argv[])
     }
     //todo: must be in init part only?
     if(colorTable_opt.empty())
-      if(imgReader[ifile].getColorTable())
-	theColorTable=(imgReader[ifile].getColorTable()->Clone());
+      // if(imgReader[ifile].getColorTable())
+      //   theColorTable=(imgReader[ifile].getColorTable()->Clone());
     if(projection_opt.empty())
       theProjection=imgReader[ifile].getProjection();
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
@@ -473,7 +471,7 @@ int main(int argc, char *argv[])
       if(band_opt.size()){
 	nband=band_opt.size();
         bands.resize(band_opt.size());
-        for(int iband=0;iband<band_opt.size();++iband){
+        for(unsigned int iband=0;iband<band_opt.size();++iband){
           bands[iband]=band_opt[iband];
           assert(bands[iband]<imgReader[ifile].nrOfBand());
         }
@@ -481,10 +479,10 @@ int main(int argc, char *argv[])
       else{
 	nband=imgReader[ifile].nrOfBand();
         bands.resize(nband);
-        for(int iband=0;iband<nband;++iband)
+        for(unsigned int iband=0;iband<nband;++iband)
           bands[iband]=iband;
       }
-      for(int iband=0;iband<bndnodata_opt.size();++iband){
+      for(unsigned int iband=0;iband<bndnodata_opt.size();++iband){
         assert(bndnodata_opt[iband]>=0&&bndnodata_opt[iband]<nband);
       }
       //if output type not set, get type from input image
@@ -541,17 +539,17 @@ int main(int argc, char *argv[])
   if(forceEUgrid){
     //force to LAEA grid
     minULX=floor(minULX);
-    minULX-=static_cast<int>(minULX)%(static_cast<int>(dx));
+    minULX-=static_cast<unsigned int>(minULX)%(static_cast<unsigned int>(dx));
     maxULY=ceil(maxULY);
-    if(static_cast<int>(maxULY)%static_cast<int>(dy))
+    if(static_cast<unsigned int>(maxULY)%static_cast<unsigned int>(dy))
       maxULY+=dy;
-    maxULY-=static_cast<int>(maxULY)%(static_cast<int>(dy));
+    maxULY-=static_cast<unsigned int>(maxULY)%(static_cast<unsigned int>(dy));
     maxLRX=ceil(maxLRX);
-    if(static_cast<int>(maxLRX)%static_cast<int>(dx))
+    if(static_cast<unsigned int>(maxLRX)%static_cast<unsigned int>(dx))
       maxLRX+=dx;
-    maxLRX-=static_cast<int>(maxLRX)%(static_cast<int>(dx));
+    maxLRX-=static_cast<unsigned int>(maxLRX)%(static_cast<unsigned int>(dx));
     minLRY=floor(minLRY);
-    minLRY-=static_cast<int>(minLRY)%(static_cast<int>(dy));
+    minLRY-=static_cast<unsigned int>(minLRY)%(static_cast<unsigned int>(dy));
   }
   else if(align_opt[0]){
     if(minULX>imgReader[0].getUlx())
@@ -579,15 +577,15 @@ int main(int argc, char *argv[])
     cout << "initializing composite image..." << endl;
 //   double dcol=(maxLRX-minULX+dx-1)/dx;
 //   double drow=(maxULY-minLRY+dy-1)/dy;
-//   int ncol=static_cast<int>(dcol);
-//   int nrow=static_cast<int>(drow);
+//   int ncol=static_cast<unsigned int>(dcol);
+//   int nrow=static_cast<unsigned int>(drow);
 
   int ncol=ceil((maxLRX-minULX)/dx);
   int nrow=ceil((maxULY-minLRY)/dy);
 
   if(verbose_opt[0])
     cout << "composite image dim (nrow x ncol): " << nrow << " x " << ncol << endl;
-  ImgWriterGdal imgWriter;
+  ImgRaster imgWriter;
   while(weight_opt.size()<input_opt.size())
     weight_opt.push_back(weight_opt[0]);
   if(verbose_opt[0]){
@@ -622,7 +620,7 @@ int main(int argc, char *argv[])
   gt[4]=0;
   gt[5]=-dy;
   imgWriter.setGeoTransform(gt);
-  // imgWriter.setGeoTransform(minULX,maxULY,dx,dy,0,0);
+
   if(projection_opt.size()){
     if(verbose_opt[0])
       cout << "projection: " << projection_opt[0] << endl;
@@ -642,10 +640,14 @@ int main(int argc, char *argv[])
       imgWriter.setColorTable(theColorTable);
   }
 
-  ImgWriterGdal maskWriter;
+  ImgRaster maskReader;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
+    if(mask_opt.size()){
+      string errorString="Error: can only either mask or extent extent with cutline, not both";
+      throw(errorString);
+    }
     try{
-      maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,"GTiff",option_opt);
+      maskReader.open(ncol,nrow,1,GDT_Float64);
       double gt[6];
       gt[0]=minULX;
       gt[1]=dx;
@@ -653,17 +655,16 @@ int main(int argc, char *argv[])
       gt[3]=maxULY;
       gt[4]=0;
       gt[5]=-dy;
-      maskWriter.setGeoTransform(gt);
+      maskReader.setGeoTransform(gt);
       if(projection_opt.size())
-	maskWriter.setProjectionProj4(projection_opt[0]);
+	maskReader.setProjectionProj4(projection_opt[0]);
       else if(theProjection!=""){
 	if(verbose_opt[0])
 	  cout << "projection: " << theProjection << endl;
-	maskWriter.setProjection(theProjection);
+	maskReader.setProjection(theProjection);
       }
       vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskWriter.rasterizeOgr(extentReader,burnValues,eoption_opt);
-      maskWriter.close();
+      maskReader.rasterizeOgr(extentReader,burnValues,eoption_opt);
     }
     catch(string error){
       cerr << error << std::endl;
@@ -674,15 +675,11 @@ int main(int argc, char *argv[])
       exit(1);
     }
     //todo: support multiple masks
-    mask_opt.clear();
-    mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgReaderGdal maskReader;
-  if(mask_opt.size()){
+  else if(mask_opt.size()==1){
     try{
-      if(verbose_opt[0]>=1)
-	std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-      maskReader.open(mask_opt[0],memory_opt[0]);
+      //there is only a single mask
+      maskReader.open(mask_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -691,10 +688,6 @@ int main(int argc, char *argv[])
     catch(string error){
       cerr << error << std::endl;
       exit(2);
-    }
-    catch(...){
-      cerr << "error caught" << std::endl;
-      exit(1);
     }
   }
 
@@ -716,7 +709,6 @@ int main(int argc, char *argv[])
     for(int iclass=0;iclass<class_opt.size();++iclass)
       assert(class_opt[iclass]<maxBuffer.size());
   }
-  int jb=0;
   double readRow=0;
   double readCol=0;
   double lowerCol=0;
@@ -726,7 +718,7 @@ int main(int argc, char *argv[])
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int irow=0;irow<imgWriter.nrOfRow();++irow){
+  for(unsigned int irow=0;irow<imgWriter.nrOfRow();++irow){
     vector<float> lineMask;
     Vector2d< vector<double> > storeBuffer;
     vector<bool> writeValid(ncol);
@@ -744,7 +736,7 @@ int main(int argc, char *argv[])
        cruleMap[crule_opt[0]]==crule::maxallbands ||
        cruleMap[crule_opt[0]]==crule::stdev)
       storeBuffer.resize(nband,ncol);
-    for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+    for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
       writeValid[icol]=false;
       fileBuffer[icol]=0;
       if(cruleMap[crule_opt[0]]==crule::mode){//max voting
@@ -752,14 +744,14 @@ int main(int argc, char *argv[])
           maxBuffer[icol][iclass]=0;
       }
       else{
-        for(int iband=0;iband<nband;++iband)
+        for(unsigned int iband=0;iband<nband;++iband)
           writeBuffer[iband][icol]=dstnodata_opt[0];
       }
     }
 
     double oldRowMask=-1;//keep track of row mask to optimize number of line readings
 
-    for(int ifile=0;ifile<input_opt.size();++ifile){
+    for(unsigned int ifile=0;ifile<input_opt.size();++ifile){
       //imgReader already open...
       // try{
       //   imgReader.open(input_opt[ifile]);
@@ -800,15 +792,14 @@ int main(int argc, char *argv[])
         continue;
       }
       // for(int iband=0;iband<imgReader.nrOfBand();++iband){
-      for(int iband=0;iband<nband;++iband){
-	int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
+      for(unsigned int iband=0;iband<nband;++iband){
+	unsigned int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
         // readBuffer[iband].resize(readncol);
 	try{
+
           imgReader[ifile].readData(readBuffer[ifile][iband],startCol,endCol,readRow,readBand,theResample);
-	  //test
-          // imgReader[ifile].readData(readBuffer[ifile][iband],static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(readRow),static_cast<int>(readBand));
 	  // if(readRow==0&&iband==0){
-	  //   for(int icol=0;icol<10;++icol)
+	  //   for(unsigned int icol=0;icol<10;++icol)
 	  //     cout << readBuffer[0][0][icol] << " ";
 	  //   cout << endl;
 	  // }
@@ -822,20 +813,19 @@ int main(int argc, char *argv[])
         imgWriter.image2geo(ib,irow,x,y);
 	//check mask first
 	bool valid=true;
-	if(mask_opt.size()){
+	if(maskReader.isInit()){
 	  //read mask
 	  double colMask=0;
 	  double rowMask=0;
 
 	  maskReader.geo2image(x,y,colMask,rowMask);
-	  colMask=static_cast<int>(colMask);
-	  rowMask=static_cast<int>(rowMask);
+	  colMask=static_cast<unsigned int>(colMask);
+	  rowMask=static_cast<unsigned int>(rowMask);
 	  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	    if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
 
-	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
-		maskReader.readData(lineMask,static_cast<int>(rowMask),mskband_opt[0]);
+		maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;
@@ -847,11 +837,13 @@ int main(int argc, char *argv[])
 	      }
 	      oldRowMask=rowMask;
 	    }
-	    if(lineMask[colMask]==msknodata_opt[0])
-	      valid=false;
+            for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
+              if(lineMask[colMask]==msknodata_opt[ivalue]){
+                valid=false;
+              }
+            }
 	  }
 	}
-
 	if(!valid)
 	  continue;
 
@@ -865,9 +857,9 @@ int main(int argc, char *argv[])
         switch(theResample){
         case(BILINEAR):
           lowerCol=readCol-0.5;
-          lowerCol=static_cast<int>(lowerCol);
+          lowerCol=static_cast<unsigned int>(lowerCol);
           upperCol=readCol+0.5;
-          upperCol=static_cast<int>(upperCol);
+          upperCol=static_cast<unsigned int>(upperCol);
           if(lowerCol<0)
             lowerCol=0;
           if(upperCol>=imgReader[ifile].nrOfCol())
@@ -895,7 +887,7 @@ int main(int argc, char *argv[])
 	  }
           break;
         default:
-          readCol=static_cast<int>(readCol);
+          readCol=static_cast<unsigned int>(readCol);
           for(int vband=0;vband<bndnodata_opt.size();++vband){
             val_new=readBuffer[ifile][bndnodata_opt[vband]][readCol-startCol];
 	    if(minValue_opt.size()>vband){
@@ -923,7 +915,7 @@ int main(int argc, char *argv[])
 	  if(file_opt[0]==1)
 	    ++fileBuffer[ib];
           if(writeValid[ib]){
-            int iband=0;
+            unsigned int iband=0;
 	    switch(cruleMap[crule_opt[0]]){
 	    case(crule::maxndvi):{//max ndvi
               double red_current=writeBuffer[ruleBand_opt[0]][ib];
@@ -937,9 +929,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -958,7 +950,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 red_new=readBuffer[ifile][ruleBand_opt[0]][readCol-startCol];
                 nir_new=readBuffer[ifile][ruleBand_opt[1]][readCol-startCol];
                 if(red_new+nir_new>0&&red_new>=0&&nir_new>=0)
@@ -982,9 +974,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1002,7 +994,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 val_new=readBuffer[ifile][ruleBand_opt[0]][readCol-startCol];
                 val_new*=weight_opt[ifile];
                 if((cruleMap[crule_opt[0]]==crule::maxband&&val_new>val_current)||(cruleMap[crule_opt[0]]==crule::minband&&val_new<val_current)||(cruleMap[crule_opt[0]]==crule::validband)){//&&val_new>minValue_opt[0]&&val_new<maxValue_opt[0])){
@@ -1021,9 +1013,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1035,7 +1027,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
@@ -1052,9 +1044,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1066,7 +1058,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -1085,9 +1077,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1099,7 +1091,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -1114,7 +1106,7 @@ int main(int argc, char *argv[])
 	  }
 	  else{
             writeValid[ib]=true;//readValid was true
-            int iband=0;
+            unsigned int iband=0;
 	    switch(cruleMap[crule_opt[0]]){
             case(crule::mean):
             case(crule::median):
@@ -1125,9 +1117,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1139,7 +1131,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -1154,9 +1146,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1168,7 +1160,7 @@ int main(int argc, char *argv[])
 		}
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
 		  val_new=readBuffer[ifile][iband][readCol-startCol];
 		  maxBuffer[ib][val_new]=maxBuffer[ib][val_new]+weight_opt[ifile];
@@ -1181,9 +1173,9 @@ int main(int argc, char *argv[])
               switch(theResample){
               case(BILINEAR):
                 lowerCol=readCol-0.5;
-                lowerCol=static_cast<int>(lowerCol);
+                lowerCol=static_cast<unsigned int>(lowerCol);
                 upperCol=readCol+0.5;
-                upperCol=static_cast<int>(upperCol);
+                upperCol=static_cast<unsigned int>(upperCol);
                 if(lowerCol<0)
                   lowerCol=0;
                 if(upperCol>=imgReader[ifile].nrOfCol())
@@ -1195,7 +1187,7 @@ int main(int argc, char *argv[])
                 }
                 break;
               default:
-                readCol=static_cast<int>(readCol);
+                readCol=static_cast<unsigned int>(readCol);
                 for(iband=0;iband<nband;++iband){
                   val_new=readBuffer[ifile][iband][readCol-startCol];
                   val_new*=weight_opt[ifile];
@@ -1216,7 +1208,7 @@ int main(int argc, char *argv[])
       vector<short> classBuffer(imgWriter.nrOfCol());
       if(class_opt.size()>1){
         for(int iclass=0;iclass<class_opt.size();++iclass){
-          for(int icol=0;icol<imgWriter.nrOfCol();++icol)
+          for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol)
             classBuffer[icol]=maxBuffer[icol][class_opt[iclass]];
           try{
             imgWriter.writeData(classBuffer,irow,iclass);
@@ -1228,7 +1220,7 @@ int main(int argc, char *argv[])
         }
       }
       else{
-        for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+        for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
           vector<short>::iterator maxit=maxBuffer[icol].begin();
           maxit=stat.mymax(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
           writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
@@ -1247,10 +1239,10 @@ int main(int argc, char *argv[])
       }
     }
     else{
-      for(int iband=0;iband<bands.size();++iband){
+      for(unsigned int iband=0;iband<bands.size();++iband){
         // assert(writeBuffer[bands[iband]].size()==imgWriter.nrOfCol());
         assert(writeBuffer[iband].size()==imgWriter.nrOfCol());
-        for(int icol=0;icol<imgWriter.nrOfCol();++icol){
+        for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
 	  try{
 	    switch(cruleMap[crule_opt[0]]){
 	    case(crule::mean):
@@ -1312,11 +1304,10 @@ int main(int argc, char *argv[])
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     extentReader.close();
   }
-  for(int ifile=0;ifile<input_opt.size();++ifile){
+  for(unsigned int ifile=0;ifile<input_opt.size();++ifile){
     imgReader[ifile].close();
   }
-  if(mask_opt.size())
+  if(maskReader.isInit())
     maskReader.close();
   imgWriter.close();
 }
-  

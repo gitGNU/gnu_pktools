@@ -376,7 +376,6 @@ template <typename T> int ImgReaderOgr::readXY(std::vector<T>& xVector, std::vec
   if(verbose)
     std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
-  OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   //start reading features from the layer
   OGRFeature *poFeature;
   if(verbose)
@@ -438,7 +437,7 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
   }
   assert(poGeometry != NULL);
          // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-  OGRPoint *poPoint = (OGRPoint *) poGeometry;
+  // OGRPoint *poPoint = (OGRPoint *) poGeometry;
   if(pos){
     if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
       OGRPoint *poPoint;
@@ -546,10 +545,6 @@ template <typename T> inline int ImgReaderOgr::readData(std::vector<T>& data, co
       else// if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
         std::cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl;
     }
-    // assert(poGeometry != NULL 
-    //        && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-    OGRPoint *poPoint = (OGRPoint *) poGeometry;
-
     for(int iField=0;iField<nfield;++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
       std::string fieldname=poFieldDefn->GetNameRef();

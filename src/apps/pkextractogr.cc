@@ -219,9 +219,6 @@ int main(int argc, char *argv[])
   if(verbose_opt[0])
     std::cout << class_opt << std::endl;
   Vector2d<unsigned int> posdata;
-  unsigned long int nsample=0;
-  unsigned long int ntotalvalid=0;
-  unsigned long int ntotalinvalid=0;
 
   ImgRaster imgReader;
   // ImgRaster imgReader;
@@ -317,7 +314,6 @@ int main(int argc, char *argv[])
   srand(time(NULL));
 
   bool sampleIsRaster=false;
-  bool sampleIsVirtual=false;
 
   ImgReaderOgr sampleReaderOgr;
   ImgWriterOgr sampleWriterOgr;
@@ -335,7 +331,6 @@ int main(int argc, char *argv[])
     try{
       sampleWriterOgr.open("/vsimem/virtual",ogrformat_opt[0]);
       char     **papszOptions=NULL;
-      sampleIsVirtual=true;
 
       if(random_opt.size()){
         //create simple random sampling within boundary
@@ -718,11 +713,6 @@ int main(int argc, char *argv[])
 	      continue;
             
 	    OGRPoint ulPoint,urPoint,llPoint,lrPoint;
-	    double ulx;
-            double uly;
-	    double lrx;
-            double lry;
-
 	    OGRPolygon writePolygon;
             OGRPoint writePoint;
 	    OGRLinearRing writeRing;
@@ -731,7 +721,6 @@ int main(int argc, char *argv[])
 	    int nPointPolygon=0;
 	    if(createPolygon){
 	      if(disc_opt[0]){
-		double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
 		double radius=buffer_opt[0]*sqrt(imgReader.getDeltaX()*imgReader.getDeltaY());
 		unsigned short nstep = 25;
 		for(int i=0;i<nstep;++i){

@@ -328,7 +328,6 @@ int main(int argc, char *argv[])
       vector<int> writeBufferClass;
       vector<int> selectedClass;
       Vector2d<double> selectedBuffer;
-      double oldimgrow=-1;
       unsigned int irow=0;
       unsigned int icol=0;
       if(verbose_opt[0]>1)
@@ -451,7 +450,6 @@ int main(int argc, char *argv[])
         map<std::string,double> pointAttributes;
         ogrWriter.createField(label_opt[0],labelType);
         for(unsigned int iband=0;iband<nband;++iband){
-	  unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
           ogrWriter.createField(fieldname_opt[iband],fieldType);
         }
         progress=0;
@@ -512,7 +510,6 @@ int main(int argc, char *argv[])
             std::cout << "writing sample " << isample << std::endl;
           pointAttributes[label_opt[0]]=writeBufferClass[isample];
           for(unsigned int iband=0;iband<writeBuffer[0].size()-2;++iband){
-	    unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
             pointAttributes[fieldname_opt[iband]]=writeBuffer[isample][iband+2];
           }
           if(verbose_opt[0]>1)
@@ -557,7 +554,6 @@ int main(int argc, char *argv[])
       vector<int> writeBufferClass;
       vector<int> selectedClass;
       Vector2d<double> selectedBuffer;
-      double oldimgrow=-1;
       unsigned int irow=0;
       unsigned int icol=0;
       if(verbose_opt[0]>1)
@@ -681,7 +677,6 @@ int main(int argc, char *argv[])
         map<std::string,double> pointAttributes;
         ogrWriter.createField(label_opt[0],labelType);
         for(unsigned int iband=0;iband<nband;++iband){
-	  unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
           ogrWriter.createField(fieldname_opt[iband],fieldType);
         }
         pfnProgress(progress,pszMessage,pProgressArg);
@@ -740,7 +735,6 @@ int main(int argc, char *argv[])
         for(unsigned int isample=0;isample<writeBuffer.size();++isample){
           pointAttributes[label_opt[0]]=writeBufferClass[isample];
           for(unsigned int iband=0;iband<writeBuffer[0].size()-2;++iband){
-	    unsigned int theBand=(band_opt.size()) ? band_opt[iband] : iband;
             pointAttributes[fieldname_opt[iband]]=writeBuffer[isample][iband+2];
           }
           ogrWriter.addPoint(writeBuffer[isample][0],writeBuffer[isample][1],pointAttributes,fieldname,isample);

@@ -1562,11 +1562,10 @@ public:
           referenceVector.clear();
           outputVector.clear();
           assert(cv<ntraining);
-          float rmse=0;
           int nclass=trainingFeatures.size();
           std::vector< Vector2d<float> > testFeatures(nclass);
           int testclass=0;//class to leave out
-          int testsample=0;//sample to leave out
+          // int testsample=0;//sample to leave out
           int nrun=(cv>1)? cv : ntraining;
           if(nrun>ntraining)
             nrun=ntraining;
@@ -1676,10 +1675,9 @@ public:
           referenceVector.clear();
           outputVector.clear();
           assert(cv<ntraining);
-          float rmse=0;
           std::vector< std::vector<fann_type> > testInput;
           std::vector< std::vector<fann_type> > testOutput;
-          int testsample=0;//sample to leave out
+          // int testsample=0;//sample to leave out
           int nrun=(cv>1)? cv : ntraining;
           if(nrun>ntraining)
             nrun=ntraining;

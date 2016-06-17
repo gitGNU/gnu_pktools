@@ -67,8 +67,8 @@ namespace app
         std::cout << m_argv[iarg] << " ";
       std::cout << std::endl;
     };
-    bool pkcrop(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
-    bool pkcomposite(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
+    int pkcrop(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
+    int pkcomposite(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
 
   private:
     //todo: create member attribute for pointer to memory buffer?

@@ -342,7 +342,7 @@ int ImgWriterOgr::getFields(std::vector<OGRFieldDefn*>& fields, int layer) const
   fields.clear();
   fields.resize(poFDefn->GetFieldCount());
   for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
-    OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
+    // OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
     fields[iField]=poFDefn->GetFieldDefn(iField);
   }
   assert(fields.size()==getFieldCount(layer));
@@ -356,7 +356,7 @@ void ImgWriterOgr::copyFields(const ImgReaderOgr& imgReaderOgr, int srcLayer, in
   std::vector<OGRFieldDefn*> fields;
   
   imgReaderOgr.getFields(fields,srcLayer);
-  for(int iField=0;iField<fields.size();++iField){
+  for(unsigned int iField=0;iField<fields.size();++iField){
     if(m_datasource->GetLayer(targetLayer)->CreateField(fields[iField]) != OGRERR_NONE ){
       std::ostringstream es;
       es << "Creating field " << fields[iField]->GetNameRef() << " failed";
@@ -395,7 +395,6 @@ void ImgWriterOgr::addPoint(double x, double y, const std::map<std::string,doubl
   }
   assert(pointAttributes.size()+1==poFeature->GetFieldCount());
   poFeature->SetField( fieldName.c_str(), theId);
-  int fid=0;
   for(std::map<std::string,double>::const_iterator mit=pointAttributes.begin();mit!=pointAttributes.end();++mit){
     poFeature->SetField((mit->first).c_str(),mit->second);
   }
@@ -417,7 +416,7 @@ void ImgWriterOgr::addLineString(std::vector<OGRPoint*>& points, const std::stri
   poFeature->SetField( fieldName.c_str(), theId);
   OGRLineString theLineString;
   theLineString.setNumPoints(points.size());
-  for(int ip=0;ip<points.size();++ip)
+  for(unsigned int ip=0;ip<points.size();++ip)
     theLineString.setPoint(ip,points[ip]);
   if(poFeature->SetGeometry( &theLineString )!=OGRERR_NONE){
     std::string errorString="Failed to set line OGRLineString as feature geometry";
@@ -440,7 +439,7 @@ void ImgWriterOgr::addRing(std::vector<OGRPoint*>& points, const std::string& fi
   // theLineString.setNumPoints(points.size());
   OGRPolygon thePolygon;
   OGRLinearRing theRing;
-  for(int ip=0;ip<points.size();++ip)
+  for(unsigned int ip=0;ip<points.size();++ip)
     theRing.addPoint(points[ip]);
   //  theRing.addPoint(points[0]);//close the ring
   theRing.closeRings();//redundent with previous line?
@@ -466,7 +465,7 @@ void ImgWriterOgr::addLineString(std::vector<OGRPoint*>& points, const std::stri
   poFeature->SetField( fieldName.c_str(), theId.c_str());
   OGRLineString theLineString;
   theLineString.setNumPoints(points.size());
-  for(int ip=0;ip<points.size();++ip)
+  for(unsigned int ip=0;ip<points.size();++ip)
     theLineString.setPoint(ip,points[ip]);
   if(poFeature->SetGeometry( &theLineString )!=OGRERR_NONE){
     std::string errorString="Failed to set line OGRLineString as feature geometry";
@@ -487,7 +486,7 @@ OGRErr ImgWriterOgr::createFeature(OGRFeature *theFeature,int layer){
   return m_datasource->GetLayer(layer)->CreateFeature(theFeature);
 }
 
-int ImgWriterOgr::getFieldCount(int layer) const
+unsigned int ImgWriterOgr::getFieldCount(int layer) const
 {
   assert(m_datasource->GetLayerCount()>layer);
   OGRLayer  *poLayer;
@@ -499,7 +498,7 @@ int ImgWriterOgr::getFieldCount(int layer) const
   return(poFDefn->GetFieldCount());
 }
 
-int ImgWriterOgr::getFeatureCount(int layer) const
+unsigned int ImgWriterOgr::getFeatureCount(int layer) const
 {
   return(getLayer(layer)->GetFeatureCount());
 }
@@ -523,7 +522,7 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
   OGRPolygon thePolygon;
   OGRLinearRing theRing;
   OGRPoint firstPoint;
-  OGRFeature *polyFeature;
+  OGRFeature *polyFeature=0;
   if(eGType!=wkbPoint)
     polyFeature=createFeature();
 
@@ -531,11 +530,10 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
   if(fs>' '&&fs<='~'){//field separator is a regular character (minimum ASCII code is space, maximum ASCII code is tilde)
     std::string csvRecord;
     while(getline(fpoints,csvRecord)){//read a line
-      OGRFeature *pointFeature;
+      OGRFeature *pointFeature=0;
       if(eGType==wkbPoint)
         pointFeature=createFeature();
       OGRPoint thePoint;
-      bool skip=false;
       std::istringstream csvstream(csvRecord);
       std::string value;
       int colId=0;
@@ -595,11 +593,10 @@ int ImgWriterOgr::ascii2ogr(const std::string& filename, const std::string &laye
   }
   else{//space or tab delimited fields
     while(getline(fpoints,line)){
-      OGRFeature *pointFeature;
+      OGRFeature *pointFeature=0;
       if(eGType==wkbPoint)
         pointFeature=createFeature();
       OGRPoint thePoint;
-      bool skip=false;
       std::istringstream ist(line);
       std::string value;
       int colId=0;
@@ -685,7 +682,7 @@ int ImgWriterOgr::addData(ImgRaster& imgReader, int theLayer, bool verbose)
   if(verbose)
     std::cout << "reset reading" << std::endl;
   poLayer->ResetReading();
-  for(int iband=0;iband<imgReader.nrOfBand();++iband){
+  for(unsigned int iband=0;iband<imgReader.nrOfBand();++iband){
     std::ostringstream fs;
     fs << "band" << iband;
     createField(fs.str(),OFTReal,theLayer);
@@ -702,7 +699,7 @@ int ImgWriterOgr::addData(ImgRaster& imgReader, int theLayer, bool verbose)
     OGRPoint *poPoint = (OGRPoint *) poGeometry;
     double x=poPoint->getX();
     double y=poPoint->getY();
-    for(int iband=0;iband<imgReader.nrOfBand();++iband){
+    for(unsigned int iband=0;iband<imgReader.nrOfBand();++iband){
       double imgData;
       imgReader.readData(imgData,x,y,iband);
       //todo: put imgdata in field

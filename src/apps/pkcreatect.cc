@@ -72,10 +72,6 @@ using namespace std;
 
 int main(int argc,char **argv) {
 
-  short red=-1;
-  short green=-1;
-  short blue=-1;
-
   Optionpk<string>  input_opt("i", "input", "Input image file");
   Optionpk<string>  output_opt("o", "output", "Output image file");
   Optionpk<string>  legend_opt("l", "legend", "Create legend as png file");

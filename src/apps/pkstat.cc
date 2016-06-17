@@ -217,10 +217,6 @@ int main(int argc, char *argv[])
   double medianValue=0;
   double stdDev=0;
 
-  const char* pszMessage;
-  void* pProgressArg=NULL;
-  GDALProgressFunc pfnProgress=GDALTermProgress;
-  double progress=0;
   srand(time(NULL));
 
   statfactory::StatFactory stat;

@@ -156,7 +156,8 @@ void ImgRaster::close(void)
     if(papszOptions)
       CSLDestroy(papszOptions);
   }
-  GDALClose(m_gds);
+  if(m_gds)
+    GDALClose(m_gds);
   reset();
 }
 
@@ -336,19 +337,6 @@ std::string ImgRaster::getGeoTransform() const
 }
 
 /**
- * @return the metadata of this data set in string format
- **/
-char** ImgRaster::getMetadata()
-{
-  if(m_gds){
-    if(m_gds->GetMetadata()!=NULL)
-      return(m_gds->GetMetadata());
-  }
-  else
-    return (char**)"";
-}
-
-/**
  * @return the metadata of this data set in C style string format (const version)
  **/
 char** ImgRaster::getMetadata() const
@@ -356,9 +344,12 @@ char** ImgRaster::getMetadata() const
   if(m_gds){
     if(m_gds->GetMetadata()!=NULL)
       return(m_gds->GetMetadata());
+    else
+      return(0);
   }
   else 
-    return (char**)"";
+    return(0);
+    // return (char**)"";
 }
 
 /**
@@ -383,6 +374,8 @@ std::string ImgRaster::getDescription() const
   if(m_gds){
     if(m_gds->GetDriver()->GetDescription()!=NULL)
       return m_gds->GetDriver()->GetDescription();
+    else
+      return("");
   }
   else
     return("");
@@ -396,6 +389,7 @@ std::string ImgRaster::getMetadataItem() const
   if(m_gds){
     if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
       return m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME );
+    return("");
   }
   else
     return("");
@@ -409,6 +403,7 @@ std::string ImgRaster::getImageDescription() const
   if(m_gds){
     if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
       return m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION");
+    return("");
   }
   else
     return("");
@@ -437,6 +432,7 @@ std::string ImgRaster::getCompression() const
   if(m_gds){
     if(m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE"))
       return m_gds->GetMetadataItem( "COMPRESSION", "IMAGE_STRUCTURE");
+    return("NONE");
   }
   else
     return("NONE");
@@ -632,7 +628,7 @@ void ImgRaster::open(const std::string& filename, unsigned long int memory)
 // void ImgRaster::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
 {
   m_filename = filename;
-  setCodec();
+  setDriver();
   initMem(memory);
   for(unsigned int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
@@ -642,8 +638,8 @@ void ImgRaster::open(const std::string& filename, unsigned long int memory)
 
 /**
  **/
-void ImgRaster::setCodec()
-// void ImgRaster::setCodec(const GDALAccess& readMode)
+void ImgRaster::setDriver()
+// void ImgRaster::setDriver(const GDALAccess& readMode)
 {
   GDALAllRegister();
   // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
@@ -682,8 +678,9 @@ void ImgRaster::setCodec()
  * @param band Band that must be read to cache
  * @return true if block was read
  **/
-bool ImgRaster::readNewBlock(unsigned int row, unsigned int band)
+CPLErr ImgRaster::readNewBlock(unsigned int row, unsigned int band)
 {
+  CPLErr returnValue=CE_None;
   if(m_gds == NULL){
     std::string errorString="Error in readNewBlock";
     throw(errorString);
@@ -701,9 +698,9 @@ bool ImgRaster::readNewBlock(unsigned int row, unsigned int band)
     GDALRasterBand  *poBand;
     assert(iband<nrOfBand()+1);
     poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-    poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
+    returnValue=poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
   }
-  return true;//new block was read
+  return(returnValue);//new block was read
 }
 
 /**
@@ -712,7 +709,7 @@ bool ImgRaster::readNewBlock(unsigned int row, unsigned int band)
  * @param band Search mininum value in image for this band
  * @return minimum value in image for the selected band
  **/
-double ImgRaster::getMin(int& x, int& y, unsigned int band){
+double ImgRaster::getMin(unsigned int& x, unsigned int& y, unsigned int band){
   double minValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
@@ -748,7 +745,7 @@ double ImgRaster::getMin(int& x, int& y, unsigned int band){
  * @param band Search mininum value in image for this band
  * @return maximum value in image for the selected band
  **/
-double ImgRaster::getMax(int& x, int& y, unsigned int band){
+double ImgRaster::getMax(unsigned int& x, unsigned int& y, unsigned int band){
   double maxValue=0;
   std::vector<double> lineBuffer(nrOfCol());
   bool isValid=false;
@@ -784,7 +781,7 @@ double ImgRaster::getMax(int& x, int& y, unsigned int band){
  * @param minValue Reported minimum value within searched region
  * @param maxValue Reported maximum value within searched region
  **/
-void ImgRaster::getMinMax(int startCol, int endCol, int startRow, int endRow, unsigned int band, double& minValue, double& maxValue)
+void ImgRaster::getMinMax(unsigned int startCol, unsigned int endCol, unsigned int startRow, unsigned int endRow, unsigned int band, double& minValue, double& maxValue)
 {
   bool isConstraint=(maxValue>minValue);
   double minConstraint=minValue;
@@ -880,7 +877,7 @@ void ImgRaster::getMinMax(double& minValue, double& maxValue, unsigned int band)
  * @param kde Apply kernel density function for a Gaussian basis function
  * @return number of valid pixels in this dataset for the the selected band
  **/
-double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, int theBand, bool kde){
+double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, double& max, unsigned int& nbin, unsigned int theBand, bool kde){
   double minValue=0;
   double maxValue=0;
       
@@ -927,10 +924,9 @@ double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, dou
   assert(nbin>0);
   if(histvector.size()!=nbin){
     histvector.resize(nbin);
-    for(int i=0;i<nbin;histvector[i++]=0);
+    for(unsigned int i=0;i<nbin;histvector[i++]=0);
   }
   double nvalid=0;
-  unsigned long int nsample=0;
   unsigned long int ninvalid=0;
   std::vector<double> lineBuffer(nrOfCol());
   for(unsigned int irow=0;irow<nrOfRow();++irow){
@@ -949,7 +945,7 @@ double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, dou
 	  //create kde for Gaussian basis function
 	  //todo: speed up by calculating first and last bin with non-zero contriubtion...
 	  //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
-	  for(int ibin=0;ibin<nbin;++ibin){
+	  for(unsigned int ibin=0;ibin<nbin;++ibin){
 	    double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
 	    double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
 	    histvector[ibin]+=thePdf;
@@ -1092,8 +1088,9 @@ void ImgRaster::getRefPix(double& refX, double &refY, unsigned int band)
  * @param band Band that must be written in cache
  * @return true if write was successful
  **/
-bool ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
+CPLErr ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
 {
+  CPLErr returnValue=CE_None;
   if(m_gds == NULL){
     std::string errorString="Error in writeNewBlock";
     throw(errorString);
@@ -1105,10 +1102,10 @@ bool ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
   GDALRasterBand  *poBand;
   assert(band<nrOfBand()+1);
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  poBand->RasterIO(GF_Write,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
+  returnValue=poBand->RasterIO(GF_Write,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
   m_begin[band]+=m_blockSize;//m_begin points to first line in block that will be written next
   m_end[band]=m_begin[band]+m_blockSize;//m_end points to last line in block that will be written next
-  return true;//new block was written
+  return(returnValue);//new block was written
 }
 
 // /**
@@ -1125,7 +1122,7 @@ bool ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
 //   setFile(filename,imgSrc,options);
 //   // m_filename=filename;
 //   // m_options=options;
-//   // setCodec(imgSrc);
+//   // setDriver(imgSrc);
 // }
 
 /**
@@ -1208,7 +1205,7 @@ void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
 //   setFile(filename,imageType,options);
 //   // m_filename = filename;
 //   // m_options=options;
-//   // setCodec(imageType);
+//   // setDriver(imageType);
 // }
 
 /**
@@ -1252,7 +1249,7 @@ void ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, c
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
  **/
-void ImgRaster::setCodec(const ImgRaster& imgSrc){
+void ImgRaster::setDriver(const ImgRaster& imgSrc){
   GDALAllRegister();
   GDALDriver *poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(imgSrc.getDriverDescription().c_str());
@@ -1260,11 +1257,14 @@ void ImgRaster::setCodec(const ImgRaster& imgSrc){
     std::string errorString="FileOpenError";
     throw(errorString);
   }
-
-  char **papszMetadata;
-  papszMetadata = poDriver->GetMetadata();
+  
+  char **papszMetadata = poDriver->GetMetadata();
   //todo: try and catch if CREATE is not supported (as in PNG)
-  assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
+  if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
+    std::ostringstream s;
+    s << "Error: image type " << imgSrc.getImageType() << " not supported";
+    throw(s.str());
+  }
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
@@ -1283,7 +1283,7 @@ void ImgRaster::setCodec(const ImgRaster& imgSrc){
       GDALSetNoDataValue(m_noDataValues[0],iband);
   }
 
-  m_gds->SetMetadata(imgSrc.getMetadata() ); 
+  m_gds->SetMetadata(imgSrc.getMetadata()); 
   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
   std::string versionString="pktools ";
   versionString+=VERSION;
@@ -1326,7 +1326,7 @@ void ImgRaster::setCodec(const ImgRaster& imgSrc){
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRaster::setCodec(const std::string& imageType){
+void ImgRaster::setDriver(const std::string& imageType){
   GDALAllRegister();
   GDALDriver *poDriver;
   poDriver = GetGDALDriverManager()->GetDriverByName(imageType.c_str());
@@ -1338,7 +1338,11 @@ void ImgRaster::setCodec(const std::string& imageType){
   char **papszMetadata;
   papszMetadata = poDriver->GetMetadata();
   //todo: try and catch if CREATE is not supported (as in PNG)
-  assert( CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE ));
+  if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
+    std::ostringstream s;
+    s << "Error: image type " << imageType << " not supported";
+    throw(s.str());
+  }
   char **papszOptions=NULL;
   for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
     papszOptions=CSLAddString(papszOptions,optionIt->c_str());
@@ -1401,7 +1405,7 @@ void ImgRaster::setFile(const std::string& filename, const std::string& imageTyp
 {
   m_filename=filename;
   m_options=options;
-  setCodec(imageType);
+  setDriver(imageType);
   if(m_data.empty())
     initMem(memory);
   for(unsigned int iband=0;iband<m_nband;++iband){
@@ -1419,7 +1423,7 @@ void ImgRaster::setFile(const std::string& filename, const ImgRaster& imgSrc, un
 {
   m_filename=filename;
   m_options=options;
-  setCodec(imgSrc);
+  setDriver(imgSrc);
   if(m_data.empty())
     initMem(memory);
   for(unsigned int iband=0;iband<m_nband;++iband){
@@ -1553,7 +1557,7 @@ void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>&
         burnLayers.insert(burnLayers.end(),burnBands.begin(),burnBands.end());
     }
   }
-  void* pTransformArg;
+  void* pTransformArg=NULL;
   GDALProgressFunc pfnProgress=NULL;
   void* pProgressArg=NULL;
 
@@ -1624,7 +1628,7 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
   }
-  void* pTransformArg;
+  void* pTransformArg=NULL;
   GDALProgressFunc pfnProgress=NULL;
   void* pProgressArg=NULL;
 
@@ -1636,7 +1640,7 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
     double gt[6];
     getGeoTransform(gt);
     if(controlOptions.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, NULL,coptions,pfnProgress,pProgressArg)!=CE_None){
+      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, 0,coptions,pfnProgress,pProgressArg)!=CE_None){
         std::string errorString(CPLGetLastErrorMsg());
         throw(errorString);
       }

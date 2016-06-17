@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
     ImgWriterOgr ogrWriter(output_opt[0],ogrReader);
     if(verbose_opt[0])
       cout << "copied layer from " << input_opt[0] << endl << flush;
-    OGRFeatureDefn *poFDefn = ogrWriter.getLayer()->GetLayerDefn();
+    // OGRFeatureDefn *poFDefn = ogrWriter.getLayer()->GetLayerDefn();
     //start reading features from the layer
     if(verbose_opt[0])
       cout << "reset reading" << endl;

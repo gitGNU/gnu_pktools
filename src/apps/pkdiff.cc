@@ -542,8 +542,6 @@ int main(int argc, char *argv[])
 	    //at this point we know the values for the entire window
 
 	    if(homogeneous_opt[0]){//only centre pixel
-	      int j=j_centre;
-	      int i=i_centre;
 	      //flag if not all pixels are homogeneous or if at least one pixel flagged
           
 	      if(!windowHasFlag&&isHomogeneous){

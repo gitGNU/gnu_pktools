@@ -249,7 +249,6 @@ int ConfusionMatrix::ua_pct(const std::string& theClass,double* se95) const{
 
 double ConfusionMatrix::oa(double* se95) const{
   double ntotal=m_results.sum();
-  double pChance=0;
   double pCorrect=0;
   for(int iclass=0;iclass<m_classes.size();++iclass)
     pCorrect+=static_cast<double>(m_results[iclass][iclass])/ntotal;

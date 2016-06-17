@@ -477,8 +477,8 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
   //main
   for(i=m_taps.size()/2;i<input.size()-m_taps.size()/2;++i){
     //todo:introduce nodata
-    T leaveOut=(*(m_taps.begin()))*input[i-m_taps.size()/2];
-    T include=(m_taps.back())*input[i+m_taps.size()/2];
+    // T leaveOut=(*(m_taps.begin()))*input[i-m_taps.size()/2];
+    // T include=(m_taps.back())*input[i+m_taps.size()/2];
     output[i]=0;
     for(int t=0;t<m_taps.size();++t)
       output[i]+=input[i-m_taps.size()/2+t]*m_taps[t];
@@ -517,7 +517,6 @@ template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T
 //todo: filling statBuffer can be optimized (no need to clear and fill entire buffer, just push back new value...)
  template<class T> void Filter::filter(const std::vector<T>& input, std::vector<T>& output, const std::string& method, int dim)
 {
-  bool verbose=false;
   assert(dim);
   output.resize(input.size());
   int i=0;

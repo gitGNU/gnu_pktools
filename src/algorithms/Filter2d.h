@@ -308,7 +308,6 @@ template<class T1, class T2> void Filter2d::doit(const Vector2d<T1>& inputVector
       std::vector<T1> windowBuffer;
       std::map<int,int> occurrence;
       int centre=dimX*(dimY-1)/2+(dimX-1)/2;
-      bool centreMasked=false;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
 	  indexI=x+i;

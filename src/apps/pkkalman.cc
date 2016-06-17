@@ -381,7 +381,7 @@ int main(int argc,char **argv) {
     }
   }
 
-  int ndigit=log(1.0*tmodel_opt.back())/log(10.0)+1;
+  // int ndigit=log(1.0*tmodel_opt.back())/log(10.0)+1;
 
   double geox=0;
   double geoy=0;
@@ -647,8 +647,8 @@ int main(int argc,char **argv) {
 		  double kalmanGain=1;
 		  unsigned int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 		  unsigned int maxCol=(icol+down_opt[0]/2<imgReaderObs.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderObs.nrOfCol()-1;
-		  unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
-		  unsigned int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
+		  // unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
+		  // unsigned int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 		  obsWindowBuffer.clear();
 		  for(unsigned int iline=0;iline<obsLineVector.size();++iline){
 		    for(unsigned int isample=minCol;isample<=maxCol;++isample){
@@ -862,8 +862,8 @@ int main(int argc,char **argv) {
 		imgUpdaterEst.image2geo(icol,irow,geox,geoy);
 		unsigned int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 		unsigned int maxCol=(icol+down_opt[0]/2<imgUpdaterEst.nrOfCol()) ? icol+down_opt[0]/2 : imgUpdaterEst.nrOfCol()-1;
-		unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
-		unsigned int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
+		// unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
+		// unsigned int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
 		estWindowBuffer.clear();
 		for(unsigned int iline=0;iline<estLineVector.size();++iline){
 		  for(unsigned int isample=minCol;isample<=maxCol;++isample){
@@ -946,7 +946,6 @@ int main(int argc,char **argv) {
 		  double estMeanValue=0;
 		  double estVarValue=0;
 		  statobs.meanVar(estWindowBuffer,estMeanValue,estVarValue);
-		  double nvalid=0;
 		  //time update
 		  double processNoiseVariance=processNoise_opt[0]*estVarValue;
 		  //estimate stability of weight distribution from model (low resolution) data in a window mod1 -> mod2 and assume distribution holds at fine spatial resolution. 
@@ -1311,8 +1310,8 @@ int main(int argc,char **argv) {
 		  double kalmanGain=1;
 		  unsigned int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 		  unsigned int maxCol=(icol+down_opt[0]/2<imgReaderObs.nrOfCol()) ? icol+down_opt[0]/2 : imgReaderObs.nrOfCol()-1;
-		  unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
-		  unsigned int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
+		  // unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
+		  // unsigned int maxRow=(irow+down_opt[0]/2<imgReaderObs.nrOfRow()) ? irow+down_opt[0]/2 : imgReaderObs.nrOfRow()-1;
 		  obsWindowBuffer.clear();
 		  for(unsigned int iline=0;iline<obsLineVector.size();++iline){
 		    for(unsigned int isample=minCol;isample<=maxCol;++isample){
@@ -1448,7 +1447,7 @@ int main(int argc,char **argv) {
 	// vector<double> gainWriteBuffer(ncol);
 
 	unsigned int readObsBand=(observation_opt.size()==nobs)? 0:obsindex;
-	unsigned int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:obsindex;
+	// unsigned int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:obsindex;
 	unsigned int readModel1Band=(model_opt.size()==nmodel)? 0:modindex+1;
 	unsigned int readModel2Band=(model_opt.size()==nmodel)? 0:modindex;
 	unsigned int readModel1MaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:modindex+1;
@@ -1526,8 +1525,8 @@ int main(int argc,char **argv) {
 		imgUpdaterEst.image2geo(icol,irow,geox,geoy);
 		unsigned int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
 		unsigned int maxCol=(icol+down_opt[0]/2<imgUpdaterEst.nrOfCol()) ? icol+down_opt[0]/2 : imgUpdaterEst.nrOfCol()-1;
-		unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
-		unsigned int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
+		// unsigned int minRow=(irow>down_opt[0]/2) ? irow-down_opt[0]/2 : 0;
+		// unsigned int maxRow=(irow+down_opt[0]/2<imgUpdaterEst.nrOfRow()) ? irow+down_opt[0]/2 : imgUpdaterEst.nrOfRow()-1;
 		estWindowBuffer.clear();
 		for(unsigned int iline=0;iline<estLineVector.size();++iline){
 		  for(unsigned int isample=minCol;isample<=maxCol;++isample){
@@ -1614,7 +1613,6 @@ int main(int argc,char **argv) {
 		  double estMeanValue=0;
 		  double estVarValue=0;
 		  statobs.meanVar(estWindowBuffer,estMeanValue,estVarValue);
-		  double nvalid=0;
 		  //time update
 		  double processNoiseVariance=processNoise_opt[0]*estVarValue;
 		  //estimate stability of weight distribution from model (low resolution) data in a window mod1 -> mod2 and assume distribution holds at fine spatial resolution. 
@@ -1813,7 +1811,7 @@ int main(int argc,char **argv) {
 	  double B=estBackwardBuffer[icol];
 	  double C=uncertForwardBuffer[icol];
 	  double D=uncertBackwardBuffer[icol];
-	  double uncertObs=uncertObs_opt[0];
+	  // double uncertObs=uncertObs_opt[0];
 
 	  double noemer=(C+D);
 	  //todo: consistently check for division by zero...

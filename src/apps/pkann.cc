@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
     cout << "number of bootstrap aggregations: " << nbag << endl;
   
   ImgReaderOgr extentReader;
-  OGRLayer  *readLayer;
+  // OGRLayer  *readLayer;
 
   double ulx=0;
   double uly=0;
@@ -276,7 +276,7 @@ int main(int argc, char *argv[])
     try{
       extentReader.open(mask_opt[0]);
       maskIsVector=true;
-      readLayer = extentReader.getDataSource()->GetLayer(0);
+      // readLayer = extentReader.getDataSource()->GetLayer(0);
       if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
 	cerr << "Error: could not get extent from " << mask_opt[0] << endl;
 	exit(1);
@@ -1039,7 +1039,6 @@ int main(int argc, char *argv[])
             fpixel[icol].push_back((hpixel[icol][iband]-offset[ibag][iband])/scale[ibag][iband]);
           vector<float> result(nclass);
           result=net[ibag].run(fpixel[icol]);
-          unsigned int maxClass=0;
           vector<float> prValues(nclass);
           float maxP=0;
 
@@ -1269,7 +1268,6 @@ int main(int argc, char *argv[])
 	  }//for ibag
 	  //search for max class prob
 	  float maxBag=0;
-	  float normBag=0;
 	  string classOut="Unclassified";
 	  for(unsigned int iclass=0;iclass<nclass;++iclass){
 	    if(verbose_opt[0]>1)

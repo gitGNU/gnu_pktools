@@ -346,7 +346,6 @@ int main(int argc, char *argv[])
     std::cout << "training vector file: " << training_opt[0] << std::endl;
 
   unsigned int totalSamples=0;
-  unsigned int totalTestSamples=0;
 
   unsigned short nclass=0;
   unsigned int nband=0;
@@ -415,7 +414,7 @@ int main(int argc, char *argv[])
       totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
+	trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }
@@ -423,7 +422,7 @@ int main(int argc, char *argv[])
       totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
+	trainingReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }

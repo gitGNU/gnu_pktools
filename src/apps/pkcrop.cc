@@ -1,6 +1,6 @@
 /**********************************************************************
 pkcrop.cc: perform raster data operations on image such as crop, extract and stack bands
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -18,12 +18,9 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  ***********************************************************************/
 #include <assert.h>
-#include <cstdlib>
 #include <string>
-#include <list>
 #include <iostream>
 #include <algorithm>
-//#include "imageclasses/ImgWriterGdal.h"
 #include "imageclasses/ImgRaster.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Optionpk.h"
@@ -62,9 +59,9 @@ The utility pkcrop can subset and stack raster images. In the spatial domain it 
  | uly    | uly                  | double | 0     |Upper left y value bounding box | 
  | lrx    | lrx                  | double | 0     |Lower right x value bounding box | 
  | lry    | lry                  | double | 0     |Lower right y value bounding box | 
- | b      | band                 | unsigned short |       |band index to crop (leave empty to retain all bands) | 
- | sband  | startband            | unsigned short |      |Start band sequence number | 
- | eband  | endband              | unsigned short |      |End band sequence number   | 
+ | b      | band                 | unsigned int |       |band index to crop (leave empty to retain all bands) | 
+ | sband  | startband            | unsigned int |      |Start band sequence number | 
+ | eband  | endband              | unsigned int |      |End band sequence number   | 
  | as     | autoscale            | double |       |scale output to min and max, e.g., --autoscale 0 --autoscale 255 | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate)| 
@@ -109,8 +106,8 @@ int main(int argc, char *argv[])
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
-  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
-  Optionpk<short> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
+  Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -121,11 +118,11 @@ int main(int argc, char *argv[])
   Optionpk<double> cy_opt("y", "y", "y-coordinate of image center to crop (in meter)");
   Optionpk<double> nx_opt("nx", "nx", "image size in x to crop (in meter)");
   Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
-  Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
-  Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
-  Optionpk<unsigned short>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
-  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
-  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<unsigned int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
+  Optionpk<unsigned int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
+  Optionpk<unsigned int>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
+  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> autoscale_opt("as", "autoscale", "scale output to min and max, e.g., --autoscale 0 --autoscale 255");
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
@@ -205,9 +202,6 @@ int main(int argc, char *argv[])
     std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(verbose_opt[0])
-    cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
-
   if(!doProcess){
     cout << endl;
     cout << "Usage: pkcrop -i input -o output" << endl;
@@ -223,8 +217,11 @@ int main(int argc, char *argv[])
     std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
     exit(0);
   }
+  if(verbose_opt[0])
+    cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
-  float nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
+
+  double nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
   RESAMPLE theResample;
   if(resample_opt[0]=="near"){
     theResample=NEAR;
@@ -270,7 +267,7 @@ int main(int argc, char *argv[])
 	  string errorstring="Error: index for end band must be smaller then start band";
 	  throw(errorstring);
 	}
-	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	for(unsigned int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
 	  band_opt.push_back(iband);
       }
     }
@@ -282,7 +279,7 @@ int main(int argc, char *argv[])
 
   bool isGeoRef=false;
   string projectionString;
-  for(int iimg=0;iimg<input_opt.size();++iimg){
+  for(unsigned int iimg=0;iimg<input_opt.size();++iimg){
     try{
     imgReader.open(input_opt[iimg],memory_opt[0]);
     }
@@ -388,28 +385,12 @@ int main(int argc, char *argv[])
     uly_opt[0]=(isGeoRef) ? cy_opt[0]+ny_opt[0]/2.0 : cy_opt[0]-ny_opt[0]/2.0;
     lrx_opt[0]=cx_opt[0]+nx_opt[0]/2.0;
     lry_opt[0]=(isGeoRef) ? cy_opt[0]-ny_opt[0]/2.0 : cy_opt[0]+ny_opt[0]/2.0;
-    // if(cropulx<ulx_opt[0])
-    //   cropulx=ulx_opt[0];
-    // if(cropuly>uly_opt[0])
-    //   cropuly=uly_opt[0];
-    // if(croplrx>lrx_opt[0])
-    //   croplrx=lrx_opt[0];
-    // if(croplry<lry_opt[0])
-    //   croplry=lry_opt[0];
   }
   else if(cx_opt.size()&&cy_opt.size()&&ns_opt.size()&&nl_opt.size()){
     ulx_opt[0]=cx_opt[0]-ns_opt[0]*dx/2.0;
     uly_opt[0]=(isGeoRef) ? cy_opt[0]+nl_opt[0]*dy/2.0 : cy_opt[0]-nl_opt[0]*dy/2.0;
     lrx_opt[0]=cx_opt[0]+ns_opt[0]*dx/2.0;
     lry_opt[0]=(isGeoRef) ? cy_opt[0]-nl_opt[0]*dy/2.0 : cy_opt[0]+nl_opt[0]*dy/2.0;
-    // if(cropulx<ulx_opt[0])
-    //   cropulx=ulx_opt[0];
-    // if(cropuly>uly_opt[0])
-    //   cropuly=uly_opt[0];
-    // if(croplrx>lrx_opt[0])
-    //   croplrx=lrx_opt[0];
-    // if(croplry<lry_opt[0])
-    //   croplry=lry_opt[0];
   }
 
   if(verbose_opt[0])
@@ -418,7 +399,7 @@ int main(int argc, char *argv[])
   int ncropcol=0;
   int ncroprow=0;
 
-  ImgRaster maskWriter;
+  ImgRaster maskReader;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     if(mask_opt.size()){
       string errorString="Error: can only either mask or extent extent with cutline, not both";
@@ -427,8 +408,7 @@ int main(int argc, char *argv[])
     try{
       ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
       ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
-      //todo: produce unique name or perform in memory solving issue on flush memory buffer (check gdal development list on how to retrieve gdal mem buffer)
-      maskWriter.open("/vsimem/mask.tif",ncropcol,ncroprow,1,GDT_Float32,"GTiff");
+      maskReader.open(ncropcol,ncroprow,1,GDT_Float64);
       double gt[6];
       gt[0]=ulx_opt[0];
       gt[1]=dx;
@@ -436,28 +416,24 @@ int main(int argc, char *argv[])
       gt[3]=uly_opt[0];
       gt[4]=0;
       gt[5]=-dy;
-      maskWriter.setGeoTransform(gt);
+      maskReader.setGeoTransform(gt);
       if(projection_opt.size())
-	maskWriter.setProjectionProj4(projection_opt[0]);
+	maskReader.setProjectionProj4(projection_opt[0]);
       else if(projectionString.size())
-	maskWriter.setProjection(projectionString);
-	
+	maskReader.setProjection(projectionString);
+      
       vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskWriter.rasterizeOgr(extentReader,burnValues,eoption_opt);
-      maskWriter.close();
+      maskReader.rasterizeBuf(extentReader,burnValues,eoption_opt);
     }
     catch(string error){
       cerr << error << std::endl;
       exit(2);
     }
-    mask_opt.clear();
-    mask_opt.push_back("/vsimem/mask.tif");
   }
-  ImgRaster maskReader;
-  if(mask_opt.size()==1){
+  else if(mask_opt.size()==1){
     try{
       //there is only a single mask
-      maskReader.open(mask_opt[0],memory_opt[0]);
+      maskReader.open(mask_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -542,8 +518,8 @@ int main(int argc, char *argv[])
       imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
       imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
       //test
-      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
-      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
+      ncropcol=abs(static_cast<unsigned int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<unsigned int>(ceil((cropuly-croplry)/dy)));
     }
     else{
       double magicX=1,magicY=1;
@@ -579,8 +555,8 @@ int main(int argc, char *argv[])
       imgReader.geo2image(cropulx+(magicX-1.0)*imgReader.getDeltaX(),cropuly-(magicY-1.0)*imgReader.getDeltaY(),uli,ulj);
       imgReader.geo2image(croplrx+(magicX-2.0)*imgReader.getDeltaX(),croplry-(magicY-2.0)*imgReader.getDeltaY(),lri,lrj);
 
-      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
-      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
+      ncropcol=abs(static_cast<unsigned int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<unsigned int>(ceil((cropuly-croplry)/dy)));
       uli=floor(uli);
       ulj=floor(ulj);
       lri=floor(lri);
@@ -628,7 +604,7 @@ int main(int argc, char *argv[])
         imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
 	if(nodata_opt.size()){
 	  // imgWriter.setNoData(nodata_opt);
-	  for(int iband=0;iband<ncropband;++iband)
+	  for(unsigned int iband=0;iband<ncropband;++iband)
 	    imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
 	}
       }
@@ -690,8 +666,8 @@ int main(int argc, char *argv[])
     // vector<double> readBuffer(readncol+1);
     vector<double> readBuffer;
     int nband=(band_opt.size())?band_opt.size() : imgReader.nrOfBand();
-    for(int iband=0;iband<nband;++iband){
-      int readBand=(band_opt.size()>iband)?band_opt[iband]:iband;
+    for(unsigned int iband=0;iband<nband;++iband){
+      unsigned int readBand=(band_opt.size()>iband)?band_opt[iband]:iband;
       if(verbose_opt[0]){
 	cout << "extracting band " << readBand << endl;
 	pfnProgress(progress,pszMessage,pProgressArg);
@@ -700,7 +676,7 @@ int main(int argc, char *argv[])
       double theMax=0;
       if(autoscale_opt.size()){
 	try{
-	  imgReader.getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
+	  imgReader.getMinMax(static_cast<unsigned int>(startCol),static_cast<unsigned int>(endCol),static_cast<unsigned int>(startRow),static_cast<unsigned int>(endRow),readBand,theMin,theMax);
 	}
 	catch(string errorString){
 	  cout << errorString << endl;
@@ -732,7 +708,7 @@ int main(int argc, char *argv[])
       double lowerCol=0;
       double upperCol=0;
       for(int irow=0;irow<imgWriter.nrOfRow();++irow){
-	vector<float> lineMask;
+	vector<double> lineMask;
 	double x=0;
 	double y=0;
 	//convert irow to geo
@@ -775,26 +751,21 @@ int main(int argc, char *argv[])
                 bool valid=true;
 		double geox=0;
 		double geoy=0;
-                //test
-                bool mydebug=false;
-                if(mask_opt.size()){
+                if(maskReader.isInit()){
 		  //read mask
 		  double colMask=0;
 		  double rowMask=0;
 
 		  imgWriter.image2geo(icol,irow,geox,geoy);
 		  maskReader.geo2image(geox,geoy,colMask,rowMask);
-                  //test
-                  if(geox>510680&&geox<510690&&geoy>296620&&geoy<296630)
-                    mydebug=true;
-		  colMask=static_cast<int>(colMask);
-		  rowMask=static_cast<int>(rowMask);
+		  colMask=static_cast<unsigned int>(colMask);
+		  rowMask=static_cast<unsigned int>(rowMask);
 		  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-		    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+		    if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
 
 		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 		      try{
-			maskReader.readData(lineMask,static_cast<int>(rowMask),mskband_opt[0]);
+			maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
 		      }
 		      catch(string errorstring){
 			cerr << errorstring << endl;
@@ -806,41 +777,24 @@ int main(int argc, char *argv[])
 		      }
 		      oldRowMask=rowMask;
 		    }
-                    //test
-                    if(mydebug){
-                      cout << "lineMask: " << endl;
-                      for(int ii=0;ii<lineMask.size();++ii)
-                        cout << lineMask[ii] << " " << endl;
-                      cout << " " << endl;
-                    }
                     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
                       if(lineMask[colMask]==msknodata_opt[ivalue]){
                         valid=false;
-                        //test
-                        std::cout << "not valid" << std::endl;
 			if(nodata_opt.size()>ivalue)
 			  nodataValue=nodata_opt[ivalue];
                       }
                     }
 		  }
 		}
-                //test
-                if(mydebug){
-                  std::cout << "nodataValue=" << nodataValue << std::endl;
-                  if(valid)
-                    std::cout << "valid" << std::endl;
-                  else
-                    std::cout << "not valid" << std::endl;
-                }
                 if(!valid)
                   writeBuffer.push_back(nodataValue);
                 else{
                   switch(theResample){
                   case(BILINEAR):
                     lowerCol=readCol-0.5;
-                    lowerCol=static_cast<int>(lowerCol);
+                    lowerCol=static_cast<unsigned int>(lowerCol);
                     upperCol=readCol+0.5;
-                    upperCol=static_cast<int>(upperCol);
+                    upperCol=static_cast<unsigned int>(upperCol);
                     if(lowerCol<0)
                       lowerCol=0;
                     if(upperCol>=imgReader.nrOfCol())
@@ -849,7 +803,7 @@ int main(int argc, char *argv[])
                     writeBuffer.push_back((readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol]);
                     break;
                   default:
-                    readCol=static_cast<int>(readCol);
+                    readCol=static_cast<unsigned int>(readCol);
                     readCol-=startCol;//we only start reading from startCol
                     // writeBuffer.push_back(readBuffer[readCol]*theScale+theOffset);
                     writeBuffer.push_back(readBuffer[readCol]);
@@ -895,7 +849,7 @@ int main(int argc, char *argv[])
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     extentReader.close();
   }
-  if(mask_opt.size())
+  if(maskReader.isInit())
     maskReader.close();
   imgWriter.close();
 }

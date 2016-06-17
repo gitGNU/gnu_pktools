@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
     std::cout << "number of bootstrap aggregations: " << nbag << std::endl;
 
   ImgReaderOgr extentReader;
-  OGRLayer  *readLayer;
+  // OGRLayer  *readLayer;
 
   double ulx=0;
   double uly=0;
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
     try{
       extentReader.open(mask_opt[0]);
       maskIsVector=true;
-      readLayer = extentReader.getDataSource()->GetLayer(0);
+      // readLayer = extentReader.getDataSource()->GetLayer(0);
       if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
 	cerr << "Error: could not get extent from " << mask_opt[0] << endl;
 	exit(1);
@@ -627,7 +627,6 @@ int main(int argc, char *argv[])
       if(nctraining<=0)
         nctraining=1;
       assert(nctraining<=trainingPixels[iclass].size());
-      int index=0;
       if(bagSize_opt[iclass]<100)
         random_shuffle(trainingPixels[iclass].begin(),trainingPixels[iclass].end());
       if(verbose_opt[0]>1)
@@ -1317,7 +1316,6 @@ int main(int argc, char *argv[])
 
 	  //search for max class prob
 	  float maxBag=0;
-	  float normBag=0;
 	  string classOut="Unclassified";
 	  for(short iclass=0;iclass<nclass;++iclass){
 	    if(verbose_opt[0]>1)

@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
   map<string,Vector2d<float> > testMap;
   vector<string> fields;
 
-  struct svm_problem prob;
+  // struct svm_problem prob;
   //organize training data
   trainingPixels.clear();
   testPixels.clear();

@@ -59,8 +59,8 @@ public:
   int addData(ImgRaster& imgReader, int layer=0, bool verbose=false);
   OGRFeature* createFeature(int layer=0);
   OGRErr createFeature(OGRFeature* theFeature, int layer=0);
-  int getFieldCount(int layer=0) const;
-  int getFeatureCount(int layer=0) const;
+  unsigned int getFieldCount(int layer=0) const;
+  unsigned int getFeatureCount(int layer=0) const;
 #if GDAL_VERSION_MAJOR < 2
   OGRDataSource* getDataSource(void) {return m_datasource;};
   OGRSFDriver* getDriver(void) const {return m_datasource->GetDriver();};

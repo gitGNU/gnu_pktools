@@ -134,9 +134,9 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   vector<Vector2d<float> > *tf=reinterpret_cast<vector<Vector2d<float> >*> (my_func_data);
   float ccost=x[0];
   float gamma=x[1];
-  double error=1.0/epsilon_tol_opt[0];
+  // double error=1.0/epsilon_tol_opt[0];
   double kappa=1.0;
-  double oa=1.0;
+  // double oa=1.0;
 
   CostFactorySVM costfactory(svm_type_opt[0], kernel_type_opt[0], kernel_degree_opt[0], gamma, coef0_opt[0], ccost, nu_opt[0],  epsilon_loss_opt[0], cache_opt[0], epsilon_tol_opt[0], shrinking_opt[0], prob_est_opt[0], cv_opt[0], verbose_opt[0]);
 
@@ -344,7 +344,7 @@ int main(int argc, char *argv[])
   }
 
   //----------------------------------- Training -------------------------------
-  struct svm_problem prob;
+  // struct svm_problem prob;
   vector<string> fields;
   //organize training data
   trainingPixels.clear();

@@ -166,7 +166,6 @@ int main(int argc,char **argv) {
   //todo: is this needed?
   GDALAllRegister();
 
-  double dfComplete=0.0;
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;

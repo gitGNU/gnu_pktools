@@ -1,25 +1,43 @@
-#include <algorithm>
-#include <iostream>
+/**********************************************************************
+pkcrop_lib.cc: perform raster data operations on image such as crop, extract and stack bands
+Copyright (C) 2008-2016 Pieter Kempeneers
+
+This file is part of pktools
+
+pktools is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+pktools is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with pktools.  If not, see <http://www.gnu.org/licenses/>.
+ ***********************************************************************/
+#include <assert.h>
 #include <string>
-#include "imageclasses/ImgReaderOgr.h"
+#include <iostream>
+#include <algorithm>
 #include "imageclasses/ImgRaster.h"
-#include "base/Vector2d.h"
+#include "imageclasses/ImgReaderOgr.h"
 #include "base/Optionpk.h"
-#include "algorithms/StatFactory.h"
 #include "algorithms/Egcs.h"
 #include "AppFactory.h"
 
 using namespace std;
 using namespace app;
 
-bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
+int AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
-  Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
+  Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
   Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
@@ -31,8 +49,8 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   Optionpk<double> cy_opt("y", "y", "y-coordinate of image center to crop (in meter)");
   Optionpk<double> nx_opt("nx", "nx", "image size in x to crop (in meter)");
   Optionpk<double> ny_opt("ny", "ny", "image size in y to crop (in meter)");
-  Optionpk<int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
-  Optionpk<int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
+  Optionpk<unsigned int> ns_opt("ns", "ns", "number of samples  to crop (in pixels)");
+  Optionpk<unsigned int> nl_opt("nl", "nl", "number of lines to crop (in pixels)");
   Optionpk<unsigned int>  band_opt("b", "band", "band index to crop (leave empty to retain all bands)");
   Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
   Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
@@ -113,9 +131,6 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
     std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(verbose_opt[0])
-    cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
-
   if(!doProcess){
     cout << endl;
     std::ostringstream helpStream;
@@ -132,8 +147,11 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   //   std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
   //   exit(0);
   // }
+  if(verbose_opt[0])
+    cout << setprecision(12) << "--ulx=" << ulx_opt[0] << " --uly=" << uly_opt[0] << " --lrx=" << lrx_opt[0] << " --lry=" << lry_opt[0] << endl;
 
-  float nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
+
+  double nodataValue=nodata_opt.size()? nodata_opt[0] : 0;
   RESAMPLE theResample;
   if(resample_opt[0]=="near"){
     theResample=NEAR;
@@ -179,7 +197,7 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
 	  string errorstring="Error: index for end band must be smaller then start band";
 	  throw(errorstring);
 	}
-	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	for(unsigned int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
 	  band_opt.push_back(iband);
       }
     }
@@ -290,9 +308,8 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
       uly_opt[0]=cropuly;
     if(croplry<cropuly&&croplry>lry_opt[0])
       lry_opt[0]=croplry;
-    if(cut_opt.size()||eoption_opt.size()){
+    if(cut_opt.size()||eoption_opt.size())
       extentReader.open(extent_opt[0]);
-    }
   }
   else if(cx_opt.size()&&cy_opt.size()&&nx_opt.size()&&ny_opt.size()){
     ulx_opt[0]=cx_opt[0]-nx_opt[0]/2.0;
@@ -320,8 +337,8 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
       throw(errorString);
     }
     try{
-      ncropcol=abs(static_cast<int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
-      ncroprow=abs(static_cast<int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
+      ncropcol=abs(static_cast<unsigned int>(ceil((lrx_opt[0]-ulx_opt[0])/dx)));
+      ncroprow=abs(static_cast<unsigned int>(ceil((uly_opt[0]-lry_opt[0])/dy)));
       maskReader.open(ncropcol,ncroprow,1,GDT_Float64);
       double gt[6];
       gt[0]=ulx_opt[0];
@@ -347,7 +364,7 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   else if(mask_opt.size()==1){
     try{
       //there is only a single mask
-      maskReader.open(mask_opt[0],memory_opt[0]);
+      maskReader.open(mask_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
 	string errorString="Error: illegal mask band";
 	throw(errorString);
@@ -396,8 +413,6 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
       theInterleave+=imgReader[iimg].getInterleave();
       option_opt.push_back(theInterleave);
     }
-    int nrow=imgReader[iimg].nrOfRow();
-    int ncol=imgReader[iimg].nrOfCol();
     // if(verbose_opt[0])
     //   cout << "size of " << input_opt[iimg] << ": " << ncol << " cols, "<< nrow << " rows" << endl;
     double uli,ulj,lri,lrj;//image coordinates
@@ -425,8 +440,8 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
       imgReader[iimg].geo2image(cropulx+(magicX-1.0)*imgReader[iimg].getDeltaX(),cropuly-(magicY-1.0)*imgReader[iimg].getDeltaY(),uli,ulj);
       imgReader[iimg].geo2image(croplrx+(magicX-2.0)*imgReader[iimg].getDeltaX(),croplry-(magicY-2.0)*imgReader[iimg].getDeltaY(),lri,lrj);
       //test
-      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
-      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
+      ncropcol=abs(static_cast<unsigned int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<unsigned int>(ceil((cropuly-croplry)/dy)));
     }
     else{
       double magicX=1,magicY=1;
@@ -462,20 +477,16 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
       imgReader[iimg].geo2image(cropulx+(magicX-1.0)*imgReader[iimg].getDeltaX(),cropuly-(magicY-1.0)*imgReader[iimg].getDeltaY(),uli,ulj);
       imgReader[iimg].geo2image(croplrx+(magicX-2.0)*imgReader[iimg].getDeltaX(),croplry-(magicY-2.0)*imgReader[iimg].getDeltaY(),lri,lrj);
 
-      ncropcol=abs(static_cast<int>(ceil((croplrx-cropulx)/dx)));
-      ncroprow=abs(static_cast<int>(ceil((cropuly-croplry)/dy)));
+      ncropcol=abs(static_cast<unsigned int>(ceil((croplrx-cropulx)/dx)));
+      ncroprow=abs(static_cast<unsigned int>(ceil((cropuly-croplry)/dy)));
       uli=floor(uli);
       ulj=floor(ulj);
       lri=floor(lri);
       lrj=floor(lrj);
     }
 
-    double dcropcol=0;
-    double dcroprow=0;
-    double deltaX=imgReader[iimg].getDeltaX();
-    double deltaY=imgReader[iimg].getDeltaY();
-    dcropcol=(lri-uli+1)/(dx/deltaX);
-    dcroprow=(lrj-ulj+1)/(dy/deltaY);
+    // double deltaX=imgReader[iimg].getDeltaX();
+    // double deltaY=imgReader[iimg].getDeltaY();
     if(!imgWriter.nrOfBand()){//not opened yet
       if(verbose_opt[0]){
 	cout << "cropulx: " << cropulx << endl;
@@ -570,7 +581,7 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
       double theMax=0;
       if(autoscale_opt.size()){
 	try{
-	  imgReader[iimg].getMinMax(static_cast<int>(startCol),static_cast<int>(endCol),static_cast<int>(startRow),static_cast<int>(endRow),readBand,theMin,theMax);
+	  imgReader[iimg].getMinMax(static_cast<unsigned int>(startCol),static_cast<unsigned int>(endCol),static_cast<unsigned int>(startRow),static_cast<unsigned int>(endRow),readBand,theMin,theMax);
 	}
 	catch(string errorString){
 	  cout << errorString << endl;
@@ -602,7 +613,7 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
       double lowerCol=0;
       double upperCol=0;
       for(int irow=0;irow<imgWriter.nrOfRow();++irow){
-	vector<float> lineMask;
+	vector<double> lineMask;
 	double x=0;
 	double y=0;
 	//convert irow to geo
@@ -631,7 +642,6 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
 		writeBuffer.push_back(nodataValue);
 	      }
 	      else{
-		
                 bool valid=true;
 		double geox=0;
 		double geoy=0;
@@ -642,12 +652,11 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
 
 		  imgWriter.image2geo(icol,irow,geox,geoy);
 		  maskReader.geo2image(geox,geoy,colMask,rowMask);
-		  colMask=static_cast<int>(colMask);
-		  rowMask=static_cast<int>(rowMask);
+		  colMask=static_cast<unsigned int>(colMask);
+		  rowMask=static_cast<unsigned int>(rowMask);
 		  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-		    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+		    if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
 
-		      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 		      try{
 			maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
 		      }
@@ -676,9 +685,9 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
                   switch(theResample){
                   case(BILINEAR):
                     lowerCol=readCol-0.5;
-                    lowerCol=static_cast<int>(lowerCol);
+                    lowerCol=static_cast<unsigned int>(lowerCol);
                     upperCol=readCol+0.5;
-                    upperCol=static_cast<int>(upperCol);
+                    upperCol=static_cast<unsigned int>(upperCol);
                     if(lowerCol<0)
                       lowerCol=0;
                     if(upperCol>=imgReader[iimg].nrOfCol())
@@ -686,7 +695,7 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
                     writeBuffer.push_back((readCol-0.5-lowerCol)*readBuffer[upperCol-startCol]+(1-readCol+0.5+lowerCol)*readBuffer[lowerCol-startCol]);
                     break;
                   default:
-                    readCol=static_cast<int>(readCol);
+                    readCol=static_cast<unsigned int>(readCol);
                     readCol-=startCol;//we only start reading from startCol
                     writeBuffer.push_back(readBuffer[readCol]);
                     break;
@@ -733,5 +742,5 @@ bool AppFactory::pkcrop(vector<ImgRaster>& imgReader, ImgRaster& imgWriter){
   }
   if(maskReader.isInit())
     maskReader.close();
-  // imgWriter.close();
+  return(0);
 }

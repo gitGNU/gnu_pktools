@@ -286,7 +286,7 @@ void filter2d::Filter2d::majorVoting(ImgRaster& input, ImgRaster& output, int di
     for(unsigned int x=0;x<input.nrOfCol();++x){
       outBuffer[x]=0;
       std::map<int,int> occurrence;
-      int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+      // int centre=dimX*(dimY-1)/2+(dimX-1)/2;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
 	  indexI=x+i;
@@ -786,7 +786,7 @@ void filter2d::Filter2d::mrf(ImgRaster& input, ImgRaster& output, int dimX, int 
         outBuffer[iclass][x/down]=0;
       }
       std::vector<double> windowBuffer;
-      int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+      // int centre=dimX*(dimY-1)/2+(dimX-1)/2;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
           if(i!=0&&j!=0&&!eightConnectivity)
@@ -1046,7 +1046,7 @@ void filter2d::Filter2d::morphology(ImgRaster& input, ImgRaster& output, const s
 	outBuffer[x]=currentValue;
 	std::vector<double> statBuffer;
 	bool currentMasked=false;
-        int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+        // int centre=dimX*(dimY-1)/2+(dimX-1)/2;
 	for(int imask=0;imask<m_noDataValues.size();++imask){
 	  if(currentValue==m_noDataValues[imask]){
 	    currentMasked=true;
