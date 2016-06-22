@@ -593,6 +593,7 @@ template<typename T> CPLErr ImgRaster::readData(std::vector<T>& buffer, unsigned
     if(upperRow<0)
       upperRow=0;
     returnValue=readData(readBuffer_upper,minCol,maxCol,static_cast<unsigned int>(upperRow),band);
+    returnValue=readData(readBuffer_lower,minCol,maxCol,static_cast<unsigned int>(lowerRow),band);
     //do interpolation in y
     for(int icol=0;icol<maxCol-minCol+1;++icol){
       buffer[icol]=(lowerRow-row+0.5)*readBuffer_upper[icol]+(1-lowerRow+row-0.5)*readBuffer_lower[icol];

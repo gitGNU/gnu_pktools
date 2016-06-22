@@ -1013,7 +1013,7 @@ int main(int argc,char **argv) {
 		  gainWriteBuffer[icol]=kalmanGain;
 		}
 	      }
-	    }
+            }
 
 	    //test
 	    if(gain_opt.size())
@@ -1022,8 +1022,9 @@ int main(int argc,char **argv) {
 	    imgUpdaterUncert.writeData(uncertWriteBuffer,irow,modindex);
 	    progress=static_cast<float>((irow+1.0)/imgUpdaterEst.nrOfRow());
 	    pfnProgress(progress,pszMessage,pProgressArg);
-	  }
-	}
+          }
+        }
+
 
 	//must close writers to ensure flush
 	imgUpdaterEst.close();

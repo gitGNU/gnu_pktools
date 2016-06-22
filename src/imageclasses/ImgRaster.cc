@@ -1175,8 +1175,12 @@ CPLErr ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
   assert(band<nrOfBand()+1);
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   returnValue=poBand->RasterIO(GF_Write,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
-  m_begin[band]+=m_blockSize;//m_begin points to first line in block that will be written next
-  m_end[band]=m_begin[band]+m_blockSize;//m_end points to last line in block that will be written next
+  if(m_begin[band]+m_blockSize<nrOfRow()){
+    m_begin[band]+=m_blockSize;//m_begin points to first line in block that will be written next
+    m_end[band]=m_begin[band]+m_blockSize;//m_end points to last line in block that will be written next
+  }
+  if(m_end[band]>nrOfRow())
+    m_end[band]=nrOfRow();
   return(returnValue);//new block was written
 }
 
