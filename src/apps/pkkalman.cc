@@ -857,7 +857,7 @@ int main(int argc,char **argv) {
 		imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsMaskBand);
 	    }
 
-	    for(unsigned int jcol=0;jcol<ncol;jcol+=down_opt[0]){
+ 	    for(unsigned int jcol=0;jcol<ncol;jcol+=down_opt[0]){
 	      for(unsigned int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
 		imgUpdaterEst.image2geo(icol,irow,geox,geoy);
 		unsigned int minCol=(icol>down_opt[0]/2) ? icol-down_opt[0]/2 : 0;
