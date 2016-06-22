@@ -915,7 +915,8 @@ int main(int argc,char **argv) {
 		bool obsIsNoData=false;
 		if(observationmask_opt.size())
 		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
-		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+                if(update)
+                  obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
 
 		if(imgUpdaterEst.isNoData(estValue)){
 		  //we have not found any valid data yet, better here to take the current model value if valid
@@ -1583,7 +1584,8 @@ int main(int argc,char **argv) {
 		bool obsIsNoData=false;
 		if(observationmask_opt.size())
 		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
-		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+                if(update)
+                  obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
 
 		if(imgUpdaterEst.isNoData(estValue)){
 		  //we have not found any valid data yet, better here to take the current model value if valid
@@ -1641,7 +1643,7 @@ int main(int argc,char **argv) {
 		  }
 		}
 		//measurement update
-		if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
+		if(update&&!obsIsNoData){ 
 		  double kalmanGain=1;
 		  if(!imgReaderModel1.isNoData(modValue2)){//model is valid
 		    statfactory::StatFactory statobs;
