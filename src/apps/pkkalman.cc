@@ -830,6 +830,7 @@ int main(int argc,char **argv) {
 	    assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
 	    imgReaderModel1.readData(model1LineBuffer,modRow,readModel1Band,theResample);
 
+
 	    if(modelmask_opt.size()){
 	      imgReaderModel1Mask.readData(model1MaskLineBuffer,modRow,readModel1MaskBand);
 	      if(modelmask_opt.size()==nmodel)
@@ -878,6 +879,7 @@ int main(int argc,char **argv) {
 		    }
 		  }
 		}
+
 		double estValue=estLineBuffer[icol];
 		imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
 		bool model1IsNoData=false;
@@ -900,6 +902,7 @@ int main(int argc,char **argv) {
 		bool model2IsNoData=false;
 		if(modelmask_opt.size())
 		  model2IsNoData=imgReaderModel1Mask.isNoData(model2MaskLineBuffer[modCol]);
+
 		lowerCol=modCol-0.5;
 		lowerCol=static_cast<int>(lowerCol);
 		upperCol=modCol+0.5;
@@ -913,9 +916,11 @@ int main(int argc,char **argv) {
 		bool obsIsNoData=false;
 		if(observationmask_opt.size())
 		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
-		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+                if(update)
+                  obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
 
 		if(imgUpdaterEst.isNoData(estValue)){
+
 		  //we have not found any valid data yet, better here to take the current model value if valid
 		  if(model2IsNoData){//if both estimate and model are no-data, set obs to nodata
 		    estWriteBuffer[icol]=obsnodata_opt[0];
@@ -1012,7 +1017,7 @@ int main(int argc,char **argv) {
 		  gainWriteBuffer[icol]=kalmanGain;
 		}
 	      }
-	    }
+            }
 
 	    //test
 	    if(gain_opt.size())
@@ -1276,7 +1281,7 @@ int main(int argc,char **argv) {
 		bool obsIsNoData=false;
 		if(observationmask_opt.size())
 		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
-		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+                obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
 		if(modelIsNoData){//model is nodata: retain observation 
 		  if(obsIsNoData){//both model and observation nodata
 		    estWriteBuffer[icol]=obsnodata_opt[0];
@@ -1581,7 +1586,8 @@ int main(int argc,char **argv) {
 		bool obsIsNoData=false;
 		if(observationmask_opt.size())
 		  obsIsNoData=imgReaderObsMask.isNoData(obsMaskLineBuffer[icol]);
-		obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
+                if(update)
+                  obsIsNoData=obsIsNoData||imgReaderObs.isNoData(obsLineBuffer[icol]);
 
 		if(imgUpdaterEst.isNoData(estValue)){
 		  //we have not found any valid data yet, better here to take the current model value if valid
@@ -1640,8 +1646,8 @@ int main(int argc,char **argv) {
 		  }
 		}
 		//measurement update
-		if(update&&!imgReaderObs.isNoData(obsLineBuffer[icol])){
-		  double kalmanGain=1;
+		if(update&&!obsIsNoData){ 
+                    double kalmanGain=1;
 		  if(!imgReaderModel1.isNoData(modValue2)){//model is valid
 		    statfactory::StatFactory statobs;
 		    statobs.setNoDataValues(obsnodata_opt);
@@ -1673,12 +1679,12 @@ int main(int argc,char **argv) {
 		      if(uncertWriteBuffer[icol]>obsmax_opt[0])
 			uncertWriteBuffer[icol]=obsmax_opt[0];
 		    }
-		  }
+                  }
 		  if(kalmanGain>=1)
 		    kalmanGain=1;
 		  //test
 		  // gainWriteBuffer[icol]=kalmanGain;
-		}
+                }//if(update)
 	      }
 	    }
 	    // //test
