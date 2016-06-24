@@ -345,7 +345,7 @@ public:
   ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
   void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
 
-private:
+protected:
   ///filename of this dataset
   std::string m_filename;
   ///instance of the GDAL dataset of this dataset
