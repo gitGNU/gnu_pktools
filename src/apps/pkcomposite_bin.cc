@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 
   try{
     ImgCollection imgCollection(input_opt.size());
-    ImgRaster imgWriter;
+    shared_ptr<ImgRaster> imgWriter(new ImgRaster());
     string imageType;
 
     for(int ifile=0;ifile<input_opt.size();++ifile){
@@ -89,13 +89,13 @@ int main(int argc, char *argv[])
       imageType=oformat_opt[0];
     else
       imageType=imgCollection[0]->getImageType();
-    imgWriter.setFile(output_opt[0],imageType);
+    imgWriter->setFile(output_opt[0],imageType);
 
     imgCollection.composite(imgWriter,app);
 
     for(int ifile=0;ifile<imgCollection.size();++ifile)
       imgCollection[ifile]->close();
-    imgWriter.close();
+    imgWriter->close();
   }
   catch(string helpString){
     cerr << helpString << endl;

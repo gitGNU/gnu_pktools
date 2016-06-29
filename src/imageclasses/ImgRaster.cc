@@ -60,11 +60,6 @@ void ImgRaster::reset(void)
 //   open(dataPointer,ncol,nrow,nband,dataType);
 // }
 
-ImgRaster::~ImgRaster(void)
-{
-  freeMem();
-}
-
 /**
  * @param memory Available memory to cache image raster data (in MB)
  **/

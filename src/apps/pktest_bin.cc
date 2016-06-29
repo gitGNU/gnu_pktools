@@ -63,9 +63,15 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  if(doProcess&&output_opt.empty()){
-    std::cerr << "Error: no output file provided (use option -o). Use --help for help information" << std::endl;
-    exit(1);
+  if(doProcess){
+    if(input_opt.empty()){
+      std::cerr << "Error: no input file provided (use option -i). Use --help for help information" << std::endl;
+      exit(1);
+    }
+    else if(output_opt.empty()){
+      std::cerr << "Error: no output file provided (use option -o). Use --help for help information" << std::endl;
+      exit(1);
+    }
   }
 
   app::AppFactory app(argc,argv);
@@ -85,11 +91,11 @@ int main(int argc, char *argv[])
     imgCollection[0]->getMinMax(theMin,theMax,0);
     cout << "min, max: " << theMin << ", " << theMax << endl;
     cout << "file1: " << imgCollection[0]->getFileName() << endl;
-    ImgRaster imgRaster;
+    shared_ptr<ImgRaster> imgRaster(new ImgRaster());
     app.showOptions();
     cout << "file2: " << imgCollection[0]->getFileName() << endl;
     imgCollection.crop(imgRaster,app);
-    filter.smooth(imgRaster,imgRaster,5);
+    filter.smooth(*imgRaster,*imgRaster,5);
     // filter.morphology(imgRaster,imgRaster,"erode",3,3);
     // filter.morphology(imgRaster,imgRaster,"dilate",3,3);
 
@@ -104,9 +110,9 @@ int main(int argc, char *argv[])
     // else if(imgCollection[0].getProjection()!="")
     //   imgRaster.setProjection(imgCollection[0].getProjection());
 
-    cout << "imgRaster.nrOfCol(): " << imgRaster.nrOfCol() << endl;
-    imgRaster.setFile(output_opt[0],imageType);
-    imgRaster.close();
+    cout << "imgRaster->nrOfCol(): " << imgRaster->nrOfCol() << endl;
+    imgRaster->setFile(output_opt[0],imageType);
+    imgRaster->close();
     inputImg->close();
   }
   catch(string helpString){//help was invoked

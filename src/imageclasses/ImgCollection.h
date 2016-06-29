@@ -169,8 +169,8 @@ public:
   unsigned int pushNoDataValue(double noDataValue);
   ///Set the no data values of this dataset using a standard template library (stl) vector as input
   unsigned int setNoData(const std::vector<double>& nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
-  int composite(ImgRaster& imgRaster, const app::AppFactory& app);
-  int crop(ImgRaster& imgRaster, const app::AppFactory& app);
+  int composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  int crop(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
 private:
   unsigned int m_index;
   std::vector<double> m_noDataValues;

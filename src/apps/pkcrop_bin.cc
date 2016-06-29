@@ -83,20 +83,20 @@ int main(int argc, char *argv[])
         imgCollection[ifile]->setOffset(offset_opt[iband],iband);
     }
 
-    ImgRaster imgWriter;
+    shared_ptr<ImgRaster> imgWriter(new ImgRaster());
     string imageType;
     if(oformat_opt.size())//default
       imageType=oformat_opt[0];
     else
       imageType=imgCollection[0]->getImageType();
     if(output_opt.size())
-      imgWriter.setFile(output_opt[0],imageType,memory_opt[0],option_opt);
+      imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
 
     imgCollection.crop(imgWriter,app);
 
     for(int ifile=0;ifile<imgCollection.size();++ifile)
       imgCollection[ifile]->close();
-    imgWriter.close();
+    imgWriter->close();
   }
   catch(string helpString){//help was invoked
     std::cout << helpString << std::endl;

@@ -93,7 +93,7 @@ public:
   ImgRaster(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);};
 
   ///destructor
-  ~ImgRaster(void);
+  virtual ~ImgRaster(void){freeMem();};
 
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned long int memory);

@@ -119,7 +119,7 @@ unsigned int ImgCollection::pushNoDataValue(double noDataValue)
  * @param imgRaster output raster crop dataset
  * @return 0 if successful
  **/
-int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
+int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
@@ -580,7 +580,7 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
 
     // double deltaX=(*imit)->getDeltaX();
     // double deltaY=(*imit)->getDeltaY();
-    if(!imgWriter.nrOfBand()){//not opened yet
+    if(!imgWriter->nrOfBand()){//not opened yet
       if(verbose_opt[0]){
 	cout << "cropulx: " << cropulx << endl;
 	cout << "cropuly: " << cropuly << endl;
@@ -602,12 +602,11 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
       if(oformat_opt.size())//default
         imageType=oformat_opt[0];
       try{
-        //open imgWriter in memory
-        imgWriter.open(ncropcol,ncroprow,ncropband,theType);
-        imgWriter.setNoData(nodata_opt);
-        // imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
+        imgWriter->open(ncropcol,ncroprow,ncropband,theType);
+        imgWriter->setNoData(nodata_opt);
+        // imgWriter->open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
 	// if(nodata_opt.size()){
-	//   imgWriter.setNoData(nodata_opt);
+	//   imgWriter->setNoData(nodata_opt);
 	// }
       }
       catch(string errorstring){
@@ -615,7 +614,7 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
         exit(4);
       }
       if(description_opt.size())
-	imgWriter.setImageDescription(description_opt[0]);
+	imgWriter->setImageDescription(description_opt[0]);
       double gt[6];
       gt[0]=cropulx;
       gt[1]=dx;
@@ -623,21 +622,21 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
       gt[3]=cropuly;
       gt[4]=0;
       gt[5]=((*imit)->isGeoRef())? -dy : dy;
-      imgWriter.setGeoTransform(gt);
+      imgWriter->setGeoTransform(gt);
       if(projection_opt.size()){
 	if(verbose_opt[0])
 	  cout << "projection: " << projection_opt[0] << endl;
-	imgWriter.setProjectionProj4(projection_opt[0]);
+	imgWriter->setProjectionProj4(projection_opt[0]);
       }
       else
-	imgWriter.setProjection((*imit)->getProjection());
-      if(imgWriter.getDataType()==GDT_Byte){
+	imgWriter->setProjection((*imit)->getProjection());
+      if(imgWriter->getDataType()==GDT_Byte){
 	if(colorTable_opt.size()){
 	  if(colorTable_opt[0]!="none")
-	    imgWriter.setColorTable(colorTable_opt[0]);
+	    imgWriter->setColorTable(colorTable_opt[0]);
 	}
 	else if ((*imit)->getColorTable()!=NULL)//copy colorTable from input image
-	  imgWriter.setColorTable((*imit)->getColorTable());
+	  imgWriter->setColorTable((*imit)->getColorTable());
       }
     }
 
@@ -705,17 +704,17 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
       double readCol=0;
       double lowerCol=0;
       double upperCol=0;
-      for(int irow=0;irow<imgWriter.nrOfRow();++irow){
+      for(int irow=0;irow<imgWriter->nrOfRow();++irow){
 	vector<double> lineMask;
 	double x=0;
 	double y=0;
 	//convert irow to geo
-	imgWriter.image2geo(0,irow,x,y);
+	imgWriter->image2geo(0,irow,x,y);
 	//lookup corresponding row for irow in this file
 	(*imit)->geo2image(x,y,readCol,readRow);
 	vector<double> writeBuffer;
 	if(readRow<0||readRow>=(*imit)->nrOfRow()){
-	  for(int icol=0;icol<imgWriter.nrOfCol();++icol)
+	  for(int icol=0;icol<imgWriter->nrOfCol();++icol)
 	    writeBuffer.push_back(nodataValue);
 	}
 	else{
@@ -727,8 +726,8 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
               (*imit)->readData(readBuffer,startCol,endCol,readRow,readBand,theResample);
             }
 	    double oldRowMask=-1;//keep track of row mask to optimize number of line readings
-	    for(int icol=0;icol<imgWriter.nrOfCol();++icol){
-	      imgWriter.image2geo(icol,irow,x,y);
+	    for(int icol=0;icol<imgWriter->nrOfCol();++icol){
+	      imgWriter->image2geo(icol,irow,x,y);
 	      //lookup corresponding row for irow in this file
 	      (*imit)->geo2image(x,y,readCol,readRow);
 	      if(readCol<0||readCol>=(*imit)->nrOfCol()){
@@ -743,7 +742,7 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
 		  double colMask=0;
 		  double rowMask=0;
 
-		  imgWriter.image2geo(icol,irow,geox,geoy);
+		  imgWriter->image2geo(icol,irow,geox,geoy);
 		  maskReader.geo2image(geox,geoy,colMask,rowMask);
 		  colMask=static_cast<unsigned int>(colMask);
 		  rowMask=static_cast<unsigned int>(rowMask);
@@ -802,11 +801,11 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
 	    exit(2);
 	  }
 	}
-	if(writeBuffer.size()!=imgWriter.nrOfCol())
-	  cout << "writeBuffer.size()=" << writeBuffer.size() << ", imgWriter.nrOfCol()=" << imgWriter.nrOfCol() << endl;
-	assert(writeBuffer.size()==imgWriter.nrOfCol());
+	if(writeBuffer.size()!=imgWriter->nrOfCol())
+	  cout << "writeBuffer.size()=" << writeBuffer.size() << ", imgWriter->nrOfCol()=" << imgWriter->nrOfCol() << endl;
+	assert(writeBuffer.size()==imgWriter->nrOfCol());
 	try{
-	  imgWriter.writeData(writeBuffer,irow,writeBand);
+	  imgWriter->writeData(writeBuffer,irow,writeBand);
 	}
 	catch(string errorstring){
 	  cout << errorstring << endl;
@@ -814,13 +813,13 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
 	}
 	if(verbose_opt[0]){
 	  progress=(1.0+irow);
-	  progress/=imgWriter.nrOfRow();
+	  progress/=imgWriter->nrOfRow();
 	  pfnProgress(progress,pszMessage,pProgressArg);
 	}
 	else{
 	  progress=(1.0+irow);
-	  progress+=(imgWriter.nrOfRow()*writeBand);
-	  progress/=imgWriter.nrOfBand()*imgWriter.nrOfRow();
+	  progress+=(imgWriter->nrOfRow()*writeBand);
+	  progress/=imgWriter->nrOfBand()*imgWriter->nrOfRow();
 	  assert(progress>=0);
 	  assert(progress<=1);
 	  pfnProgress(progress,pszMessage,pProgressArg);
@@ -842,7 +841,7 @@ int ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
  * @param imgRaster output raster composite dataset
  * @return 0 if successful
  **/
-int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
+int ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   Optionpk<unsigned int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
@@ -1329,9 +1328,8 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
     nwriteBand=(file_opt[0])? bands.size()+1:bands.size();
 
   try{
-    //open imgWriter in memory
-    imgWriter.open(ncol,nrow,nwriteBand,theType);
-    imgWriter.setNoData(dstnodata_opt);
+    imgWriter->open(ncol,nrow,nwriteBand,theType);
+    imgWriter->setNoData(dstnodata_opt);
   }
   catch(string error){
     cout << error << endl;
@@ -1343,17 +1341,17 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
   gt[3]=maxULY;
   gt[4]=0;
   gt[5]=-dy;
-  imgWriter.setGeoTransform(gt);
+  imgWriter->setGeoTransform(gt);
 
   if(projection_opt.size()){
     if(verbose_opt[0])
       cout << "projection: " << projection_opt[0] << endl;
-    imgWriter.setProjectionProj4(projection_opt[0]);
+    imgWriter->setProjectionProj4(projection_opt[0]);
   }
   else if(theProjection!=""){
     if(verbose_opt[0])
       cout << "projection: " << theProjection << endl;
-    imgWriter.setProjection(theProjection);
+    imgWriter->setProjection(theProjection);
   }
 
   ImgRaster maskReader;
@@ -1410,7 +1408,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
   //create composite image
   if(verbose_opt[0])
      cout << "creating composite image" << endl;
-  Vector2d<double> writeBuffer(nband,imgWriter.nrOfCol());
+  Vector2d<double> writeBuffer(nband,imgWriter->nrOfCol());
   vector<short> fileBuffer(ncol);//holds the number of used files
   Vector2d<short> maxBuffer;//buffer used for maximum voting
   // Vector2d<double> readBuffer(nband);
@@ -1422,7 +1420,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
   if(cruleMap[crule_opt[0]]==maxndvi)//ndvi
     assert(ruleBand_opt.size()==2);
   if(cruleMap[crule_opt[0]]==mode){//max voting
-    maxBuffer.resize(imgWriter.nrOfCol(),256);//use only byte images for max voting
+    maxBuffer.resize(imgWriter->nrOfCol(),256);//use only byte images for max voting
     for(int iclass=0;iclass<class_opt.size();++iclass)
       assert(class_opt[iclass]<maxBuffer.size());
   }
@@ -1435,7 +1433,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(unsigned int irow=0;irow<imgWriter.nrOfRow();++irow){
+  for(unsigned int irow=0;irow<imgWriter->nrOfRow();++irow){
     vector<float> lineMask;
     Vector2d< vector<double> > storeBuffer;
     vector<bool> writeValid(ncol);
@@ -1443,7 +1441,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
     //convert irow to geo
     double x=0;
     double y=0;
-    imgWriter.image2geo(0,irow,x,y);
+    imgWriter->image2geo(0,irow,x,y);
 
 
     if(cruleMap[crule_opt[0]]==mean ||
@@ -1453,7 +1451,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
        cruleMap[crule_opt[0]]==maxallbands ||
        cruleMap[crule_opt[0]]==stdev)
       storeBuffer.resize(nband,ncol);
-    for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
+    for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
       writeValid[icol]=false;
       fileBuffer[icol]=0;
       if(cruleMap[crule_opt[0]]==mode){//max voting
@@ -1526,7 +1524,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
 	}
       }
       for(int ib=0;ib<ncol;++ib){
-        imgWriter.image2geo(ib,irow,x,y);
+        imgWriter->image2geo(ib,irow,x,y);
 	//check mask first
 	bool valid=true;
 	if(maskReader.isInit()){
@@ -1921,13 +1919,13 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
       // (this->at(ifile)).close();
     }
     if(cruleMap[crule_opt[0]]==mode){
-      vector<short> classBuffer(imgWriter.nrOfCol());
+      vector<short> classBuffer(imgWriter->nrOfCol());
       if(class_opt.size()>1){
         for(int iclass=0;iclass<class_opt.size();++iclass){
-          for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol)
+          for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol)
             classBuffer[icol]=maxBuffer[icol][class_opt[iclass]];
           try{
-            imgWriter.writeData(classBuffer,irow,iclass);
+            imgWriter->writeData(classBuffer,irow,iclass);
           }
           catch(string error){
             cerr << "error writing image file: " << error << endl;
@@ -1936,7 +1934,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
         }
       }
       else{
-        for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
+        for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
           vector<short>::iterator maxit=maxBuffer[icol].begin();
           maxit=stat.mymax(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
           writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
@@ -1944,9 +1942,9 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
 	    fileBuffer[icol]=*(maxit);
         }
         try{
-          imgWriter.writeData(writeBuffer[0],irow,0);
+          imgWriter->writeData(writeBuffer[0],irow,0);
           if(file_opt[0])
-            imgWriter.writeData(fileBuffer,irow,1);
+            imgWriter->writeData(fileBuffer,irow,1);
         }
         catch(string error){
           cerr << "error writing image file: " << error << endl;
@@ -1956,9 +1954,9 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
     }
     else{
       for(unsigned int iband=0;iband<bands.size();++iband){
-        // assert(writeBuffer[bands[iband]].size()==imgWriter.nrOfCol());
-        assert(writeBuffer[iband].size()==imgWriter.nrOfCol());
-        for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
+        // assert(writeBuffer[bands[iband]].size()==imgWriter->nrOfCol());
+        assert(writeBuffer[iband].size()==imgWriter->nrOfCol());
+        for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
 	  try{
 	    switch(cruleMap[crule_opt[0]]){
 	    case(mean):
@@ -1997,7 +1995,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
 	  }
         }
         try{
-          imgWriter.writeData(writeBuffer[iband],irow,iband);
+          imgWriter->writeData(writeBuffer[iband],irow,iband);
         }
         catch(string error){
           cerr << error << endl;
@@ -2006,7 +2004,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
       }
       if(file_opt[0]){
         try{
-          imgWriter.writeData(fileBuffer,irow,bands.size());
+          imgWriter->writeData(fileBuffer,irow,bands.size());
         }
         catch(string error){
           cerr << error << endl;
@@ -2014,7 +2012,7 @@ int ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
         }
       }
     }
-    progress=static_cast<float>(irow+1.0)/imgWriter.nrOfRow();
+    progress=static_cast<float>(irow+1.0)/imgWriter->nrOfRow();
     pfnProgress(progress,pszMessage,pProgressArg);
   }
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
