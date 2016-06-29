@@ -22,6 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <string>
 #include "imageclasses/ImgRaster.h"
+#include "imageclasses/ImgCollection.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -61,75 +62,57 @@ int main(int argc, char *argv[])
     std::cout << predefinedString << std::endl;
     exit(0);
   }
-  if(!doProcess){
-    cout << endl;
-    cout << "Usage: pktest -i input -o output" << endl;
-    cout << endl;
-    std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
-    exit(0);//help was invoked, stop processing
+
+  if(doProcess&&output_opt.empty()){
+    std::cerr << "Error: no output file provided (use option -o). Use --help for help information" << std::endl;
+    exit(1);
   }
 
-  if(input_opt.empty()){
-    std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
-    exit(0);
-  }
-
-  if(output_opt.empty()){
-    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
-    exit(0);
-  }
-
-  app::AppFactory app;
+  app::AppFactory app(argc,argv);
   app.setOption("dx","100");
   app.setOption("dy","100");
   
   filter2d::Filter2d filter;
-  //  this is working
-  // vector<ImgRaster> imgVector(1);
-  // try{
-  //   imgVector[0].open(input_opt[0]);
-  // }
-  // catch(string  errorString){
-  //   cout  <<  errorString  << endl;
-  // }
-
-  //this is not working!!!
-  vector<ImgRaster> imgVector;
+  
   try{
-    ImgRaster inputImg;
-    imgVector.push_back(inputImg);
-    imgVector[0].open(input_opt[0]);
+    ImgCollection imgCollection;
+    shared_ptr<ImgRaster> inputImg(new ImgRaster);
+    inputImg->open(input_opt[0]);
+    imgCollection.pushImage(inputImg);
 
+    double theMin=0;
+    double theMax=0;
+    imgCollection[0]->getMinMax(theMin,theMax,0);
+    cout << "min, max: " << theMin << ", " << theMax << endl;
+    cout << "file1: " << imgCollection[0]->getFileName() << endl;
+    ImgRaster imgRaster;
+    app.showOptions();
+    cout << "file2: " << imgCollection[0]->getFileName() << endl;
+    imgCollection.crop(imgRaster,app);
+    filter.smooth(imgRaster,imgRaster,5);
+    // filter.morphology(imgRaster,imgRaster,"erode",3,3);
+    // filter.morphology(imgRaster,imgRaster,"dilate",3,3);
+
+    string imageType;
+    if(oformat_opt.size())//default
+      imageType=oformat_opt[0];
+    else
+      imageType=imgCollection[0]->getImageType();
+
+    // if(projection_opt.size())
+    //   imgRaster.setProjectionProj4(projection_opt[0]);
+    // else if(imgCollection[0].getProjection()!="")
+    //   imgRaster.setProjection(imgCollection[0].getProjection());
+
+    cout << "imgRaster.nrOfCol(): " << imgRaster.nrOfCol() << endl;
+    imgRaster.setFile(output_opt[0],imageType);
+    imgRaster.close();
+    inputImg->close();
   }
-  catch(string  errorString){
-    cout  <<  errorString  << endl;
+  catch(string helpString){//help was invoked
+    std::cout << helpString << std::endl;
+    return(1);
   }
-  double theMin=0;
-  double theMax=0;
-  imgVector[0].getMinMax(theMin,theMax,0);
-  cout << "min, max: " << theMin << ", " << theMax << endl;
-  ImgRaster imgRaster;
-  app.showOptions();
-  app.pkcrop(imgVector,imgRaster);
-  filter.smooth(imgRaster,imgRaster,5);
-  // filter.morphology(imgRaster,imgRaster,"erode",3,3);
-  // filter.morphology(imgRaster,imgRaster,"dilate",3,3);
-
-  string imageType;
-  if(oformat_opt.size())//default
-    imageType=oformat_opt[0];
-  else
-    imageType=imgVector[0].getImageType();
-
-  // if(projection_opt.size())
-  //   imgRaster.setProjectionProj4(projection_opt[0]);
-  // else if(imgVector[0].getProjection()!="")
-  //   imgRaster.setProjection(imgVector[0].getProjection());
-
-  imgRaster.setFile(output_opt[0],imageType);
-  imgRaster.close();
-
-  imgVector[0].close();
-  return 0;
+  return(0);
 }
   

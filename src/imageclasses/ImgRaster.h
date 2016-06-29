@@ -1,5 +1,5 @@
 /**********************************************************************
-ImgRaster.h: class to read raster files using GDAL API library
+ImgRaster.h: class to read/write raster files using GDAL API library
 Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools

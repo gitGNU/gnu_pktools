@@ -22,6 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <string>
 #include "imageclasses/ImgRaster.h"
+#include "imageclasses/ImgCollection.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
@@ -50,8 +51,9 @@ int main(int argc, char *argv[])
   offset_opt.setHide(1);
   memory_opt.setHide(1);
 
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
-    input_opt.retrieveOption(argc,argv);
+    doProcess=input_opt.retrieveOption(argc,argv);
     output_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
@@ -64,40 +66,41 @@ int main(int argc, char *argv[])
     std::cout << predefinedString << std::endl;
   }
 
-  if(output_opt.empty()){
-    std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
-    exit(0);
+  app::AppFactory app(argc,argv);
+
+  if(doProcess&&output_opt.empty()){
+    std::cerr << "Error: no output file provided (use option -o). Use --help for help information" << std::endl;
+    exit(1);
   }
 
-  app::AppFactory app;
-  app.setOptions(argc,argv);
-
   try{
-    vector<ImgRaster> imgReader(input_opt.size());
+    ImgCollection imgCollection(input_opt.size());
     ImgRaster imgWriter;
     string imageType;
+
+    for(int ifile=0;ifile<input_opt.size();++ifile){
+      imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);
+      for(int iband=0;iband<scale_opt.size();++iband)
+        imgCollection[ifile]->setScale(scale_opt[iband],iband);
+      for(int iband=0;iband<offset_opt.size();++iband)
+        imgCollection[ifile]->setOffset(offset_opt[iband],iband);
+    } 
     if(oformat_opt.size())//default
       imageType=oformat_opt[0];
     else
-      imageType=imgReader[0].getImageType();
+      imageType=imgCollection[0]->getImageType();
     imgWriter.setFile(output_opt[0],imageType);
 
-    for(int ifile=0;ifile<input_opt.size();++ifile){
-      imgReader[ifile].open(input_opt[ifile],memory_opt[0]);
-      for(int iband=0;iband<scale_opt.size();++iband)
-        imgReader[ifile].setScale(scale_opt[iband],iband);
-      for(int iband=0;iband<offset_opt.size();++iband)
-        imgReader[ifile].setOffset(offset_opt[iband],iband);
-    } 
-    app.pkcomposite(imgReader,imgWriter);
+    imgCollection.composite(imgWriter,app);
 
-    for(int ifile=0;ifile<imgReader.size();++ifile)
-      imgReader[ifile].close();
+    for(int ifile=0;ifile<imgCollection.size();++ifile)
+      imgCollection[ifile]->close();
     imgWriter.close();
   }
   catch(string helpString){
     cerr << helpString << endl;
+    return(1);
   }
-  return 0;
+  return(0);
 }
   

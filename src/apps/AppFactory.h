@@ -20,27 +20,28 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _APPFACTORY_H_
 #define _APPFACTORY_H_
 
-#include <algorithm>
+#include <string>
 #include <vector>
 #include <iostream>
-#include <string>
-#include "imageclasses/ImgRaster.h"
-#include "imageclasses/ImgReaderOgr.h"
-#include "base/Vector2d.h"
 #include "base/Optionpk.h"
-#include "algorithms/StatFactory.h"
 
 namespace app
 {
   
   class AppFactory{
-
-  enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
   
   public:
-    AppFactory(void) : m_argc(1), m_argv(std::vector<std::string>(1,"appFactory")){};
+    AppFactory(void) : m_argc(1), m_argv(std::vector<std::string>(1,"appFactory")){}
+    AppFactory(int argc, char* argv[]) : m_argc(1), m_argv(std::vector<std::string>(1,"appFactory")){
+      setOptions(argc, argv);
+    };
     virtual ~AppFactory(void){};
-    void setOptions(int argc, char* argv[]);
+    void setOptions(int argc, char* argv[]){
+      m_argc=argc;
+      m_argv.clear();
+      for(int iarg=0;iarg<argc;++iarg)
+        m_argv.push_back(argv[iarg]);
+    }
     ///set bool option (used as flag)
     void setOption(const std::string &key)
     {
@@ -61,15 +62,25 @@ namespace app
     };
     void getHelp() {setOption("help");};
     void clearOptions() {m_argc=1;m_argv.clear();m_argv.push_back("appFactory");};
-    void showOptions() 
+    void showOptions() const
     {
       for(int iarg=1;iarg<m_argv.size();++iarg)
         std::cout << m_argv[iarg] << " ";
       std::cout << std::endl;
     };
-    int pkcrop(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
-    int pkcomposite(std::vector<ImgRaster>& input, ImgRaster& imgWriter);   
-
+    int getArgc() const {return m_argc;};
+    std::string getArgv(unsigned int i) const {
+      if((i>0)&&(i<m_argv.size()))
+        return m_argv[i];
+      else 
+        throw(std::string("Error: invalid index"));
+    }
+    std::vector<std::string> getArgv() const {
+      return m_argv;
+    }
+    std::vector<std::string> getArgv() {
+      return m_argv;
+    }
   private:
     //todo: create member attribute for pointer to memory buffer?
     int m_argc;
