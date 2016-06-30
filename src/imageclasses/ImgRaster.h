@@ -84,7 +84,7 @@ public:
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
   ImgRaster(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, imgSrc, memory, options);};
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgRaster(const ImgRaster& imgSrc, bool copyData=true) : ImgRaster() {
+  ImgRaster(ImgRaster& imgSrc, bool copyData=true) : ImgRaster() {
     open(imgSrc,copyData);
   };
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
@@ -98,7 +98,7 @@ public:
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned long int memory);
   ///assignment operator
-  ImgRaster& operator=(const ImgRaster& imgSrc);
+  ImgRaster& operator=(ImgRaster& imgSrc);
   bool writeMode(){return m_writeMode;};
   bool isInit(){return(m_data.size()>0);};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
@@ -195,9 +195,9 @@ public:
   ///free memory os data pointer
   void freeMem();
   ///Copy data 
-  void copyData(void* data, unsigned int band=0) const{
-    memcpy(data,m_data[band],(GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
-  };
+  void copyData(void* data, unsigned int band=0);
+  ///Copy data 
+  void copyData(ImgRaster& imgRaster, unsigned int band=0);
   //todo: introduce smart pointer instead of void*
   // std::unique_ptr<void> getDataPointer(unsigned int band=0){return(m_data[band]);};
   ///Get the GDAL rasterband for this dataset
@@ -313,7 +313,7 @@ public:
   ///Open an image for writing in memory, defining image attributes.
   void open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(const ImgRaster& imgSrc,  bool copyData=false);
+  void open(ImgRaster& imgSrc,  bool copyData=false);
   ///Open an image for writing using an external data pointer (not tested yet)
   // void open(void* dataPointer, const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Close the raster dataset
@@ -344,6 +344,8 @@ public:
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
   ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
   void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
+  ///Set threshold
+  CPLErr setThreshold(double t1, double t2, double bg, double fg);
 
 protected:
   ///filename of this dataset

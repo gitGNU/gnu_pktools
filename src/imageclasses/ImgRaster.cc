@@ -102,7 +102,7 @@ void ImgRaster::freeMem()
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-ImgRaster& ImgRaster::operator=(const ImgRaster& imgSrc)
+ImgRaster& ImgRaster::operator=(ImgRaster& imgSrc)
 {
   bool copyData=true;
   //check for assignment to self (of the form v=v)
@@ -1230,7 +1230,7 @@ void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, unsig
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
+void ImgRaster::open(ImgRaster& imgSrc, bool copyData)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -1251,12 +1251,20 @@ void ImgRaster::open(const ImgRaster& imgSrc, bool copyData)
     for(unsigned int iband=0;iband<m_nband;++iband){
       m_begin[iband]=0;
       m_end[iband]=m_begin[iband]+m_blockSize;
-      if(copyData)
-        imgSrc.copyData(m_data[iband],iband);
+      if(copyData){
+        std::vector<double> lineInput(nrOfCol());
+        for(int iband=0;iband<nrOfBand();++iband){
+          for(int irow=0;irow<nrOfRow();++irow){
+            imgSrc.readData(lineInput,irow,iband,NEAR);
+            writeData(lineInput,irow,iband);
+          }
+        }
+        // imgSrc.copyData(m_data[iband],iband);
+      }
     }
     if(imgSrc.getFileName()!=""){
       m_filename=imgSrc.getFileName();
-      std::cout << "Warning: dataset not opened, open dataset manually" << std::endl;
+      std::cout << "Warning: filename not set, dataset not defined yet" << std::endl;
     }
   }
 }
@@ -1495,6 +1503,12 @@ void ImgRaster::setFile(const std::string& filename, const std::string& imageTyp
     }
   }
 }
+
+///Copy data 
+void ImgRaster::copyData(void* data, unsigned int band){
+  memcpy(data,m_data[band],(GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+};
+
 
 /**
  * @param filename Open a raster dataset with this filename
@@ -1737,4 +1751,30 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
         throw(errorString);
     }
   }
+}
+
+CPLErr ImgRaster::setThreshold(double t1, double t2, double bg, double fg){
+  try{
+    std::vector<double> lineInput(nrOfCol());
+    for(int iband=0;iband<nrOfBand();++iband){
+      for(int irow=0;irow<nrOfRow();++irow){
+        readData(lineInput,irow,iband,NEAR);
+        for(int icol=0;icol<nrOfCol();++icol){
+          if(lineInput[icol]>=t1&&lineInput[icol]<=t2)
+            lineInput[icol]=fg;
+          else
+            lineInput[icol]=bg;
+        }
+        writeData(lineInput,irow,iband);
+      }
+    }
+  }
+  catch(std::string errorstring){
+    std::cerr << errorstring << std::endl;
+    return(CE_Failure);
+  }
+  catch(...){
+    return(CE_Failure);
+  }
+  return(CE_None);
 }
