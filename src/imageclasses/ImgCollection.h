@@ -42,7 +42,7 @@ class ImgCollection : public std::vector<std::shared_ptr<ImgRaster> >
 public:
   enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
   ///default constructor
-  ImgCollection(void){};// : std::vector<ImgRaster*>(), m_index(0) {};
+  ImgCollection(void) : m_index(0) {};// : std::vector<ImgRaster*>(), m_index(0) {};
   ImgCollection(size_type theSize){
     for(size_type iimg=0;iimg<theSize;++iimg){
       this->emplace_back(new(ImgRaster));
@@ -169,8 +169,12 @@ public:
   unsigned int pushNoDataValue(double noDataValue);
   ///Set the no data values of this dataset using a standard template library (stl) vector as input
   unsigned int setNoData(const std::vector<double>& nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
+  ///composite image
   int composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///crop image
   int crop(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///crop image only for in memory
+  std::shared_ptr<ImgRaster> crop(const app::AppFactory& app);
 private:
   unsigned int m_index;
   std::vector<double> m_noDataValues;

@@ -117,6 +117,16 @@ unsigned int ImgCollection::pushNoDataValue(double noDataValue)
 
 /**
  * @param imgRaster output raster crop dataset
+ * @return output image
+ **/
+shared_ptr<ImgRaster> ImgCollection::crop(const AppFactory& app){
+  shared_ptr<ImgRaster> imgWriter(new ImgRaster);
+  crop(imgWriter, app);
+  return(imgWriter);
+}
+
+/**
+ * @param imgRaster output raster crop dataset
  * @return 0 if successful
  **/
 int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
@@ -532,7 +542,6 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
       }
       (*imit)->geo2image(cropulx+(magicX-1.0)*(*imit)->getDeltaX(),cropuly-(magicY-1.0)*(*imit)->getDeltaY(),uli,ulj);
       (*imit)->geo2image(croplrx+(magicX-2.0)*(*imit)->getDeltaX(),croplry-(magicY-2.0)*(*imit)->getDeltaY(),lri,lrj);
-      //test
       ncropcol=abs(static_cast<unsigned int>(ceil((croplrx-cropulx)/dx)));
       ncroprow=abs(static_cast<unsigned int>(ceil((cropuly-croplry)/dy)));
     }
