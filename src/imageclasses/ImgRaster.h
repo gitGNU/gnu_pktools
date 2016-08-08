@@ -199,7 +199,7 @@ public:
   ///Copy data 
   void copyData(void* data, unsigned int band=0);
   ///Copy data 
-  void copyData(ImgRaster& imgRaster, unsigned int band=0);
+  // void copyData(ImgRaster& imgRaster, unsigned int band=0);
   //todo: introduce smart pointer instead of void*
   // std::unique_ptr<void> getDataPointer(unsigned int band=0){return(m_data[band]);};
   ///Get the GDAL rasterband for this dataset
@@ -347,7 +347,7 @@ public:
   ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
   void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
   ///Set threshold
-  CPLErr setThreshold(double t1, double t2, double bg, double fg);
+  CPLErr setThreshold(double t1, double t2, double fg, double bg);
 
 protected:
   ///filename of this dataset

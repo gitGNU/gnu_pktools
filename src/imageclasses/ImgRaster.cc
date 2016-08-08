@@ -1751,7 +1751,8 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
   }
 }
 
-CPLErr ImgRaster::setThreshold(double t1, double t2, double bg, double fg){
+//need to debug for read/write file
+CPLErr ImgRaster::setThreshold(double t1, double t2, double fg, double bg){
   try{
     std::vector<double> lineInput(nrOfCol());
     for(int iband=0;iband<nrOfBand();++iband){
