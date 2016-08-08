@@ -99,7 +99,9 @@ public:
   void initMem(unsigned long int memory);
   ///assignment operator
   ImgRaster& operator=(ImgRaster& imgSrc);
+  ///get write mode
   bool writeMode(){return m_writeMode;};
+  ///check if data pointer has been initialized
   bool isInit(){return(m_data.size()>0);};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
   void setScale(double theScale, int band=0){
@@ -392,10 +394,8 @@ protected:
   ///We are writing a physical file
   bool m_writeMode;
 
-  //From Reader
   ///Read new block in cache (defined by m_begin and m_end)
   CPLErr readNewBlock(unsigned int row, unsigned int band);
-  //From Writer
   ///Write new block from cache (defined by m_begin and m_end)
   CPLErr writeNewBlock(unsigned int row, unsigned int band);
 };

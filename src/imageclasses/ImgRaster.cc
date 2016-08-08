@@ -100,7 +100,6 @@ void ImgRaster::freeMem()
 
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
- * @param copyData Copy data from source image when true
  **/
 ImgRaster& ImgRaster::operator=(ImgRaster& imgSrc)
 {
@@ -1245,27 +1244,26 @@ void ImgRaster::open(ImgRaster& imgSrc, bool copyData)
     m_writeMode=true;
     registerDriver();
   }
-  else{
+  else
     m_writeMode=false;
-    initMem(0);
-    for(unsigned int iband=0;iband<m_nband;++iband){
-      m_begin[iband]=0;
-      m_end[iband]=m_begin[iband]+m_blockSize;
-      if(copyData){
-        std::vector<double> lineInput(nrOfCol());
-        for(int iband=0;iband<nrOfBand();++iband){
-          for(int irow=0;irow<nrOfRow();++irow){
-            imgSrc.readData(lineInput,irow,iband,NEAR);
-            writeData(lineInput,irow,iband);
-          }
+  initMem(0);
+  for(unsigned int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+    if(copyData){
+      std::vector<double> lineInput(nrOfCol());
+      for(int iband=0;iband<nrOfBand();++iband){
+        for(int irow=0;irow<nrOfRow();++irow){
+          imgSrc.readData(lineInput,irow,iband,NEAR);
+          writeData(lineInput,irow,iband);
         }
-        // imgSrc.copyData(m_data[iband],iband);
       }
+      // imgSrc.copyData(m_data[iband],iband);
     }
-    if(imgSrc.getFileName()!=""){
-      m_filename=imgSrc.getFileName();
-      std::cout << "Warning: filename not set, dataset not defined yet" << std::endl;
-    }
+  }
+  if(imgSrc.getFileName()!=""){
+    m_filename=imgSrc.getFileName();
+    std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
   }
 }
 
