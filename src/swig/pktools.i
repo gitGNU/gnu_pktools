@@ -71,20 +71,20 @@
 %template(writeDataBlock_float) ImgRaster::writeDataBlock<float>;
 %template(writeDataBlock_double) ImgRaster::writeDataBlock<double>;
 
+%ignore ImgRaster::operator=;
 // Instantiate templates used by example
-%rename(__equals__) ImgRaster::operator=;
+/* %rename(__assignImgRaster__) ImgRaster::operator=; */
 
-namespace std {
-  %template(ImgVector) vector<ImgRaster>;
-  %template(IntVector) vector<int>;
-
-}
-/* swig -c++ -I../.. -I../imageclasses -I../apps -python -o pktools_wrap.cc pktools.i */
+/* namespace std { */
+/*   %template(ImgVector) vector<ImgRaster>; */
+/*   %template(IntVector) vector<int>; */
+/* } */
+/* swig -c++ -I../.. -I../algorithms -I../imageclasses -I../apps -python -o pktools_wrap.cc pktools.i */
 /* add following lines to pktools_wrap.cc */
 // extern "C"
 // {
 // void *__dso_handle = 0;
 // }
 // g++ -fPIC -I../.. -I.. -I../imageclasses -I../apps -I../algorithms -I/usr/include/python2.7 -c pktools_wrap.cc $(python-config --cflags) -o pktools_wrap.o 
-//g++ -shared -v -nostartfiles -L/usr/local/lib pktools_wrap.o -limageClasses -lappClasses -lalgorithms -lgsl -ldl -lgdal $(python-config --ldflags) -o _pktools.so
+//g++ -shared -v -nostartfiles -L/usr/local/lib pktools_wrap.o -limageClasses -lalgorithms -lgsl -ldl -lgdal $(python-config --ldflags) -o _pktools.so
 
