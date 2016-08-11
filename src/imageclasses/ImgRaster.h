@@ -270,6 +270,10 @@ public:
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
   void open(const std::string& filename, unsigned long int memory=0);
   // void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned long int memory=0);
+  ///Read all pixels from image in memory for specific band
+  CPLErr readData(unsigned int band);
+  ///Read all pixels from image in memory
+  CPLErr readData();
   ///Read a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
   template<typename T> CPLErr readData(T& value, unsigned int col, unsigned int row, unsigned int band=0);
   ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)

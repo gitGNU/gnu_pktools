@@ -740,6 +740,42 @@ void ImgRaster::registerDriver()
 }
 
 /**
+ * @param band Band that must be read to cache
+ * @return true if block was read
+ **/
+CPLErr ImgRaster::readData(unsigned int band)
+{
+  CPLErr returnValue=CE_None;
+  if(m_blockSize<nrOfRow()){
+    std::ostringstream s;
+    s << "Error: increase memory to read all pixels in memory (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+    throw(s.str());
+  }
+  if(m_gds == NULL){
+    std::string errorString="Error in readData";
+    throw(errorString);
+  }
+  m_begin[band]=0;
+  m_end[band]=nrOfRow();
+  GDALRasterBand  *poBand;
+  assert(band<nrOfBand()+1);
+  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+  returnValue=poBand->RasterIO(GF_Read,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
+  return(returnValue);//new block was read
+}
+
+/**
+ * @return true if block was read
+ **/
+CPLErr ImgRaster::readData()
+{
+  CPLErr returnValue=CE_None;
+  for(int iband=0;iband<nrOfBand();++iband)
+    readData(iband);
+  return(returnValue);//new block was read
+}
+
+/**
  * @param row Read a new block for caching this row (if needed)
  * @param band Band that must be read to cache
  * @return true if block was read
