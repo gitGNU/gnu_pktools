@@ -670,11 +670,11 @@ void ImgRaster::registerDriver()
         GDALSetNoDataValue(m_noDataValues[0],iband);
     }
 
-    m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
-    std::string versionString="pktools ";
-    versionString+=VERSION;
-    versionString+=" by Pieter Kempeneers";
-    m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
+    // m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
+    // std::string versionString="pktools ";
+    // versionString+=VERSION;
+    // versionString+=" by Pieter Kempeneers";
+    // m_gds->SetMetadataItem( "TIFFTAG_SOFTWARE", versionString.c_str());
     time_t rawtime;
     time ( &rawtime );
 
@@ -727,6 +727,8 @@ void ImgRaster::registerDriver()
     m_ncol= m_gds->GetRasterXSize();
     m_nrow= m_gds->GetRasterYSize();
     m_nband= m_gds->GetRasterCount();
+    m_dataType=getDataType();
+    m_imageType=getImageType();
     double adfGeoTransform[6];
     m_gds->GetGeoTransform( adfGeoTransform );
     m_gt[0]=adfGeoTransform[0];
