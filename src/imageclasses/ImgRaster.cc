@@ -1301,7 +1301,7 @@ void ImgRaster::open(ImgRaster& imgSrc, bool copyData)
   }
   if(imgSrc.getFileName()!=""){
     m_filename=imgSrc.getFileName();
-    std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
+    // std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
   }
 }
 

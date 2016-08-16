@@ -327,7 +327,7 @@ public:
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
 
   ///Write a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
-  template<typename T> CPLErr writeData(T& value, unsigned int col, unsigned int row, unsigned int band=0);
+  template<typename T> CPLErr writeData(const T& value, unsigned int col, unsigned int row, unsigned int band=0);
   ///Write pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
   template<typename T> CPLErr writeData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, unsigned int row, unsigned int band=0);
   ///Write pixel cell values for an entire row for a specific band (all indices start counting from 0)
@@ -768,7 +768,7 @@ template<typename T> CPLErr ImgRaster::readData(std::vector<T>& buffer, double r
  * @param[in] band The band number to write (counting starts from 0)
  * @return true if write successful
  **/
-template<typename T> CPLErr ImgRaster::writeData(T& value, unsigned int col, unsigned int row, unsigned int band)
+template<typename T> CPLErr ImgRaster::writeData(const T& value, unsigned int col, unsigned int row, unsigned int band)
 {
   CPLErr returnValue=CE_None;
   if(band>=nrOfBand()+1){
@@ -913,7 +913,7 @@ template<typename T> CPLErr ImgRaster::writeData(std::vector<T>& buffer, unsigne
     int index=(row-m_begin[band])*nrOfCol();
     int minindex=(index+minCol);
     int maxindex=(index+maxCol);
-    typename std::vector<T>::iterator bufit=buffer.begin();
+    typename std::vector<T>::const_iterator bufit=buffer.begin();
     double theScale=1;
     double theOffset=0;
     if(m_scale.size()>band)
