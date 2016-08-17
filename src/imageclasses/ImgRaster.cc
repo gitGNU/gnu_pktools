@@ -1789,18 +1789,30 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
   }
 }
 
-//need to debug for read/write file
-CPLErr ImgRaster::setThreshold(double t1, double t2, double fg, double bg){
+/** 
+ * 
+ * 
+ * @param t1 minimum threshold
+ * @param t2 maximum threshold
+ * @param fg value if within thresholds
+ * @param bg value if outside thresholds
+ * 
+ * @return CE_None if success, CE_Failure if failed
+ */CPLErr ImgRaster::setThreshold(double t1, double t2, double value){
   try{
+    if(m_noDataValues.empty()){
+      std::string errorString="Error: no data value not set";
+      throw(errorString);
+    }
     std::vector<double> lineInput(nrOfCol());
     for(int iband=0;iband<nrOfBand();++iband){
       for(int irow=0;irow<nrOfRow();++irow){
         readData(lineInput,irow,iband,NEAR);
         for(int icol=0;icol<nrOfCol();++icol){
           if(lineInput[icol]>=t1&&lineInput[icol]<=t2)
-            lineInput[icol]=fg;
+            lineInput[icol]=value;
           else
-            lineInput[icol]=bg;
+            lineInput[icol]=m_noDataValues[0];
         }
         writeData(lineInput,irow,iband);
       }

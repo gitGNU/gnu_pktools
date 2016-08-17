@@ -350,8 +350,8 @@ public:
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
   ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
   void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
-  ///Set threshold
-  CPLErr setThreshold(double t1, double t2, double fg, double bg);
+  ///Apply thresholds: set to no data if not within thresholds t1 and t2
+  CPLErr setThreshold(double t1, double t2, double value);
 
 protected:
   ///filename of this dataset
