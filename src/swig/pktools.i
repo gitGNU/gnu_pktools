@@ -6,15 +6,15 @@
 %module pktools
 %{
   #include "config.h"
-  #include "ImgRaster.h"
-  #include "AppFactory.h"
-  #include "Filter2d.h"
+  #include "imageclasses/ImgRaster.h"
+  #include "apps/AppFactory.h"
+  #include "algorithms/Filter2d.h"
   %}
 
 //Parse the header file
-%include "ImgRaster.h"
-%include "AppFactory.h"
-%include "Filter2d.h"
+%include "imageclasses/ImgRaster.h"
+%include "apps/AppFactory.h"
+%include "algorithms/Filter2d.h"
 // Instantiate some templates
 %template(getGDALDataType_char) getGDALDataType<char>;
 %template(getGDALDataType_uchar) getGDALDataType<unsigned char>;
