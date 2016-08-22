@@ -23,9 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <vector>
 #include <memory>
-#include "boost/date_time/posix_time/posix_time.hpp"
-//#include "boost/date_time/gregorian/gregorian.hpp" //include all types plus i/o
-//#include "boost/date_time/gregorian/gregorian_types.hpp" //no i/o just types
+// #include "boost/date_time/posix_time/posix_time.hpp"
 #include "ImgReaderOgr.h"
 #include "ImgRaster.h"
 #include "apps/AppFactory.h"
@@ -43,10 +41,9 @@ public:
   enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
   ///default constructor
   ImgCollection(void) : m_index(0) {};// : std::vector<ImgRaster*>(), m_index(0) {};
-  ImgCollection(size_type theSize){
-    for(size_type iimg=0;iimg<theSize;++iimg){
+  ImgCollection(unsigned int theSize){
+    for(unsigned int iimg=0;iimg<theSize;++iimg){
       this->emplace_back(new(ImgRaster));
-      //m_time.push_back(boost::posix_time::time_period);
     }
     m_index=0;
   }
@@ -58,40 +55,40 @@ public:
 
   ///get bounding box of image collection
   void getBoundingBox(double& ulx, double& uly, double& lrx, double& lry) const;
-  ///get begin and last time of image collection
-  boost::posix_time::time_period getTimePeriod();
+  // ///get begin and last time of image collection
+  // boost::posix_time::time_period getTimePeriod();
 
-  ///filter collection according to period
-  void filterTime(const boost::posix_time::time_period& thePeriod){
-    unsigned int index=0;
-    std::vector<std::shared_ptr<ImgRaster>>::iterator it=begin();
-    std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
-    while(it!=end()&&tit!=m_time.end()){
-      if(thePeriod.contains(m_time[m_index])){
-        ++it;
-        ++tit;
-      }
-      else{
-        it=erase(it);
-        tit=m_time.erase(tit);
-      }
-    }
-    m_index=0;
-  };
+  // ///filter collection according to period
+  // void filterTime(const boost::posix_time::time_period& thePeriod){
+  //   unsigned int index=0;
+  //   std::vector<std::shared_ptr<ImgRaster>>::iterator it=begin();
+  //   std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
+  //   while(it!=end()&&tit!=m_time.end()){
+  //     if(thePeriod.contains(m_time[m_index])){
+  //       ++it;
+  //       ++tit;
+  //     }
+  //     else{
+  //       it=erase(it);
+  //       tit=m_time.erase(tit);
+  //     }
+  //   }
+  //   m_index=0;
+  // };
   ///filter collection according to bounding box
   void filterGeo(double ulx, double uly, double lrx, double lry){
     std::vector<std::shared_ptr<ImgRaster>>::iterator it=begin();
-    std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
+    // std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
     while(it!=end()){
       if((*it)->covers(ulx, uly, lrx, lry)){
         ++it;
-        if(tit!=m_time.end())
-          ++tit;
+        // if(tit!=m_time.end())
+        //   ++tit;
       }
       else{
         it=erase(it);
-        if(tit!=m_time.end())
-          tit=m_time.erase(tit);
+        // if(tit!=m_time.end())
+        //   tit=m_time.erase(tit);
       }
     }
     m_index=0;
@@ -99,17 +96,17 @@ public:
   ///filter collection according to position
   void filterGeo(double x, double y){
     std::vector<std::shared_ptr<ImgRaster>>::iterator it=begin();
-    std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
+    // std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
     while(it!=end()){
       if((*it)->covers(x,y)){
         ++it;
-        if(tit!=m_time.end())
-          ++tit;
+        // if(tit!=m_time.end())
+        //   ++tit;
       }
       else{
         it=erase(it);
-        if(tit!=m_time.end())
-          tit=m_time.erase(tit);
+        // if(tit!=m_time.end())
+        //   tit=m_time.erase(tit);
       }
     }
     m_index=0;
@@ -118,23 +115,23 @@ public:
   void pushImage(std::shared_ptr<ImgRaster> imgRaster){
     this->emplace_back(imgRaster);
   };
-  ///push image to collection with corresponding period
-  void pushImage(std::shared_ptr<ImgRaster> imgRaster, boost::posix_time::time_period imgPeriod){
-    this->emplace_back(imgRaster);
-    m_time.push_back(imgPeriod);
-  };
-  ///push image period
-  void pushTime(boost::posix_time::time_period imgPeriod){
-    m_time.push_back(imgPeriod);
-  };
-  ///set image periods for collection
-  void setTime(const std::vector<boost::posix_time::time_period>& timeVector){
-    m_time=timeVector;
-  };
-  ///get image periods for collection
-  void getTime(std::vector<boost::posix_time::time_period>& timeVector){
-    timeVector=m_time;
-  };
+  // ///push image to collection with corresponding period
+  // void pushImage(std::shared_ptr<ImgRaster> imgRaster, boost::posix_time::time_period imgPeriod){
+  //   this->emplace_back(imgRaster);
+  //   // m_time.push_back(imgPeriod);
+  // };
+  // ///push image period
+  // void pushTime(boost::posix_time::time_period imgPeriod){
+  //   m_time.push_back(imgPeriod);
+  // };
+  // ///set image periods for collection
+  // void setTime(const std::vector<boost::posix_time::time_period>& timeVector){
+  //   m_time=timeVector;
+  // };
+  // ///get image periods for collection
+  // void getTime(std::vector<boost::posix_time::time_period>& timeVector){
+  //   timeVector=m_time;
+  // };
   ///Check if a geolocation is covered by this dataset. Only the bounding box is checked, irrespective of no data values.
   bool covers(double x, double y) const;
   ///Check if a region of interest is (partially) covered by this dataset. Only the bounding box is checked, irrespective of no data values.
@@ -158,8 +155,8 @@ public:
   void resetIterator(){m_index=0;};
   void clean(){clear();m_index=0;};
   void close(){
-    for(size_type index=0;index<size();++index)
-      at(index)->close();
+    for(std::vector<std::shared_ptr<ImgRaster>>::iterator it=begin();it!=end();++it)
+      (*it)->close();
   }
   ///Get the no data values of this dataset as a standard template library (stl) vector
   unsigned int getNoDataValues(std::vector<double>& noDataValues) const;
@@ -171,6 +168,8 @@ public:
   unsigned int setNoData(const std::vector<double>& nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
   ///composite image
   int composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///composite image only for in memory
+  std::shared_ptr<ImgRaster> composite(const app::AppFactory& app);
   ///crop image
   int crop(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///crop image only for in memory
@@ -178,7 +177,7 @@ public:
 private:
   unsigned int m_index;
   std::vector<double> m_noDataValues;
-  std::vector<boost::posix_time::time_period> m_time;
+  // std::vector<boost::posix_time::time_period> m_time;
 };
 
 #endif // _IMGCOLLECTION_H_

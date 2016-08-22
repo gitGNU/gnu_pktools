@@ -30,17 +30,17 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 using namespace std;
 using namespace app;
 
-  ///time period covering the image collection (check http://www.boost.org/doc/libs/1_55_0/doc/html/date_time/examples.html#date_time.examples.time_periods for how to use boost period)
-boost::posix_time::time_period ImgCollection::getTimePeriod(){
-  if(m_time.size()){
-    std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
-    boost::posix_time::time_period timePeriod=*(tit++);
-    while(tit!=m_time.end()){
-      timePeriod.span(*(tit++));
-    }
-    return(timePeriod);
-  }
-}    
+//   ///time period covering the image collection (check http://www.boost.org/doc/libs/1_55_0/doc/html/date_time/examples.html#date_time.examples.time_periods for how to use boost period)
+// boost::posix_time::time_period ImgCollection::getTimePeriod(){
+//   if(m_time.size()){
+//     std::vector<boost::posix_time::time_period>::iterator tit=m_time.begin();
+//     boost::posix_time::time_period timePeriod=*(tit++);
+//     while(tit!=m_time.end()){
+//       timePeriod.span(*(tit++));
+//     }
+//     return(timePeriod);
+//   }
+// }    
 
 /**
  * @param ulx upper left coordinate in x
@@ -308,6 +308,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   // for(int iimg=0;iimg<input_opt.size();++iimg){
 
   std::vector<std::shared_ptr<ImgRaster> >::const_iterator imit=begin();
+
   for(imit=begin();imit!=end();++imit){
   // while((imgReader=getNextImage())){
     if(verbose_opt[0])
@@ -812,6 +813,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
 	}
 	if(writeBuffer.size()!=imgWriter->nrOfCol())
 	  cout << "writeBuffer.size()=" << writeBuffer.size() << ", imgWriter->nrOfCol()=" << imgWriter->nrOfCol() << endl;
+
 	assert(writeBuffer.size()==imgWriter->nrOfCol());
 	try{
 	  imgWriter->writeData(writeBuffer,irow,writeBand);
@@ -844,6 +846,16 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   if(maskReader.isInit())
     maskReader.close();
   return(0);
+}
+
+/**
+ * @param imgRaster output raster composite dataset
+ * @return output image
+ **/
+shared_ptr<ImgRaster> ImgCollection::composite(const AppFactory& app){
+  shared_ptr<ImgRaster> imgWriter(new ImgRaster);
+  composite(imgWriter, app);
+  return(imgWriter);
 }
 
 /**

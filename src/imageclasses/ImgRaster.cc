@@ -63,7 +63,7 @@ void ImgRaster::reset(void)
 /**
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRaster::initMem(unsigned long int memory)
+void ImgRaster::initMem(unsigned int memory)
 {
   if(memory<=0)
     m_blockSize=nrOfRow();
@@ -618,8 +618,8 @@ unsigned int ImgRaster::pushNoDataValue(double noDataValue)
  * @param filename Open a raster dataset with this filename
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRaster::open(const std::string& filename, unsigned long int memory)
-// void ImgRaster::open(const std::string& filename, const GDALAccess& readMode, unsigned long int memory)
+void ImgRaster::open(const std::string& filename, unsigned int memory)
+// void ImgRaster::open(const std::string& filename, const GDALAccess& readMode, unsigned int memory)
 {
   m_writeMode=false;
   m_filename = filename;
@@ -1523,7 +1523,7 @@ void ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, c
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRaster::setFile(const std::string& filename, const std::string& imageType, unsigned long int memory, const std::vector<std::string>& options)
+void ImgRaster::setFile(const std::string& filename, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
   m_writeMode=true;
   m_filename=filename;
@@ -1550,7 +1550,7 @@ void ImgRaster::copyData(void* data, unsigned int band){
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-// void ImgRaster::setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned long int memory, const std::vector<std::string>& options)
+// void ImgRaster::setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options)
 // {
 //   m_filename=filename;
 //   m_options=options;

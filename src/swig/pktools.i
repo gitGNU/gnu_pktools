@@ -2,17 +2,29 @@
 %include <std_string.i>
 %include <std_vector.i>
 %include <std_iostream.i>
+%include <std_shared_ptr.i>
+%shared_ptr(ImgRaster)
 
 %module pktools
 %{
+  #include <memory>
   #include "config.h"
   #include "imageclasses/ImgRaster.h"
+  #include "imageclasses/ImgCollection.h"
   #include "apps/AppFactory.h"
   #include "algorithms/Filter2d.h"
   %}
 
+%inline %{
+extern "C"
+{
+ void *__dso_handle = 0;
+}
+ %}
+
 //Parse the header file
 %include "imageclasses/ImgRaster.h"
+%include "imageclasses/ImgCollection.h"
 %include "apps/AppFactory.h"
 %include "algorithms/Filter2d.h"
 // Instantiate some templates
@@ -74,17 +86,9 @@
 %ignore ImgRaster::operator=;
 // Instantiate templates used by example
 /* %rename(__assignImgRaster__) ImgRaster::operator=; */
-
-/* namespace std { */
-/*   %template(ImgVector) vector<ImgRaster>; */
-/*   %template(IntVector) vector<int>; */
-/* } */
-/* swig -c++ -I../.. -I../algorithms -I../imageclasses -I../apps -python -o pktools_wrap.cc pktools.i */
-/* add following lines to pktools_wrap.cc */
-// extern "C"
-// {
-// void *__dso_handle = 0;
-// }
-// g++ -fPIC -I../.. -I.. -I../imageclasses -I../apps -I../algorithms -I/usr/include/python2.7 -c pktools_wrap.cc $(python-config --cflags) -o pktools_wrap.o 
+/*   %template(ImgVector) std::vector<ImgRaster>; */
+/*   %template(IntVector) std::vector<int>; */
+//swig -c++ -I../.. -I.. -python -o pktools_wrap.cc pktools.i
+//g++ -fPIC -std=c++11 -I../.. -I.. -I/usr/include/python2.7 -c pktools_wrap.cc $(python-config --cflags) -o pktools_wrap.o
 //g++ -shared -v -nostartfiles -L/usr/local/lib pktools_wrap.o -limageClasses -lalgorithms -lgsl -ldl -lgdal $(python-config --ldflags) -o _pktools.so
 
