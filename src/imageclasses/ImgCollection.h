@@ -114,6 +114,8 @@ public:
   ///push image to collection
   void pushImage(std::shared_ptr<ImgRaster> imgRaster){
     this->emplace_back(imgRaster);
+    //test
+    std::cout << back()->getID() << std::endl;
   };
   // ///push image to collection with corresponding period
   // void pushImage(std::shared_ptr<ImgRaster> imgRaster, boost::posix_time::time_period imgPeriod){

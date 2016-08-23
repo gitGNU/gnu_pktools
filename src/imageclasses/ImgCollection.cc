@@ -853,7 +853,12 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
  * @return output image
  **/
 shared_ptr<ImgRaster> ImgCollection::composite(const AppFactory& app){
-  shared_ptr<ImgRaster> imgWriter(new ImgRaster);
+  std::vector<std::shared_ptr<ImgRaster> >::const_iterator imit=begin();
+  //test
+  cout << "typeid of first element in collection: " << typeid(*imit).name() << endl;
+  shared_ptr<ImgRaster> imgWriter=(*imit)->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
+  //test
+  cout << "typeid of imgWriter: " << typeid(imgWriter).name() << endl;
   composite(imgWriter, app);
   return(imgWriter);
 }
@@ -1375,7 +1380,11 @@ int ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactory& 
     imgWriter->setProjection(theProjection);
   }
 
+  //test
+  std::cout << "creating mask" << std::endl;
   ImgRaster maskReader;
+  //test
+  std::cout << "end creating mask" << std::endl;
   if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){
     if(mask_opt.size()){
       string errorString="Error: can only either mask or extent extent with cutline, not both";

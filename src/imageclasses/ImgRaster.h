@@ -78,22 +78,30 @@ public:
   ///constructor opening an image in memory using an external data pointer (not tested yet)
   //ImgRaster(void* dataPointer, unsigned int ncol, unsigned int nrow, int nband, const GDALDataType& dataType);
   //from Reader
-  ImgRaster(const std::string& filename, unsigned int memory=0) : ImgRaster() {open(filename, memory);};
+  ImgRaster(const std::string& filename, unsigned int memory=0) : ImgRaster() {
+    open(filename, memory);
+  };
   // ImgRaster(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
   //from Writer
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
-  ImgRaster(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, imgSrc, memory, options);};
+  ImgRaster(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, imgSrc, memory, options);
+};
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
   ImgRaster(ImgRaster& imgSrc, bool copyData=true) : ImgRaster() {
     open(imgSrc,copyData);
   };
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
-  ImgRaster(const std::string& filename, unsigned int ncol, unsigned int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);};
+  ImgRaster(const std::string& filename, unsigned int ncol, unsigned int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);
+  };
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgRaster(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);};
+  ImgRaster(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);
+  };
 
   ///destructor
   virtual ~ImgRaster(void){freeMem();};
+
+  //test
+  virtual std::string getID(){return(std::string("I am ImgRaster"));};
 
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned int memory);
@@ -265,7 +273,12 @@ public:
     }
     return nYBlocks;
   }
-
+  ///Clone as new shared pointer to ImgRaster object
+  /** 
+   * 
+   * @return shared pointer to new ImgRaster object
+   */  
+  virtual std::shared_ptr<ImgRaster> clone() { return std::shared_ptr<ImgRaster>(new ImgRaster(*this,false) ); };
   //From Reader
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
   void open(const std::string& filename, unsigned int memory=0);

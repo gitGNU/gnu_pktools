@@ -27,6 +27,8 @@ extern "C" {
 
 ImgRaster::ImgRaster(void){
   reset();
+  //test
+  std::cout << "ImgRaster constructor" << std::endl;
 }
 
 void ImgRaster::reset(void)
@@ -1299,10 +1301,11 @@ void ImgRaster::open(ImgRaster& imgSrc, bool copyData)
       // imgSrc.copyData(m_data[iband],iband);
     }
   }
-  if(imgSrc.getFileName()!=""){
-    m_filename=imgSrc.getFileName();
+  //todo: check if filename needs to be set, but as is it is used for writing, I don't think so.
+  // if(imgSrc.getFileName()!=""){
+  //   m_filename=imgSrc.getFileName();
     // std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
-  }
+  // }
 }
 
 // /**
