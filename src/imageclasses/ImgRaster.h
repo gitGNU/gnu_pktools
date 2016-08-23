@@ -100,9 +100,6 @@ public:
   ///destructor
   virtual ~ImgRaster(void){freeMem();};
 
-  //test
-  virtual std::string getID(){return(std::string("I am ImgRaster"));};
-
   ///Initialize the memory for read/write image in cache
   void initMem(unsigned int memory);
   ///assignment operator
@@ -289,6 +286,12 @@ public:
   CPLErr readData();
   ///Read a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
   template<typename T> CPLErr readData(T& value, unsigned int col, unsigned int row, unsigned int band=0);
+  ///Return a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
+  double readData(unsigned int col, unsigned int row, unsigned int band=0){
+    double value;
+    readData(value, col, row, band);
+    return(value);
+  };
   ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0)
   template<typename T> CPLErr readData(std::vector<T>& buffer, unsigned int minCol, unsigned int maxCol, unsigned int row, unsigned int band=0);
   ///Read pixel cell values for a range of columns for a specific row and band (all indices start counting from 0). The row counter can be floating, in which case a resampling is applied at the row level. You still must apply the resampling at column level. This function will be deprecated, as the GDAL API now supports rasterIO resampling (see http://www.gdal.org/structGDALRasterIOExtraArg.html)

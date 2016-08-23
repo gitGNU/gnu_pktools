@@ -114,8 +114,6 @@ public:
   ///push image to collection
   void pushImage(std::shared_ptr<ImgRaster> imgRaster){
     this->emplace_back(imgRaster);
-    //test
-    std::cout << back()->getID() << std::endl;
   };
   // ///push image to collection with corresponding period
   // void pushImage(std::shared_ptr<ImgRaster> imgRaster, boost::posix_time::time_period imgPeriod){
@@ -171,11 +169,11 @@ public:
   ///composite image
   int composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///composite image only for in memory
-  std::shared_ptr<ImgRaster> composite(const app::AppFactory& app);
+  std::shared_ptr<ImgRaster> composite(app::AppFactory& app);
   ///crop image
   int crop(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///crop image only for in memory
-  std::shared_ptr<ImgRaster> crop(const app::AppFactory& app);
+  std::shared_ptr<ImgRaster> crop(app::AppFactory& app);
 private:
   unsigned int m_index;
   std::vector<double> m_noDataValues;

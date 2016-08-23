@@ -67,6 +67,10 @@ int main(int argc, char *argv[])
 
   app::AppFactory app(argc,argv);
 
+  if(doProcess&&input_opt.empty()){
+    std::cerr << "Error: no input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(1);
+  }
   if(doProcess&&output_opt.empty()){
     std::cerr << "Error: no output file provided (use option -o). Use --help for help information" << std::endl;
     exit(1);
@@ -74,24 +78,27 @@ int main(int argc, char *argv[])
 
   try{
     ImgCollection imgCollection(input_opt.size());
+    shared_ptr<ImgRaster> imgWriter;
+    if(imgCollection.size()){
+      imgWriter=(*(imgCollection.begin()))->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
+      // shared_ptr<ImgRaster> imgWriter(new ImgRaster());
+      string imageType;
 
-    for(int ifile=0;ifile<input_opt.size();++ifile){
-      imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);
-      for(int iband=0;iband<scale_opt.size();++iband)
-        imgCollection[ifile]->setScale(scale_opt[iband],iband);
-      for(int iband=0;iband<offset_opt.size();++iband)
-        imgCollection[ifile]->setOffset(offset_opt[iband],iband);
+      for(int ifile=0;ifile<input_opt.size();++ifile){
+        imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);
+        for(int iband=0;iband<scale_opt.size();++iband)
+          imgCollection[ifile]->setScale(scale_opt[iband],iband);
+        for(int iband=0;iband<offset_opt.size();++iband)
+          imgCollection[ifile]->setOffset(offset_opt[iband],iband);
+      }
+
+      if(oformat_opt.size())//default
+        imageType=oformat_opt[0];
+      else
+        imageType=imgCollection[0]->getImageType();
+      if(output_opt.size())
+        imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
     }
-
-    shared_ptr<ImgRaster> imgWriter(new ImgRaster());
-    string imageType;
-    if(oformat_opt.size())//default
-      imageType=oformat_opt[0];
-    else
-      imageType=imgCollection[0]->getImageType();
-    if(output_opt.size())
-      imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
-
     imgCollection.crop(imgWriter,app);
 
     for(int ifile=0;ifile<imgCollection.size();++ifile)

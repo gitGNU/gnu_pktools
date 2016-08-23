@@ -27,8 +27,6 @@ extern "C" {
 
 ImgRaster::ImgRaster(void){
   reset();
-  //test
-  std::cout << "ImgRaster constructor" << std::endl;
 }
 
 void ImgRaster::reset(void)
