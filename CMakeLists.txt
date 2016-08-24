@@ -276,38 +276,42 @@ set(PKLIBS ${GSL_LIBRARIES} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_
 set(PKAPPS
   pkcrop
   pkcomposite
+  pkinfo
+  pkextractogr
   pktest
   )
 
 set(PKUTILS
-  pkextractogr
   pkextractimg
   pkstatprofile
   pkfilter 
-  pksvm 
-  pkfssvm 
-  pkoptsvm
-  pkkalman
-  pkinfo
+  pksvm #split in ImgRaster and ImgReaderOgr
   pkdiff
   pkgetmask
   pksetmask
-  pkcreatect 
   pkdumpimg 
-  pkdumpogr 
+  pkcreatect 
   pksieve 
   pkstat
-  pkstatascii
-  pkstatogr
   pkegcs 
   pkfillnodata 
   pkfilterdem 
-  pkfilterascii
   pkdsm2shadow 
+  pkreclass
   pkpolygonize 
+
+  pkfssvm 
+  pkoptsvm
+
+  pkkalman
+
+  pkdumpogr 
+
+  pkstatascii
+  pkstatogr
+  pkfilterascii
   pkascii2img 
   pkascii2ogr
-  pkreclass
 )
 
 set(PKFANNAPPS

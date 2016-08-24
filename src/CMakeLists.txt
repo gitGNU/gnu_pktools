@@ -61,6 +61,9 @@ set(IMGCLASS_CC
 	${IMGCLASS_SRC_DIR}/ImgCollection.cc
 	${IMGCLASS_SRC_DIR}/ImgReaderOgr.cc
 	${IMGCLASS_SRC_DIR}/ImgWriterOgr.cc
+	${IMGCLASS_SRC_DIR}/pkcomposite_lib.cc
+	${IMGCLASS_SRC_DIR}/pkcrop_lib.cc
+	${IMGCLASS_SRC_DIR}/pkextractogr_lib.cc
 	)
 	
 set(LASCLASS_H

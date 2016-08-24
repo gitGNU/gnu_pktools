@@ -33,6 +33,11 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "gdal_priv.h"
 #include "base/Vector2d.h"
 #include "ImgReaderOgr.h"
+#include "apps/AppFactory.h"
+
+namespace app{
+class AppFactory;
+}
 
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
@@ -369,6 +374,9 @@ public:
   ///Apply thresholds: set to no data if not within thresholds t1 and t2
   CPLErr setThreshold(double t1, double t2, double value);
 
+  //lib functions
+  ///extract pixel values from raster image from a vector sample
+  CPLErr extractOgr(const app::AppFactory& app);
 protected:
   ///filename of this dataset
   std::string m_filename;
