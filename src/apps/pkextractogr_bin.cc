@@ -22,10 +22,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "AppFactory.h"
 
-#ifndef PI
-#define PI 3.1415926535897932384626433832795
-#endif
-
 /******************************************************************************/
 /*! \page pkextractogr pkextractogr
  extract pixel values from raster image using a vector dataset sample
@@ -139,7 +135,6 @@ int main(int argc, char *argv[])
     ImgRaster imgRaster;
     if(image_opt.size()){
       imgRaster.open(image_opt[0],memory_opt[0]);
-      imgRaster.readData();
     }
     imgRaster.extractOgr(app);
     imgRaster.close();

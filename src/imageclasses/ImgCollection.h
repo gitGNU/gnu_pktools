@@ -167,11 +167,11 @@ public:
   ///Set the no data values of this dataset using a standard template library (stl) vector as input
   unsigned int setNoData(const std::vector<double>& nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
   ///composite image
-  int composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  CPLErr composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///composite image only for in memory
   std::shared_ptr<ImgRaster> composite(app::AppFactory& app);
   ///crop image
-  int crop(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  CPLErr crop(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///crop image only for in memory
   std::shared_ptr<ImgRaster> crop(app::AppFactory& app);
 private:

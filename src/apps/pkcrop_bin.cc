@@ -145,7 +145,6 @@ int main(int argc, char *argv[])
     if(imgCollection.size()){
       imgWriter=(*(imgCollection.begin()))->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
       // shared_ptr<ImgRaster> imgWriter(new ImgRaster());
-      string imageType;
 
       for(int ifile=0;ifile<input_opt.size();++ifile){
         imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);
@@ -155,6 +154,7 @@ int main(int argc, char *argv[])
           imgCollection[ifile]->setOffset(offset_opt[iband],iband);
       }
 
+      string imageType;
       if(oformat_opt.size())//default
         imageType=oformat_opt[0];
       else

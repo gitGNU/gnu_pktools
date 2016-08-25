@@ -64,6 +64,8 @@ set(IMGCLASS_CC
 	${IMGCLASS_SRC_DIR}/pkcomposite_lib.cc
 	${IMGCLASS_SRC_DIR}/pkcrop_lib.cc
 	${IMGCLASS_SRC_DIR}/pkextractogr_lib.cc
+	${IMGCLASS_SRC_DIR}/pkextractimg_lib.cc
+	${IMGCLASS_SRC_DIR}/pkstatprofile_lib.cc
 	)
 	
 set(LASCLASS_H

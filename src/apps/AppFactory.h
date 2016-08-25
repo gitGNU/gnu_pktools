@@ -46,7 +46,11 @@ namespace app
     void setOption(const std::string &key)
     {
       std::ostringstream os;
-      os << "--" << key;;
+      // os << "--" << key;;
+      if(key=="help")
+        os << "--" << key;;
+      else
+        os << "-" << key;;
       m_argv.push_back(os.str().c_str());
       ++m_argc;
     };
@@ -62,6 +66,24 @@ namespace app
     };
     void getHelp() {setOption("help");};
     void clearOptions() {m_argc=1;m_argv.clear();m_argv.push_back("appFactory");};
+    void clearOption(const std::string &key) 
+    {
+      std::vector<std::string>::iterator opit=m_argv.begin();
+      while(opit!=m_argv.end()){
+        if(opit->find("-"+key)!=std::string::npos){
+          m_argv.erase(opit);
+          --m_argc;
+          if(opit!=m_argv.end()){
+            if(opit->find("-")==std::string::npos){//not a bool option
+              m_argv.erase(opit);
+              --m_argc;
+            }
+          }
+        }
+        else
+          ++opit;
+      }
+    };
     void showOptions() const
     {
       for(int iarg=1;iarg<m_argv.size();++iarg)

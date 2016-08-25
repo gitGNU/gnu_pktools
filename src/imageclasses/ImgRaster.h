@@ -377,6 +377,13 @@ public:
   //lib functions
   ///extract pixel values from raster image from a vector sample
   CPLErr extractOgr(const app::AppFactory& app);
+  ///extract pixel values from raster image from a raster sample
+  CPLErr extractImg(const app::AppFactory& app);
+  ///calculate statistics profile based on multiband raster dataset
+  CPLErr statProfile(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///calculate statistics profile based on multiband raster dataset only for in memory
+  std::shared_ptr<ImgRaster> statProfile(const app::AppFactory& app);
+
 protected:
   ///filename of this dataset
   std::string m_filename;

@@ -92,3 +92,4 @@ extern "C"
 //g++ -fPIC -std=c++11 -I../.. -I.. -I/usr/include/python2.7 -c pktools_wrap.cc $(python-config --cflags) -o pktools_wrap.o
 //g++ -shared -v -nostartfiles -L/usr/local/lib pktools_wrap.o -limageClasses -lalgorithms -lgsl -ldl -lgdal $(python-config --ldflags) -o _pktools.so
 
+%allowexception;                // turn on globally

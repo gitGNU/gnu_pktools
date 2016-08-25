@@ -33,32 +33,32 @@ using namespace std;
 using namespace app;
 
 /**
- * @param imgRaster output raster crop dataset
+ * @param app application specific option arguments
  * @return output image
  **/
 shared_ptr<ImgRaster> ImgCollection::crop(AppFactory& app){
-  shared_ptr<ImgRaster> imgWriter;
-  if(size())
-    imgWriter=(*begin())->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
-  else{
-    std::cerr << "Input collection is empty. Use --help for help information" << std::endl;
-    app.getHelp();
-  }
   try{
-    crop(imgWriter, app);
+    shared_ptr<ImgRaster> imgWriter;
+    if(size())
+      imgWriter=(*begin())->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
+    else{
+      std::cerr << "Input collection is empty. Use --help for help information" << std::endl;
+      app.getHelp();
+      crop(imgWriter, app);
+      return(imgWriter);
+    }
   }
   catch(string helpString){
     cerr << helpString << endl;
     return(0);
   }
-  return(imgWriter);
 }
 
 /**
- * @param imgRaster output raster crop dataset
- * @return 0 if successful
+ * @param imgWriter output raster crop dataset
+ * @return CE_None if successful, CE_Failure if failed
  **/
-int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
+CPLErr ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the projection for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   //todo: support layer names
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
@@ -157,18 +157,20 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
-    exit(0);
+    return(CE_Failure);
   }
   if(!doProcess){
     cout << endl;
     std::ostringstream helpStream;
     helpStream << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
+    //test
+    helpStream << "throwing exception" << std::endl;
     throw(helpStream.str());//help was invoked, stop processing
   }
   // if(input_opt.empty()){
   if(empty()){
     std::cerr << "Input collection is empty. Use --help for more help information" << std::endl;
-    exit(0);
+    return(CE_Failure);
   }
   // if(output_opt.empty()){
   //   std::cerr << "No output file provided (use option -o). Use --help for help information" << std::endl;
@@ -189,7 +191,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   }
   else{
     std::cout << "Error: resampling method " << resample_opt[0] << " not supported" << std::endl;
-    exit(1);
+    return(CE_Failure);
   }
 
   const char* pszMessage;
@@ -228,7 +230,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   }
   catch(string error){
     cerr << error << std::endl;
-    exit(1);
+    return(CE_Failure);
   }
 
   bool isGeoRef=false;
@@ -311,7 +313,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
       }
       catch(string error){
         cerr << error << std::endl;
-        exit(1);
+        return(CE_Failure);
       }
       if(!iextent){
 	ulx_opt[0]=e_ulx;
@@ -389,7 +391,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
     }
     catch(string error){
       cerr << error << std::endl;
-      exit(2);
+      return(CE_Failure);
     }
   }
   else if(mask_opt.size()==1){
@@ -403,7 +405,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
     }
     catch(string error){
       cerr << error << std::endl;
-      exit(2);
+      return(CE_Failure);
     }
   }
 
@@ -549,7 +551,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
       }
       catch(string errorstring){
         cout << errorstring << endl;
-        exit(4);
+        return(CE_Failure);
       }
       if(description_opt.size())
 	imgWriter->setImageDescription(description_opt[0]);
@@ -692,11 +694,11 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
 		      }
 		      catch(string errorstring){
 			cerr << errorstring << endl;
-			exit(1);
+                        return(CE_Failure);
 		      }
 		      catch(...){
 			cerr << "error caught" << std::endl;
-			exit(3);
+                        return(CE_Failure);
 		      }
 		      oldRowMask=rowMask;
 		    }
@@ -736,7 +738,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
 	  }
 	  catch(string errorstring){
 	    cout << errorstring << endl;
-	    exit(2);
+            return(CE_Failure);
 	  }
 	}
 	if(writeBuffer.size()!=imgWriter->nrOfCol())
@@ -748,7 +750,7 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
 	}
 	catch(string errorstring){
 	  cout << errorstring << endl;
-	  exit(3);
+          return(CE_Failure);
 	}
 	if(verbose_opt[0]){
 	  progress=(1.0+irow);
@@ -773,5 +775,5 @@ int ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   }
   if(maskReader.isInit())
     maskReader.close();
-  return(0);
+  return(CE_None);
 }

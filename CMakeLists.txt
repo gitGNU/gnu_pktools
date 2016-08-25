@@ -278,12 +278,12 @@ set(PKAPPS
   pkcomposite
   pkinfo
   pkextractogr
+  pkextractimg
+  pkstatprofile
   pktest
   )
 
 set(PKUTILS
-  pkextractimg
-  pkstatprofile
   pkfilter 
   pksvm #split in ImgRaster and ImgReaderOgr
   pkdiff
