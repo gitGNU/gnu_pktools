@@ -30,10 +30,10 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 class FileReaderAscii
 {
 public:
-  FileReaderAscii(void);
+  FileReaderAscii();
   FileReaderAscii(const std::string& filename);
   FileReaderAscii(const std::string& filename, const char& fieldseparator);
-  ~FileReaderAscii(void);
+  ~FileReaderAscii();
   void reset(){m_ifstream.clear();m_ifstream.seekg(0,std::ios::beg);};
   void open(const std::string& filename);
   void close(void);

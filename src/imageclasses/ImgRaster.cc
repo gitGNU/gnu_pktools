@@ -1306,6 +1306,49 @@ void ImgRaster::open(ImgRaster& imgSrc, bool copyData)
   // }
 }
 
+/**
+ * @param imgSrc Use this source image as a template to copy image attributes
+ * @param copyData Copy data from source image when true
+ **/
+void ImgRaster::open(std::shared_ptr<ImgRaster> imgSrc, bool copyData)
+{
+  m_ncol=imgSrc->nrOfCol();
+  m_nrow=imgSrc->nrOfRow();
+  m_nband=imgSrc->nrOfBand();
+  m_dataType=imgSrc->getDataType();
+  setProjection(imgSrc->getProjection());
+  copyGeoTransform(imgSrc);
+  imgSrc->getNoDataValues(m_noDataValues);
+  imgSrc->getScale(m_scale);
+  imgSrc->getOffset(m_offset);
+  if(m_filename!=""){
+    m_writeMode=true;
+    registerDriver();
+  }
+  else
+    m_writeMode=false;
+  initMem(0);
+  for(unsigned int iband=0;iband<m_nband;++iband){
+    m_begin[iband]=0;
+    m_end[iband]=m_begin[iband]+m_blockSize;
+    if(copyData){
+      std::vector<double> lineInput(nrOfCol());
+      for(int iband=0;iband<nrOfBand();++iband){
+        for(int irow=0;irow<nrOfRow();++irow){
+          imgSrc->readData(lineInput,irow,iband,NEAR);
+          writeData(lineInput,irow,iband);
+        }
+      }
+      // imgSrc->copyData(m_data[iband],iband);
+    }
+  }
+  //todo: check if filename needs to be set, but as is it is used for writing, I don't think so.
+  // if(imgSrc->getFileName()!=""){
+  //   m_filename=imgSrc->getFileName();
+    // std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
+  // }
+}
+
 // /**
 //  * @param filename Open a raster dataset with this filename
 //  * @param ncol Number of columns in image

@@ -73,7 +73,7 @@ template<typename T1> GDALDataType getGDALDataType(){
 /**
    Base class for raster dataset (read and write) in a format supported by GDAL. This general raster class is used to store e.g., filename, number of columns, rows and bands of the dataset. 
 **/
-class ImgRaster
+class ImgRaster : public std::enable_shared_from_this<ImgRaster>
 {
 public:
   ///default constructor
@@ -93,6 +93,10 @@ public:
 };
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
   ImgRaster(ImgRaster& imgSrc, bool copyData=true) : ImgRaster() {
+    open(imgSrc,copyData);
+  };
+  ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
+  ImgRaster(std::shared_ptr<ImgRaster> imgSrc, bool copyData=true) : ImgRaster() {
     open(imgSrc,copyData);
   };
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
@@ -340,7 +344,9 @@ public:
   ///Open an image for writing in memory, defining image attributes.
   void open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(ImgRaster& imgSrc,  bool copyData=false);
+  void open(ImgRaster& imgSrc,  bool copyData=true);
+  ///Open an image for writing in memory, copying image attributes from a source image.
+  void open(std::shared_ptr<ImgRaster> imgSrc,  bool copyData=true);
   ///Open an image for writing using an external data pointer (not tested yet)
   // void open(void* dataPointer, const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Close the raster dataset
@@ -383,6 +389,10 @@ public:
   CPLErr statProfile(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///calculate statistics profile based on multiband raster dataset only for in memory
   std::shared_ptr<ImgRaster> statProfile(const app::AppFactory& app);
+  ///filter raster dataset
+  CPLErr filter(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///filter raster dataset only for in memory
+  std::shared_ptr<ImgRaster> filter(const app::AppFactory& app);
 
 protected:
   ///filename of this dataset

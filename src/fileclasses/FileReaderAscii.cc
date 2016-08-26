@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include "FileReaderAscii.h"
 
-FileReaderAscii::FileReaderAscii(void)
+FileReaderAscii::FileReaderAscii()
   : m_min(0),m_max(0),m_minRow(0),m_maxRow(0),m_fs(' '),m_comment('#'){
 }
 
@@ -35,7 +35,7 @@ FileReaderAscii::FileReaderAscii(const std::string& filename, const char& fields
   open(filename);
 }
 
-FileReaderAscii::~FileReaderAscii(void)
+FileReaderAscii::~FileReaderAscii()
 {
 }
 

@@ -48,9 +48,9 @@ namespace app
       std::ostringstream os;
       // os << "--" << key;;
       if(key=="help")
-        os << "--" << key;;
+        os << "--" << key;
       else
-        os << "-" << key;;
+        os << "-" << key;
       m_argv.push_back(os.str().c_str());
       ++m_argc;
     };

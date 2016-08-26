@@ -119,9 +119,9 @@ int main(int argc,char **argv) {
     }
 
     ImgRaster input;
-    shared_ptr<ImgRaster> imgWriter;
-  
     input.open(input_opt[0],memory_opt[0]);
+
+    std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
 
     string imageType;//=input.getImageType();
     if(oformat_opt.size())//default
@@ -129,9 +129,7 @@ int main(int argc,char **argv) {
     else
       imageType=input.getImageType();
 
-    // output.open(output_opt[0],input.nrOfCol(),input.nrOfRow(),function_opt.size(),theType,imageType,memory_opt[0],option_opt);
     imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
-
     input.statProfile(imgWriter,app);
 
     input.close();

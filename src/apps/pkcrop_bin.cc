@@ -143,8 +143,7 @@ int main(int argc, char *argv[])
     ImgCollection imgCollection(input_opt.size());
     shared_ptr<ImgRaster> imgWriter;
     if(imgCollection.size()){
-      imgWriter=(*(imgCollection.begin()))->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
-      // shared_ptr<ImgRaster> imgWriter(new ImgRaster());
+      std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
 
       for(int ifile=0;ifile<input_opt.size();++ifile){
         imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);

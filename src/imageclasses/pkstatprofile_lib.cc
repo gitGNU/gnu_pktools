@@ -34,7 +34,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace std;
 using namespace app;
-using namespace filter;
 
 /**
  * @param app application specific option arguments
@@ -169,7 +168,7 @@ CPLErr ImgRaster::statProfile(shared_ptr<ImgRaster> imgWriter, const AppFactory&
         pixelInput=lineInput.selectCol(x);
         int ithreshold=0;//threshold to use for percentiles
         for(int imethod=0;imethod<function_opt.size();++imethod){
-          switch(Filter::getFilterType(function_opt[imethod])){
+          switch(filter::Filter::getFilterType(function_opt[imethod])){
           case(filter::nvalid):
             lineOutput[imethod][x]=stat.nvalid(pixelInput);
             break;

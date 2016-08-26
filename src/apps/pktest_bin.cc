@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
     app.showOptions();
     cout << "file2: " << imgCollection[0]->getFileName() << endl;
     imgCollection.crop(imgRaster,app);
-    filter.smooth(*imgRaster,*imgRaster,5);
+    filter.smooth(imgRaster,imgRaster,5);
     // filter.morphology(imgRaster,imgRaster,"erode",3,3);
     // filter.morphology(imgRaster,imgRaster,"dilate",3,3);
 

@@ -280,11 +280,11 @@ set(PKAPPS
   pkextractogr
   pkextractimg
   pkstatprofile
+  pkfilter 
   pktest
   )
 
 set(PKUTILS
-  pkfilter 
   pksvm #split in ImgRaster and ImgReaderOgr
   pkdiff
   pkgetmask
@@ -296,17 +296,15 @@ set(PKUTILS
   pkegcs 
   pkfillnodata 
   pkfilterdem 
-  pkdsm2shadow 
+  #pkdsm2shadow 
   pkreclass
   pkpolygonize 
-
-  pkfssvm 
-  pkoptsvm
 
   pkkalman
 
   pkdumpogr 
-
+  pkfssvm 
+  pkoptsvm
   pkstatascii
   pkstatogr
   pkfilterascii
