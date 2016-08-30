@@ -393,6 +393,10 @@ public:
   CPLErr filter(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///filter raster dataset only for in memory
   std::shared_ptr<ImgRaster> filter(const app::AppFactory& app);
+  ///svm raster dataset
+  CPLErr svm(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///svm raster dataset only for in memory
+  std::shared_ptr<ImgRaster> svm(const app::AppFactory& app);
 
 protected:
   ///filename of this dataset

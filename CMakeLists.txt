@@ -1,5 +1,5 @@
 ###############################################################################
-#
+
 # CMake build scripts for PKTOOLS
 # 
 #
@@ -282,10 +282,10 @@ set(PKAPPS
   pkstatprofile
   pkfilter 
   pktest
+  pksvm #split in ImgRaster and ImgReaderOgr
   )
 
 set(PKUTILS
-  pksvm #split in ImgRaster and ImgReaderOgr
   pkdiff
   pkgetmask
   pksetmask

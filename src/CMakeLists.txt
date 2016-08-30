@@ -67,6 +67,7 @@ set(IMGCLASS_CC
 	${IMGCLASS_SRC_DIR}/pkextractimg_lib.cc
 	${IMGCLASS_SRC_DIR}/pkstatprofile_lib.cc
 	${IMGCLASS_SRC_DIR}/pkfilter_lib.cc
+	${IMGCLASS_SRC_DIR}/pksvm_lib.cc
 	)
 	
 set(LASCLASS_H
@@ -85,8 +86,8 @@ set(PYTHON_CC
 	${PYTHON_SRC_DIR}/ImgRaster_wrap.cc
 	)
 
-set(PYTHON_I
-	${PYTHON_SRC_DIR}/ImgRaster.i
+set(PKTOOLS_I
+	${PYTHON_SRC_DIR}/pktools.i
 	)
 ###############################################################################
 
@@ -199,10 +200,11 @@ if (BUILD_WITH_LIBLAS)
   install (FILES ${LASCLASS_H} DESTINATION ${PROJECT_INCLUDE_DIR}/lasclasses)
 endif(BUILD_WITH_LIBLAS)
 
-# if (BUILD_WITH_PYTHON)
+if (BUILD_WITH_PYTHON)
+   install (FILES ${PKTOOLS_I} DESTINATION ${PROJECT_INCLUDE_DIR})
 #   #  SET_SOURCE_FILES_PROPERTIES(ImgRaster.i PROPERTIES SWIG_FLAGS "-includeall")
 #   SWIG_ADD_MODULE(ImgRaster python ${PYTHON_CC} ${PYTHON_I})
 #   SWIG_LINK_LIBRARIES(ImgRaster ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PYTHON_LIBRARIES})
 #   #INSTALL(TARGETS ${PKTOOLS_PYTHON_MODULE} DESTINATION ${PYTHON_SITE_PACKAGES})
-# endif(BUILD_WITH_PYTHON)
+endif(BUILD_WITH_PYTHON)
 ###############################################################################

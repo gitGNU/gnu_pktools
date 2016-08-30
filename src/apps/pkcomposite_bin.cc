@@ -172,9 +172,8 @@ int main(int argc, char *argv[])
     }
 
     ImgCollection imgCollection(input_opt.size());
-    shared_ptr<ImgRaster> imgWriter;
+    std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
     if(imgCollection.size()){
-      std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
 
       for(int ifile=0;ifile<input_opt.size();++ifile){
         imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);

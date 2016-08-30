@@ -580,11 +580,11 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
       gt[5]=-dy;
       maskReader.setGeoTransform(gt);
       if(projection_opt.size())
-	maskReader.setProjectionProj4(projection_opt[0]);
+        maskReader.setProjectionProj4(projection_opt[0]);
       else if(theProjection!=""){
-	if(verbose_opt[0])
-	  cout << "projection: " << theProjection << endl;
-	maskReader.setProjection(theProjection);
+        if(verbose_opt[0])
+          cout << "projection: " << theProjection << endl;
+        maskReader.setProjection(theProjection);
       }
       vector<double> burnValues(1,1);//burn value is 1 (single band)
       maskReader.rasterizeOgr(extentReader,burnValues,eoption_opt);
@@ -594,8 +594,8 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
       //there is only a single mask
       maskReader.open(mask_opt[0]);
       if(mskband_opt[0]>=maskReader.nrOfBand()){
-	string errorString="Error: illegal mask band";
-	throw(errorString);
+        string errorString="Error: illegal mask band";
+        throw(errorString);
       }
     }
 
