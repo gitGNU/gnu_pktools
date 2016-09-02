@@ -22,9 +22,9 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <string>
 #include <memory>
-#include "imageclasses/ImgRaster.h"
-#include "imageclasses/ImgCollection.h"
-#include "imageclasses/ImgReaderOgr.h"
+#include "ImgRaster.h"
+#include "ImgCollection.h"
+#include "ImgReaderOgr.h"
 #include "base/Vector2d.h"
 #include "base/Optionpk.h"
 #include "algorithms/StatFactory.h"

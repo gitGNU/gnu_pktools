@@ -68,6 +68,8 @@ set(IMGCLASS_CC
 	${IMGCLASS_SRC_DIR}/pkstatprofile_lib.cc
 	${IMGCLASS_SRC_DIR}/pkfilter_lib.cc
 	${IMGCLASS_SRC_DIR}/pksvm_lib.cc
+	${IMGCLASS_SRC_DIR}/pkdiff_lib.cc
+	${IMGCLASS_SRC_DIR}/pkvalidate_lib.cc
 	)
 	
 set(LASCLASS_H

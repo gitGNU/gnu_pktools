@@ -294,6 +294,16 @@ void ImgRaster::copyGeoTransform(const ImgRaster& imgSrc)
 }
 
 /**
+ * @param imgSrc Use this pointer to source image as a template to copy geotranform information
+ **/
+void ImgRaster::copyGeoTransform(const std::shared_ptr<ImgRaster>& imgSrc)
+{
+  double gt[6];
+  imgSrc->getGeoTransform(gt);
+  setGeoTransform(gt);
+}
+
+/**
  * @param gt pointer to the six geotransform parameters:
  * @param adfGeoTransform[0] top left x
  * @param GeoTransform[1] w-e pixel resolution

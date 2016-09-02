@@ -166,6 +166,8 @@ public:
   unsigned int pushNoDataValue(double noDataValue);
   ///Set the no data values of this dataset using a standard template library (stl) vector as input
   unsigned int setNoData(const std::vector<double>& nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
+  ///validate image based on reference vector dataset (-ref)
+  CPLErr validate(const app::AppFactory& app);
   ///composite image
   CPLErr composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///composite image only for in memory

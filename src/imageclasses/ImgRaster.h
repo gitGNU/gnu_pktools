@@ -162,6 +162,8 @@ public:
   CPLErr setGeoTransform(double* gt);
   ///Copy geotransform information from another georeferenced image
   void copyGeoTransform(const ImgRaster& imgSrc);
+  ///Copy geotransform information from another georeferenced image pointer
+  void copyGeoTransform(const std::shared_ptr<ImgRaster>& imgSrc);
   ///Set the projection for this dataset in well known text (wkt) format
   CPLErr setProjection(const std::string& projection);
   ///Set the projection for this dataset from user input (supports epsg:<number> format)
@@ -393,6 +395,8 @@ public:
   CPLErr filter(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///filter raster dataset only for in memory
   std::shared_ptr<ImgRaster> filter(const app::AppFactory& app);
+  ///check the difference between two images (validate in case of classification image)
+  CPLErr diff(std::shared_ptr<ImgRaster> imgReference, const app::AppFactory& app);
   ///svm raster dataset
   CPLErr svm(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///svm raster dataset only for in memory

@@ -282,11 +282,13 @@ set(PKAPPS
   pkstatprofile
   pkfilter 
   pktest
-  pksvm #split in ImgRaster and ImgReaderOgr
+  pksvm
+  pksvmogr
+  pkdiff
+  pkvalidate
   )
 
 set(PKUTILS
-  pkdiff
   pkgetmask
   pksetmask
   pkdumpimg 

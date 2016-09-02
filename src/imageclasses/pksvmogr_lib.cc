@@ -1,5 +1,5 @@
 /**********************************************************************
-pksvm_lib.cc: classify raster image using Support Vector Machine
+pksvmogr_lib.cc: classify vector dataset using Support Vector Machine
 Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
@@ -22,7 +22,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <memory>
 #include <algorithm>
-#include "ImgRaster.h"
 #include "ImgReaderOgr.h"
 #include "ImgWriterOgr.h"
 #include "base/Optionpk.h"
@@ -42,28 +41,11 @@ using namespace std;
 using namespace app;
 
 /**
- * @param app application specific option arguments
- * @return output classified raster dataset
- **/
-shared_ptr<ImgRaster> ImgRaster::svm(const AppFactory& app){
-  try{
-    shared_ptr<ImgRaster> imgWriter;
-    imgWriter=this->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
-    svm(imgWriter, app);
-    return(imgWriter);
-  }
-  catch(string helpString){
-    cerr << helpString << endl;
-    return(0);
-  }
-}
-
-/**
- * @param imgWriter output classified raster dataset
+ * @param imgWriterOgr output classified vector dataset
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
-CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
+CPLErr ImgReaderOgr::svm(shared_ptr<ImgWriterOgr> imgWriter, const AppFactory& app){
   vector<double> priors;
 
   //--------------------------- command line options ------------------------------------
@@ -99,12 +81,6 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
   Optionpk<unsigned short> bag_opt("bag", "bag", "Number of bootstrap aggregations", 1);
   Optionpk<int> bagSize_opt("bagsize", "bagsize", "Percentage of features used from available training features for each bootstrap aggregation (one size for all classes, or a different size for each class respectively", 100);
   Optionpk<string> classBag_opt("cb", "classbag", "Output for each individual bootstrap aggregation");
-  Optionpk<string> extent_opt("e", "extent", "Only classify within extent from polygons in vector file");
-  Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
-  Optionpk<string> mask_opt("m", "mask", "Only classify within specified mask (vector or raster). For raster mask, set nodata values with the option msknodata.");
-  Optionpk<short> msknodata_opt("msknodata", "msknodata", "Mask value(s) not to consider for classification. Values will be taken over in classification image.", 0);
-  Optionpk<unsigned short> nodata_opt("nodata", "nodata", "Nodata value to put where image is masked as nodata", 0);
-  Optionpk<string> colorTable_opt("ct", "ct", "Color table in ASCII format having 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string> prob_opt("prob", "prob", "Probability image.");
   Optionpk<string> entropy_opt("entropy", "entropy", "Entropy image (measure for uncertainty of classifier output","",2);
   Optionpk<string> active_opt("active", "active", "Ogr output for active training sample.","",2);
@@ -116,8 +92,6 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
 
   // oformat_opt.setHide(1);
   // option_opt.setHide(1);
-  extent_opt.setHide(1);
-  eoption_opt.setHide(1);
   band_opt.setHide(1);
   bstart_opt.setHide(1);
   bend_opt.setHide(1);
@@ -161,10 +135,6 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
     priors_opt.retrieveOption(app.getArgc(),app.getArgv());
     gamma_opt.retrieveOption(app.getArgc(),app.getArgv());
     ccost_opt.retrieveOption(app.getArgc(),app.getArgv());
-    extent_opt.retrieveOption(app.getArgc(),app.getArgv());
-    eoption_opt.retrieveOption(app.getArgc(),app.getArgv());
-    mask_opt.retrieveOption(app.getArgc(),app.getArgv());
-    msknodata_opt.retrieveOption(app.getArgc(),app.getArgv());
     nodata_opt.retrieveOption(app.getArgc(),app.getArgv());
     // Advanced options
     band_opt.retrieveOption(app.getArgc(),app.getArgv());
@@ -230,8 +200,6 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
     assert(training_opt.size());
 
     if(verbose_opt[0]>=1){
-      if(mask_opt.size())
-        std::cout << "mask filename: " << mask_opt[0] << std::endl;
       std::cout << "training vector file: " << std::endl;
       for(unsigned int ifile=0;ifile<training_opt.size();++ifile)
         std::cout << training_opt[ifile] << std::endl;
@@ -240,38 +208,6 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
     unsigned short nbag=(training_opt.size()>1)?training_opt.size():bag_opt[0];
     if(verbose_opt[0]>=1)
       std::cout << "number of bootstrap aggregations: " << nbag << std::endl;
-
-    ImgReaderOgr extentReader;
-    ImgRaster maskReader;
-    // OGRLayer  *readLayer;
-
-    double ulx=0;
-    double uly=0;
-    double lrx=0;
-    double lry=0;
-
-    // bool maskIsVector=false;
-    if(extent_opt.size()){
-      if(mask_opt.size()){
-        string errorString="Error: can only either mask or extent, not both";
-        throw(errorString);
-      }
-      extentReader.open(extent_opt[0]);
-      // readLayer = extentReader.getDataSource()->GetLayer(0);
-      if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
-        cerr << "Error: could not get extent from " << mask_opt[0] << endl;
-        exit(1);
-      }
-      maskReader.open(this->nrOfCol(),this->nrOfRow(),1,GDT_Float64);
-      double gt[6];
-      this->getGeoTransform(gt);
-      maskReader.setGeoTransform(gt);
-      maskReader.setProjection(this->getProjection());
-      vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskReader.rasterizeOgr(extentReader,burnValues,eoption_opt);
-      maskReader.GDALSetNoDataValue(nodata_opt[0]);
-      extentReader.close();
-    }
 
     ImgWriterOgr activeWriter;
     if(active_opt.size()){
@@ -656,218 +592,84 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
     float progress=0;
     if(!verbose_opt[0])
       pfnProgress(progress,pszMessage,pProgressArg);
-    //-------------------------------- open image file ------------------------------------
-    // bool inputIsRaster=false;
-    bool inputIsRaster=true;
-    // ImgReaderOgr imgReaderOgr;
-    // //todo: will not work in GDAL v2.0
-    // try{
-    //   imgReaderOgr.open(input_opt[0]);
-    //   imgReaderOgr.close();
-    // }
-    // catch(string errorString){
-    //   inputIsRaster=true;
-    // }
-    if(inputIsRaster){
-      if(verbose_opt[0]>=1)
-        std::cout << "opening image" << std::endl;
-      ImgRaster priorReader;
-      if(priorimg_opt.size()){
-        if(verbose_opt[0]>=1)
-          std::cout << "opening prior image " << priorimg_opt[0] << std::endl;
-        priorReader.open(priorimg_opt[0]);
-        assert(priorReader.nrOfCol()==imgWriter->nrOfCol());
-        assert(priorReader.nrOfRow()==imgWriter->nrOfRow());
-      }
 
-      int nrow=imgWriter->nrOfRow();
-      int ncol=imgWriter->nrOfCol();
-      vector<char> classOut(ncol);//classified line for writing to image file
+    cm.clearResults();
+    //notice that fields have already been set by readDataImageOgr (taking into account appropriate bands)
+    for(int ivalidation=0;ivalidation<vectorCollection.size();++ivalidation){
+      if(output_opt.size())
+        assert(output_opt.size()==input_opt.size());
+      if(verbose_opt[0])
+        std::cout << "opening img reader " << input_opt[ivalidation] << std::endl;
+      // imgReaderOgr.open(input_opt[ivalidation]);
+      // ImgWriterOgr imgWriterOgr;
 
-      //   assert(nband==imgWriter->nrOfBand());
-      ImgRaster classImageBag;
-      // ImgRaster imgWriter->
-      ImgRaster probImage;
-      ImgRaster entropyImage;
-
-      string imageType=imgWriter->getImageType();
-      if(classBag_opt.size()){
-        classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType);
-        classImageBag.GDALSetNoDataValue(nodata_opt[0]);
-        classImageBag.copyGeoTransform(imgWriter);
-        classImageBag.setProjection(this->getProjection());
-      }
-      // imgWriter->open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,memory_opt[0],option_opt);
-      imgWriter->open(this->nrOfCol(),this->nrOfRow(),1,GDT_Byte);
-      imgWriter->GDALSetNoDataValue(nodata_opt[0]);
-      imgWriter->copyGeoTransform(imgWriter);
-      imgWriter->setProjection(this->getProjection());
-      if(colorTable_opt.size())
-        imgWriter->setColorTable(colorTable_opt[0],0);
-      if(prob_opt.size()){
-        probImage.open(prob_opt[0],ncol,nrow,nclass,GDT_Byte,imageType);
-        probImage.GDALSetNoDataValue(nodata_opt[0]);
-        probImage.copyGeoTransform(imgWriter);
-        probImage.setProjection(this->getProjection());
-      }
-      if(entropy_opt.size()){
-        entropyImage.open(entropy_opt[0],ncol,nrow,1,GDT_Byte,imageType);
-        entropyImage.GDALSetNoDataValue(nodata_opt[0]);
-        entropyImage.copyGeoTransform(imgWriter);
-        entropyImage.setProjection(this->getProjection());
-      }
-
-      // if(maskIsVector){
-      //   //todo: produce unique name or perform in memory solving issue on flush memory buffer (check gdal development list on how to retrieve gdal mem buffer)
-      //   maskWriter.open(ncol,nrow,1,GDT_Float32);
-      //   maskWriter.GDALSetNoDataValue(nodata_opt[0]);
-      //   maskWriter.copyGeoTransform(imgWriter);
-      //   maskWriter.setProjection(this->getProjection());
-      //   vector<double> burnValues(1,1);//burn value is 1 (single band)
-      //   maskWriter.rasterizeOgr(extentReader,burnValues);
-      //   extentReader.close();
-      //   maskWriter.close();
-      //   mask_opt.clear();
-      //   mask_opt.push_back("/vsimem/mask.tif");
+      // if(output_opt.size()){
+      //   if(verbose_opt[0])
+      //     std::cout << "opening img writer and copying fields from img reader" << output_opt[ivalidation] << std::endl;
+      //   imgWriterOgr.open(output_opt[ivalidation],imgReaderOgr);
       // }
-      // ImgRaster maskReader;
-      if(mask_opt.size()){
-        if(verbose_opt[0]>=1)
-          std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-        maskReader.open(mask_opt[0]);
-      }
-
-      for(unsigned int iline=0;iline<nrow;++iline){
-        vector<float> buffer(ncol);
-        vector<short> lineMask;
-        Vector2d<float> linePrior;
-        if(priorimg_opt.size())
-          linePrior.resize(nclass,ncol);//prior prob for each class
-        Vector2d<float> hpixel(ncol);
-        Vector2d<float> probOut(nclass,ncol);//posterior prob for each (internal) class
-        vector<float> entropy(ncol);
-        Vector2d<char> classBag;//classified line for writing to image file
-        if(classBag_opt.size())
-          classBag.resize(nbag,ncol);
-        if(band_opt.size()){
-          for(unsigned int iband=0;iband<band_opt.size();++iband){
-            if(verbose_opt[0]==2)
-              std::cout << "reading band " << band_opt[iband] << std::endl;
-            assert(band_opt[iband]>=0);
-            assert(band_opt[iband]<imgWriter->nrOfBand());
-            imgWriter->readData(buffer,iline,band_opt[iband]);
-            for(unsigned int icol=0;icol<ncol;++icol)
-              hpixel[icol].push_back(buffer[icol]);
-          }
+      if(verbose_opt[0])
+        cout << "number of layers in input ogr file: " << imgReaderOgr.getLayerCount() << endl;
+      for(int ilayer=0;ilayer<imgReaderOgr.getLayerCount();++ilayer){
+        if(verbose_opt[0])
+          cout << "processing input layer " << ilayer << endl;
+        if(output_opt.size()){
+          if(verbose_opt[0])
+            std::cout << "creating field class" << std::endl;
+          if(classValueMap.size())
+            imgWriterOgr.createField("class",OFTInteger,ilayer);
+          else
+            imgWriterOgr.createField("class",OFTString,ilayer);
         }
-        else{
-          for(unsigned int iband=0;iband<nband;++iband){
-            if(verbose_opt[0]==2)
-              std::cout << "reading band " << iband << std::endl;
-            assert(iband>=0);
-            assert(iband<imgWriter->nrOfBand());
-            imgWriter->readData(buffer,iline,iband);
-            for(unsigned int icol=0;icol<ncol;++icol)
-              hpixel[icol].push_back(buffer[icol]);
-          }
-        }
-        assert(nband==hpixel[0].size());
-        if(verbose_opt[0]>1)
-          std::cout << "used bands: " << nband << std::endl;
-        //read prior
-        if(priorimg_opt.size()){
-          for(unsigned int iclass=0;iclass<nclass;++iclass){
-            if(verbose_opt.size()>1)
-              std::cout << "Reading " << priorimg_opt[0] << " band " << iclass << " line " << iline << std::endl;
-            priorReader.readData(linePrior[iclass],iline,iclass);
-          }
-        }
-        double oldRowMask=-1;//keep track of row mask to optimize number of line readings
-        //process per pixel
-        for(int icol=0;icol<ncol;++icol){
-          assert(hpixel[icol].size()==nband);
-          bool doClassify=true;
-          bool masked=false;
-          double geox=0;
-          double geoy=0;
-          if(maskReader.isInit()){
-            //read mask
-            double colMask=0;
-            double rowMask=0;
-
-            imgWriter->image2geo(icol,iline,geox,geoy);
-            maskReader.geo2image(geox,geoy,colMask,rowMask);
-            colMask=static_cast<int>(colMask);
-            rowMask=static_cast<int>(rowMask);
-            if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-              if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
-                assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
-                // maskReader.readData(lineMask[imask],GDT_Int32,static_cast<int>(rowMask));
-                maskReader.readData(lineMask,static_cast<unsigned int>(rowMask));
-                oldRowMask=rowMask;
-              }
-              short theMask=0;
-              for(short ivalue=0;ivalue<msknodata_opt.size();++ivalue){
-                // if(msknodata_opt[ivalue]>=0){//values set in msknodata_opt are invalid
-                if(lineMask[colMask]==msknodata_opt[ivalue]){
-                  theMask=lineMask[colMask];
-                  masked=true;
-                  break;
-                }
-                // }
-                // else{//only values set in msknodata_opt are valid
-                //   if(lineMask[colMask]!=-msknodata_opt[ivalue]){
-                //     theMask=lineMask[colMask];
-                //     masked=true;
-                //   }
-                //   else{
-                //     masked=false;
-                //     break;
-                //   }
-                // }
-              }
-              if(masked){
-                if(classBag_opt.size())
-                  for(int ibag=0;ibag<nbag;++ibag)
-                    classBag[ibag][icol]=theMask;
-                classOut[icol]=theMask;
-                continue;
-              }
-            }
-            bool valid=false;
-            for(int iband=0;iband<hpixel[icol].size();++iband){
-              if(hpixel[icol][iband]){
-                valid=true;
-                break;
-              }
-            }
-            if(!valid)
-              doClassify=false;
-          }
-          for(short iclass=0;iclass<nclass;++iclass)
-            probOut[iclass][icol]=0;
-          if(!doClassify){
-            if(classBag_opt.size())
-              for(int ibag=0;ibag<nbag;++ibag)
-                classBag[ibag][icol]=nodata_opt[0];
-            classOut[icol]=nodata_opt[0];
-            continue;//next column
-          }
+        unsigned int nFeatures=imgReaderOgr.getFeatureCount(ilayer);
+        unsigned int ifeature=0;
+        progress=0;
+        pfnProgress(progress,pszMessage,pProgressArg);
+        OGRFeature *poFeature;
+        while( (poFeature = imgReaderOgr.getLayer(ilayer)->GetNextFeature()) != NULL ){
           if(verbose_opt[0]>1)
-            std::cout << "begin classification " << std::endl;
-          //----------------------------------- classification -------------------
+            std::cout << "feature " << ifeature << std::endl;
+          if( poFeature == NULL ){
+            cout << "Warning: could not read feature " << ifeature << " in layer " << imgReaderOgr.getLayerName(ilayer) << endl;
+            continue;
+          }
+          OGRFeature *poDstFeature = NULL;
+          if(output_opt.size()){
+            poDstFeature=imgWriterOgr.createFeature(ilayer);
+            if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
+              CPLError( CE_Failure, CPLE_AppDefined,
+                        "Unable to translate feature %d from layer %s.\n",
+                        poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
+              OGRFeature::DestroyFeature( poFeature );
+              OGRFeature::DestroyFeature( poDstFeature );
+            }
+          }
+          vector<float> validationPixel;
+          vector<float> validationFeature;
+
+          imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature,ilayer);
+          assert(validationPixel.size()==nband);
+          vector<float> probOut(nclass);//posterior prob for each class
+          for(short iclass=0;iclass<nclass;++iclass)
+            probOut[iclass]=0;
           for(int ibag=0;ibag<nbag;++ibag){
+            for(int iband=0;iband<nband;++iband){
+              validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
+              if(verbose_opt[0]==2)
+                std::cout << " " << validationFeature.back();
+            }
+            if(verbose_opt[0]==2)
+              std::cout << std::endl;
             vector<double> result(nclass);
             struct svm_node *x;
-            x = (struct svm_node *) malloc((nband+1)*sizeof(struct svm_node));
-            for(int iband=0;iband<nband;++iband){
-              x[iband].index=iband+1;
-              x[iband].value=(hpixel[icol][iband]-offset[ibag][iband])/scale[ibag][iband];
+            x = (struct svm_node *) malloc((validationFeature.size()+1)*sizeof(struct svm_node));
+            for(int i=0;i<validationFeature.size();++i){
+              x[i].index=i+1;
+              x[i].value=validationFeature[i];
             }
-            x[nband].index=-1;//to end svm feature vector
+
+            x[validationFeature.size()].index=-1;//to end svm feature vector
             double predict_label=0;
-            vector<float> prValues(nclass);
-            float maxP=0;
             if(!prob_est_opt[0]){
               predict_label = svm_predict(svm[ibag],x);
               for(short iclass=0;iclass<nclass;++iclass){
@@ -881,311 +683,90 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
               assert(svm_check_probability_model(svm[ibag]));
               predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
             }
+            if(verbose_opt[0]>1){
+              std::cout << "predict_label: " << predict_label << std::endl;
+              for(int iclass=0;iclass<result.size();++iclass)
+                std::cout << result[iclass] << " ";
+              std::cout << std::endl;
+            }
+
             //calculate posterior prob of bag
-            if(classBag_opt.size()){
-              //search for max prob within bag
-              maxP=0;
-              classBag[ibag][icol]=0;
-            }
-            double normPrior=0;
-            if(priorimg_opt.size()){
-              for(short iclass=0;iclass<nclass;++iclass)
-                normPrior+=linePrior[iclass][icol];
-            }
             for(short iclass=0;iclass<nclass;++iclass){
-              if(priorimg_opt.size())
-                priors[iclass]=linePrior[iclass][icol]/normPrior;//todo: check if correct for all cases... (automatic classValueMap and manual input for names and values)
               switch(comb_opt[0]){
               default:
               case(0)://sum rule
-                probOut[iclass][icol]+=result[iclass]*priors[iclass];//add probabilities for each bag
+                probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
               break;
               case(1)://product rule
-                probOut[iclass][icol]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
+                probOut[iclass]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
                 break;
               case(2)://max rule
-                if(priors[iclass]*result[iclass]>probOut[iclass][icol])
-                  probOut[iclass][icol]=priors[iclass]*result[iclass];
+                if(priors[iclass]*result[iclass]>probOut[iclass])
+                  probOut[iclass]=priors[iclass]*result[iclass];
                 break;
-              }
-              if(classBag_opt.size()){
-                //search for max prob within bag
-                // if(prValues[iclass]>maxP){
-                //   maxP=prValues[iclass];
-                //   classBag[ibag][icol]=iclass;
-                // }
-                if(result[iclass]>maxP){
-                  maxP=result[iclass];
-                  classBag[ibag][icol]=iclass;
-                }
               }
             }
             free(x);
-          }//ibag
+          }//for ibag
 
           //search for max class prob
-          float maxBag1=0;//max probability
-          float maxBag2=0;//second max probability
-          float normBag=0;
+          float maxBag=0;
+          string classOut="Unclassified";
           for(short iclass=0;iclass<nclass;++iclass){
-            if(probOut[iclass][icol]>maxBag1){
-              maxBag1=probOut[iclass][icol];
-              classOut[icol]=classValueMap[nameVector[iclass]];
-            }
-            else if(probOut[iclass][icol]>maxBag2)
-              maxBag2=probOut[iclass][icol];
-            normBag+=probOut[iclass][icol];
-          }
-          //normalize probOut and convert to percentage
-          entropy[icol]=0;
-          for(short iclass=0;iclass<nclass;++iclass){
-            float prv=probOut[iclass][icol];
-            prv/=normBag;
-            entropy[icol]-=prv*log(prv)/log(2.0);
-            prv*=100.0;
-
-            probOut[iclass][icol]=static_cast<short>(prv+0.5);
-            // assert(classValueMap[nameVector[iclass]]<probOut.size());
-            // assert(classValueMap[nameVector[iclass]]>=0);
-            // probOut[classValueMap[nameVector[iclass]]][icol]=static_cast<short>(prv+0.5);
-          }
-          entropy[icol]/=log(static_cast<double>(nclass))/log(2.0);
-          entropy[icol]=static_cast<short>(100*entropy[icol]+0.5);
-          if(active_opt.size()){
-            if(entropy[icol]>activePoints.back().value){
-              activePoints.back().value=entropy[icol];//replace largest value (last)
-              activePoints.back().posx=icol;
-              activePoints.back().posy=iline;
-              std::sort(activePoints.begin(),activePoints.end(),Decrease_PosValue());//sort in descending order (largest first, smallest last)
-              if(verbose_opt[0])
-                std::cout << activePoints.back().posx << " " << activePoints.back().posy << " " << activePoints.back().value << std::endl;
+            if(verbose_opt[0]>1)
+              std::cout << probOut[iclass] << " ";
+            if(probOut[iclass]>maxBag){
+              maxBag=probOut[iclass];
+              classOut=nameVector[iclass];
             }
           }
-        }//icol
-        //----------------------------------- write output ------------------------------------------
-        if(classBag_opt.size())
-          for(int ibag=0;ibag<nbag;++ibag)
-            classImageBag.writeData(classBag[ibag],iline,ibag);
-        if(prob_opt.size()){
-          for(short iclass=0;iclass<nclass;++iclass)
-            probImage.writeData(probOut[iclass],iline,iclass);
-        }
-        if(entropy_opt.size()){
-          entropyImage.writeData(entropy,iline);
-        }
-        imgWriter->writeData(classOut,iline);
-        if(!verbose_opt[0]){
-          progress=static_cast<float>(iline+1.0)/imgWriter->nrOfRow();
-          pfnProgress(progress,pszMessage,pProgressArg);
-        }
-      }
-      //write active learning points
-      if(active_opt.size()){
-        for(int iactive=0;iactive<activePoints.size();++iactive){
-          std::map<string,double> pointMap;
-          for(int iband=0;iband<imgWriter->nrOfBand();++iband){
-            double value;
-            imgWriter->readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
-            ostringstream fs;
-            fs << "B" << iband;
-            pointMap[fs.str()]=value;
+          //look for class name
+          if(verbose_opt[0]>1){
+            if(classValueMap.size())
+              std::cout << "->" << classValueMap[classOut] << std::endl;
+            else
+              std::cout << "->" << classOut << std::endl;
           }
-          pointMap[label_opt[0]]=0;
-          double x, y;
-          imgWriter->image2geo(activePoints[iactive].posx,activePoints[iactive].posy,x,y);
-          std::string fieldname="id";//number of the point
-          activeWriter.addPoint(x,y,pointMap,fieldname,++nactive);
-        }
-      }
+          if(output_opt.size()){
+            if(classValueMap.size())
+              poDstFeature->SetField("class",classValueMap[classOut]);
+            else
+              poDstFeature->SetField("class",classOut.c_str());
+            poDstFeature->SetFID( poFeature->GetFID() );
+          }
+          int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
+          if(labelIndex>=0){
+            string classRef=poFeature->GetFieldAsString(labelIndex);
+            if(classRef!="0"){
+              if(classValueMap.size())
+                cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
+              else
+                cm.incrementResult(classRef,classOut,1);
+            }
+          }
+          CPLErrorReset();
+          if(output_opt.size()){
+            if(imgWriterOgr.createFeature(poDstFeature,ilayer) != OGRERR_NONE){
+              CPLError( CE_Failure, CPLE_AppDefined,
+                        "Unable to translate feature %d from layer %s.\n",
+                        poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
+              OGRFeature::DestroyFeature( poDstFeature );
+              OGRFeature::DestroyFeature( poDstFeature );
+            }
+          }
+          ++ifeature;
+          if(!verbose_opt[0]){
+            progress=static_cast<float>(ifeature+1.0)/nFeatures;
+            pfnProgress(progress,pszMessage,pProgressArg);
+          }
+          OGRFeature::DestroyFeature( poFeature );
+          OGRFeature::DestroyFeature( poDstFeature );
+        }//get next feature
+      }//next layer
+      // imgReaderOgr.close();
+      // if(output_opt.size())
+      //   imgWriterOgr.close();
 
-      // imgWriter->close();
-      if(mask_opt.size())
-        maskReader.close();
-      if(priorimg_opt.size())
-        priorReader.close();
-      if(prob_opt.size())
-        probImage.close();
-      if(entropy_opt.size())
-        entropyImage.close();
-      if(classBag_opt.size())
-        classImageBag.close();
-      // imgWriter->close();
-    }
-    // else{//classify vector file
-    //   cm.clearResults();
-    //   //notice that fields have already been set by readDataImageOgr (taking into account appropriate bands)
-    //   for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
-    //     if(output_opt.size())
-    //       assert(output_opt.size()==input_opt.size());
-    //     if(verbose_opt[0])
-    //       std::cout << "opening img reader " << input_opt[ivalidation] << std::endl;
-    //     imgReaderOgr.open(input_opt[ivalidation]);
-    //     ImgWriterOgr imgWriterOgr;
-
-    //     if(output_opt.size()){
-    //       if(verbose_opt[0])
-    //         std::cout << "opening img writer and copying fields from img reader" << output_opt[ivalidation] << std::endl;
-    //       imgWriterOgr.open(output_opt[ivalidation],imgReaderOgr);
-    //     }
-    //     if(verbose_opt[0])
-    //       cout << "number of layers in input ogr file: " << imgReaderOgr.getLayerCount() << endl;
-    //     for(int ilayer=0;ilayer<imgReaderOgr.getLayerCount();++ilayer){
-    //       if(verbose_opt[0])
-    //         cout << "processing input layer " << ilayer << endl;
-    //       if(output_opt.size()){
-    //         if(verbose_opt[0])
-    //           std::cout << "creating field class" << std::endl;
-    //         if(classValueMap.size())
-    //           imgWriterOgr.createField("class",OFTInteger,ilayer);
-    //         else
-    //           imgWriterOgr.createField("class",OFTString,ilayer);
-    //       }
-    //       unsigned int nFeatures=imgReaderOgr.getFeatureCount(ilayer);
-    //       unsigned int ifeature=0;
-    //       progress=0;
-    //       pfnProgress(progress,pszMessage,pProgressArg);
-    //       OGRFeature *poFeature;
-    //       while( (poFeature = imgReaderOgr.getLayer(ilayer)->GetNextFeature()) != NULL ){
-    //         if(verbose_opt[0]>1)
-    //           std::cout << "feature " << ifeature << std::endl;
-    //         if( poFeature == NULL ){
-    //           cout << "Warning: could not read feature " << ifeature << " in layer " << imgReaderOgr.getLayerName(ilayer) << endl;
-    //           continue;
-    //         }
-    //         OGRFeature *poDstFeature = NULL;
-    //         if(output_opt.size()){
-    //           poDstFeature=imgWriterOgr.createFeature(ilayer);
-    //           if( poDstFeature->SetFrom( poFeature, TRUE ) != OGRERR_NONE ){
-    //             CPLError( CE_Failure, CPLE_AppDefined,
-    //                       "Unable to translate feature %d from layer %s.\n",
-    //                       poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
-    //             OGRFeature::DestroyFeature( poFeature );
-    //             OGRFeature::DestroyFeature( poDstFeature );
-    //           }
-    //         }
-    //         vector<float> validationPixel;
-    //         vector<float> validationFeature;
-
-    //         imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature,ilayer);
-    //         assert(validationPixel.size()==nband);
-    //         vector<float> probOut(nclass);//posterior prob for each class
-    //         for(short iclass=0;iclass<nclass;++iclass)
-    //           probOut[iclass]=0;
-    //         for(int ibag=0;ibag<nbag;++ibag){
-    //           for(int iband=0;iband<nband;++iband){
-    //             validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
-    //             if(verbose_opt[0]==2)
-    //               std::cout << " " << validationFeature.back();
-    //           }
-    //           if(verbose_opt[0]==2)
-    //             std::cout << std::endl;
-    //           vector<double> result(nclass);
-    //           struct svm_node *x;
-    //           x = (struct svm_node *) malloc((validationFeature.size()+1)*sizeof(struct svm_node));
-    //           for(int i=0;i<validationFeature.size();++i){
-    //             x[i].index=i+1;
-    //             x[i].value=validationFeature[i];
-    //           }
-
-    //           x[validationFeature.size()].index=-1;//to end svm feature vector
-    //           double predict_label=0;
-    //           if(!prob_est_opt[0]){
-    //             predict_label = svm_predict(svm[ibag],x);
-    //             for(short iclass=0;iclass<nclass;++iclass){
-    //               if(iclass==static_cast<short>(predict_label))
-    //                 result[iclass]=1;
-    //               else
-    //                 result[iclass]=0;
-    //             }
-    //           }
-    //           else{
-    //             assert(svm_check_probability_model(svm[ibag]));
-    //             predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
-    //           }
-    //           if(verbose_opt[0]>1){
-    //             std::cout << "predict_label: " << predict_label << std::endl;
-    //             for(int iclass=0;iclass<result.size();++iclass)
-    //               std::cout << result[iclass] << " ";
-    //             std::cout << std::endl;
-    //           }
-
-    //           //calculate posterior prob of bag
-    //           for(short iclass=0;iclass<nclass;++iclass){
-    //             switch(comb_opt[0]){
-    //             default:
-    //             case(0)://sum rule
-    //               probOut[iclass]+=result[iclass]*priors[iclass];//add probabilities for each bag
-    //             break;
-    //             case(1)://product rule
-    //               probOut[iclass]*=pow(static_cast<float>(priors[iclass]),static_cast<float>(1.0-nbag)/nbag)*result[iclass];//multiply probabilities for each bag
-    //               break;
-    //             case(2)://max rule
-    //               if(priors[iclass]*result[iclass]>probOut[iclass])
-    //                 probOut[iclass]=priors[iclass]*result[iclass];
-    //               break;
-    //             }
-    //           }
-    //           free(x);
-    //         }//for ibag
-
-    //         //search for max class prob
-    //         float maxBag=0;
-    //         string classOut="Unclassified";
-    //         for(short iclass=0;iclass<nclass;++iclass){
-    //           if(verbose_opt[0]>1)
-    //             std::cout << probOut[iclass] << " ";
-    //           if(probOut[iclass]>maxBag){
-    //             maxBag=probOut[iclass];
-    //             classOut=nameVector[iclass];
-    //           }
-    //         }
-    //         //look for class name
-    //         if(verbose_opt[0]>1){
-    //           if(classValueMap.size())
-    //             std::cout << "->" << classValueMap[classOut] << std::endl;
-    //           else
-    //             std::cout << "->" << classOut << std::endl;
-    //         }
-    //         if(output_opt.size()){
-    //           if(classValueMap.size())
-    //             poDstFeature->SetField("class",classValueMap[classOut]);
-    //           else
-    //             poDstFeature->SetField("class",classOut.c_str());
-    //           poDstFeature->SetFID( poFeature->GetFID() );
-    //         }
-    //         int labelIndex=poFeature->GetFieldIndex(label_opt[0].c_str());
-    //         if(labelIndex>=0){
-    //           string classRef=poFeature->GetFieldAsString(labelIndex);
-    //           if(classRef!="0"){
-    //             if(classValueMap.size())
-    //               cm.incrementResult(type2string<short>(classValueMap[classRef]),type2string<short>(classValueMap[classOut]),1);
-    //             else
-    //               cm.incrementResult(classRef,classOut,1);
-    //           }
-    //         }
-    //         CPLErrorReset();
-    //         if(output_opt.size()){
-    //           if(imgWriterOgr.createFeature(poDstFeature,ilayer) != OGRERR_NONE){
-    //             CPLError( CE_Failure, CPLE_AppDefined,
-    //                       "Unable to translate feature %d from layer %s.\n",
-    //                       poFeature->GetFID(), imgWriterOgr.getLayerName(ilayer).c_str() );
-    //             OGRFeature::DestroyFeature( poDstFeature );
-    //             OGRFeature::DestroyFeature( poDstFeature );
-    //           }
-    //         }
-    //         ++ifeature;
-    //         if(!verbose_opt[0]){
-    //           progress=static_cast<float>(ifeature+1.0)/nFeatures;
-    //           pfnProgress(progress,pszMessage,pProgressArg);
-    //         }
-    //         OGRFeature::DestroyFeature( poFeature );
-    //         OGRFeature::DestroyFeature( poDstFeature );
-    //       }//get next feature
-    //     }//next layer
-    //     imgReaderOgr.close();
-    //     if(output_opt.size())
-    //       imgWriterOgr.close();
-    //   }
       if(cm.nReference()){
         std::cout << cm << std::endl;
         cout << "class #samples userAcc prodAcc" << endl;
@@ -1204,18 +785,19 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
         doa=cm.oa(&se95_oa);
         std::cout << "Overall Accuracy: " << 100*doa << " (" << 100*se95_oa << ")"  << std::endl;
       }
-    if(active_opt.size())
-      activeWriter.close();
+      if(active_opt.size())
+        activeWriter.close();
 
-    for(int ibag=0;ibag<nbag;++ibag){
-      // svm_destroy_param[ibag](&param[ibag]);
-      svm_destroy_param(&param[ibag]);
-      free(prob[ibag].y);
-      free(prob[ibag].x);
-      free(x_space[ibag]);
-      svm_free_and_destroy_model(&(svm[ibag]));
+      for(int ibag=0;ibag<nbag;++ibag){
+        // svm_destroy_param[ibag](&param[ibag]);
+        svm_destroy_param(&param[ibag]);
+        free(prob[ibag].y);
+        free(prob[ibag].x);
+        free(x_space[ibag]);
+        svm_free_and_destroy_model(&(svm[ibag]));
+      }
+      return(CE_None);
     }
-    return(CE_None);
   }
   catch(BadConversion conversionString){
     std::cerr << "Error: did you provide class pairs names (-c) and integer values (-r) for each class in training vector?" << std::endl;

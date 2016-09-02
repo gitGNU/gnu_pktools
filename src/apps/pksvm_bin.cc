@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
   }
   catch(string helpString){
     cerr << helpString << endl;
-    cout << "Usage: pksvm -t training [-i input -o output] [-cv value]" << endl;
+    cout << "Usage: pksvm -t training [-i input [-o output]] [-cv value]" << endl;
     return(1);
   }
   return(0);
