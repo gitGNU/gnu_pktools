@@ -15,12 +15,12 @@
   #include "algorithms/Filter2d.h"
   %}
 
-%inline %{
-extern "C"
-{
- void *__dso_handle = 0;
-}
- %}
+/* %inline %{ */
+/* extern "C" */
+/* { */
+/*  void *__dso_handle = 0; */
+/* } */
+/*  %} */
 
 //Parse the header file
 %include "imageclasses/ImgRaster.h"

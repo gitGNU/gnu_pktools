@@ -96,6 +96,9 @@ set(PKTOOLS_WITH_APPS TRUE CACHE BOOL "Choose if pktools applications should be 
 set(GSL_INCLUDE_DIR /usr/include CACHE PATH "Include PATH for GSL")
 set(GSL_LIB_PATH /usr/lib CACHE PATH "Library PATH for GSL")
 
+set(PKTOOLS_INCLUDE_DIRS ${PREFIX}/include/pktools)
+# set(PKTOOLS_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
+
 ###############################################################################
 
 ###############################################################################
@@ -280,7 +283,7 @@ set(PKAPPS
   pkextractogr
   pkextractimg
   pkstatprofile
-  pkfilter 
+  pkfilter
   pktest
   pksvm
   pksvmogr
@@ -291,26 +294,26 @@ set(PKAPPS
 set(PKUTILS
   pkgetmask
   pksetmask
-  pkdumpimg 
-  pkcreatect 
-  pksieve 
+  pkdumpimg
+  pkcreatect
+  pksieve
   pkstat
-  pkegcs 
-  pkfillnodata 
-  pkfilterdem 
-  #pkdsm2shadow 
+  pkegcs
+  pkfillnodata
+  pkfilterdem
+  #pkdsm2shadow
   pkreclass
-  pkpolygonize 
+  pkpolygonize
 
   pkkalman
 
-  pkdumpogr 
-  pkfssvm 
+  pkdumpogr
+  pkfssvm
   pkoptsvm
   pkstatascii
   pkstatogr
   pkfilterascii
-  pkascii2img 
+  pkascii2img
   pkascii2ogr
 )
 
@@ -341,7 +344,7 @@ if (PKTOOLS_WITH_APPS)
 		set(PKLIBS ${PKLIBS} ${PKTOOLS_LASCLASSES_LIB_NAME})
 		foreach(PKLASAPP ${PKLASAPPS})
 		add_executable(${PKLASAPP} src/apps/${PKLASAPP}.cc)
-		target_link_libraries (${PKLASAPP} 
+		target_link_libraries (${PKLASAPP}
 		${PKLIBS} ${LIBLAS_LIBRARIES})
     		set_target_properties(${PKLASAPP} PROPERTIES FOLDER apps)
 		endforeach()
@@ -355,7 +358,7 @@ if (PKTOOLS_WITH_APPS)
 		endforeach()
 	endif()
 	add_custom_target(apps DEPENDS ${PKAPPS} ${PKTUTILS} ${PKLASAPPS} ${PKFANNAPPS})
-	set_target_properties(apps PROPERTIES FOLDER 
+	set_target_properties(apps PROPERTIES FOLDER
 	phony)
 endif (PKTOOLS_WITH_APPS)
 
@@ -368,10 +371,11 @@ endif (PKTOOLS_WITH_APPS)
 #test
 install (FILES "${CMAKE_CURRENT_BINARY_DIR}/pktools-config" DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install (FILES "pktools.pc" DESTINATION lib/pkgconfig PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+install(FILES pktools-config.cmake DESTINATION lib/cmake/pktools)
 
 if (PKTOOLS_WITH_APPS)
-  install (TARGETS ${PKAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
-  install (TARGETS ${PKUTILS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
+  install (TARGETS ${PKAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  install (TARGETS ${PKUTILS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   if (BUILD_WITH_LIBLAS)
     install (TARGETS ${PKLASAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif(BUILD_WITH_LIBLAS)
