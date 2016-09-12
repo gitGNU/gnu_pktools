@@ -1080,62 +1080,62 @@ template<typename T> CPLErr ImgRaster::writeDataBlock(Vector2d<T>& buffer2d, uns
   if(m_data.size()){
     for(int irow=minRow;irow<=maxRow;++irow){
       if(irow>=nrOfRow()){
-	std::ostringstream s;
-	s << "row (" << irow << ") exceeds nrOfRow (" << nrOfRow() << ")";
-	throw(s.str());
+        std::ostringstream s;
+        s << "row (" << irow << ") exceeds nrOfRow (" << nrOfRow() << ")";
+        throw(s.str());
       }
       if(irow<0){
-	std::ostringstream s;
-	s << "row (" << irow << ") is negative";
-	throw(s.str());
+        std::ostringstream s;
+        s << "row (" << irow << ") is negative";
+        throw(s.str());
       }
       if(irow<m_begin[band]){
-	std::ostringstream s;
-	s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
-	throw(s.str());
+        std::ostringstream s;
+        s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+        throw(s.str());
       }
       if(irow>=m_end[band]){
-	if(irow>=m_end[band]+m_blockSize){
-	  std::ostringstream s;
-	  s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
-	  throw(s.str());
-	}
-	else if(m_filename.size())
-	  returnValue=writeNewBlock(irow,band);
+        if(irow>=m_end[band]+m_blockSize){
+          std::ostringstream s;
+          s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+          throw(s.str());
+        }
+        else if(m_filename.size())
+          returnValue=writeNewBlock(irow,band);
       }
       int index=(irow-m_begin[band])*nrOfCol();
       int minindex=index+minCol;
       int maxindex=index+maxCol;
       typename std::vector<T>::iterator bufit=buffer2d[irow-minRow].begin();
       for(index=minindex;index<=maxindex;++index,++bufit){
-	double dvalue=theScale*(*(bufit))+theOffset;
-	switch(getDataType()){
-	case(GDT_Byte):
-	  static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
-	  break;
-	case(GDT_Int16):
-	  static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
-	  break;
-	case(GDT_UInt16):
-	  static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
-	  break;
-	case(GDT_Int32):
-	  static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
-	  break;
-	case(GDT_UInt32):
-	  static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
-	  break;
-	case(GDT_Float32):
-	  static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
-	  break;
-	case(GDT_Float64):
-	  static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
-	  break;
-	default:
-	  std::string errorString="Error: data type not supported";
-	  throw(errorString);
-	  break;
-	}
+        double dvalue=theScale*(*(bufit))+theOffset;
+        switch(getDataType()){
+        case(GDT_Byte):
+          static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+          break;
+        case(GDT_Int16):
+          static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+          break;
+        case(GDT_UInt16):
+          static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+          break;
+        case(GDT_Int32):
+          static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+          break;
+        case(GDT_UInt32):
+          static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+          break;
+        case(GDT_Float32):
+          static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+          break;
+        case(GDT_Float64):
+          static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+          break;
+        default:
+          std::string errorString="Error: data type not supported";
+          throw(errorString);
+          break;
+        }
       }
     }
   }

@@ -554,7 +554,7 @@ CPLErr ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& ap
         return(CE_Failure);
       }
       if(description_opt.size())
-	imgWriter->setImageDescription(description_opt[0]);
+        imgWriter->setImageDescription(description_opt[0]);
       double gt[6];
       gt[0]=cropulx;
       gt[1]=dx;
@@ -564,19 +564,19 @@ CPLErr ImgCollection::crop(shared_ptr<ImgRaster> imgWriter, const AppFactory& ap
       gt[5]=((*imit)->isGeoRef())? -dy : dy;
       imgWriter->setGeoTransform(gt);
       if(projection_opt.size()){
-	if(verbose_opt[0])
-	  cout << "projection: " << projection_opt[0] << endl;
-	imgWriter->setProjectionProj4(projection_opt[0]);
+        if(verbose_opt[0])
+          cout << "projection: " << projection_opt[0] << endl;
+        imgWriter->setProjectionProj4(projection_opt[0]);
       }
       else
-	imgWriter->setProjection((*imit)->getProjection());
+        imgWriter->setProjection((*imit)->getProjection());
       if(imgWriter->getDataType()==GDT_Byte){
-	if(colorTable_opt.size()){
-	  if(colorTable_opt[0]!="none")
-	    imgWriter->setColorTable(colorTable_opt[0]);
-	}
-	else if ((*imit)->getColorTable()!=NULL)//copy colorTable from input image
-	  imgWriter->setColorTable((*imit)->getColorTable());
+        if(colorTable_opt.size()){
+          if(colorTable_opt[0]!="none")
+            imgWriter->setColorTable(colorTable_opt[0]);
+        }
+        else if ((*imit)->getColorTable()!=NULL)//copy colorTable from input image
+          imgWriter->setColorTable((*imit)->getColorTable());
       }
     }
 
