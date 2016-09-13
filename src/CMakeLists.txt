@@ -185,7 +185,7 @@ INSTALL (TARGETS ${PKTOOLS_LIB_NAME} LIBRARY DESTINATION lib)
 EXECUTE_PROCESS(COMMAND python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()" OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
 SET(PYTHON_INSTALL_DIR ${PYTHON_SITE_PACKAGES} CACHE PATH "Install directory for Python library")
 INSTALL(TARGETS ${SWIG_MODULE_pktools_REAL_NAME} LIBRARY DESTINATION ${PYTHON_INSTALL_DIR})
-INSTALL(FILES ${PYTHON_SRC_DIR}/pktools.py DESTINATION ${PYTHON_INSTALL_DIR})
+INSTALL(FILES  ${CMAKE_CURRENT_BINARY_DIR}/pktools.py DESTINATION ${PYTHON_INSTALL_DIR})
 INSTALL (FILES ${PYTHON_SRC_DIR}/pktools.i DESTINATION ${PROJECT_INCLUDE_DIR}/swig)
 ###############################################################################
 ###############################################################################
