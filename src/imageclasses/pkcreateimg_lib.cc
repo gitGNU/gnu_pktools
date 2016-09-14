@@ -66,7 +66,7 @@ CPLErr ImgRaster::createImg(shared_ptr<ImgRaster> imgWriter, const AppFactory& a
   Optionpk<double> nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<unsigned long int> seed_opt("seed", "seed", "seed value for random generator",0);
   Optionpk<double> mean_opt("mean", "mean", "Mean value for random generator",0);
-  Optionpk<double> sigma_opt("sigma", "sigma", "Sigma value for random generator",1);
+  Optionpk<double> sigma_opt("sigma", "sigma", "Sigma value for random generator",0);
   Optionpk<string> description_opt("d", "description", "Set image description");
   Optionpk<string> projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
 
@@ -148,11 +148,14 @@ CPLErr ImgRaster::createImg(shared_ptr<ImgRaster> imgWriter, const AppFactory& a
     StatFactory stat;
     gsl_rng* rndgen=stat.getRandomGenerator(seed_opt[0]);
     vector<double> lineBuffer(imgWriter->nrOfCol());
+    double value=stat.getRandomValue(rndgen,"gaussian",mean_opt[0],sigma_opt[0]);
     for(unsigned int iband=0;iband<imgWriter->nrOfBand();++iband){
       for(unsigned int irow=0;irow<imgWriter->nrOfRow();++irow){
         for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
-          double value=stat.getRandomValue(rndgen,"gaussian",mean_opt[0],sigma_opt[0]);
-          lineBuffer[icol]=value;
+          if(sigma_opt[0]>0||(!irow&&!iband)){
+            value=stat.getRandomValue(rndgen,"gaussian",mean_opt[0],sigma_opt[0]);
+            lineBuffer[icol]=value;
+          }
         }
         imgWriter->writeData(lineBuffer,irow,iband);
       }
