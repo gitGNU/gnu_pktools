@@ -25,7 +25,7 @@ extern "C" {
 #include <config.h>
 #include "ImgRaster.h"
 
-ImgRaster::ImgRaster(void){
+ImgRaster::ImgRaster(){
   reset();
 }
 

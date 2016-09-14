@@ -77,7 +77,7 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
 {
 public:
   ///default constructor
-  ImgRaster(void);
+  ImgRaster();
   ///reset all member variables
   void reset(void);
   ///constructor opening an image in memory using an external data pointer (not tested yet)
@@ -286,7 +286,17 @@ public:
    * 
    * @return shared pointer to new ImgRaster object
    */  
-  virtual std::shared_ptr<ImgRaster> clone() { return std::shared_ptr<ImgRaster>(new ImgRaster(*this,false) ); };
+  virtual std::shared_ptr<ImgRaster> clone() {
+    return(cloneImpl());
+  };
+  ///Create new shared pointer to ImgRaster object
+  /** 
+   * 
+   * @return shared pointer to new ImgRaster object
+   */  
+  static std::shared_ptr<ImgRaster> createImg() {
+    return(std::make_shared<ImgRaster>());
+  };
   //From Reader
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
   void open(const std::string& filename, unsigned int memory=0);
@@ -401,7 +411,10 @@ public:
   CPLErr svm(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
   ///svm raster dataset only for in memory
   std::shared_ptr<ImgRaster> svm(const app::AppFactory& app);
-
+  ///create shared pointer to ImgRaster with random values
+  static CPLErr createImg(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///create shared pointer to ImgRaster with random values only for in memory
+  static std::shared_ptr<ImgRaster> createImg(const app::AppFactory& app);
 protected:
   ///filename of this dataset
   std::string m_filename;
@@ -451,6 +464,11 @@ protected:
   CPLErr readNewBlock(unsigned int row, unsigned int band);
   ///Write new block from cache (defined by m_begin and m_end)
   CPLErr writeNewBlock(unsigned int row, unsigned int band);
+
+ private:
+  virtual std::shared_ptr<ImgRaster> cloneImpl() {
+    return(std::shared_ptr<ImgRaster>(new ImgRaster(*this,false) ));
+  };
 };
 
 /**
