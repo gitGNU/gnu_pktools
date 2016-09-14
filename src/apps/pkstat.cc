@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
       src_max_opt.push_back(src_max_opt[0]);
   }
 
-  unsigned int nbin=0;
+  int nbin=0;
   double minX=0;
   double minY=0;
   double maxX=0;

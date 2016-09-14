@@ -211,8 +211,8 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
     if(output_opt.size())
       lineOutput.resize(this->nrOfCol());
 
-    unsigned int irow=0;
-    unsigned int icol=0;
+    int irow=0;
+    int icol=0;
     double oldreferencerow=-1;
     double oldmaskrow=-1;
 
@@ -286,7 +286,7 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
             }
           }
           else{
-            imgReference->readData(lineReference,static_cast<unsigned int>(jreference),band_opt[1]);
+            imgReference->readData(lineReference,static_cast<int>(jreference),band_opt[1]);
             oldreferencerow=jreference;
           }
         }
