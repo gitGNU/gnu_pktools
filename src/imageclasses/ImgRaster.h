@@ -81,7 +81,7 @@ public:
   ///reset all member variables
   void reset(void);
   ///constructor opening an image in memory using an external data pointer (not tested yet)
-  //ImgRaster(void* dataPointer, unsigned int ncol, unsigned int nrow, int nband, const GDALDataType& dataType);
+  ImgRaster(void* dataPointer, unsigned int ncol, unsigned int nrow, const GDALDataType& dataType);
   //from Reader
   ImgRaster(const std::string& filename, unsigned int memory=0) : ImgRaster() {
     open(filename, memory);
@@ -299,7 +299,7 @@ public:
   };
   //From Reader
   ///Open an image. Set memory (in MB) to cache a number of rows in memory
-  void open(const std::string& filename, unsigned int memory=0);
+  CPLErr open(const std::string& filename, unsigned int memory=0);
   // void open(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned int memory=0);
   ///Read all pixels from image in memory for specific band
   CPLErr readData(unsigned int band);
@@ -346,22 +346,22 @@ public:
 
   //From Writer
   ///Open an image for writing, copying image attributes from a source image. Image is directly written to file. Use the constructor with memory>0 to support caching
-  void open(const std::string& filename, const ImgRaster& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
+  CPLErr open(const std::string& filename, const ImgRaster& imgSrc, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, copying image attributes from a source image. Caching is supported when memory>0
-  void open(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
+  CPLErr open(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Image is directly written to file. Use the constructor with memory>0 to support caching
   // void open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing, defining all image attributes. Caching is supported when memory>0
-  void open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  CPLErr open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Open an image for writing in memory, defining image attributes.
-  void open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
+  CPLErr open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(ImgRaster& imgSrc,  bool copyData=true);
+  CPLErr open(ImgRaster& imgSrc,  bool copyData=true);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  void open(std::shared_ptr<ImgRaster> imgSrc,  bool copyData=true);
+  CPLErr open(std::shared_ptr<ImgRaster> imgSrc,  bool copyData=true);
   ///Open an image for writing using an external data pointer (not tested yet)
-  // void open(void* dataPointer, const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType);
-  ///Close the raster dataset
+  /* void open(void* dataPointer, unsigned int ncol, unsigned int nrow, const GDALDataType& dataType); */
+  CPLErr open(void* dataPointer, int ncol, int nrow, const GDALDataType& dataType);
   ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
 
@@ -376,7 +376,7 @@ public:
   ///Write pixel cell values for a range of columns and rows for a specific band (all indices start counting from 0). The buffer is a two dimensional vector (stl vector of stl vector) representing [row][col].
   template<typename T> CPLErr writeDataBlock(Vector2d<T>& buffer2d, unsigned int minCol, unsigned int maxCol, int minRow, int maxRow, unsigned int band=0);
   ///Prepare image writer to write to file
-  void setFile(const std::string& filename, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  CPLErr setFile(const std::string& filename, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Prepare image writer to write to file
   // void setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)

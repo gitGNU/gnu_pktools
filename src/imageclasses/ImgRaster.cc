@@ -53,12 +53,11 @@ void ImgRaster::reset(void)
  * @paramdataPointer External pointer to which the image data should be written in memory
  * @param ncol The number of columns in the image
  * @param nrow The number of rows in the image
- * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-// ImgRaster::ImgRaster(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned unsigned int nband, const GDALDataType& dataType){
-//   open(dataPointer,ncol,nrow,nband,dataType);
-// }
+ImgRaster::ImgRaster(void* dataPointer, unsigned int ncol, unsigned int nrow, const GDALDataType& dataType){
+  open(dataPointer,ncol,nrow,dataType);
+}
 
 /**
  * @param memory Available memory to cache image raster data (in MB)
@@ -118,24 +117,29 @@ ImgRaster& ImgRaster::operator=(ImgRaster& imgSrc)
  * @paramdataPointer External pointer to which the image data should be written in memory
  * @param ncol The number of columns in the image
  * @param nrow The number of rows in the image
- * @param band The number of bands in the image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-// void ImgRaster::open(void* dataPointer, unsigned int ncol, unsigned int nrow, unsigned unsigned int nband, const GDALDataType& dataType){
-//   m_ncol=ncol;
-//   m_nrow=nrow;
-//   m_nband=nband;
-//   m_dataType=dataType;
-//   m_data.resize(nband);
-//   m_begin.resize(nband);
-//   m_end.resize(nband);
-//   m_blockSize=nrow;//memory contains entire image and has been read already
-//   for(unsigned int iband=0;iband<nband;++iband){
-//     m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
-//     m_begin[iband]=0;
-//     m_end[iband]=m_begin[iband]+m_blockSize;
-//   }
-// }
+// void ImgRaster::open(void* dataPointer, unsigned int ncol, unsigned int nrow, const GDALDataType& dataType){
+CPLErr ImgRaster::open(void* dataPointer, int ncol, int nrow, const GDALDataType& dataType){
+  m_ncol=ncol;
+  m_nrow=nrow;
+  m_nband=1;
+  m_dataType=dataType;
+  m_data.resize(m_nband);
+  m_begin.resize(m_nband);
+  m_end.resize(m_nband);
+  m_blockSize=nrow;//memory contains entire image and has been read already
+  if(dataPointer){
+    for(unsigned int iband=0;iband<m_nband;++iband){
+      m_data[iband]=dataPointer+iband*ncol*nrow*(GDALGetDataTypeSize(getDataType())>>3);
+      m_begin[iband]=0;
+      m_end[iband]=m_begin[iband]+m_blockSize;
+    }
+    return(CE_None);
+  }
+  else
+    return(CE_Failure);
+}
 
 void ImgRaster::close(void)
 {
@@ -628,7 +632,7 @@ unsigned int ImgRaster::pushNoDataValue(double noDataValue)
  * @param filename Open a raster dataset with this filename
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRaster::open(const std::string& filename, unsigned int memory)
+CPLErr ImgRaster::open(const std::string& filename, unsigned int memory)
 // void ImgRaster::open(const std::string& filename, const GDALAccess& readMode, unsigned int memory)
 {
   m_writeMode=false;
@@ -639,6 +643,7 @@ void ImgRaster::open(const std::string& filename, unsigned int memory)
     m_begin[iband]=0;
     m_end[iband]=0;
   }
+  return(CE_None);
 }
 
 /**
@@ -1248,9 +1253,9 @@ CPLErr ImgRaster::writeNewBlock(unsigned int row, unsigned int band)
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param options Creation options
  **/
-void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, const std::vector<std::string>& options)
+CPLErr ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, const std::vector<std::string>& options)
 {
-  open(filename,imgSrc,0,options);
+  return(open(filename,imgSrc,0,options));
 }
 
 /**
@@ -1259,7 +1264,7 @@ void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, const
  * @param memory Available memory to cache image raster data (in MB)
  * @param options Creation options
  **/
-void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options)
+CPLErr ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory, const std::vector<std::string>& options)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -1267,17 +1272,19 @@ void ImgRaster::open(const std::string& filename, const ImgRaster& imgSrc, unsig
   m_dataType=imgSrc.getDataType();
   setProjection(imgSrc.getProjection());
   copyGeoTransform(imgSrc);
-  setFile(filename,imgSrc.getImageType(),memory,options);
+  if(setFile(filename,imgSrc.getImageType(),memory,options)!=CE_None)
+    return(CE_Failure);
   m_gds->SetMetadata(imgSrc.getMetadata());
   if(imgSrc.getColorTable()!=NULL)
     setColorTable(imgSrc.getColorTable());
+  return(CE_None);
 }
 
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-void ImgRaster::open(ImgRaster& imgSrc, bool copyData)
+CPLErr ImgRaster::open(ImgRaster& imgSrc, bool copyData)
 {
   m_ncol=imgSrc.nrOfCol();
   m_nrow=imgSrc.nrOfRow();
@@ -1314,13 +1321,14 @@ void ImgRaster::open(ImgRaster& imgSrc, bool copyData)
   //   m_filename=imgSrc.getFileName();
     // std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
   // }
+  return(CE_None);
 }
 
 /**
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-void ImgRaster::open(std::shared_ptr<ImgRaster> imgSrc, bool copyData)
+CPLErr ImgRaster::open(std::shared_ptr<ImgRaster> imgSrc, bool copyData)
 {
   m_ncol=imgSrc->nrOfCol();
   m_nrow=imgSrc->nrOfRow();
@@ -1357,6 +1365,7 @@ void ImgRaster::open(std::shared_ptr<ImgRaster> imgSrc, bool copyData)
   //   m_filename=imgSrc->getFileName();
     // std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
   // }
+  return(CE_None);
 }
 
 // /**
@@ -1390,13 +1399,13 @@ void ImgRaster::open(std::shared_ptr<ImgRaster> imgSrc, bool copyData)
  * @param memory Available memory to cache image raster data (in MB)
  * @param options Creation options
  **/
-void ImgRaster::open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
+CPLErr ImgRaster::open(const std::string& filename, unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
   m_ncol = ncol;
   m_nrow = nrow;
   m_nband = nband;
   m_dataType = dataType;
-  setFile(filename,imageType,memory,options);
+  return(setFile(filename,imageType,memory,options));
 }
 
 /**
@@ -1405,7 +1414,7 @@ void ImgRaster::open(const std::string& filename, unsigned int ncol, unsigned in
  * @param nband Number of bands in image
  * @param dataType The data type of the image (one of the GDAL supported datatypes: GDT_Byte, GDT_[U]Int[16|32], GDT_Float[32|64])
  **/
-void ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType)
+CPLErr ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, const GDALDataType& dataType)
 {
   m_ncol = ncol;
   m_nrow = nrow;
@@ -1420,6 +1429,7 @@ void ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, c
     m_writeMode=true;
     registerDriver();
   }
+  return(CE_None);
 }
 
 /**
@@ -1577,7 +1587,7 @@ void ImgRaster::open(unsigned int ncol, unsigned int nrow, unsigned int nband, c
  * @param filename Open a raster dataset with this filename
  * @param imageType Image type. Currently only those formats where the drivers support the Create method can be written
  **/
-void ImgRaster::setFile(const std::string& filename, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
+CPLErr ImgRaster::setFile(const std::string& filename, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
   m_writeMode=true;
   m_filename=filename;
@@ -1592,6 +1602,7 @@ void ImgRaster::setFile(const std::string& filename, const std::string& imageTyp
       m_end[iband]=m_begin[iband]+m_blockSize;
     }
   }
+  return(CE_None);
 }
 
 ///Copy data 
