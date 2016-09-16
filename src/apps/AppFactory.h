@@ -27,15 +27,20 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace app
 {
-  
+
   class AppFactory{
-  
+
   public:
     AppFactory(void) : m_argc(1), m_argv(std::vector<std::string>(1,"appFactory")){}
     AppFactory(int argc, char* argv[]) : m_argc(1), m_argv(std::vector<std::string>(1,"appFactory")){
       setOptions(argc, argv);
     };
     virtual ~AppFactory(void){};
+    void setOptions(int argc, const std::vector<std::string> argv){
+      m_argc=argc;
+      m_argv.clear();
+      m_argv=argv;
+    }
     void setOptions(int argc, char* argv[]){
       m_argc=argc;
       m_argv.clear();

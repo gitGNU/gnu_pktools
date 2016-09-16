@@ -35,15 +35,9 @@ using namespace statfactory;
  * @return output image
  **/
 shared_ptr<ImgRaster> ImgRaster::createImg(const AppFactory& app){
-  try{
-    shared_ptr<ImgRaster> pRaster=createImg();
-    createImg(pRaster, app);
-    return(pRaster);
-  }
-  catch(string helpString){
-    cerr << helpString << endl;
-    return(0);
-  }
+  shared_ptr<ImgRaster> pRaster=createImg();
+  createImg(pRaster, app);
+  return(pRaster);
 }
 
 /**
