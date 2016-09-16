@@ -331,8 +331,12 @@ public:
   void getMinMax(double& minValue, double& maxValue, int band=0);
   ///Get the minimum cell values for a specific band and report the column and row in which the minimum value was found (all indices start counting from 0).
   double getMin(int& col, int& row, int band=0);
+  ///Get the minimum cell values for a specific band.
+  double getMin(int band=0){int theCol=0;int theRow=0;return(getMin(theCol,theRow));};
   ///Get the maximum cell values for a specific band and report the column and row in which the maximum value was found (all indices start counting from 0).
   double getMax(int& col, int& row, int band=0);
+  ///Get the maximum cell values for a specific band.
+  double getMax(int band=0){int theCol=0;int theRow=0;return(getMax(theCol,theRow));};
   ///Calculate the image histogram for a specific band using a defined number of bins and constrained   by a minimum and maximum value. A kernel density function can also be applied (default is false).
   double getHistogram(std::vector<double>& histvector, double& min, double& max,int& nbin, int theBand=0, bool kde=false);
   ///Calculate the reference pixel as the centre of gravity pixel (weighted average of all values not taking into account no data values) for a specific band (start counting from 0).
