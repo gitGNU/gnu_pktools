@@ -36,6 +36,8 @@ namespace app
       setOptions(argc, argv);
     };
     virtual ~AppFactory(void){};
+    bool empty() const {return(m_argv.empty());};
+    bool size() const {return(m_argv.size());};
     void setOptions(int argc, const std::vector<std::string> argv){
       m_argc=argc;
       m_argv.clear();

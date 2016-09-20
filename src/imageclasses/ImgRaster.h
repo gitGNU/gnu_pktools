@@ -36,7 +36,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "apps/AppFactory.h"
 
 namespace app{
-class AppFactory;
+  class AppFactory;
 }
 
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
@@ -71,11 +71,11 @@ template<typename T1> GDALDataType getGDALDataType(){
 };
 
 /**
-   Base class for raster dataset (read and write) in a format supported by GDAL. This general raster class is used to store e.g., filename, number of columns, rows and bands of the dataset. 
+   Base class for raster dataset (read and write) in a format supported by GDAL. This general raster class is used to store e.g., filename, number of columns, rows and bands of the dataset.
 **/
 class ImgRaster : public std::enable_shared_from_this<ImgRaster>
 {
-public:
+ public:
   ///default constructor
   ImgRaster();
   ///reset all member variables
@@ -83,16 +83,16 @@ public:
   ///constructor opening an image in memory using an external data pointer (not tested yet)
   ImgRaster(void* dataPointer, int ncol, int nrow, const GDALDataType& dataType);
   //from Reader
-  ImgRaster(const std::string& filename, unsigned int memory=0) : ImgRaster() {
+ ImgRaster(const std::string& filename, unsigned int memory=0) : ImgRaster() {
     open(filename, memory);
   };
   // ImgRaster(const std::string& filename, const GDALAccess& readMode=GA_ReadOnly, unsigned int memory=0) : m_writeMode(false) {open(filename, readMode, memory);};
   //from Writer
   ///constructor opening an image for writing, copying image attributes from a source image. Caching is supported when memory>0
-  ImgRaster(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, imgSrc, memory, options);
-};
+ ImgRaster(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, imgSrc, memory, options);
+  };
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgRaster(ImgRaster& imgSrc, bool copyData=true) : ImgRaster() {
+ ImgRaster(ImgRaster& imgSrc, bool copyData=true) : ImgRaster() {
     open(imgSrc,copyData);
   };
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
@@ -100,10 +100,10 @@ public:
   /*   open(imgSrc,copyData); */
   /* }; */
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
-  ImgRaster(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);
+ ImgRaster(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);
   };
   ///constructor opening an image for writing in memory, defining all image attributes
-  ImgRaster(int ncol, int nrow, int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);
+ ImgRaster(int ncol, int nrow, int nband, const GDALDataType& dataType) : ImgRaster() {open(ncol, nrow, nband, dataType);
   };
 
   ///destructor
@@ -122,7 +122,7 @@ public:
     if(m_scale.size()!=nrOfBand()){//initialize
       m_scale.resize(nrOfBand());
       for(int iband=0;iband<nrOfBand();++iband)
-       m_scale[iband]=1.0;
+        m_scale[iband]=1.0;
     }
     m_scale[band]=theScale;
   };
@@ -131,9 +131,9 @@ public:
     if(m_offset.size()!=nrOfBand()){
       m_offset.resize(nrOfBand());
       for(int iband=0;iband<nrOfBand();++iband)
-       m_offset[iband]=0.0;
+        m_offset[iband]=0.0;
     }
-      m_offset[band]=theOffset;
+    m_offset[band]=theOffset;
   };
   ///set externalData
   void setExternalData(bool flag){m_externalData=flag;};
@@ -212,9 +212,9 @@ public:
   void* getDataPointer(int band=0){return(m_data[band]);};
   ///free memory os data pointer
   void freeMem();
-  ///Copy data 
+  ///Copy data
   void copyData(void* data, int band=0);
-  ///Copy data 
+  ///Copy data
   // void copyData(ImgRaster& imgRaster, int band=0);
   //todo: introduce smart pointer instead of void*
   // std::unique_ptr<void> getDataPointer(int band=0){return(m_data[band]);};
@@ -282,18 +282,18 @@ public:
     return nYBlocks;
   }
   ///Clone as new shared pointer to ImgRaster object
-  /** 
-   * 
+  /**
+   *
    * @return shared pointer to new ImgRaster object
-   */  
+   */
   virtual std::shared_ptr<ImgRaster> clone() {
     return(cloneImpl());
   };
   ///Create new shared pointer to ImgRaster object
-  /** 
-   * 
+  /**
+   *
    * @return shared pointer to new ImgRaster object
-   */  
+   */
   static std::shared_ptr<ImgRaster> createImg() {
     return(std::make_shared<ImgRaster>());
   };
@@ -418,7 +418,7 @@ public:
   static CPLErr createImg(ImgRaster& imgWriter, const app::AppFactory& app);
   ///create shared pointer to ImgRaster with random values only for in memory
   static std::shared_ptr<ImgRaster> createImg(const app::AppFactory& app);
-protected:
+ protected:
   ///filename of this dataset
   std::string m_filename;
   ///instance of the GDAL dataset of this dataset
@@ -591,8 +591,8 @@ template<typename T> CPLErr ImgRaster::readData(std::vector<T>& buffer, int minC
       buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
       typename std::vector<T>::iterator bufit=buffer.begin();
       while(bufit!=buffer.end()){
-	double dvalue=theScale*(*bufit)+theOffset;
-	*(bufit++)=static_cast<T>(dvalue);
+        double dvalue=theScale*(*bufit)+theOffset;
+        *(bufit++)=static_cast<T>(dvalue);
       }
     }
     else{
@@ -624,7 +624,7 @@ template<typename T> CPLErr ImgRaster::readData(std::vector<T>& buffer, int minC
         default:
           std::string errorString="Error: data type not supported";
           throw(errorString);
-	  break;
+          break;
         }
         // double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
         *(bufit)=static_cast<T>(dvalue);
@@ -640,7 +640,7 @@ template<typename T> CPLErr ImgRaster::readData(std::vector<T>& buffer, int minC
     returnValue=poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
     if(m_scale.size()>band||m_offset.size()>band){
       for(int index=0;index<buffer.size();++index)
-	buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
+        buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
     }
   }
   return(returnValue);
@@ -709,7 +709,7 @@ template<typename T> CPLErr ImgRaster::readDataBlock(Vector2d<T>& buffer2d, int 
   }
   return(returnValue);
 }
-  
+
 /**
  * @param[out] buffer One dimensional vector representing all pixel values read starting from upper left to lower right.
  * @param[in] minCol First column from where to start reading (counting starts from 0)
@@ -752,49 +752,49 @@ template<typename T> CPLErr ImgRaster::readDataBlock(std::vector<T>& buffer, int
       int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
 
       if(getGDALDataType<T>()==getDataType()){//no conversion needed
-	//assign will replace current contents and modify its size accordingly
-	buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
+        //assign will replace current contents and modify its size accordingly
+        buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
       }
       else{
-	for(index=minindex;index<=maxindex;++index,++bufit){
-	  double dvalue=0;
-	  switch(getDataType()){
-	  case(GDT_Byte):
-	    dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
-	    break;
-	  case(GDT_Int16):
-	    dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
-	    break;
-	  case(GDT_UInt16):
-	    dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
-	    break;
-	  case(GDT_Int32):
-	    dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
-	    break;
-	  case(GDT_UInt32):
-	    dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
-	    break;
-	  case(GDT_Float32):
-	    dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
-	    break;
-	  case(GDT_Float64):
-	    dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
-	    break;
-	  default:
-	    std::string errorString="Error: data type not supported";
-	    throw(errorString);
-	    break;
-	  }
-	  *(bufit)=static_cast<T>(dvalue);
-	}//for index
+        for(index=minindex;index<=maxindex;++index,++bufit){
+          double dvalue=0;
+          switch(getDataType()){
+          case(GDT_Byte):
+            dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Int16):
+            dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_UInt16):
+            dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Int32):
+            dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_UInt32):
+            dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Float32):
+            dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Float64):
+            dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+            break;
+          default:
+            std::string errorString="Error: data type not supported";
+            throw(errorString);
+            break;
+          }
+          *(bufit)=static_cast<T>(dvalue);
+        }//for index
       }//else
       if(getGDALDataType<T>()==getDataType()){
-	if(m_scale.size()>band||m_offset.size()>band){
-	  for(bufit=buffer.begin();bufit!=buffer.end();++bufit){
-	    double dvalue=theScale*(*bufit)+theOffset;
-	    *(bufit)=static_cast<T>(dvalue);
-	  }
-	}
+        if(m_scale.size()>band||m_offset.size()>band){
+          for(bufit=buffer.begin();bufit!=buffer.end();++bufit){
+            double dvalue=theScale*(*bufit)+theOffset;
+            *(bufit)=static_cast<T>(dvalue);
+          }
+        }
       }
     }
   }
@@ -806,7 +806,7 @@ template<typename T> CPLErr ImgRaster::readDataBlock(std::vector<T>& buffer, int
     returnValue=poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
     if(m_scale.size()>band||m_offset.size()>band){
       for(int index=0;index<buffer.size();++index)
-	buffer[index]=theScale*buffer[index]+theOffset;
+        buffer[index]=theScale*buffer[index]+theOffset;
     }
   }
   return(returnValue);
@@ -976,12 +976,12 @@ template<typename T> CPLErr ImgRaster::writeData(std::vector<T>& buffer, int min
     }
     if(row>=m_end[band]){
       if(row>=m_end[band]+m_blockSize){
-	std::ostringstream s;
-	s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
-	throw(s.str());
+        std::ostringstream s;
+        s << "Error: increase memory to support random access writing (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+        throw(s.str());
       }
       else if(m_filename.size())
-	returnValue=writeNewBlock(row,band);
+        returnValue=writeNewBlock(row,band);
     }
     int index=(row-m_begin[band])*nrOfCol();
     int minindex=(index+minCol);
@@ -997,30 +997,30 @@ template<typename T> CPLErr ImgRaster::writeData(std::vector<T>& buffer, int min
       double dvalue=theScale*(*(bufit))+theOffset;
       switch(getDataType()){
       case(GDT_Byte):
-	static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
-	break;
+        static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+        break;
       case(GDT_Int16):
-	static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
-	break;
+        static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+        break;
       case(GDT_UInt16):
-	static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
-	break;
+        static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+        break;
       case(GDT_Int32):
-	static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
-	break;
+        static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+        break;
       case(GDT_UInt32):
-	static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
-	break;
+        static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+        break;
       case(GDT_Float32):
-	static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
-	break;
+        static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+        break;
       case(GDT_Float64):
-	static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
-	break;
+        static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+        break;
       default:
-	std::string errorString="Error: data type not supported";
-	throw(errorString);
-	break;
+        std::string errorString="Error: data type not supported";
+        throw(errorString);
+        break;
       }
     }
   }

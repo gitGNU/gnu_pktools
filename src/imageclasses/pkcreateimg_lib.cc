@@ -90,12 +90,12 @@ CPLErr ImgRaster::createImg(ImgRaster& imgWriter, const AppFactory& app){
     }
     else if(nsample_opt.empty()){
       std::ostringstream errorStream;
-      errorStream << "Error: no number of samples (use option -ns). Use --help for help information" << std::endl;
+      errorStream << "Warning: no number of samples (use option -ns). Returning empty image" << std::endl;
       throw(errorStream.str());
     }
     else if(nline_opt.empty()){
       std::ostringstream errorStream;
-      errorStream << "Error: no number of lines (use option -nl). Use --help for help information" << std::endl;
+      errorStream << "Warning: no number of lines (use option -nl). Returning empty image" << std::endl;
       throw(errorStream.str());
     }
     GDALDataType theType=GDT_Unknown;

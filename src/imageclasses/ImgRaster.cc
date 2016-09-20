@@ -1314,7 +1314,7 @@ CPLErr ImgRaster::open(ImgRaster& imgSrc, bool copyData)
       std::vector<double> lineInput(nrOfCol());
       for(int iband=0;iband<nrOfBand();++iband){
         for(int irow=0;irow<nrOfRow();++irow){
-          imgSrc.readData(lineInput,irow,iband,NEAR);
+          imgSrc.readData(lineInput,irow,iband);
           writeData(lineInput,irow,iband);
         }
       }
@@ -1877,7 +1877,7 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
     std::vector<double> lineInput(nrOfCol());
     for(int iband=0;iband<nrOfBand();++iband){
       for(int irow=0;irow<nrOfRow();++irow){
-        readData(lineInput,irow,iband,NEAR);
+        readData(lineInput,irow,iband);
         for(int icol=0;icol<nrOfCol();++icol){
           if(lineInput[icol]>=t1&&lineInput[icol]<=t2)
             lineInput[icol]=value;
