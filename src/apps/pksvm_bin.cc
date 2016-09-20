@@ -150,17 +150,17 @@ int main(int argc, char *argv[])
     }
     ImgRaster imgRaster;
     imgRaster.open(input_opt[0],memory_opt[0]);
-    std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
+    ImgRaster imgWriter;
     string imageType;
     if(oformat_opt.size())//default
       imageType=oformat_opt[0];
     else
       imageType=imgRaster.getImageType();
-    imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
+    imgWriter.setFile(output_opt[0],imageType,memory_opt[0],option_opt);
 
     imgRaster.svm(imgWriter,app);
     imgRaster.close();
-    imgWriter->close();
+    imgWriter.close();
   }
   catch(string helpString){
     cerr << helpString << endl;

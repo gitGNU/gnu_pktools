@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
   try{
     ImgCollection imgCollection(input_opt.size());
-    std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
+    ImgRaster imgWriter;
     if(imgCollection.size()){
       for(int ifile=0;ifile<input_opt.size();++ifile){
         imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);
@@ -157,13 +157,13 @@ int main(int argc, char *argv[])
       else
         imageType=imgCollection[0]->getImageType();
       if(output_opt.size())
-        imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
+        imgWriter.setFile(output_opt[0],imageType,memory_opt[0],option_opt);
     }
     imgCollection.crop(imgWriter,app);
 
     for(int ifile=0;ifile<imgCollection.size();++ifile)
       imgCollection[ifile]->close();
-    imgWriter->close();
+    imgWriter.close();
   }
   catch(string helpString){//help was invoked
     std::cout << helpString << std::endl;

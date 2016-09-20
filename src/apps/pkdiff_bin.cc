@@ -116,12 +116,11 @@ int main(int argc, char *argv[])
     }
     ImgRaster imgRaster;
     imgRaster.open(input_opt[0],memory_opt[0]);
-    std::shared_ptr<ImgRaster> imgReference = std::make_shared<ImgRaster>();
-    imgReference->open(reference_opt[0],memory_opt[0]);
+    ImgRaster imgReference(reference_opt[0],memory_opt[0]);
 
     imgRaster.diff(imgReference,app);
     imgRaster.close();
-    imgReference->close();
+    imgReference.close();
   }
   catch(string helpString){
     cerr << helpString << endl;

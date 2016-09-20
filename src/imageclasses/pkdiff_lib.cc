@@ -33,7 +33,7 @@ using namespace app;
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
-CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app){
+CPLErr ImgRaster::diff(ImgRaster& imgReference, const AppFactory& app){
   Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask. Nodata values can be set with the option msknodata.");
   Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value(s) where image is invalid. Use negative value for valid data (example: use -t -1: if only -1 is valid value)", 0);
   Optionpk<double> nodata_opt("nodata", "nodata", "No data value(s) in input or reference dataset are ignored");
@@ -192,7 +192,7 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
       gdalWriter.open(output_opt[0],this->nrOfCol(),this->nrOfRow(),1,this->getDataType(),oformat_opt[0],0,option_opt);
       if(nodata_opt.size())
         gdalWriter.GDALSetNoDataValue(nodata_opt[0]);
-      gdalWriter.copyGeoTransform(shared_from_this());
+      gdalWriter.copyGeoTransform(*this);
       if(colorTable_opt.size())
         gdalWriter.setColorTable(colorTable_opt[0]);
       else if(this->getColorTable()!=NULL){
@@ -216,15 +216,15 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
     double oldreferencerow=-1;
     double oldmaskrow=-1;
 
-    // imgReference->open(reference_opt[0]);//,rmagicX_opt[0],rmagicY_opt[0]);
+    // imgReference.open(reference_opt[0]);//,rmagicX_opt[0],rmagicY_opt[0]);
     if(this->isGeoRef()){
-      assert(imgReference->isGeoRef());
-      // if(this->getProjection()!=imgReference->getProjection())
+      assert(imgReference.isGeoRef());
+      // if(this->getProjection()!=imgReference.getProjection())
       //    << "Warning: projection of input image and reference image are different" << endl;
     }
-    vector<double> lineReference(imgReference->nrOfCol());
+    vector<double> lineReference(imgReference.nrOfCol());
     if(confusion_opt[0]){
-      imgReference->getRange(referenceRange,band_opt[1]);
+      imgReference.getRange(referenceRange,band_opt[1]);
       for(int iflag=0;iflag<nodata_opt.size();++iflag){
         vector<short>::iterator fit;
         fit=find(referenceRange.begin(),referenceRange.end(),static_cast<unsigned short>(nodata_opt[iflag]));
@@ -261,8 +261,8 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
       for(icol=0;icol<this->nrOfCol();++icol){
         //find col in reference
         this->image2geo(icol,irow,x,y);
-        imgReference->geo2image(x,y,ireference,jreference);
-        if(ireference<0||ireference>=imgReference->nrOfCol()){
+        imgReference.geo2image(x,y,ireference,jreference);
+        if(ireference<0||ireference>=imgReference.nrOfCol()){
           if(rmse_opt[0]||regression_opt[0])
             continue;
           else{
@@ -274,7 +274,7 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
           }
         }
         if(jreference!=oldreferencerow){
-          if(jreference<0||jreference>=imgReference->nrOfRow()){
+          if(jreference<0||jreference>=imgReference.nrOfRow()){
             if(rmse_opt[0]||regression_opt[0])
               continue;
             else{
@@ -286,7 +286,7 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
             }
           }
           else{
-            imgReference->readData(lineReference,static_cast<int>(jreference),band_opt[1]);
+            imgReference.readData(lineReference,static_cast<int>(jreference),band_opt[1]);
             oldreferencerow=jreference;
           }
         }
@@ -422,7 +422,7 @@ CPLErr ImgRaster::diff(shared_ptr<ImgRaster> imgReference, const AppFactory& app
         throw(outputStream.str());
       }
     }
-    // imgReference->close();
+    // imgReference.close();
     // this->close();
     if(mask_opt.size())
       maskReader.close();

@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
     }
 
     ImgCollection imgCollection(input_opt.size());
-    std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
+    ImgRaster imgWriter;
     if(imgCollection.size()){
       for(int ifile=0;ifile<input_opt.size();++ifile){
         imgCollection[ifile]->open(input_opt[ifile],memory_opt[0]);
@@ -187,13 +187,13 @@ int main(int argc, char *argv[])
         imageType=oformat_opt[0];
       else
         imageType=imgCollection[0]->getImageType();
-      imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
+      imgWriter.setFile(output_opt[0],imageType,memory_opt[0],option_opt);
     }
     imgCollection.composite(imgWriter,app);
 
     for(int ifile=0;ifile<imgCollection.size();++ifile)
       imgCollection[ifile]->close();
-    imgWriter->close();
+    imgWriter.close();
   }
   catch(string helpString){
     cerr << helpString << endl;

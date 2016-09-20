@@ -45,7 +45,7 @@ shared_ptr<ImgRaster> ImgRaster::filter(const AppFactory& app){
   try{
     shared_ptr<ImgRaster> imgWriter;
     imgWriter=this->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
-    filter(imgWriter, app);
+    filter(*imgWriter, app);
     return(imgWriter);
   }
   catch(string helpString){
@@ -59,7 +59,7 @@ shared_ptr<ImgRaster> ImgRaster::filter(const AppFactory& app){
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
-CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
+CPLErr ImgRaster::filter(ImgRaster& imgWriter, const AppFactory& app){
   Optionpk<bool> disc_opt("circ", "circular", "circular disc kernel for dilation and erosion", false);
   // Optionpk<double> angle_opt("a", "angle", "angle used for directional filtering in dilation (North=0, East=90, South=180, West=270).");
   Optionpk<std::string> method_opt("f", "filter", "filter function (nvalid, median, var, min, max, sum, mean, dilate, erode, close, open, homog (central pixel must be identical to all other pixels within window), heterog (central pixel must be different than all other pixels within window), sauvola, sobelx (horizontal edge detection), sobely (vertical edge detection), sobelxy (diagonal edge detection NE-SW),sobelyx (diagonal edge detection NW-SE), density, countid, mode (majority voting), only for classes), smooth, smoothnodata (smooth nodata values only) values, ismin, ismax, order (rank pixels in order), stdev, mrf, dwt, dwti, dwt_cut, dwt_cut_from, scramble, shift, savgolay, percentile, proportion)");
@@ -198,44 +198,47 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         errorString="Error: no filter selected, use option -f";
         throw(errorString);
       }
+      else if(verbose_opt[0])
+        std::cout << "filter method: " << method_opt[0] << "=" << filter2d::Filter2d::getFilterType(method_opt[0]) << std::endl;
+        // std::cout << "filter method: "<< filter2d::Filter2d::getFilterType(method_opt[0]) << std::endl;
       switch(filter2d::Filter2d::getFilterType(method_opt[0])){
       case(filter2d::dilate):
       case(filter2d::erode):
       case(filter2d::close):
       case(filter2d::open):
       case(filter2d::smooth):
-	//implemented in spectral/temporal domain (dimZ>1) and spatial domain
-	if(dimZ_opt.size())
-	  assert(dimZ_opt[0]>1);
+        //implemented in spectral/temporal domain (dimZ>1) and spatial domain
+        if(dimZ_opt.size())
+          assert(dimZ_opt[0]>1);
       nband=this->nrOfBand();
       break;
       case(filter2d::dwt):
       case(filter2d::dwti):
       case(filter2d::dwt_cut):
       case(filter2d::smoothnodata):
-	//implemented in spectral/temporal/spatial domain and nband always this->nrOfBand()
-	nband=this->nrOfBand();
+        //implemented in spectral/temporal/spatial domain and nband always this->nrOfBand()
+        nband=this->nrOfBand();
       break;
       case(filter2d::savgolay):
-	nband=this->nrOfBand();
-	if(dimZ_opt.empty())
-	  dimZ_opt.push_back(1);
+        nband=this->nrOfBand();
+        if(dimZ_opt.empty())
+          dimZ_opt.push_back(1);
       case(filter2d::dwt_cut_from):
-	//only implemented in spectral/temporal domain
-	if(dimZ_opt.size()){
-	  nband=this->nrOfBand();
-	  assert(threshold_opt.size());
-	}
-	else{
+        //only implemented in spectral/temporal domain
+        if(dimZ_opt.size()){
+          nband=this->nrOfBand();
+          assert(threshold_opt.size());
+        }
+        else{
           errorString="filter not implemented in spatial domain";
           throw(errorString);
-	}
-	break;
+        }
+        break;
       case(filter2d::mrf)://deliberate fall through
-	assert(class_opt.size()>1);
-	if(verbose_opt[0])
-	  std::cout << "opening output image" << std::endl;
-	nband=class_opt.size();
+        assert(class_opt.size()>1);
+        if(verbose_opt[0])
+          std::cout << "opening output image" << std::endl;
+        nband=class_opt.size();
       case(filter2d::ismin):
       case(filter2d::ismax):
       case(filter2d::shift):
@@ -250,21 +253,21 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
       case(filter2d::homog):
       case(filter2d::heterog):
       case(filter2d::sauvola):
-	//only implemented in spatial domain
-	if(dimZ_opt.size()){
+        //only implemented in spatial domain
+        if(dimZ_opt.size()){
           errorString="filter not implemented in spectral/temporal domain";
           throw(errorString);
-	}
+        }
       break;
       // case(filter2d::percentile):
-      // 	//implemented in spectral/temporal/spatial domain and nband 1 if dimZ>0
-      // 	if(dimZ_opt.size()){
-      // 	  dimZ_opt[0]=1;
-      // 	  nband=1;
-      // 	}
-      // 	else
-      // 	  nband=this->nrOfBand();
-      // 	break;
+      //  //implemented in spectral/temporal/spatial domain and nband 1 if dimZ>0
+      //  if(dimZ_opt.size()){
+      //    dimZ_opt[0]=1;
+      //    nband=1;
+      //  }
+      //  else
+      //    nband=this->nrOfBand();
+      //  break;
       case(filter2d::sum):
       case(filter2d::mean):
       case(filter2d::min):
@@ -275,42 +278,46 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
       case(filter2d::median):
       case(filter2d::percentile):
       case(filter2d::proportion):
-	//implemented in spectral/temporal/spatial domain and nband 1 if dimZ==1
-	if(dimZ_opt.size()==1)
-	  if(dimZ_opt[0]==1)
-	    nband=1;
+        //implemented in spectral/temporal/spatial domain and nband 1 if dimZ==1
+        if(dimZ_opt.size()==1)
+          if(dimZ_opt[0]==1)
+            nband=1;
           else
             nband=this->nrOfBand();
       break;
-      default:
-	errorString="filter not implemented";
-        throw(errorString);
-	break;
+      default:{
+        cout << endl;
+        std::ostringstream errorStream;
+        errorStream << "filter method: " << method_opt[0] << "=" << filter2d::Filter2d::getFilterType(method_opt[0]) << " not implemented"<< std::endl;
+        // errorStream << "filter " << method_opt[0] << " (" << )"<< " not implemented";
+        throw(errorStream.str());
+        break;
+      }
       }
     }
-    // imgWriter->open(output_opt[0],(this->nrOfCol()+down_opt[0]-1)/down_opt[0],(this->nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,memory_opt[0],option_opt);
-    imgWriter->open((this->nrOfCol()+down_opt[0]-1)/down_opt[0],(this->nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType);
-    imgWriter->setProjection(this->getProjection());
+    // imgWriter.open(output_opt[0],(this->nrOfCol()+down_opt[0]-1)/down_opt[0],(this->nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,memory_opt[0],option_opt);
+    imgWriter.open((this->nrOfCol()+down_opt[0]-1)/down_opt[0],(this->nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType);
+    imgWriter.setProjection(this->getProjection());
     double gt[6];
     this->getGeoTransform(gt);
     gt[1]*=down_opt[0];//dx
     gt[5]*=down_opt[0];//dy
-    imgWriter->setGeoTransform(gt);
-  
+    imgWriter.setGeoTransform(gt);
+
     if(colorTable_opt.size()){
       if(colorTable_opt[0]!="none"){
         if(verbose_opt[0])
           cout << "set colortable " << colorTable_opt[0] << endl;
-        assert(imgWriter->getDataType()==GDT_Byte);
-        imgWriter->setColorTable(colorTable_opt[0]);
+        assert(imgWriter.getDataType()==GDT_Byte);
+        imgWriter.setColorTable(colorTable_opt[0]);
       }
     }
     else if(this->getColorTable()!=NULL)
-      imgWriter->setColorTable(this->getColorTable());
-  
+      imgWriter.setColorTable(this->getColorTable());
+
     if(nodata_opt.size()){
-      for(unsigned int iband=0;iband<imgWriter->nrOfBand();++iband)
-        imgWriter->GDALSetNoDataValue(nodata_opt[0],iband);
+      for(unsigned int iband=0;iband<imgWriter.nrOfBand();++iband)
+        imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
     }
 
     filter2d::Filter2d filter2d;
@@ -369,7 +376,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
       }
       filter2d.setTaps(taps);
       //todo: this->filter2D.filter(imgWriter);
-      filter2d.filter(shared_from_this(),imgWriter);
+      filter2d.filter(*this,imgWriter);
       // filter2d.filter(input,output);
       tapfile.close();
     }
@@ -382,7 +389,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
       }
       filter1d.setTaps(tapz_opt);
       //todo:this->filter3D.filter(imgWriter);
-      filter1d.filter(shared_from_this(),imgWriter);
+      filter1d.filter(*this,imgWriter);
       // filter1d.filter(input,output);
     }
     else if(fwhm_opt.size()){
@@ -404,10 +411,10 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         for(unsigned int iband=0;iband<this->nrOfBand();++iband)
           this->readData(lineInput[iband],y,iband);
         filter1d.applyFwhm<double>(wavelengthIn_opt,lineInput,wavelengthOut_opt,fwhm_opt, interpolationType_opt[0], lineOutput, down_opt[0], verbose_opt[0]);
-        for(unsigned int iband=0;iband<imgWriter->nrOfBand();++iband){
-          imgWriter->writeData(lineOutput[iband],y/down_opt[0],iband);
+        for(unsigned int iband=0;iband<imgWriter.nrOfBand();++iband){
+          imgWriter.writeData(lineOutput[iband],y/down_opt[0],iband);
         }
-        progress=(1.0+y)/imgWriter->nrOfRow();
+        progress=(1.0+y)/imgWriter.nrOfRow();
         pfnProgress(progress,pszMessage,pProgressArg);
       }
     }
@@ -434,13 +441,13 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         srfFile.close();
         //add 0 to make sure srf[isrf] is 0 at boundaries after interpolation step
         srf[isrf][0].push_back(srf[isrf][0].back()+1);
-        srf[isrf][1].push_back(0);    
+        srf[isrf][1].push_back(0);
         srf[isrf][0].push_back(srf[isrf][0].back()+1);
         srf[isrf][1].push_back(0);
         if(verbose_opt[0])
-          cout << "srf file details: " << srf[isrf][0].size() << " wavelengths defined" << endl;    
+          cout << "srf file details: " << srf[isrf][0].size() << " wavelengths defined" << endl;
       }
-      assert(imgWriter->nrOfBand()==srf.size());
+      assert(imgWriter.nrOfBand()==srf.size());
       double centreWavelength=0;
       Vector2d<double> lineInput(this->nrOfBand(),this->nrOfCol());
       const char* pszMessage;
@@ -454,15 +461,15 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         for(unsigned int iband=0;iband<this->nrOfBand();++iband)
           this->readData(lineInput[iband],y,iband);
         for(unsigned int isrf=0;isrf<srf.size();++isrf){
-          vector<double> lineOutput(imgWriter->nrOfCol());
+          vector<double> lineOutput(imgWriter.nrOfCol());
           double delta=1.0;
           bool normalize=true;
           centreWavelength=filter1d.applySrf<double>(wavelengthIn_opt,lineInput,srf[isrf], interpolationType_opt[0], lineOutput, delta, normalize);
           if(verbose_opt[0])
             std::cout << "centre wavelength srf " << isrf << ": " << centreWavelength << std::endl;
-          imgWriter->writeData(lineOutput,y/down_opt[0],isrf);
+          imgWriter.writeData(lineOutput,y/down_opt[0],isrf);
         }
-        progress=(1.0+y)/imgWriter->nrOfRow();
+        progress=(1.0+y)/imgWriter.nrOfRow();
         pfnProgress(progress,pszMessage,pProgressArg);
       }
 
@@ -478,12 +485,12 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
           if(verbose_opt[0])
             std::cout<< "1-D filtering: dilate" << std::endl;
           //todo:this->filter3D.morphology(imgWriter,"dilate",dimZ_opt[0],verbose_opt[0]);
-          filter1d.morphology(shared_from_this(),imgWriter,"dilate",dimZ_opt[0],verbose_opt[0]);
+          filter1d.morphology(*this,imgWriter,"dilate",dimZ_opt[0],verbose_opt[0]);
           // filter1d.morphology(input,output,"dilate",dimZ_opt[0],verbose_opt[0]);
         }
         else{
           //todo:this=>filter2D.morphology(imgWriter,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
-          filter2d.morphology(shared_from_this(),imgWriter,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+          filter2d.morphology(*this,imgWriter,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
           // filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
         }
         break;
@@ -496,12 +503,12 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
           if(verbose_opt[0])
             std::cout<< "1-D filtering: erode" << std::endl;
           //todo:this->filter3D.morphology(imgRaster,"erode",dimZ_opt[0],verbose_opt[0]);
-          filter1d.morphology(shared_from_this(),imgWriter,"erode",dimZ_opt[0],verbose_opt[0]);
+          filter1d.morphology(*this,imgWriter,"erode",dimZ_opt[0],verbose_opt[0]);
           // filter1d.morphology(input,output,"erode",dimZ_opt[0],verbose_opt[0]);
         }
         else{
           //todo:this->filter2D.morphology(imgRaster,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
-          filter2d.morphology(shared_from_this(),imgWriter,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+          filter2d.morphology(*this,imgWriter,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
           // filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
         }
         break;
@@ -513,12 +520,12 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
 
         if(dimZ_opt.size()){
           //todo:this->filter3D.morphology(imgRaster,"dilate",dimZ_opt[0]);
-          filter1d.morphology(shared_from_this(),imgWriter,"dilate",dimZ_opt[0]);
+          filter1d.morphology(*this,imgWriter,"dilate",dimZ_opt[0]);
           // filter1d.morphology(input,output,"dilate",dimZ_opt[0]);
         }
         else{
           //todo:this->filter2D.morphology(imgRaster,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
-          filter2d.morphology(shared_from_this(),imgWriter,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+          filter2d.morphology(*this,imgWriter,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
           // filter2d.morphology(input,output,"dilate",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
         }
         if(dimZ_opt.size()){
@@ -537,11 +544,11 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
           exit(1);
         }
         if(dimZ_opt.size()){
-          filter1d.morphology(shared_from_this(),imgWriter,"erode",dimZ_opt[0],verbose_opt[0]);
+          filter1d.morphology(*this,imgWriter,"erode",dimZ_opt[0],verbose_opt[0]);
           // filter1d.morphology(input,output,"erode",dimZ_opt[0],verbose_opt[0]);
         }
         else{
-          filter2d.morphology(shared_from_this(),imgWriter,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
+          filter2d.morphology(*this,imgWriter,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
           // filter2d.morphology(input,output,"erode",dimX_opt[0],dimY_opt[0],angle_opt,disc_opt[0]);
         }
         if(dimZ_opt.size()){
@@ -555,12 +562,12 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         break;
       }
       case(filter2d::homog):{//spatially homogeneous
-        filter2d.doit(shared_from_this(),imgWriter,"homog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+        filter2d.doit(*this,imgWriter,"homog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         // filter2d.doit(input,output,"homog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         break;
       }
       case(filter2d::heterog):{//spatially heterogeneous
-        filter2d.doit(shared_from_this(),imgWriter,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+        filter2d.doit(*this,imgWriter,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         // filter2d.doit(input,output,"heterog",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         break;
       }
@@ -571,7 +578,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         for(unsigned int iband=0;iband<this->nrOfBand();++iband){
           this->readDataBlock(inBuffer,0,this->nrOfCol()-1,0,this->nrOfRow()-1,iband);
         }
-        filter2d.doit(shared_from_this(),imgWriter,"sauvola",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+        filter2d.doit(*this,imgWriter,"sauvola",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         // filter2d.doit(input,output,"sauvola",dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         break;
       }
@@ -583,25 +590,25 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         assert(this->nrOfBand());
         assert(this->nrOfCol());
         assert(this->nrOfRow());
-        filter2d.shift(shared_from_this(),imgWriter,dimX_opt[0],dimY_opt[0],threshold_opt[0],filter2d::Filter2d::getResampleType(resample_opt[0]));
-        // filter2d.shift(shared_from_this(),imgWriter,dimX_opt[0],dimY_opt[0],threshold_opt[0],filter2d::Filter2d::getResResampleType(resample_opt[0]));
+        filter2d.shift(*this,imgWriter,dimX_opt[0],dimY_opt[0],threshold_opt[0],filter2d::Filter2d::getResampleType(resample_opt[0]));
+        // filter2d.shift(*this,imgWriter,dimX_opt[0],dimY_opt[0],threshold_opt[0],filter2d::Filter2d::getResResampleType(resample_opt[0]));
         break;
       }
         // case(filter2d::linearfeature):{
         //   if(down_opt[0]!=1){
-        // 	std::cerr << "Error: down option not supported for linear feature" << std::endl;
-        // 	exit(1);
+        //  std::cerr << "Error: down option not supported for linear feature" << std::endl;
+        //  exit(1);
         //   }
         //   assert(this->nrOfBand());
         //   assert(this->nrOfCol());
         //   assert(this->nrOfRow());
         //   float theAngle=361;
         //   if(angle_opt.size())
-        // 	theAngle=angle_opt[0];
+        //  theAngle=angle_opt[0];
         //   if(verbose_opt[0])
-        // 	std::cout << "using angle " << theAngle << std::endl;
+        //  std::cout << "using angle " << theAngle << std::endl;
         //   try{
-        // 	//using an angle step of 5 degrees and no maximum distance
+        //  //using an angle step of 5 degrees and no maximum distance
         //     filter2d.linearFeature(input,output,theAngle,5,0,eps_opt[0],l1_opt[0],a1_opt[0],l2_opt[0],a2_opt[0],0,verbose_opt[0]);
         //   }
         //   catch(string errorstring){
@@ -633,11 +640,11 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
               std::cout << std::endl;
             }
           }
-          filter2d.mrf(shared_from_this(), imgWriter, dimX_opt[0], dimY_opt[0], beta, true, down_opt[0], verbose_opt[0]);
+          filter2d.mrf(*this, imgWriter, dimX_opt[0], dimY_opt[0], beta, true, down_opt[0], verbose_opt[0]);
           //filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], beta, true, down_opt[0], verbose_opt[0]);
         }
         else
-          filter2d.mrf(shared_from_this(), imgWriter, dimX_opt[0], dimY_opt[0], 1, true, down_opt[0], verbose_opt[0]);
+          filter2d.mrf(*this, imgWriter, dimX_opt[0], dimY_opt[0], 1, true, down_opt[0], verbose_opt[0]);
         // filter2d.mrf(input, output, dimX_opt[0], dimY_opt[0], 1, true, down_opt[0], verbose_opt[0]);
         break;
       }
@@ -657,7 +664,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         theTaps[2][1]=0.0;
         theTaps[2][2]=1.0;
         filter2d.setTaps(theTaps);
-        filter2d.filter(shared_from_this(),imgWriter,true,true);//absolute and normalize
+        filter2d.filter(*this,imgWriter,true,true);//absolute and normalize
         // filter2d.filter(input,output,true,true);//absolute and normalize
         break;
       }
@@ -677,7 +684,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         theTaps[2][1]=-2.0;
         theTaps[2][2]=-1.0;
         filter2d.setTaps(theTaps);
-        filter2d.filter(shared_from_this(),imgWriter,true,true);//absolute and normalize
+        filter2d.filter(*this,imgWriter,true,true);//absolute and normalize
         // filter2d.filter(input,output,true,true);//absolute and normalize
         break;
       }
@@ -697,7 +704,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         theTaps[2][1]=-1.0;
         theTaps[2][2]=0.0;
         filter2d.setTaps(theTaps);
-        filter2d.filter(shared_from_this(),imgWriter,true,true);//absolute and normalize
+        filter2d.filter(*this,imgWriter,true,true);//absolute and normalize
         // filter2d.filter(input,output,true,true);//absolute and normalize
         break;
       }
@@ -717,7 +724,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         theTaps[2][1]=-1.0;
         theTaps[2][2]=-2.0;
         filter2d.setTaps(theTaps);
-        filter2d.filter(shared_from_this(),imgWriter,true,true);//absolute and normalize
+        filter2d.filter(*this,imgWriter,true,true);//absolute and normalize
         // filter2d.filter(input,output,true,true);//absolute and normalize
         break;
       }
@@ -729,11 +736,11 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         if(dimZ_opt.size()){
           if(verbose_opt[0])
             std::cout<< "1-D filtering: smooth" << std::endl;
-          filter1d.smooth(shared_from_this(),imgWriter,dimZ_opt[0]);
+          filter1d.smooth(*this,imgWriter,dimZ_opt[0]);
           // filter1d.smooth(input,output,dimZ_opt[0]);
         }
         else{
-          filter2d.smooth(shared_from_this(),imgWriter,dimX_opt[0],dimY_opt[0]);
+          filter2d.smooth(*this,imgWriter,dimX_opt[0],dimY_opt[0]);
           // filter2d.smooth(input,output,dimX_opt[0],dimY_opt[0]);
         }
         break;
@@ -746,13 +753,13 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         if(dimZ_opt.size()){
           if(verbose_opt[0])
             std::cout<< "1-D filtering: smooth" << std::endl;
-          filter1d.smoothNoData(shared_from_this(),interpolationType_opt[0],imgWriter);
+          filter1d.smoothNoData(*this,interpolationType_opt[0],imgWriter);
           // filter1d.smoothNoData(input,interpolationType_opt[0],output);
         }
         else{
           if(verbose_opt[0])
             std::cout<< "2-D filtering: smooth" << std::endl;
-          filter2d.smoothNoData(shared_from_this(),imgWriter,dimX_opt[0],dimY_opt[0]);
+          filter2d.smoothNoData(*this,imgWriter,dimX_opt[0],dimY_opt[0]);
           // filter2d.smoothNoData(input,output,dimX_opt[0],dimY_opt[0]);
         }
         break;
@@ -765,11 +772,11 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         if(dimZ_opt.size()){
           if(verbose_opt[0])
             std::cout<< "DWT in spectral domain" << std::endl;
-          filter1d.dwtForward(shared_from_this(), imgWriter, wavelet_type_opt[0], family_opt[0]);
+          filter1d.dwtForward(*this, imgWriter, wavelet_type_opt[0], family_opt[0]);
           // filter1d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
         }
         else
-          filter2d.dwtForward(shared_from_this(), imgWriter, wavelet_type_opt[0], family_opt[0]);
+          filter2d.dwtForward(*this, imgWriter, wavelet_type_opt[0], family_opt[0]);
         // filter2d.dwtForward(input, output, wavelet_type_opt[0], family_opt[0]);
         break;
       case(filter2d::dwti):
@@ -780,11 +787,11 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         if(dimZ_opt.size()){
           if(verbose_opt[0])
             std::cout<< "inverse DWT in spectral domain" << std::endl;
-          filter1d.dwtInverse(shared_from_this(), imgWriter, wavelet_type_opt[0], family_opt[0]);
+          filter1d.dwtInverse(*this, imgWriter, wavelet_type_opt[0], family_opt[0]);
           // filter1d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
         }
         else
-          filter2d.dwtInverse(shared_from_this(), imgWriter, wavelet_type_opt[0], family_opt[0]);
+          filter2d.dwtInverse(*this, imgWriter, wavelet_type_opt[0], family_opt[0]);
         // filter2d.dwtInverse(input, output, wavelet_type_opt[0], family_opt[0]);
         break;
       case(filter2d::dwt_cut):
@@ -795,11 +802,11 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         if(dimZ_opt.size()){
           if(verbose_opt[0])
             std::cout<< "DWT approximation in spectral domain" << std::endl;
-          filter1d.dwtCut(shared_from_this(), imgWriter, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
+          filter1d.dwtCut(*this, imgWriter, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
           // filter1d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
         }
         else
-          filter2d.dwtCut(shared_from_this(), imgWriter, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
+          filter2d.dwtCut(*this, imgWriter, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
         // filter2d.dwtCut(input, output, wavelet_type_opt[0], family_opt[0], threshold_opt[0]);
         break;
       case(filter2d::dwt_cut_from):
@@ -810,7 +817,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
         if(dimZ_opt.size()){
           if(verbose_opt[0])
             std::cout<< "DWT approximation in spectral domain" << std::endl;
-          filter1d.dwtCutFrom(shared_from_this(),imgWriter, wavelet_type_opt[0], family_opt[0], static_cast<int>(threshold_opt[0]));
+          filter1d.dwtCutFrom(*this,imgWriter, wavelet_type_opt[0], family_opt[0], static_cast<int>(threshold_opt[0]));
           //filter1d.dwtCutFrom(input, output, wavelet_type_opt[0], family_opt[0], static_cast<int>(thres
         }
         else{
@@ -833,7 +840,7 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
           std::cout<< std::endl;
         }
         filter1d.setTaps(tapz_opt);
-        filter1d.filter(shared_from_this(),imgWriter);
+        filter1d.filter(*this,imgWriter);
         // filter1d.filter(input,output);
         break;
       }
@@ -851,22 +858,22 @@ CPLErr ImgRaster::filter(shared_ptr<ImgRaster> imgWriter, const AppFactory& app)
       default:
         if(dimZ_opt.size()){
           if(dimZ_opt[0]==1)
-            filter1d.stat(shared_from_this(),imgWriter,method_opt[0]);
+            filter1d.stat(*this,imgWriter,method_opt[0]);
           // filter1d.stat(input,output,method_opt[0]);
           else{
             assert(down_opt[0]==1);//not implemented yet...
-            filter1d.filter(shared_from_this(),imgWriter,method_opt[0],dimZ_opt[0]);
+            filter1d.filter(*this,imgWriter,method_opt[0],dimZ_opt[0]);
             // filter1d.filter(input,output,method_opt[0],dimZ_opt[0]);
           }
         }
         else
-          filter2d.doit(shared_from_this(),imgWriter,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
+          filter2d.doit(*this,imgWriter,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         // filter2d.doit(input,output,method_opt[0],dimX_opt[0],dimY_opt[0],down_opt[0],disc_opt[0]);
         break;
       }
     }
     // this->close();
-    // imgWriter->close();
+    // imgWriter.close();
     return(CE_None);
   }
   catch(string predefinedString){

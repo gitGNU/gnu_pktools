@@ -169,11 +169,11 @@ public:
   ///validate image based on reference vector dataset (-ref)
   CPLErr validate(const app::AppFactory& app);
   ///composite image
-  CPLErr composite(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  CPLErr composite(ImgRaster& imgWriter, const app::AppFactory& app);
   ///composite image only for in memory
   std::shared_ptr<ImgRaster> composite(app::AppFactory& app);
   ///crop image
-  CPLErr crop(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  CPLErr crop(ImgRaster& imgWriter, const app::AppFactory& app);
   ///crop image only for in memory
   std::shared_ptr<ImgRaster> crop(app::AppFactory& app);
 private:

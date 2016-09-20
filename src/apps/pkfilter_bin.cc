@@ -248,21 +248,20 @@ int main(int argc,char **argv) {
     }
 
     ImgRaster input;
-    input.open(input_opt[0],memory_opt[0]);
-
-    std::shared_ptr<ImgRaster> imgWriter = std::make_shared<ImgRaster>();
-
     string imageType;//=input.getImageType();
-    if(oformat_opt.size())//default
-      imageType=oformat_opt[0];
-    else
-      imageType=input.getImageType();
-
-    imgWriter->setFile(output_opt[0],imageType,memory_opt[0],option_opt);
+    if(input_opt.size()){
+      input.open(input_opt[0],memory_opt[0]);
+      if(oformat_opt.size())//default
+        imageType=oformat_opt[0];
+      else
+        imageType=input.getImageType();
+    }
+    ImgRaster imgWriter;
+    imgWriter.setFile(output_opt[0],imageType,memory_opt[0],option_opt);
     input.filter(imgWriter,app);
 
     input.close();
-    imgWriter->close();
+    imgWriter.close();
   }
   catch(string helpString){
     cerr << helpString << endl;

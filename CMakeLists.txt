@@ -86,10 +86,10 @@ set(PKTOOLS_FILECLASSES_LIB_NAME fileClasses)
 set(PKTOOLS_IMAGECLASSES_LIB_NAME imageClasses)
 set(PKTOOLS_LASCLASSES_LIB_NAME lasClasses)
 
-option (BUILD_SHARED_LIBS "Build with shared library" OFF)
+option (BUILD_SHARED_LIBS "Build with shared library" ON)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
-set(BUILD_WITH_FANN FALSE CACHE BOOL "Choose if pktools is to be built with fann")
-set(BUILD_WITH_PYTHON CACHE BOOL "Choose if pktools is to be built with PYTHON support")
+set(BUILD_WITH_FANN TRUE CACHE BOOL "Choose if pktools is to be built with fann")
+set(BUILD_WITH_PYTHON TRUE CACHE BOOL "Choose if pktools is to be built with PYTHON support")
 set(PKTOOLS_WITH_APPS TRUE CACHE BOOL "Choose if pktools applications should be built")
 
 set(GSL_INCLUDE_DIR /usr/include CACHE PATH "Include PATH for GSL")

@@ -47,8 +47,9 @@ void ImgRaster::reset(void)
   m_writeMode=false;
   m_filename.clear();
   m_data.clear();
+  m_externalData=false;
 }
-//not tested yet!!!
+
 /**
  * @paramdataPointer External pointer to which the image data should be written in memory
  * @param ncol The number of columns in the image
@@ -90,10 +91,13 @@ void ImgRaster::initMem(unsigned int memory)
  **/
 void ImgRaster::freeMem()
 {
-//no need if using smart (stl shared or unique) pointers
 //  if(m_data.size()&&m_filename.size()){
-  for(int iband=0;iband<m_data.size();++iband)
-    CPLFree(m_data[iband]);
+  for(int iband=0;iband<m_data.size();++iband){
+    if(m_externalData)
+      m_data[iband]=0;
+    else
+      CPLFree(m_data[iband]);
+  }
   m_data.clear();
 }
 
@@ -135,6 +139,7 @@ CPLErr ImgRaster::open(void* dataPointer, int ncol, int nrow, const GDALDataType
       m_begin[iband]=0;
       m_end[iband]=m_begin[iband]+m_blockSize;
     }
+    m_externalData=true;
     return(CE_None);
   }
   else
@@ -300,12 +305,12 @@ void ImgRaster::copyGeoTransform(const ImgRaster& imgSrc)
 /**
  * @param imgSrc Use this pointer to source image as a template to copy geotranform information
  **/
-void ImgRaster::copyGeoTransform(const std::shared_ptr<ImgRaster>& imgSrc)
-{
-  double gt[6];
-  imgSrc->getGeoTransform(gt);
-  setGeoTransform(gt);
-}
+// void ImgRaster::copyGeoTransform(const std::shared_ptr<ImgRaster>& imgSrc)
+// {
+//   double gt[6];
+//   imgSrc->getGeoTransform(gt);
+//   setGeoTransform(gt);
+// }
 
 /**
  * @param gt pointer to the six geotransform parameters:
@@ -1328,45 +1333,45 @@ CPLErr ImgRaster::open(ImgRaster& imgSrc, bool copyData)
  * @param imgSrc Use this source image as a template to copy image attributes
  * @param copyData Copy data from source image when true
  **/
-CPLErr ImgRaster::open(std::shared_ptr<ImgRaster> imgSrc, bool copyData)
-{
-  m_ncol=imgSrc->nrOfCol();
-  m_nrow=imgSrc->nrOfRow();
-  m_nband=imgSrc->nrOfBand();
-  m_dataType=imgSrc->getDataType();
-  setProjection(imgSrc->getProjection());
-  copyGeoTransform(imgSrc);
-  imgSrc->getNoDataValues(m_noDataValues);
-  imgSrc->getScale(m_scale);
-  imgSrc->getOffset(m_offset);
-  if(m_filename!=""){
-    m_writeMode=true;
-    registerDriver();
-  }
-  else
-    m_writeMode=false;
-  initMem(0);
-  for(int iband=0;iband<m_nband;++iband){
-    m_begin[iband]=0;
-    m_end[iband]=m_begin[iband]+m_blockSize;
-    if(copyData){
-      std::vector<double> lineInput(nrOfCol());
-      for(int iband=0;iband<nrOfBand();++iband){
-        for(int irow=0;irow<nrOfRow();++irow){
-          imgSrc->readData(lineInput,irow,iband,NEAR);
-          writeData(lineInput,irow,iband);
-        }
-      }
-      // imgSrc->copyData(m_data[iband],iband);
-    }
-  }
-  //todo: check if filename needs to be set, but as is it is used for writing, I don't think so.
-  // if(imgSrc->getFileName()!=""){
-  //   m_filename=imgSrc->getFileName();
-    // std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
-  // }
-  return(CE_None);
-}
+// CPLErr ImgRaster::open(std::shared_ptr<ImgRaster> imgSrc, bool copyData)
+// {
+//   m_ncol=imgSrc->nrOfCol();
+//   m_nrow=imgSrc->nrOfRow();
+//   m_nband=imgSrc->nrOfBand();
+//   m_dataType=imgSrc->getDataType();
+//   setProjection(imgSrc->getProjection());
+//   copyGeoTransform(imgSrc);
+//   imgSrc->getNoDataValues(m_noDataValues);
+//   imgSrc->getScale(m_scale);
+//   imgSrc->getOffset(m_offset);
+//   if(m_filename!=""){
+//     m_writeMode=true;
+//     registerDriver();
+//   }
+//   else
+//     m_writeMode=false;
+//   initMem(0);
+//   for(int iband=0;iband<m_nband;++iband){
+//     m_begin[iband]=0;
+//     m_end[iband]=m_begin[iband]+m_blockSize;
+//     if(copyData){
+//       std::vector<double> lineInput(nrOfCol());
+//       for(int iband=0;iband<nrOfBand();++iband){
+//         for(int irow=0;irow<nrOfRow();++irow){
+//           imgSrc->readData(lineInput,irow,iband,NEAR);
+//           writeData(lineInput,irow,iband);
+//         }
+//       }
+//       // imgSrc->copyData(m_data[iband],iband);
+//     }
+//   }
+//   //todo: check if filename needs to be set, but as is it is used for writing, I don't think so.
+//   // if(imgSrc->getFileName()!=""){
+//   //   m_filename=imgSrc->getFileName();
+//     // std::cerr << "Warning: filename not set, dataset not defined yet" << std::endl;
+//   // }
+//   return(CE_None);
+// }
 
 // /**
 //  * @param filename Open a raster dataset with this filename

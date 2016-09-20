@@ -47,7 +47,7 @@ shared_ptr<ImgRaster> ImgCollection::composite(AppFactory& app){
       std::cerr << "Error: no input file provided." << std::endl;
       app.getHelp();
     }
-    composite(imgWriter, app);
+    composite(*imgWriter, app);
     return(imgWriter);
   }
   catch(string helpString){
@@ -61,7 +61,7 @@ shared_ptr<ImgRaster> ImgCollection::composite(AppFactory& app){
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
-CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
+CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
   Optionpk<unsigned int>  band_opt("b", "band", "band index(es) to crop (leave empty if all bands must be retained)");
   Optionpk<double>  dx_opt("dx", "dx", "Output resolution in x (in meter) (empty: keep original resolution)");
   Optionpk<double>  dy_opt("dy", "dy", "Output resolution in y (in meter) (empty: keep original resolution)");
@@ -542,8 +542,8 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
     else
       nwriteBand=(file_opt[0])? bands.size()+1:bands.size();
 
-    imgWriter->open(ncol,nrow,nwriteBand,theType);
-    imgWriter->setNoData(dstnodata_opt);
+    imgWriter.open(ncol,nrow,nwriteBand,theType);
+    imgWriter.setNoData(dstnodata_opt);
     double gt[6];
     gt[0]=minULX;
     gt[1]=dx;
@@ -551,17 +551,17 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
     gt[3]=maxULY;
     gt[4]=0;
     gt[5]=-dy;
-    imgWriter->setGeoTransform(gt);
+    imgWriter.setGeoTransform(gt);
 
     if(projection_opt.size()){
       if(verbose_opt[0])
         cout << "projection: " << projection_opt[0] << endl;
-      imgWriter->setProjectionProj4(projection_opt[0]);
+      imgWriter.setProjectionProj4(projection_opt[0]);
     }
     else if(theProjection!=""){
       if(verbose_opt[0])
         cout << "projection: " << theProjection << endl;
-      imgWriter->setProjection(theProjection);
+      imgWriter.setProjection(theProjection);
     }
 
     ImgRaster maskReader;
@@ -602,7 +602,7 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
     //create composite image
     if(verbose_opt[0])
       cout << "creating composite image" << endl;
-    Vector2d<double> writeBuffer(nband,imgWriter->nrOfCol());
+    Vector2d<double> writeBuffer(nband,imgWriter.nrOfCol());
     vector<short> fileBuffer(ncol);//holds the number of used files
     Vector2d<short> maxBuffer;//buffer used for maximum voting
     // Vector2d<double> readBuffer(nband);
@@ -614,7 +614,7 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
     if(cruleMap[crule_opt[0]]==maxndvi)//ndvi
       assert(ruleBand_opt.size()==2);
     if(cruleMap[crule_opt[0]]==mode){//max voting
-      maxBuffer.resize(imgWriter->nrOfCol(),256);//use only byte images for max voting
+      maxBuffer.resize(imgWriter.nrOfCol(),256);//use only byte images for max voting
       for(int iclass=0;iclass<class_opt.size();++iclass)
         assert(class_opt[iclass]<maxBuffer.size());
     }
@@ -627,7 +627,7 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
     GDALProgressFunc pfnProgress=GDALTermProgress;
     double progress=0;
     pfnProgress(progress,pszMessage,pProgressArg);
-    for(unsigned int irow=0;irow<imgWriter->nrOfRow();++irow){
+    for(unsigned int irow=0;irow<imgWriter.nrOfRow();++irow){
       vector<float> lineMask;
       Vector2d< vector<double> > storeBuffer;
       vector<bool> writeValid(ncol);
@@ -635,7 +635,7 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
       //convert irow to geo
       double x=0;
       double y=0;
-      imgWriter->image2geo(0,irow,x,y);
+      imgWriter.image2geo(0,irow,x,y);
 
 
       if(cruleMap[crule_opt[0]]==mean ||
@@ -645,7 +645,7 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
          cruleMap[crule_opt[0]]==maxallbands ||
          cruleMap[crule_opt[0]]==stdev)
         storeBuffer.resize(nband,ncol);
-      for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
+      for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
         writeValid[icol]=false;
         fileBuffer[icol]=0;
         if(cruleMap[crule_opt[0]]==mode){//max voting
@@ -711,7 +711,7 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
 	  // }
         }
         for(int ib=0;ib<ncol;++ib){
-          imgWriter->image2geo(ib,irow,x,y);
+          imgWriter.image2geo(ib,irow,x,y);
           //check mask first
           bool valid=true;
           if(maskReader.isInit()){
@@ -1096,32 +1096,32 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
         // (this->at(ifile)).close();
       }
       if(cruleMap[crule_opt[0]]==mode){
-        vector<short> classBuffer(imgWriter->nrOfCol());
+        vector<short> classBuffer(imgWriter.nrOfCol());
         if(class_opt.size()>1){
           for(int iclass=0;iclass<class_opt.size();++iclass){
-            for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol)
+            for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol)
               classBuffer[icol]=maxBuffer[icol][class_opt[iclass]];
-            imgWriter->writeData(classBuffer,irow,iclass);
+            imgWriter.writeData(classBuffer,irow,iclass);
           }
         }
         else{
-          for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
+          for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
             vector<short>::iterator maxit=maxBuffer[icol].begin();
             maxit=stat.mymax(maxBuffer[icol],maxBuffer[icol].begin(),maxBuffer[icol].end());
             writeBuffer[0][icol]=distance(maxBuffer[icol].begin(),maxit);
             if(file_opt[0]>1)
               fileBuffer[icol]=*(maxit);
           }
-          imgWriter->writeData(writeBuffer[0],irow,0);
+          imgWriter.writeData(writeBuffer[0],irow,0);
           if(file_opt[0])
-            imgWriter->writeData(fileBuffer,irow,1);
+            imgWriter.writeData(fileBuffer,irow,1);
         }
       }
       else{
         for(unsigned int iband=0;iband<bands.size();++iband){
-          // assert(writeBuffer[bands[iband]].size()==imgWriter->nrOfCol());
-          assert(writeBuffer[iband].size()==imgWriter->nrOfCol());
-          for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
+          // assert(writeBuffer[bands[iband]].size()==imgWriter.nrOfCol());
+          assert(writeBuffer[iband].size()==imgWriter.nrOfCol());
+          for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
             try{
               switch(cruleMap[crule_opt[0]]){
               case(mean):
@@ -1159,13 +1159,13 @@ CPLErr ImgCollection::composite(shared_ptr<ImgRaster> imgWriter, const AppFactor
               continue;
             }
           }
-          imgWriter->writeData(writeBuffer[iband],irow,iband);
+          imgWriter.writeData(writeBuffer[iband],irow,iband);
         }
         if(file_opt[0]){
-          imgWriter->writeData(fileBuffer,irow,bands.size());
+          imgWriter.writeData(fileBuffer,irow,bands.size());
         }
       }
-      progress=static_cast<float>(irow+1.0)/imgWriter->nrOfRow();
+      progress=static_cast<float>(irow+1.0)/imgWriter.nrOfRow();
       pfnProgress(progress,pszMessage,pProgressArg);
     }
     if(extent_opt.size()&&(cut_opt[0]||eoption_opt.size())){

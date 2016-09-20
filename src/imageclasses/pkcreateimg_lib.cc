@@ -36,7 +36,7 @@ using namespace statfactory;
  **/
 shared_ptr<ImgRaster> ImgRaster::createImg(const AppFactory& app){
   shared_ptr<ImgRaster> pRaster=createImg();
-  createImg(pRaster, app);
+  createImg(*pRaster, app);
   return(pRaster);
 }
 
@@ -45,7 +45,7 @@ shared_ptr<ImgRaster> ImgRaster::createImg(const AppFactory& app){
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
-CPLErr ImgRaster::createImg(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
+CPLErr ImgRaster::createImg(ImgRaster& imgWriter, const AppFactory& app){
 
   Optionpk<unsigned int> nsample_opt("ns", "nsample", "Number of samples");
   Optionpk<unsigned int> nline_opt("nl", "nline", "Number of lines");
@@ -105,10 +105,10 @@ CPLErr ImgRaster::createImg(shared_ptr<ImgRaster> imgWriter, const AppFactory& a
                    otype_opt[0].c_str()))
         theType=(GDALDataType) iType;
     }
-    imgWriter->open(nsample_opt[0],nline_opt[0],nband_opt[0],theType);
-    imgWriter->setNoData(nodata_opt);
+    imgWriter.open(nsample_opt[0],nline_opt[0],nband_opt[0],theType);
+    imgWriter.setNoData(nodata_opt);
     if(description_opt.size())
-      imgWriter->setImageDescription(description_opt[0]);
+      imgWriter.setImageDescription(description_opt[0]);
     double gt[6];
     if(ulx_opt[0]<lrx_opt[0])
       gt[0]=ulx_opt[0];
@@ -118,7 +118,7 @@ CPLErr ImgRaster::createImg(shared_ptr<ImgRaster> imgWriter, const AppFactory& a
       gt[1]=dx_opt[0];
     else if(lrx_opt[0]>0){
       gt[1]=lrx_opt[0]-ulx_opt[0];
-      gt[1]/=imgWriter->nrOfCol();
+      gt[1]/=imgWriter.nrOfCol();
     }
     else
       gt[1]=1;
@@ -132,26 +132,26 @@ CPLErr ImgRaster::createImg(shared_ptr<ImgRaster> imgWriter, const AppFactory& a
       gt[5]=-dy_opt[0];
     else if(lry_opt[0]>0){
       gt[5]=lry_opt[0]-uly_opt[0];
-      gt[5]/=imgWriter->nrOfRow();
+      gt[5]/=imgWriter.nrOfRow();
     }
     else
       gt[5]=1;
-    imgWriter->setGeoTransform(gt);
+    imgWriter.setGeoTransform(gt);
     if(projection_opt.size())
-      imgWriter->setProjectionProj4(projection_opt[0]);
+      imgWriter.setProjectionProj4(projection_opt[0]);
     StatFactory stat;
     gsl_rng* rndgen=stat.getRandomGenerator(seed_opt[0]);
-    vector<double> lineBuffer(imgWriter->nrOfCol());
+    vector<double> lineBuffer(imgWriter.nrOfCol());
     double value=stat.getRandomValue(rndgen,"gaussian",mean_opt[0],sigma_opt[0]);
-    for(unsigned int iband=0;iband<imgWriter->nrOfBand();++iband){
-      for(unsigned int irow=0;irow<imgWriter->nrOfRow();++irow){
-        for(unsigned int icol=0;icol<imgWriter->nrOfCol();++icol){
+    for(unsigned int iband=0;iband<imgWriter.nrOfBand();++iband){
+      for(unsigned int irow=0;irow<imgWriter.nrOfRow();++irow){
+        for(unsigned int icol=0;icol<imgWriter.nrOfCol();++icol){
           if(sigma_opt[0]>0||(!irow&&!iband)){
             value=stat.getRandomValue(rndgen,"gaussian",mean_opt[0],sigma_opt[0]);
             lineBuffer[icol]=value;
           }
         }
-        imgWriter->writeData(lineBuffer,irow,iband);
+        imgWriter.writeData(lineBuffer,irow,iband);
       }
     }
     return(CE_None);

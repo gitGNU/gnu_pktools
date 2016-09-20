@@ -43,7 +43,7 @@ shared_ptr<ImgRaster> ImgRaster::statProfile(const AppFactory& app){
   try{
     shared_ptr<ImgRaster> imgWriter;
     imgWriter=this->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
-    statProfile(imgWriter, app);
+    statProfile(*imgWriter, app);
     return(imgWriter);
   }
   catch(string helpString){
@@ -57,7 +57,7 @@ shared_ptr<ImgRaster> ImgRaster::statProfile(const AppFactory& app){
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
-CPLErr ImgRaster::statProfile(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
+CPLErr ImgRaster::statProfile(ImgRaster& imgWriter, const AppFactory& app){
   Optionpk<std::string> function_opt("f", "function", "Statistics function (mean, median, var, stdev, min, max, sum, mode (provide classes), ismin, ismax, proportion (provide classes), percentile, nvalid");
   Optionpk<double> percentile_opt("perc","perc","Percentile value(s) used for rule percentile");
   // Optionpk<short> class_opt("class", "class", "class value(s) to use for mode, proportion");
@@ -126,33 +126,33 @@ CPLErr ImgRaster::statProfile(shared_ptr<ImgRaster> imgWriter, const AppFactory&
 
     if(verbose_opt[0])
       cout << "Calculating statistic metrics: " << function_opt.size() << endl;
-    // imgWriter->open(output_opt[0],this->nrOfCol(),this->nrOfRow(),function_opt.size(),theType,imageType,memory_opt[0],option_opt);
-    imgWriter->open(this->nrOfCol(),this->nrOfRow(),function_opt.size(),theType);
-    imgWriter->setProjection(this->getProjection());
+    // imgWriter.open(output_opt[0],this->nrOfCol(),this->nrOfRow(),function_opt.size(),theType,imageType,memory_opt[0],option_opt);
+    imgWriter.open(this->nrOfCol(),this->nrOfRow(),function_opt.size(),theType);
+    imgWriter.setProjection(this->getProjection());
     double gt[6];
     this->getGeoTransform(gt);
-    imgWriter->setGeoTransform(gt);
-  
+    imgWriter.setGeoTransform(gt);
+
     // if(colorTable_opt.size()){
     //   if(colorTable_opt[0]!="none"){
     //     if(verbose_opt[0])
     //       cout << "set colortable " << colorTable_opt[0] << endl;
-    //     assert(imgWriter->getDataType()==GDT_Byte);
-    //     imgWriter->setColorTable(colorTable_opt[0]);
+    //     assert(imgWriter.getDataType()==GDT_Byte);
+    //     imgWriter.setColorTable(colorTable_opt[0]);
     //   }
     // }
     // else if(this->getColorTable()!=NULL)
-    //   imgWriter->setColorTable(this->getColorTable());
-  
+    //   imgWriter.setColorTable(this->getColorTable());
+
     if(nodata_opt.size()){
-      for(int iband=0;iband<imgWriter->nrOfBand();++iband)
-        imgWriter->GDALSetNoDataValue(nodata_opt[0],iband);
+      for(int iband=0;iband<imgWriter.nrOfBand();++iband)
+        imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
     }
 
-    assert(imgWriter->nrOfBand()==function_opt.size());
+    assert(imgWriter.nrOfBand()==function_opt.size());
     Vector2d<double> lineInput(this->nrOfBand(),this->nrOfCol());
-    assert(imgWriter->nrOfCol()==this->nrOfCol());
-    Vector2d<double> lineOutput(function_opt.size(),imgWriter->nrOfCol());
+    assert(imgWriter.nrOfCol()==this->nrOfCol());
+    Vector2d<double> lineOutput(function_opt.size(),imgWriter.nrOfCol());
     statfactory::StatFactory stat;
     stat.setNoDataValues(nodata_opt);
     const char* pszMessage;
@@ -207,16 +207,16 @@ CPLErr ImgRaster::statProfile(shared_ptr<ImgRaster> imgWriter, const AppFactory&
         }
       }
       for(int imethod=0;imethod<function_opt.size();++imethod){
-	imgWriter->writeData(lineOutput[imethod],y,imethod);
+        imgWriter.writeData(lineOutput[imethod],y,imethod);
 
       }
-      progress=(1.0+y)/imgWriter->nrOfRow();
+      progress=(1.0+y)/imgWriter.nrOfRow();
       pfnProgress(progress,pszMessage,pProgressArg);
     }
     // filter1d.stats(input,output,function_opt);
 
     // this->close();
-    // imgWriter->close();
+    // imgWriter.close();
     return(CE_None);
   }
   catch(string predefinedString){

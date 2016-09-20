@@ -91,9 +91,10 @@ int main(int argc, char *argv[])
     imgCollection[0]->getMinMax(theMin,theMax,0);
     cout << "min, max: " << theMin << ", " << theMax << endl;
     cout << "file1: " << imgCollection[0]->getFileName() << endl;
-    shared_ptr<ImgRaster> imgRaster(new ImgRaster());
+    ImgRaster imgRaster;
     app.showOptions();
     cout << "file2: " << imgCollection[0]->getFileName() << endl;
+    //test: todo: uncomment next crop line when crop accepts ImgRaster reference instead of shared_ptr
     imgCollection.crop(imgRaster,app);
     filter.smooth(imgRaster,imgRaster,5);
     // filter.morphology(imgRaster,imgRaster,"erode",3,3);
@@ -110,9 +111,9 @@ int main(int argc, char *argv[])
     // else if(imgCollection[0].getProjection()!="")
     //   imgRaster.setProjection(imgCollection[0].getProjection());
 
-    cout << "imgRaster->nrOfCol(): " << imgRaster->nrOfCol() << endl;
-    imgRaster->setFile(output_opt[0],imageType);
-    imgRaster->close();
+    cout << "imgRaster.nrOfCol(): " << imgRaster.nrOfCol() << endl;
+    imgRaster.setFile(output_opt[0],imageType);
+    imgRaster.close();
     inputImg->close();
   }
   catch(string helpString){//help was invoked

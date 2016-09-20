@@ -49,7 +49,7 @@ shared_ptr<ImgRaster> ImgRaster::svm(const AppFactory& app){
   try{
     shared_ptr<ImgRaster> imgWriter;
     imgWriter=this->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
-    svm(imgWriter, app);
+    svm(*imgWriter, app);
     return(imgWriter);
   }
   catch(string helpString){
@@ -63,7 +63,7 @@ shared_ptr<ImgRaster> ImgRaster::svm(const AppFactory& app){
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
-CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
+CPLErr ImgRaster::svm(ImgRaster& imgWriter, const AppFactory& app){
   vector<double> priors;
 
   //--------------------------- command line options ------------------------------------
@@ -676,34 +676,34 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
         if(verbose_opt[0]>=1)
           std::cout << "opening prior image " << priorimg_opt[0] << std::endl;
         priorReader.open(priorimg_opt[0]);
-        assert(priorReader.nrOfCol()==imgWriter->nrOfCol());
-        assert(priorReader.nrOfRow()==imgWriter->nrOfRow());
+        assert(priorReader.nrOfCol()==imgWriter.nrOfCol());
+        assert(priorReader.nrOfRow()==imgWriter.nrOfRow());
       }
 
-      int nrow=imgWriter->nrOfRow();
-      int ncol=imgWriter->nrOfCol();
+      int nrow=imgWriter.nrOfRow();
+      int ncol=imgWriter.nrOfCol();
       vector<char> classOut(ncol);//classified line for writing to image file
 
-      //   assert(nband==imgWriter->nrOfBand());
+      //   assert(nband==imgWriter.nrOfBand());
       ImgRaster classImageBag;
-      // ImgRaster imgWriter->
+      // ImgRaster imgWriter.
       ImgRaster probImage;
       ImgRaster entropyImage;
 
-      string imageType=imgWriter->getImageType();
+      string imageType=imgWriter.getImageType();
       if(classBag_opt.size()){
         classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType);
         classImageBag.GDALSetNoDataValue(nodata_opt[0]);
         classImageBag.copyGeoTransform(imgWriter);
         classImageBag.setProjection(this->getProjection());
       }
-      // imgWriter->open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,memory_opt[0],option_opt);
-      imgWriter->open(this->nrOfCol(),this->nrOfRow(),1,GDT_Byte);
-      imgWriter->GDALSetNoDataValue(nodata_opt[0]);
-      imgWriter->copyGeoTransform(imgWriter);
-      imgWriter->setProjection(this->getProjection());
+      // imgWriter.open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,memory_opt[0],option_opt);
+      imgWriter.open(this->nrOfCol(),this->nrOfRow(),1,GDT_Byte);
+      imgWriter.GDALSetNoDataValue(nodata_opt[0]);
+      imgWriter.copyGeoTransform(imgWriter);
+      imgWriter.setProjection(this->getProjection());
       if(colorTable_opt.size())
-        imgWriter->setColorTable(colorTable_opt[0],0);
+        imgWriter.setColorTable(colorTable_opt[0],0);
       if(prob_opt.size()){
         probImage.open(prob_opt[0],ncol,nrow,nclass,GDT_Byte,imageType);
         probImage.GDALSetNoDataValue(nodata_opt[0]);
@@ -754,8 +754,8 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << band_opt[iband] << std::endl;
             assert(band_opt[iband]>=0);
-            assert(band_opt[iband]<imgWriter->nrOfBand());
-            imgWriter->readData(buffer,iline,band_opt[iband]);
+            assert(band_opt[iband]<imgWriter.nrOfBand());
+            imgWriter.readData(buffer,iline,band_opt[iband]);
             for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -765,8 +765,8 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);
-            assert(iband<imgWriter->nrOfBand());
-            imgWriter->readData(buffer,iline,iband);
+            assert(iband<imgWriter.nrOfBand());
+            imgWriter.readData(buffer,iline,iband);
             for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -795,7 +795,7 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
             double colMask=0;
             double rowMask=0;
 
-            imgWriter->image2geo(icol,iline,geox,geoy);
+            imgWriter.image2geo(icol,iline,geox,geoy);
             maskReader.geo2image(geox,geoy,colMask,rowMask);
             colMask=static_cast<int>(colMask);
             rowMask=static_cast<int>(rowMask);
@@ -973,9 +973,9 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
         if(entropy_opt.size()){
           entropyImage.writeData(entropy,iline);
         }
-        imgWriter->writeData(classOut,iline);
+        imgWriter.writeData(classOut,iline);
         if(!verbose_opt[0]){
-          progress=static_cast<float>(iline+1.0)/imgWriter->nrOfRow();
+          progress=static_cast<float>(iline+1.0)/imgWriter.nrOfRow();
           pfnProgress(progress,pszMessage,pProgressArg);
         }
       }
@@ -983,22 +983,22 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
       if(active_opt.size()){
         for(int iactive=0;iactive<activePoints.size();++iactive){
           std::map<string,double> pointMap;
-          for(int iband=0;iband<imgWriter->nrOfBand();++iband){
+          for(int iband=0;iband<imgWriter.nrOfBand();++iband){
             double value;
-            imgWriter->readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
+            imgWriter.readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
             ostringstream fs;
             fs << "B" << iband;
             pointMap[fs.str()]=value;
           }
           pointMap[label_opt[0]]=0;
           double x, y;
-          imgWriter->image2geo(activePoints[iactive].posx,activePoints[iactive].posy,x,y);
+          imgWriter.image2geo(activePoints[iactive].posx,activePoints[iactive].posy,x,y);
           std::string fieldname="id";//number of the point
           activeWriter.addPoint(x,y,pointMap,fieldname,++nactive);
         }
       }
 
-      // imgWriter->close();
+      // imgWriter.close();
       if(mask_opt.size())
         maskReader.close();
       if(priorimg_opt.size())
@@ -1009,7 +1009,7 @@ CPLErr ImgRaster::svm(shared_ptr<ImgRaster> imgWriter, const AppFactory& app){
         entropyImage.close();
       if(classBag_opt.size())
         classImageBag.close();
-      // imgWriter->close();
+      // imgWriter.close();
     }
     // else{//classify vector file
     //   cm.clearResults();

@@ -96,9 +96,9 @@ public:
     open(imgSrc,copyData);
   };
   ///copy constructor opening an image for writing in memory, copying image attributes from a source image.
-  ImgRaster(std::shared_ptr<ImgRaster> imgSrc, bool copyData=true) : ImgRaster() {
-    open(imgSrc,copyData);
-  };
+  /* ImgRaster(std::shared_ptr<ImgRaster> imgSrc, bool copyData=true) : ImgRaster() { */
+  /*   open(imgSrc,copyData); */
+  /* }; */
   ///constructor opening an image for writing, defining all image attributes. Caching is supported when memory>0
   ImgRaster(const std::string& filename, int ncol, int nrow, int nband, const GDALDataType& dataType, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>()) : ImgRaster() {open(filename, ncol, nrow, nband, dataType, imageType, memory, options);
   };
@@ -135,7 +135,9 @@ public:
     }
       m_offset[band]=theOffset;
   };
-
+  ///set externalData
+  void setExternalData(bool flag){m_externalData=flag;};
+  bool getExternalData() const {return(m_externalData);};
   ///Open image from allocated memory instead of from file. This will allow in place image processing in memory (streaming). Notice that an extra call must be made to set the geotranform and projection. This function has not been tested yet!
   //void open(void* dataPointer, int ncol, int nrow, int nband, const GDALDataType& dataType);
   ///Close the image.
@@ -162,8 +164,6 @@ public:
   CPLErr setGeoTransform(double* gt);
   ///Copy geotransform information from another georeferenced image
   void copyGeoTransform(const ImgRaster& imgSrc);
-  ///Copy geotransform information from another georeferenced image pointer
-  void copyGeoTransform(const std::shared_ptr<ImgRaster>& imgSrc);
   ///Set the projection for this dataset in well known text (wkt) format
   CPLErr setProjection(const std::string& projection);
   ///Set the projection for this dataset from user input (supports epsg:<number> format)
@@ -362,9 +362,8 @@ public:
   ///Open an image for writing in memory, copying image attributes from a source image.
   CPLErr open(ImgRaster& imgSrc,  bool copyData=true);
   ///Open an image for writing in memory, copying image attributes from a source image.
-  CPLErr open(std::shared_ptr<ImgRaster> imgSrc,  bool copyData=true);
+  /* CPLErr open(std::shared_ptr<ImgRaster> imgSrc,  bool copyData=true); */
   ///Open an image for writing using an external data pointer (not tested yet)
-  /* void open(void* dataPointer, int ncol, int nrow, const GDALDataType& dataType); */
   CPLErr open(void* dataPointer, int ncol, int nrow, const GDALDataType& dataType);
   ///Set the image description (only for GeoTiff format: TIFFTAG_IMAGEDESCRIPTION)
   void setImageDescription(const std::string& imageDescription){m_gds->SetMetadataItem( "TIFFTAG_IMAGEDESCRIPTION",imageDescription.c_str());};
@@ -402,21 +401,21 @@ public:
   ///extract pixel values from raster image from a raster sample
   CPLErr extractImg(const app::AppFactory& app);
   ///calculate statistics profile based on multiband raster dataset
-  CPLErr statProfile(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  CPLErr statProfile(ImgRaster& imgWriter, const app::AppFactory& app);
   ///calculate statistics profile based on multiband raster dataset only for in memory
   std::shared_ptr<ImgRaster> statProfile(const app::AppFactory& app);
   ///filter raster dataset
-  CPLErr filter(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  CPLErr filter(ImgRaster& imgWriter, const app::AppFactory& app);
   ///filter raster dataset only for in memory
   std::shared_ptr<ImgRaster> filter(const app::AppFactory& app);
   ///check the difference between two images (validate in case of classification image)
-  CPLErr diff(std::shared_ptr<ImgRaster> imgReference, const app::AppFactory& app);
+  CPLErr diff(ImgRaster& imgReference, const app::AppFactory& app);
   ///svm raster dataset
-  CPLErr svm(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  CPLErr svm(ImgRaster& imgWriter, const app::AppFactory& app);
   ///svm raster dataset only for in memory
   std::shared_ptr<ImgRaster> svm(const app::AppFactory& app);
-  ///create shared pointer to ImgRaster with random values
-  static CPLErr createImg(std::shared_ptr<ImgRaster> imgWriter, const app::AppFactory& app);
+  ///create shared pointer to ImgRaster with values
+  static CPLErr createImg(ImgRaster& imgWriter, const app::AppFactory& app);
   ///create shared pointer to ImgRaster with random values only for in memory
   static std::shared_ptr<ImgRaster> createImg(const app::AppFactory& app);
 protected:
@@ -444,6 +443,8 @@ protected:
   std::vector<double> m_scale;
   ///Vector containing the offset factor to be applied (one offset value for each band)
   std::vector<double> m_offset;
+  ///Flag for external data pointer, do not delete data pointer m_data when flag is set
+  bool m_externalData;
 
   ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
   int m_blockSize;
