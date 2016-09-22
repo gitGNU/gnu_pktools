@@ -38,20 +38,21 @@ using namespace app;
  * @param app application specific option arguments
  * @return output image
  **/
-shared_ptr<ImgRaster> ImgCollection::composite(AppFactory& app){
+shared_ptr<ImgRaster> ImgCollection::composite(const AppFactory& app){
   try{
     shared_ptr<ImgRaster> imgWriter;
-    if(size())
-      imgWriter=(*begin())->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects 
-    else{
-      std::cerr << "Error: no input file provided." << std::endl;
-      app.getHelp();
+    if(size()){
+      imgWriter=(*begin())->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
+      composite(*imgWriter, app);
+      return(imgWriter);
     }
-    composite(*imgWriter, app);
-    return(imgWriter);
+    else{
+      std::string errorString="Input collection is empty. Use --help for help information";
+      throw(errorString);
+    }
   }
-  catch(string helpString){
-    cerr << helpString << endl;
+  catch(string errorString){
+    cerr << errorString << endl;
     return(0);
   }
 }
@@ -217,7 +218,7 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
     std::map<std::string, CRULE_TYPE> cruleMap;
     // //initialize cruleMap
     // enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8};
-  
+
     cruleMap["overwrite"]=overwrite;
     cruleMap["maxndvi"]=maxndvi;
     cruleMap["maxband"]=maxband;
@@ -447,7 +448,7 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
           cout << "input data type: " << theType << endl;
           cout << "nband: " << nband << endl;
         }
-      
+
         maxLRX=theLRX;
         maxULY=theULY;
         minULX=theULX;
@@ -478,7 +479,7 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
       minULX=ulx_opt[0];
       minLRY=lry_opt[0];
     }
-  
+
     bool forceEUgrid=false;
     if(projection_opt.size())
       forceEUgrid=(!(projection_opt[0].compare("EPSG:3035"))||!(projection_opt[0].compare("EPSG:3035"))||projection_opt[0].find("ETRS-LAEA")!=string::npos);
@@ -681,7 +682,7 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
         ulj=floor(ulj);
         lri=floor(lri);
         lrj=floor(lrj);
-        
+
         double startCol=uli;
         double endCol=lri;
         if(uli<0)
@@ -704,11 +705,11 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
           unsigned int readBand=(band_opt.size()>iband)? band_opt[iband] : iband;
           // readBuffer[iband].resize(readncol);
           (this->at(ifile))->readData(readBuffer[ifile][iband],startCol,endCol,readRow,readBand,theResample);
-	  // if(readRow==0&&iband==0){
-	  //   for(unsigned int icol=0;icol<10;++icol)
-	  //     cout << readBuffer[0][0][icol] << " ";
-	  //   cout << endl;
-	  // }
+    // if(readRow==0&&iband==0){
+    //   for(unsigned int icol=0;icol<10;++icol)
+    //     cout << readBuffer[0][0][icol] << " ";
+    //   cout << endl;
+    // }
         }
         for(int ib=0;ib<ncol;++ib){
           imgWriter.image2geo(ib,irow,x,y);
@@ -725,7 +726,7 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
             if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
               if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
 
-		maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
+    maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
                 oldRowMask=rowMask;
               }
               for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
@@ -880,8 +881,8 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
                     val_new*=weight_opt[ifile];
                     writeBuffer[iband][ib]=val_new;
                   }
-		  if(file_opt[0]>1)
-		    fileBuffer[ib]=ifile;
+      if(file_opt[0]>1)
+        fileBuffer[ib]=ifile;
                 }
                 break;
               default:
@@ -894,12 +895,12 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
                     val_new*=weight_opt[ifile];
                     writeBuffer[iband][ib]=val_new;
                   }
-		  if(file_opt[0]>1)
-		    fileBuffer[ib]=ifile;
+      if(file_opt[0]>1)
+        fileBuffer[ib]=ifile;
                 }
                 break;
               }
-	      break;
+        break;
               case(mode)://max voting (only for Byte images)
                 switch(theResample){
                 case(BILINEAR):
@@ -962,7 +963,7 @@ CPLErr ImgCollection::composite(ImgRaster& imgWriter, const AppFactory& app){
                 }
               if(file_opt[0]>1)
                 fileBuffer[ib]=ifile;
-	      break;
+        break;
               case(overwrite):
               default:
                 switch(theResample){

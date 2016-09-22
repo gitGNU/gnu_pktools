@@ -36,20 +36,24 @@ using namespace app;
  * @param app application specific option arguments
  * @return output image
  **/
-shared_ptr<ImgRaster> ImgCollection::crop(AppFactory& app){
+shared_ptr<ImgRaster> ImgCollection::crop(const AppFactory& app){
   try{
-    shared_ptr<ImgRaster> imgWriter;
-    if(size())
-      imgWriter=(*begin())->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
-    else{
-      std::cerr << "Input collection is empty. Use --help for help information" << std::endl;
-      app.getHelp();
+    //test
+    shared_ptr<ImgRaster> imgWriter=ImgRaster::createImg();
+    // shared_ptr<ImgRaster> imgWriter;
+    if(size()){
+      //test
+      // imgWriter=(*begin())->clone();//create clone to first object, allowing for polymorphism in case of derived ImgRaster objects
       crop(*imgWriter, app);
       return(imgWriter);
     }
+    else{
+      std::string errorString="Input collection is empty. Use --help for help information";
+      throw(errorString);
+    }
   }
-  catch(string helpString){
-    cerr << helpString << endl;
+  catch(string errorString){
+    cerr << errorString << endl;
     return(0);
   }
 }

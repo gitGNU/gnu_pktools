@@ -171,11 +171,11 @@ public:
   ///composite image
   CPLErr composite(ImgRaster& imgWriter, const app::AppFactory& app);
   ///composite image only for in memory
-  std::shared_ptr<ImgRaster> composite(app::AppFactory& app);
+  std::shared_ptr<ImgRaster> composite(const app::AppFactory& app);
   ///crop image
   CPLErr crop(ImgRaster& imgWriter, const app::AppFactory& app);
   ///crop image only for in memory
-  std::shared_ptr<ImgRaster> crop(app::AppFactory& app);
+  std::shared_ptr<ImgRaster> crop(const app::AppFactory& app);
 private:
   unsigned int m_index;
   std::vector<double> m_noDataValues;

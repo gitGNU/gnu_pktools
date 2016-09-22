@@ -29,6 +29,11 @@ ImgRaster::ImgRaster(){
   reset();
 }
 
+
+ImgRaster::ImgRaster(const app::AppFactory& app) : ImgRaster() {
+  createImg(*this,app);
+}
+
 void ImgRaster::reset(void)
 {
   m_gds=0;
