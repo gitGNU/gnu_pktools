@@ -49,9 +49,22 @@ namespace app
       for(int iarg=0;iarg<argc;++iarg)
         m_argv.push_back(argv[iarg]);
     }
+    ///push bool option (used as flag)
+    void pushOption(const std::string &key)
+    {
+      std::ostringstream os;
+      // os << "--" << key;;
+      if(key=="help")
+        os << "--" << key;
+      else
+        os << "-" << key;
+      m_argv.push_back(os.str().c_str());
+      ++m_argc;
+    };
     ///set bool option (used as flag)
     void setOption(const std::string &key)
     {
+      clearOption(key);
       std::ostringstream os;
       // os << "--" << key;;
       if(key=="help")
@@ -64,6 +77,18 @@ namespace app
     ///set key value option
     void setOption(const std::string &key, const std::string &value)
     {
+      clearOption(key);
+      std::ostringstream os;
+      os << "-" << key;
+      m_argv.push_back(os.str());
+      ++m_argc;
+      m_argv.push_back(value);
+      ++m_argc;
+    };
+    ///push key value option
+    void pushOption(const std::string &key, const std::string &value)
+    {
+      clearOption(key);
       std::ostringstream os;
       os << "-" << key;
       m_argv.push_back(os.str());
@@ -73,7 +98,7 @@ namespace app
     };
     void getHelp() {setOption("help");};
     void clearOptions() {m_argc=1;m_argv.clear();m_argv.push_back("appFactory");};
-    void clearOption(const std::string &key) 
+    void clearOption(const std::string &key)
     {
       std::vector<std::string>::iterator opit=m_argv.begin();
       while(opit!=m_argv.end()){
@@ -101,7 +126,7 @@ namespace app
     std::string getArgv(unsigned int i) const {
       if((i>0)&&(i<m_argv.size()))
         return m_argv[i];
-      else 
+      else
         throw(std::string("Error: invalid index"));
     }
     std::vector<std::string> getArgv() const {

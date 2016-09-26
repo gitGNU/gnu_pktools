@@ -24,14 +24,10 @@ extern "C" {
 }
 #include <config.h>
 #include "ImgRaster.h"
+#include "algorithms/StatFactory.h"
 
 ImgRaster::ImgRaster(){
   reset();
-}
-
-
-ImgRaster::ImgRaster(const app::AppFactory& app) : ImgRaster() {
-  createImg(*this,app);
 }
 
 void ImgRaster::reset(void)
@@ -49,7 +45,9 @@ void ImgRaster::reset(void)
   m_begin.clear();
   m_end.clear();
   m_options.clear();
-  m_writeMode=false;
+  // m_writeMode=false;
+  m_access=READ_ONLY;
+  m_resample=GRIORA_NearestNeighbour;
   m_filename.clear();
   m_data.clear();
   m_externalData=false;
@@ -153,9 +151,9 @@ CPLErr ImgRaster::open(void* dataPointer, int ncol, int nrow, const GDALDataType
 
 void ImgRaster::close(void)
 {
-  if(m_writeMode){
+  if(writeMode()){
     if(m_data.size()&&m_filename.size()){
-      for(int iband=0;iband<nrOfBand();++iband) 
+      for(int iband=0;iband<nrOfBand();++iband)
         writeNewBlock(nrOfRow(),iband);
     }
     char **papszOptions=NULL;
@@ -172,7 +170,7 @@ void ImgRaster::close(void)
 /**
  * @return the projection of this data set in string format
  **/
-std::string ImgRaster::getProjection(void) const 
+std::string ImgRaster::getProjection(void) const
 {
   // if(m_gds)
   //   return(m_gds->GetProjectionRef());
@@ -183,7 +181,7 @@ std::string ImgRaster::getProjection(void) const
 /**
  * @return the projection of this data set in string format
  **/
-std::string ImgRaster::getProjectionRef(void) const 
+std::string ImgRaster::getProjectionRef(void) const
 {
   // if(m_gds)
   //   return(m_gds->GetProjectionRef());
@@ -228,7 +226,10 @@ CPLErr ImgRaster::setProjection(const std::string& projection)
  **/
 GDALDataType ImgRaster::getDataType(int band) const
 {
-  assert(band<m_nband+1);
+  if(nrOfBand()<=band){
+    std::string errorString="Error: band number exceeds available bands in getDataType";
+    throw(errorString);
+  }
   if(getRasterBand(band))
     return((getRasterBand(band)->GetRasterDataType()));
   else
@@ -241,7 +242,10 @@ GDALDataType ImgRaster::getDataType(int band) const
  **/
 GDALRasterBand* ImgRaster::getRasterBand(int band) const
 {
-  assert(band<m_nband+1);
+  if(nrOfBand()<=band){
+    std::string errorString="Error: band number exceeds available bands in getRasterBand";
+    throw(errorString);
+  }
   if(m_gds)
     return((m_gds->GetRasterBand(band+1)));
   else
@@ -254,7 +258,10 @@ GDALRasterBand* ImgRaster::getRasterBand(int band) const
  **/
 GDALColorTable* ImgRaster::getColorTable(int band) const
 {
-  assert(band<m_nband+1);
+  if(nrOfBand()<=band){
+    std::string errorString="Error: band number exceeds available bands in getColorTable";
+    throw(errorString);
+  }
   GDALRasterBand* theRasterBand=getRasterBand(band);
   if(theRasterBand)
     return(theRasterBand->GetColorTable());
@@ -290,11 +297,10 @@ CPLErr ImgRaster::setGeoTransform(double* gt){
   m_gt[3]=gt[3];
   m_gt[4]=gt[4];
   m_gt[5]=gt[5];
-  if(m_gds)
+  if(m_gds&&m_access==WRITE)
     return(m_gds->SetGeoTransform(m_gt));
   else
     return(CE_Failure);
-      
 }
 
 /**
@@ -365,7 +371,7 @@ char** ImgRaster::getMetadata() const
     else
       return(0);
   }
-  else 
+  else
     return(0);
     // return (char**)"";
 }
@@ -402,7 +408,7 @@ std::string ImgRaster::getDescription() const
 /**
  * @return the meta data item of this data set in string format
  **/
-std::string ImgRaster::getMetadataItem() const 
+std::string ImgRaster::getMetadataItem() const
 {
   if(m_gds){
     if(m_gds->GetDriver()->GetMetadataItem( GDAL_DMD_LONGNAME )!=NULL)
@@ -416,7 +422,7 @@ std::string ImgRaster::getMetadataItem() const
 /**
  * @return the image description (TIFFTAG) of this data set in string format
  **/
-std::string ImgRaster::getImageDescription() const 
+std::string ImgRaster::getImageDescription() const
 {
   if(m_gds){
     if(m_gds->GetDriver()->GetMetadataItem("TIFFTAG_IMAGEDESCRIPTION")!=NULL)
@@ -645,7 +651,8 @@ int ImgRaster::pushNoDataValue(double noDataValue)
 CPLErr ImgRaster::open(const std::string& filename, unsigned int memory)
 // void ImgRaster::open(const std::string& filename, const GDALAccess& readMode, unsigned int memory)
 {
-  m_writeMode=false;
+  // m_writeMode=false;
+  m_access=READ_ONLY;
   m_filename = filename;
   registerDriver();
   initMem(memory);
@@ -735,12 +742,19 @@ void ImgRaster::registerDriver()
     // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #if GDAL_VERSION_MAJOR < 2
     GDALAllRegister();
-    m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
+    if(m_access==UPDATE)
+      m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_Update);
+    else
+      m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
     // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #else
     GDALAllRegister();
     // if(readMode==GA_ReadOnly)
-    m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY|GDAL_OF_RASTER, NULL, NULL, NULL);
+    if(m_access==UPDATE)
+      m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
+    else
+      m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY|GDAL_OF_RASTER, NULL, NULL, NULL);
+    // m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_READONLY|GDAL_OF_RASTER, NULL, NULL, NULL);
     // else if(readMode==GA_Update)
     //   m_gds = (GDALDataset*) GDALOpenEx(m_filename.c_str(), GDAL_OF_UPDATE|GDAL_OF_RASTER, NULL, NULL, NULL);
 #endif
@@ -763,7 +777,207 @@ void ImgRaster::registerDriver()
     m_gt[4]=adfGeoTransform[4];
     m_gt[5]=adfGeoTransform[5];
     m_projection=m_gds->GetProjectionRef();
-  }  
+  }
+}
+
+/**
+ * @param app application options
+ **/
+ImgRaster::ImgRaster(const app::AppFactory &app) {
+  //input
+  Optionpk<std::string> input_opt("i", "input", "input filename");
+  Optionpk<std::string> resample_opt("r", "r", "resample: GRIORA_NearestNeighbour|GRIORA_Bilinear|GRIORA_Cubic|GRIORA_CubicSpline|GRIORA_Lanczos|GRIORA_Average|GRIORA_Average|GRIORA_Gauss (check http://www.gdal.org/gdal_8h.html#a640ada511cbddeefac67c548e009d5a)","GRIORA_NearestNeighbour");
+  Optionpk<std::string> extra_opt("extra", "extra", "RGDALRasterIOExtraArg (check http://www.gdal.org/structGDALRasterIOExtraArg.html)");
+  // Optionpk<std::string> targetSRS_opt("t_srs", "t_srs", "Target spatial reference system in EPSG format (e.g., epsg:3035)");//todo
+  //output
+  Optionpk<int> nsample_opt("ns", "nsample", "Number of samples");
+  Optionpk<int> nline_opt("nl", "nline", "Number of lines");
+  Optionpk<int> band_opt("b", "band", "Number of bands");
+  Optionpk<std::string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64})","Byte");
+  Optionpk<double> nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
+  Optionpk<unsigned long int> seed_opt("seed", "seed", "seed value for random generator",0);
+  Optionpk<double> mean_opt("mean", "mean", "Mean value for random generator",0);
+  Optionpk<double> sigma_opt("sigma", "sigma", "Sigma value for random generator",0);
+  Optionpk<std::string> assignSRS_opt("a_srs", "a_srs", "Assign the spatial reference for the output file, e.g., psg:3035 to use European projection and force to European grid");
+  Optionpk<std::string> description_opt("d", "description", "Set image description");
+  //input and output
+  Optionpk<double> ulx_opt("ulx", "ulx", "Upper left x value bounding box");
+  Optionpk<double> uly_opt("uly", "uly", "Upper left y value bounding box");
+  Optionpk<double> lrx_opt("lrx", "lrx", "Lower right x value bounding box");
+  Optionpk<double> lry_opt("lry", "lry", "Lower right y value bounding box");
+  Optionpk<double> dx_opt("dx", "dx", "Resolution in x");
+  Optionpk<double> dy_opt("dy", "dy", "Resolution in y");
+  Optionpk<std::string> access_opt("access", "access", "access (READ_ONLY, UPDATE)","READ_ONLY",2);//todo
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
+
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  doProcess=input_opt.retrieveOption(app.getArgc(),app.getArgv());
+  nsample_opt.retrieveOption(app.getArgc(),app.getArgv());
+  nline_opt.retrieveOption(app.getArgc(),app.getArgv());
+  band_opt.retrieveOption(app.getArgc(),app.getArgv());
+  ulx_opt.retrieveOption(app.getArgc(),app.getArgv());
+  uly_opt.retrieveOption(app.getArgc(),app.getArgv());
+  lrx_opt.retrieveOption(app.getArgc(),app.getArgv());
+  lry_opt.retrieveOption(app.getArgc(),app.getArgv());
+  dx_opt.retrieveOption(app.getArgc(),app.getArgv());
+  dy_opt.retrieveOption(app.getArgc(),app.getArgv());
+  resample_opt.retrieveOption(app.getArgc(),app.getArgv());
+  extra_opt.retrieveOption(app.getArgc(),app.getArgv());
+  otype_opt.retrieveOption(app.getArgc(),app.getArgv());
+  nodata_opt.retrieveOption(app.getArgc(),app.getArgv());
+  seed_opt.retrieveOption(app.getArgc(),app.getArgv());
+  mean_opt.retrieveOption(app.getArgc(),app.getArgv());
+  sigma_opt.retrieveOption(app.getArgc(),app.getArgv());
+  description_opt.retrieveOption(app.getArgc(),app.getArgv());
+  assignSRS_opt.retrieveOption(app.getArgc(),app.getArgv());
+  // targetSRS_opt.retrieveOption(app.getArgc(),app.getArgv());
+  access_opt.retrieveOption(app.getArgc(),app.getArgv());
+  memory_opt.retrieveOption(app.getArgc(),app.getArgv());
+  if(!doProcess){
+    std::cout << std::endl;
+    std::ostringstream helpStream;
+    helpStream << "help info: ";
+    throw(helpStream.str());//help was invoked, stop processing
+  }
+  if(app.empty()){
+    ImgRaster();
+  }
+  else if(input_opt.empty()){
+    // createImg(*this,app);
+    if(nsample_opt.empty()){
+      std::ostringstream errorStream;
+      errorStream << "Warning: no number of samples (use option -ns). Returning empty image" << std::endl;
+      throw(errorStream.str());
+    }
+    if(nline_opt.empty()){
+      std::ostringstream errorStream;
+      errorStream << "Warning: no number of lines (use option -nl). Returning empty image" << std::endl;
+      throw(errorStream.str());
+    }
+    GDALDataType theType=getGDALDataType(otype_opt[0]);
+    open(nsample_opt[0],nline_opt[0],band_opt[0],theType);
+    setNoData(nodata_opt);
+    if(description_opt.size())
+      setImageDescription(description_opt[0]);
+    double gt[6];
+    if(ulx_opt[0]<lrx_opt[0])
+      gt[0]=ulx_opt[0];
+    else
+      gt[0]=0;
+    if(dx_opt.size())
+      gt[1]=dx_opt[0];
+    else if(lrx_opt[0]>0){
+      gt[1]=lrx_opt[0]-ulx_opt[0];
+      gt[1]/=nrOfCol();
+    }
+    else
+      gt[1]=1;
+    gt[2]=0;
+    if(uly_opt[0]>lry_opt[0])
+      gt[3]=uly_opt[0];
+    else
+      gt[3]=0;
+    gt[4]=0;
+    if(dy_opt.size())
+      gt[5]=-dy_opt[0];
+    else if(lry_opt[0]>0){
+      gt[5]=lry_opt[0]-uly_opt[0];
+      gt[5]/=nrOfRow();
+    }
+    else
+      gt[5]=1;
+    setGeoTransform(gt);
+    if(assignSRS_opt.size())
+      setProjectionProj4(assignSRS_opt[0]);
+    statfactory::StatFactory stat;
+    gsl_rng* rndgen=stat.getRandomGenerator(seed_opt[0]);
+    std::vector<double> lineBuffer(nrOfCol());
+    double value=stat.getRandomValue(rndgen,"gaussian",mean_opt[0],sigma_opt[0]);
+    for(unsigned int iband=0;iband<nrOfBand();++iband){
+      for(unsigned int irow=0;irow<nrOfRow();++irow){
+        for(unsigned int icol=0;icol<nrOfCol();++icol){
+          if(sigma_opt[0]>0||(!irow&&!iband)){
+            value=stat.getRandomValue(rndgen,"gaussian",mean_opt[0],sigma_opt[0]);
+            lineBuffer[icol]=value;
+          }
+        }
+        writeData(lineBuffer,irow,iband);
+      }
+    }
+  }
+  else{
+    setAccess(access_opt[0]);
+    m_filename=input_opt[0];
+    registerDriver();
+    if(band_opt.empty()){
+      while(band_opt.size()<nrOfBand())
+        band_opt.push_back(band_opt.size());
+    }
+    if(ulx_opt.empty())
+      ulx_opt.push_back(getUlx());
+    if(uly_opt.empty())
+      uly_opt.push_back(getUly());
+    if(lrx_opt.empty())
+      lrx_opt.push_back(getLrx());
+    if(lry_opt.empty())
+      lry_opt.push_back(getLry());
+    if(dx_opt.empty())
+      dx_opt.push_back(getDeltaX());
+    if(dy_opt.empty())
+      dy_opt.push_back(getDeltaY());
+
+    //todo: reproject on the fly using
+    // OGRSpatialReference::SetFromUserInput
+
+    double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
+    //todo: set extra according to double offset calculated from bounding box and buf size
+    double diffXm=ulx_opt[0]-getUlx();
+    double dfXSize=diffXm/getDeltaX();
+    int nXOff=static_cast<int>(dfXSize);
+    double dfXOff=dfXSize-nXOff;
+    double diffYm=getUly()-uly_opt[0];
+    double dfYSize=diffYm/getDeltaY();
+    int nYOff=static_cast<int>(dfYSize);
+    double dfYOff=dfYSize-nYOff;
+    GDALRasterIOExtraArg sExtraArg;
+
+    int nXSize=abs(static_cast<unsigned int>(ceil((lrx_opt[0]-ulx_opt[0])/getDeltaX())));
+    int nYSize=abs(static_cast<unsigned int>(ceil((uly_opt[0]-lry_opt[0])/getDeltaY())));
+
+    m_resample=getGDALResample(resample_opt[0]);
+
+    gt[0]=ulx_opt[0];
+    gt[3]=uly_opt[0];
+    gt[1]=dx_opt[0];//todo: adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
+    gt[2]=0;//todo: $-sin(\alpha)\cdot\textrm{Xres}$
+    gt[4]=0;//todo: $-sin(\alpha)\cdot\textrm{Yres}$
+    gt[5]=-dy_opt[0];//todo: a$-cos(\alpha)\cdot\textrm{Yres}
+    setGeoTransform(gt);
+
+    int nBufXSize=abs(static_cast<unsigned int>(ceil((lrx_opt[0]-ulx_opt[0])/dx_opt[0])));
+    int nBufYSize=abs(static_cast<unsigned int>(ceil((uly_opt[0]-lry_opt[0])/dy_opt[0])));
+    m_ncol=nBufXSize;
+    m_nrow=nBufYSize;
+    //todo: support user defined selection of bands
+    // m_nband=band_opt.size();
+
+    //we initialize memory using user defined dimensions instead of those read from GDAL dataset
+    initMem(memory_opt[0]);
+    for(int iband=0;iband<band_opt.size();++iband){
+      m_begin[iband]=0;
+      m_end[iband]=m_begin[iband]+m_blockSize;
+    }
+  }
+}
+
+/**
+ * @param app application specific option arguments
+ * @return output image
+ **/
+std::shared_ptr<ImgRaster> ImgRaster::createImg(const app::AppFactory& app){
+  std::shared_ptr<ImgRaster> pRaster=createImg(app);
+  // createImg(*pRaster, app);
+  return(pRaster);
 }
 
 /**
@@ -784,12 +998,32 @@ CPLErr ImgRaster::readData(int band)
   }
   m_begin[band]=0;
   m_end[band]=nrOfRow();
-  GDALRasterBand  *poBand;
-  assert(band<nrOfBand()+1);
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  returnValue=poBand->RasterIO(GF_Read,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
-  return(returnValue);//new block was read
+  readNewBlock(0,band);
 }
+
+// CPLErr ImgRaster::readData(int band)
+// {
+//   CPLErr returnValue=CE_None;
+//   if(m_blockSize<nrOfRow()){
+//     std::ostringstream s;
+//     s << "Error: increase memory to read all pixels in memory (now at " << 100.0*m_blockSize/nrOfRow() << "%)";
+//     throw(s.str());
+//   }
+//   if(m_gds == NULL){
+//     std::string errorString="Error in readData";
+//     throw(errorString);
+//   }
+//   m_begin[band]=0;
+//   m_end[band]=nrOfRow();
+//   GDALRasterBand  *poBand;
+//   if(nrOfBand()<=iband){
+//     std::string errorString="Error: band number exceeds available bands in readData";
+//     throw(errorString);
+//   }
+//   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+//   returnValue=poBand->RasterIO(GF_Read,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
+//   return(returnValue);//new block was read
+// }
 
 /**
  * @return true if block was read
@@ -822,15 +1056,89 @@ CPLErr ImgRaster::readNewBlock(int row, int band)
   }
   if(m_end[band]>nrOfRow())
     m_end[band]=nrOfRow();
+
+  int gds_ncol= m_gds->GetRasterXSize();
+  int gds_nrow= m_gds->GetRasterYSize();
+  int gds_nband= m_gds->GetRasterCount();
+  double gds_gt[6];
+  m_gds->GetGeoTransform(gds_gt);
+  double gds_ulx=gds_gt[0];
+  double gds_uly=gds_gt[3];
+  double gds_lrx=gds_gt[0]+gds_ncol*gds_gt[1]+gds_nrow*gds_gt[2];
+  double gds_lry=gds_gt[3]+gds_ncol*gds_gt[4]+gds_nrow*gds_gt[5];
+  double gds_dx=gds_gt[1];
+  double gds_dy=-gds_gt[5];
+  double diffXm=getUlx()-gds_ulx;
+  double dfXSize=diffXm/gds_dx;
+  int nXOff=static_cast<int>(dfXSize);
+  double dfXOff=dfXSize-nXOff;
+  double diffYm=gds_uly-getUly();
+  double dfYSize=diffYm/gds_dy;
+  int nYOff=static_cast<int>(dfYSize);
+  double dfYOff=dfYSize-nYOff;
+  GDALRasterIOExtraArg sExtraArg;
+
+  int nXSize=abs(static_cast<unsigned int>(ceil((getLrx()-getUlx())/gds_dx)));
+
+  INIT_RASTERIO_EXTRA_ARG(sExtraArg);
+  // sExtraArg.eResampleAlg = getGDALResample(resample_opt[0]);
+  sExtraArg.eResampleAlg = m_resample;
+  if(dfXOff>0||dfYOff>0){
+    sExtraArg.bFloatingPointWindowValidity = TRUE;
+    sExtraArg.dfXOff = dfXOff;
+    sExtraArg.dfYOff = dfYOff;
+    sExtraArg.dfXSize = dfXSize;
+    sExtraArg.dfYSize = dfYSize;
+  }
   for(int iband=0;iband<m_nband;++iband){
     //fetch raster band
     GDALRasterBand  *poBand;
-    assert(iband<nrOfBand()+1);
+    if(nrOfBand()<=iband){
+      std::string errorString="Error: band number exceeds available bands in readNewBlock";
+      throw(errorString);
+    }
     poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-    returnValue=poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
+    int nYSize=abs(static_cast<unsigned int>(ceil((m_end[iband]-m_begin[iband])*getDeltaY()/gds_dy)));
+    //test
+    std::cout << "nXOff: " << nXOff << std::endl;
+    std::cout << "nYOff: " << nYOff << std::endl;
+    std::cout << "m_begin[iband]: " << m_begin[iband] << std::endl;
+    std::cout << "nXSize: " << nXSize << std::endl;
+    std::cout << "nYSize: " << nYSize << std::endl;
+    std::cout << "nrOfCol() " << nrOfCol() << std::endl;
+    std::cout << "m_end[iband]-m_begin[iband]: " << m_end[iband]-m_begin[iband] << std::endl;
+    std::cout << "m_resample: " << m_resample << std::endl;
+    returnValue=poBand->RasterIO(GF_Read,nXOff,nYOff+m_begin[iband],nXSize,nYSize,m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0,&sExtraArg);
+    // returnValue=poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
   }
   return(returnValue);//new block was read
 }
+
+// CPLErr ImgRaster::readNewBlock(int row, int band)
+// {
+//   CPLErr returnValue=CE_None;
+//   if(m_gds == NULL){
+//     std::string errorString="Error in readNewBlock";
+//     throw(errorString);
+//   }
+//   if(m_end[band]<m_blockSize)//first time
+//     m_end[band]=m_blockSize;
+//   while(row>=m_end[band]&&m_begin[band]<nrOfRow()){
+//     m_begin[band]+=m_blockSize;
+//     m_end[band]=m_begin[band]+m_blockSize;
+//   }
+//   if(m_end[band]>nrOfRow())
+//     m_end[band]=nrOfRow();
+//   for(int iband=0;iband<m_nband;++iband){
+//     //fetch raster band
+//     GDALRasterBand  *poBand;
+//     //todo: replace assert with exception
+//     assert(iband<nrOfBand()+1);
+//     poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
+//     returnValue=poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
+//   }
+//   return(returnValue);//new block was read
+// }
 
 /**
  * @param x Reported column where minimum value in image was found (start counting from 0)
@@ -846,19 +1154,19 @@ double ImgRaster::getMin(int& x, int& y, int band){
     readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
-	continue;
+  continue;
       if(isValid){
-	if(lineBuffer[icol]<minValue){
+  if(lineBuffer[icol]<minValue){
           y=irow;
           x=icol;
           minValue=lineBuffer[icol];
         }
       }
       else{
-	y=irow;
-	x=icol;
-	minValue=lineBuffer[icol];
-	isValid=true;
+  y=irow;
+  x=icol;
+  minValue=lineBuffer[icol];
+  isValid=true;
       }
     }
   }
@@ -882,19 +1190,19 @@ double ImgRaster::getMax(int& x, int& y, int band){
     readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
-	continue;
+  continue;
       if(isValid){
-	if(lineBuffer[icol]>maxValue){
+  if(lineBuffer[icol]>maxValue){
           y=irow;
           x=icol;
           maxValue=lineBuffer[icol];
         }
       }
       else{
-	y=irow;
-	x=icol;
-	maxValue=lineBuffer[icol];
-	isValid=true;
+  y=irow;
+  x=icol;
+  maxValue=lineBuffer[icol];
+  isValid=true;
       }
     }
   }
@@ -917,34 +1225,35 @@ void ImgRaster::getMinMax(int startCol, int endCol, int startRow, int endRow, in
   double maxConstraint=maxValue;
   std::vector<double> lineBuffer(endCol-startCol+1);
   bool isValid=false;
+  //todo: replace assert with exception
   assert(endRow<nrOfRow());
   for(int irow=startCol;irow<endRow+1;++irow){
     readData(lineBuffer,startCol,endCol,irow,band);
     for(int icol=0;icol<lineBuffer.size();++icol){
       if(isNoData(lineBuffer[icol]))
-	continue;
+  continue;
       if(isValid){
-	if(isConstraint){
-	  if(lineBuffer[icol]<minConstraint)
-	    continue;
-	  if(lineBuffer[icol]>maxConstraint)
-	    continue;
-	}
-	if(lineBuffer[icol]<minValue)
-	  minValue=lineBuffer[icol];
-	if(lineBuffer[icol]>maxValue)
-	  maxValue=lineBuffer[icol];
+  if(isConstraint){
+    if(lineBuffer[icol]<minConstraint)
+      continue;
+    if(lineBuffer[icol]>maxConstraint)
+      continue;
+  }
+  if(lineBuffer[icol]<minValue)
+    minValue=lineBuffer[icol];
+  if(lineBuffer[icol]>maxValue)
+    maxValue=lineBuffer[icol];
       }
       else{
-	if(isConstraint){
-	  if(lineBuffer[icol]<minConstraint)
-	    continue;
-	  if(lineBuffer[icol]>maxConstraint)
-	    continue;
-	}
-	minValue=lineBuffer[icol];
-	maxValue=lineBuffer[icol];
-	isValid=true;
+  if(isConstraint){
+    if(lineBuffer[icol]<minConstraint)
+      continue;
+    if(lineBuffer[icol]>maxConstraint)
+      continue;
+  }
+  minValue=lineBuffer[icol];
+  maxValue=lineBuffer[icol];
+  isValid=true;
       }
     }
   }
@@ -968,29 +1277,29 @@ void ImgRaster::getMinMax(double& minValue, double& maxValue, int band)
     readData(lineBuffer,irow,band);
     for(int icol=0;icol<nrOfCol();++icol){
       if(isNoData(lineBuffer[icol]))
-	continue;
+  continue;
       if(isValid){
-	if(isConstraint){
-	  if(lineBuffer[icol]<minConstraint)
-	    continue;
-	  if(lineBuffer[icol]>maxConstraint)
-	    continue;
-	}
-	if(lineBuffer[icol]<minValue)
-	  minValue=lineBuffer[icol];
-	if(lineBuffer[icol]>maxValue)
-	  maxValue=lineBuffer[icol];
+  if(isConstraint){
+    if(lineBuffer[icol]<minConstraint)
+      continue;
+    if(lineBuffer[icol]>maxConstraint)
+      continue;
+  }
+  if(lineBuffer[icol]<minValue)
+    minValue=lineBuffer[icol];
+  if(lineBuffer[icol]>maxValue)
+    maxValue=lineBuffer[icol];
       }
       else{
-	if(isConstraint){
-	  if(lineBuffer[icol]<minConstraint)
-	    continue;
-	  if(lineBuffer[icol]>maxConstraint)
-	    continue;
-	}
-	minValue=lineBuffer[icol];
-	maxValue=lineBuffer[icol];
-	isValid=true;
+  if(isConstraint){
+    if(lineBuffer[icol]<minConstraint)
+      continue;
+    if(lineBuffer[icol]>maxConstraint)
+      continue;
+  }
+  minValue=lineBuffer[icol];
+  maxValue=lineBuffer[icol];
+  isValid=true;
       }
     }
   }
@@ -1009,7 +1318,7 @@ void ImgRaster::getMinMax(double& minValue, double& maxValue, int band)
 double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, double& max, int& nbin, int theBand, bool kde){
   double minValue=0;
   double maxValue=0;
-      
+
   if(min>=max)
     getMinMax(minValue,maxValue,theBand);
   else{
@@ -1050,6 +1359,7 @@ double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, dou
   }
   else
     nbin=1;
+  //todo: replace assert with exception
   assert(nbin>0);
   if(histvector.size()!=nbin){
     histvector.resize(nbin);
@@ -1068,26 +1378,27 @@ double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, dou
       else if(lineBuffer[icol]<minValue)
         ++ninvalid;
       else if(nbin==1)
-	++histvector[0];
+  ++histvector[0];
       else{//scale to [0:nbin]
-	if(sigma>0){
-	  //create kde for Gaussian basis function
-	  //todo: speed up by calculating first and last bin with non-zero contriubtion...
-	  //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
-	  for(int ibin=0;ibin<nbin;++ibin){
-	    double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
-	    double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
-	    histvector[ibin]+=thePdf;
-	    nvalid+=thePdf;
-	  }
-	}
-	else{
-	  int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
-	  assert(theBin>=0);
-	  assert(theBin<nbin);
-	  ++histvector[theBin];
-	  ++nvalid;
-	}
+  if(sigma>0){
+    //create kde for Gaussian basis function
+    //todo: speed up by calculating first and last bin with non-zero contriubtion...
+    //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
+    for(int ibin=0;ibin<nbin;++ibin){
+      double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
+      double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
+      histvector[ibin]+=thePdf;
+      nvalid+=thePdf;
+    }
+  }
+  else{
+    int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
+    //todo: replace assert with exception
+    assert(theBin>=0);
+    assert(theBin<nbin);
+    ++histvector[theBin];
+    ++nvalid;
+  }
       // else if(lineBuffer[icol]==maxValue)
       //   ++histvector[nbin-1];
       // else
@@ -1129,10 +1440,10 @@ unsigned long int ImgRaster::getNvalid(int band)
     for(int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,irow,band);
       for(int icol=0;icol<nrOfCol();++icol){
-	if(isNoData(lineBuffer[icol]))
-	  continue;
-	else
-	  ++nvalid;
+  if(isNoData(lineBuffer[icol]))
+    continue;
+  else
+    ++nvalid;
       }
     }
     return nvalid;
@@ -1153,10 +1464,10 @@ unsigned long int ImgRaster::getNinvalid(int band)
     for(int irow=0;irow<nrOfRow();++irow){
       readData(lineBuffer,irow,band);
       for(int icol=0;icol<nrOfCol();++icol){
-	if(isNoData(lineBuffer[icol]))
-	  continue;
-	else
-	  ++nvalid;
+  if(isNoData(lineBuffer[icol]))
+    continue;
+  else
+    ++nvalid;
       }
     }
     return (nrOfCol()*nrOfRow())-nvalid;
@@ -1224,12 +1535,16 @@ CPLErr ImgRaster::writeNewBlock(int row, int band)
     std::string errorString="Error in writeNewBlock";
     throw(errorString);
   }
+  //todo: replace assert with exception
   //assert(row==m_end)
   if(m_end[band]>nrOfRow())
     m_end[band]=nrOfRow();
   //fetch raster band
   GDALRasterBand  *poBand;
-  assert(band<nrOfBand()+1);
+  if(nrOfBand()<=band){
+    std::string errorString="Error: band number exceeds available bands in writeNewBlock";
+    throw(errorString);
+  }
   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
   returnValue=poBand->RasterIO(GF_Write,0,m_begin[band],nrOfCol(),m_end[band]-m_begin[band],m_data[band],nrOfCol(),m_end[band]-m_begin[band],getDataType(),0,0);
   if(m_begin[band]+m_blockSize<nrOfRow()){
@@ -1306,11 +1621,13 @@ CPLErr ImgRaster::open(ImgRaster& imgSrc, bool copyData)
   imgSrc.getScale(m_scale);
   imgSrc.getOffset(m_offset);
   if(m_filename!=""){
-    m_writeMode=true;
+    // m_writeMode=true;
+    m_access=WRITE;
     registerDriver();
   }
   else
-    m_writeMode=false;
+    m_access=READ_ONLY;
+    // m_writeMode=false;
   initMem(0);
   for(int iband=0;iband<m_nband;++iband){
     m_begin[iband]=0;
@@ -1436,7 +1753,8 @@ CPLErr ImgRaster::open(int ncol, int nrow, int nband, const GDALDataType& dataTy
     m_end[iband]=m_begin[iband]+m_blockSize;
   }
   if(m_filename!=""){
-    m_writeMode=true;
+    // m_writeMode=true;
+    m_access=WRITE;
     registerDriver();
   }
   return(CE_None);
@@ -1453,7 +1771,7 @@ CPLErr ImgRaster::open(int ncol, int nrow, int nband, const GDALDataType& dataTy
 //     std::string errorString="FileOpenError";
 //     throw(errorString);
 //   }
-  
+
 //   char **papszMetadata = poDriver->GetMetadata();
 //   //todo: try and catch if CREATE is not supported (as in PNG)
 //   if( ! CSLFetchBoolean( papszMetadata, GDAL_DCAP_CREATE, FALSE )){
@@ -1479,7 +1797,7 @@ CPLErr ImgRaster::open(int ncol, int nrow, int nband, const GDALDataType& dataTy
 //       GDALSetNoDataValue(m_noDataValues[0],iband);
 //   }
 
-//   m_gds->SetMetadata(imgSrc.getMetadata()); 
+//   m_gds->SetMetadata(imgSrc.getMetadata());
 //   m_gds->SetMetadataItem( "TIFFTAG_DOCUMENTNAME", m_filename.c_str());
 //   std::string versionString="pktools ";
 //   versionString+=VERSION;
@@ -1599,7 +1917,8 @@ CPLErr ImgRaster::open(int ncol, int nrow, int nband, const GDALDataType& dataTy
  **/
 CPLErr ImgRaster::setFile(const std::string& filename, const std::string& imageType, unsigned int memory, const std::vector<std::string>& options)
 {
-  m_writeMode=true;
+  m_access=WRITE;
+  // m_writeMode=true;
   m_filename=filename;
   m_options=options;
   m_imageType=imageType;
@@ -1615,7 +1934,7 @@ CPLErr ImgRaster::setFile(const std::string& filename, const std::string& imageT
   return(CE_None);
 }
 
-///Copy data 
+///Copy data
 void ImgRaster::copyData(void* data, int band){
   memcpy(data,m_data[band],(GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
 };
@@ -1645,7 +1964,7 @@ void ImgRaster::copyData(void* data, int band){
 void ImgRaster::setMetadata(char** metadata)
 {
   if(m_gds)
-    m_gds->SetMetadata(metadata); 
+    m_gds->SetMetadata(metadata);
 }
 
 //default projection: ETSR-LAEA
@@ -1714,22 +2033,22 @@ void ImgRaster::setColorTable(GDALColorTable* colorTable, int band)
 //   poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
 //   poBand->RasterIO(GF_Write,0,0,nrOfCol(),nrOfRow(),pdata,nrOfCol(),nrOfRow(),dataType,0,0);
 //   return true;
-// }  
+// }
 
 /**
  * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
  * @param burnValues Values to burn into raster cells (one value for each band)
  * @param controlOptions special options controlling rasterization (ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG)
  * "ATTRIBUTE":
- * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer. 
+ * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer.
  * "CHUNKYSIZE":
  * The height in lines of the chunk to operate on. The larger the chunk size the less times we need to make a pass through all the shapes. If it is not set or set to zero the default chunk size will be used. Default size will be estimated based on the GDAL cache buffer size using formula: cache_size_bytes/scanline_size_bytes, so the chunk will not exceed the cache.
  * "ALL_TOUCHED":
- * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE. 
+ * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE.
  "BURN_VALUE_
- * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future. 
+ * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future.
  * "MERGE_ALG":
- * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
+ * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance.
  * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
  **/
 void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
@@ -1754,7 +2073,7 @@ void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>&
     std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
     if(layernames.size())
       if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
-	continue;
+  continue;
     std::cout << "processing layer " << currentLayername << std::endl;
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
@@ -1788,7 +2107,8 @@ void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>&
     throw(errorString);
   }
   //do not overwrite m_gds with what is in m_data
-  m_writeMode=false;
+  m_access=READ_ONLY;
+  // m_writeMode=false;
 }
 
 /**
@@ -1796,13 +2116,13 @@ void ImgRaster::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>&
  * @param burnValues Values to burn into raster cells (one value for each band)
  * @param controlOptions special options controlling rasterization (ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG)
  * "ATTRIBUTE":
- * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer. 
+ * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer.
  * "ALL_TOUCHED":
- * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE. 
+ * May be set to TRUE to set all pixels touched by the line or polygons, not just those whose center is within the polygon or that are selected by brezenhams line algorithm. Defaults to FALSE.
  "BURN_VALUE_FROM":
- * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future. 
+ * May be set to "Z" to use the Z values of the geometries. The value from padfLayerBurnValues or the attribute field value is added to this before burning. In default case dfBurnValue is burned as it is. This is implemented properly only for points and lines for now. Polygons will be burned using the Z value from the first point. The M value may be supported in the future.
  * "MERGE_ALG":
- * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance. 
+ * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance.
  * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
  **/
 void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
@@ -1829,7 +2149,7 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
     std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
     if(layernames.size())
       if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
-	continue;
+  continue;
     std::cout << "processing layer " << currentLayername << std::endl;
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
@@ -1864,14 +2184,14 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
   }
 }
 
-/** 
- * 
- * 
+/**
+ *
+ *
  * @param t1 minimum threshold
  * @param t2 maximum threshold
  * @param fg value if within thresholds
  * @param bg value if outside thresholds
- * 
+ *
  * @return CE_None if success, CE_Failure if failed
  */CPLErr ImgRaster::setThreshold(double t1, double t2, double value){
   try{

@@ -5,7 +5,26 @@
 %include <std_shared_ptr.i>
 %shared_ptr(ImgRaster)
 
-%module pktools
+%include "exception.i"
+%exception {
+  try {
+    $action
+      }
+  catch (const std::string errorString) {
+    PyErr_SetString(PyExc_SystemError,errorString.c_str());
+    SWIG_fail;
+  }
+ }
+%define DOCSTRING
+"Processing kernel for geospatial data (pktools)
+http://pktools.nongnu.org/html/index.html"
+%enddef
+
+
+%feature("autodoc", "2");
+
+%module(docstring=DOCSTRING) pktools
+
 %{
   #include <memory>
   #include "config.h"

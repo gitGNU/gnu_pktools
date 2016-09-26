@@ -31,22 +31,11 @@ using namespace app;
 using namespace statfactory;
 
 /**
- * @param app application specific option arguments
- * @return output image
- **/
-shared_ptr<ImgRaster> ImgRaster::createImg(const AppFactory& app){
-  shared_ptr<ImgRaster> pRaster=createImg();
-  createImg(*pRaster, app);
-  return(pRaster);
-}
-
-/**
  * @param imgRaster output raster dataset
  * @param app application specific option arguments
  * @return CE_None if successful, CE_Failure if failed
  **/
 CPLErr ImgRaster::createImg(ImgRaster& imgRaster, const AppFactory& app){
-
   Optionpk<unsigned int> nsample_opt("ns", "nsample", "Number of samples");
   Optionpk<unsigned int> nline_opt("nl", "nline", "Number of lines");
   Optionpk<unsigned int> nband_opt("b", "nband", "Number of bands",1);
@@ -56,13 +45,13 @@ CPLErr ImgRaster::createImg(ImgRaster& imgRaster, const AppFactory& app){
   Optionpk<double> lry_opt("lry", "lry", "Lower right y value bounding box", 0.0);
   Optionpk<double> dx_opt("dx", "dx", "Resolution in x");
   Optionpk<double> dy_opt("dy", "dy", "Resolution in y");
-  Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","Byte");
+  Optionpk<string> otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64})","Byte");
   Optionpk<double> nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<unsigned long int> seed_opt("seed", "seed", "seed value for random generator",0);
   Optionpk<double> mean_opt("mean", "mean", "Mean value for random generator",0);
   Optionpk<double> sigma_opt("sigma", "sigma", "Sigma value for random generator",0);
   Optionpk<string> description_opt("d", "description", "Set image description");
-  Optionpk<string> projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
+  Optionpk<string> assignSRS_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -81,7 +70,7 @@ CPLErr ImgRaster::createImg(ImgRaster& imgRaster, const AppFactory& app){
     mean_opt.retrieveOption(app.getArgc(),app.getArgv());
     sigma_opt.retrieveOption(app.getArgc(),app.getArgv());
     description_opt.retrieveOption(app.getArgc(),app.getArgv());
-    projection_opt.retrieveOption(app.getArgc(),app.getArgv());
+    assignSRS_opt.retrieveOption(app.getArgc(),app.getArgv());
     if(!doProcess){
       cout << endl;
       std::ostringstream helpStream;
@@ -137,8 +126,8 @@ CPLErr ImgRaster::createImg(ImgRaster& imgRaster, const AppFactory& app){
     else
       gt[5]=1;
     imgRaster.setGeoTransform(gt);
-    if(projection_opt.size())
-      imgRaster.setProjectionProj4(projection_opt[0]);
+    if(assignSRS_opt.size())
+      imgRaster.setProjectionProj4(assignSRS_opt[0]);
     StatFactory stat;
     gsl_rng* rndgen=stat.getRandomGenerator(seed_opt[0]);
     vector<double> lineBuffer(imgRaster.nrOfCol());

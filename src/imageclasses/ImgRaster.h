@@ -39,6 +39,7 @@ namespace app{
   class AppFactory;
 }
 
+enum RASTERACCESS { READ_ONLY = 0, UPDATE = 1, WRITE = 3};
 enum RESAMPLE { NEAR = 0, BILINEAR = 1, BICUBIC = 2 };
 
 /**
@@ -70,6 +71,38 @@ template<typename T1> GDALDataType getGDALDataType(){
     return GDT_Byte;
 };
 
+static GDALDataType getGDALDataType(const std::string &typeString){
+  //initialize selMap
+  std::map<std::string,GDALDataType> typeMap;
+  typeMap["GDT_Byte"]=GDT_Byte;
+  typeMap["GDT_UInt16"]=GDT_UInt16;
+  typeMap["GDT_Int16"]=GDT_Int16;
+  typeMap["GDT_UInt32"]=GDT_UInt32;
+  typeMap["GDT_Int32"]=GDT_Int32;
+  typeMap["GDT_Float32"]=GDT_Float32;
+  typeMap["GDT_Float64"]=GDT_Float64;
+  if(typeMap.count(typeString))
+    return(typeMap[typeString]);
+  else
+    return(GDT_Byte);
+}
+
+static GDALRIOResampleAlg getGDALResample(const std::string &resampleString){
+  //initialize selMap
+  std::map<std::string,GDALRIOResampleAlg> resampleMap;
+  resampleMap["GRIORA_NearestNeighbour"]=GRIORA_NearestNeighbour;
+  resampleMap["GRIORA_Bilinear"] = GRIORA_Bilinear;
+  resampleMap["GRIORA_Cubic"]=GRIORA_Cubic;
+  resampleMap["GRIORA_CubicSpline"]=GRIORA_CubicSpline;
+  resampleMap["GRIORA_Lanczos"]=GRIORA_Lanczos;
+  resampleMap["GRIORA_Average"]=GRIORA_Average;
+  resampleMap["GRIORA_Mode"]=GRIORA_Mode;
+  resampleMap["GRIORA_Gauss"]=GRIORA_Gauss;
+  if(resampleMap.count(resampleString))
+    return(resampleMap[resampleString]);
+  else
+    return(GRIORA_NearestNeighbour);
+}
 /**
    Base class for raster dataset (read and write) in a format supported by GDAL. This general raster class is used to store e.g., filename, number of columns, rows and bands of the dataset.
 **/
@@ -115,7 +148,28 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   ///assignment operator
   ImgRaster& operator=(ImgRaster& imgSrc);
   ///get write mode
-  bool writeMode(){return m_writeMode;};
+  bool writeMode(){return(m_access==WRITE);};
+  ///get access mode
+  RASTERACCESS getAccess(){return m_access;};
+  ///set access mode
+  CPLErr setAccess(RASTERACCESS theAccess){m_access=theAccess;return CE_None;};
+  ///set access mode using a string argument
+  CPLErr setAccess(std::string accessString){
+    if(accessString=="READ_ONLY"){
+      m_access=READ_ONLY;
+      return CE_None;
+    }
+    if(accessString=="UPDATE"){
+      m_access=UPDATE;
+      return CE_None;
+    }
+    if(accessString=="WRITE"){
+      m_access=WRITE;
+      return CE_None;
+    }
+    else
+      return CE_Failure;
+  }
   ///check if data pointer has been initialized
   bool isInit(){return(m_data.size()>0);};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band. If the image data are cached (class was created with memory>0), the scaling is applied on the cached memory.
@@ -306,6 +360,8 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   CPLErr readData(int band);
   ///Read all pixels from image in memory
   CPLErr readData();
+  ///Read data using the arguments from AppFactory
+  /* CPLErr readData(const app::AppFactory &app); */
   ///Read a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
   template<typename T> CPLErr readData(T& value, int col, int row, int band=0);
   ///Return a single pixel cell value at a specific column and row for a specific band (all indices start counting from 0)
@@ -480,7 +536,11 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   ///Create options
   std::vector<std::string> m_options;
   ///We are writing a physical file
-  bool m_writeMode;
+  /* bool m_writeMode; */
+  ///access mode (ReadOnly or GA_Update)
+  RASTERACCESS m_access;
+  ///resampling algorithm: GRIORA_NearestNeighbour|GRIORA_Bilinear|GRIORA_Cubic|GRIORA_CubicSpline|GRIORA_Lanczos|GRIORA_Average|GRIORA_Average|GRIORA_Gauss (check http://www.gdal.org/gdal_8h.html#a640ada511cbddeefac67c548e009d5a)"
+  GDALRIOResampleAlg m_resample; 
 
   ///Read new block in cache (defined by m_begin and m_end)
   CPLErr readNewBlock(int row, int band);
