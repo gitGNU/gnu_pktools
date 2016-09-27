@@ -843,7 +843,6 @@ ImgRaster::ImgRaster(const app::AppFactory &app) {
     ImgRaster();
   }
   else if(input_opt.empty()){
-    // createImg(*this,app);
     if(nsample_opt.empty()){
       std::ostringstream errorStream;
       errorStream << "Warning: no number of samples (use option -ns). Returning empty image" << std::endl;
@@ -925,6 +924,16 @@ ImgRaster::ImgRaster(const app::AppFactory &app) {
       dx_opt.push_back(getDeltaX());
     if(dy_opt.empty())
       dy_opt.push_back(getDeltaY());
+
+    //force bounding box to be within dataset
+    if(ulx_opt[0]<getUlx())
+      ulx_opt[0]=getUlx();
+    if(uly_opt[0]>getUly())
+      uly_opt[0]=getUly();
+    if(lrx_opt[0]>getLrx())
+      lrx_opt[0]=getLrx();
+    if(lry_opt[0]<getLry())
+      lry_opt[0]=getLry();
 
     //todo: reproject on the fly using
     // OGRSpatialReference::SetFromUserInput

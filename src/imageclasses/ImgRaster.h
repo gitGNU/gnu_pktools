@@ -488,7 +488,7 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
     return(pRaster);
   };
   ///create ImgRaster with values
-  static CPLErr createImg(ImgRaster& imgRaster, const app::AppFactory& app);
+  /* static CPLErr createImg(ImgRaster& imgRaster, const app::AppFactory& app); */
   ///create shared pointer to ImgRaster with random values only for in memory
   static std::shared_ptr<ImgRaster> createImg(const app::AppFactory& app);
  protected:
