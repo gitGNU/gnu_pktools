@@ -88,7 +88,6 @@ namespace app
     ///push key value option
     void pushOption(const std::string &key, const std::string &value)
     {
-      clearOption(key);
       std::ostringstream os;
       os << "-" << key;
       m_argv.push_back(os.str());

@@ -66,12 +66,12 @@ ImgRaster::ImgRaster(void* dataPointer, int ncol, int nrow, const GDALDataType& 
 /**
  * @param memory Available memory to cache image raster data (in MB)
  **/
-void ImgRaster::initMem(unsigned int memory)
+CPLErr ImgRaster::initMem(unsigned int memory)
 {
   if(memory<=0)
     m_blockSize=nrOfRow();
   else{
-    m_blockSize=static_cast<int>(memory*1000000/nrOfBand()/nrOfCol());
+    m_blockSize=static_cast<unsigned int>(memory*1000000/nrOfBand()/nrOfCol());
     if(getBlockSizeY(0))
       m_blockSize-=m_blockSize%getBlockSizeY(0);
   }
@@ -84,9 +84,14 @@ void ImgRaster::initMem(unsigned int memory)
   freeMem();
   m_data.resize(nrOfBand());
   for(int iband=0;iband<m_nband;++iband){
-    //todo: introduce smart pointers
-    m_data[iband]=(void *) CPLMalloc((GDALGetDataTypeSize(getDataType())>>3)*nrOfCol()*m_blockSize);
+    // m_data[iband]=(void *) CPLMalloc(((GDALGetDataTypeSize(getDataType()))>>3)*nrOfCol()*m_blockSize);
+    m_data[iband]=(void *) malloc(((GDALGetDataTypeSize(getDataType()))>>3)*nrOfCol()*m_blockSize);
+    if(!(m_data[iband])){
+      std::string errorString="Error: could not allocate memory in initMem";
+      throw(errorString);
+    }
   }
+  return(CE_None);
 }
 
 /**
@@ -99,7 +104,8 @@ void ImgRaster::freeMem()
     if(m_externalData)
       m_data[iband]=0;
     else
-      CPLFree(m_data[iband]);
+      free(m_data[iband]);
+    // CPLFree(m_data[iband]);
   }
   m_data.clear();
 }
@@ -846,11 +852,13 @@ ImgRaster::ImgRaster(const app::AppFactory &app) {
     if(nsample_opt.empty()){
       std::ostringstream errorStream;
       errorStream << "Warning: no number of samples (use option -ns). Returning empty image" << std::endl;
+      ImgRaster();
       throw(errorStream.str());
     }
     if(nline_opt.empty()){
       std::ostringstream errorStream;
       errorStream << "Warning: no number of lines (use option -nl). Returning empty image" << std::endl;
+      ImgRaster();
       throw(errorStream.str());
     }
     GDALDataType theType=getGDALDataType(otype_opt[0]);
@@ -938,23 +946,9 @@ ImgRaster::ImgRaster(const app::AppFactory &app) {
     //todo: reproject on the fly using
     // OGRSpatialReference::SetFromUserInput
 
-    double gt[6];// { 444720, 30, 0, 3751320, 0, -30 };
-    //todo: set extra according to double offset calculated from bounding box and buf size
-    double diffXm=ulx_opt[0]-getUlx();
-    double dfXSize=diffXm/getDeltaX();
-    int nXOff=static_cast<int>(dfXSize);
-    double dfXOff=dfXSize-nXOff;
-    double diffYm=getUly()-uly_opt[0];
-    double dfYSize=diffYm/getDeltaY();
-    int nYOff=static_cast<int>(dfYSize);
-    double dfYOff=dfYSize-nYOff;
-    GDALRasterIOExtraArg sExtraArg;
-
-    int nXSize=abs(static_cast<unsigned int>(ceil((lrx_opt[0]-ulx_opt[0])/getDeltaX())));
-    int nYSize=abs(static_cast<unsigned int>(ceil((uly_opt[0]-lry_opt[0])/getDeltaY())));
-
     m_resample=getGDALResample(resample_opt[0]);
 
+    double gt[6];
     gt[0]=ulx_opt[0];
     gt[3]=uly_opt[0];
     gt[1]=dx_opt[0];//todo: adfGeotransform[1]: $cos(\alpha)\cdot\textrm{Xres}$
@@ -977,16 +971,6 @@ ImgRaster::ImgRaster(const app::AppFactory &app) {
       m_end[iband]=m_begin[iband]+m_blockSize;
     }
   }
-}
-
-/**
- * @param app application specific option arguments
- * @return output image
- **/
-std::shared_ptr<ImgRaster> ImgRaster::createImg(const app::AppFactory& app){
-  std::shared_ptr<ImgRaster> pRaster=createImg(app);
-  // createImg(*pRaster, app);
-  return(pRaster);
 }
 
 /**
@@ -1066,9 +1050,9 @@ CPLErr ImgRaster::readNewBlock(int row, int band)
   if(m_end[band]>nrOfRow())
     m_end[band]=nrOfRow();
 
-  int gds_ncol= m_gds->GetRasterXSize();
-  int gds_nrow= m_gds->GetRasterYSize();
-  int gds_nband= m_gds->GetRasterCount();
+  int gds_ncol=m_gds->GetRasterXSize();
+  int gds_nrow=m_gds->GetRasterYSize();
+  int gds_nband=m_gds->GetRasterCount();
   double gds_gt[6];
   m_gds->GetGeoTransform(gds_gt);
   double gds_ulx=gds_gt[0];
@@ -1078,24 +1062,33 @@ CPLErr ImgRaster::readNewBlock(int row, int band)
   double gds_dx=gds_gt[1];
   double gds_dy=-gds_gt[5];
   double diffXm=getUlx()-gds_ulx;
+  double diffYm=gds_uly-getUly();
+
   double dfXSize=diffXm/gds_dx;
   int nXOff=static_cast<int>(dfXSize);
   double dfXOff=dfXSize-nXOff;
-  double diffYm=gds_uly-getUly();
   double dfYSize=diffYm/gds_dy;
   int nYOff=static_cast<int>(dfYSize);
   double dfYOff=dfYSize-nYOff;
+
+  int nXSize=abs(static_cast<unsigned int>(ceil((getLrx()-getUlx())/gds_dx)));//x-size in pixels of region to read in original image
+  if(nXSize>gds_ncol)
+    nXSize=gds_ncol;
+
   GDALRasterIOExtraArg sExtraArg;
-
-  int nXSize=abs(static_cast<unsigned int>(ceil((getLrx()-getUlx())/gds_dx)));
-
   INIT_RASTERIO_EXTRA_ARG(sExtraArg);
-  // sExtraArg.eResampleAlg = getGDALResample(resample_opt[0]);
   sExtraArg.eResampleAlg = m_resample;
   if(dfXOff>0||dfYOff>0){
     sExtraArg.bFloatingPointWindowValidity = TRUE;
     sExtraArg.dfXOff = dfXOff;
     sExtraArg.dfYOff = dfYOff;
+    sExtraArg.dfXSize = dfXSize;
+    sExtraArg.dfYSize = dfYSize;
+  }
+  else{
+    sExtraArg.bFloatingPointWindowValidity = FALSE;
+    sExtraArg.dfXOff = 0;
+    sExtraArg.dfYOff = 0;
     sExtraArg.dfXSize = dfXSize;
     sExtraArg.dfYSize = dfYSize;
   }
@@ -1107,16 +1100,57 @@ CPLErr ImgRaster::readNewBlock(int row, int band)
       throw(errorString);
     }
     poBand = m_gds->GetRasterBand(iband+1);//GDAL uses 1 based index
-    int nYSize=abs(static_cast<unsigned int>(ceil((m_end[iband]-m_begin[iband])*getDeltaY()/gds_dy)));
-    //test
-    std::cout << "nXOff: " << nXOff << std::endl;
-    std::cout << "nYOff: " << nYOff << std::endl;
-    std::cout << "m_begin[iband]: " << m_begin[iband] << std::endl;
-    std::cout << "nXSize: " << nXSize << std::endl;
-    std::cout << "nYSize: " << nYSize << std::endl;
-    std::cout << "nrOfCol() " << nrOfCol() << std::endl;
-    std::cout << "m_end[iband]-m_begin[iband]: " << m_end[iband]-m_begin[iband] << std::endl;
-    std::cout << "m_resample: " << m_resample << std::endl;
+
+    int nYSize=abs(static_cast<unsigned int>(ceil((m_end[iband]-m_begin[iband])*getDeltaY()/gds_dy)));//y-size in pixels of region to read in original image
+    if(nYSize>gds_nrow)
+      nYSize=gds_nrow;
+
+    if(poBand->GetOverviewCount()){
+      //calculate number of desired samples in overview
+      int nDesiredSamples=abs(static_cast<unsigned int>(ceil((gds_lrx-gds_ulx)/getDeltaX())));
+      //test
+      std::cout << "nDesiredSamples: " << nDesiredSamples << std::endl;
+      poBand=poBand->GetRasterSampleOverview(nDesiredSamples);
+      int ods_ncol=poBand->GetXSize();
+      int ods_nrow=poBand->GetYSize();
+      double ods_dx=gds_dx*gds_ncol/ods_ncol;
+      double ods_dy=gds_dy*gds_nrow/ods_nrow;
+      //test
+      std::cout << "ods_dx: " << ods_dx << std::endl;
+      std::cout << "ods_dy: " << ods_dy << std::endl;
+
+      dfXSize=diffXm/ods_dx;
+      nXOff=static_cast<int>(dfXSize);
+      dfXOff=dfXSize-nXOff;
+      dfYSize=diffYm/ods_dy;
+      nYOff=static_cast<int>(dfYSize);
+      dfYOff=dfYSize-nYOff;
+
+      nXSize=abs(static_cast<unsigned int>(ceil((getLrx()-getUlx())/ods_dx)));//x-size in pixels of region to read in overview image
+      if(nXSize>ods_ncol)
+        nXSize=ods_ncol;
+      nYSize=abs(static_cast<unsigned int>(ceil((m_end[iband]-m_begin[iband])*getDeltaY()/ods_dy)));//y-size in pixels of region to read in overview image
+      if(nYSize>ods_nrow)
+        nYSize=ods_nrow;
+      //test
+      std::cout << "nXSize: " << nXSize << std::endl;
+      std::cout << "nYSize: " << nYSize << std::endl;
+      sExtraArg.eResampleAlg = m_resample;
+      if(dfXOff>0||dfYOff>0){
+        sExtraArg.bFloatingPointWindowValidity = TRUE;
+        sExtraArg.dfXOff = dfXOff;
+        sExtraArg.dfYOff = dfYOff;
+        sExtraArg.dfXSize = dfXSize;
+        sExtraArg.dfYSize = dfYSize;
+      }
+      else{
+        sExtraArg.bFloatingPointWindowValidity = FALSE;
+        sExtraArg.dfXOff = 0;
+        sExtraArg.dfYOff = 0;
+        sExtraArg.dfXSize = dfXSize;
+        sExtraArg.dfYSize = dfYSize;
+      }
+    }
     returnValue=poBand->RasterIO(GF_Read,nXOff,nYOff+m_begin[iband],nXSize,nYSize,m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0,&sExtraArg);
     // returnValue=poBand->RasterIO(GF_Read,0,m_begin[iband],nrOfCol(),m_end[iband]-m_begin[iband],m_data[iband],nrOfCol(),m_end[iband]-m_begin[iband],getDataType(),0,0);
   }
@@ -2191,6 +2225,44 @@ void ImgRaster::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>&
         throw(errorString);
     }
   }
+}
+
+/**
+ *
+ *
+ * @param t1 minimum threshold
+ * @param t2 maximum threshold
+ * @param bg value if outside thresholds
+ *
+ * @return CE_None if success, CE_Failure if failed
+ */CPLErr ImgRaster::setThreshold(double t1, double t2){
+  try{
+    if(m_noDataValues.empty()){
+      std::string errorString="Error: no data value not set";
+      throw(errorString);
+    }
+    std::vector<double> lineInput(nrOfCol());
+    for(int iband=0;iband<nrOfBand();++iband){
+      for(int irow=0;irow<nrOfRow();++irow){
+        readData(lineInput,irow,iband);
+        for(int icol=0;icol<nrOfCol();++icol){
+          if(lineInput[icol]>=t1&&lineInput[icol]<=t2)
+            continue;
+          else
+            lineInput[icol]=m_noDataValues[0];
+        }
+        writeData(lineInput,irow,iband);
+      }
+    }
+  }
+  catch(std::string errorstring){
+    std::cerr << errorstring << std::endl;
+    return(CE_Failure);
+  }
+  catch(...){
+    return(CE_Failure);
+  }
+  return(CE_None);
 }
 
 /**

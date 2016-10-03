@@ -41,6 +41,17 @@ public:
   enum CRULE_TYPE {overwrite=0, maxndvi=1, maxband=2, minband=3, validband=4, mean=5, mode=6, median=7,sum=8,minallbands=9,maxallbands=10,stdev=11};
   ///default constructor
   ImgCollection(void) : m_index(0) {};// : std::vector<ImgRaster*>(), m_index(0) {};
+  ///copy constructor
+  ImgCollection(const ImgCollection &coll){
+    std::vector<std::shared_ptr<ImgRaster> >::const_iterator pimit=coll.begin();
+    for(pimit=coll.begin();pimit!=coll.end();++pimit)
+      pushImage(*pimit);
+  }
+  ImgCollection(const std::vector<std::shared_ptr<ImgRaster> > &coll){
+    std::vector<std::shared_ptr<ImgRaster> >::const_iterator pimit=coll.begin();
+    for(pimit=coll.begin();pimit!=coll.end();++pimit)
+      pushImage(*pimit);
+  }
   ImgCollection(unsigned int theSize){
     for(unsigned int iimg=0;iimg<theSize;++iimg){
       this->emplace_back(new(ImgRaster));
@@ -112,7 +123,7 @@ public:
     m_index=0;
 };
   ///push image to collection
-  void pushImage(std::shared_ptr<ImgRaster> imgRaster){
+  void pushImage(const std::shared_ptr<ImgRaster> imgRaster){
     this->emplace_back(imgRaster);
   };
   // ///push image to collection with corresponding period
@@ -176,6 +187,10 @@ public:
   CPLErr crop(ImgRaster& imgWriter, const app::AppFactory& app);
   ///crop image only for in memory
   std::shared_ptr<ImgRaster> crop(const app::AppFactory& app);
+  ///stat profile image
+  CPLErr statProfile(ImgRaster& imgWriter, const app::AppFactory& app);
+  ///stat profile image only for in memory
+  std::shared_ptr<ImgRaster> statProfile(const app::AppFactory& app);
 private:
   unsigned int m_index;
   std::vector<double> m_noDataValues;

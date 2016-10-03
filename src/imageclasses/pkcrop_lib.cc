@@ -39,6 +39,7 @@ using namespace app;
 shared_ptr<ImgRaster> ImgCollection::crop(const AppFactory& app){
   try{
     //test
+    // shared_ptr<ImgRaster> imgWriter=(this->front())->createImg();
     shared_ptr<ImgRaster> imgWriter=ImgRaster::createImg();
     // shared_ptr<ImgRaster> imgWriter;
     if(size()){

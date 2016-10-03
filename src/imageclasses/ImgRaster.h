@@ -144,7 +144,7 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   virtual ~ImgRaster(void){freeMem();};
 
   ///Initialize the memory for read/write image in cache
-  void initMem(unsigned int memory);
+  CPLErr initMem(unsigned int memory);
   ///assignment operator
   ImgRaster& operator=(ImgRaster& imgSrc);
   ///get write mode
@@ -246,9 +246,9 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   ///Push a no data value for this dataset
   int pushNoDataValue(double noDataValue);
   ///Set the no data values of this dataset using a standard template library (stl) vector as input
-  int setNoData(const std::vector<double> nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
+  int setNoData(const std::vector<double>& nodata){m_noDataValues=nodata; return(m_noDataValues.size());};
   ///Set the GDAL (internal) no data value for this data set. Only a single no data value per band is supported.
-  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {return getRasterBand(band)->SetNoDataValue(noDataValue);};
+  CPLErr GDALSetNoDataValue(double noDataValue, int band=0) {if(getRasterBand(band)) return getRasterBand(band)->SetNoDataValue(noDataValue);else return(CE_Failure);};
   ///Check if a geolocation is covered by this dataset. Only the bounding box is checked, irrespective of no data values.
   bool covers(double x, double y) const;
   ///Check if a region of interest is (partially) covered by this dataset. Only the bounding box is checked, irrespective of no data values.
@@ -450,6 +450,8 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
   void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
   ///Apply thresholds: set to no data if not within thresholds t1 and t2
+  CPLErr setThreshold(double t1, double t2);
+  ///Apply thresholds: set to no data if not within thresholds t1 and t2, else set to value
   CPLErr setThreshold(double t1, double t2, double value);
 
   //lib functions
@@ -472,25 +474,28 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   ///svm raster dataset only for in memory
   std::shared_ptr<ImgRaster> svm(const app::AppFactory& app);
   ///create ImgRaster reading from file
-  static CPLErr createImg(ImgRaster& imgRaster, const std::string filename, unsigned int memory=0){imgRaster.open(filename,memory);};
+  /* static CPLErr createImg(ImgRaster& imgRaster, const std::string filename, unsigned int memory=0){imgRaster.open(filename,memory);}; */
   ///create shared pointer to ImgRaster
-  static std::shared_ptr<ImgRaster> createImg(const std::string filename, unsigned int memory=0){
-    std::shared_ptr<ImgRaster> pRaster=createImg();
-    createImg(*pRaster, filename, memory);
-    return(pRaster);
-  };
+  /* static std::shared_ptr<ImgRaster> createImg(const std::string filename, unsigned int memory=0){ */
+  /*   std::shared_ptr<ImgRaster> pRaster=createImg(); */
+  /*   createImg(*pRaster, filename, memory); */
+  /*   return(pRaster); */
+  /* }; */
   ///create ImgRaster copying from existing ImgRaster
-  static CPLErr createImg(ImgRaster& imgRaster, ImgRaster& imgSrc, bool copyData=true){imgRaster.open(imgSrc,copyData);};
+  /* static CPLErr createImg(ImgRaster& imgRaster, ImgRaster& imgSrc, bool copyData=true){imgRaster.open(imgSrc,copyData);}; */
   ///create shared pointer to ImgRaster
   static std::shared_ptr<ImgRaster> createImg(const std::shared_ptr<ImgRaster> pSrc, bool copyData=true){
-    std::shared_ptr<ImgRaster> pRaster=createImg();
-    createImg(*pRaster, *pSrc, copyData);
+    std::shared_ptr<ImgRaster> pRaster=std::make_shared<ImgRaster>(*pSrc,copyData);
     return(pRaster);
   };
   ///create ImgRaster with values
   /* static CPLErr createImg(ImgRaster& imgRaster, const app::AppFactory& app); */
   ///create shared pointer to ImgRaster with random values only for in memory
-  static std::shared_ptr<ImgRaster> createImg(const app::AppFactory& app);
+  static std::shared_ptr<ImgRaster> createImg(const app::AppFactory &theApp){
+    std::shared_ptr<ImgRaster> pRaster=std::make_shared<ImgRaster>(theApp);
+    return(pRaster);
+  }
+
  protected:
   ///filename of this dataset
   std::string m_filename;
@@ -520,7 +525,7 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   bool m_externalData;
 
   ///Block size to cache pixel cell values in memory (calculated from user provided memory size in MB)
-  int m_blockSize;
+  unsigned int m_blockSize;
   ///The cached pixel cell values for a certain block: a vector of void pointers (one void pointer for each band)
   std::vector<void*> m_data;
   //todo: use smart pointer
