@@ -148,7 +148,7 @@ CPLErr ImgRaster::open(void* dataPointer, int ncol, int nrow, const GDALDataType
       m_begin[iband]=0;
       m_end[iband]=m_begin[iband]+m_blockSize;
     }
-    m_externalData=true;
+    // m_externalData=true;
     return(CE_None);
   }
   else
@@ -1108,16 +1108,11 @@ CPLErr ImgRaster::readNewBlock(int row, int band)
     if(poBand->GetOverviewCount()){
       //calculate number of desired samples in overview
       int nDesiredSamples=abs(static_cast<unsigned int>(ceil((gds_lrx-gds_ulx)/getDeltaX())));
-      //test
-      std::cout << "nDesiredSamples: " << nDesiredSamples << std::endl;
       poBand=poBand->GetRasterSampleOverview(nDesiredSamples);
       int ods_ncol=poBand->GetXSize();
       int ods_nrow=poBand->GetYSize();
       double ods_dx=gds_dx*gds_ncol/ods_ncol;
       double ods_dy=gds_dy*gds_nrow/ods_nrow;
-      //test
-      std::cout << "ods_dx: " << ods_dx << std::endl;
-      std::cout << "ods_dy: " << ods_dy << std::endl;
 
       dfXSize=diffXm/ods_dx;
       nXOff=static_cast<int>(dfXSize);
@@ -1132,9 +1127,6 @@ CPLErr ImgRaster::readNewBlock(int row, int band)
       nYSize=abs(static_cast<unsigned int>(ceil((m_end[iband]-m_begin[iband])*getDeltaY()/ods_dy)));//y-size in pixels of region to read in overview image
       if(nYSize>ods_nrow)
         nYSize=ods_nrow;
-      //test
-      std::cout << "nXSize: " << nXSize << std::endl;
-      std::cout << "nYSize: " << nYSize << std::endl;
       sExtraArg.eResampleAlg = m_resample;
       if(dfXOff>0||dfYOff>0){
         sExtraArg.bFloatingPointWindowValidity = TRUE;
@@ -1350,6 +1342,7 @@ void ImgRaster::getMinMax(double& minValue, double& maxValue, int band)
     throw(static_cast<std::string>("Warning: not initialized"));
 }
 
+
 /**
  * @param histvector The reported histogram with counts per bin
  * @param min, max Only calculate histogram for values between min and max. If min>=max, calculate min and max from the image
@@ -1421,31 +1414,31 @@ double ImgRaster::getHistogram(std::vector<double>& histvector, double& min, dou
       else if(lineBuffer[icol]<minValue)
         ++ninvalid;
       else if(nbin==1)
-  ++histvector[0];
+        ++histvector[0];
       else{//scale to [0:nbin]
-  if(sigma>0){
-    //create kde for Gaussian basis function
-    //todo: speed up by calculating first and last bin with non-zero contriubtion...
-    //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
-    for(int ibin=0;ibin<nbin;++ibin){
-      double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
-      double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
-      histvector[ibin]+=thePdf;
-      nvalid+=thePdf;
-    }
-  }
-  else{
-    int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
-    //todo: replace assert with exception
-    assert(theBin>=0);
-    assert(theBin<nbin);
-    ++histvector[theBin];
-    ++nvalid;
-  }
-      // else if(lineBuffer[icol]==maxValue)
-      //   ++histvector[nbin-1];
-      // else
-      //   ++histvector[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*(nbin-1))];
+        if(sigma>0){
+          //create kde for Gaussian basis function
+          //todo: speed up by calculating first and last bin with non-zero contriubtion...
+          //todo: calculate real surface below pdf by using gsl_cdf_gaussian_P(x-mean+binsize,sigma)-gsl_cdf_gaussian_P(x-mean,sigma)
+          for(int ibin=0;ibin<nbin;++ibin){
+            double icenter=minValue+static_cast<double>(maxValue-minValue)*(ibin+0.5)/nbin;
+            double thePdf=gsl_ran_gaussian_pdf(lineBuffer[icol]-icenter, sigma);
+            histvector[ibin]+=thePdf;
+            nvalid+=thePdf;
+          }
+        }
+        else{
+          int theBin=static_cast<unsigned long int>(scale*(lineBuffer[icol]-minValue));
+          //todo: replace assert with exception
+          assert(theBin>=0);
+          assert(theBin<nbin);
+          ++histvector[theBin];
+          ++nvalid;
+        }
+        // else if(lineBuffer[icol]==maxValue)
+        //   ++histvector[nbin-1];
+        // else
+        //   ++histvector[static_cast<int>(static_cast<double>(lineBuffer[icol]-minValue)/(maxValue-minValue)*(nbin-1))];
       }
     }
   }
@@ -1975,6 +1968,29 @@ CPLErr ImgRaster::setFile(const std::string& filename, const std::string& imageT
     }
   }
   return(CE_None);
+}
+
+CPLErr ImgRaster::setFile(const app::AppFactory &app){
+  Optionpk<std::string> input_opt("i", "input", "filename");
+  Optionpk<std::string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
+  Optionpk<std::string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
+
+  option_opt.setHide(1);
+  memory_opt.setHide(1);
+
+  bool doProcess;//stop process when program was invoked with help option (-h --help)
+  doProcess=input_opt.retrieveOption(app.getArgc(),app.getArgv());
+  oformat_opt.retrieveOption(app.getArgc(),app.getArgv());
+  option_opt.retrieveOption(app.getArgc(),app.getArgv());
+  memory_opt.retrieveOption(app.getArgc(),app.getArgv());
+  if(!doProcess){
+    std::cout << std::endl;
+    std::ostringstream helpStream;
+    helpStream << "help info: ";
+    throw(helpStream.str());//help was invoked, stop processing
+  }
+  setFile(input_opt[0],oformat_opt[0],memory_opt[0],option_opt);
 }
 
 ///Copy data

@@ -25,55 +25,55 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "algorithms/ImgRegression.h"
 /******************************************************************************/
 /*! \page pkstat pkstat
- program to calculate basic statistics from raster dataset
-## SYNOPSIS
+  program to calculate basic statistics from raster dataset
+  ## SYNOPSIS
 
-<code>
+  <code>
   Usage: pkstat -i input
-</code>
+  </code>
 
-\section pkstat_options Options
- - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
- - short option `-h` shows basic options only, long option `--help` shows all options
-|short|long|type|default|description|
-|-----|----|----|-------|-----------|
- | i      | input                | std::string |       |name of the input raster dataset | 
- | b      | band                 | unsigned short | 0     |band(s) on which to calculate statistics | 
- | f      | filename             | bool | false |Shows image filename  | 
- | invalid | invalid           | bool | false |Report number of nodata values in image |
- | valid | valid           | bool | false |Report number of valid data values (i.e., not nodata) in image |
- | stats  | statistics           | bool | false |Shows basic statistics (min,max, mean and stdDev of the raster datasets) | 
- | nodata | nodata               | double |       |Set nodata value(s) | 
- | mean   | mean                 | bool | false |calculate mean | 
- | median | median               | bool | false |calculate median | 
- | var    | var                  | bool | false |calculate variance | 
- | stdev  | stdev                | bool | false |calculate standard deviation | 
- | mm     | minmax               | bool | false |calculate minimum and maximum value | 
- | min    | min                  | bool | false |calculate minimum value | 
- | max    | max                  | bool | false |calculate maximum value | 
- | hist   | hist                 | bool | false |calculate histogram | 
- | nbin   | nbin                 | short |       |number of bins to calculate histogram | 
- | rel    | relative             | bool | false |use percentiles for histogram to calculate histogram | 
- | hist2d | hist2d               | bool | false |calculate 2-dimensional histogram based on two images | 
- | cor    | correlation          | bool | false |calculate Pearson produc-moment correlation coefficient between two raster datasets (defined by -c <col1> -c <col2>) | 
- | rmse   | rmse                 | bool | false |calculate root mean square error between two raster datasets | 
- | reg    | regression           | bool | false |calculate linear regression between two raster datasets and get correlation coefficient | 
- | regerr | regerr               | bool | false |calculate linear regression between two raster datasets and get root mean square error | 
- | preg   | preg                 | bool | false |calculate perpendicular regression between two raster datasets and get correlation coefficient | 
- | ulx    | ulx                  | double |       |Upper left x value bounding box | 
- | uly    | uly                  | double |       |Upper left y value bounding box | 
- | lrx    | lrx                  | double |       |Lower right x value bounding box | 
- | lry    | lry                  | double |       |Lower right y value bounding box | 
- | down   | down                 | short | 1     |Down sampling factor (for raster sample datasets only). Can be used to create grid points | 
- | rnd    | rnd                  | unsigned int | 0     |generate random numbers | 
- | scale  | scale                | double |       |Scale(s) for reading input image(s) | 
- | offset | offset               | double |       |Offset(s) for reading input image(s) | 
- | src_min | src_min              | double |       |start reading source from this minimum value | 
- | src_max | src_max              | double |       |stop reading source from this maximum value | 
- | kde    | kde                  | bool | false |Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb | 
- | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory | 
+  \section pkstat_options Options
+  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+  - short option `-h` shows basic options only, long option `--help` shows all options
+  |short|long|type|default|description|
+  |-----|----|----|-------|-----------|
+  | i      | input                | std::string |       |name of the input raster dataset |
+  | b      | band                 | unsigned short | 0     |band(s) on which to calculate statistics |
+  | f      | filename             | bool | false |Shows image filename  |
+  | invalid | invalid           | bool | false |Report number of nodata values in image |
+  | valid | valid           | bool | false |Report number of valid data values (i.e., not nodata) in image |
+  | stats  | statistics           | bool | false |Shows basic statistics (min,max, mean and stdDev of the raster datasets) |
+  | nodata | nodata               | double |       |Set nodata value(s) |
+  | mean   | mean                 | bool | false |calculate mean |
+  | median | median               | bool | false |calculate median |
+  | var    | var                  | bool | false |calculate variance |
+  | stdev  | stdev                | bool | false |calculate standard deviation |
+  | mm     | minmax               | bool | false |calculate minimum and maximum value |
+  | min    | min                  | bool | false |calculate minimum value |
+  | max    | max                  | bool | false |calculate maximum value |
+  | hist   | hist                 | bool | false |calculate histogram |
+  | nbin   | nbin                 | short |       |number of bins to calculate histogram |
+  | rel    | relative             | bool | false |use percentiles for histogram to calculate histogram |
+  | hist2d | hist2d               | bool | false |calculate 2-dimensional histogram based on two images |
+  | cor    | correlation          | bool | false |calculate Pearson produc-moment correlation coefficient between two raster datasets (defined by -c <col1> -c <col2>) |
+  | rmse   | rmse                 | bool | false |calculate root mean square error between two raster datasets |
+  | reg    | regression           | bool | false |calculate linear regression between two raster datasets and get correlation coefficient |
+  | regerr | regerr               | bool | false |calculate linear regression between two raster datasets and get root mean square error |
+  | preg   | preg                 | bool | false |calculate perpendicular regression between two raster datasets and get correlation coefficient |
+  | ulx    | ulx                  | double |       |Upper left x value bounding box |
+  | uly    | uly                  | double |       |Upper left y value bounding box |
+  | lrx    | lrx                  | double |       |Lower right x value bounding box |
+  | lry    | lry                  | double |       |Lower right y value bounding box |
+  | down   | down                 | short | 1     |Down sampling factor (for raster sample datasets only). Can be used to create grid points |
+  | rnd    | rnd                  | unsigned int | 0     |generate random numbers |
+  | scale  | scale                | double |       |Scale(s) for reading input image(s) |
+  | offset | offset               | double |       |Offset(s) for reading input image(s) |
+  | src_min | src_min              | double |       |start reading source from this minimum value |
+  | src_max | src_max              | double |       |stop reading source from this maximum value |
+  | kde    | kde                  | bool | false |Use Kernel density estimation when producing histogram. The standard deviation is estimated based on Silverman's rule of thumb |
+  | mem    | mem                  | unsigned long int | 0 |Buffer size (in MB) to read image data blocks in memory |
 
-Usage: pkstat -i input
+  Usage: pkstat -i input
 
 
 **/
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
   }
   if(input_opt.empty()){
     std::cerr << "No image dataset provided (use option -i). Use --help for help information";
-      exit(0);
+    exit(0);
   }
   for(int ifile=0;ifile<input_opt.size();++ifile){
     try{
@@ -258,8 +258,8 @@ int main(int argc, char *argv[])
       minValue=(src_min_opt.size())? src_min_opt[0] : 0;
       maxValue=(src_max_opt.size())? src_max_opt[0] : 0;
       for(int inodata=0;inodata<nodata_opt.size();++inodata){
-	if(!inodata)
-	  imgReader.GDALSetNoDataValue(nodata_opt[0],band_opt[iband]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
+        if(!inodata)
+          imgReader.GDALSetNoDataValue(nodata_opt[0],band_opt[iband]);//only single no data can be set in GDALRasterBand (used for ComputeStatistics)
       }
 
       if(offset_opt.size()>ifile)
@@ -268,95 +268,93 @@ int main(int argc, char *argv[])
         imgReader.setScale(scale_opt[ifile],band_opt[iband]);
 
       if(valid_opt[0])
-	cout << "--nvalid " << imgReader.getNvalid(band_opt[0]) << endl;
+        cout << "--nvalid " << imgReader.getNvalid(band_opt[0]) << endl;
       if(invalid_opt[0])
-	cout << "--ninvalid " << imgReader.getNinvalid(band_opt[0]) << endl;
+        cout << "--ninvalid " << imgReader.getNinvalid(band_opt[0]) << endl;
       if(stat_opt[0]||mean_opt[0]||median_opt[0]||var_opt[0]||stdev_opt[0]){//the hard way (in memory)
-	statfactory::StatFactory stat;
-	vector<double> readBuffer;
-	double varValue;
-	imgReader.readDataBlock(readBuffer,  0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
-	stat.setNoDataValues(nodata_opt);
-	stat.meanVar(readBuffer,meanValue,varValue);
-	medianValue=stat.median(readBuffer);
-	stat.minmax(readBuffer,readBuffer.begin(),readBuffer.end(),minValue,maxValue);
-      	if(mean_opt[0])
-      	  std::cout << "--mean " << meanValue << " ";
-      	if(median_opt[0])
-      	  std::cout << "--median " << medianValue << " ";
-      	if(stdev_opt[0])
-      	  std::cout << "--stdDev " << sqrt(varValue) << " ";
-      	if(var_opt[0])
-      	  std::cout << "--var " << varValue << " ";
-      	if(stat_opt[0])
-      	  std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << sqrt(varValue) << " ";
+        statfactory::StatFactory stat;
+        vector<double> readBuffer;
+        double varValue;
+        imgReader.readDataBlock(readBuffer,  0, imgReader.nrOfCol()-1, 0, imgReader.nrOfRow()-1, band_opt[0]);
+        stat.setNoDataValues(nodata_opt);
+        stat.meanVar(readBuffer,meanValue,varValue);
+        medianValue=stat.median(readBuffer);
+        stat.minmax(readBuffer,readBuffer.begin(),readBuffer.end(),minValue,maxValue);
+        if(mean_opt[0])
+          std::cout << "--mean " << meanValue << " ";
+        if(median_opt[0])
+          std::cout << "--median " << medianValue << " ";
+        if(stdev_opt[0])
+          std::cout << "--stdDev " << sqrt(varValue) << " ";
+        if(var_opt[0])
+          std::cout << "--var " << varValue << " ";
+        if(stat_opt[0])
+          std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << sqrt(varValue) << " ";
       }
 
       if(fstat_opt[0]){//the fast way
-      	assert(band_opt[iband]<imgReader.nrOfBand());
-	GDALProgressFunc pfnProgress;
-	void* pProgressData;
-	GDALRasterBand* rasterBand;
-      	rasterBand=imgReader.getRasterBand(band_opt[iband]);
-      	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
+        assert(band_opt[iband]<imgReader.nrOfBand());
+        GDALProgressFunc pfnProgress;
+        void* pProgressData;
+        GDALRasterBand* rasterBand;
+        rasterBand=imgReader.getRasterBand(band_opt[iband]);
+        rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev,pfnProgress,pProgressData);
 
-	std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
+        std::cout << "-min " << minValue << " -max " << maxValue << " --mean " << meanValue << " --stdDev " << stdDev << " ";
       }
 
       if(minmax_opt[0]||min_opt[0]||max_opt[0]){
-	assert(band_opt[iband]<imgReader.nrOfBand());
+        assert(band_opt[iband]<imgReader.nrOfBand());
 
-	if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
-	  double uli,ulj,lri,lrj;
-	  imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
-	  imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
-	  imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),band_opt[iband],minValue,maxValue);
-	}
-	else{
-	  imgReader.getMinMax(minValue,maxValue,band_opt[iband]);
-	}
-	if(minmax_opt[0])
-	  std::cout << "-min " << minValue << " -max " << maxValue << " ";
-	else{
-	  if(min_opt[0])
-	    std::cout << "-min " << minValue << " ";
-	  if(max_opt[0])
-	    std::cout << "-max " << maxValue << " ";
-	}
+        if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
+          double uli,ulj,lri,lrj;
+          imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
+          imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
+          imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),band_opt[iband],minValue,maxValue);
+        }
+        else{
+          imgReader.getMinMax(minValue,maxValue,band_opt[iband]);
+        }
+        if(minmax_opt[0])
+          std::cout << "-min " << minValue << " -max " << maxValue << " ";
+        else{
+          if(min_opt[0])
+            std::cout << "-min " << minValue << " ";
+          if(max_opt[0])
+            std::cout << "-max " << maxValue << " ";
+        }
       }
     }
     if(histogram_opt[0]){//aggregate results from multiple inputs, but only calculate for first selected band
       assert(band_opt[0]<imgReader.nrOfBand());
       nbin=(nbin_opt.size())? nbin_opt[0]:0;
-      
       imgReader.getMinMax(minValue,maxValue,band_opt[0]);
       if(src_min_opt.size())
         minValue=src_min_opt[0];
       if(src_max_opt.size())
         maxValue=src_max_opt[0];
       if(minValue>=maxValue)
-	imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+        imgReader.getMinMax(minValue,maxValue,band_opt[0]);
 
       if(verbose_opt[0])
-	cout << "number of valid pixels in image: " << imgReader.getNvalid(band_opt[0]) << endl;
-
+        cout << "number of valid pixels in image: " << imgReader.getNvalid(band_opt[0]) << endl;
       nsample+=imgReader.getHistogram(histogramOutput,minValue,maxValue,nbin,band_opt[0],kde_opt[0]);
 
       //only output for last input file
       if(ifile==input_opt.size()-1){
-	std::cout.precision(10);
-	for(int bin=0;bin<nbin;++bin){
-	  double binValue=0;
-	  if(nbin==maxValue-minValue+1)
-	    binValue=minValue+bin;
-	  else
-	    binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
-	  std::cout << binValue << " ";
-	  if(relative_opt[0]||kde_opt[0])
-	    std::cout << 100.0*static_cast<double>(histogramOutput[bin])/static_cast<double>(nsample) << std::endl;
-	  else
-	    std::cout << static_cast<double>(histogramOutput[bin]) << std::endl;
-	}
+        std::cout.precision(10);
+        for(int bin=0;bin<nbin;++bin){
+          double binValue=0;
+          if(nbin==maxValue-minValue+1)
+            binValue=minValue+bin;
+          else
+            binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
+          std::cout << binValue << " ";
+          if(relative_opt[0]||kde_opt[0])
+            std::cout << 100.0*static_cast<double>(histogramOutput[bin])/static_cast<double>(nsample) << std::endl;
+          else
+            std::cout << static_cast<double>(histogramOutput[bin]) << std::endl;
+        }
       }
     }
     if(histogram2d_opt[0]&&input_opt.size()<2){
@@ -364,80 +362,80 @@ int main(int argc, char *argv[])
       imgReader.getMinMax(minX,maxX,band_opt[0]);
       imgReader.getMinMax(minY,maxY,band_opt[1]);
       if(src_min_opt.size()){
-	minX=src_min_opt[0];
-	minY=src_min_opt[1];
+        minX=src_min_opt[0];
+        minY=src_min_opt[1];
       }
       if(src_max_opt.size()){
-	maxX=src_max_opt[0];
-	maxY=src_max_opt[1];
+        maxX=src_max_opt[0];
+        maxY=src_max_opt[1];
       }
       nbin=(nbin_opt.size())? nbin_opt[0]:0;
       if(nbin<=1){
-	std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
-	if(minX>=maxX)
-	  imgReader.getMinMax(minX,maxX,band_opt[0]);
-	if(minY>=maxY)
-	  imgReader.getMinMax(minY,maxY,band_opt[1]);
+        std::cerr << "Warning: number of bins not defined, calculating bins from min and max value" << std::endl;
+        if(minX>=maxX)
+          imgReader.getMinMax(minX,maxX,band_opt[0]);
+        if(minY>=maxY)
+          imgReader.getMinMax(minY,maxY,band_opt[1]);
 
-	minValue=(minX<minY)? minX:minY;
-	maxValue=(maxX>maxY)? maxX:maxY;
-	if(verbose_opt[0])
-	  std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
-	nbin=maxValue-minValue+1;
+        minValue=(minX<minY)? minX:minY;
+        maxValue=(maxX>maxY)? maxX:maxY;
+        if(verbose_opt[0])
+          std::cout << "min and max values: " << minValue << ", " << maxValue << std::endl;
+        nbin=maxValue-minValue+1;
       }
       assert(nbin>1);
       double sigma=0;
       //kernel density estimation as in http://en.wikipedia.org/wiki/Kernel_density_estimation
       if(kde_opt[0]){
-	assert(band_opt[0]<imgReader.nrOfBand());
-	assert(band_opt[1]<imgReader.nrOfBand());
-	GDALProgressFunc pfnProgress;
-	void* pProgressData;
-	GDALRasterBand* rasterBand;
-	double stdDev1=0;
-	double stdDev2=0;
-	rasterBand=imgReader.getRasterBand(band_opt[0]);
-	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev1,pfnProgress,pProgressData);
-	rasterBand=imgReader.getRasterBand(band_opt[1]);
-	rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev2,pfnProgress,pProgressData);
+        assert(band_opt[0]<imgReader.nrOfBand());
+        assert(band_opt[1]<imgReader.nrOfBand());
+        GDALProgressFunc pfnProgress;
+        void* pProgressData;
+        GDALRasterBand* rasterBand;
+        double stdDev1=0;
+        double stdDev2=0;
+        rasterBand=imgReader.getRasterBand(band_opt[0]);
+        rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev1,pfnProgress,pProgressData);
+        rasterBand=imgReader.getRasterBand(band_opt[1]);
+        rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev2,pfnProgress,pProgressData);
 
-	double estimatedSize=1.0*imgReader.getNvalid(band_opt[0])/down_opt[0]/down_opt[0];
-	if(random_opt[0]>0)
-	  estimatedSize*=random_opt[0]/100.0;
+        double estimatedSize=1.0*imgReader.getNvalid(band_opt[0])/down_opt[0]/down_opt[0];
+        if(random_opt[0]>0)
+          estimatedSize*=random_opt[0]/100.0;
         sigma=1.06*sqrt(stdDev1*stdDev2)*pow(estimatedSize,-0.2);
       }
       assert(nbin);
       if(verbose_opt[0]){
-	if(sigma>0)
-	  std::cout << "calculating 2d kernel density estimate with sigma " << sigma << " for bands " << band_opt[0] << " and " << band_opt[1] << std::endl;
-	else
-	  std::cout << "calculating 2d histogram for bands " << band_opt[0] << " and " << band_opt[1] << std::endl;
-	std::cout << "nbin: " << nbin << std::endl;
+        if(sigma>0)
+          std::cout << "calculating 2d kernel density estimate with sigma " << sigma << " for bands " << band_opt[0] << " and " << band_opt[1] << std::endl;
+        else
+          std::cout << "calculating 2d histogram for bands " << band_opt[0] << " and " << band_opt[1] << std::endl;
+        std::cout << "nbin: " << nbin << std::endl;
       }
 
 
       vector< vector<double> > output;
 
       if(maxX<=minX)
-	imgReader.getMinMax(minX,maxX,band_opt[0]);
+        imgReader.getMinMax(minX,maxX,band_opt[0]);
       if(maxY<=minY)
-	imgReader.getMinMax(minY,maxY,band_opt[1]);
+        imgReader.getMinMax(minY,maxY,band_opt[1]);
 
       if(maxX<=minX){
-	std::ostringstream s;
-	s<<"Error: could not calculate distribution (minX>=maxX)";
-	throw(s.str());
+        std::ostringstream s;
+        s<<"Error: could not calculate distribution (minX>=maxX)";
+        throw(s.str());
       }
       if(maxY<=minY){
-	std::ostringstream s;
-	s<<"Error: could not calculate distribution (minY>=maxY)";
-	throw(s.str());
+        std::ostringstream s;
+        s<<"Error: could not calculate distribution (minY>=maxY)";
+        throw(s.str());
       }
       output.resize(nbin);
       for(int i=0;i<nbin;++i){
-	output[i].resize(nbin);
-	for(int j=0;j<nbin;++j)
-	  output[i][j]=0;
+        output[i].resize(nbin);
+        for(int j=0;j<nbin;++j)
+          output[i][j]=0;
       }
       int binX=0;
       int binY=0;
@@ -447,87 +445,87 @@ int main(int argc, char *argv[])
       for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
         if(irow%down_opt[0])
           continue;
-	imgReader.readData(inputX,irow,band_opt[0]);
-	imgReader.readData(inputY,irow,band_opt[1]);
-	for(unsigned int icol=0;icol<imgReader.nrOfCol();++icol){
+        imgReader.readData(inputX,irow,band_opt[0]);
+        imgReader.readData(inputY,irow,band_opt[1]);
+        for(unsigned int icol=0;icol<imgReader.nrOfCol();++icol){
           if(icol%down_opt[0])
             continue;
-	  if(random_opt[0]>0){
-	    double p=static_cast<double>(rand())/(RAND_MAX);
-	    p*=100.0;
-	    if(p>random_opt[0])
-	      continue;//do not select for now, go to next column
-	  }
-	  if(imgReader.isNoData(inputX[icol]))
-	    continue;
-	  if(imgReader.isNoData(inputY[icol]))
-	    continue;
-	  ++nvalid;
-	  if(inputX[icol]>=maxX)
-	    binX=nbin-1;
-	  else if(inputX[icol]<=minX)
-	    binX=0;
-	  else
-	    binX=static_cast<int>(static_cast<double>(inputX[icol]-minX)/(maxX-minX)*nbin);
-	  if(inputY[icol]>=maxY)
-	    binY=nbin-1;
-	  else if(inputY[icol]<=minX)
-	    binY=0;
-	  else
-	    binY=static_cast<int>(static_cast<double>(inputY[icol]-minY)/(maxY-minY)*nbin);
-	  assert(binX>=0);
-	  assert(binX<output.size());
-	  assert(binY>=0);
-	  assert(binY<output[binX].size());
-	  if(sigma>0){
-	    //create kde for Gaussian basis function
-	    //todo: speed up by calculating first and last bin with non-zero contriubtion...
-	    for(int ibinX=0;ibinX<nbin;++ibinX){
-	      double centerX=minX+static_cast<double>(maxX-minX)*ibinX/nbin;
-	      double pdfX=gsl_ran_gaussian_pdf(inputX[icol]-centerX, sigma);
-	      for(int ibinY=0;ibinY<nbin;++ibinY){
-		//calculate  \integral_ibinX^(ibinX+1)
-		double centerY=minY+static_cast<double>(maxY-minY)*ibinY/nbin;
-		double pdfY=gsl_ran_gaussian_pdf(inputY[icol]-centerY, sigma);
-		output[ibinX][binY]+=pdfX*pdfY;
-	      }
-	    }
-	  }
-	  else
-	    ++output[binX][binY];
-	}
+          if(random_opt[0]>0){
+            double p=static_cast<double>(rand())/(RAND_MAX);
+            p*=100.0;
+            if(p>random_opt[0])
+              continue;//do not select for now, go to next column
+          }
+          if(imgReader.isNoData(inputX[icol]))
+            continue;
+          if(imgReader.isNoData(inputY[icol]))
+            continue;
+          ++nvalid;
+          if(inputX[icol]>=maxX)
+            binX=nbin-1;
+          else if(inputX[icol]<=minX)
+            binX=0;
+          else
+            binX=static_cast<int>(static_cast<double>(inputX[icol]-minX)/(maxX-minX)*nbin);
+          if(inputY[icol]>=maxY)
+            binY=nbin-1;
+          else if(inputY[icol]<=minX)
+            binY=0;
+          else
+            binY=static_cast<int>(static_cast<double>(inputY[icol]-minY)/(maxY-minY)*nbin);
+          assert(binX>=0);
+          assert(binX<output.size());
+          assert(binY>=0);
+          assert(binY<output[binX].size());
+          if(sigma>0){
+            //create kde for Gaussian basis function
+            //todo: speed up by calculating first and last bin with non-zero contriubtion...
+            for(int ibinX=0;ibinX<nbin;++ibinX){
+              double centerX=minX+static_cast<double>(maxX-minX)*ibinX/nbin;
+              double pdfX=gsl_ran_gaussian_pdf(inputX[icol]-centerX, sigma);
+              for(int ibinY=0;ibinY<nbin;++ibinY){
+                //calculate  \integral_ibinX^(ibinX+1)
+                double centerY=minY+static_cast<double>(maxY-minY)*ibinY/nbin;
+                double pdfY=gsl_ran_gaussian_pdf(inputY[icol]-centerY, sigma);
+                output[ibinX][binY]+=pdfX*pdfY;
+              }
+            }
+          }
+          else
+            ++output[binX][binY];
+        }
       }
       if(verbose_opt[0])
-	cout << "number of valid pixels: " << nvalid << endl;
+        cout << "number of valid pixels: " << nvalid << endl;
 
       for(int binX=0;binX<nbin;++binX){
-	cout << endl;
-	for(int binY=0;binY<nbin;++binY){
-	  double binValueX=0;
-	  if(nbin==maxX-minX+1)
-	    binValueX=minX+binX;
-	  else
-	    binValueX=minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin;
-	  double binValueY=0;
-	  if(nbin==maxY-minY+1)
-	    binValueY=minY+binY;
-	  else
-	    binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
+        cout << endl;
+        for(int binY=0;binY<nbin;++binY){
+          double binValueX=0;
+          if(nbin==maxX-minX+1)
+            binValueX=minX+binX;
+          else
+            binValueX=minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin;
+          double binValueY=0;
+          if(nbin==maxY-minY+1)
+            binValueY=minY+binY;
+          else
+            binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
 
-	  double value=static_cast<double>(output[binX][binY]);
-	  
-	  if(relative_opt[0])
-	    value*=100.0/nvalid;
+          double value=static_cast<double>(output[binX][binY]);
 
-	  cout << binValueX << " " << binValueY << " " << value << std::endl;
-	  // double value=static_cast<double>(output[binX][binY])/nvalid;
-	  // cout << (maxX-minX)*bin/(nbin-1)+minX << " " << (maxY-minY)*bin/(nbin-1)+minY << " " << value << std::endl;
-	}
+          if(relative_opt[0])
+            value*=100.0/nvalid;
+
+          cout << binValueX << " " << binValueY << " " << value << std::endl;
+          // double value=static_cast<double>(output[binX][binY])/nvalid;
+          // cout << (maxX-minX)*bin/(nbin-1)+minX << " " << (maxY-minY)*bin/(nbin-1)+minY << " " << value << std::endl;
+        }
       }
     }
     if(reg_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
-	continue;
+        continue;
       imgreg.setDown(down_opt[0]);
       imgreg.setThreshold(random_opt[0]);
       double c0=0;//offset
@@ -537,7 +535,7 @@ int main(int argc, char *argv[])
     }
     if(regerr_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
-	continue;
+        continue;
       imgreg.setDown(down_opt[0]);
       imgreg.setThreshold(random_opt[0]);
       double c0=0;//offset
@@ -547,32 +545,32 @@ int main(int argc, char *argv[])
     }
     if(rmse_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
-	continue;
+        continue;
       vector<double> xBuffer(imgReader.nrOfCol());
       vector<double> yBuffer(imgReader.nrOfCol());
       double mse=0;
       double nValid=0;
       double nPixel=imgReader.nrOfCol()/down_opt[0]*imgReader.nrOfRow()/down_opt[0];
       for(unsigned int irow;irow<imgReader.nrOfRow();irow+=down_opt[0]){
-	imgReader.readData(xBuffer,irow,band_opt[0]);
-	imgReader.readData(yBuffer,irow,band_opt[1]);
-	for(unsigned int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
-	  double xValue=xBuffer[icol];
-	  double yValue=yBuffer[icol];
-	  if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
-	    continue;
-	  }
-	  if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
-	    continue;
-	  }
-	  if(xValue<src_min_opt[0]||xValue>src_max_opt[0]||yValue<src_min_opt[0]||yValue>src_max_opt[0])
-	    continue;
-	  ++nValid;
-	  double e=xValue-yValue;
-	  if(relative_opt[0])
-	    e/=yValue;
-	  mse+=e*e/nPixel;
-	}
+        imgReader.readData(xBuffer,irow,band_opt[0]);
+        imgReader.readData(yBuffer,irow,band_opt[1]);
+        for(unsigned int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
+          double xValue=xBuffer[icol];
+          double yValue=yBuffer[icol];
+          if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
+            continue;
+          }
+          if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
+            continue;
+          }
+          if(xValue<src_min_opt[0]||xValue>src_max_opt[0]||yValue<src_min_opt[0]||yValue>src_max_opt[0])
+            continue;
+          ++nValid;
+          double e=xValue-yValue;
+          if(relative_opt[0])
+            e/=yValue;
+          mse+=e*e/nPixel;
+        }
       }
       double correctNorm=nValid;
       correctNorm/=nPixel;
@@ -581,7 +579,7 @@ int main(int argc, char *argv[])
     }
     if(preg_opt[0]&&input_opt.size()<2){
       if(band_opt.size()<2)
-	continue;
+        continue;
       imgreg.setDown(down_opt[0]);
       imgreg.setThreshold(random_opt[0]);
       double c0=0;//offset
@@ -596,11 +594,11 @@ int main(int argc, char *argv[])
   //     band_opt.push_back(band_opt[0]);
   //   if(src_min_opt.size()){
   //     while(src_min_opt.size()<input_opt.size())
-  // 	src_min_opt.push_back(src_min_opt[0]);
+  //  src_min_opt.push_back(src_min_opt[0]);
   //   }
   //   if(src_max_opt.size()){
   //     while(src_max_opt.size()<input_opt.size())
-  // 	src_max_opt.push_back(src_max_opt[0]);
+  //  src_max_opt.push_back(src_max_opt[0]);
   //   }
   //   ImgRaster imgReader1(input_opt[0]);
   //   ImgRaster imgReader2(input_opt[1]);
@@ -636,21 +634,21 @@ int main(int argc, char *argv[])
   //     imgReader1.readData(xBuffer,irow1,band_opt[0]);
   //     imgReader2.readData(yBuffer,irow2,band_opt[1]);
   //     for(unsigned int icol;icol<imgReader.nrOfCol();icol+=down_opt[0]){
-  // 	icol1=icol;
-  // 	imgReader1.image2geo(icol1,irow1,geoX,geoY);
-  // 	imgReader2.geo2image(geoX,geoY,icol2,irow2);
-  // 	double xValue=xBuffer[icol1];
-  // 	double yValue=yBuffer[icol2];
-  // 	if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
-  // 	  continue;
-  // 	}
-  // 	if(xValue<src_min_opt[0]||xValue>src_max_opt[0]||yValue<src_min_opt[1]||yValue>src_max_opt[1])
-  // 	  continue;
-  // 	++nValid;
-  // 	double e=xValue-yValue;
-  // 	if(relative_opt[0])
-  // 	  e/=yValue;
-  // 	mse+=e*e/nPixel;
+  //  icol1=icol;
+  //  imgReader1.image2geo(icol1,irow1,geoX,geoY);
+  //  imgReader2.geo2image(geoX,geoY,icol2,irow2);
+  //  double xValue=xBuffer[icol1];
+  //  double yValue=yBuffer[icol2];
+  //  if(imgReader.isNoData(xValue)||imgReader.isNoData(yValue)){
+  //    continue;
+  //  }
+  //  if(xValue<src_min_opt[0]||xValue>src_max_opt[0]||yValue<src_min_opt[1]||yValue>src_max_opt[1])
+  //    continue;
+  //  ++nValid;
+  //  double e=xValue-yValue;
+  //  if(relative_opt[0])
+  //    e/=yValue;
+  //  mse+=e*e/nPixel;
   //     }
   //   }
   //   double correctNorm=nValid;
@@ -667,11 +665,11 @@ int main(int argc, char *argv[])
       band_opt.push_back(band_opt[0]);
     if(src_min_opt.size()){
       while(src_min_opt.size()<input_opt.size())
-	src_min_opt.push_back(src_min_opt[0]);
+        src_min_opt.push_back(src_min_opt[0]);
     }
     if(src_max_opt.size()){
       while(src_max_opt.size()<input_opt.size())
-	src_max_opt.push_back(src_max_opt[0]);
+        src_max_opt.push_back(src_max_opt[0]);
     }
     ImgRaster imgReader1(input_opt[0]);
     ImgRaster imgReader2(input_opt[1]);
@@ -708,11 +706,11 @@ int main(int argc, char *argv[])
       band_opt.push_back(band_opt[0]);
     if(src_min_opt.size()){
       while(src_min_opt.size()<input_opt.size())
-	src_min_opt.push_back(src_min_opt[0]);
+        src_min_opt.push_back(src_min_opt[0]);
     }
     if(src_max_opt.size()){
       while(src_max_opt.size()<input_opt.size())
-	src_max_opt.push_back(src_max_opt[0]);
+        src_max_opt.push_back(src_max_opt[0]);
     }
     ImgRaster imgReader1(input_opt[0]);
     ImgRaster imgReader2(input_opt[1]);
@@ -749,11 +747,11 @@ int main(int argc, char *argv[])
       band_opt.push_back(band_opt[0]);
     if(src_min_opt.size()){
       while(src_min_opt.size()<input_opt.size())
-	src_min_opt.push_back(src_min_opt[0]);
+        src_min_opt.push_back(src_min_opt[0]);
     }
     if(src_max_opt.size()){
       while(src_max_opt.size()<input_opt.size())
-	src_max_opt.push_back(src_max_opt[0]);
+        src_max_opt.push_back(src_max_opt[0]);
     }
     ImgRaster imgReader1(input_opt[0]);
     ImgRaster imgReader2(input_opt[1]);
@@ -790,11 +788,11 @@ int main(int argc, char *argv[])
       band_opt.push_back(band_opt[0]);
     if(src_min_opt.size()){
       while(src_min_opt.size()<input_opt.size())
-	src_min_opt.push_back(src_min_opt[0]);
+        src_min_opt.push_back(src_min_opt[0]);
     }
     if(src_max_opt.size()){
       while(src_max_opt.size()<input_opt.size())
-	src_max_opt.push_back(src_max_opt[0]);
+        src_max_opt.push_back(src_max_opt[0]);
     }
     ImgRaster imgReader1(input_opt[0]);
     ImgRaster imgReader2(input_opt[1]);
@@ -827,11 +825,11 @@ int main(int argc, char *argv[])
       band_opt.push_back(band_opt[0]);
     if(src_min_opt.size()){
       while(src_min_opt.size()<input_opt.size())
-	src_min_opt.push_back(src_min_opt[0]);
+        src_min_opt.push_back(src_min_opt[0]);
     }
     if(src_max_opt.size()){
       while(src_max_opt.size()<input_opt.size())
-	src_max_opt.push_back(src_max_opt[0]);
+        src_max_opt.push_back(src_max_opt[0]);
     }
     ImgRaster imgReader1(input_opt[0]);
     ImgRaster imgReader2(input_opt[1]);
@@ -863,7 +861,7 @@ int main(int argc, char *argv[])
       cout << "minY: " << minY << endl;
       cout << "maxY: " << maxY << endl;
     }
-      
+
     if(src_min_opt.size()){
       minX=src_min_opt[0];
       minY=src_min_opt[1];
@@ -879,10 +877,10 @@ int main(int argc, char *argv[])
       // imgReader1.getMinMax(minX,maxX,band_opt[0]);
       // imgReader2.getMinMax(minY,maxY,band_opt[0]);
       if(minX>=maxX)
-	imgReader1.getMinMax(minX,maxX,band_opt[0]);
+        imgReader1.getMinMax(minX,maxX,band_opt[0]);
       if(minY>=maxY)
-	imgReader2.getMinMax(minY,maxY,band_opt[1]);
-      
+        imgReader2.getMinMax(minY,maxY,band_opt[1]);
+
       minValue=(minX<minY)? minX:minY;
       maxValue=(maxX>maxY)? maxX:maxY;
       if(verbose_opt[0])
@@ -902,19 +900,19 @@ int main(int argc, char *argv[])
       rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev1,pfnProgress,pProgressData);
       rasterBand=imgReader2.getRasterBand(band_opt[0]);
       rasterBand->ComputeStatistics(0,&minValue,&maxValue,&meanValue,&stdDev2,pfnProgress,pProgressData);
-      
+
       //todo: think of smarter way how to estimate size (nodata!)
       double estimatedSize=1.0*imgReader.getNvalid(band_opt[0])/down_opt[0]/down_opt[0];
       if(random_opt[0]>0)
-	estimatedSize*=random_opt[0]/100.0;
+        estimatedSize*=random_opt[0]/100.0;
       sigma=1.06*sqrt(stdDev1*stdDev2)*pow(estimatedSize,-0.2);
     }
     assert(nbin);
     if(verbose_opt[0]){
       if(sigma>0)
-	std::cout << "calculating 2d kernel density estimate with sigma " << sigma << " for datasets " << input_opt[0] << " and " << input_opt[1] << std::endl;
+        std::cout << "calculating 2d kernel density estimate with sigma " << sigma << " for datasets " << input_opt[0] << " and " << input_opt[1] << std::endl;
       else
-	std::cout << "calculating 2d histogram for datasets " << input_opt[0] << " and " << input_opt[1] << std::endl;
+        std::cout << "calculating 2d histogram for datasets " << input_opt[0] << " and " << input_opt[1] << std::endl;
       std::cout << "nbin: " << nbin << std::endl;
     }
 
@@ -945,7 +943,7 @@ int main(int argc, char *argv[])
     for(int i=0;i<nbin;++i){
       output[i].resize(nbin);
       for(int j=0;j<nbin;++j)
-	output[i][j]=0;
+        output[i][j]=0;
     }
     int binX=0;
     int binY=0;
@@ -960,7 +958,7 @@ int main(int argc, char *argv[])
     double irow2=0;
     for(unsigned int irow=0;irow<imgReader1.nrOfRow();++irow){
       if(irow%down_opt[0])
-	continue;
+        continue;
       irow1=irow;
       imgReader1.image2geo(icol1,irow1,geoX,geoY);
       imgReader2.geo2image(geoX,geoY,icol2,irow2);
@@ -968,58 +966,58 @@ int main(int argc, char *argv[])
       imgReader1.readData(inputX,irow1,band_opt[0]);
       imgReader2.readData(inputY,irow2,band_opt[1]);
       for(unsigned int icol=0;icol<imgReader.nrOfCol();++icol){
-	if(icol%down_opt[0])
-	  continue;
-	icol1=icol;
-	if(random_opt[0]>0){
-	  double p=static_cast<double>(rand())/(RAND_MAX);
-	  p*=100.0;
-	  if(p>random_opt[0])
-	    continue;//do not select for now, go to next column
-	}
-	if(imgReader1.isNoData(inputX[icol]))
-	  continue;
-	imgReader1.image2geo(icol1,irow1,geoX,geoY);
-	imgReader2.geo2image(geoX,geoY,icol2,irow2);
-	icol2=static_cast<int>(icol2);
-	if(imgReader2.isNoData(inputY[icol2]))
-	  continue;
-	// ++nvalid;
-	if(inputX[icol1]>=maxX)
-	  binX=nbin-1;
-	else if(inputX[icol]<=minX)
-	  binX=0;
-	else
-	  binX=static_cast<int>(static_cast<double>(inputX[icol1]-minX)/(maxX-minX)*nbin);
-	if(inputY[icol2]>=maxY)
-	  binY=nbin-1;
-	else if(inputY[icol2]<=minY)
-	  binY=0;
-	else
-	  binY=static_cast<int>(static_cast<double>(inputY[icol2]-minY)/(maxY-minY)*nbin);
-	assert(binX>=0);
-	assert(binX<output.size());
-	assert(binY>=0);
-	assert(binY<output[binX].size());
-	if(sigma>0){
-	  //create kde for Gaussian basis function
-	  //todo: speed up by calculating first and last bin with non-zero contriubtion...
-	  for(int ibinX=0;ibinX<nbin;++ibinX){
-	    double centerX=minX+static_cast<double>(maxX-minX)*ibinX/nbin;
-	    double pdfX=gsl_ran_gaussian_pdf(inputX[icol1]-centerX, sigma);
-	    for(int ibinY=0;ibinY<nbin;++ibinY){
-	      //calculate  \integral_ibinX^(ibinX+1)
-	      double centerY=minY+static_cast<double>(maxY-minY)*ibinY/nbin;
-	      double pdfY=gsl_ran_gaussian_pdf(inputY[icol2]-centerY, sigma);
-	      output[ibinX][binY]+=pdfX*pdfY;
-	      nvalid+=pdfX*pdfY;
-	    }
-	  }
-	}
-	else{
-	  ++output[binX][binY];
-	  ++nvalid;
-	}
+        if(icol%down_opt[0])
+          continue;
+        icol1=icol;
+        if(random_opt[0]>0){
+          double p=static_cast<double>(rand())/(RAND_MAX);
+          p*=100.0;
+          if(p>random_opt[0])
+            continue;//do not select for now, go to next column
+        }
+        if(imgReader1.isNoData(inputX[icol]))
+          continue;
+        imgReader1.image2geo(icol1,irow1,geoX,geoY);
+        imgReader2.geo2image(geoX,geoY,icol2,irow2);
+        icol2=static_cast<int>(icol2);
+        if(imgReader2.isNoData(inputY[icol2]))
+          continue;
+        // ++nvalid;
+        if(inputX[icol1]>=maxX)
+          binX=nbin-1;
+        else if(inputX[icol]<=minX)
+          binX=0;
+        else
+          binX=static_cast<int>(static_cast<double>(inputX[icol1]-minX)/(maxX-minX)*nbin);
+        if(inputY[icol2]>=maxY)
+          binY=nbin-1;
+        else if(inputY[icol2]<=minY)
+          binY=0;
+        else
+          binY=static_cast<int>(static_cast<double>(inputY[icol2]-minY)/(maxY-minY)*nbin);
+        assert(binX>=0);
+        assert(binX<output.size());
+        assert(binY>=0);
+        assert(binY<output[binX].size());
+        if(sigma>0){
+          //create kde for Gaussian basis function
+          //todo: speed up by calculating first and last bin with non-zero contriubtion...
+          for(int ibinX=0;ibinX<nbin;++ibinX){
+            double centerX=minX+static_cast<double>(maxX-minX)*ibinX/nbin;
+            double pdfX=gsl_ran_gaussian_pdf(inputX[icol1]-centerX, sigma);
+            for(int ibinY=0;ibinY<nbin;++ibinY){
+              //calculate  \integral_ibinX^(ibinX+1)
+              double centerY=minY+static_cast<double>(maxY-minY)*ibinY/nbin;
+              double pdfY=gsl_ran_gaussian_pdf(inputY[icol2]-centerY, sigma);
+              output[ibinX][binY]+=pdfX*pdfY;
+              nvalid+=pdfX*pdfY;
+            }
+          }
+        }
+        else{
+          ++output[binX][binY];
+          ++nvalid;
+        }
       }
     }
     if(verbose_opt[0])
@@ -1027,24 +1025,24 @@ int main(int argc, char *argv[])
     for(int binX=0;binX<nbin;++binX){
       cout << endl;
       for(int binY=0;binY<nbin;++binY){
-	double binValueX=0;
-	if(nbin==maxX-minX+1)
-	  binValueX=minX+binX;
-	else
-	  binValueX=minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin;
-	double binValueY=0;
-	if(nbin==maxY-minY+1)
-	  binValueY=minY+binY;
-	else
-	  binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
-	double value=static_cast<double>(output[binX][binY]);
-	  
-	if(relative_opt[0]||kde_opt[0])
-	  value*=100.0/nvalid;
+        double binValueX=0;
+        if(nbin==maxX-minX+1)
+          binValueX=minX+binX;
+        else
+          binValueX=minX+static_cast<double>(maxX-minX)*(binX+0.5)/nbin;
+        double binValueY=0;
+        if(nbin==maxY-minY+1)
+          binValueY=minY+binY;
+        else
+          binValueY=minY+static_cast<double>(maxY-minY)*(binY+0.5)/nbin;
+        double value=static_cast<double>(output[binX][binY]);
 
-	cout << binValueX << " " << binValueY << " " << value << std::endl;
-	// double value=static_cast<double>(output[binX][binY])/nvalid;
-	// cout << (maxX-minX)*bin/(nbin-1)+minX << " " << (maxY-minY)*bin/(nbin-1)+minY << " " << value << std::endl;
+        if(relative_opt[0]||kde_opt[0])
+          value*=100.0/nvalid;
+
+        cout << binValueX << " " << binValueY << " " << value << std::endl;
+        // double value=static_cast<double>(output[binX][binY])/nvalid;
+        // cout << (maxX-minX)*bin/(nbin-1)+minX << " " << (maxY-minY)*bin/(nbin-1)+minY << " " << value << std::endl;
       }
     }
     imgReader1.close();
@@ -1054,7 +1052,7 @@ int main(int argc, char *argv[])
   if(!histogram_opt[0]||histogram2d_opt[0])
     std::cout << std::endl;
 }
-  
+
 // int nband=(band_opt.size()) ? band_opt.size() : imgReader.nrOfBand();
 
 // const char* pszMessage;
@@ -1077,77 +1075,77 @@ int main(int argc, char *argv[])
 //   double iimg,jimg;//image coordinates in img image
 //   for(icol=0;icol<classReader.nrOfCol();++icol){
 //     if(icol%down_opt[0])
-  // 	continue;
+//  continue;
 
 
-  // if(rand_opt[0]>0){
-  //   gsl_rng* r=stat.getRandomGenerator(time(NULL));
-  //   //todo: init random number generator using time...
-  //   if(verbose_opt[0])
-  //     std::cout << "generating " << rand_opt[0] << " random numbers: " << std::endl;
-  //   for(unsigned int i=0;i<rand_opt[0];++i)
-  //     std::cout << i << " " << stat.getRandomValue(r,randdist_opt[0],randa_opt[0],randb_opt[0]) << std::endl;
-  // }
+// if(rand_opt[0]>0){
+//   gsl_rng* r=stat.getRandomGenerator(time(NULL));
+//   //todo: init random number generator using time...
+//   if(verbose_opt[0])
+//     std::cout << "generating " << rand_opt[0] << " random numbers: " << std::endl;
+//   for(unsigned int i=0;i<rand_opt[0];++i)
+//     std::cout << i << " " << stat.getRandomValue(r,randdist_opt[0],randa_opt[0],randb_opt[0]) << std::endl;
+// }
 
-  // imgreg.setDown(down_opt[0]);
-  // imgreg.setThreshold(threshold_opt[0]);
-  // double c0=0;//offset
-  // double c1=1;//scale
-  // double err=uncertNodata_opt[0];//start with high initial value in case we do not have first ob	err=imgreg.getRMSE(imgReaderModel1,imgReader,c0,c1,verbose_opt[0]);
+// imgreg.setDown(down_opt[0]);
+// imgreg.setThreshold(threshold_opt[0]);
+// double c0=0;//offset
+// double c1=1;//scale
+// double err=uncertNodata_opt[0];//start with high initial value in case we do not have first ob	err=imgreg.getRMSE(imgReaderModel1,imgReader,c0,c1,verbose_opt[0]);
 
-  //   int nband=band_opt.size();
-  //   if(band_opt[0]<0)
-  //     nband=imgReader.nrOfBand();
-  //   for(int iband=0;iband<nband;++iband){
-  //     unsigned short band_opt[iband]=(band_opt[0]<0)? iband : band_opt[iband];
+//   int nband=band_opt.size();
+//   if(band_opt[0]<0)
+//     nband=imgReader.nrOfBand();
+//   for(int iband=0;iband<nband;++iband){
+//     unsigned short band_opt[iband]=(band_opt[0]<0)? iband : band_opt[iband];
 
-  //     if(minmax_opt[0]||min_opt[0]||max_opt[0]){
-  // 	assert(band_opt[iband]<imgReader.nrOfBand());
-  // 	if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
-  // 	  double uli,ulj,lri,lrj;
-  // 	  imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
-  // 	  imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
-  // 	  imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),band_opt[iband],minValue,maxValue);
-  // 	}
-  // 	else
-  // 	  imgReader.getMinMax(minValue,maxValue,band_opt[iband],true);
-  // 	if(minmax_opt[0])
-  // 	  std::cout << "-min " << minValue << " -max " << maxValue << " ";
-  // 	else{
-  // 	  if(min_opt[0])
-  // 	    std::cout << "-min " << minValue << " ";
-  // 	  if(max_opt[0])
-  // 	    std::cout << "-max " << maxValue << " ";
-  // 	}
-  //     }
-  //   }
-  //   if(relative_opt[0])
-  //     hist_opt[0]=true;
-  //   if(hist_opt[0]){
-  //     assert(band_opt[0]<imgReader.nrOfBand());
-  //     unsigned int nbin=(nbin_opt.size())? nbin_opt[0]:0;
-  //     std::vector<unsigned long int> output;
-  //     minValue=0;
-  //     maxValue=0;
-  //     //todo: optimize such that getMinMax is only called once...
-  //     imgReader.getMinMax(minValue,maxValue,band_opt[0]);
-      
-  //     if(src_min_opt.size())
-  //       minValue=src_min_opt[0];
-  //     if(src_max_opt.size())
-  //       maxValue=src_max_opt[0];
-  //     unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0]);
-  //     std::cout.precision(10);
-  //     for(int bin=0;bin<nbin;++bin){
-  // 	double binValue=0;
-  // 	if(nbin==maxValue-minValue+1)
-  // 	  binValue=minValue+bin;
-  // 	else
-  // 	  binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
-  // 	std::cout << binValue << " ";
-  // 	if(relative_opt[0])
-  // 	  std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
-  // 	else
-  // 	  std::cout << static_cast<double>(output[bin]) << std::endl;
-  //     }
-  //   }
+//     if(minmax_opt[0]||min_opt[0]||max_opt[0]){
+//  assert(band_opt[iband]<imgReader.nrOfBand());
+//  if((ulx_opt.size()||uly_opt.size()||lrx_opt.size()||lry_opt.size())&&(imgReader.covers(ulx_opt[0],uly_opt[0],lrx_opt[0],lry_opt[0]))){
+//    double uli,ulj,lri,lrj;
+//    imgReader.geo2image(ulx_opt[0],uly_opt[0],uli,ulj);
+//    imgReader.geo2image(lrx_opt[0],lry_opt[0],lri,lrj);
+//    imgReader.getMinMax(static_cast<int>(uli),static_cast<int>(lri),static_cast<int>(ulj),static_cast<int>(lrj),band_opt[iband],minValue,maxValue);
+//  }
+//  else
+//    imgReader.getMinMax(minValue,maxValue,band_opt[iband],true);
+//  if(minmax_opt[0])
+//    std::cout << "-min " << minValue << " -max " << maxValue << " ";
+//  else{
+//    if(min_opt[0])
+//      std::cout << "-min " << minValue << " ";
+//    if(max_opt[0])
+//      std::cout << "-max " << maxValue << " ";
+//  }
+//     }
+//   }
+//   if(relative_opt[0])
+//     hist_opt[0]=true;
+//   if(hist_opt[0]){
+//     assert(band_opt[0]<imgReader.nrOfBand());
+//     unsigned int nbin=(nbin_opt.size())? nbin_opt[0]:0;
+//     std::vector<unsigned long int> output;
+//     minValue=0;
+//     maxValue=0;
+//     //todo: optimize such that getMinMax is only called once...
+//     imgReader.getMinMax(minValue,maxValue,band_opt[0]);
+
+//     if(src_min_opt.size())
+//       minValue=src_min_opt[0];
+//     if(src_max_opt.size())
+//       maxValue=src_max_opt[0];
+//     unsigned long int nsample=imgReader.getHistogram(output,minValue,maxValue,nbin,band_opt[0]);
+//     std::cout.precision(10);
+//     for(int bin=0;bin<nbin;++bin){
+//  double binValue=0;
+//  if(nbin==maxValue-minValue+1)
+//    binValue=minValue+bin;
+//  else
+//    binValue=minValue+static_cast<double>(maxValue-minValue)*(bin+0.5)/nbin;
+//  std::cout << binValue << " ";
+//  if(relative_opt[0])
+//    std::cout << 100.0*static_cast<double>(output[bin])/static_cast<double>(nsample) << std::endl;
+//  else
+//    std::cout << static_cast<double>(output[bin]) << std::endl;
+//     }
+//   }

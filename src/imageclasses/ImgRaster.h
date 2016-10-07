@@ -395,7 +395,7 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   ///Get the maximum cell values for a specific band.
   double getMax(int band=0){int theCol=0;int theRow=0;return(getMax(theCol,theRow,band));};
   ///Calculate the image histogram for a specific band using a defined number of bins and constrained   by a minimum and maximum value. A kernel density function can also be applied (default is false).
-  double getHistogram(std::vector<double>& histvector, double& min, double& max,int& nbin, int theBand=0, bool kde=false);
+  double getHistogram(std::vector<double>& histvector, double& min, double& max, int& nbin, int theBand=0, bool kde=false);
   ///Calculate the reference pixel as the centre of gravity pixel (weighted average of all values not taking into account no data values) for a specific band (start counting from 0).
   void getRefPix(double& refX, double &refY, int band=0);
   ///Calculate the range of cell values in the image for a specific band (start counting from 0).
@@ -437,6 +437,7 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   template<typename T> CPLErr writeDataBlock(Vector2d<T>& buffer2d, int minCol, int maxCol, int minRow, int maxRow, int band=0);
   ///Prepare image writer to write to file
   CPLErr setFile(const std::string& filename, const std::string& imageType, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
+  CPLErr setFile(const app::AppFactory &app);
   ///Prepare image writer to write to file
   // void setFile(const std::string& filename, const ImgRaster& imgSrc, unsigned int memory=0, const std::vector<std::string>& options=std::vector<std::string>());
   ///Set the color table using an (ASCII) file with 5 columns (value R G B alpha)
@@ -473,6 +474,10 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   CPLErr svm(ImgRaster& imgWriter, const app::AppFactory& app);
   ///svm raster dataset only for in memory
   std::shared_ptr<ImgRaster> svm(const app::AppFactory& app);
+  ///stretch raster dataset
+  CPLErr stretch(ImgRaster& imgWriter, const app::AppFactory& app);
+  ///stretch raster dataset only for in memory
+  std::shared_ptr<ImgRaster> stretch(const app::AppFactory& app);
   ///create ImgRaster reading from file
   /* static CPLErr createImg(ImgRaster& imgRaster, const std::string filename, unsigned int memory=0){imgRaster.open(filename,memory);}; */
   ///create shared pointer to ImgRaster

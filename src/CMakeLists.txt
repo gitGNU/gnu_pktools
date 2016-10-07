@@ -70,6 +70,7 @@ set(IMGCLASS_CC
 	${IMGCLASS_SRC_DIR}/pksvm_lib.cc
 	${IMGCLASS_SRC_DIR}/pkdiff_lib.cc
 	${IMGCLASS_SRC_DIR}/pkvalidate_lib.cc
+	${IMGCLASS_SRC_DIR}/pkstretch_lib.cc
 	)
 
 set(LASCLASS_H

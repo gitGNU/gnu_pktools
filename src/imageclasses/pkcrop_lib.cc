@@ -92,7 +92,7 @@ CPLErr ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
   Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
-  Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
+  // Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<double>  nodata_opt("nodata", "nodata", "Nodata value to put in image if out of bounds.");
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
@@ -109,7 +109,7 @@ CPLErr ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
   mask_opt.setHide(1);
   msknodata_opt.setHide(1);
   mskband_opt.setHide(1);
-  option_opt.setHide(1);
+  // option_opt.setHide(1);
   cx_opt.setHide(1);
   cy_opt.setHide(1);
   nx_opt.setHide(1);
@@ -145,7 +145,7 @@ CPLErr ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
     mask_opt.retrieveOption(app.getArgc(),app.getArgv());
     msknodata_opt.retrieveOption(app.getArgc(),app.getArgv());
     mskband_opt.retrieveOption(app.getArgc(),app.getArgv());
-    option_opt.retrieveOption(app.getArgc(),app.getArgv());
+    // option_opt.retrieveOption(app.getArgc(),app.getArgv());
     cx_opt.retrieveOption(app.getArgc(),app.getArgv());
     cy_opt.retrieveOption(app.getArgc(),app.getArgv());
     nx_opt.retrieveOption(app.getArgc(),app.getArgv());
@@ -447,11 +447,11 @@ CPLErr ImgCollection::crop(ImgRaster& imgWriter, const AppFactory& app){
       if(verbose_opt[0])
         cout << "Using data type from input image: " << GDALGetDataTypeName(theType) << endl;
     }
-    if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
-      string theInterleave="INTERLEAVE=";
-      theInterleave+=(*imit)->getInterleave();
-      option_opt.push_back(theInterleave);
-    }
+    // if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
+    //   string theInterleave="INTERLEAVE=";
+    //   theInterleave+=(*imit)->getInterleave();
+    //   option_opt.push_back(theInterleave);
+    // }
     // if(verbose_opt[0])
     //   cout << "size of " << input_opt[iimg] << ": " << ncol << " cols, "<< nrow << " rows" << endl;
     double uli,ulj,lri,lrj;//image coordinates
