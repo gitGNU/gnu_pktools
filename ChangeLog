@@ -475,5 +475,3 @@ version 2.6.7
 	- CMakeLists.txt: removed option to enable nlopt
 version 2.6.8
 	- pkextractogr support options -perc for percentile rule sr #108771
-version 3.0.1
-	- redesign of ImgReadergdal and ImgWritergdal -> ImgRaster with memory buffering
