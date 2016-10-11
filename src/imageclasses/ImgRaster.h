@@ -474,6 +474,10 @@ class ImgRaster : public std::enable_shared_from_this<ImgRaster>
   CPLErr svm(ImgRaster& imgWriter, const app::AppFactory& app);
   ///svm raster dataset only for in memory
   std::shared_ptr<ImgRaster> svm(const app::AppFactory& app);
+  ///equalize raster dataset
+  CPLErr equalize(ImgRaster& imgWriter, const app::AppFactory& app);
+  ///equalize raster dataset only for in memory
+  std::shared_ptr<ImgRaster> equalize(const app::AppFactory& app);
   ///stretch raster dataset
   CPLErr stretch(ImgRaster& imgWriter, const app::AppFactory& app);
   ///stretch raster dataset only for in memory
