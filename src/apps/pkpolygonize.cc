@@ -20,8 +20,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "cpl_string.h"
 #include "gdal_priv.h"
 #include "gdal.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
 #include "ogrsf_frmts.h"
@@ -64,7 +63,7 @@ The utility pkpolygonize converts a raster to a vector dataset. All pixels in th
  | b      | band                 | int  | 0     |the band to be used from input file | 
  | nodata | nodata               | double |       |Disgard this nodata value when creating polygons. | 
  | n      | name                 | std::string | DN    |the field name of the output layer | 
-
+  | 
 Usage: pkpolygonize -i input [-m mask] -o output
 
 
@@ -125,7 +124,7 @@ int main(int argc,char **argv) {
   pfnProgress(dfComplete,pszMessage,pProgressArg);
   
 
-  ImgReaderGdal maskReader;
+  ImgRasterGdal maskReader;
   GDALRasterBand *maskBand=NULL;
   if(mask_opt.size()){
     if(verbose_opt[0])
@@ -134,7 +133,7 @@ int main(int argc,char **argv) {
     maskBand = maskReader.getRasterBand(0);
   }
 
-  ImgReaderGdal inputReader(input_opt[0]);
+  ImgRasterGdal inputReader(input_opt[0]);
   GDALRasterBand  *inputBand;
   inputBand=inputReader.getRasterBand(0);
   if(nodata_opt.size())

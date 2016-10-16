@@ -19,8 +19,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <iostream>
 #include "base/Optionpk.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "lasclasses/FileReaderLas.h"
 #include "algorithms/StatFactory.h"
@@ -55,7 +54,7 @@ The utility pklas2img converts a las/laz point cloud into a gridded raster datas
  | n      | name                 | std::string | z     |names of the attribute to select: intensity, angle, return, nreturn, spacing, z | 
  | ret    | ret                  | unsigned short |       |number(s) of returns to include | 
  | class  | class                | unsigned short |       |classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap) | 
- | comp   | comp                 | std::string | last  |composite for multiple points in cell (min, max, absmin, absmax, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point | 
+ | comp   | comp                 | std::string | last  |composite for multiple points in cell (min, max, absmin, absmax, median, mean, var, stdev, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point | 
  | fir    | filter               | std::string | all   |filter las points (first,last,single,multiple,all). | 
  | angle_min  | angle_min        | unsigned short |    |minimum scan angle to read points. | 
  | angle_max  | angle_max        | unsigned short |    |maximum scan angle to read points. | 
@@ -91,7 +90,7 @@ int main(int argc,char **argv) {
   // Optionpk<short> maxIter_opt("maxit", "maxit", "Maximum number of iterations in post filter", 5);
   Optionpk<unsigned short> returns_opt("ret", "ret", "number(s) of returns to include");
   Optionpk<unsigned short> classes_opt("class", "class", "classes to keep: 0 (created, never classified), 1 (unclassified), 2 (ground), 3 (low vegetation), 4 (medium vegetation), 5 (high vegetation), 6 (building), 7 (low point, noise), 8 (model key-point), 9 (water), 10 (reserved), 11 (reserved), 12 (overlap)");
-  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, absmin, absmax, median, mean, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point", "last");
+  Optionpk<string> composite_opt("comp", "comp", "composite for multiple points in cell (min, max, absmin, absmax, median, mean, var, stdev, sum, first, last, profile (percentile height values), percentile, number (point density)). Last: overwrite cells with latest point", "last");
   Optionpk<string> filter_opt("fir", "filter", "filter las points (first,last,single,multiple,all).", "all");
   Optionpk<short> angle_min_opt("angle_min", "angle_min", "Minimum scan angle to read points.");
   Optionpk<short> angle_max_opt("angle_max", "angle_max", "Maximum scan angle to read points.");
@@ -163,7 +162,6 @@ int main(int argc,char **argv) {
   //todo: is this needed?
   GDALAllRegister();
 
-  double dfComplete=0.0;
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -172,8 +170,8 @@ int main(int argc,char **argv) {
   Vector2d<vector<double> > inputData;//row,col,point
 
    
-  ImgReaderGdal maskReader;
-  ImgWriterGdal outputWriter;
+  ImgRasterGdal maskReader;
+  ImgRasterGdal outputWriter;
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
     cout << "possible output data types: ";
@@ -286,9 +284,8 @@ int main(int argc,char **argv) {
   gt[4]=0;
   gt[5]=-dy_opt[0];
   outputWriter.setGeoTransform(gt);
-  if(projection_opt.size()){
+  if(projection_opt.size())
     outputWriter.setProjectionProj4(projection_opt[0]);
-  }
   if(!outputWriter.isGeoRef())
     cout << "Warning: output image " << output_opt[0] << " is not georeferenced!" << endl;
   if(colorTable_opt.size())
@@ -484,6 +481,10 @@ int main(int argc,char **argv) {
           outputData[irow][icol]=stat.percentile(inputData[irow][icol],inputData[irow][icol].begin(),inputData[irow][icol].end(),percentile_opt[0]);
         else if(composite_opt[0]=="mean")
           outputData[irow][icol]=stat.mean(inputData[irow][icol]);
+        else if(composite_opt[0]=="var")
+          outputData[irow][icol]=stat.var(inputData[irow][icol]);
+        else if(composite_opt[0]=="stdev")
+          outputData[irow][icol]=sqrt(stat.var(inputData[irow][icol]));
         else if(composite_opt[0]=="sum")
           outputData[irow][icol]=stat.sum(inputData[irow][icol]);
         else if(composite_opt[0]=="first")

@@ -19,8 +19,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <assert.h>
 #include <vector>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "base/Optionpk.h"
 
 /******************************************************************************/
@@ -144,7 +143,7 @@ int main(int argc,char **argv) {
   }
 
   assert(input_opt.size());
-  ImgReaderGdal imgReader(input_opt[0]);
+  ImgRasterGdal imgReader(input_opt[0]);
   assert(band_opt.size()>=0);
   assert(band_opt.size()<=imgReader.nrOfBand());
 
@@ -178,9 +177,9 @@ int main(int argc,char **argv) {
   // }
   
   vector< vector<float> > lineBuffer(band_opt.size());
-  for(int iband=0;iband<band_opt.size();++iband)
+  for(unsigned int iband=0;iband<band_opt.size();++iband)
     lineBuffer.resize(imgReader.nrOfCol());
-  ImgWriterGdal imgWriter;
+  ImgRasterGdal imgWriter;
   //if output type not set, get type from input image
   if(theType==GDT_Unknown){
     theType=imgReader.getDataType();
@@ -213,17 +212,17 @@ int main(int argc,char **argv) {
       imgWriter.GDALSetNoDataValue(nodata_opt[0]);
 
   vector<char> writeBuffer(imgWriter.nrOfCol());
-  for(int irow=0;irow<imgReader.nrOfRow();++irow){
-    for(int iband=0;iband<band_opt.size();++iband)
+  for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
+    for(unsigned int iband=0;iband<band_opt.size();++iband)
       imgReader.readData(lineBuffer[iband],irow,band_opt[iband]);
-    for(int icol=0;icol<imgReader.nrOfCol();++icol){
+    for(unsigned int icol=0;icol<imgReader.nrOfCol();++icol){
       bool valid=(operator_opt[0]=="OR")?false:true;
       unsigned short validValue=data_opt[0];
       if(min_opt.size()&&max_opt.size()){
 	assert(max_opt.size()==min_opt.size());
-	for(int ivalid=0;ivalid<min_opt.size();++ivalid){
+	for(unsigned int ivalid=0;ivalid<min_opt.size();++ivalid){
 	  bool validBand=false;
-	  // for(int iband=0;iband<band_opt.size();++iband){
+	  // for(unsigned int iband=0;iband<band_opt.size();++iband){
 	  unsigned short theBand=(band_opt.size()==min_opt.size())? ivalid:0;
 	  if(lineBuffer[theBand][icol]>=min_opt[ivalid]&&lineBuffer[theBand][icol]<=max_opt[ivalid]){
 	    validValue=data_opt[ivalid];

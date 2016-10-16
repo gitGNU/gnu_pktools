@@ -18,8 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include <iostream>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "base/Optionpk.h"
 
 /******************************************************************************/
@@ -71,10 +70,6 @@ Some examples how to use pkcreatect can be found \ref examples_pkcreatect "here"
 using namespace std;
 
 int main(int argc,char **argv) {
-
-  short red=-1;
-  short green=-1;
-  short blue=-1;
 
   Optionpk<string>  input_opt("i", "input", "Input image file");
   Optionpk<string>  output_opt("o", "output", "Output image file");
@@ -156,7 +151,7 @@ int main(int argc,char **argv) {
         cout << i << " " << sEntry.c1 << " " << sEntry.c2 << " " << sEntry.c3 << " " << sEntry.c4 << endl;
     }
   }
-  ImgWriterGdal legendWriter;
+  ImgRasterGdal legendWriter;
   short ncol=dim_opt[0];
   short nrow;
   if(legend_opt.size()){
@@ -177,9 +172,9 @@ int main(int argc,char **argv) {
     else
       legendWriter.setColorTable(&colorTable);
     if(legend_opt.size()){
-      for(int irow=0;irow<legendWriter.nrOfRow();++irow){
+      for(unsigned int irow=0;irow<legendWriter.nrOfRow();++irow){
         vector<char> buffer(legendWriter.nrOfCol());
-        for(int icol=0;icol<legendWriter.nrOfCol();++icol)
+        for(unsigned int icol=0;icol<legendWriter.nrOfCol();++icol)
           buffer[icol]=min_opt[0]+irow*static_cast<short>(max_opt[0]-min_opt[0]+1)/legendWriter.nrOfRow();
         legendWriter.writeData(buffer,legendWriter.nrOfRow()-1-irow);
       }
@@ -192,8 +187,8 @@ int main(int argc,char **argv) {
   // double progress=0;
   // pfnProgress(progress,pszMessage,pProgressArg);
   if(input_opt.size()&&output_opt.size()){
-    ImgReaderGdal imgReader(input_opt[0]);
-    ImgWriterGdal imgWriter;
+    ImgRasterGdal imgReader(input_opt[0]);
+    ImgRasterGdal imgWriter;
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
       string theInterleave="INTERLEAVE=";
       theInterleave+=imgReader.getInterleave();
@@ -214,7 +209,7 @@ int main(int argc,char **argv) {
     switch(imgReader.getDataType()){
     case(GDT_Byte):{
       vector<char> buffer;
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
+      for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
         imgReader.readData(buffer,irow);
         imgWriter.writeData(buffer,irow);
       }
@@ -223,17 +218,17 @@ int main(int argc,char **argv) {
     case(GDT_Int16):{
       vector<short> buffer;
       cout << "Warning: copying short to unsigned short without conversion, use gdal_translate -scale if needed..." << endl;
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
-        imgReader.readData(buffer,irow,0);
-        imgWriter.writeData(buffer,irow,0);
+      for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
+        imgReader.readData(buffer,irow);
+        imgWriter.writeData(buffer,irow);
       }
       break;
     }
     case(GDT_UInt16):{
       vector<unsigned short> buffer;
-      for(int irow=0;irow<imgReader.nrOfRow();++irow){
-        imgReader.readData(buffer,irow,0);
-        imgWriter.writeData(buffer,irow,0);
+      for(unsigned int irow=0;irow<imgReader.nrOfRow();++irow){
+        imgReader.readData(buffer,irow);
+        imgWriter.writeData(buffer,irow);
       }
       break;
     }

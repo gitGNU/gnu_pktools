@@ -24,8 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <assert.h>
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
-#include "imageclasses/ImgWriterGdal.h"
-// #include "imageclasses/ImgWriterOgr.h"
+#include "imageclasses/ImgRasterGdal.h"
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -158,23 +157,18 @@ int main(int argc, char *argv[])
   }
 
   // ImgWriterGdal imgWriter;
-  GDALDataType theType;
-
   if(input_opt.empty()){
     std::cerr << "No input file provided (use option -i). Use --help for help information" << std::endl;
     exit(0);
   }
 
-  ImgReaderGdal imgReader(input_opt[0]);
+  ImgRasterGdal imgReader(input_opt[0]);
   for(int inodata=0;inodata<srcnodata_opt.size();++inodata)
     imgReader.pushNoDataValue(srcnodata_opt[inodata]);
 
   // ImgWriterGdal virtualWriter;//only for coordinate conversion (no output file defined)
   
-  int nband=imgReader.nrOfBand();
   //get number of lines
-  int nrow=imgReader.nrOfRow();
-  int ncol=imgReader.nrOfCol();
   int ncropcol=0;
   int ncroprow=0;
   double dx=dx_opt[0];

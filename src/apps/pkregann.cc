@@ -134,7 +134,6 @@ int main(int argc, char *argv[])
   vector< vector<float> > trainingUnits;
   vector< vector<float> > trainingOutput;
   FileReaderAscii inputFile;
-  unsigned int inputSize=0;
   if(input_opt.size()){
     inputFile.open(input_opt[0]);
     inputFile.setMinRow(from_opt[0]);
@@ -142,7 +141,6 @@ int main(int argc, char *argv[])
     inputFile.setComment('#');
     inputFile.readData(inputUnits,inputCols_opt,1,0,true,verbose_opt[0]);
     inputFile.close();
-    inputSize=inputUnits.size();
   }
   FileReaderAscii trainingFile(training_opt[0]);
   unsigned int sampleSize=0;

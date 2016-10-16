@@ -21,8 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <map>
 #include <algorithm>
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterOgr.h"
 #include "base/Optionpk.h"
@@ -119,9 +118,9 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random", "random", "in case of balance, randomize input data", true,2);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account (0: consider all classes)", 0);
-  Optionpk<unsigned short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
-  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<unsigned int> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> offset_opt("offset", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("scale", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (1: sum rule, 2: max rule).",1);
@@ -176,7 +175,6 @@ int main(int argc, char *argv[])
   weights_opt.setHide(1);
   maxit_opt.setHide(1);
   learning_opt.setHide(1);
-
   verbose_opt.setHide(2);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
@@ -250,7 +248,7 @@ int main(int argc, char *argv[])
       cout << "mask filename: " << mask_opt[0] << endl;
     if(training_opt.size()){
       cout << "training vector file: " << endl;
-      for(int ifile=0;ifile<training_opt.size();++ifile)
+      for(unsigned int ifile=0;ifile<training_opt.size();++ifile)
         cout << training_opt[ifile] << endl;
     }
     else
@@ -262,7 +260,7 @@ int main(int argc, char *argv[])
     cout << "number of bootstrap aggregations: " << nbag << endl;
   
   ImgReaderOgr extentReader;
-  OGRLayer  *readLayer;
+  // OGRLayer  *readLayer;
 
   double ulx=0;
   double uly=0;
@@ -274,7 +272,7 @@ int main(int argc, char *argv[])
     try{
       extentReader.open(mask_opt[0]);
       maskIsVector=true;
-      readLayer = extentReader.getDataSource()->GetLayer(0);
+      // readLayer = extentReader.getDataSource()->GetLayer(0);
       if(!(extentReader.getExtent(ulx,uly,lrx,lry))){
 	cerr << "Error: could not get extent from " << mask_opt[0] << endl;
 	exit(1);
@@ -293,7 +291,7 @@ int main(int argc, char *argv[])
     activeWriter.copyFields(trainingReader);
   }
   vector<PosValue> activePoints(nactive_opt[0]);
-  for(int iactive=0;iactive<activePoints.size();++iactive){
+  for(unsigned int iactive=0;iactive<activePoints.size();++iactive){
     activePoints[iactive].value=1.0;
     activePoints[iactive].posx=0.0;
     activePoints[iactive].posy=0.0;
@@ -304,18 +302,18 @@ int main(int argc, char *argv[])
   vector<FANN::neural_net> net(nbag);//the neural network
 
   unsigned int nclass=0;
-  int nband=0;
-  int startBand=2;//first two bands represent X and Y pos
+  unsigned int nband=0;
+  unsigned int startBand=2;//first two bands represent X and Y pos
 
   if(priors_opt.size()>1){//priors from argument list
     priors.resize(priors_opt.size());
     double normPrior=0;
-    for(int iclass=0;iclass<priors_opt.size();++iclass){
+    for(unsigned int iclass=0;iclass<priors_opt.size();++iclass){
       priors[iclass]=priors_opt[iclass];
       normPrior+=priors[iclass];
     }
     //normalize
-    for(int iclass=0;iclass<priors_opt.size();++iclass)
+    for(unsigned int iclass=0;iclass<priors_opt.size();++iclass)
       priors[iclass]/=normPrior;
   }
 
@@ -327,12 +325,12 @@ int main(int argc, char *argv[])
 	throw(errorstring);
       }
       band_opt.clear();
-      for(int ipair=0;ipair<bstart_opt.size();++ipair){
+      for(unsigned int ipair=0;ipair<bstart_opt.size();++ipair){
 	if(bend_opt[ipair]<=bstart_opt[ipair]){
 	  string errorstring="Error: index for end band must be smaller then start band";
 	  throw(errorstring);
 	}
-	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+	for(unsigned int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
 	  band_opt.push_back(iband);
       }
     }
@@ -349,7 +347,7 @@ int main(int argc, char *argv[])
   vector<std::string> nameVector;
   if(classname_opt.size()){
     assert(classname_opt.size()==classvalue_opt.size());
-    for(int iclass=0;iclass<classname_opt.size();++iclass)
+    for(unsigned int iclass=0;iclass<classname_opt.size();++iclass)
       classValueMap[classname_opt[iclass]]=classvalue_opt[iclass];
   }
   //----------------------------------- Training -------------------------------
@@ -359,7 +357,7 @@ int main(int argc, char *argv[])
   map<string,Vector2d<float> > trainingMap;
   vector< Vector2d<float> > trainingPixels;//[class][sample][band]
   vector<string> fields;
-  for(int ibag=0;ibag<nbag;++ibag){
+  for(unsigned int ibag=0;ibag<nbag;++ibag){
     //organize training data
     if(ibag<training_opt.size()){//if bag contains new training pixels
       trainingMap.clear();
@@ -425,17 +423,17 @@ int main(int argc, char *argv[])
         if(random_opt[0])
           srand(time(NULL));
         totalSamples=0;
-        for(int iclass=0;iclass<nclass;++iclass){
+        for(unsigned int iclass=0;iclass<nclass;++iclass){
           if(trainingPixels[iclass].size()>balance_opt[iclass]){
             while(trainingPixels[iclass].size()>balance_opt[iclass]){
-              int index=rand()%trainingPixels[iclass].size();
+              unsigned int index=rand()%trainingPixels[iclass].size();
               trainingPixels[iclass].erase(trainingPixels[iclass].begin()+index);
             }
           }
           else{
-            int oldsize=trainingPixels[iclass].size();
-            for(int isample=trainingPixels[iclass].size();isample<balance_opt[iclass];++isample){
-              int index = rand()%oldsize;
+            unsigned int oldsize=trainingPixels[iclass].size();
+            for(unsigned int isample=trainingPixels[iclass].size();isample<balance_opt[iclass];++isample){
+              unsigned int index = rand()%oldsize;
               trainingPixels[iclass].push_back(trainingPixels[iclass][index]);
             }
           }
@@ -450,7 +448,7 @@ int main(int argc, char *argv[])
         assert(offset_opt.size()==nband);
       if(scale_opt.size()>1)
         assert(scale_opt.size()==nband);
-      for(int iband=0;iband<nband;++iband){
+      for(unsigned int iband=0;iband<nband;++iband){
         if(verbose_opt[0]>=1)
           cout << "scaling for band" << iband << endl;
         offset[ibag][iband]=(offset_opt.size()==1)?offset_opt[0]:offset_opt[iband];
@@ -459,8 +457,8 @@ int main(int argc, char *argv[])
         if(scale[ibag][iband]<=0){
           float theMin=trainingPixels[0][0][iband+startBand];
           float theMax=trainingPixels[0][0][iband+startBand];
-          for(int iclass=0;iclass<nclass;++iclass){
-            for(int isample=0;isample<trainingPixels[iclass].size();++isample){
+          for(unsigned int iclass=0;iclass<nclass;++iclass){
+            for(unsigned int isample=0;isample<trainingPixels[iclass].size();++isample){
               if(theMin>trainingPixels[iclass][isample][iband+startBand])
                 theMin=trainingPixels[iclass][isample][iband+startBand];
               if(theMax<trainingPixels[iclass][isample][iband+startBand])
@@ -480,7 +478,7 @@ int main(int argc, char *argv[])
     else{//use same offset and scale 
       offset[ibag].resize(nband);
       scale[ibag].resize(nband);
-      for(int iband=0;iband<nband;++iband){
+      for(unsigned int iband=0;iband<nband;++iband){
         offset[ibag][iband]=offset[0][iband];
         scale[ibag][iband]=scale[0][iband];
       }
@@ -489,7 +487,7 @@ int main(int argc, char *argv[])
     if(!ibag){
       if(priors_opt.size()==1){//default: equal priors for each class
         priors.resize(nclass);
-        for(int iclass=0;iclass<nclass;++iclass)
+        for(unsigned int iclass=0;iclass<nclass;++iclass)
           priors[iclass]=1.0/nclass;
       }
       assert(priors_opt.size()==1||priors_opt.size()==nclass);
@@ -503,7 +501,7 @@ int main(int argc, char *argv[])
         std::cout << "number of classes: " << nclass << std::endl;
         std::cout << "priors:";
 	if(priorimg_opt.empty()){
-          for(int iclass=0;iclass<nclass;++iclass)
+          for(unsigned int iclass=0;iclass<nclass;++iclass)
             std::cout << " " << priors[iclass];
           std::cout << std::endl;
         }
@@ -529,7 +527,7 @@ int main(int argc, char *argv[])
       }
       if(classname_opt.empty()){
         //std::cerr << "Warning: no class name and value pair provided for all " << nclass << " classes, using string2type<int> instead!" << std::endl;
-        for(int iclass=0;iclass<nclass;++iclass){
+        for(unsigned int iclass=0;iclass<nclass;++iclass){
           if(verbose_opt[0])
             std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
           classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
@@ -537,15 +535,15 @@ int main(int argc, char *argv[])
       }
       if(priors_opt.size()==nameVector.size()){
 	std::cerr << "Warning: please check if priors are provided in correct order!!!" << std::endl;
-	for(int iclass=0;iclass<nameVector.size();++iclass)
+	for(unsigned int iclass=0;iclass<nameVector.size();++iclass)
 	  std::cerr << nameVector[iclass] << " " << priors_opt[iclass] << std::endl;
       }
     }//if(!ibag)
 
     //Calculate features of training set
     vector< Vector2d<float> > trainingFeatures(nclass);
-    for(int iclass=0;iclass<nclass;++iclass){
-      int nctraining=0;
+    for(unsigned int iclass=0;iclass<nclass;++iclass){
+      unsigned int nctraining=0;
       if(verbose_opt[0]>=1)
         cout << "calculating features for class " << iclass << endl;
       if(random_opt[0])
@@ -554,14 +552,13 @@ int main(int argc, char *argv[])
       if(nctraining<=0)
         nctraining=1;
       assert(nctraining<=trainingPixels[iclass].size());
-      int index=0;
       if(bagSize_opt[iclass]<100)
         random_shuffle(trainingPixels[iclass].begin(),trainingPixels[iclass].end());
       
       trainingFeatures[iclass].resize(nctraining);
-      for(int isample=0;isample<nctraining;++isample){
+      for(unsigned int isample=0;isample<nctraining;++isample){
         //scale pixel values according to scale and offset!!!
-        for(int iband=0;iband<nband;++iband){
+        for(unsigned int iband=0;iband<nband;++iband){
           float value=trainingPixels[iclass][isample][iband+startBand];
           trainingFeatures[iclass][isample].push_back((value-offset[ibag][iband])/scale[ibag][iband]);
         }
@@ -571,7 +568,7 @@ int main(int argc, char *argv[])
     
     unsigned int nFeatures=trainingFeatures[0][0].size();
     unsigned int ntraining=0;
-    for(int iclass=0;iclass<nclass;++iclass)
+    for(unsigned int iclass=0;iclass<nclass;++iclass)
       ntraining+=trainingFeatures[iclass].size();
 
     const unsigned int num_layers = nneuron_opt.size()+2;
@@ -580,7 +577,7 @@ int main(int argc, char *argv[])
     if(verbose_opt[0]>=1){
       cout << "number of features: " << nFeatures << endl;
       cout << "creating artificial neural network with " << nneuron_opt.size() << " hidden layer, having " << endl;
-      for(int ilayer=0;ilayer<nneuron_opt.size();++ilayer)
+      for(unsigned int ilayer=0;ilayer<nneuron_opt.size();++ilayer)
         cout << nneuron_opt[ilayer] << " ";
       cout << "neurons" << endl;
       cout << "connection_opt[0]: " << connection_opt[0] << std::endl;
@@ -663,7 +660,7 @@ int main(int argc, char *argv[])
                                             outputVector,
                                             verbose_opt[0]);
       map<string,Vector2d<float> >::iterator mapit=trainingMap.begin();
-      for(int isample=0;isample<referenceVector.size();++isample){
+      for(unsigned int isample=0;isample<referenceVector.size();++isample){
 	string refClassName=nameVector[referenceVector[isample]];
 	string className=nameVector[outputVector[isample]];
 	if(classValueMap.size())
@@ -686,7 +683,7 @@ int main(int argc, char *argv[])
     if(weights_opt.size()==net[ibag].get_total_connections()){//no new training needed (same training sample)
       vector<fann_connection> convector;
       net[ibag].get_connection_array(convector);
-      for(int i_connection=0;i_connection<net[ibag].get_total_connections();++i_connection)
+      for(unsigned int i_connection=0;i_connection<net[ibag].get_total_connections();++i_connection)
         convector[i_connection].weight=weights_opt[i_connection];
       net[ibag].set_weight_array(convector);
     }
@@ -701,7 +698,7 @@ int main(int argc, char *argv[])
       net[ibag].print_connections();
       vector<fann_connection> convector;
       net[ibag].get_connection_array(convector);
-      for(int i_connection=0;i_connection<net[ibag].get_total_connections();++i_connection)
+      for(unsigned int i_connection=0;i_connection<net[ibag].get_total_connections();++i_connection)
         cout << "connection " << i_connection << ": " << convector[i_connection].weight << endl;
 
     }
@@ -718,7 +715,7 @@ int main(int argc, char *argv[])
     double dua=0;
     double dpa=0;
     double doa=0;
-    for(int iclass=0;iclass<cm.nClasses();++iclass){
+    for(unsigned int iclass=0;iclass<cm.nClasses();++iclass){
       dua=cm.ua_pct(cm.getClass(iclass),&se95_ua);
       dpa=cm.pa_pct(cm.getClass(iclass),&se95_pa);
       cout << cm.getClass(iclass) << " " << cm.nReference(cm.getClass(iclass)) << " " << dua << " (" << se95_ua << ")" << " " << dpa << " (" << se95_pa << ")" << endl;
@@ -747,7 +744,7 @@ int main(int argc, char *argv[])
   }
   if(inputIsRaster){
   // if(input_opt[0].find(".shp")==string::npos){
-    ImgReaderGdal testImage;
+    ImgRasterGdal testImage;
     try{
       if(verbose_opt[0]>=1)
         cout << "opening image " << input_opt[0] << endl; 
@@ -757,7 +754,7 @@ int main(int argc, char *argv[])
       cerr << error << endl;
       exit(2);
     }
-    ImgReaderGdal priorReader;
+    ImgRasterGdal priorReader;
     if(priorimg_opt.size()){
       try{
 	if(verbose_opt[0]>=1)
@@ -776,8 +773,8 @@ int main(int argc, char *argv[])
       }
     }
 
-    int nrow=testImage.nrOfRow();
-    int ncol=testImage.nrOfCol();
+    unsigned int nrow=testImage.nrOfRow();
+    unsigned int ncol=testImage.nrOfCol();
     if(option_opt.findSubstring("INTERLEAVE=")==option_opt.end()){
       string theInterleave="INTERLEAVE=";
       theInterleave+=testImage.getInterleave();
@@ -786,10 +783,10 @@ int main(int argc, char *argv[])
     vector<char> classOut(ncol);//classified line for writing to image file
 
     //   assert(nband==testImage.nrOfBand());
-    ImgWriterGdal classImageBag;
-    ImgWriterGdal classImageOut;
-    ImgWriterGdal probImage;
-    ImgWriterGdal entropyImage;
+    ImgRasterGdal classImageBag;
+    ImgRasterGdal classImageOut;
+    ImgRasterGdal probImage;
+    ImgRasterGdal entropyImage;
 
     string imageType;//testImage.getImageType();
     if(oformat_opt.size())//default
@@ -827,10 +824,11 @@ int main(int argc, char *argv[])
       cerr << error << endl;
     }
   
-    ImgWriterGdal maskWriter;
+    ImgRasterGdal maskWriter;
 
     if(maskIsVector){
       try{
+        //todo: produce unique name or perform in memory solving issue on flush memory buffer (check gdal development list on how to retrieve gdal mem buffer)
 	maskWriter.open("/vsimem/mask.tif",ncol,nrow,1,GDT_Float32,imageType,option_opt);
 	maskWriter.GDALSetNoDataValue(nodata_opt[0]);
         maskWriter.copyGeoTransform(testImage);
@@ -851,12 +849,12 @@ int main(int argc, char *argv[])
       mask_opt.clear();
       mask_opt.push_back("/vsimem/mask.tif");
     }
-    ImgReaderGdal maskReader;
+    ImgRasterGdal maskReader;
     if(mask_opt.size()){
       try{
         if(verbose_opt[0]>=1)
           std::cout << "opening mask image file " << mask_opt[0] << std::endl;
-        maskReader.open(mask_opt[0]);
+        maskReader.open(mask_opt[0],imageType);
       }
       catch(string error){
         cerr << error << std::endl;
@@ -868,7 +866,7 @@ int main(int argc, char *argv[])
       }
     }
 
-    for(int iline=0;iline<nrow;++iline){
+    for(unsigned int iline=0;iline<nrow;++iline){
       vector<float> buffer(ncol);
       vector<short> lineMask;
       if(mask_opt.size())
@@ -886,24 +884,24 @@ int main(int argc, char *argv[])
       //read all bands of all pixels in this line in hline
       try{
         if(band_opt.size()){
-          for(int iband=0;iband<band_opt.size();++iband){
+          for(unsigned int iband=0;iband<band_opt.size();++iband){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << band_opt[iband] << std::endl;
             assert(band_opt[iband]>=0);
             assert(band_opt[iband]<testImage.nrOfBand());
             testImage.readData(buffer,iline,band_opt[iband]);
-            for(int icol=0;icol<ncol;++icol)
+            for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
         }
         else{
-          for(int iband=0;iband<nband;++iband){
+          for(unsigned int iband=0;iband<nband;++iband){
             if(verbose_opt[0]==2)
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);
             assert(iband<testImage.nrOfBand());
             testImage.readData(buffer,iline,iband);
-            for(int icol=0;icol<ncol;++icol)
+            for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
         }
@@ -939,7 +937,7 @@ int main(int argc, char *argv[])
       }
       double oldRowMask=-1;//keep track of row mask to optimize number of line readings
       //process per pixel
-      for(int icol=0;icol<ncol;++icol){
+      for(unsigned int icol=0;icol<ncol;++icol){
         assert(hpixel[icol].size()==nband);
 	bool doClassify=true;
         bool masked=false;
@@ -960,14 +958,14 @@ int main(int argc, char *argv[])
 
 	  testImage.image2geo(icol,iline,geox,geoy);
 	  maskReader.geo2image(geox,geoy,colMask,rowMask);
-	  colMask=static_cast<int>(colMask);
-	  rowMask=static_cast<int>(rowMask);
+	  colMask=static_cast<unsigned int>(colMask);
+	  rowMask=static_cast<unsigned int>(rowMask);
 	  if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
-	    if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+	    if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
 	      assert(rowMask>=0&&rowMask<maskReader.nrOfRow());
 	      try{
-		// maskReader.readData(lineMask[imask],GDT_Int32,static_cast<int>(rowMask));
-		maskReader.readData(lineMask,static_cast<int>(rowMask));
+		// maskReader.readData(lineMask[imask],GDT_Int32,static_cast<unsigned int>(rowMask));
+		maskReader.readData(lineMask,static_cast<unsigned int>(rowMask));
 	      }
 	      catch(string errorstring){
 		cerr << errorstring << endl;
@@ -1001,14 +999,14 @@ int main(int argc, char *argv[])
 	    }
 	    if(masked){
 	      if(classBag_opt.size())
-		for(int ibag=0;ibag<nbag;++ibag)
+		for(unsigned int ibag=0;ibag<nbag;++ibag)
 		  classBag[ibag][icol]=theMask;
 	      classOut[icol]=theMask;
 	      continue;
 	    }
 	  }
 	  bool valid=false;
-	  for(int iband=0;iband<hpixel[icol].size();++iband){
+	  for(unsigned int iband=0;iband<hpixel[icol].size();++iband){
 	    if(hpixel[icol][iband]){
 	      valid=true;
 	      break;
@@ -1022,7 +1020,7 @@ int main(int argc, char *argv[])
           probOut[iclass][icol]=0;
 	if(!doClassify){
 	  if(classBag_opt.size())
-	    for(int ibag=0;ibag<nbag;++ibag)
+	    for(unsigned int ibag=0;ibag<nbag;++ibag)
 	      classBag[ibag][icol]=nodata_opt[0];
 	  classOut[icol]=nodata_opt[0];
 	  continue;//next column
@@ -1030,14 +1028,13 @@ int main(int argc, char *argv[])
 	if(verbose_opt[0]>1)
 	  std::cout << "begin classification " << std::endl;
         //----------------------------------- classification -------------------
-        for(int ibag=0;ibag<nbag;++ibag){
+        for(unsigned int ibag=0;ibag<nbag;++ibag){
           //calculate image features
           fpixel[icol].clear();
-          for(int iband=0;iband<nband;++iband)
+          for(unsigned int iband=0;iband<nband;++iband)
             fpixel[icol].push_back((hpixel[icol][iband]-offset[ibag][iband])/scale[ibag][iband]);
           vector<float> result(nclass);
           result=net[ibag].run(fpixel[icol]);
-          int maxClass=0;
           vector<float> prValues(nclass);
           float maxP=0;
 
@@ -1052,7 +1049,7 @@ int main(int argc, char *argv[])
 	    for(short iclass=0;iclass<nclass;++iclass)
 	      normPrior+=linePrior[iclass][icol];
 	  }
-          for(int iclass=0;iclass<nclass;++iclass){
+          for(unsigned int iclass=0;iclass<nclass;++iclass){
 	    result[iclass]=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
 	    if(priorimg_opt.size())
 	      priors[iclass]=linePrior[iclass][icol]/normPrior;//todo: check if correct for all cases... (automatic classValueMap and manual input for names and values)
@@ -1124,10 +1121,10 @@ int main(int argc, char *argv[])
       }//icol
       //----------------------------------- write output ------------------------------------------
       if(classBag_opt.size())
-        for(int ibag=0;ibag<nbag;++ibag)
+        for(unsigned int ibag=0;ibag<nbag;++ibag)
           classImageBag.writeData(classBag[ibag],iline,ibag);
       if(prob_opt.size()){
-        for(int iclass=0;iclass<nclass;++iclass)
+        for(unsigned int iclass=0;iclass<nclass;++iclass)
           probImage.writeData(probOut[iclass],iline,iclass);
       }
       if(entropy_opt.size()){
@@ -1141,11 +1138,11 @@ int main(int argc, char *argv[])
     }
     //write active learning points
     if(active_opt.size()){
-      for(int iactive=0;iactive<activePoints.size();++iactive){
+      for(unsigned int iactive=0;iactive<activePoints.size();++iactive){
 	std::map<string,double> pointMap;
-	for(int iband=0;iband<testImage.nrOfBand();++iband){
+	for(unsigned int iband=0;iband<testImage.nrOfBand();++iband){
 	  double value;
-	  testImage.readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
+	  testImage.readData(value,static_cast<unsigned int>(activePoints[iactive].posx),static_cast<unsigned int>(activePoints[iactive].posy),iband);
 	  ostringstream fs;
 	  fs << "B" << iband;
 	  pointMap[fs.str()]=value;
@@ -1174,7 +1171,7 @@ int main(int argc, char *argv[])
   else{//classify vector file
     cm.clearResults();
     //notice that fields have already been set by readDataImageOgr (taking into account appropriate bands)
-    for(int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
+    for(unsigned int ivalidation=0;ivalidation<input_opt.size();++ivalidation){
       if(output_opt.size())
         assert(output_opt.size()==input_opt.size());
       if(verbose_opt[0])
@@ -1189,7 +1186,7 @@ int main(int argc, char *argv[])
       }
       if(verbose_opt[0])
 	cout << "number of layers in input ogr file: " << imgReaderOgr.getLayerCount() << endl;
-      for(int ilayer=0;ilayer<imgReaderOgr.getLayerCount();++ilayer){
+      for(unsigned int ilayer=0;ilayer<imgReaderOgr.getLayerCount();++ilayer){
 	if(verbose_opt[0])
 	  cout << "processing input layer " << ilayer << endl;
 	if(output_opt.size()){
@@ -1229,10 +1226,10 @@ int main(int argc, char *argv[])
 	  imgReaderOgr.readData(validationPixel,OFTReal,fields,poFeature,ilayer);
 	  assert(validationPixel.size()==nband);
 	  vector<float> probOut(nclass);//posterior prob for each class
-	  for(int iclass=0;iclass<nclass;++iclass)
+	  for(unsigned int iclass=0;iclass<nclass;++iclass)
 	    probOut[iclass]=0;
-	  for(int ibag=0;ibag<nbag;++ibag){
-	    for(int iband=0;iband<nband;++iband){
+	  for(unsigned int ibag=0;ibag<nbag;++ibag){
+	    for(unsigned int iband=0;iband<nband;++iband){
 	      validationFeature.push_back((validationPixel[iband]-offset[ibag][iband])/scale[ibag][iband]);
 	      if(verbose_opt[0]==2)
 		std:: cout << " " << validationFeature.back();
@@ -1243,12 +1240,12 @@ int main(int argc, char *argv[])
 	    result=net[ibag].run(validationFeature);
 
 	    if(verbose_opt[0]>1){
-	      for(int iclass=0;iclass<result.size();++iclass)
+	      for(unsigned int iclass=0;iclass<result.size();++iclass)
 		std::cout << result[iclass] << " ";
 	      std::cout << std::endl;
 	    }
 	    //calculate posterior prob of bag 
-	    for(int iclass=0;iclass<nclass;++iclass){
+	    for(unsigned int iclass=0;iclass<nclass;++iclass){
 	      result[iclass]=(result[iclass]+1.0)/2.0;//bring back to scale [0,1]
 	      switch(comb_opt[0]){
 	      default:
@@ -1267,9 +1264,8 @@ int main(int argc, char *argv[])
 	  }//for ibag
 	  //search for max class prob
 	  float maxBag=0;
-	  float normBag=0;
 	  string classOut="Unclassified";
-	  for(int iclass=0;iclass<nclass;++iclass){
+	  for(unsigned int iclass=0;iclass<nclass;++iclass){
 	    if(verbose_opt[0]>1)
 	      std::cout << probOut[iclass] << " ";
 	    if(probOut[iclass]>maxBag){

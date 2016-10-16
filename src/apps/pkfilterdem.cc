@@ -23,8 +23,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "base/Vector2d.h"
 #include "algorithms/Filter2d.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 
 /******************************************************************************/
 /*! \page pkfilterdem pkfilterdem
@@ -61,7 +60,7 @@ The utility pkfilterdem can be used to filter digital elevation models. It is ty
  | minchange | minchange            | short | 0     |Stop iterations when no more pixels are changed than this threshold. | 
  | ot     | otype                | std::string |       |Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image | 
  | of     | oformat              | std::string | GTiff |Output image format (see also gdal_translate).| 
- | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table | 
+ | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to omit color table | 
  | nodata | nodata               | short |       |nodata value | 
 
 Usage: pkfilterdem -i input.txt -o output
@@ -85,7 +84,7 @@ int main(int argc,char **argv) {
   Optionpk<short> minChange_opt("minchange", "minchange", "Stop iterations when no more pixels are changed than this threshold.", 0);
   Optionpk<std::string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
-  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to ommit color table");
+  Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid). Use none to omit color table");
   Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<short> nodata_opt("nodata", "nodata", "nodata value");
   Optionpk<short> verbose_opt("v", "verbose", "verbose mode if > 0", 0,2);
@@ -128,8 +127,8 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
-  ImgReaderGdal input;
-  ImgWriterGdal outputWriter;
+  ImgRasterGdal input;
+  ImgRasterGdal outputWriter;
   if(input_opt.empty()){
     cerr << "Error: no input file selected, use option -i" << endl;
     exit(1);
@@ -417,7 +416,7 @@ int main(int argc,char **argv) {
     }
   }
   //write outputData to outputWriter
-  outputWriter.writeDataBlock(outputData,GDT_Float64,0,outputData.nCols()-1,0,outputData.nRows()-1);
+  outputWriter.writeDataBlock(outputData,0,outputData.nCols()-1,0,outputData.nRows()-1);
 
   // progress=1;
   // pfnProgress(progress,pszMessage,pProgressArg);

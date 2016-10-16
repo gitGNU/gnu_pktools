@@ -73,9 +73,9 @@ The optimization routine uses a grid search. The initial and final values of the
  | bal    | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
  | random | random               | bool | true  |in case of balance, randomize input data | 
  | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account | 
- | b      | band                 | unsigned short |      |band index (starting from 0, either use band option or use start to end) | 
- | sband  | startband            | unsigned short |      |Start band sequence number | 
- | eband  | endband              | unsigned short |      |End band sequence number   | 
+ | b      | band                 | unsigned int |      |band index (starting from 0, either use band option or use start to end) | 
+ | sband  | startband            | unsigned int |      |Start band sequence number | 
+ | eband  | endband              | unsigned int |      |End band sequence number   | 
  | offset | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
  | scale  | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
  | svmt   | svmtype              | std::string | C_SVC |type of SVM (C_SVC, nu_SVC,one_class, epsilon_SVR, nu_SVR) | 
@@ -134,9 +134,9 @@ double objFunction(const std::vector<double> &x, std::vector<double> &grad, void
   vector<Vector2d<float> > *tf=reinterpret_cast<vector<Vector2d<float> >*> (my_func_data);
   float ccost=x[0];
   float gamma=x[1];
-  double error=1.0/epsilon_tol_opt[0];
+  // double error=1.0/epsilon_tol_opt[0];
   double kappa=1.0;
-  double oa=1.0;
+  // double oa=1.0;
 
   CostFactorySVM costfactory(svm_type_opt[0], kernel_type_opt[0], kernel_degree_opt[0], gamma, coef0_opt[0], ccost, nu_opt[0],  epsilon_loss_opt[0], cache_opt[0], epsilon_tol_opt[0], shrinking_opt[0], prob_est_opt[0], cv_opt[0], verbose_opt[0]);
 
@@ -186,9 +186,9 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("bal", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
-  Optionpk<unsigned short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
-  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<unsigned int> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> offset_opt("offset", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("scale", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned int> maxit_opt("maxit","maxit","maximum number of iterations",500);
@@ -290,8 +290,8 @@ int main(int argc, char *argv[])
   unsigned int totalTestSamples=0;
 
   unsigned short nclass=0;
-  int nband=0;
-  int startBand=2;//first two bands represent X and Y pos
+  unsigned int nband=0;
+  unsigned int startBand=2;//first two bands represent X and Y pos
 
   vector<double> offset;
   vector<double> scale;
@@ -344,7 +344,7 @@ int main(int argc, char *argv[])
   }
 
   //----------------------------------- Training -------------------------------
-  struct svm_problem prob;
+  // struct svm_problem prob;
   vector<string> fields;
   //organize training data
   trainingPixels.clear();

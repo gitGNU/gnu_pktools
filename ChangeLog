@@ -475,3 +475,5 @@ version 2.6.7
 	- CMakeLists.txt: removed option to enable nlopt
 version 2.6.8
 	- pkextractogr support options -perc for percentile rule sr #108771
+	- bug fixes for #49325 #49352
+	- feature request #109091 (creation of stdev grid in pklas2img)

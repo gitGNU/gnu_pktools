@@ -29,7 +29,6 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include "ogrsf_frmts.h"
 #include "base/Vector2d.h"
-#include "ImgReaderGdal.h"
 
 //--------------------------------------------------------------------------
 class ImgReaderOgr
@@ -50,7 +49,7 @@ public:
   template <typename T> int readData(std::map<std::string,Vector2d<T> >& data, const OGRFieldType& fieldType, std::vector<std::string>& fields, const std::string& label, int layer=0, bool pos=false, bool verbose=false);//default layer 0 and no pos information in data
   unsigned int readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
 				std::vector<std::string>& fields,
-				const std::vector<unsigned short>& bands,
+				const std::vector<unsigned int>& bands,
 				const std::string& label,
 				const std::vector<std::string>& layers,
 				int verbose=false);
@@ -124,7 +123,7 @@ template <typename T> int ImgReaderOgr::readData(std::map<int,Vector2d<T> >& dat
       std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
-    int posOffset=(pos)?2:0;
+    // int posOffset=(pos)?2:0;
     if(verbose)
       std::cout << "going through features" << std::endl << std::flush;
     int theClass=0;
@@ -258,7 +257,7 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
       std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
-    int posOffset=(pos)?2:0;
+    // int posOffset=(pos)?2:0;
     if(verbose)
       std::cout << "going through features to fill in string map" << std::endl << std::flush;
     std::string theClass;
@@ -377,7 +376,6 @@ template <typename T> int ImgReaderOgr::readXY(std::vector<T>& xVector, std::vec
   if(verbose)
     std::cout << "number of layers: " << m_datasource->GetLayerCount() << std::endl;
   poLayer = m_datasource->GetLayer(layer);
-  OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();
   //start reading features from the layer
   OGRFeature *poFeature;
   if(verbose)
@@ -439,7 +437,7 @@ template <typename T> int ImgReaderOgr::readData(std::vector<T>& data, const OGR
   }
   assert(poGeometry != NULL);
          // && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-  OGRPoint *poPoint = (OGRPoint *) poGeometry;
+  // OGRPoint *poPoint = (OGRPoint *) poGeometry;
   if(pos){
     if(wkbFlatten(poGeometry->getGeometryType()) == wkbPoint){
       OGRPoint *poPoint;
@@ -547,10 +545,6 @@ template <typename T> inline int ImgReaderOgr::readData(std::vector<T>& data, co
       else// if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
         std::cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl;
     }
-    // assert(poGeometry != NULL 
-    //        && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-    OGRPoint *poPoint = (OGRPoint *) poGeometry;
-
     for(int iField=0;iField<nfield;++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
       std::string fieldname=poFieldDefn->GetNameRef();
@@ -620,10 +614,6 @@ template <> inline int ImgReaderOgr::readData(std::vector<std::string>& data, co
       else// if(wkbFlatten(poGeometry->getGeometryType()) != wkbPoint)
         std::cout << "poGeometry type: " << wkbFlatten(poGeometry->getGeometryType()) << std::endl;
     }
-    // assert(poGeometry != NULL 
-    //        && wkbFlatten(poGeometry->getGeometryType()) == wkbPoint);
-    OGRPoint *poPoint = (OGRPoint *) poGeometry;
-
     for(int iField=0;iField<nfield;++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
       std::string fieldname=poFieldDefn->GetNameRef();
@@ -678,7 +668,7 @@ template <typename T> int ImgReaderOgr::readData(Vector2d<T>& data, const OGRFie
     std::cout << "reset reading" << std::endl;
   poLayer->ResetReading();
   unsigned long int ifeature=0;
-  int posOffset=(pos)?2:0;
+  // int posOffset=(pos)?2:0;
   if(verbose)
     std::cout << "going through features" << std::endl << std::flush;
   while( (poFeature = poLayer->GetNextFeature()) != NULL ){
@@ -770,7 +760,7 @@ template<typename T> int ImgReaderOgr::readSql(std::map<int, Vector2d<T> >& data
       std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
-    int posOffset=(pos)?2:0;
+    // int posOffset=(pos)?2:0;
     if(verbose)
       std::cout << "going through features" << std::endl << std::flush;
     int theClass=0;
@@ -880,7 +870,7 @@ template<typename T> int ImgReaderOgr::readSql(Vector2d<T>& data, const OGRField
       std::cout << "reset reading" << std::endl;
     poLayer->ResetReading();
     unsigned long int ifeature=0;
-    int posOffset=(pos)?2:0;
+    // int posOffset=(pos)?2:0;
     if(verbose)
       std::cout << "going through features" << std::endl << std::flush;
     while( (poFeature = poLayer->GetNextFeature()) != NULL ){

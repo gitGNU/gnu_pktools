@@ -17,13 +17,13 @@ Unzip the archives to your local hard drive. Then copy the pktools folder in the
 
 \subsection Installation_windows_cmake Manual installation via cmake
 
-If you prefer to compile pktools yourself, the easiest way is to use CMake. First, install CMake on your machine (version 3.0 or higher). These dependency packages must also be pre-installed: <a href="http://arma.sourceforge.net/download.html">Armadillo</a> and <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt_on_Windows">NLOpt</a> (for the utility pkoptsvm only).
+If you prefer to compile pktools yourself, the easiest way is to use CMake. First, install CMake on your machine (version 3.0 or higher). The dependency package must also be pre-installed: <a href="http://ab-initio.mit.edu/wiki/index.php/NLopt_on_Windows">NLOpt</a> (for the utility pkoptsvm only).
 
 Set the source directory in CMake to the pktools directory. Build out-of-source by setting a "build" directory, where binaries will be created.
 
 Specify the generator for building the pktools (e.g., Visual Studio 14 2015 Win64 for 64 bit architectures). You can leave the default native compilers checked. 
 
-Add the OSGeoW64 and armadillo paths to the CMAKE_INSTALL_PREFIX (via the button "add Entry"). Other paths for dependencies on FANN and NLOPT should also be added here.
+Add the OSGeoW64 path to the CMAKE_INSTALL_PREFIX (via the button "add Entry"). Other paths for dependencies on FANN and NLOPT should also be added here.
 
 Click on the "Configure" button. 
 

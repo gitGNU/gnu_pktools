@@ -49,10 +49,9 @@ packages to install before pktools
    - make
    - libgdal-dev (see also http://trac.osgeo.org/gdal/wiki/BuildingOnUnix)
    - libgsl0-dev (see also http://www.gnu.org/software/gsl/)
-   - libarmadillo-dev (see also http://arma.sourceforge.net/download.html)
 
    Example on how to install required packages in Debian based system (using apt-get):
-  - sudo apt-get install g++ make libgdal-dev libgsl0-dev libarmadillo-dev
+  - sudo apt-get install g++ make libgdal-dev libgsl0-dev
 
 \subsubsection pktools_installation_optional Optional dependences
 

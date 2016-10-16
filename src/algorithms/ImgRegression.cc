@@ -29,10 +29,10 @@ ImgRegression::ImgRegression(void)
 ImgRegression::~ImgRegression(void)
 {}
 
-double ImgRegression::getRMSE(ImgReaderGdal& imgReader1, ImgReaderGdal& imgReader2, double& c0, double& c1, unsigned short band1, unsigned short band2, short verbose) const{
+double ImgRegression::getRMSE(ImgRasterGdal& imgReader1, ImgRasterGdal& imgReader2, double& c0, double& c1, unsigned int band1, unsigned int band2, short verbose) const{
   c0=0;
   c1=1;
-  int icol1=0,irow1=0;
+  unsigned int icol1=0,irow1=0;
   std::vector<double> rowBuffer1(imgReader1.nrOfCol());
   std::vector<double> rowBuffer2(imgReader2.nrOfCol());
   std::vector<double> buffer1;
@@ -90,7 +90,7 @@ double ImgRegression::getRMSE(ImgReaderGdal& imgReader1, ImgReaderGdal& imgReade
   return err;
 }
 
-double ImgRegression::getR2(ImgReaderGdal& imgReader1, ImgReaderGdal& imgReader2, double& c0, double& c1, unsigned short band1, unsigned short band2, short verbose) const{
+double ImgRegression::getR2(ImgRasterGdal& imgReader1, ImgRasterGdal& imgReader2, double& c0, double& c1, unsigned int band1, unsigned int band2, short verbose) const{
   c0=0;
   c1=1;
   int icol1=0,irow1=0;
@@ -151,7 +151,7 @@ double ImgRegression::getR2(ImgReaderGdal& imgReader1, ImgReaderGdal& imgReader2
   return r2;
 }
 
-double ImgRegression::pgetR2(ImgReaderGdal& imgReader1, ImgReaderGdal& imgReader2, double& c0, double& c1, unsigned short band1, unsigned short band2, short verbose) const{
+double ImgRegression::pgetR2(ImgRasterGdal& imgReader1, ImgRasterGdal& imgReader2, double& c0, double& c1, unsigned int band1, unsigned int band2, short verbose) const{
   c0=0;
   c1=1;
   int icol1=0,irow1=0;
@@ -226,7 +226,7 @@ double ImgRegression::pgetR2(ImgReaderGdal& imgReader1, ImgReaderGdal& imgReader
   return r*r;
 }
 
-double ImgRegression::getRMSE(ImgReaderGdal& imgReader, unsigned short band1, unsigned short band2, double& c0, double& c1, short verbose) const{
+double ImgRegression::getRMSE(ImgRasterGdal& imgReader, unsigned int band1, unsigned int band2, double& c0, double& c1, short verbose) const{
   c0=0;
   c1=1;
   int icol=0,irow=0;
@@ -277,7 +277,7 @@ double ImgRegression::getRMSE(ImgReaderGdal& imgReader, unsigned short band1, un
   return err;
 }
 
-double ImgRegression::getR2(ImgReaderGdal& imgReader, unsigned short band1, unsigned short band2, double& c0, double& c1, short verbose) const{
+double ImgRegression::getR2(ImgRasterGdal& imgReader, unsigned int band1, unsigned int band2, double& c0, double& c1, short verbose) const{
   c0=0;
   c1=1;
   int icol=0,irow=0;
@@ -328,7 +328,7 @@ double ImgRegression::getR2(ImgReaderGdal& imgReader, unsigned short band1, unsi
   return r2;
 }
 
-double ImgRegression::pgetR2(ImgReaderGdal& imgReader, unsigned short band1, unsigned short band2, double& c0, double& c1, short verbose) const{
+double ImgRegression::pgetR2(ImgRasterGdal& imgReader, unsigned int band1, unsigned int band2, double& c0, double& c1, short verbose) const{
   c0=0;
   c1=1;
   int icol=0,irow=0;

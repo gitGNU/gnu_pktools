@@ -21,7 +21,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include <fstream>
 #include "base/Optionpk.h"
 #include <assert.h>
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 
 /******************************************************************************/
 /*! \page pkascii2img pkascii2img
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
   assert(input_opt.size());
   assert(output_opt.size());
-  ImgWriterGdal imgWriter;
+  ImgRasterGdal imgWriter;
   ifstream ifile(input_opt[0].c_str(),ios::in);
   //get number of lines
   string line;

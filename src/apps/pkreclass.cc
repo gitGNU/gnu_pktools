@@ -22,8 +22,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "imageclasses/ImgReaderOgr.h"
 #include "imageclasses/ImgWriterOgr.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 
 /******************************************************************************/
 /*! \page pkreclass pkreclass
@@ -43,7 +42,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
  | m      | mask                 | std::string |       |Mask image(s) | 
  | msknodata | msknodata            | unsigned short | 1     |Mask value(s) where image has nodata. Use one value for each mask, or multiple values for a single mask. | 
  | nodata | nodata               | int  | 0     |nodata value to put in image if not valid (0) | 
- | code   | code                 | std::string |       |Recode text file (2 colums: from to) | 
+ | code   | code                 | std::string |       |Recode text file (2 columns: from to) | 
  | c      | class                | std::string |       |list of classes to reclass (in combination with reclass option) | 
  | r      | reclass              | std::string |       |list of recoded classes (in combination with class option) | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
@@ -77,7 +76,7 @@ int main(int argc, char *argv[])
   Optionpk<unsigned short>  band_opt("b", "band", "band index(es) to replace (other bands are copied to output)", 0);
   Optionpk<string> type_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
-  Optionpk<string> code_opt("code", "code", "Recode text file (2 colums: from to)");
+  Optionpk<string> code_opt("code", "code", "Recode text file (2 columns: from to)");
   Optionpk<string> class_opt("c", "class", "list of classes to reclass (in combination with reclass option)");
   Optionpk<string> reclass_opt("r", "reclass", "list of recoded classes (in combination with class option)");
   Optionpk<string> fieldname_opt("n", "fname", "field name of the shape file to be replaced", "label");
@@ -178,7 +177,7 @@ int main(int argc, char *argv[])
     ImgWriterOgr ogrWriter(output_opt[0],ogrReader);
     if(verbose_opt[0])
       cout << "copied layer from " << input_opt[0] << endl << flush;
-    OGRFeatureDefn *poFDefn = ogrWriter.getLayer()->GetLayerDefn();
+    // OGRFeatureDefn *poFDefn = ogrWriter.getLayer()->GetLayerDefn();
     //start reading features from the layer
     if(verbose_opt[0])
       cout << "reset reading" << endl;
@@ -219,9 +218,9 @@ int main(int argc, char *argv[])
     ogrWriter.close();
   }
   else{//image file
-    ImgReaderGdal inputReader;
-    vector<ImgReaderGdal> maskReader(mask_opt.size()); 
-    ImgWriterGdal outputWriter;
+    ImgRasterGdal inputReader;
+    vector<ImgRasterGdal> maskReader(mask_opt.size()); 
+    ImgRasterGdal outputWriter;
     if(verbose_opt[0])
       cout << "opening input image file " << input_opt[0] << endl;
     inputReader.open(input_opt[0]);
@@ -291,8 +290,8 @@ int main(int argc, char *argv[])
     for(int imask=0;imask<mask_opt.size();++imask)
       lineMask[imask].resize(maskReader[imask].nrOfCol());
     Vector2d<double> lineOutput(outputWriter.nrOfBand(),outputWriter.nrOfCol());
-    int irow=0;
-    int icol=0;
+    unsigned int irow=0;
+    unsigned int icol=0;
     const char* pszMessage;
     void* pProgressArg=NULL;
     GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -301,7 +300,7 @@ int main(int argc, char *argv[])
     double oldRowMask=-1;
     for(irow=0;irow<inputReader.nrOfRow();++irow){
       //read line in lineInput buffer
-      for(int iband=0;iband<inputReader.nrOfBand();++iband){
+      for(unsigned int iband=0;iband<inputReader.nrOfBand();++iband){
         try{
           // inputReader.readData(lineInput[iband],GDT_Int32,irow,iband);
           inputReader.readData(lineInput[iband],irow,iband);
@@ -319,10 +318,10 @@ int main(int argc, char *argv[])
           for(int imask=0;imask<mask_opt.size();++imask){
 	    inputReader.image2geo(icol,irow,x,y);
 	    maskReader[imask].geo2image(x,y,colMask,rowMask);
-            if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+            if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
               assert(rowMask>=0&&rowMask<maskReader[imask].nrOfRow());
               try{
-                maskReader[imask].readData(lineMask[imask],static_cast<int>(rowMask));
+                maskReader[imask].readData(lineMask[imask],static_cast<unsigned int>(rowMask));
               }
               catch(string errorstring){
                 cerr << errorstring << endl;
@@ -336,7 +335,7 @@ int main(int argc, char *argv[])
             else//use same invalid value for each mask
               ivalue=masknodata_opt[0];
             if(lineMask[imask][colMask]==ivalue){
-              for(int iband=0;iband<inputReader.nrOfBand();++iband)
+              for(unsigned int iband=0;iband<inputReader.nrOfBand();++iband)
                 lineInput[iband][icol]=nodata_opt[imask];
               masked=true;
               break;
@@ -346,10 +345,10 @@ int main(int argc, char *argv[])
         else if(mask_opt.size()){//potentially more invalid values for single mask
 	  inputReader.image2geo(icol,irow,x,y);
 	  maskReader[0].geo2image(x,y,colMask,rowMask);
-          if(static_cast<int>(rowMask)!=static_cast<int>(oldRowMask)){
+          if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
             assert(rowMask>=0&&rowMask<maskReader[0].nrOfRow());
             try{
-              maskReader[0].readData(lineMask[0],static_cast<int>(rowMask));
+              maskReader[0].readData(lineMask[0],static_cast<unsigned int>(rowMask));
             }
             catch(string errorstring){
               cerr << errorstring << endl;
@@ -367,7 +366,7 @@ int main(int argc, char *argv[])
             }
           }
         }
-        for(int iband=0;iband<lineOutput.size();++iband){
+        for(unsigned int iband=0;iband<lineOutput.size();++iband){
           lineOutput[iband][icol]=lineInput[iband][icol];
           if(find(band_opt.begin(),band_opt.end(),iband)!=band_opt.end()){
             if(!masked && codemap.find(lineInput[iband][icol])!=codemap.end()){
@@ -379,7 +378,7 @@ int main(int argc, char *argv[])
       }
       //write buffer lineOutput to output file
       try{
-        for(int iband=0;iband<outputWriter.nrOfBand();++iband)
+        for(unsigned int iband=0;iband<outputWriter.nrOfBand();++iband)
           outputWriter.writeData(lineOutput[iband],irow,iband);
       }
       catch(string errorstring){

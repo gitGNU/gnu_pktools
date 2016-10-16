@@ -58,9 +58,15 @@ fi
 echo "create general dox file for aps list"
 echo "\section available_tools Available tools" > ../doc/apps.dox
 for file in ${SRCDIR}/apps/pk*.cc;do
-    THETOOL=$(basename $file .cc)
-    THESHORTDESCRIPTION=$(grep "${THETOOL}.cc: " $file | awk -v FS=':' '{print $2}')
-    echo "- \\ref ${THETOOL} ${THESHORTDESCRIPTION}"; 
+    if [[ $file != *"_bin"* ]];then
+        THETOOL=$(basename $file .cc)
+        THESHORTDESCRIPTION=$(grep "${THETOOL}.cc: " $file | awk -v FS=':' '{print $2}')
+        echo "- \\ref ${THETOOL} ${THESHORTDESCRIPTION}"; 
+    else
+        THETOOL=$(basename $file _bin.cc)
+        THESHORTDESCRIPTION=$(grep "${THETOOL}_bin.cc: " $file | awk -v FS=':' '{print $2}')
+        echo "- \\ref ${THETOOL} ${THESHORTDESCRIPTION}"; 
+    fi
 done >> ../doc/apps.dox
 
 #remove depricated utilities and those not ready to publish"

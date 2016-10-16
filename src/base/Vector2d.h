@@ -62,8 +62,8 @@ public:
   void sort(Vector2d<T>& output);  
   void scale(const std::vector<double> &scaleVector, const std::vector<double> &offsetVector, Vector2d<T>& scaledOutput);
   void scale(const T lbound, const T ubound, std::vector<double> &scaleVector, std::vector<double> &offsetVector, Vector2d<T>& scaledOutput);
-  Vector2d<T> operator=(const Vector2d<T>& v1);
-  Vector2d<T> operator+=(const Vector2d<T>& v1);
+  Vector2d<T>& operator=(const Vector2d<T>& v1);
+  Vector2d<T>& operator+=(const Vector2d<T>& v1);
 //   std::ostream& operator<<(std::ostream& os, const Vector2d<T>& v);
 //   template<class T> std::ostream& operator<<(std::ostream& os, const Vector2d<T>& v);
   template<class T1> friend std::ostream& operator<<(std::ostream & os, const Vector2d<T1>& v);
@@ -89,7 +89,7 @@ template<class T> Vector2d<T>::Vector2d(const Vector2d<T>& v1){
     this->at(irow)=v1[irow];
 }
 
-template<class T> Vector2d<T> Vector2d<T>::operator=(const Vector2d<T>& v1){
+template<class T> Vector2d<T>& Vector2d<T>::operator=(const Vector2d<T>& v1){
   //check for assignment to self (of the form v=v)
   if(this==&v1)
      return *this;
@@ -101,7 +101,7 @@ template<class T> Vector2d<T> Vector2d<T>::operator=(const Vector2d<T>& v1){
   }
 }
 
-template<class T> Vector2d<T> Vector2d<T>::operator+=(const Vector2d<T>& v1){
+template<class T> Vector2d<T>& Vector2d<T>::operator+=(const Vector2d<T>& v1){
   assert(v1.nRows()==nRows());
   assert(v1.nCols()==nCols());
   for(int irow=0;irow<nRows();++irow)

@@ -27,8 +27,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Optionpk.h"
 #include "base/Vector2d.h"
 #include "algorithms/Filter2d.h"
-#include "imageclasses/ImgReaderGdal.h"
-#include "imageclasses/ImgWriterGdal.h"
+#include "imageclasses/ImgRaster.h"
 
 /******************************************************************************/
 /*! \page pkdsm2shadow pkdsm2shadow
@@ -125,8 +124,8 @@ int main(int argc,char **argv) {
     exit(0);//help was invoked, stop processing
   }
 
-  ImgReaderGdal input;
-  ImgWriterGdal output;
+  ImgRaster input;
+  ImgRaster output;
   assert(input_opt.size());
   assert(output_opt.size());
   input.open(input_opt[0]);

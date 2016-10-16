@@ -50,7 +50,7 @@ public:
   int nClasses() const {return m_classes.size();};
   std::string getClass(int iclass) const {assert(iclass>=0);assert(iclass<m_classes.size());return m_classes[iclass];};
   int getClassIndex(std::string className) const {
-    int index=0;
+    unsigned int index=0;
     for(index=0;index<m_classes.size();++index){
       if(m_classes[index]==className)
 	break;
@@ -125,9 +125,8 @@ public:
     double se95_oa=0;
     double dua=0;
     double dpa=0;
-    double doa=0;
-
-    doa = cm.oa(&se95_oa);
+    // double doa=0;
+    // doa = cm.oa(&se95_oa);
 
     if(cm.getFormat()==LATEX){
       os << "\\documentclass{article}" << std::endl;
@@ -154,9 +153,9 @@ public:
     if(cm.getFormat()==LATEX)
       os << "\\hline" << std::endl;
     assert(cm.m_classes.size()==cm.m_results.size());
-    for(int irow=0;irow<cm.m_results.size();++irow){
+    for(unsigned int irow=0;irow<cm.m_results.size();++irow){
       os << cm.m_classes[irow];
-      for(int icol=0;icol<cm.m_results[irow].size();++icol)
+      for(unsigned int icol=0;icol<cm.m_results[irow].size();++icol)
         os << fieldSeparator << cm.m_results[irow][icol];
       os << lineSeparator<< std::endl;
     }

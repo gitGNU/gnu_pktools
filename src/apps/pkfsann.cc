@@ -69,9 +69,9 @@ The utility pkfsann implements a number of feature selection techniques, among w
  |        | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
  | random | random               | bool | true  |in case of balance, randomize input data | 
  | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account | 
- | b      | band                 | unsigned short |      |band index (starting from 0, either use band option or use start to end) | 
- | sband  | startband            | unsigned short |      |Start band sequence number | 
- | eband  | endband              | unsigned short |      |End band sequence number   | 
+ | b      | band                 | unsigned int |      |band index (starting from 0, either use band option or use start to end) | 
+ | sband  | startband            | unsigned int |      |Start band sequence number | 
+ | eband  | endband              | unsigned int |      |End band sequence number   | 
  | offset | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
  | scale  | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
  | a      | aggreg               | unsigned short | 0     |how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule). | 
@@ -235,9 +235,9 @@ int main(int argc, char *argv[])
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
-  Optionpk<unsigned short> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<unsigned short> bstart_opt("sband", "startband", "Start band sequence number"); 
-  Optionpk<unsigned short> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<unsigned int> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
+  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
+  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",0);
@@ -346,11 +346,10 @@ int main(int argc, char *argv[])
     std::cout << "training vector file: " << training_opt[0] << std::endl;
 
   unsigned int totalSamples=0;
-  unsigned int totalTestSamples=0;
 
   unsigned short nclass=0;
-  int nband=0;
-  int startBand=2;//first two bands represent X and Y pos
+  unsigned int nband=0;
+  unsigned int startBand=2;//first two bands represent X and Y pos
 
   // if(priors_opt.size()>1){//priors from argument list
   //   priors.resize(priors_opt.size());
@@ -415,7 +414,7 @@ int main(int argc, char *argv[])
       totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
+	trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }
@@ -423,7 +422,7 @@ int main(int argc, char *argv[])
       totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
 	ImgReaderOgr inputReader(input_opt[0]);
-	totalTestSamples=trainingReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
+	trainingReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
 	inputReader.close();
       }
     }

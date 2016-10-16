@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 ***********************************************************************/
 #include "base/Optionpk.h"
-#include "imageclasses/ImgReaderGdal.h"
+#include "imageclasses/ImgRasterGdal.h"
 #include "algorithms/Egcs.h"
 
 /******************************************************************************/
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
     std::cout << egcs.geo2cell(x_opt[0],y_opt[0]) << std::endl;
   }
   if(image_opt[0]!=""){
-    ImgReaderGdal imgReader;
+    ImgRasterGdal imgReader;
     imgReader.open(image_opt[0]);
     if(refpixel_opt[0]){
       assert(band_opt[0]<imgReader.nrOfBand());

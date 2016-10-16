@@ -46,17 +46,17 @@ void filter2d::Filter2d::setTaps(const Vector2d<double> &taps)
   m_taps=taps;
 }
 
-void filter2d::Filter2d::smoothNoData(ImgReaderGdal& input, ImgWriterGdal& output, int dim)
+void filter2d::Filter2d::smoothNoData(ImgRasterGdal& input, ImgRasterGdal& output, int dim)
 {
   smoothNoData(input, output,dim,dim);
 }
 
-void filter2d::Filter2d::smooth(ImgReaderGdal& input, ImgWriterGdal& output, int dim)
+void filter2d::Filter2d::smooth(ImgRasterGdal& input, ImgRasterGdal& output, int dim)
 {
   smooth(input, output,dim,dim);
 }
 
-void filter2d::Filter2d::smoothNoData(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smoothNoData(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -67,7 +67,7 @@ void filter2d::Filter2d::smoothNoData(ImgReaderGdal& input, ImgWriterGdal& outpu
   filter(input,output,false,true,true);
 }
 
-void filter2d::Filter2d::smooth(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY)
+void filter2d::Filter2d::smooth(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY)
 {
   m_taps.resize(dimY);
   for(int j=0;j<dimY;++j){
@@ -79,8 +79,12 @@ void filter2d::Filter2d::smooth(ImgReaderGdal& input, ImgWriterGdal& output, int
 }
 
     
-void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, bool absolute, bool normalize, bool noData)
+void filter2d::Filter2d::filter(ImgRasterGdal& input, ImgRasterGdal& output, bool absolute, bool normalize, bool noData)
 {
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   int dimX=m_taps[0].size();//horizontal!!!
   int dimY=m_taps.size();//vertical!!!
   //  byte* tmpbuf=new byte[input.rowSize()];
@@ -89,7 +93,7 @@ void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, boo
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int iband=0;iband<input.nrOfBand();++iband){
+  for(unsigned int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     std::vector<double> outBuffer(input.nrOfCol());
     int indexI=0;
@@ -97,7 +101,7 @@ void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, boo
     //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-        input.readData(inBuffer[indexJ],abs(j),iband);
+        input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)),iband);
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
@@ -105,7 +109,7 @@ void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, boo
       ++indexJ;
     }
 
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	if(dimY>1)
@@ -120,6 +124,7 @@ void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, boo
 	  }
 	  catch(std::string errorstring){
 	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
+            exit(1);
 	  }
 	}
         else{
@@ -184,7 +189,8 @@ void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, boo
         output.writeData(outBuffer,y,iband);
       }
       catch(std::string errorstring){
-	    std::cerr << errorstring << "in band " << iband << ", line " << y << std::endl;
+        std::cerr << errorstring << " in band " << iband << ", line " << y << std::endl;
+        exit(1);
       }
       progress=(1.0+y);
       progress+=(output.nrOfRow()*iband);
@@ -195,8 +201,12 @@ void filter2d::Filter2d::filter(ImgReaderGdal& input, ImgWriterGdal& output, boo
 }
 
 
-void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std::string& outputFilename,int dim,const std::vector<int> &prior)
+void filter2d::Filter2d::majorVoting(ImgRasterGdal& input, ImgRasterGdal& output, int dim, const std::vector<int> &prior)
 {
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -215,10 +225,10 @@ void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std
     std::cout << std::endl;    
   }  
 
-  ImgReaderGdal input;
-  ImgWriterGdal output;
-  input.open(inputFilename);
-  output.open(outputFilename,input);
+  // ImgRasterGdal input;
+  // ImgRasterGdal output;
+  // input.open(inputFilename);
+  // output.open(outputFilename,input);
   int dimX=0;//horizontal!!!
   int dimY=0;//vertical!!!
   if(dim){
@@ -240,7 +250,7 @@ void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std
   //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-        input.readData(inBuffer[indexJ],abs(j));
+        input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)));
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
@@ -248,7 +258,7 @@ void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std
       ++indexJ;
     }
 
-  for(int y=0;y<input.nrOfRow();++y){
+  for(unsigned int y=0;y<input.nrOfRow();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
       if(dimY>1)
@@ -273,10 +283,10 @@ void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std
         inBuffer.push_back(inBuffer[index]);
       }
     }
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       outBuffer[x]=0;
       std::map<int,int> occurrence;
-      int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+      // int centre=dimX*(dimY-1)/2+(dimX-1)/2;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
 	  indexI=x+i;
@@ -331,31 +341,27 @@ void filter2d::Filter2d::majorVoting(const std::string& inputFilename, const std
   output.close();
 }
 
-void filter2d::Filter2d::median(const std::string& inputFilename, const std::string& outputFilename,int dim, bool disc)
+void filter2d::Filter2d::median(ImgRasterGdal& input, ImgRasterGdal& output, int dim, bool disc)
 {
-  ImgReaderGdal input;
-  ImgWriterGdal output;
-  input.open(inputFilename);
-  output.open(outputFilename,input);
   doit(input,output,"median",dim,disc);
 }
 
-void filter2d::Filter2d::var(const std::string& inputFilename, const std::string& outputFilename,int dim, bool disc)
+void filter2d::Filter2d::var(ImgRasterGdal& input, ImgRasterGdal& output, int dim, bool disc)
 {
-  ImgReaderGdal input;
-  ImgWriterGdal output;
-  input.open(inputFilename);
-  output.open(outputFilename,input);
   doit(input,output,"var",dim,disc);
 }
 
-void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dim, short down, bool disc)
+void filter2d::Filter2d::doit(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dim, short down, bool disc)
 {
   doit(input,output,method,dim,dim,down,disc);
 }
 
-void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
+void filter2d::Filter2d::doit(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dimX, int dimY, short down, bool disc)
 {
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -366,7 +372,7 @@ void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const
   assert(dimY);
 
   statfactory::StatFactory stat;
-  for(int iband=0;iband<input.nrOfBand();++iband){
+  for(unsigned int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     std::vector<double> outBuffer((input.nrOfCol()+down-1)/down);
     int indexI=0;
@@ -374,14 +380,14 @@ void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const
     //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-        input.readData(inBuffer[indexJ],abs(j),iband);
+        input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)),iband);
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
       ++indexJ;
     }
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	if(dimY>1)
@@ -408,7 +414,7 @@ void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const
       }
       if((y+1+down/2)%down)
         continue;
-      for(int x=0;x<input.nrOfCol();++x){
+      for(unsigned int x=0;x<input.nrOfCol();++x){
         if((x+1+down/2)%down)
           continue;
 	outBuffer[x/down]=0;
@@ -701,7 +707,7 @@ void filter2d::Filter2d::doit(ImgReaderGdal& input, ImgWriterGdal& output, const
   pfnProgress(1.0,pszMessage,pProgressArg);
 }
 
-void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
+void filter2d::Filter2d::mrf(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY, double beta, bool eightConnectivity, short down, bool verbose){
   assert(m_class.size()>1);
   Vector2d<double> fullBeta(m_class.size(),m_class.size());
   for(int iclass1=0;iclass1<m_class.size();++iclass1)
@@ -711,8 +717,12 @@ void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int di
 }
 
 //beta[classTo][classFrom]
-void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
+void filter2d::Filter2d::mrf(ImgRasterGdal& input, ImgRasterGdal& output, int dimX, int dimY, Vector2d<double> beta, bool eightConnectivity, short down, bool verbose)
 {
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -733,14 +743,14 @@ void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int di
   //initialize last half of inBuffer
   for(int j=-(dimY-1)/2;j<=dimY/2;++j){
     try{
-      input.readData(inBuffer[indexJ],abs(j));
+      input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)));
     }
     catch(std::string errorstring){
       std::cerr << errorstring << "in line " << indexJ << std::endl;
     }
     ++indexJ;
   }
-  for(int y=0;y<input.nrOfRow();++y){
+  for(unsigned int y=0;y<input.nrOfRow();++y){
     if(y){//inBuffer already initialized for y=0
       //erase first line from inBuffer
       if(dimY>1)
@@ -767,7 +777,7 @@ void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int di
     }
     if((y+1+down/2)%down)
       continue;
-    for(int x=0;x<input.nrOfCol();++x){
+    for(unsigned int x=0;x<input.nrOfCol();++x){
       if((x+1+down/2)%down)
         continue;
       std::vector<short> potential(m_class.size());
@@ -776,7 +786,7 @@ void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int di
         outBuffer[iclass][x/down]=0;
       }
       std::vector<double> windowBuffer;
-      int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+      // int centre=dimX*(dimY-1)/2+(dimX-1)/2;
       for(int j=-(dimY-1)/2;j<=dimY/2;++j){
         for(int i=-(dimX-1)/2;i<=dimX/2;++i){
           if(i!=0&&j!=0&&!eightConnectivity)
@@ -843,8 +853,13 @@ void filter2d::Filter2d::mrf(ImgReaderGdal& input, ImgWriterGdal& output, int di
   }
 }
 
-void filter2d::Filter2d::shift(ImgReaderGdal& input, ImgWriterGdal& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
+//todo: perform on ImgRasterGdal directly instead of copying into Vector2d
+void filter2d::Filter2d::shift(ImgRasterGdal& input, ImgRasterGdal& output, double offsetX, double offsetY, double randomSigma, RESAMPLE resample, bool verbose)
 {
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   assert(input.nrOfCol()==output.nrOfCol());
   assert(input.nrOfRow()==output.nrOfRow());
   assert(input.nrOfBand()==output.nrOfBand());
@@ -866,8 +881,8 @@ void filter2d::Filter2d::shift(ImgReaderGdal& input, ImgWriterGdal& output, doub
 //todo: re-implement without dependency of CImg and reg libraries
 // void filter2d::Filter2d::dwt_texture(const std::string& inputFilename, const std::string& outputFilename,int dim, int scale, int down, int iband, bool verbose)
 // {
-//   ImgReaderGdal input;
-//   ImgWriterGdal output;
+//   ImgRasterGdal input;
+//   ImgRasterGdal output;
 //   if(verbose)
 //     std::cout << "opening file " << inputFilename << std::endl;
 //   input.open(inputFilename);
@@ -970,8 +985,12 @@ void filter2d::Filter2d::shift(ImgReaderGdal& input, ImgWriterGdal& output, doub
 //   output.close();
 // }
 
-void filter2d::Filter2d::morphology(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc)
+void filter2d::Filter2d::morphology(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& method, int dimX, int dimY, const std::vector<double> &angle, bool disc)
 {
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   const char* pszMessage;
   void* pProgressArg=NULL;
   GDALProgressFunc pfnProgress=GDALTermProgress;
@@ -982,7 +1001,7 @@ void filter2d::Filter2d::morphology(ImgReaderGdal& input, ImgWriterGdal& output,
   assert(dimY);
 
   statfactory::StatFactory stat;
-  for(int iband=0;iband<input.nrOfBand();++iband){
+  for(unsigned int iband=0;iband<input.nrOfBand();++iband){
     Vector2d<double> inBuffer(dimY,input.nrOfCol());
     std::vector<double> outBuffer(input.nrOfCol());
     int indexI=0;
@@ -990,14 +1009,14 @@ void filter2d::Filter2d::morphology(ImgReaderGdal& input, ImgWriterGdal& output,
     //initialize last half of inBuffer
     for(int j=-(dimY-1)/2;j<=dimY/2;++j){
       try{
-	input.readData(inBuffer[indexJ],abs(j),iband);
+	input.readData(inBuffer[indexJ],static_cast<unsigned int>(abs(j)),iband);
 	++indexJ;
       }
       catch(std::string errorstring){
 	std::cerr << errorstring << "in line " << indexJ << std::endl;
       }
     }
-    for(int y=0;y<input.nrOfRow();++y){
+    for(unsigned int y=0;y<input.nrOfRow();++y){
       if(y){//inBuffer already initialized for y=0
 	//erase first line from inBuffer
 	if(dimY>1)
@@ -1022,12 +1041,12 @@ void filter2d::Filter2d::morphology(ImgReaderGdal& input, ImgWriterGdal& output,
           inBuffer.push_back(inBuffer[index]);
         }
       }
-      for(int x=0;x<input.nrOfCol();++x){
+      for(unsigned int x=0;x<input.nrOfCol();++x){
         double currentValue=inBuffer[(dimY-1)/2][x];
 	outBuffer[x]=currentValue;
 	std::vector<double> statBuffer;
 	bool currentMasked=false;
-        int centre=dimX*(dimY-1)/2+(dimX-1)/2;
+        // int centre=dimX*(dimY-1)/2+(dimX-1)/2;
 	for(int imask=0;imask<m_noDataValues.size();++imask){
 	  if(currentValue==m_noDataValues[imask]){
 	    currentMasked=true;
@@ -1149,7 +1168,12 @@ void filter2d::Filter2d::morphology(ImgReaderGdal& input, ImgWriterGdal& output,
   }
 }
 
-void filter2d::Filter2d::shadowDsm(ImgReaderGdal& input, ImgWriterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
+//todo: perform on ImgRasterGdal directly instead of copying into Vector2d
+void filter2d::Filter2d::shadowDsm(ImgRasterGdal& input, ImgRasterGdal& output, double sza, double saa, double pixelSize, short shadowFlag){
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   Vector2d<float> inputBuffer;
   Vector2d<float> outputBuffer;
   input.readDataBlock(inputBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, 0);
@@ -1157,17 +1181,25 @@ void filter2d::Filter2d::shadowDsm(ImgReaderGdal& input, ImgWriterGdal& output, 
   output.writeDataBlock(outputBuffer,0,output.nrOfCol()-1,0,output.nrOfRow()-1,0);
 }
 
-void filter2d::Filter2d::dwtForward(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
-  Vector2d<float> theBuffer;
+void filter2d::Filter2d::dwtForward(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family){
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
+  Vector2d<double> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
-    input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
     std::cout << "filtering band " << iband << std::endl << std::flush;
+    input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
     dwtForward(theBuffer, wavelet_type, family);
     output.writeDataBlock(theBuffer,0,output.nrOfCol()-1,0,output.nrOfRow()-1,iband);
   }
 }
 
-void filter2d::Filter2d::dwtInverse(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family){
+void filter2d::Filter2d::dwtInverse(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family){
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   Vector2d<float> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
     input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
@@ -1177,7 +1209,11 @@ void filter2d::Filter2d::dwtInverse(ImgReaderGdal& input, ImgWriterGdal& output,
   }
 }
 
-void filter2d::Filter2d::dwtCut(ImgReaderGdal& input, ImgWriterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose){
+void filter2d::Filter2d::dwtCut(ImgRasterGdal& input, ImgRasterGdal& output, const std::string& wavelet_type, int family, double cut, bool verbose){
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   Vector2d<float> theBuffer;
   for(int iband=0;iband<input.nrOfBand();++iband){
     input.readDataBlock(theBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, iband);
@@ -1187,7 +1223,11 @@ void filter2d::Filter2d::dwtCut(ImgReaderGdal& input, ImgWriterGdal& output, con
   }
 }
 
-void filter2d::Filter2d::linearFeature(ImgReaderGdal& input, ImgWriterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
+void filter2d::Filter2d::linearFeature(ImgRasterGdal& input, ImgRasterGdal& output, float angle, float angleStep, float maxDistance, float eps, bool l1, bool a1, bool l2, bool a2, int band, bool verbose){
+  if(!output.isInit())
+    output.open(input);
+  output.setNoData(m_noDataValues);
+
   Vector2d<float> inputBuffer;
   std::vector< Vector2d<float> > outputBuffer;
   input.readDataBlock(inputBuffer,  0, input.nrOfCol()-1, 0, input.nrOfRow()-1, band);
@@ -1222,8 +1262,8 @@ void filter2d::Filter2d::linearFeature(const Vector2d<float>& input, std::vector
   GDALProgressFunc pfnProgress=GDALTermProgress;
   double progress=0;
   pfnProgress(progress,pszMessage,pProgressArg);
-  for(int y=0;y<input.nRows();++y){
-    for(int x=0;x<input.nCols();++x){
+  for(unsigned int y=0;y<input.nRows();++y){
+    for(unsigned int x=0;x<input.nCols();++x){
       float currentValue=input[y][x];
       //find values equal to current value with some error margin
       //todo: add distance for two opposite directions

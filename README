@@ -1,6 +1,6 @@
 Description of pktools
 ----------------------
-The version of this pktools distribution is 2.6.7
+The version of this pktools distribution is 2.6.8
 pktools is a collection of programs written in C++ to perform operations, mostly on raster images. It heavily relies on the Geospatial Data Abstraction Library (GDAL, http://www.gdal.org) and OGR. The programs are similar to the gdal tools (gdalinfo, gdal_translate, gdal_merge,...) and some of the functionalities provided in pktools already exist in the gdal tools. The reason for implementing pktools is a combination of personal preference and additional functionality.
 
 License and distribution

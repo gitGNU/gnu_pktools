@@ -1,7 +1,7 @@
 ###############################################################################
-#
+
 # CMake build scripts for PKTOOLS
-# 
+#
 #
 # History
 # 2010/12/14 - Created by Peter Bunting for SPDLib
@@ -35,7 +35,7 @@ set (PROJECT_SOURCE_DIR src)
 # The version number.
 set (PKTOOLS_VERSION_MAJOR 2)
 set (PKTOOLS_VERSION_MINOR 6)
-set (PKTOOLS_VERSION_PATCH 7)
+set (PKTOOLS_VERSION_PATCH 8)
 set (PKTOOLS_VERSION "${PKTOOLS_VERSION_MAJOR}.${PKTOOLS_VERSION_MINOR}.${PKTOOLS_VERSION_PATCH}")
 set (PKTOOLS_PACKAGE_VERSION "${PKTOOLS_VERSION_MAJOR}.${PKTOOLS_VERSION_MINOR}.${PKTOOLS_VERSION_PATCH}")
 set (PKTOOLS_PACKAGE_STRING "PKTOOLS ${PKTOOLS_VERSION_MAJOR}.${PKTOOLS_VERSION_MINOR}.${PKTOOLS_VERSION_PATCH}")
@@ -44,31 +44,31 @@ set (PKTOOLS_PACKAGE "pktools")
 set (PKTOOLS_COPYRIGHT_YEAR 2016)
 
 set (PKTOOLS_BASE_VERSION_MAJOR 1)
-set (PKTOOLS_BASE_VERSION_MINOR 6)
+set (PKTOOLS_BASE_VERSION_MINOR 7)
 set (PKTOOLS_BASE_VERSION_PATCH 0)
 set (PKTOOLS_BASE_VERSION "${PKTOOLS_BASE_VERSION_MAJOR}.${PKTOOLS_BASE_VERSION_MINOR}.${PKTOOLS_BASE_VERSION_PATCH}")
 set (PKTOOLS_BASE_SOVERSION 1)
 
 set (PKTOOLS_ALGORITHMS_VERSION_MAJOR 1)
-set (PKTOOLS_ALGORITHMS_VERSION_MINOR 6)
+set (PKTOOLS_ALGORITHMS_VERSION_MINOR 7)
 set (PKTOOLS_ALGORITHMS_VERSION_PATCH 0)
 set (PKTOOLS_ALGORITHMS_VERSION "${PKTOOLS_ALGORITHMS_VERSION_MAJOR}.${PKTOOLS_ALGORITHMS_VERSION_MINOR}.${PKTOOLS_ALGORITHMS_VERSION_PATCH}")
 set (PKTOOLS_ALGORITHMS_SOVERSION 1)
 
 set (PKTOOLS_FILECLASSES_VERSION_MAJOR 1)
-set (PKTOOLS_FILECLASSES_VERSION_MINOR 6)
+set (PKTOOLS_FILECLASSES_VERSION_MINOR 7)
 set (PKTOOLS_FILECLASSES_VERSION_PATCH 0)
 set (PKTOOLS_FILECLASSES_VERSION "${PKTOOLS_FILECLASSES_VERSION_MAJOR}.${PKTOOLS_FILECLASSES_VERSION_MINOR}.${PKTOOLS_FILECLASSES_VERSION_PATCH}")
 set (PKTOOLS_FILECLASSES_SOVERSION 1)
 
 set (PKTOOLS_IMAGECLASSES_VERSION_MAJOR 1)
-set (PKTOOLS_IMAGECLASSES_VERSION_MINOR 6)
+set (PKTOOLS_IMAGECLASSES_VERSION_MINOR 7)
 set (PKTOOLS_IMAGECLASSES_VERSION_PATCH 0)
 set (PKTOOLS_IMAGECLASSES_VERSION "${PKTOOLS_IMAGECLASSES_VERSION_MAJOR}.${PKTOOLS_IMAGECLASSES_VERSION_MINOR}.${PKTOOLS_IMAGECLASSES_VERSION_PATCH}")
 set (PKTOOLS_IMAGECLASSES_SOVERSION 1)
 
 set (PKTOOLS_LASCLASSES_VERSION_MAJOR 1)
-set (PKTOOLS_LASCLASSES_VERSION_MINOR 6)
+set (PKTOOLS_LASCLASSES_VERSION_MINOR 7)
 set (PKTOOLS_LASCLASSES_VERSION_PATCH 0)
 set (PKTOOLS_LASCLASSES_VERSION "${PKTOOLS_LASCLASSES_VERSION_MAJOR}.${PKTOOLS_LASCLASSES_VERSION_MINOR}.${PKTOOLS_LASCLASSES_VERSION_PATCH}")
 set (PKTOOLS_LASCLASSES_SOVERSION 1)
@@ -80,14 +80,17 @@ set(PKTOOLS_FILECLASSES_LIB_NAME fileClasses)
 set(PKTOOLS_IMAGECLASSES_LIB_NAME imageClasses)
 set(PKTOOLS_LASCLASSES_LIB_NAME lasClasses)
 
-option (BUILD_SHARED_LIBS "Build with shared library" OFF)
+option (BUILD_SHARED_LIBS "Build with shared library" ON)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
-set(BUILD_WITH_FANN FALSE CACHE BOOL "Choose if pktools is to be built with fann")
-#set(BUILD_WITH_NLOPT FALSE CACHE BOOL "Choose if pktools is to be built with nlopt")
-set(PKTOOLS_WITH_UTILITIES TRUE CACHE BOOL "Choose if pktools utilities should be built")
+set(BUILD_WITH_FANN TRUE CACHE BOOL "Choose if pktools is to be built with fann")
+set(BUILD_WITH_PYTHON TRUE CACHE BOOL "Choose if pktools is to be built with PYTHON support")
+set(PKTOOLS_WITH_APPS TRUE CACHE BOOL "Choose if pktools applications should be built")
 
 set(GSL_INCLUDE_DIR /usr/include CACHE PATH "Include PATH for GSL")
 set(GSL_LIB_PATH /usr/lib CACHE PATH "Library PATH for GSL")
+
+set(PKTOOLS_INCLUDE_DIRS ${PREFIX}/include/pktools)
+# set(PKTOOLS_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 
 ###############################################################################
 
@@ -96,10 +99,7 @@ set(GSL_LIB_PATH /usr/lib CACHE PATH "Library PATH for GSL")
 # cmake_minimum_required(VERSION 2.6.0)
 
 IF(NOT CMAKE_BUILD_TYPE)
-  #SET(CMAKE_BUILD_TYPE "DEBUG")
   SET(CMAKE_BUILD_TYPE "RELEASE")
-  #SET(CMAKE_BUILD_TYPE "RELWITHDEBINFO")
-  #SET(CMAKE_BUILD_TYPE "MINSIZEREL")
 ENDIF()
 
 set(CMAKE_COLOR_MAKEFILE ON)
@@ -112,13 +112,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 ###############################################################################
 
 ###############################################################################
-# Setup configure file
-configure_file ( "cmake-config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/base/config.h" @ONLY)
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/base")
-add_definitions(-DHAVE_CONFIG_H)
-###############################################################################
-
-###############################################################################
 # Documentation
 #file(READ "doc/index.txt" README )
 file(WRITE "README.txt" "${README}")
@@ -126,6 +119,17 @@ file(WRITE "README.txt" "${README}")
 
 ###############################################################################
 # Platform and compiler specific settings
+
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has C++11 support.")
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else(COMPILER_SUPPORTS_CXX11)
+  message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif()
 
 if(WIN32)
     if (MSVC)
@@ -135,7 +139,7 @@ if(WIN32)
             add_definitions(-D_CRT_NONSTDC_NO_WARNING)
             add_definitions(-D_SCL_SECURE_NO_WARNINGS)
         endif()
-        
+
         if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
             string(REGEX REPLACE "/W[0-4]" "/W4"
                    CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
@@ -152,7 +156,7 @@ if(WIN32)
 
     endif()
 
-	set(CMAKE_INCLUDE_PATH c:/osgeo4w/include;$ENV{CMAKE_INCLUDE_PATH})
+  set(CMAKE_INCLUDE_PATH c:/osgeo4w/include;$ENV{CMAKE_INCLUDE_PATH})
     set(CMAKE_LIBRARY_PATH c:/osgeo4w/lib;$ENV{CMAKE_LIBRARY_PATH})
 else()
   # Recommended C++ compilation flags
@@ -164,9 +168,6 @@ else()
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC ${PKTOOLS_COMMON_CXX_FLAGS}")
-    if (CMAKE_COMPILER_IS_GNUCXX)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98")
-    endif()
 
   elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER}" MATCHES "clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PKTOOLS_COMMON_CXX_FLAGS}")
@@ -175,7 +176,6 @@ endif(WIN32)
 
 if (APPLE)
   set(SO_EXT dylib)
- # set(CMAKE_FIND_FRAMEWORK "LAST")
 elseif(WIN32)
   set(SO_EXT dll)
 else()
@@ -186,16 +186,9 @@ endif(APPLE)
 ###############################################################################
 # Check the required libraries are present
 
-#include_directories(${GDAL_INCLUDE_DIR})
-#if (MSVC)
-#  set(GDAL_LIBRARIES -LIBPATH:${GDAL_LIB_PATH} gdal_i.lib)
-#else()
-#  set(GDAL_LIBRARIES -L${GDAL_LIB_PATH} -lgdal)
-#endif(MSVC)
-
 find_package(GDAL 1.10 REQUIRED)
 if(GDAL_FOUND)
-	include_directories(${GDAL_INCLUDE_DIRS})
+  include_directories(${GDAL_INCLUDE_DIRS})
 endif()
 
 find_package(GSL REQUIRED)
@@ -204,23 +197,23 @@ if(GSL_FOUND)
   add_definitions(-DGSL_DLL)
 endif()
 
-find_package(Armadillo REQUIRED)
-if(ARMADILLO_FOUND)
-	include_directories(${ARMADILLO_INCLUDE_DIRS})
-endif()
+# find_package(Armadillo REQUIRED)
+# if(ARMADILLO_FOUND)
+#   include_directories(${ARMADILLO_INCLUDE_DIRS})
+# endif()
 
 if (BUILD_WITH_LIBLAS)
-	find_package(LIBLAS)
-	if(LIBLAS_FOUND)
-	  include_directories(${LIBLAS_INCLUDE_DIRS})
-	endif()
-	set(Boost_DEBUG 0)
-	find_package(Boost COMPONENTS filesystem system)
-	if(Boost_FOUND)
-		include_directories(${Boost_INCLUDE_DIRS})
-		add_definitions("-DBOOST_ALL_NO_LIB")
-	endif()
-	
+  find_package(LIBLAS)
+  if(LIBLAS_FOUND)
+    include_directories(${LIBLAS_INCLUDE_DIRS})
+  endif()
+  set(Boost_DEBUG 0)
+  find_package(Boost COMPONENTS filesystem system)
+  if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+    add_definitions("-DBOOST_ALL_NO_LIB")
+  endif()
+
 #	include_directories(${BOOST_INCLUDE_DIR})
 #	if (MSVC)
 #		set(BOOST_LIBRARIES -LIBPATH:${BOOST_LIB_PATH} libboost_filesystem-vc100-mt-1_56.lib libboost_system-vc100-mt-1_56.lib)
@@ -230,20 +223,20 @@ if (BUILD_WITH_LIBLAS)
 endif(BUILD_WITH_LIBLAS)
 
 if (BUILD_WITH_FANN)
-	find_package(FANN)
-	if(FANN_FOUND)
-		include_directories(${FANN_INCLUDE_DIRS})
-		add_definitions(-DFANN_DLL)
-	endif()
+  find_package(FANN)
+  if(FANN_FOUND)
+    include_directories(${FANN_INCLUDE_DIRS})
+    add_definitions(-DFANN_DLL)
+  endif()
 endif(BUILD_WITH_FANN)
 
-# if (BUILD_WITH_NLOPT)
-#   find_package(NLOPT)
-#   if(NLOPT_FOUND)
-#     include_directories(${NLOPT_INCLUDE_DIRS})
-#     add_definitions(-DNLOPT_DLL)
-#   endif()
-# endif(BUILD_WITH_NLOPT)
+###############################################################################
+
+###############################################################################
+# Setup configure file
+configure_file ( "cmake-config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/base/config.h" @ONLY)
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/base")
+add_definitions(-DHAVE_CONFIG_H)
 ###############################################################################
 
 ###############################################################################
@@ -259,102 +252,101 @@ add_subdirectory ("${PROJECT_SOURCE_DIR}")
 #test
 configure_file ( "cmake-config.in" "${CMAKE_CURRENT_BINARY_DIR}/pktools-config" @ONLY )
 configure_file ( "cmake.pc.in" "pktools.pc"  @ONLY)
+configure_file ( "pktools-config.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/pktools-config.cmake" @ONLY )
 
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(PKLIBS ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
+#set(PKLIBS ${PKTOOLS_APPCLASSES_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
 
-set(PKUTILITIES
-  pkinfo
+set(PKLIBS ${GSL_LIBRARIES} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${Boost_LIBRARIES} ${GSL_LIBRARIES} )
+
+set(PKAPPS
   pkcrop
-  pkdiff
-  pkgetmask
-  pksetmask
-  pkcreatect 
-  pkdumpimg 
-  pkdumpogr 
-  pksieve 
-  pkstat
-  pkstatascii 
-  pkstatogr 
-  pkstatprofile
-  pkegcs 
-  pkextractimg
-  pkextractogr
-  pkfillnodata 
-  pkfilter 
-  pkfilterdem 
-  pkfilterascii 
-  pkdsm2shadow 
   pkcomposite
-  pkpolygonize 
-  pkascii2img 
-  pksvm 
-  pkfssvm 
-  pkoptsvm
-  pkascii2ogr 
-  pkreclass 
-  pkkalman
+  pkinfo
+  pkextractogr
+  pkextractimg
+  pkstatprofile
+  pkfilter
+  pktest
+  pksvm
+  pksvmogr
+  pkdiff
+  pkvalidate
   )
 
-set(PKLASUTILITIES
-	pklas2img
+set(PKUTILS
+  pkgetmask
+  pksetmask
+  pkdumpimg
+  pkcreatect
+  pksieve
+  pkstat
+  pkegcs
+  pkfillnodata
+  pkfilterdem
+  #pkdsm2shadow
+  pkreclass
+  pkpolygonize
+
+  pkkalman
+
+  pkdumpogr
+  pkfssvm
+  pkoptsvm
+  pkstatascii
+  pkstatogr
+  pkfilterascii
+  pkascii2img
+  pkascii2ogr
 )
 
-set(PKFANNUTILITIES
-	pkann
-	pkfsann
-	pkregann
+set(PKFANNAPPS
+  pkann
+  pkfsann
+  pkregann
 )
 
-# set(PKNLOPTUTILITIES
-# 	pkoptsvm
-# )
+set(PKLASAPPS
+  pklas2img
+)
 
-if (PKTOOLS_WITH_UTILITIES)
-	foreach(UTILITY ${PKUTILITIES})
-    		add_executable(${UTILITY} src/apps/${UTILITY}.cc)
-    		target_link_libraries(${UTILITY} ${PKLIBS})
-    		set_target_properties(${UTILITY} PROPERTIES FOLDER utilities)
-	endforeach()
+if (PKTOOLS_WITH_APPS)
+  foreach(APP ${PKAPPS})
+        add_executable(${APP} src/apps/${APP}_bin.cc)
+        target_link_libraries(${APP} ${PKLIBS})
+        set_target_properties(${APP} PROPERTIES FOLDER apps)
+  endforeach()
 
-	if (BUILD_WITH_LIBLAS)
-		set(PKLIBS ${PKLIBS} ${PKTOOLS_LASCLASSES_LIB_NAME})
-		foreach(PKLASUTILITY ${PKLASUTILITIES})
-		add_executable(${PKLASUTILITY} src/apps/${PKLASUTILITY}.cc)
-		target_link_libraries (${PKLASUTILITY} 
-		${PKLIBS} ${LIBLAS_LIBRARIES})
-    		set_target_properties(${PKLASUTILITY} PROPERTIES FOLDER utilities)
-		endforeach()
-	endif()
-	if (BUILD_WITH_FANN)
-		set(PKLIBS ${PKLIBS} ${FANN_LIBRARIES})
-		foreach(PKFANNUTILITY ${PKFANNUTILITIES})
-		add_executable(${PKFANNUTILITY} src/apps/${PKFANNUTILITY}.cc)
-		message(${PKLIBS})
-		target_link_libraries (${PKFANNUTILITY} ${PKLIBS})
-    		set_target_properties(${PKFANNUTILITY} PROPERTIES FOLDER utilities)
-		endforeach()
-	endif()
-	# if (BUILD_WITH_NLOPT)
-	# 	set(PKLIBS ${PKLIBS} ${NLOPT_LIBRARIES})
-	# 	foreach(PKNLOPTUTILITY ${PKNLOPTUTILITIES})
-	# 	add_executable(${PKNLOPTUTILITY} src/apps/${PKNLOPTUTILITY}.cc)
-	# 	message(${PKLIBS})
-	# 	target_link_libraries (${PKNLOPTUTILITY} ${PKLIBS})
-    	# 	set_target_properties(${PKNLOPTUTILITY} PROPERTIES FOLDER utilities)
-	# 	endforeach()
-	# endif()	
-	# add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES} ${PKNLOPTUTILITIES})
-	add_custom_target(utilities DEPENDS ${PKUTILITIES} ${PKLASUTILITIES} ${PKFANNUTILITIES})
-	set_target_properties(utilities PROPERTIES FOLDER 
-	phony)
+  foreach(UTIL ${PKUTILS})
+        add_executable(${UTIL} src/apps/${UTIL}.cc)
+        target_link_libraries(${UTIL} ${PKLIBS})
+        set_target_properties(${UTIL} PROPERTIES FOLDER apps)
+  endforeach()
 
-endif()
+  if (BUILD_WITH_LIBLAS)
+    set(PKLIBS ${PKLIBS} ${PKTOOLS_LASCLASSES_LIB_NAME})
+    foreach(PKLASAPP ${PKLASAPPS})
+    add_executable(${PKLASAPP} src/apps/${PKLASAPP}.cc)
+    target_link_libraries (${PKLASAPP}
+    ${PKLIBS} ${LIBLAS_LIBRARIES})
+        set_target_properties(${PKLASAPP} PROPERTIES FOLDER apps)
+    endforeach()
+  endif()
+  if (BUILD_WITH_FANN)
+    set(PKLIBS ${PKLIBS} ${FANN_LIBRARIES})
+    foreach(PKFANNAPP ${PKFANNAPPS})
+    add_executable(${PKFANNAPP} src/apps/${PKFANNAPP}.cc)
+    target_link_libraries (${PKFANNAPP} ${PKLIBS})
+        set_target_properties(${PKFANNAPP} PROPERTIES FOLDER apps)
+    endforeach()
+  endif()
+  add_custom_target(apps DEPENDS ${PKAPPS} ${PKTUTILS} ${PKLASAPPS} ${PKFANNAPPS})
+  set_target_properties(apps PROPERTIES FOLDER
+  phony)
+endif (PKTOOLS_WITH_APPS)
 
-
-	
 ###############################################################################
 
 ###############################################################################
@@ -364,24 +356,21 @@ endif()
 #test
 install (FILES "${CMAKE_CURRENT_BINARY_DIR}/pktools-config" DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 install (FILES "pktools.pc" DESTINATION lib/pkgconfig PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pktools-config.cmake" DESTINATION lib/cmake/pktools)
 
-if (PKTOOLS_WITH_UTILITIES)
-	install (TARGETS ${PKUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)	
-	if (BUILD_WITH_LIBLAS)
-		install (TARGETS ${PKLASUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-	endif(BUILD_WITH_LIBLAS)
-	if (BUILD_WITH_FANN)
-		install (TARGETS ${PKFANNUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-	endif(BUILD_WITH_FANN)
-	# if (BUILD_WITH_NLOPT)
-	# 	install (TARGETS ${PKNLOPTUTILITIES} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-	# endif(BUILD_WITH_NLOPT)
-	
-endif(PKTOOLS_WITH_UTILITIES)
+if (PKTOOLS_WITH_APPS)
+  install (TARGETS ${PKAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  install (TARGETS ${PKUTILS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  if (BUILD_WITH_LIBLAS)
+    install (TARGETS ${PKLASAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  endif(BUILD_WITH_LIBLAS)
+  if (BUILD_WITH_FANN)
+    install (TARGETS ${PKFANNAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  endif(BUILD_WITH_FANN)
+endif(PKTOOLS_WITH_APPS)
 
 ###############################################################################
 
-###############################################################################
 # Create Distribution
 SET(CPACK_SOURCE_GENERATOR "TGZ;ZIP;TBZ2")
 SET(CPACK_CMAKE_GENERATOR "Unix Makefiles")

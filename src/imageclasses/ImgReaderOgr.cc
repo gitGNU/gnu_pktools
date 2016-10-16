@@ -180,7 +180,6 @@ int ImgReaderOgr::getFields(std::vector<OGRFieldDefn*>& fields, int layer) const
   fields.clear();
   fields.resize(poFDefn->GetFieldCount());
   for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
-    OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
     fields[iField]=poFDefn->GetFieldDefn(iField);
   }
   assert(fields.size()==getFieldCount(layer));
@@ -215,7 +214,6 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
     OGRFeatureDefn *poFDefn = readLayer->GetLayerDefn();
 
     theOstream << "#";
-    int iField=0;
     for(int iField=0;iField<poFDefn->GetFieldCount();++iField){
       OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
       std::string fieldname=poFieldDefn->GetNameRef();
@@ -272,7 +270,7 @@ std::ostream& operator<<(std::ostream& theOstream, ImgReaderOgr& theImageReader)
 
 unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float> > &mapPixels, //[classNr][pixelNr][bandNr],
 					    std::vector<std::string>& fields,
-					    const std::vector<unsigned short>& bands,
+					    const std::vector<unsigned int>& bands,
 					    const std::string& label,
 					    const std::vector<std::string>& layers,
 					    int verbose)
@@ -307,10 +305,10 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
 	  else if(digits!=std::string::npos&&digite==std::string::npos){
 	    std::string digitString=(*fit).substr(digits);
 	    // int theBand=atoi((*fit).substr(1).c_str());
-	    int theBand=atoi(digitString.c_str());
+	    unsigned int theBand=atoi(digitString.c_str());
 	    if(bands.size()){
 	      bool validBand=false;
-	      for(int iband=0;iband<bands.size();++iband){
+	      for(unsigned int iband=0;iband<bands.size();++iband){
 		if(theBand==bands[iband])
 		  validBand=true;
 	      }
