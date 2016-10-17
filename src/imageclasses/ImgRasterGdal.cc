@@ -66,7 +66,8 @@ ImgRasterGdal& ImgRasterGdal::operator=(ImgRasterGdal& imgSrc)
 
 void ImgRasterGdal::close(void)
 {
-  if(writeMode()){
+  // if(writeMode()){
+  if(writeMode()||updateMode()){
     char **papszOptions=NULL;
     for(std::vector<std::string>::const_iterator optionIt=m_options.begin();optionIt!=m_options.end();++optionIt)
       papszOptions=CSLAddString(papszOptions,optionIt->c_str());
@@ -647,8 +648,13 @@ void ImgRasterGdal::registerDriver()
     // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #if GDAL_VERSION_MAJOR < 2
     GDALAllRegister();
-    if(m_access==UPDATE)
+    if(m_access==UPDATE){
+      //test
+      std::cout << "open in update mode" << std::endl;
       m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_Update);
+      //test
+      std::cout << "opened in update mode" << std::endl;
+    }
     else
       m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
     // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );

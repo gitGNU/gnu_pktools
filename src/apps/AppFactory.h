@@ -74,6 +74,10 @@ namespace app
       m_argv.push_back(os.str().c_str());
       ++m_argc;
     };
+    ///template set key value option
+    template<typename T> void setOption(const std::string &key, T value){
+      setOption(key,type2string<T>(value));
+    }
     ///set key value option
     void setOption(const std::string &key, const std::string &value)
     {

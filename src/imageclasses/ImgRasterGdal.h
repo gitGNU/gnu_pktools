@@ -140,6 +140,11 @@ class ImgRasterGdal : public std::enable_shared_from_this<ImgRasterGdal>
   ImgRasterGdal& operator=(ImgRasterGdal& imgSrc);
   ///get write mode
   bool writeMode(){return(m_access==WRITE);};
+  ///get update mode
+  bool updateMode(){return(m_access==UPDATE);};
+  ///get read mode
+  bool readMode(){return(m_access==READ_ONLY);};
+  /* bool writeMode(){return(m_access==WRITE||m_access==UPDATE);}; */
   ///get access mode
   RASTERACCESS getAccess(){return m_access;};
   ///set access mode

@@ -24,6 +24,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 #include "base/Vector2d.h"
 #include "imageclasses/ImgRasterGdal.h"
 #include "algorithms/StatFactory.h"
+#include "apps/AppFactory.h"
 
 /******************************************************************************/
 /*! \page pkkalman pkkalman
@@ -293,7 +294,9 @@ int main(int argc,char **argv) {
   if(projection_opt.empty())
     projection_opt.push_back(imgReaderObs.getProjection());
   double geotransform[6];
+  double correctedgeotransform[6];
   imgReaderObs.getGeoTransform(geotransform);
+  imgReaderObs.getGeoTransform(correctedgeotransform);
 
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
@@ -326,6 +329,9 @@ int main(int argc,char **argv) {
       down+=1;
     down_opt.push_back(down);
   }
+
+  //ticket #49196
+  correctedgeotransform[3]=geotransform[3]+static_cast<int>(down_opt[0]/2)*geotransform[5];
 
   int obsindex=0;
 
@@ -403,18 +409,18 @@ int main(int argc,char **argv) {
       ImgRasterGdal imgWriterUncert;
       imgWriterEst.open(outputfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
-      imgWriterEst.setGeoTransform(geotransform);
+      imgWriterEst.setGeoTransform(correctedgeotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
       imgWriterUncert.open(uncertfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterUncert.setProjectionProj4(projection_opt[0]);
-      imgWriterUncert.setGeoTransform(geotransform);
+      imgWriterUncert.setGeoTransform(correctedgeotransform);
 
       try{
         //test
         if(gain_opt.size()){
           imgWriterGain.open(gain_opt[0],ncol,nrow,nmodel,GDT_Float64,imageType,option_opt);
           imgWriterGain.setProjectionProj4(projection_opt[0]);
-          imgWriterGain.setGeoTransform(geotransform);
+          imgWriterGain.setGeoTransform(correctedgeotransform);
           imgWriterGain.GDALSetNoDataValue(obsnodata_opt[0]);
         }
 
@@ -700,6 +706,7 @@ int main(int argc,char **argv) {
           imgReaderObsMask.close();
         ++obsindex;
       }
+
       if(model_opt.size()==nmodel)
         imgReaderModel1.close();
       if(modelmask_opt.size()==nmodel)
@@ -707,12 +714,18 @@ int main(int argc,char **argv) {
       imgWriterEst.close();
       imgWriterUncert.close();
 
-      ImgRasterGdal imgUpdaterEst;
-      ImgRasterGdal imgUpdaterUncert;
-      for(unsigned int modindex=1;modindex<nmodel;++modindex){
-        imgUpdaterEst.open(outputfw_opt[0]);
+      // ImgRasterGdal imgUpdaterEst;
+      // ImgRasterGdal imgUpdaterUncert;
+      for(int modindex=1;modindex<nmodel;++modindex){
+        app::AppFactory theApp;
+        theApp.setOption("access","UPDATE");
+        theApp.setOption("i",outputfw_opt[0]);
+        ImgRasterGdal imgUpdaterEst(theApp);
+        // imgUpdaterEst.open(outputfw_opt[0]);
         imgUpdaterEst.setNoData(obsnodata_opt);
-        imgUpdaterUncert.open(uncertfw_opt[0]);
+        theApp.setOption("i",uncertfw_opt[0]);
+        ImgRasterGdal imgUpdaterUncert(theApp);
+        // imgUpdaterUncert.open(uncertfw_opt[0]);
         if(verbose_opt[0]){
           cout << "processing time " << tmodel_opt[modindex] << endl;
           if(obsindex<relobsindex.size())
@@ -810,6 +823,7 @@ int main(int argc,char **argv) {
         }
         statfactory::StatFactory statobs;
         statobs.setNoDataValues(obsnodata_opt);
+
         for(unsigned int jrow=0;jrow<nrow;jrow+=down_opt[0]){
           //todo: read entire window for uncertReadBuffer...
           for(unsigned int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
@@ -876,11 +890,14 @@ int main(int argc,char **argv) {
                     }
                   }
                 }
+
                 double estValue=estLineBuffer[icol];
                 imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
                 bool model1IsNoData=false;
+
                 if(modelmask_opt.size())
                   model1IsNoData=imgReaderModel1Mask.isNoData(model1MaskLineBuffer[modCol]);
+
                 lowerCol=modCol-0.5;
                 lowerCol=static_cast<int>(lowerCol);
                 upperCol=modCol+0.5;
@@ -896,6 +913,7 @@ int main(int argc,char **argv) {
                 else
                   imgReaderModel1.geo2image(geox,geoy,modCol,modRow);
                 bool model2IsNoData=false;
+
                 if(modelmask_opt.size())
                   model2IsNoData=imgReaderModel1Mask.isNoData(model2MaskLineBuffer[modCol]);
                 lowerCol=modCol-0.5;
@@ -1068,11 +1086,11 @@ int main(int argc,char **argv) {
       ImgRasterGdal imgWriterUncert;
       imgWriterEst.open(outputbw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
-      imgWriterEst.setGeoTransform(geotransform);
+      imgWriterEst.setGeoTransform(correctedgeotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
       imgWriterUncert.open(uncertbw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterUncert.setProjectionProj4(projection_opt[0]);
-      imgWriterUncert.setGeoTransform(geotransform);
+      imgWriterUncert.setGeoTransform(correctedgeotransform);
 
       try{
         // //test
@@ -1133,7 +1151,7 @@ int main(int argc,char **argv) {
                 cerr << "Error: geo coordinates (" << geox << "," << geoy << ") not covered in model image " << imgReaderModel1.getFileName() << endl;
                 assert(modRow>=0&&modRow<imgReaderModel1.nrOfRow());
               }
-              // imgReaderModel1.readData(estReadBuffer,modRow,0,theResample);
+
               unsigned int readModelBand=(model_opt.size()==nmodel)? 0:nmodel-1;
               unsigned int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
               imgReaderModel1.readData(estReadBuffer,modRow,readModelBand,theResample);
@@ -1373,12 +1391,18 @@ int main(int argc,char **argv) {
       imgWriterEst.close();
       imgWriterUncert.close();
 
-      ImgRasterGdal imgUpdaterEst;
-      ImgRasterGdal imgUpdaterUncert;
-      for(unsigned int modindex=nmodel-2;modindex>=0;--modindex){
-        imgUpdaterEst.open(outputbw_opt[0]);
+      // ImgRasterGdal imgUpdaterEst;
+      // ImgRasterGdal imgUpdaterUncert;
+      for(int modindex=nmodel-2;modindex>=0;--modindex){
+        app::AppFactory theApp;
+        theApp.setOption("access","UPDATE");
+        theApp.setOption("i",outputbw_opt[0]);
+        ImgRasterGdal imgUpdaterEst(theApp);
+        // imgUpdaterEst.open(outputbw_opt[0]);
         imgUpdaterEst.setNoData(obsnodata_opt);
-        imgUpdaterUncert.open(uncertbw_opt[0]);
+        theApp.setOption("i",uncertbw_opt[0]);
+        ImgRasterGdal imgUpdaterUncert(theApp);
+        // imgUpdaterUncert.open(uncertbw_opt[0]);
         if(verbose_opt[0]){
           cout << "processing time " << tmodel_opt[modindex] << endl;
           if(obsindex<relobsindex.size())
@@ -1395,7 +1419,7 @@ int main(int argc,char **argv) {
           imgReaderModel2.setNoData(modnodata_opt);
         }
         if(modelmask_opt.size()==nmodel){
-          imgReaderModel1Mask.open(modelmask_opt[modindex-1]);
+          imgReaderModel1Mask.open(modelmask_opt[modindex+1]);
           imgReaderModel1Mask.setNoData(msknodata_opt);
           imgReaderModel2Mask.open(modelmask_opt[modindex]);
           imgReaderModel2Mask.setNoData(msknodata_opt);
@@ -1445,7 +1469,7 @@ int main(int argc,char **argv) {
         // vector<double> gainWriteBuffer(ncol);
 
         unsigned int readObsBand=(observation_opt.size()==nobs)? 0:obsindex;
-        // unsigned int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:obsindex;
+        unsigned int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:obsindex;
         unsigned int readModel1Band=(model_opt.size()==nmodel)? 0:modindex+1;
         unsigned int readModel2Band=(model_opt.size()==nmodel)? 0:modindex;
         unsigned int readModel1MaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:modindex+1;
@@ -1518,6 +1542,7 @@ int main(int argc,char **argv) {
               if(observationmask_opt.size())
                 imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsBand);
             }
+            
             for(unsigned int jcol=0;jcol<ncol;jcol+=down_opt[0]){
               for(unsigned int icol=jcol;icol<jcol+down_opt[0]&&icol<ncol;++icol){
                 imgUpdaterEst.image2geo(icol,irow,geox,geoy);
@@ -1680,6 +1705,7 @@ int main(int argc,char **argv) {
                 }
               }
             }
+
             // //test
             // if(gain_opt.size())
             //   imgWriterGain.writeData(gainWriteBuffer,irow,modindex);
@@ -1743,13 +1769,13 @@ int main(int argc,char **argv) {
     ImgRasterGdal imgWriterUncert;
     imgWriterEst.open(outputfb_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
     imgWriterEst.setProjectionProj4(projection_opt[0]);
-    imgWriterEst.setGeoTransform(geotransform);
+    imgWriterEst.setGeoTransform(correctedgeotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
     imgWriterUncert.open(uncertfb_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
     imgWriterUncert.setProjectionProj4(projection_opt[0]);
-    imgWriterUncert.setGeoTransform(geotransform);
-    for(unsigned int modindex=0;modindex<nmodel;++modindex){
+    imgWriterUncert.setGeoTransform(correctedgeotransform);
+    for(int modindex=0;modindex<nmodel;++modindex){
       if(verbose_opt[0]){
         cout << "processing time " << tmodel_opt[modindex] << endl;
         if(obsindex<relobsindex.size())
