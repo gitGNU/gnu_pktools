@@ -294,9 +294,9 @@ int main(int argc,char **argv) {
   if(projection_opt.empty())
     projection_opt.push_back(imgReaderObs.getProjection());
   double geotransform[6];
-  double correctedgeotransform[6];
+  // double correctedgeotransform[6];
   imgReaderObs.getGeoTransform(geotransform);
-  imgReaderObs.getGeoTransform(correctedgeotransform);
+  // imgReaderObs.getGeoTransform(correctedgeotransform);
 
   GDALDataType theType=GDT_Unknown;
   if(verbose_opt[0])
@@ -331,7 +331,7 @@ int main(int argc,char **argv) {
   }
 
   //ticket #49196
-  correctedgeotransform[3]=geotransform[3]+static_cast<int>(down_opt[0]/2)*geotransform[5];
+  // correctedgeotransform[3]=geotransform[3]+static_cast<int>(down_opt[0]/2)*geotransform[5];
 
   int obsindex=0;
 
@@ -409,18 +409,18 @@ int main(int argc,char **argv) {
       ImgRasterGdal imgWriterUncert;
       imgWriterEst.open(outputfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
-      imgWriterEst.setGeoTransform(correctedgeotransform);
+      imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
       imgWriterUncert.open(uncertfw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterUncert.setProjectionProj4(projection_opt[0]);
-      imgWriterUncert.setGeoTransform(correctedgeotransform);
+      imgWriterUncert.setGeoTransform(geotransform);
 
       try{
         //test
         if(gain_opt.size()){
           imgWriterGain.open(gain_opt[0],ncol,nrow,nmodel,GDT_Float64,imageType,option_opt);
           imgWriterGain.setProjectionProj4(projection_opt[0]);
-          imgWriterGain.setGeoTransform(correctedgeotransform);
+          imgWriterGain.setGeoTransform(geotransform);
           imgWriterGain.GDALSetNoDataValue(obsnodata_opt[0]);
         }
 
@@ -571,11 +571,11 @@ int main(int argc,char **argv) {
         unsigned int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:0;
         unsigned int readModelBand=(model_opt.size()==nmodel)? 0:0;
         unsigned int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:0;
-        for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+        for(int iline=-down_opt[0]/2-1;iline<down_opt[0]/2;++iline){
           if(iline<0)//replicate line 0
-            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(0),readObsBand);
+            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(0),readObsBand);
           else
-            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(iline),readObsBand);
+            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(iline),readObsBand);
         }
         for(unsigned int jrow=0;jrow<nrow;jrow+=down_opt[0]){
           for(unsigned int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
@@ -589,6 +589,7 @@ int main(int argc,char **argv) {
             obsLineVector.erase(obsLineVector.begin());
             imgReaderObs.readData(obsLineBuffer,maxRow,readObsBand);
             obsLineVector.push_back(obsLineBuffer);
+            obsLineBuffer=obsLineVector[down_opt[0]/2];
 
             if(observationmask_opt.size())
               imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsMaskBand);
@@ -803,11 +804,11 @@ int main(int argc,char **argv) {
           if(verbose_opt[0])
             cout << "initialize obsLineVector" << endl;
           assert(down_opt[0]%2);//window size must be odd
-          for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+          for(int iline=-down_opt[0]/2-1;iline<down_opt[0]/2;++iline){
             if(iline<0)//replicate line 0
-              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(0),readObsBand);
+              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(0),readObsBand);
             else
-              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(iline),readObsBand);
+              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(iline),readObsBand);
           }
         }
         //initialize estLineVector
@@ -815,11 +816,11 @@ int main(int argc,char **argv) {
           cout << "initialize estLineVector" << endl;
         assert(down_opt[0]%2);//window size must be odd
 
-        for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+        for(int iline=-down_opt[0]/2-1;iline<down_opt[0]/2;++iline){
           if(iline<0)//replicate line 0
-            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(0),modindex-1);
+            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(0),modindex-1);
           else
-            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(iline),modindex-1);
+            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(iline),modindex-1);
         }
         statfactory::StatFactory statobs;
         statobs.setNoDataValues(obsnodata_opt);
@@ -1086,11 +1087,11 @@ int main(int argc,char **argv) {
       ImgRasterGdal imgWriterUncert;
       imgWriterEst.open(outputbw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterEst.setProjectionProj4(projection_opt[0]);
-      imgWriterEst.setGeoTransform(correctedgeotransform);
+      imgWriterEst.setGeoTransform(geotransform);
       imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
       imgWriterUncert.open(uncertbw_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
       imgWriterUncert.setProjectionProj4(projection_opt[0]);
-      imgWriterUncert.setGeoTransform(correctedgeotransform);
+      imgWriterUncert.setGeoTransform(geotransform);
 
       try{
         // //test
@@ -1248,11 +1249,11 @@ int main(int argc,char **argv) {
         unsigned int readObsMaskBand=(observationmask_opt.size()==nobs)? mskband_opt[0]:nobs-1;
         unsigned int readModelBand=(model_opt.size()==nmodel)? 0:nmodel-1;
         unsigned int readModelMaskBand=(modelmask_opt.size()==nmodel)? mskband_opt[0]:nmodel-1;
-        for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+        for(int iline=-down_opt[0]/2-1;iline<down_opt[0]/2;++iline){
           if(iline<0)//replicate line 0
-            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(0),readObsBand);
+            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(0),readObsBand);
           else
-            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(iline),readObsBand);
+            imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(iline),readObsBand);
         }
         for(unsigned int jrow=0;jrow<nrow;jrow+=down_opt[0]){
           for(unsigned int irow=jrow;irow<jrow+down_opt[0]&&irow<nrow;++irow){
@@ -1266,6 +1267,7 @@ int main(int argc,char **argv) {
             obsLineVector.erase(obsLineVector.begin());
             imgReaderObs.readData(obsLineBuffer,maxRow,readObsBand);
             obsLineVector.push_back(obsLineBuffer);
+            obsLineBuffer=obsLineVector[down_opt[0]/2];
 
             if(observationmask_opt.size())
               imgReaderObsMask.readData(obsMaskLineBuffer,irow,readObsMaskBand);
@@ -1480,11 +1482,11 @@ int main(int argc,char **argv) {
           if(verbose_opt[0])
             cout << "initialize obsLineVector" << endl;
           assert(down_opt[0]%2);//window size must be odd
-          for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+          for(int iline=-down_opt[0]/2-1;iline<down_opt[0]/2;++iline){
             if(iline<0)//replicate line 0
-              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(0),readObsBand);
+              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(0),readObsBand);
             else
-              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(iline),readObsBand);
+              imgReaderObs.readData(obsLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(iline),readObsBand);
           }
         }
         //initialize estLineVector
@@ -1492,11 +1494,11 @@ int main(int argc,char **argv) {
           cout << "initialize estLineVector" << endl;
         assert(down_opt[0]%2);//window size must be odd
 
-        for(int iline=-down_opt[0]/2;iline<down_opt[0]/2+1;++iline){
+        for(int iline=-down_opt[0]/2-1;iline<down_opt[0]/2;++iline){
           if(iline<0)//replicate line 0
-            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(0),modindex+1);
+            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(0),modindex+1);
           else
-            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2],static_cast<unsigned int>(iline),modindex+1);
+            imgUpdaterEst.readData(estLineVector[iline+down_opt[0]/2+1],static_cast<unsigned int>(iline),modindex+1);
         }
         statfactory::StatFactory statobs;
         statobs.setNoDataValues(obsnodata_opt);
@@ -1769,12 +1771,12 @@ int main(int argc,char **argv) {
     ImgRasterGdal imgWriterUncert;
     imgWriterEst.open(outputfb_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
     imgWriterEst.setProjectionProj4(projection_opt[0]);
-    imgWriterEst.setGeoTransform(correctedgeotransform);
+    imgWriterEst.setGeoTransform(geotransform);
     imgWriterEst.GDALSetNoDataValue(obsnodata_opt[0]);
 
     imgWriterUncert.open(uncertfb_opt[0],ncol,nrow,nmodel,theType,imageType,option_opt);
     imgWriterUncert.setProjectionProj4(projection_opt[0]);
-    imgWriterUncert.setGeoTransform(correctedgeotransform);
+    imgWriterUncert.setGeoTransform(geotransform);
     for(int modindex=0;modindex<nmodel;++modindex){
       if(verbose_opt[0]){
         cout << "processing time " << tmodel_opt[modindex] << endl;
