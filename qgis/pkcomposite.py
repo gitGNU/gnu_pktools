@@ -34,15 +34,22 @@ from processing.core.parameters import ParameterNumber
 from processing.core.parameters import ParameterString
 from processing.core.parameters import ParameterBoolean
 from processing.core.parameters import ParameterExtent
+from processing.core.parameters import ParameterFile
 
 class pkcomposite(pktoolsAlgorithm):
 
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
-    CRULE_OPTIONS = ["overwrite", "maxndvi", "maxband", "minband", "validband", "mean", "mode", "median", "sum", "minallbands", "maxallbands","stdev"]
+    BAND = "BAND"
+    CRULE_OPTIONS = ["overwrite", "maxndvi", "maxband", "minband", "mean", "stdev", "median", "mode (use for Byte images only)", "sum", "maxallbands", "minallbands"]
     CRULE = "CRULE"
     DX = "DX"
     DY = "DY"
+    EXTENT = "EXTENT"
+    CUT = "CUT"
+    MASK = "MASK"
+    MSKBAND = "MSKBAND"
+    MSKNODATA = "MSKNODATA"
     PROJWIN = 'PROJWIN'
     CB = "CB"
     SRCNODATA = "SRCNODATA"
@@ -63,11 +70,17 @@ class pkcomposite(pktoolsAlgorithm):
         self.name = "composite/mosaic raster datasets"
         self.group = "[pktools] raster"
         self.addParameter(ParameterMultipleInput(self.INPUT, 'Input layer raster data set',ParameterMultipleInput.TYPE_RASTER))
+        self.addParameter(ParameterString(self.BAND, "band index(es) to crop (leave empty if all bands must be retained"))
         self.addParameter(ParameterSelection(self.CRULE,"composite rule",self.CRULE_OPTIONS, 0))
         self.addOutput(OutputRaster(self.OUTPUT, "Output raster data set"))
         self.addParameter(ParameterSelection(self.RTYPE, 'Output raster type (leave as none to keep original type)', self.TYPE, 0))
         self.addParameter(ParameterNumber(self.DX, "Output resolution in x (leave 0 for no change)",0.0,None,0.0))
         self.addParameter(ParameterNumber(self.DY, "Output resolution in y (leave 0 for no change)",0.0,None,0.0))
+        self.addParameter(ParameterFile(self.EXTENT, "get boundary from extent from polygons in vector file", False, optional=True))
+        self.addParameter(ParameterBoolean(self.CUT, "Crop the extent of the target dataset to the extent of the cutline.", False))
+        self.addParameter(ParameterFile(self.MASK, "Use the first band of the specified file as a validity mask (0 is nodata)",False,optional=True))
+        self.addParameter(ParameterString(self.MSKBAND, "Mask band to read (0 indexed)","0"))
+        self.addParameter(ParameterString(self.MSKNODATA, "Mask value not to consider for composite.","0"))
         self.addParameter(ParameterExtent(self.PROJWIN,
                           'Georeferenced boundingbox'))
         self.addParameter(ParameterString(self.CB, "band index(es) used for the composite rule (0 based), e.g., 0;1 in case of maxndvi","0"))
@@ -89,6 +102,12 @@ class pkcomposite(pktoolsAlgorithm):
         for inputFile in inputFiles:
             commands.append('-i')
             commands.append('"' + inputFile + '"')
+        if self.getParameterValue(self.BAND) != "":
+            bv=self.getParameterValue(self.BAND)
+            bandValues = bv.split(';')
+            for bandValue in bandValues:
+                commands.append('-b')
+                commands.append(bandValue)
 
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
@@ -105,6 +124,21 @@ class pkcomposite(pktoolsAlgorithm):
         if self.getParameterValue(self.DY) != 0:
             commands.append("-dy")
             commands.append(str(self.getParameterValue(self.DY)))
+        if self.getParameterValue(self.EXTENT) != "":
+            extent=self.getParameterValue(self.EXTENT)
+            extentFiles = extent.split(';')
+            for extentFile in extentFiles:
+                commands.append('-e')
+                commands.append('"' + extentFile + '"')
+                if self.getParameterValue(self.CUT) == True:
+                    commands.append('-cut')
+        if self.getParameterValue(self.MASK) != "":
+            commands.append('-m')
+            commands.append(self.getParameterValue(self.MASK))
+            commands.append('-mskband')
+            commands.append(str(self.getParameterValue(self.MSKBAND)))
+            commands.append('-msknodata')
+            commands.append(str(self.getParameterValue(self.MSKNODATA)))
         projwin = str(self.getParameterValue(self.PROJWIN))
         regionCoords = projwin.split(',')
         commands.append('-ulx')

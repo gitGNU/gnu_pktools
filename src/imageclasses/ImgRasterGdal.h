@@ -81,6 +81,13 @@ static GDALDataType getGDALDataType(const std::string &typeString){
   typeMap["GDT_Int32"]=GDT_Int32;
   typeMap["GDT_Float32"]=GDT_Float32;
   typeMap["GDT_Float64"]=GDT_Float64;
+  typeMap["Byte"]=GDT_Byte;
+  typeMap["UInt16"]=GDT_UInt16;
+  typeMap["Int16"]=GDT_Int16;
+  typeMap["UInt32"]=GDT_UInt32;
+  typeMap["Int32"]=GDT_Int32;
+  typeMap["Float32"]=GDT_Float32;
+  typeMap["Float64"]=GDT_Float64;
   if(typeMap.count(typeString))
     return(typeMap[typeString]);
   else
@@ -134,8 +141,12 @@ class ImgRasterGdal : public std::enable_shared_from_this<ImgRasterGdal>
   ImgRasterGdal(const app::AppFactory& app);
 
   ///destructor
-  virtual ~ImgRasterGdal(void){};
+  virtual ~ImgRasterGdal(void){if(m_data.size()) freeMem();};
 
+  ///Initialize the memory for read/write image in cache
+  CPLErr initMem();
+  ///free memory data pointer
+  void freeMem();
   ///assignment operator
   ImgRasterGdal& operator=(ImgRasterGdal& imgSrc);
   ///get write mode
@@ -167,7 +178,7 @@ class ImgRasterGdal : public std::enable_shared_from_this<ImgRasterGdal>
       return CE_Failure;
   }
   ///check if dataset is valid
-  bool isInit(){return(m_gds!=0);};
+  bool isInit(){return(m_gds!=0||m_data.size()>0);};
   ///Set scale for a specific band when writing the raster data values. The scaling and offset are applied on a per band basis. You need to set the scale for each band.
   void setScale(double theScale, int band=0){
     if(m_scale.size()!=nrOfBand()){//initialize
@@ -477,6 +488,8 @@ class ImgRasterGdal : public std::enable_shared_from_this<ImgRasterGdal>
   std::vector<double> m_scale;
   ///Vector containing the offset factor to be applied (one offset value for each band)
   std::vector<double> m_offset;
+  ///a vector of void pointers to be used for GDAL algorithm functions on images in memory
+  std::vector<void*> m_data;
 
   //From Reader
   ///register driver for GDAl
@@ -494,8 +507,6 @@ class ImgRasterGdal : public std::enable_shared_from_this<ImgRasterGdal>
 
  private:
   virtual std::shared_ptr<ImgRasterGdal> cloneImpl() {
-    //test
-    std::cout << "clone ImgRasterGdal object" << std::endl;
     /* return(std::make_shared<ImgRasterGdal>(*this,false)); */
     return(ImgRasterGdal::createImg());
   };
@@ -532,12 +543,46 @@ template<typename T> CPLErr ImgRasterGdal::readData(T& value, int col, int row, 
       if(m_offset.size()>band)
         theOffset=m_offset[band];
     }
+    if(m_data.size()){
+      //only support random access reading if entire image is in memory for performance reasons
+      int index=row*nrOfCol()+col;
+      switch(getDataType()){
+      case(GDT_Byte):
+        dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+        break;
+      case(GDT_Int16):
+        dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+        break;
+      case(GDT_UInt16):
+        dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+        break;
+      case(GDT_Int32):
+        dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+        break;
+      case(GDT_UInt32):
+        dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+        break;
+      case(GDT_Float32):
+        dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+        break;
+      case(GDT_Float64):
+        dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+        break;
+      default:
+        std::string errorString="Error: data type not supported";
+        throw(errorString);
+        break;
+      }
+      value=static_cast<T>(dvalue);
+    }
+    else{
       //fetch raster band
-    GDALRasterBand  *poBand;
-    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-    returnValue=poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,getGDALDataType<T>(),0,0);
-    dvalue=theScale*value+theOffset;
-    value=static_cast<T>(dvalue);
+      GDALRasterBand  *poBand;
+      poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+      returnValue=poBand->RasterIO(GF_Read,col,row,1,1,&value,1,1,getGDALDataType<T>(),0,0);
+      dvalue=theScale*value+theOffset;
+      value=static_cast<T>(dvalue);
+    }
     return(returnValue);
   }
   catch(std::string errorString){
@@ -600,15 +645,71 @@ template<typename T> CPLErr ImgRasterGdal::readData(std::vector<T>& buffer, int 
       if(m_offset.size()>band)
         theOffset=m_offset[band];
     }
-    //fetch raster band
-    GDALRasterBand  *poBand;
-    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-    if(buffer.size()!=maxCol-minCol+1)
-      buffer.resize(maxCol-minCol+1);
-    returnValue=poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
-    if(m_scale.size()>band||m_offset.size()>band){
-      for(int index=0;index<buffer.size();++index)
-        buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
+    if(m_data.size()){
+      if(buffer.size()!=maxCol-minCol+1)
+        buffer.resize(maxCol-minCol+1);
+      int index=row*nrOfCol();
+      int minindex=(index+minCol);
+      int maxindex=(index+maxCol);
+      if(getGDALDataType<T>()==getDataType()){//no conversion needed
+        buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
+        typename std::vector<T>::iterator bufit=buffer.begin();
+        while(bufit!=buffer.end()){
+          double dvalue=theScale*(*bufit)+theOffset;
+          *(bufit++)=static_cast<T>(dvalue);
+        }
+      }
+      else{
+        typename std::vector<T>::iterator bufit=buffer.begin();
+        for(index=minindex;index<=maxindex;++index,++bufit){
+          double dvalue=0;
+          switch(getDataType()){
+          case(GDT_Byte):
+            dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Int16):
+            dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_UInt16):
+            dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Int32):
+            dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_UInt32):
+            dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Float32):
+            dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+            break;
+          case(GDT_Float64):
+            dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+            break;
+          default:
+            std::string errorString="Error: data type not supported";
+            throw(errorString);
+            break;
+          }
+          // double dvalue=theScale*(*(static_cast<double*>(m_data[band])+index))+theOffset;
+          *(bufit)=static_cast<T>(dvalue);
+        }
+      }
+    }
+    else if(m_gds){
+      //fetch raster band
+      GDALRasterBand  *poBand;
+      poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+      if(buffer.size()!=maxCol-minCol+1)
+        buffer.resize(maxCol-minCol+1);
+      returnValue=poBand->RasterIO(GF_Read,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
+      if(m_scale.size()>band||m_offset.size()>band){
+        for(int index=0;index<buffer.size();++index)
+          buffer[index]=theScale*static_cast<double>(buffer[index])+theOffset;
+      }
+    }
+    else{
+      std::string errorString="Error: m_data nor m_gds set";
+      throw(errorString);
     }
     return(returnValue);
   }
@@ -716,17 +817,77 @@ template<typename T> CPLErr ImgRasterGdal::readDataBlock(std::vector<T>& buffer,
     }
     if(buffer.size()!=(maxRow-minRow+1)*(maxCol-minCol+1))
       buffer.resize((maxRow-minRow+1)*(maxCol-minCol+1));
-    //fetch raster band
-    GDALRasterBand  *poBand;
-    if(nrOfBand()<=band){
-      std::string errorString="Error: band number exceeds number of bands in input image";
-      throw(errorString);
+    if(m_data.size()){
+      typename std::vector<T>::iterator bufit=buffer.begin();
+      for(int irow=minRow;irow<=maxRow;++irow){
+        int index=irow*nrOfCol();
+        int minindex=(index+minCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+        int maxindex=(index+maxCol);//*(GDALGetDataTypeSize(getDataType())>>3);
+
+        if(getGDALDataType<T>()==getDataType()){//no conversion needed
+          //assign will replace current contents and modify its size accordingly
+          buffer.assign(static_cast<T*>(m_data[band])+minindex,static_cast<T*>(m_data[band])+maxindex);
+        }
+        else{
+          for(index=minindex;index<=maxindex;++index,++bufit){
+            double dvalue=0;
+            switch(getDataType()){
+            case(GDT_Byte):
+              dvalue=theScale*(static_cast<unsigned char*>(m_data[band])[index])+theOffset;
+              break;
+            case(GDT_Int16):
+              dvalue=theScale*(static_cast<short*>(m_data[band])[index])+theOffset;
+              break;
+            case(GDT_UInt16):
+              dvalue=theScale*(static_cast<unsigned short*>(m_data[band])[index])+theOffset;
+              break;
+            case(GDT_Int32):
+              dvalue=theScale*(static_cast<int*>(m_data[band])[index])+theOffset;
+              break;
+            case(GDT_UInt32):
+              dvalue=theScale*(static_cast<unsigned int*>(m_data[band])[index])+theOffset;
+              break;
+            case(GDT_Float32):
+              dvalue=theScale*(static_cast<float*>(m_data[band])[index])+theOffset;
+              break;
+            case(GDT_Float64):
+              dvalue=theScale*(static_cast<double*>(m_data[band])[index])+theOffset;
+              break;
+            default:
+              std::string errorString="Error: data type not supported";
+              throw(errorString);
+              break;
+            }
+            *(bufit)=static_cast<T>(dvalue);
+          }//for index
+        }//else
+        if(getGDALDataType<T>()==getDataType()){
+          if(m_scale.size()>band||m_offset.size()>band){
+            for(bufit=buffer.begin();bufit!=buffer.end();++bufit){
+              double dvalue=theScale*(*bufit)+theOffset;
+              *(bufit)=static_cast<T>(dvalue);
+            }
+          }
+        }
+      }
     }
-    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-    returnValue=poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
-    if(m_scale.size()>band||m_offset.size()>band){
-      for(int index=0;index<buffer.size();++index)
-        buffer[index]=theScale*buffer[index]+theOffset;
+    else if(m_gds){
+      //fetch raster band
+      GDALRasterBand  *poBand;
+      if(nrOfBand()<=band){
+        std::string errorString="Error: band number exceeds number of bands in input image";
+        throw(errorString);
+      }
+      poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+      returnValue=poBand->RasterIO(GF_Read,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
+      if(m_scale.size()>band||m_offset.size()>band){
+        for(int index=0;index<buffer.size();++index)
+          buffer[index]=theScale*buffer[index]+theOffset;
+      }
+    }
+    else{
+      std::string errorString="Error: m_data nor m_gds set";
+      throw(errorString);
     }
     return(returnValue);
   }
@@ -804,8 +965,43 @@ template<typename T> CPLErr ImgRasterGdal::writeData(const T& value, int col, in
     if(m_offset.size()>band)
       theOffset=m_offset[band];
   }
-  T dvalue=theScale*value+theOffset;
-  returnValue=m_gds->GetRasterBand(band+1)->RasterIO(GF_Write,col,row,1,1,&dvalue,1,1,getGDALDataType<T>(),0,0);
+  if(m_data.size()){
+    int index=row*nrOfCol()+col;
+    double dvalue=theScale*value+theOffset;
+    switch(getDataType()){
+    case(GDT_Byte):
+      static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+      break;
+    case(GDT_Int16):
+      static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+      break;
+    case(GDT_UInt16):
+      static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+      break;
+    case(GDT_Int32):
+      static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+      break;
+    case(GDT_UInt32):
+      static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+      break;
+    case(GDT_Float32):
+      static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+      break;
+    case(GDT_Float64):
+      static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+      break;
+    default:
+      std::string errorString="Error: data type not supported";
+      throw(errorString);
+      break;
+    }
+  }
+  else{
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    T dvalue=theScale*value+theOffset;
+    returnValue=poBand->RasterIO(GF_Write,col,row,1,1,&dvalue,1,1,getGDALDataType<T>(),0,0);
+  }
   return(returnValue);
 }
 
@@ -854,16 +1050,60 @@ template<typename T> CPLErr ImgRasterGdal::writeData(std::vector<T>& buffer, int
     s << "row (" << row << ") is negative";
     throw(s.str());
   }
-  //todo: scaling and offset!
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  if(band>=nrOfBand()+1){
-    std::ostringstream s;
-    s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
-    throw(s.str());
+  if(m_data.size()){
+    int index=row*nrOfCol();
+    int minindex=(index+minCol);
+    int maxindex=(index+maxCol);
+    typename std::vector<T>::const_iterator bufit=buffer.begin();
+    double theScale=1;
+    double theOffset=0;
+    if(m_scale.size()>band)
+      theScale=m_scale[band];
+    if(m_offset.size()>band)
+      theOffset=m_offset[band];
+    for(index=minindex;index<=maxindex;++index,++bufit){
+      double dvalue=theScale*(*(bufit))+theOffset;
+      switch(getDataType()){
+      case(GDT_Byte):
+        static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+        break;
+      case(GDT_Int16):
+        static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+        break;
+      case(GDT_UInt16):
+        static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+        break;
+      case(GDT_Int32):
+        static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+        break;
+      case(GDT_UInt32):
+        static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+        break;
+      case(GDT_Float32):
+        static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+        break;
+      case(GDT_Float64):
+        static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+        break;
+      default:
+        std::string errorString="Error: data type not supported";
+        throw(errorString);
+        break;
+      }
+    }
   }
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  returnValue=poBand->RasterIO(GF_Write,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
+  else{
+    //todo: scaling and offset!
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    if(band>=nrOfBand()+1){
+      std::ostringstream s;
+      s << "band (" << band << ") exceeds nrOfBand (" << nrOfBand() << ")";
+      throw(s.str());
+    }
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    returnValue=poBand->RasterIO(GF_Write,minCol,row,buffer.size(),1,&(buffer[0]),buffer.size(),1,getGDALDataType<T>(),0,0);
+  }
   return(returnValue);
 }
 
@@ -924,16 +1164,66 @@ template<typename T> CPLErr ImgRasterGdal::writeDataBlock(Vector2d<T>& buffer2d,
     s << "maxCol (" << maxCol << ") is less than minCol (" << minCol << ")";
     throw(s.str());
   }
-  //todo: apply scaling and offset!
-  typename std::vector<T> buffer((maxRow-minRow+1)*(maxCol-minCol+1));
-  //fetch raster band
-  GDALRasterBand  *poBand;
-  // typename std::vector<T>::iterator startit=buffer.begin();
-  for(int irow=minRow;irow<=maxRow;++irow){
-    buffer.insert(buffer.begin()+(maxCol-minCol+1)*(irow-minRow),buffer2d[irow-minRow].begin(),buffer2d[irow-minRow].end());
+  if(m_data.size()){
+    for(int irow=minRow;irow<=maxRow;++irow){
+      if(irow>=nrOfRow()){
+        std::ostringstream s;
+        s << "row (" << irow << ") exceeds nrOfRow (" << nrOfRow() << ")";
+        throw(s.str());
+      }
+      if(irow<0){
+        std::ostringstream s;
+        s << "row (" << irow << ") is negative";
+        throw(s.str());
+      }
+      int index=irow*nrOfCol();
+      int minindex=index+minCol;
+      int maxindex=index+maxCol;
+      typename std::vector<T>::iterator bufit=buffer2d[irow-minRow].begin();
+      for(index=minindex;index<=maxindex;++index,++bufit){
+        double dvalue=theScale*(*(bufit))+theOffset;
+        switch(getDataType()){
+        case(GDT_Byte):
+          static_cast<unsigned char*>(m_data[band])[index]=static_cast<unsigned char>(dvalue);
+          break;
+        case(GDT_Int16):
+          static_cast<short*>(m_data[band])[index]=static_cast<short>(dvalue);
+          break;
+        case(GDT_UInt16):
+          static_cast<unsigned short*>(m_data[band])[index]=static_cast<unsigned short>(dvalue);
+          break;
+        case(GDT_Int32):
+          static_cast<int*>(m_data[band])[index]=static_cast<int>(dvalue);
+          break;
+        case(GDT_UInt32):
+          static_cast<unsigned int*>(m_data[band])[index]=static_cast<unsigned int>(dvalue);
+          break;
+        case(GDT_Float32):
+          static_cast<float*>(m_data[band])[index]=static_cast<float>(dvalue);
+          break;
+        case(GDT_Float64):
+          static_cast<double*>(m_data[band])[index]=static_cast<double>(dvalue);
+          break;
+        default:
+          std::string errorString="Error: data type not supported";
+          throw(errorString);
+          break;
+        }
+      }
+    }
   }
-  poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
-  returnValue=poBand->RasterIO(GF_Write,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
+  else{
+    //todo: apply scaling and offset!
+    typename std::vector<T> buffer((maxRow-minRow+1)*(maxCol-minCol+1));
+    //fetch raster band
+    GDALRasterBand  *poBand;
+    // typename std::vector<T>::iterator startit=buffer.begin();
+    for(int irow=minRow;irow<=maxRow;++irow){
+      buffer.insert(buffer.begin()+(maxCol-minCol+1)*(irow-minRow),buffer2d[irow-minRow].begin(),buffer2d[irow-minRow].end());
+    }
+    poBand = m_gds->GetRasterBand(band+1);//GDAL uses 1 based index
+    returnValue=poBand->RasterIO(GF_Write,minCol,minRow,maxCol-minCol+1,maxRow-minRow+1,&(buffer[0]),(maxCol-minCol+1),(maxRow-minRow+1),getGDALDataType<T>(),0,0);
+  }
   return(returnValue);
 }
 

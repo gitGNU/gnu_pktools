@@ -531,7 +531,11 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
         imageType=oformat_opt[0];
       try{
         imgWriter.open(ncropcol,ncroprow,ncropband,theType);
-        imgWriter.setNoData(nodata_opt);
+        if(nodata_opt.size()){
+          imgWriter.setNoData(nodata_opt);
+          for(int iband=0;iband<ncropband;++iband)
+            imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
+        }
         // imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
         // if(nodata_opt.size()){
         //   imgWriter.setNoData(nodata_opt);

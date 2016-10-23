@@ -16,11 +16,11 @@ about =
       supervised classification (support vector machine);
       
 
-      To install the executables, please follow the procedure explained on the homepage
+      To install the executables, please follow the procedure explained on the homepage. Make sure to install the latest version of pktools (should be at least 2.6.8)
 
 
 category=Raster,Vector
-version=1.0.7
+version=1.0.8
 qgisMinimumVersion=2.6
 
 author=Pieter Kempeneers

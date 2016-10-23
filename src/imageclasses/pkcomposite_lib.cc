@@ -71,7 +71,7 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
   Optionpk<double> maxValue_opt("max", "max", "flag values larger or equal to this value as invalid.");
   Optionpk<double>  dstnodata_opt("dstnodata", "dstnodata", "nodata value to put in output raster dataset if not valid or out of bounds.", 0);
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
-  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image", "");
+  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
   Optionpk<string>  projection_opt("a_srs", "a_srs", "Override the spatial reference for the output file (leave blank to copy from input file, use epsg:3035 to use European projection and force to European grid");
   Optionpk<short> file_opt("file", "file", "write number of observations (1) or sequence nr of selected file (2) for each pixels as additional layer in composite", 0);
   Optionpk<short> weight_opt("w", "weight", "Weights (type: short) for the composite, use one weight for each input file in same order as input files are provided). Use value 1 for equal weights.", 1);
@@ -266,23 +266,13 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
     double magic_x=1,magic_y=1;//magic pixel for GDAL map info
 
     GDALDataType theType=GDT_Unknown;
-    if(verbose_opt[0])
-      cout << "possible output data types: ";
-    for(int iType = 0; iType < GDT_TypeCount; ++iType){
-      if(verbose_opt[0])
-        cout << " " << GDALGetDataTypeName((GDALDataType)iType);
-      if( GDALGetDataTypeName((GDALDataType)iType) != NULL
-          && EQUAL(GDALGetDataTypeName((GDALDataType)iType),
-                   otype_opt[0].c_str()))
-        theType=(GDALDataType) iType;
-    }
-    if(verbose_opt[0]){
-      cout << endl;
+    if(otype_opt.size()){
+      theType=getGDALDataType(otype_opt[0]);
       if(theType==GDT_Unknown)
-        cout << "Unknown output pixel type: " << otype_opt[0] << endl;
-      else
-        cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
+        std::cout << "Warning: unknown output pixel type: " << otype_opt[0] << ", using input type as default" << std::endl;
     }
+    if(verbose_opt[0])
+      cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
 
     double dx=0;
     double dy=0;
@@ -531,7 +521,11 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
       nwriteBand=(file_opt[0])? bands.size()+1:bands.size();
 
     imgWriter.open(ncol,nrow,nwriteBand,theType);
-    imgWriter.setNoData(dstnodata_opt);
+    if(dstnodata_opt.size()){
+      imgWriter.setNoData(dstnodata_opt);
+      for(int iband=0;iband<nwriteBand;++iband)
+        imgWriter.GDALSetNoDataValue(dstnodata_opt[0],iband);
+    }
     double gt[6];
     gt[0]=minULX;
     gt[1]=dx;
@@ -575,8 +569,10 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
         maskReader.setProjection(theProjection);
       }
       vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskReader.rasterizeOgr(extentReader,burnValues,eoption_opt);
+      maskReader.rasterizeBuf(extentReader,burnValues,eoption_opt);
       //todo: support multiple masks
+      std::vector<double> tmpBuffer;
+      maskReader.readData(tmpBuffer,1,0);
     }
     else if(mask_opt.size()==1){
       //there is only a single mask
@@ -706,19 +702,19 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
             //read mask
             double colMask=0;
             double rowMask=0;
-
             maskReader.geo2image(x,y,colMask,rowMask);
             colMask=static_cast<unsigned int>(colMask);
             rowMask=static_cast<unsigned int>(rowMask);
             if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
               if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
 
-    maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
+                maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
                 oldRowMask=rowMask;
               }
               for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
                 if(lineMask[colMask]==msknodata_opt[ivalue]){
                   valid=false;
+                  break;
                 }
               }
             }

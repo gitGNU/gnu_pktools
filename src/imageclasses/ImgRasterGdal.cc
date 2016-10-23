@@ -48,6 +48,36 @@ void ImgRasterGdal::reset(void)
   m_resample=GRIORA_NearestNeighbour;
 #endif
   m_filename.clear();
+  m_data.clear();
+}
+
+/**
+ * @param memory Available memory to cache image raster data (in MB)
+ **/
+CPLErr ImgRasterGdal::initMem()
+{
+  freeMem();
+  m_data.resize(nrOfBand());
+  for(int iband=0;iband<m_nband;++iband){
+    m_data[iband]=(void *) malloc(((GDALGetDataTypeSize(getDataType()))>>3)*nrOfCol()*m_nrow);
+    if(!(m_data[iband])){
+      std::string errorString="Error: could not allocate memory in initMem";
+      throw(errorString);
+    }
+  }
+  return(CE_None);
+}
+
+/**
+   /**
+   * @param memory Available memory to cache image raster data (in MB)
+   **/
+void ImgRasterGdal::freeMem()
+{
+  for(int iband=0;iband<m_data.size();++iband){
+    free(m_data[iband]);
+  }
+  m_data.clear();
 }
 
 /**
@@ -648,13 +678,8 @@ void ImgRasterGdal::registerDriver()
     // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
 #if GDAL_VERSION_MAJOR < 2
     GDALAllRegister();
-    if(m_access==UPDATE){
-      //test
-      std::cout << "open in update mode" << std::endl;
+    if(m_access==UPDATE)
       m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_Update);
-      //test
-      std::cout << "opened in update mode" << std::endl;
-    }
     else
       m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), GA_ReadOnly );
     // m_gds = (GDALDataset *) GDALOpen(m_filename.c_str(), readMode );
@@ -695,6 +720,7 @@ void ImgRasterGdal::registerDriver()
  * @param app application options
  **/
 ImgRasterGdal::ImgRasterGdal(const app::AppFactory &app) {
+  ImgRasterGdal();
   //input
   Optionpk<std::string> input_opt("i", "input", "input filename");
   Optionpk<std::string> resample_opt("r", "r", "resample: GRIORA_NearestNeighbour|GRIORA_Bilinear|GRIORA_Cubic|GRIORA_CubicSpline|GRIORA_Lanczos|GRIORA_Average|GRIORA_Average|GRIORA_Gauss (check http://www.gdal.org/gdal_8h.html#a640ada511cbddeefac67c548e009d5a)","GRIORA_NearestNeighbour");
@@ -1357,6 +1383,8 @@ CPLErr ImgRasterGdal::open(int ncol, int nrow, int nband, const GDALDataType& da
     m_access=WRITE;
     registerDriver();
   }
+  else
+    initMem();
   return(CE_None);
 }
 
@@ -1649,7 +1677,7 @@ void ImgRasterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
     std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
     if(layernames.size())
       if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
-  continue;
+        continue;
     std::cout << "processing layer " << currentLayername << std::endl;
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
@@ -1732,8 +1760,17 @@ void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<doub
   for(std::vector<std::string>::const_iterator optionIt=controlOptions.begin();optionIt!=controlOptions.end();++optionIt)
     coptions=CSLAddString(coptions,optionIt->c_str());
 
-  void* m_data[nrOfBand()];
+  if(m_data.size()!=nrOfBand()){
+    std::string errorString="Error: m_data not initialized";
+    throw(errorString);
+  }
   for(int iband=0;iband<nrOfBand();++iband){
+    if(!(m_data[iband])){
+      std::string errorString="Error: m_data not initialized";
+      throw(errorString);
+    }
+    Vector2d<double> initBlock(nrOfRow(),nrOfCol());
+    writeDataBlock(initBlock,0,nrOfCol()-1,0,nrOfRow()-1,iband);
     double gt[6];
     getGeoTransform(gt);
     if(controlOptions.size()){
