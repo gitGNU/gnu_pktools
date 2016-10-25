@@ -53,8 +53,8 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
   Optionpk<string> mask_opt("m", "mask", "Use the the specified file as a validity mask (0 is nodata).");
-  Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
   Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
+  Optionpk<double> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for crop.", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
   Optionpk<double>  uly_opt("uly", "uly", "Upper left y value bounding box", 0.0);
   Optionpk<double>  lrx_opt("lrx", "lrx", "Lower right x value bounding box", 0.0);
@@ -73,7 +73,7 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
   Optionpk<double> autoscale_opt("as", "autoscale", "scale output to min and max, e.g., --autoscale 0 --autoscale 255");
   Optionpk<double> scale_opt("scale", "scale", "output=scale*input+offset");
   Optionpk<double> offset_opt("offset", "offset", "output=scale*input+offset");
-  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image","");
+  Optionpk<string>  otype_opt("ot", "otype", "Data type for output image ({Byte/Int16/UInt16/UInt32/Int32/Float32/Float64/CInt16/CInt32/CFloat32/CFloat64}). Empty string: inherit type from input image");
   Optionpk<string>  oformat_opt("of", "oformat", "Output image format (see also gdal_translate).","GTiff");
   // Optionpk<string> option_opt("co", "co", "Creation option for output file. Multiple options can be specified.");
   Optionpk<string>  colorTable_opt("ct", "ct", "color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
@@ -81,7 +81,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
   Optionpk<string>  resample_opt("r", "resampling-method", "Resampling method (near: nearest neighbor, bilinear: bi-linear interpolation).", "near");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
-  Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -103,7 +102,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
   offset_opt.setHide(1);
   nodata_opt.setHide(1);
   description_opt.setHide(1);
-  memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -126,8 +124,8 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
     cut_opt.retrieveOption(app.getArgc(),app.getArgv());
     eoption_opt.retrieveOption(app.getArgc(),app.getArgv());
     mask_opt.retrieveOption(app.getArgc(),app.getArgv());
-    msknodata_opt.retrieveOption(app.getArgc(),app.getArgv());
     mskband_opt.retrieveOption(app.getArgc(),app.getArgv());
+    msknodata_opt.retrieveOption(app.getArgc(),app.getArgv());
     // option_opt.retrieveOption(app.getArgc(),app.getArgv());
     cx_opt.retrieveOption(app.getArgc(),app.getArgv());
     cy_opt.retrieveOption(app.getArgc(),app.getArgv());
@@ -140,7 +138,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
     nodata_opt.retrieveOption(app.getArgc(),app.getArgv());
     description_opt.retrieveOption(app.getArgc(),app.getArgv());
     align_opt.retrieveOption(app.getArgc(),app.getArgv());
-    memory_opt.retrieveOption(app.getArgc(),app.getArgv());
     verbose_opt.retrieveOption(app.getArgc(),app.getArgv());
   }
   catch(string predefinedString){
@@ -231,14 +228,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
     // while((imgReader=getNextImage())){
     if(verbose_opt[0])
       cout << "m_index: " << m_index << endl;
-    // for(int iimg=0;iimg<imgReader.size();++iimg){
-    // try{
-    // imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
-    // }
-    // catch(string error){
-    //   cerr << "Error: could not open file " << input_opt[iimg] << ": " << error << std::endl;
-    //   exit(1);
-    // }
     if(!isGeoRef)
       isGeoRef=(*imit)->isGeoRef();
     if((*imit)->isGeoRef()&&projection_opt.empty())
@@ -260,23 +249,14 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
   }
 
   GDALDataType theType=GDT_Unknown;
-  if(verbose_opt[0])
-    cout << "possible output data types: ";
-  for(int iType = 0; iType < GDT_TypeCount; ++iType){
-    if(verbose_opt[0])
-      cout << " " << GDALGetDataTypeName((GDALDataType)iType);
-    if( GDALGetDataTypeName((GDALDataType)iType) != NULL
-        && EQUAL(GDALGetDataTypeName((GDALDataType)iType),
-                 otype_opt[0].c_str()))
-      theType=(GDALDataType) iType;
-  }
-  if(verbose_opt[0]){
-    cout << endl;
+  if(otype_opt.size()){
+    theType=getGDALDataType(otype_opt[0]);
     if(theType==GDT_Unknown)
-      cout << "Unknown output pixel type: " << otype_opt[0] << endl;
-    else
-      cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
+      std::cout << "Warning: unknown output pixel type: " << otype_opt[0] << ", using input type as default" << std::endl;
   }
+  if(verbose_opt[0])
+    cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
+
   //bounding box of cropped image
   double cropulx=ulx_opt[0];
   double cropuly=uly_opt[0];
@@ -291,16 +271,9 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
     double e_lrx;
     double e_lry;
     for(int iextent=0;iextent<extent_opt.size();++iextent){
-      try{
-        extentReader.open(extent_opt[iextent]);
-        if(!(extentReader.getExtent(e_ulx,e_uly,e_lrx,e_lry))){
-          ostringstream os;
-          os << "Error: could not get extent from " << extent_opt[0] << endl;
-          throw(os.str());
-        }
-      }
-      catch(string error){
-        cerr << error << std::endl;
+      extentReader.open(extent_opt[iextent]);
+      if(!(extentReader.getExtent(e_ulx,e_uly,e_lrx,e_lry))){
+        cerr << "Error: could not get extent from " << extent_opt[0] << endl;
         return(CE_Failure);
       }
       if(!iextent){
@@ -414,17 +387,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
 
   // for(int iimg=0;iimg<input_opt.size();++iimg){
   for(imit=begin();imit!=end();++imit){
-    // for(int iimg=0;iimg<imgReader.size();++iimg){
-    // if(verbose_opt[0])
-    //   cout << "opening image " << input_opt[iimg] << endl;
-    // try{
-    //   imgReader.open(input_opt[iimg],GA_ReadOnly,memory_opt[0]);
-    // }
-    // catch(string error){
-    //   cerr << error << std::endl;
-    //   exit(2);
-    // }
-    //if output type not set, get type from input image
     if(theType==GDT_Unknown){
       theType=(*imit)->getDataType();
       if(verbose_opt[0])
@@ -536,10 +498,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
           for(int iband=0;iband<ncropband;++iband)
             imgWriter.GDALSetNoDataValue(nodata_opt[0],iband);
         }
-        // imgWriter.open(output_opt[0],ncropcol,ncroprow,ncropband,theType,imageType,memory_opt[0],option_opt);
-        // if(nodata_opt.size()){
-        //   imgWriter.setNoData(nodata_opt);
-        // }
       }
       catch(string errorstring){
         cout << errorstring << endl;
@@ -680,7 +638,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
                   rowMask=static_cast<unsigned int>(rowMask);
                   if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
                     if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
-
                       try{
                         maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
                       }
@@ -696,9 +653,10 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
                     }
                     for(int ivalue=0;ivalue<msknodata_opt.size();++ivalue){
                       if(lineMask[colMask]==msknodata_opt[ivalue]){
-                        valid=false;
                         if(nodata_opt.size()>ivalue)
                           nodataValue=nodata_opt[ivalue];
+                        valid=false;
+                        break;
                       }
                     }
                   }

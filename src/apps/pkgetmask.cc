@@ -59,8 +59,7 @@ The utility pkgetmask creates a mask raster dataset from an input raster dataset
  | co     | co                   | std::string |       |Creation option for output file. Multiple options can be specified. | 
  | ct     | ct                   | std::string |       |color table (file with 5 columns: id R G B ALFA (0: transparent, 255: solid) | 
 
-Usage: pkgetmask -i input -o output
-
+Usage: pkgetmask -i input -o output [-data value]* [-nodata value]*
 
 Examples
 ========
@@ -112,7 +111,7 @@ int main(int argc,char **argv) {
   }
   if(!doProcess){
     cout << endl;
-    cout << "Usage: pkgetmask -i input -o output" << endl;
+    cout << "Usage: pkgetmask -i input -o output [-data value]* [-nodata value]*" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing

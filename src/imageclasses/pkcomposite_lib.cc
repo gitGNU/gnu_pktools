@@ -79,7 +79,6 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
   Optionpk<string>  colorTable_opt("ct", "ct", "color table file with 5 columns: id R G B ALFA (0: transparent, 255: solid)");
   Optionpk<string>  description_opt("d", "description", "Set image description");
   Optionpk<bool>  align_opt("align", "align", "Align output bounding box to input image",false);
-  // Optionpk<unsigned long int>  memory_opt("mem", "mem", "Buffer size (in MB) to read image data blocks in memory",0,1);
   Optionpk<short>  verbose_opt("v", "verbose", "verbose", 0,2);
 
   extent_opt.setHide(1);
@@ -93,7 +92,6 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
   class_opt.setHide(1);
   colorTable_opt.setHide(1);
   description_opt.setHide(1);
-  // memory_opt.setHide(1);
 
   bool doProcess;//stop process when program was invoked with help option (-h --help)
   try{
@@ -126,7 +124,6 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
     colorTable_opt.retrieveOption(app.getArgc(),app.getArgv());
     description_opt.retrieveOption(app.getArgc(),app.getArgv());
     align_opt.retrieveOption(app.getArgc(),app.getArgv());
-    // memory_opt.retrieveOption(app.getArgc(),app.getArgv());
     verbose_opt.retrieveOption(app.getArgc(),app.getArgv());
     if(!doProcess){
       cout << endl;
@@ -571,8 +568,6 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
       vector<double> burnValues(1,1);//burn value is 1 (single band)
       maskReader.rasterizeBuf(extentReader,burnValues,eoption_opt);
       //todo: support multiple masks
-      std::vector<double> tmpBuffer;
-      maskReader.readData(tmpBuffer,1,0);
     }
     else if(mask_opt.size()==1){
       //there is only a single mask
@@ -707,7 +702,6 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
             rowMask=static_cast<unsigned int>(rowMask);
             if(rowMask>=0&&rowMask<maskReader.nrOfRow()&&colMask>=0&&colMask<maskReader.nrOfCol()){
               if(static_cast<unsigned int>(rowMask)!=static_cast<unsigned int>(oldRowMask)){
-
                 maskReader.readData(lineMask,static_cast<unsigned int>(rowMask),mskband_opt[0]);
                 oldRowMask=rowMask;
               }

@@ -86,7 +86,7 @@ percentile | Extract percentile as defined by option perc (e.g, 95th percentile 
  | b      | band                 | int  |       |Band index(es) to extract (0 based). Leave empty to use all bands | 
  | sband  | startband            | unsigned short |      |Start band sequence number | 
  | eband  | endband              | unsigned short |      |End band sequence number   | 
- | r      | rule                 | std::string | centroid |Rule how to report image information per feature (only for vector sample). point (single point or at centroid if polygon), allpoints (within polygon), centroid, mean, stdev, median, proportion, count, min, max, mode, sum, percentile. | 
+ | r      | rule                 | std::string | centroid |Rule how to report image information per feature. point (single point or at centroid if polygon), allpoints (within polygon), centroid, mean, stdev, median, proportion, count, min, max, mode, sum, percentile. | 
  | bndnodata | bndnodata            | int  | 0     |Band(s) in input image to check if pixel is valid (used for srcnodata) | 
  | srcnodata | srcnodata            | double |       |Invalid value(s) for input image | 
  | tp     | thresholdPolygon     | float |       |(absolute) threshold for selecting samples in each polygon | 

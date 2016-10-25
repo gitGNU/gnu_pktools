@@ -102,13 +102,12 @@ class pkcomposite(pktoolsAlgorithm):
         for inputFile in inputFiles:
             commands.append('-i')
             commands.append('"' + inputFile + '"')
-        if self.getParameterValue(self.BAND) != "":
-            bv=self.getParameterValue(self.BAND)
-            bandValues = bv.split(';')
+        band=self.getParameterValue(self.BAND)
+        if band != '':
+            bandValues = band.split(';')
             for bandValue in bandValues:
                 commands.append('-b')
                 commands.append(bandValue)
-
         if self.TYPE[self.getParameterValue(self.RTYPE)] != "none":
             commands.append('-ot')
             commands.append(self.TYPE[self.getParameterValue(self.RTYPE)])

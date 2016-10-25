@@ -86,7 +86,7 @@ class pkreclass(pktoolsAlgorithm):
 
         commands.append('-nodata')
         commands.append(str(self.getParameterValue(self.NODATA)))
-        
+
         band=str(self.getParameterValue(self.BAND))
         if band != '':
             bandValues = band.split(';')

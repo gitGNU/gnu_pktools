@@ -99,6 +99,16 @@ CPLErr ImgRasterGdal::diff(ImgRasterGdal& imgReference, const AppFactory& app){
     if(band_opt.size()<2)
       band_opt.push_back(band_opt[0]);
 
+    if(nrOfBand()<=band_opt[0]){
+      std::ostringstream helpStream;
+      helpStream << "Error: band exceeds number of bands in input dataset" << std::endl;
+      throw(helpStream.str());//help was invoked, stop processing
+    }
+    if(imgReference.nrOfBand()<=band_opt[1]){
+      std::ostringstream helpStream;
+      helpStream << "Error: band exceeds number of bands in reference dataset" << std::endl;
+      throw(helpStream.str());//help was invoked, stop processing
+    }
     // if(mask_opt.size())
     //   while(mask_opt.size()<input_opt.size())
     //     mask_opt.push_back(mask_opt[0]);
@@ -412,7 +422,6 @@ CPLErr ImgRasterGdal::diff(ImgRasterGdal& imgReference, const AppFactory& app){
       }
       else if(isDifferent){
         std::ostringstream outputStream;
-        outputStream << "Error: no input file provided (use option -i). Use --help for help information" << std::endl;
         outputStream << "Images are different" << endl;
         throw(outputStream.str());
       }

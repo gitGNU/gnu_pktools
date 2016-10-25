@@ -160,6 +160,8 @@ public:
   ///find substring in options of type string (e.g., -co INTERLEAVE=BAND)
   ///this template function only makes sense for T=std::string (implemented via a specialization)
   typename std::vector<T>::const_iterator findSubstring(const T& argument) const {std::string errorString="Error: findSubstring only defined for options of type std::string"; throw(errorString);};
+  ///this template function only makes sense for T=std::string (implemented via a specialization)
+  int countSubstring(const T& argument) const{std::string errorString="Error: countSubstring only defined for options of type std::string"; throw(errorString);};
 
  private:
   ///all options except bools should have arguments
@@ -569,4 +571,16 @@ template<> inline std::vector<std::string>::const_iterator Optionpk<std::string>
   return opit;
 }
 
+//specialization (only makes sense for T=std::string), generic function throws exception
+//find a substring in string option (e.g., option is of type -co INTERLEAVE=BAND)
+template<> inline int Optionpk<std::string>::countSubstring(const std::string& argument) const{
+  int count=0;
+  std::vector<std::string>::const_iterator opit=this->begin();
+  while(opit!=this->end()){
+    if(opit->find(argument)!=std::string::npos)
+      ++count;
+    ++opit;
+  }
+  return count;
+}
 #endif

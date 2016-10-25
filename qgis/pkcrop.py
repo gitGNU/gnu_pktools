@@ -34,6 +34,7 @@ from processing.core.parameters import ParameterNumber
 from processing.core.parameters import ParameterString
 from processing.core.parameters import ParameterBoolean
 from processing.core.parameters import ParameterExtent
+from processing.core.parameters import ParameterFile
 
 class pkcrop(pktoolsAlgorithm):
 
@@ -41,6 +42,11 @@ class pkcrop(pktoolsAlgorithm):
     OUTPUT = "OUTPUT"
     DX = "DX"
     DY = "DY"
+    EXTENT = "EXTENT"
+    CUT = "CUT"
+    MASK = "MASK"
+    MSKBAND = "MSKBAND"
+    MSKNODATA = "MSKNODATA"
     PROJWIN = 'PROJWIN'
     BAND = "BAND"
     NODATA = "NODATA"
@@ -61,6 +67,11 @@ class pkcrop(pktoolsAlgorithm):
         self.addParameter(ParameterSelection(self.RTYPE, 'Output raster type (leave as none to keep original type)', self.TYPE, 0))
         self.addParameter(ParameterNumber(self.DX, "Output resolution in x (leave 0 for no change)",0.0,None,0.0))
         self.addParameter(ParameterNumber(self.DY, "Output resolution in y (leave 0 for no change)",0.0,None,0.0))
+        self.addParameter(ParameterFile(self.EXTENT, "get boundary from extent from polygons in vector file", False, optional=True))
+        self.addParameter(ParameterBoolean(self.CUT, "Crop the extent of the target dataset to the extent of the cutline.", False))
+        self.addParameter(ParameterFile(self.MASK, "Use the first band of the specified file as a validity mask (0 is nodata)",False,optional=True))
+        self.addParameter(ParameterString(self.MSKBAND, "Mask band to read (0 indexed)","0"))
+        self.addParameter(ParameterString(self.MSKNODATA, "Mask value not to consider for composite.","0"))
         self.addParameter(ParameterExtent(self.PROJWIN,
                           'Georeferenced boundingbox'))
         self.addParameter(ParameterString(self.NODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
@@ -92,7 +103,21 @@ class pkcrop(pktoolsAlgorithm):
         if self.getParameterValue(self.DY) != 0:
             commands.append("-dy")
             commands.append(str(self.getParameterValue(self.DY)))
-
+        if self.getParameterValue(self.EXTENT) != "":
+            extent=self.getParameterValue(self.EXTENT)
+            extentFiles = extent.split(';')
+            for extentFile in extentFiles:
+                commands.append('-e')
+                commands.append('"' + extentFile + '"')
+                if self.getParameterValue(self.CUT) == True:
+                    commands.append('-cut')
+        if self.getParameterValue(self.MASK) != "":
+            commands.append('-m')
+            commands.append(self.getParameterValue(self.MASK))
+            commands.append('-mskband')
+            commands.append(str(self.getParameterValue(self.MSKBAND)))
+            commands.append('-msknodata')
+            commands.append(str(self.getParameterValue(self.MSKNODATA)))
         projwin = str(self.getParameterValue(self.PROJWIN))
         if(str(projwin).find(',')>0):
            regionCoords = projwin.split(',')
@@ -111,7 +136,6 @@ class pkcrop(pktoolsAlgorithm):
             for nodataValue in nodataValues:
                 commands.append('-nodata')
                 commands.append(nodataValue)
-        
         band=self.getParameterValue(self.BAND)
         if band != '':
             bandValues = band.split(';')

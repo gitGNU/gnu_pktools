@@ -32,7 +32,8 @@ from pktools.pkreclass import pkreclass
 from pktools.pkgetmask import pkgetmask
 from pktools.pksetmask import pksetmask
 #raster/vector utilities
-from pktools.pkextract import pkextract
+from pktools.pkextractogr import pkextractogr
+# from pktools.pkextractimg import pkextractimg
 from pktools.pkextract_grid import pkextract_grid
 from pktools.pkextract_random import pkextract_random
 #Supervised classification utilities

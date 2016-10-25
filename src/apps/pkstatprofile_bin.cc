@@ -113,9 +113,10 @@ int main(int argc,char **argv) {
       errorStream << "Error: no output file provided (use option -o). Use --help for help information" << std::endl;
       throw(errorStream.str());
     }
-
+    //todo: accept both multiple single band input (create a collection) and single input multiband
     ImgRasterGdal input;
-    input.open(input_opt[0]);
+    if(input_opt.size())
+      input.open(input_opt[0]);
 
     ImgRasterGdal imgWriter;
 
@@ -125,7 +126,8 @@ int main(int argc,char **argv) {
     else
       imageType=input.getImageType();
 
-    imgWriter.setFile(output_opt[0],imageType,option_opt);
+    if(output_opt.size())
+      imgWriter.setFile(output_opt[0],imageType,option_opt);
     input.statProfile(imgWriter,app);
 
     input.close();
