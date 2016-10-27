@@ -193,10 +193,14 @@ CPLErr ImgRasterGdal::svm(ImgRasterGdal& imgWriter, const AppFactory& app){
     entropy_opt.retrieveOption(app.getArgc(),app.getArgv());
     active_opt.retrieveOption(app.getArgc(),app.getArgv());
     nactive_opt.retrieveOption(app.getArgc(),app.getArgv());
-    verbose_opt.retrieveOption(app.getArgc(),app.getArgv());
     random_opt.retrieveOption(app.getArgc(),app.getArgv());
-    // memory_opt.retrieveOption(app.getArgc(),app.getArgv());
-
+    verbose_opt.retrieveOption(app.getArgc(),app.getArgv());
+  }
+  catch(string predefinedString){
+    std::cout << predefinedString << std::endl;
+    return(CE_Failure);
+  }
+  try{
     if(!doProcess){
       cout << endl;
       std::ostringstream helpStream;
@@ -676,12 +680,12 @@ CPLErr ImgRasterGdal::svm(ImgRasterGdal& imgWriter, const AppFactory& app){
         if(verbose_opt[0]>=1)
           std::cout << "opening prior image " << priorimg_opt[0] << std::endl;
         priorReader.open(priorimg_opt[0]);
-        assert(priorReader.nrOfCol()==imgWriter.nrOfCol());
-        assert(priorReader.nrOfRow()==imgWriter.nrOfRow());
+        assert(priorReader.nrOfCol()==.nrOfCol());
+        assert(priorReader.nrOfRow()==nrOfRow());
       }
 
-      int nrow=imgWriter.nrOfRow();
-      int ncol=imgWriter.nrOfCol();
+      int nrow=nrOfRow();
+      int ncol=nrOfCol();
       vector<char> classOut(ncol);//classified line for writing to image file
 
       //   assert(nband==imgWriter.nrOfBand());
@@ -690,30 +694,29 @@ CPLErr ImgRasterGdal::svm(ImgRasterGdal& imgWriter, const AppFactory& app){
       ImgRasterGdal probImage;
       ImgRasterGdal entropyImage;
 
-      string imageType=imgWriter.getImageType();
+      string imageType=getImageType();
       if(classBag_opt.size()){
         classImageBag.open(classBag_opt[0],ncol,nrow,nbag,GDT_Byte,imageType);
         classImageBag.GDALSetNoDataValue(nodata_opt[0]);
-        classImageBag.copyGeoTransform(imgWriter);
+        classImageBag.copyGeoTransform(*this);
         classImageBag.setProjection(this->getProjection());
       }
-      // imgWriter.open(output_opt[0],ncol,nrow,1,GDT_Byte,imageType,memory_opt[0],option_opt);
       imgWriter.open(this->nrOfCol(),this->nrOfRow(),1,GDT_Byte);
       imgWriter.GDALSetNoDataValue(nodata_opt[0]);
-      imgWriter.copyGeoTransform(imgWriter);
+      imgWriter.copyGeoTransform(*this);
       imgWriter.setProjection(this->getProjection());
       if(colorTable_opt.size())
         imgWriter.setColorTable(colorTable_opt[0],0);
       if(prob_opt.size()){
         probImage.open(prob_opt[0],ncol,nrow,nclass,GDT_Byte,imageType);
         probImage.GDALSetNoDataValue(nodata_opt[0]);
-        probImage.copyGeoTransform(imgWriter);
+        probImage.copyGeoTransform(*this);
         probImage.setProjection(this->getProjection());
       }
       if(entropy_opt.size()){
         entropyImage.open(entropy_opt[0],ncol,nrow,1,GDT_Byte,imageType);
         entropyImage.GDALSetNoDataValue(nodata_opt[0]);
-        entropyImage.copyGeoTransform(imgWriter);
+        entropyImage.copyGeoTransform(*this);
         entropyImage.setProjection(this->getProjection());
       }
 
@@ -755,7 +758,7 @@ CPLErr ImgRasterGdal::svm(ImgRasterGdal& imgWriter, const AppFactory& app){
               std::cout << "reading band " << band_opt[iband] << std::endl;
             assert(band_opt[iband]>=0);
             assert(band_opt[iband]<imgWriter.nrOfBand());
-            imgWriter.readData(buffer,iline,band_opt[iband]);
+            readData(buffer,iline,band_opt[iband]);
             for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -766,7 +769,7 @@ CPLErr ImgRasterGdal::svm(ImgRasterGdal& imgWriter, const AppFactory& app){
               std::cout << "reading band " << iband << std::endl;
             assert(iband>=0);
             assert(iband<imgWriter.nrOfBand());
-            imgWriter.readData(buffer,iline,iband);
+            readData(buffer,iline,iband);
             for(unsigned int icol=0;icol<ncol;++icol)
               hpixel[icol].push_back(buffer[icol]);
           }
@@ -985,7 +988,7 @@ CPLErr ImgRasterGdal::svm(ImgRasterGdal& imgWriter, const AppFactory& app){
           std::map<string,double> pointMap;
           for(int iband=0;iband<imgWriter.nrOfBand();++iband){
             double value;
-            imgWriter.readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
+            readData(value,static_cast<int>(activePoints[iactive].posx),static_cast<int>(activePoints[iactive].posy),iband);
             ostringstream fs;
             fs << "B" << iband;
             pointMap[fs.str()]=value;

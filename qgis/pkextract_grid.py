@@ -4,8 +4,8 @@
 ***************************************************************************
     pkextract_grid.py
     ---------------------
-    Date                 : April 2015
-    Copyright            : (C) 2015 by Pieter Kempeneers
+    Date                 : October 2016
+    Copyright            : (C) 2016 by Pieter Kempeneers
     Email                : kempenep at gmail dot com
 ***************************************************************************
 *                                                                         *
@@ -18,8 +18,8 @@
 """
 
 __author__ = 'Pieter Kempeneers'
-__date__ = 'April 2015'
-__copyright__ = '(C) 2015, Pieter Kempeneers'
+__date__ = 'April 2016'
+__copyright__ = '(C) 2016, Pieter Kempeneers'
 # This will get replaced with a git SHA1 when you do a git archive
 __revision__ = '$Format:%H$'
 
@@ -88,17 +88,14 @@ class pkextract_grid(pktoolsAlgorithm):
 
     INPUT = "INPUT"
     OUTPUT = "OUTPUT"
-    
     RULE_OPTIONS = ['centroid', 'point', 'mean', 'proportion', 'custom', 'min', 'max', 'mode', 'sum', 'median', 'stdev', 'percentile']
 
     RULE = "RULE"
-    POLYGON = "POLYGON"
     BUFFER = "BUFFER"
     GRID = "GRID"
     SRCNODATA = "SRCNODATA"
     BNDNODATA = "BNDNODATA"
     EXTRA = 'EXTRA'
-    
     FORMAT = "FORMAT"
 
     def cliName(self):
@@ -113,9 +110,8 @@ class pkextract_grid(pktoolsAlgorithm):
         self.addOutput(OutputVector(self.OUTPUT, 'Output vector data set'))
         self.addParameter(ParameterSelection(self.FORMAT,
                           'Destination Format', FORMATS))
-        self.addParameter(ParameterBoolean(self.POLYGON, "Create OGRPolygon as geometry instead of OGRPoint",False))
         self.addParameter(ParameterNumber(self.BUFFER, "Buffer for calculating statistics for point features",1,25,1))
-        self.addParameter(ParameterNumber(self.GRID, "Cell grid size (in projected units, e.g,. m)",0,1000000,1))
+        self.addParameter(ParameterNumber(self.GRID, "Cell grid size (in projected units, e.g,. m)",0,1000000,100))
 
         self.addParameter(ParameterString(self.SRCNODATA, "invalid value(s) for input raster dataset (e.g., 0;255)","none"))
         self.addParameter(ParameterString(self.BNDNODATA, "Band(s) in input image to check if pixel is valid (e.g., 0;1)","0"))
@@ -145,8 +141,6 @@ class pkextract_grid(pktoolsAlgorithm):
         commands.append('-o')
         commands.append('"' + outFile + '"')
 
-        if self.getParameterValue(self.POLYGON):
-            commands.append("-polygon")
         buffer=self.getParameterValue(self.BUFFER)
         if buffer > 1:
             commands.append("-buf")

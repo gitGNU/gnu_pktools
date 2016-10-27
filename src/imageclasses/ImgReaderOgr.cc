@@ -335,12 +335,12 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
       std::cout << std::endl;
       }
       if(!nband){
-	if(verbose)
-	  std::cout << "reading data" << std::endl;
-	nband=readData(mapPixels,OFTReal,fields,label,ilayer,true,verbose==2);
+        if(verbose)
+          std::cout << "reading data" << std::endl;
+        nband=readData(mapPixels,OFTReal,fields,label,ilayer,true,verbose==2);
       }
       else{
-	assert(nband==readData(mapPixels,OFTReal,fields,label,ilayer,true,false));
+        readData(mapPixels,OFTReal,fields,label,ilayer,true,false);
       }
       nsample=getFeatureCount(ilayer);
       totalSamples+=nsample;
@@ -421,7 +421,7 @@ unsigned int ImgReaderOgr::readDataImageOgr(std::map<std::string,Vector2d<float>
 	nband=readData(mapPixels,OFTReal,fields,label,ilayer,true,verbose==2);
       }
       else{
-	assert(nband==readData(mapPixels,OFTReal,fields,label,ilayer,true,false));
+        readData(mapPixels,OFTReal,fields,label,ilayer,true,false);
       }
       nsample=getFeatureCount(ilayer);
       totalSamples+=nsample;

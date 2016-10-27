@@ -148,8 +148,6 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
     cout << endl;
     std::ostringstream helpStream;
     helpStream << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
-    //test
-    helpStream << "throwing exception" << std::endl;
     throw(helpStream.str());//help was invoked, stop processing
   }
   // if(input_opt.empty()){

@@ -31,7 +31,6 @@ from qgis.core import QgsField
 from pktoolsUtils import pktoolsUtils
 from pktoolsAlgorithm import pktoolsAlgorithm
 from processing.core.parameters import ParameterRaster
-from processing.core.parameters import ParameterVector
 from processing.core.outputs import OutputVector
 from processing.core.outputs import OutputFile
 #from processing.core.outputs import OutputTable
@@ -114,7 +113,8 @@ class pkdiff_accuracy(pktoolsAlgorithm):
         self.name = "Accuracy assessment with ground reference"
         self.group = "[pktools] supervised classification"
         self.addParameter(ParameterRaster(self.INPUT, 'Classification result (raster map)'))
-        self.addParameter(ParameterVector(self.REFERENCE, 'Labeled reference vector data set'))
+        self.addParameter(ParameterFile(self.REFERENCE, "Labeled reference vector data set", False, optional=False))
+        self.addParameter(ParameterString(self.LAYERS, "Layer name(s) in sample (leave empty to select all",'', optional=True))
         self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
         self.addParameter(ParameterString(self.LABELREF, "Attribute name of the reference label","label"))
         self.addParameter(ParameterString(self.NODATA, "No data value(s) in input or reference dataset to ignore (e.g., 0;255)","0"))
@@ -139,15 +139,15 @@ class pkdiff_accuracy(pktoolsAlgorithm):
         commands.append('"' + input + '"')
 
         reference=self.getParameterValue(self.REFERENCE)
-        if self.getParameterValue(self.ITERATE):
-            if str(reference).find('|')>0:
-                referencename=str(reference)[:str(reference).find('|')]
-            else:
-                referencename=str(reference)
-        else:
-            referencename=str(reference).replace("|layername"," -ln")
         commands.append('-ref')
-        commands.append(referencename)
+        commands.append(reference)
+
+        layer=self.getParameterValue(self.LAYERS)
+        if layer != '':
+            layerValues = layer.split(';')
+            for layerValue in layerValues:
+                commands.append('-ln')
+                commands.append(layerValue)
 
         commands.append('-lr');
         commands.append(self.getParameterValue(self.LABELREF))

@@ -4,8 +4,8 @@
 ***************************************************************************
     pksvm.py
     ---------------------
-    Date                 : April 2015
-    Copyright            : (C) 2015 by Pieter Kempeneers
+    Date                 : April 2016
+    Copyright            : (C) 2016 by Pieter Kempeneers
     Email                : kempenep at gmail dot com
 ***************************************************************************
 *                                                                         *
@@ -18,8 +18,8 @@
 """
 
 __author__ = 'Pieter Kempeneers'
-__date__ = 'April 2015'
-__copyright__ = '(C) 2015, Pieter Kempeneers'
+__date__ = 'April 2016'
+__copyright__ = '(C) 2016, Pieter Kempeneers'
 # This will get replaced with a git SHA1 when you do a git archive
 __revision__ = '$Format:%H$'
 
@@ -27,7 +27,6 @@ import os
 from pktoolsUtils import pktoolsUtils
 from pktoolsAlgorithm import pktoolsAlgorithm
 from processing.core.parameters import ParameterMultipleInput
-from processing.core.parameters import ParameterVector
 from processing.core.parameters import ParameterRaster
 from processing.core.outputs import OutputRaster
 from processing.core.parameters import ParameterSelection
@@ -62,7 +61,8 @@ class pksvm(pktoolsAlgorithm):
         self.name = "Support vector machine"
         self.group = "[pktools] supervised classification"
         self.addParameter(ParameterRaster(self.INPUT, 'Input layer raster data set',ParameterRaster))
-        self.addParameter(ParameterVector(self.TRAINING, 'Training vector file.'))
+        self.addParameter(ParameterFile(self.TRAINING, "Training vector file", False, optional=False))
+        self.addParameter(ParameterString(self.LAYERS, "Layer name(s) in sample (leave empty to select all",'', optional=True))
         self.addParameter(ParameterBoolean(self.ITERATE, "Iterate over all layers",True))
         self.addParameter(ParameterString(self.LABEL, "Attribute name for class label in training vector file","label"))
         self.addParameter(ParameterNumber(self.GAMMA, "Gamma in kernel function",0,100,1.0))
@@ -87,16 +87,14 @@ class pksvm(pktoolsAlgorithm):
 
         commands.append('-t')
         training=self.getParameterValue(self.TRAINING)
+        commands.append(training)
 
-        if(str(training).find('|')>0):
-            if self.getParameterValue(self.ITERATE):
-                trainingname=str(training)
-                commands.append(trainingname[:trainingname.find('|')])
-            else:
-                trainingname=str(training).replace("|layername"," -ln")
-                commands.append(trainingname)
-        else:
-            commands.append(training)
+        layer=self.getParameterValue(self.LAYERS)
+        if layer != '':
+            layerValues = layer.split(';')
+            for layerValue in layerValues:
+                commands.append('-ln')
+                commands.append(layerValue)
 
         commands.append('-label')
         commands.append(str(self.getParameterValue(self.LABEL)))
@@ -116,7 +114,7 @@ class pksvm(pktoolsAlgorithm):
             for msknodataValue in msknodataValues:
                 commands.append('-msknodata')
                 commands.append(msknodataValue)
-                
+
         extra = str(self.getParameterValue(self.EXTRA))
         if len(extra) > 0:
             commands.append(extra)

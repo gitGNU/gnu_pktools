@@ -145,14 +145,17 @@ int main(int argc, char *argv[])
       throw(errorStream.str());
     }
     ImgRasterGdal imgRaster;
-    imgRaster.open(input_opt[0]);
+    if(input_opt.size())
+      imgRaster.open(input_opt[0]);
     ImgRasterGdal imgWriter;
     string imageType;
     if(oformat_opt.size())//default
       imageType=oformat_opt[0];
     else
       imageType=imgRaster.getImageType();
-    imgWriter.setFile(output_opt[0],imageType,option_opt);
+
+    if(output_opt.size())
+      imgWriter.setFile(output_opt[0],imageType,option_opt);
 
     imgRaster.svm(imgWriter,app);
     imgRaster.close();

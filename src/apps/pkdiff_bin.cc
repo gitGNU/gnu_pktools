@@ -110,8 +110,11 @@ int main(int argc, char *argv[])
       throw(errorStream.str());
     }
     ImgRasterGdal imgRaster;
-    imgRaster.open(input_opt[0]);
-    ImgRasterGdal imgReference(reference_opt[0]);
+    if(input_opt.size())
+      imgRaster.open(input_opt[0]);
+    ImgRasterGdal imgReference;
+    if(reference_opt.size())
+      imgReference.open(reference_opt[0]);
 
     imgRaster.diff(imgReference,app);
     imgRaster.close();
