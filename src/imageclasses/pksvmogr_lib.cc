@@ -679,7 +679,10 @@ CPLErr ImgReaderOgr::svm(shared_ptr<ImgWriterOgr> imgWriter, const AppFactory& a
               }
             }
             else{
-              assert(svm_check_probability_model(svm[ibag]));
+              if(!svm_check_probability_model(svm[ibag])){
+              string errorString="Error: check probability model failed";
+              throw(errorString);
+            }
               predict_label = svm_predict_probability(svm[ibag],x,&(result[0]));
             }
             if(verbose_opt[0]>1){
