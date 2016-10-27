@@ -103,7 +103,6 @@ CPLErr ImgCollection::statProfile(ImgRasterGdal& imgWriter, const AppFactory& ap
 
   if(verbose_opt[0])
     cout << "Calculating statistic metrics: " << function_opt.size() << endl;
-  // imgWriter.open(output_opt[0],this->nrOfCol(),this->nrOfRow(),function_opt.size(),theType,imageType,memory_opt[0],option_opt);
   //todo: expand for collections that have different image dimensions and geotransforms?
   imgWriter.open(this->front()->nrOfCol(),this->front()->nrOfRow(),function_opt.size(),theType);
   imgWriter.setProjection(this->front()->getProjection());
@@ -261,22 +260,6 @@ CPLErr ImgRasterGdal::statProfile(ImgRasterGdal& imgWriter, const AppFactory& ap
     }
     while(function_opt.countSubstring("percentile")<percentile_opt.size())
       function_opt.push_back("percentile");
-    // Filter filter1d;
-    // filter1d.setNoDataValues(nodata_opt);
-    // for(int iclass=0;iclass<class_opt.size();++iclass)
-    //   filter1d.pushClass(class_opt[iclass]);
-
-    // filter1d.setThresholds(percentile_opt);
-
-    // ImgRasterGdal input;
-    // ImgRasterGdal output;
-    // try{
-    //   input.open(input_opt[0],memory_opt[0]);
-    // }
-    // catch(string errorstring){
-    //   cout << errorstring << endl;
-    //   exit(1);
-    // }
 
     GDALDataType theType=getGDALDataType(otype_opt[0]);
     if(theType==GDT_Unknown)
@@ -287,7 +270,6 @@ CPLErr ImgRasterGdal::statProfile(ImgRasterGdal& imgWriter, const AppFactory& ap
 
     if(verbose_opt[0])
       cout << "Calculating statistic metrics: " << function_opt.size() << endl;
-    // imgWriter.open(output_opt[0],this->nrOfCol(),this->nrOfRow(),function_opt.size(),theType,imageType,memory_opt[0],option_opt);
     imgWriter.open(this->nrOfCol(),this->nrOfRow(),function_opt.size(),theType);
     imgWriter.setProjection(this->getProjection());
     double gt[6];

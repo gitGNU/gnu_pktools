@@ -165,7 +165,6 @@ CPLErr ImgReaderOgr::svm(shared_ptr<ImgWriterOgr> imgWriter, const AppFactory& a
     nactive_opt.retrieveOption(app.getArgc(),app.getArgv());
     verbose_opt.retrieveOption(app.getArgc(),app.getArgv());
     random_opt.retrieveOption(app.getArgc(),app.getArgv());
-    // memory_opt.retrieveOption(app.getArgc(),app.getArgv());
 
     if(!doProcess){
       cout << endl;

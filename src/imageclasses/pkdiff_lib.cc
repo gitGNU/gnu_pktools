@@ -130,7 +130,6 @@ CPLErr ImgRasterGdal::diff(ImgRasterGdal& imgReference, const AppFactory& app){
     if(confusion_opt[0]){
       if(verbose_opt[0])
         cout << "opening input image file" << endl;
-      // this->open(input_opt[0],memory_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
       this->getRange(inputRange,band_opt[0]);
       this->close();
 
@@ -186,10 +185,8 @@ CPLErr ImgRasterGdal::diff(ImgRasterGdal& imgReference, const AppFactory& app){
     float progress=0;
     // if(reference_opt[0].find(".shp")!=string::npos){
     ImgRasterGdal gdalWriter;
-    // this->open(input_opt[0],memory_opt[0]);
     if(mask_opt.size())
       maskReader.open(mask_opt[0]);
-    // maskReader.open(mask_opt[0],memory_opt[0]);
     if(output_opt.size()){
       if(verbose_opt[0])
         cout << "opening output image " << output_opt[0] << endl;
@@ -198,7 +195,6 @@ CPLErr ImgRasterGdal::diff(ImgRasterGdal& imgReference, const AppFactory& app){
         theInterleave+=this->getInterleave();
         option_opt.push_back(theInterleave);
       }
-      // gdalWriter.open(output_opt[0],this->nrOfCol(),this->nrOfRow(),1,this->getDataType(),oformat_opt[0],memory_opt[0],option_opt);
       gdalWriter.open(output_opt[0],this->nrOfCol(),this->nrOfRow(),1,this->getDataType(),oformat_opt[0],option_opt);
       if(nodata_opt.size())
         gdalWriter.GDALSetNoDataValue(nodata_opt[0]);

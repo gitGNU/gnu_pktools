@@ -147,11 +147,8 @@ CPLErr ImgCollection::validate(const AppFactory& app){
         assert(reference_opt.size()==output_opt.size());
       for(int iref=0;iref<reference_opt.size();++iref){
         cout << "reference " << reference_opt[iref] << endl;
-        // assert(reference_opt[iref].find(".shp")!=string::npos);
-        // inputReader.open(input_opt[iinput],memory_opt[0]);//,imagicX_opt[0],imagicY_opt[0]);
         if(mask_opt.size()){
           maskReader.open(mask_opt[iinput]);
-          // maskReader.open(mask_opt[iinput],memory_opt[0]);
           assert(this->at(iinput)->nrOfCol()==maskReader.nrOfCol());
           assert(this->at(iinput)->nrOfRow()==maskReader.nrOfRow());
         }

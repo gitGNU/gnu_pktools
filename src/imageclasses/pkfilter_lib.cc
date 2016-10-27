@@ -295,7 +295,6 @@ CPLErr ImgRasterGdal::filter(ImgRasterGdal& imgWriter, const AppFactory& app){
       }
       }
     }
-    // imgWriter.open(output_opt[0],(this->nrOfCol()+down_opt[0]-1)/down_opt[0],(this->nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType,imageType,memory_opt[0],option_opt);
     imgWriter.open((this->nrOfCol()+down_opt[0]-1)/down_opt[0],(this->nrOfRow()+down_opt[0]-1)/down_opt[0],nband,theType);
     imgWriter.setProjection(this->getProjection());
     double gt[6];
