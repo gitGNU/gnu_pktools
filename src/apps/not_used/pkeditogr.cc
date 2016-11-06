@@ -1,6 +1,6 @@
 /**********************************************************************
 pkeditogr.cc: program to edit (rename fields) ogr fil
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

@@ -287,14 +287,14 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
           poGeometry->Centroid(&thePoint);
           theFeature.push_back(thePoint.getX());
           theFeature.push_back(thePoint.getY());
-        }        
+        }
         else{
           //Centroid for non polygon geometry not supported until OGR 1.8.0, comment out if version < 1.8.0 is installed...";
           OGRPoint thePoint;
           poGeometry->Centroid(&thePoint);
           theFeature.push_back(thePoint.getX());
           theFeature.push_back(thePoint.getY());
-        }       
+        }
       }
       // OGRFeatureDefn *poFDefn = poLayer->GetLayerDefn();//got LayerDefn already...
       std::string featurename;
@@ -341,8 +341,10 @@ template <typename T> int ImgReaderOgr::readData(std::map<std::string,Vector2d<T
       data[theClass].push_back(theFeature);
       ++ifeature;
     }
-    if(verbose)
+    if(verbose){
+      std::cout << "number of classes: " << data.size() << std::endl;
       std::cout << "number of features read: " << ifeature << std::endl << std::flush;
+    }
     typename std::map<std::string,Vector2d<T> >::const_iterator mit=data.begin();
     int nband=0;
     if(verbose)

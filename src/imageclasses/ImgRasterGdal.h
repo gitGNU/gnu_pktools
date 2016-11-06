@@ -425,7 +425,8 @@ class ImgRasterGdal : public std::enable_shared_from_this<ImgRasterGdal>
   ///Rasterize an OGR vector dataset using the gdal algorithm "GDALRasterizeLayers"
   void rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
   ///Rasterize an OGR vector dataset in memory using the gdal algorithm "GDALRasterizeLayersBuf"
-  void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions=std::vector<std::string>(), const std::vector<std::string>& layernames=std::vector<std::string>());
+  void rasterizeBuf(ImgReaderOgr& ogrReader, double burnValue=1.0, const std::vector<std::string>& layernames=std::vector<std::string>());
+  void rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames=std::vector<std::string>());
   ///Apply thresholds: set to no data if not within thresholds t1 and t2
   CPLErr setThreshold(double t1, double t2);
   ///Apply thresholds: set to no data if not within thresholds t1 and t2, else set to value
@@ -450,6 +451,24 @@ class ImgRasterGdal : public std::enable_shared_from_this<ImgRasterGdal>
   CPLErr svm(ImgRasterGdal& imgWriter, const app::AppFactory& app);
   ///svm raster dataset
   std::shared_ptr<ImgRasterGdal> svm(const app::AppFactory& app);
+  ///ann raster dataset
+  CPLErr ann(ImgRasterGdal& imgWriter, const app::AppFactory& app);
+  ///ann raster dataset
+  std::shared_ptr<ImgRasterGdal> ann(const app::AppFactory& app);
+  ///reclass raster dataset
+  CPLErr reclass(ImgRasterGdal& imgWriter, const app::AppFactory& app);
+  ///reclass raster dataset only for in memory
+  std::shared_ptr<ImgRasterGdal> reclass(const app::AppFactory& app);
+  ///set mask to raster dataset
+  CPLErr setMask(ImgRasterGdal& imgWriter, const app::AppFactory& app);
+  ///setmask raster dataset only for in memory
+  std::shared_ptr<ImgRasterGdal> setMask(const app::AppFactory& app);
+  ///get mask to raster dataset
+  CPLErr getMask(ImgRasterGdal& imgWriter, const app::AppFactory& app);
+  ///getmask raster dataset only for in memory
+  std::shared_ptr<ImgRasterGdal> getMask(const app::AppFactory& app);
+  ///dump raster dataset
+  CPLErr dumpimg(const app::AppFactory& app=app::AppFactory());
   ///create shared pointer to ImgRasterGdal
   static std::shared_ptr<ImgRasterGdal> createImg(const std::shared_ptr<ImgRasterGdal> pSrc){
     std::shared_ptr<ImgRasterGdal> pRaster=std::make_shared<ImgRasterGdal>(*pSrc);

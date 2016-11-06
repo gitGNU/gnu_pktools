@@ -1,6 +1,6 @@
 /**********************************************************************
 pkinfo.cc: Report basic information from raster datasets (similar to gdalinfo)
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

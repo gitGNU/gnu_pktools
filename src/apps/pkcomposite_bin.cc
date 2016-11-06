@@ -93,7 +93,7 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
   | e      | extent               | std::string |       |get boundary from extent from polygons in vector file | 
   | cut      | crop_to_cutline    | bool | false |Crop the extent of the target dataset to the extent of the cutline | 
   | eo       | eo                 | std::string |       |special extent options controlling rasterization: ATTRIBUTE or CHUNKYSIZE or ALL_TOUCHED or BURN_VALUE_FROM or MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname |
-  | m      | mask                 | std::string |       |Use the first band of the specified file as a validity mask (0 is nodata) | 
+  | m      | mask                 | std::string |       |Use the specified file as a validity mask (0 is nodata) | 
   | msknodata | msknodata            | float | 0     |Mask value not to consider for composite
   | mskband | mskband              | short | 0     |Mask band to read (0 indexed) | 
   | ulx    | ulx                  | double | 0     |Upper left x value bounding box | 

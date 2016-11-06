@@ -1,6 +1,6 @@
 /**********************************************************************
 pkfsann.cc: feature selection for artificial neural network classifier pkann
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -37,56 +37,56 @@ along with pktools.  If not, see <http://www.gnu.org/licenses/>.
 
 /******************************************************************************/
 /*! \page pkfsann pkfsann
- feature selection for artificial neural network classifier pkann
-## SYNOPSIS
+  feature selection for artificial neural network classifier pkann
+  ## SYNOPSIS
 
-<code>
+  <code>
   Usage: pkfsann -t training -n number
-</code>
+  </code>
 
-<code>
+  <code>
 
   Options:
 
   Advanced options:
-</code>
+  </code>
 
-\section pkfsann_description Description
+  \section pkfsann_description Description
 
-Classification problems dealing with high dimensional input data can be challenging due to the Hughes phenomenon. Hyperspectral data, for instance, can have hundreds of spectral bands and require special attention when being classified. In particular when limited training data are available, the classification of such data can be problematic without reducing the dimension.
+  Classification problems dealing with high dimensional input data can be challenging due to the Hughes phenomenon. Hyperspectral data, for instance, can have hundreds of spectral bands and require special attention when being classified. In particular when limited training data are available, the classification of such data can be problematic without reducing the dimension.
 
-The utility pkfsann implements a number of feature selection techniques, among which a sequential floating forward search (SFFS). Also consider the SVM classifier implemented in pksvm, which has been shown to be more robust to this type of problem than others.
-\section pkfsann_options Options
- - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
- - short option `-h` shows basic options only, long option `--help` shows all options
-|short|long|type|default|description|
-|-----|----|----|-------|-----------|
- | i      | input                | std::string |       |input test set (leave empty to perform a cross validation based on training only) | 
- | t      | training             | std::string |       |training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file) | 
- | n      | nf                   | unsigned short | 0     |number of features to select (0 to select optimal number, see also ecost option) | 
- | tln    | tln                  | std::string |       |training layer name(s) | 
- | label  | label                | std::string | label |identifier for class label in training vector file. | 
- |        | balance              | unsigned int | 0     |balance the input data to this number of samples for each class | 
- | random | random               | bool | true  |in case of balance, randomize input data | 
- | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account | 
- | b      | band                 | unsigned int |      |band index (starting from 0, either use band option or use start to end) | 
- | sband  | startband            | unsigned int |      |Start band sequence number | 
- | eband  | endband              | unsigned int |      |End band sequence number   | 
- | offset | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] | 
- | scale  | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) | 
- | a      | aggreg               | unsigned short | 0     |how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule). | 
- | sm     | sm                   | std::string | sffs  |feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search) | 
- | ecost  | ecost                | float | 0.001 |epsilon for stopping criterion in cost function to determine optimal number of features | 
- | cv     | cv                   | unsigned short | 2     |n-fold cross validation mode | 
- | c      | class                | std::string |       |list of class names. | 
- | r      | reclass              | short |       |list of class values (use same order as in classname opt. | 
- | n      | nneuron              | unsigned int | 5     |number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons) | 
- |        | connection           | float | 1     |connection reate (default: 1.0 for a fully connected network) | 
- | w      | weights              | float | 0     |weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer) | 
- | l      | learning             | float | 0.7   |learning rate (default: 0.7) | 
- |        | maxit                | unsigned int | 500   |number of maximum iterations (epoch) (default: 500) | 
+  The utility pkfsann implements a number of feature selection techniques, among which a sequential floating forward search (SFFS). Also consider the SVM classifier implemented in pksvm, which has been shown to be more robust to this type of problem than others.
+  \section pkfsann_options Options
+  - use either `-short` or `--long` options (both `--long=value` and `--long value` are supported)
+  - short option `-h` shows basic options only, long option `--help` shows all options
+  |short|long|type|default|description|
+  |-----|----|----|-------|-----------|
+  | i      | input                | std::string |       |input test set (leave empty to perform a cross validation based on training only) |
+  | t      | training             | std::string |       |training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file) |
+  | n      | nf                   | unsigned short | 0     |number of features to select (0 to select optimal number, see also ecost option) |
+  | tln    | tln                  | std::string |       |training layer name(s) |
+  | label  | label                | std::string | label |identifier for class label in training vector file. |
+  |        | balance              | unsigned int | 0     |balance the input data to this number of samples for each class |
+  | random | random               | bool | true  |in case of balance, randomize input data |
+  | min    | min                  | int  | 0     |if number of training pixels is less then min, do not take this class into account |
+  | b      | band                 | unsigned int |      |band index (starting from 0, either use band option or use start to end) |
+  | sband  | startband            | unsigned int |      |Start band sequence number |
+  | eband  | endband              | unsigned int |      |End band sequence number   |
+  | offset | offset               | double | 0     |offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band] |
+  | scale  | scale                | double | 0     |scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0) |
+  | a      | aggreg               | unsigned short | 0     |how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule). |
+  | sm     | sm                   | std::string | sffs  |feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search) |
+  | ecost  | ecost                | float | 0.001 |epsilon for stopping criterion in cost function to determine optimal number of features |
+  | cv     | cv                   | unsigned short | 2     |n-fold cross validation mode |
+  | c      | class                | std::string |       |list of class names. |
+  | r      | reclass              | short |       |list of class values (use same order as in classname opt. |
+  | n      | nneuron              | unsigned int | 5     |number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons) |
+  |        | connection           | float | 1     |connection reate (default: 1.0 for a fully connected network) |
+  | w      | weights              | float | 0     |weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer) |
+  | l      | learning             | float | 0.7   |learning rate (default: 0.7) |
+  |        | maxit                | unsigned int | 500   |number of maximum iterations (epoch) (default: 500) |
 
-Usage: pkfsann -t training -n number
+  Usage: pkfsann -t training -n number
 
 
 **/
@@ -151,7 +151,7 @@ double CostFactoryANN::getCost(const vector<Vector2d<float> > &trainingFeatures)
   }
 
   net.set_learning_rate(m_learning);
-    
+
   net.set_activation_function_hidden(FANN::SIGMOID_SYMMETRIC_STEPWISE);
   net.set_activation_function_output(FANN::SIGMOID_SYMMETRIC_STEPWISE);
 
@@ -162,8 +162,8 @@ double CostFactoryANN::getCost(const vector<Vector2d<float> > &trainingFeatures)
   for(int iclass=0;iclass<nclass;++iclass){
     tmpFeatures[iclass].resize(trainingFeatures[iclass].size(),nFeatures);
     for(unsigned int isample=0;isample<m_nctraining[iclass];++isample){
-	for(int ifeature=0;ifeature<nFeatures;++ifeature){
-          tmpFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][isample][ifeature];
+      for(int ifeature=0;ifeature<nFeatures;++ifeature){
+        tmpFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][isample][ifeature];
       }
     }
   }
@@ -181,9 +181,9 @@ double CostFactoryANN::getCost(const vector<Vector2d<float> > &trainingFeatures)
       string refClassName=m_nameVector[referenceVector[isample]];
       string className=m_nameVector[outputVector[isample]];
       if(m_classValueMap.size())
-	m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
+        m_cm.incrementResult(type2string<short>(m_classValueMap[refClassName]),type2string<short>(m_classValueMap[className]),1.0);
       else
-	m_cm.incrementResult(m_cm.getClass(referenceVector[isample]),m_cm.getClass(outputVector[isample]),1.0);
+        m_cm.incrementResult(m_cm.getClass(referenceVector[isample]),m_cm.getClass(outputVector[isample]),1.0);
     }
   }
   else{//not working yet. please repair...
@@ -197,7 +197,7 @@ double CostFactoryANN::getCost(const vector<Vector2d<float> > &trainingFeatures)
     for(int iclass=0;iclass<nclass;++iclass){
       testFeatures.resize(m_nctest[iclass],nFeatures);
       for(unsigned int isample=0;isample<m_nctraining[iclass];++isample){
-	for(int ifeature=0;ifeature<nFeatures;++ifeature){
+        for(int ifeature=0;ifeature<nFeatures;++ifeature){
           testFeatures[iclass][isample][ifeature]=trainingFeatures[iclass][m_nctraining[iclass]+isample][ifeature];
         }
         result=net.run(testFeatures[iclass][isample]);
@@ -225,33 +225,33 @@ double CostFactoryANN::getCost(const vector<Vector2d<float> > &trainingFeatures)
 int main(int argc, char *argv[])
 {
   // vector<double> priors;
-  
+
   //--------------------------- command line options ------------------------------------
-  Optionpk<string> input_opt("i", "input", "input test set (leave empty to perform a cross validation based on training only)"); 
-  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)"); 
+  Optionpk<string> input_opt("i", "input", "input test set (leave empty to perform a cross validation based on training only)");
+  Optionpk<string> training_opt("t", "training", "training vector file. A single vector file contains all training features (must be set as: B0, B1, B2,...) for all classes (class numbers identified by label option). Use multiple training files for bootstrap aggregation (alternative to the bag and bsize options, where a random subset is taken from a single training file)");
   Optionpk<string> tlayer_opt("tln", "tln", "training layer name(s)");
-  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label"); 
+  Optionpk<string> label_opt("label", "label", "identifier for class label in training vector file.","label");
   Optionpk<unsigned short> maxFeatures_opt("n", "nf", "number of features to select (0 to select optimal number, see also ecost option)", 0);
   Optionpk<unsigned int> balance_opt("\0", "balance", "balance the input data to this number of samples for each class", 0);
   Optionpk<bool> random_opt("random","random", "in case of balance, randomize input data", true);
   Optionpk<int> minSize_opt("min", "min", "if number of training pixels is less then min, do not take this class into account", 0);
   Optionpk<unsigned int> band_opt("b", "band", "band index (starting from 0, either use band option or use start to end)");
-  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number"); 
-  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number"); 
+  Optionpk<unsigned int> bstart_opt("sband", "startband", "Start band sequence number");
+  Optionpk<unsigned int> bend_opt("eband", "endband", "End band sequence number");
   Optionpk<double> offset_opt("\0", "offset", "offset value for each spectral band input features: refl[band]=(DN[band]-offset[band])/scale[band]", 0.0);
   Optionpk<double> scale_opt("\0", "scale", "scale value for each spectral band input features: refl=(DN[band]-offset[band])/scale[band] (use 0 if scale min and max in each band to -1.0 and 1.0)", 0.0);
   Optionpk<unsigned short> aggreg_opt("a", "aggreg", "how to combine aggregated classifiers, see also rc option (0: no aggregation, 1: sum rule, 2: max rule).",0);
   // Optionpk<double> priors_opt("p", "prior", "prior probabilities for each class (e.g., -p 0.3 -p 0.3 -p 0.2 )", 0.0);
-  Optionpk<string> selector_opt("sm", "sm", "feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search)","sffs"); 
+  Optionpk<string> selector_opt("sm", "sm", "feature selection method (sffs=sequential floating forward search,sfs=sequential forward search, sbs, sequential backward search ,bfs=brute force search)","sffs");
   Optionpk<float> epsilon_cost_opt("ecost", "ecost", "epsilon for stopping criterion in cost function to determine optimal number of features",0.001);
   Optionpk<unsigned short> cv_opt("cv", "cv", "n-fold cross validation mode",2);
-  Optionpk<string> classname_opt("c", "class", "list of class names."); 
-  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt."); 
-  Optionpk<unsigned int> nneuron_opt("n", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5); 
-  Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0); 
-  Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0); 
-  Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7); 
-  Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500); 
+  Optionpk<string> classname_opt("c", "class", "list of class names.");
+  Optionpk<short> classvalue_opt("r", "reclass", "list of class values (use same order as in classname opt.");
+  Optionpk<unsigned int> nneuron_opt("n", "nneuron", "number of neurons in hidden layers in neural network (multiple hidden layers are set by defining multiple number of neurons: -n 15 -n 1, default is one hidden layer with 5 neurons)", 5);
+  Optionpk<float> connection_opt("\0", "connection", "connection reate (default: 1.0 for a fully connected network)", 1.0);
+  Optionpk<float> weights_opt("w", "weights", "weights for neural network. Apply to fully connected network only, starting from first input neuron to last output neuron, including the bias neurons (last neuron in each but last layer)", 0.0);
+  Optionpk<float> learning_opt("l", "learning", "learning rate (default: 0.7)", 0.7);
+  Optionpk<unsigned int> maxit_opt("\0", "maxit", "number of maximum iterations (epoch) (default: 500)", 500);
   Optionpk<short> verbose_opt("v", "verbose", "set to: 0 (results only), 1 (confusion matrix), 2 (debug)",0,2);
 
   tlayer_opt.setHide(1);
@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
   offset_opt.setHide(1);
   scale_opt.setHide(1);
   aggreg_opt.setHide(1);
-    // priors_opt.setHide(1);
+  // priors_opt.setHide(1);
   selector_opt.setHide(1);
   epsilon_cost_opt.setHide(1);
   cv_opt.setHide(1);
@@ -308,19 +308,22 @@ int main(int argc, char *argv[])
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
-    exit(0);
+    exit(1);
   }
   if(!doProcess){
     cout << endl;
     cout << "Usage: pkfsann -t training -n number" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
-    exit(0);//help was invoked, stop processing
+    exit(1);//help was invoked, stop processing
   }
-  
+
   CostFactoryANN costfactory(nneuron_opt, connection_opt[0], weights_opt, learning_opt[0], maxit_opt[0], cv_opt[0], verbose_opt[0]);
 
-  assert(training_opt.size());
+  if(training_opt.empty()){
+    std::string errorString="Error: training is empty, use option -t to provide training sample";
+    throw(errorString);
+  }
   if(input_opt.size())
     costfactory.setCv(0);
   if(verbose_opt[0]>=1){
@@ -367,17 +370,17 @@ int main(int argc, char *argv[])
   try{
     if(bstart_opt.size()){
       if(bend_opt.size()!=bstart_opt.size()){
-	string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
-	throw(errorstring);
+        string errorstring="Error: options for start and end band indexes must be provided as pairs, missing end band";
+        throw(errorstring);
       }
       band_opt.clear();
       for(int ipair=0;ipair<bstart_opt.size();++ipair){
-	if(bend_opt[ipair]<=bstart_opt[ipair]){
-	  string errorstring="Error: index for end band must be smaller then start band";
-	  throw(errorstring);
-	}
-	for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
-	  band_opt.push_back(iband);
+        if(bend_opt[ipair]<=bstart_opt[ipair]){
+          string errorstring="Error: index for end band must be smaller then start band";
+          throw(errorstring);
+        }
+        for(int iband=bstart_opt[ipair];iband<=bend_opt[ipair];++iband)
+          band_opt.push_back(iband);
       }
     }
   }
@@ -413,17 +416,17 @@ int main(int argc, char *argv[])
     if(band_opt.size()){
       totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
-	ImgReaderOgr inputReader(input_opt[0]);
-	trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
-	inputReader.close();
+        ImgReaderOgr inputReader(input_opt[0]);
+        trainingReader.readDataImageOgr(testMap,fields,band_opt,label_opt[0],tlayer_opt,verbose_opt[0]);
+        inputReader.close();
       }
     }
     else{
       totalSamples=trainingReader.readDataImageOgr(trainingMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
       if(input_opt.size()){
-	ImgReaderOgr inputReader(input_opt[0]);
-	trainingReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
-	inputReader.close();
+        ImgReaderOgr inputReader(input_opt[0]);
+        trainingReader.readDataImageOgr(testMap,fields,0,0,label_opt[0],tlayer_opt,verbose_opt[0]);
+        inputReader.close();
       }
     }
     if(trainingMap.size()<2){
@@ -443,7 +446,7 @@ int main(int argc, char *argv[])
   catch(std::exception& e){
     std::cerr << "Error: ";
     std::cerr << e.what() << std::endl;
-    std::cerr << CPLGetLastErrorMsg() << std::endl; 
+    std::cerr << CPLGetLastErrorMsg() << std::endl;
     exit(1);
   }
   catch(...){
@@ -464,14 +467,14 @@ int main(int argc, char *argv[])
     // if(classValueMap.size()){
     //   //check if name in training is covered by classname_opt (values can not be 0)
     //   if(classValueMap[mapit->first]>0){
-    // 	if(verbose_opt[0])
-    // 	  std::cout << mapit->first << " -> " << classValueMap[mapit->first] << std::endl;
+    //  if(verbose_opt[0])
+    //    std::cout << mapit->first << " -> " << classValueMap[mapit->first] << std::endl;
     //   }
     //   else{
-    // 	std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
-    // 	exit(1);
+    //  std::cerr << "Error: names in classname option are not complete, please check names in training vector and make sure classvalue is > 0" << std::endl;
+    //  exit(1);
     //   }
-    // }    
+    // }
     //delete small classes
     if((mapit->second).size()<minSize_opt[0]){
       trainingMap.erase(mapit);
@@ -525,7 +528,7 @@ int main(int argc, char *argv[])
     }
     assert(totalSamples==nclass*balance_opt[0]);
   }
-    
+
   //set scale and offset
   offset.resize(nband);
   scale.resize(nband);
@@ -566,7 +569,7 @@ int main(int argc, char *argv[])
   //     priors[iclass]=1.0/nclass;
   // }
   // assert(priors_opt.size()==1||priors_opt.size()==nclass);
-    
+
   if(verbose_opt[0]>=1){
     std::cout << "number of bands: " << nband << std::endl;
     std::cout << "number of classes: " << nclass << std::endl;
@@ -581,7 +584,7 @@ int main(int argc, char *argv[])
   for(int iname=0;iname<nameVector.size();++iname){
     if(costfactory.getClassValueMap().empty())
       costfactory.pushBackClassName(nameVector[iname]);
-      // cm.pushBackClassName(nameVector[iname]);
+    // cm.pushBackClassName(nameVector[iname]);
     else if(costfactory.getClassIndex(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]))<0)
       costfactory.pushBackClassName(type2string<short>((costfactory.getClassValueMap())[nameVector[iname]]));
   }
@@ -589,7 +592,7 @@ int main(int argc, char *argv[])
   // if(classname_opt.empty()){
   //   for(int iclass=0;iclass<nclass;++iclass){
   //     if(verbose_opt[0])
-  // 	std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
+  //  std::cout << iclass << " " << cm.getClass(iclass) << " -> " << string2type<short>(cm.getClass(iclass)) << std::endl;
   //     classValueMap[cm.getClass(iclass)]=string2type<short>(cm.getClass(iclass));
   //   }
   // }
@@ -610,12 +613,12 @@ int main(int argc, char *argv[])
     if(testPixels.size()>iclass){
       nctest[iclass]=testPixels[iclass].size();
       if(verbose_opt[0]>=1){
-	std::cout << "nctest[" << iclass << "]: " << nctest[iclass] << std::endl;
+        std::cout << "nctest[" << iclass << "]: " << nctest[iclass] << std::endl;
       }
     }
     else
       nctest[iclass]=0;
-      
+
     trainingFeatures[iclass].resize(nctraining[iclass]+nctest[iclass]);
     for(int isample=0;isample<nctraining[iclass];++isample){
       //scale pixel values according to scale and offset!!!
@@ -642,7 +645,7 @@ int main(int argc, char *argv[])
     }
     assert(trainingFeatures[iclass].size()==nctraining[iclass]+nctest[iclass]);
   }
-    
+
   costfactory.setNcTraining(nctraining);
   costfactory.setNcTest(nctest);
   int nFeatures=trainingFeatures[0][0].size();
@@ -704,13 +707,13 @@ int main(int argc, char *argv[])
   for(list<int>::const_iterator lit=subset.begin();lit!=subset.end();++lit)
     std::cout << " -b " << *lit;
   std::cout << std::endl;
-    // if((*(lit))!=subset.back())
-    // else
-    //   cout << endl;
+  // if((*(lit))!=subset.back())
+  // else
+  //   cout << endl;
 
   // *NOTE* Because svm_model contains pointers to svm_problem, you can
   // not free the memory used by svm_problem if you are still using the
-  // svm_model produced by svm_train(). 
+  // svm_model produced by svm_train().
 
   // free(prob.y);
   // free(prob.x);
@@ -718,4 +721,3 @@ int main(int argc, char *argv[])
   // svm_destroy_param(&param);
   return 0;
 }
-                            

@@ -1,6 +1,6 @@
 /**********************************************************************
 pklas2img.cc: Rasterize LAS/LAZ point clouds with filtering/compositing options
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

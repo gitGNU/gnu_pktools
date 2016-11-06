@@ -131,19 +131,8 @@ int main(int argc, char *argv[])
     output_opt.retrieveOption(argc,argv);
     oformat_opt.retrieveOption(argc,argv);
     option_opt.retrieveOption(argc,argv);
-
     app::AppFactory app(argc,argv);
 
-    if(doProcess&&input_opt.empty()){
-      std::ostringstream errorStream;
-      errorStream << "Error: no input file provided (use option -i). Use --help for help information" << std::endl;
-      throw(errorStream.str());
-    }
-    if(doProcess&&output_opt.empty()){
-      std::ostringstream errorStream;
-      errorStream << "Error: no output file provided (use option -o). Use --help for help information" << std::endl;
-      throw(errorStream.str());
-    }
     ImgRasterGdal imgRaster;
     if(input_opt.size())
       imgRaster.open(input_opt[0]);

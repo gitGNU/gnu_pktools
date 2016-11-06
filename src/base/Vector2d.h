@@ -45,6 +45,8 @@ public:
   void resize(int nrow, int ncol);
   int nRows() const {return this->size();};
   int nCols() const {if(this->size()) return this->begin()->size(); else return 0;};
+  int nrOfRow() const {return this->size();};
+  int nrOfCol() const {if(this->size()) return this->begin()->size(); else return 0;};
   void selectCol(int col, std::vector<T> &output) const;
   void selectCol(int col, T* output) const;
   std::vector<T> selectCol(int col);

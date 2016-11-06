@@ -1,6 +1,6 @@
 /**********************************************************************
 FileReaderLas.cc: class to read LAS files using liblas API library
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

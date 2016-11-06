@@ -1,6 +1,6 @@
 /**********************************************************************
 CostFactory.h: select features, typical use: feature selection for classification
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

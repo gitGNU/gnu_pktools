@@ -1,6 +1,6 @@
 /**********************************************************************
 pkfilterascii.cc: program to filter data in an ASCII file
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -141,6 +141,10 @@ int main(int argc,char **argv) {
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
     exit(0);//help was invoked, stop processing
+  }
+  if(doProcess&&input_opt.empty()){
+    std::cerr << "Error: no input file provided (use option -i). Use --help for help information" << std::endl;
+    exit(1);
   }
 
   Vector2d<double> inputData(inputCols_opt.size());

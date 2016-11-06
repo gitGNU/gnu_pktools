@@ -1,6 +1,6 @@
 /**********************************************************************
 pkgetmask.cc: program to create mask image based on values in input raster image
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -107,14 +107,14 @@ int main(int argc,char **argv) {
   }
   catch(string predefinedString){
     std::cout << predefinedString << std::endl;
-    exit(0);
+    exit(1);
   }
   if(!doProcess){
     cout << endl;
     cout << "Usage: pkgetmask -i input -o output [-data value]* [-nodata value]*" << endl;
     cout << endl;
     std::cout << "short option -h shows basic options only, use long option --help to show all options" << std::endl;
-    exit(0);//help was invoked, stop processing
+    exit(1);//help was invoked, stop processing
   }
 
   const char* pszMessage;
@@ -141,7 +141,10 @@ int main(int argc,char **argv) {
       cout << "Output pixel type:  " << GDALGetDataTypeName(theType) << endl;
   }
 
-  assert(input_opt.size());
+  if(input_opt.empty()){
+    std::string errorString="Error: input is empty, use option -i to provide input";
+    throw(errorString);
+  }
   ImgRasterGdal imgReader(input_opt[0]);
   assert(band_opt.size()>=0);
   assert(band_opt.size()<=imgReader.nrOfBand());

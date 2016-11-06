@@ -1717,6 +1717,50 @@ void ImgRasterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
 /**
  * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
  * @param burnValues Values to burn into raster cells (one value for each band)
+ * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
+ **/
+void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, double burnValue, const std::vector<std::string>& layernames ){
+  std::vector<OGRLayerH> layers;
+  int nlayer=0;
+
+  std::vector<double> burnBands;//burn values for all bands in a single layer
+  while(burnBands.size()<nrOfBand())
+    burnBands.push_back(burnValue);
+  for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
+    std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
+    if(layernames.size())
+      if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
+        continue;
+    std::cout << "processing layer " << currentLayername << std::endl;
+    layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
+    ++nlayer;
+  }
+  void* pTransformArg=NULL;
+  GDALProgressFunc pfnProgress=NULL;
+  void* pProgressArg=NULL;
+
+  if(m_data.size()!=nrOfBand()){
+    std::string errorString="Error: m_data not initialized";
+    throw(errorString);
+  }
+  for(int iband=0;iband<nrOfBand();++iband){
+    if(!(m_data[iband])){
+      std::string errorString="Error: m_data not initialized";
+      throw(errorString);
+    }
+    Vector2d<double> initBlock(nrOfRow(),nrOfCol());
+    writeDataBlock(initBlock,0,nrOfCol()-1,0,nrOfRow()-1,iband);
+    double gt[6];
+    getGeoTransform(gt);
+    if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
+      std::string errorString(CPLGetLastErrorMsg());
+      throw(errorString);
+    }
+  }
+}
+
+/**
+ * @param ogrReader Vector dataset as an instance of the ImgReaderOgr that must be rasterized
  * @param controlOptions special options controlling rasterization (ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG)
  * "ATTRIBUTE":
  * Identifies an attribute field on the features to be used for a burn in value. The value will be burned into all output bands. If specified, padfLayerBurnValues will not be used and can be a NULL pointer.
@@ -1728,26 +1772,15 @@ void ImgRasterGdal::rasterizeOgr(ImgReaderOgr& ogrReader, const std::vector<doub
  * May be REPLACE (the default) or ADD. REPLACE results in overwriting of value, while ADD adds the new value to the existing raster, suitable for heatmaps for instance.
  * @param layernames Names of the vector dataset layers to process. Leave empty to process all layers
  **/
-void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<double>& burnValues, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
-  if(burnValues.empty()&&controlOptions.empty()){
-    std::string errorString="Error: either burn values or control options must be provided";
-    throw(errorString);
-  }
-
+void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<std::string>& controlOptions, const std::vector<std::string>& layernames ){
   std::vector<OGRLayerH> layers;
   int nlayer=0;
 
-  std::vector<double> burnBands;//burn values for all bands in a single layer
-   if(burnValues.size()){
-    burnBands=burnValues;
-    while(burnBands.size()<nrOfBand())
-      burnBands.push_back(burnValues[0]);
-  }
   for(int ilayer=0;ilayer<ogrReader.getLayerCount();++ilayer){
     std::string currentLayername=ogrReader.getLayer(ilayer)->GetName();
     if(layernames.size())
       if(find(layernames.begin(),layernames.end(),currentLayername)==layernames.end())
-  continue;
+        continue;
     std::cout << "processing layer " << currentLayername << std::endl;
     layers.push_back((OGRLayerH)ogrReader.getLayer(ilayer));
     ++nlayer;
@@ -1773,21 +1806,9 @@ void ImgRasterGdal::rasterizeBuf(ImgReaderOgr& ogrReader, const std::vector<doub
     writeDataBlock(initBlock,0,nrOfCol()-1,0,nrOfRow()-1,iband);
     double gt[6];
     getGeoTransform(gt);
-    if(controlOptions.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, 0,coptions,pfnProgress,pProgressArg)!=CE_None){
-        std::string errorString(CPLGetLastErrorMsg());
-        throw(errorString);
-      }
-    }
-    else if(burnValues.size()){
-      if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, burnBands[iband],NULL,pfnProgress,pProgressArg)!=CE_None){
-        std::string errorString(CPLGetLastErrorMsg());
-        throw(errorString);
-      }
-    }
-    else{
-      std::string errorString="Error: either attribute fieldname or burn values must be set to rasterize vector dataset";
-        throw(errorString);
+    if(GDALRasterizeLayersBuf(m_data[iband],nrOfCol(),nrOfRow(),getDataType(),GDALGetDataTypeSize(getDataType())>>3,0,layers.size(),&(layers[0]), getProjectionRef().c_str(),gt,NULL, pTransformArg, 0,coptions,pfnProgress,pProgressArg)!=CE_None){
+      std::string errorString(CPLGetLastErrorMsg());
+      throw(errorString);
     }
   }
 }

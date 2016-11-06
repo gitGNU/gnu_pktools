@@ -1,6 +1,6 @@
 /**********************************************************************
 pkstatogr.cc: program to calculate basic statistics from vector file
-Copyright (C) 2008-2012 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

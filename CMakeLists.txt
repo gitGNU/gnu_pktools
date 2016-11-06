@@ -82,7 +82,6 @@ set(PKTOOLS_LASCLASSES_LIB_NAME lasClasses)
 
 option (BUILD_SHARED_LIBS "Build with shared library" ON)
 set(BUILD_WITH_LIBLAS FALSE CACHE BOOL "Choose if pktools is to be built with liblas")
-set(BUILD_WITH_FANN TRUE CACHE BOOL "Choose if pktools is to be built with fann")
 set(BUILD_WITH_PYTHON TRUE CACHE BOOL "Choose if pktools is to be built with PYTHON support")
 set(PKTOOLS_WITH_APPS TRUE CACHE BOOL "Choose if pktools applications should be built")
 
@@ -197,11 +196,6 @@ if(GSL_FOUND)
   add_definitions(-DGSL_DLL)
 endif()
 
-# find_package(Armadillo REQUIRED)
-# if(ARMADILLO_FOUND)
-#   include_directories(${ARMADILLO_INCLUDE_DIRS})
-# endif()
-
 if (BUILD_WITH_LIBLAS)
   find_package(LIBLAS)
   if(LIBLAS_FOUND)
@@ -222,13 +216,11 @@ if (BUILD_WITH_LIBLAS)
 #	endif(MSVC)
 endif(BUILD_WITH_LIBLAS)
 
-if (BUILD_WITH_FANN)
-  find_package(FANN)
-  if(FANN_FOUND)
-    include_directories(${FANN_INCLUDE_DIRS})
-    add_definitions(-DFANN_DLL)
-  endif()
-endif(BUILD_WITH_FANN)
+find_package(FANN REQUIRED)
+if(FANN_FOUND)
+  include_directories(${FANN_INCLUDE_DIRS})
+  add_definitions(-DFANN_DLL)
+endif()
 
 ###############################################################################
 
@@ -257,9 +249,9 @@ configure_file ( "pktools-config.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/pktools-
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-#set(PKLIBS ${PKTOOLS_APPCLASSES_LIB_NAME} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${ARMADILLO_LIBRARIES} ${Boost_LIBRARIES})
+# set(PKLIBS ${GSL_LIBRARIES} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${Boost_LIBRARIES} ${GSL_LIBRARIES} )
 
-set(PKLIBS ${GSL_LIBRARIES} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${Boost_LIBRARIES} ${GSL_LIBRARIES} )
+set(PKLIBS ${GSL_LIBRARIES} ${PKTOOLS_BASE_LIB_NAME} ${PKTOOLS_IMAGECLASSES_LIB_NAME} ${PKTOOLS_FILECLASSES_LIB_NAME} ${PKTOOLS_ALGORITHMS_LIB_NAME} ${GDAL_LIBRARIES} ${GSL_LIBRARIES} ${Boost_LIBRARIES} ${GSL_LIBRARIES} ${FANN_LIBRARIES})
 
 set(PKAPPS
   pkcrop
@@ -271,15 +263,17 @@ set(PKAPPS
   pkfilter
   pktest
   pksvm
+  pkann
   pksvmogr
   pkdiff
   pkvalidate
+  pkreclass
+  pksetmask
+  pkgetmask
+  pkdumpimg
   )
 
 set(PKUTILS
-  pkgetmask
-  pksetmask
-  pkdumpimg
   pkcreatect
   pksieve
   pkstat
@@ -287,7 +281,6 @@ set(PKUTILS
   pkfillnodata
   pkfilterdem
   #pkdsm2shadow
-  pkreclass
   pkpolygonize
 
   pkkalman
@@ -300,10 +293,6 @@ set(PKUTILS
   pkfilterascii
   pkascii2img
   pkascii2ogr
-)
-
-set(PKFANNAPPS
-  pkann
   pkfsann
   pkregann
 )
@@ -334,15 +323,7 @@ if (PKTOOLS_WITH_APPS)
         set_target_properties(${PKLASAPP} PROPERTIES FOLDER apps)
     endforeach()
   endif()
-  if (BUILD_WITH_FANN)
-    set(PKLIBS ${PKLIBS} ${FANN_LIBRARIES})
-    foreach(PKFANNAPP ${PKFANNAPPS})
-    add_executable(${PKFANNAPP} src/apps/${PKFANNAPP}.cc)
-    target_link_libraries (${PKFANNAPP} ${PKLIBS})
-        set_target_properties(${PKFANNAPP} PROPERTIES FOLDER apps)
-    endforeach()
-  endif()
-  add_custom_target(apps DEPENDS ${PKAPPS} ${PKTUTILS} ${PKLASAPPS} ${PKFANNAPPS})
+  add_custom_target(apps DEPENDS ${PKAPPS} ${PKTUTILS} ${PKLASAPPS})
   set_target_properties(apps PROPERTIES FOLDER
   phony)
 endif (PKTOOLS_WITH_APPS)
@@ -364,9 +345,6 @@ if (PKTOOLS_WITH_APPS)
   if (BUILD_WITH_LIBLAS)
     install (TARGETS ${PKLASAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif(BUILD_WITH_LIBLAS)
-  if (BUILD_WITH_FANN)
-    install (TARGETS ${PKFANNAPPS} DESTINATION bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-  endif(BUILD_WITH_FANN)
 endif(PKTOOLS_WITH_APPS)
 
 ###############################################################################

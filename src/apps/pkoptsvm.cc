@@ -1,6 +1,6 @@
 /**********************************************************************
 pkoptsvm.cc: program to optimize parameters for support vector machine classifier pksvm
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -273,7 +273,10 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  assert(training_opt.size());
+  if(training_opt.empty()){
+    string errorString="Error: no training provided";
+    throw(errorString);
+  }
   if(input_opt.size())
     cv_opt[0]=0;
 

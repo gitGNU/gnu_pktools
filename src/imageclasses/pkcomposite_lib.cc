@@ -56,7 +56,7 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
   Optionpk<string>  extent_opt("e", "extent", "get boundary from extent from polygons in vector file");
   Optionpk<bool> cut_opt("cut", "crop_to_cutline", "Crop the extent of the target dataset to the extent of the cutline.",false);
   Optionpk<string> eoption_opt("eo","eo", "special extent options controlling rasterization: ATTRIBUTE|CHUNKYSIZE|ALL_TOUCHED|BURN_VALUE_FROM|MERGE_ALG, e.g., -eo ATTRIBUTE=fieldname");
-  Optionpk<string> mask_opt("m", "mask", "Use the first band of the specified file as a validity mask (0 is nodata).");
+  Optionpk<string> mask_opt("m", "mask", "Use the specified file as a validity mask.");
   Optionpk<unsigned int> mskband_opt("mskband", "mskband", "Mask band to read (0 indexed)", 0);
   Optionpk<float> msknodata_opt("msknodata", "msknodata", "Mask value not to consider for composite.", 0);
   Optionpk<double>  ulx_opt("ulx", "ulx", "Upper left x value bounding box", 0.0);
@@ -565,8 +565,12 @@ CPLErr ImgCollection::composite(ImgRasterGdal& imgWriter, const AppFactory& app)
           cout << "projection: " << theProjection << endl;
         maskReader.setProjection(theProjection);
       }
-      vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskReader.rasterizeBuf(extentReader,burnValues,eoption_opt);
+      // vector<double> burnValues(1,1);//burn value is 1 (single band)
+      // maskReader.rasterizeBuf(extentReader,burnValues,eoption_opt);
+      if(eoption_opt.size())
+        maskReader.rasterizeBuf(extentReader,eoption_opt);
+      else
+        maskReader.rasterizeBuf(extentReader);
       //todo: support multiple masks
     }
     else if(mask_opt.size()==1){

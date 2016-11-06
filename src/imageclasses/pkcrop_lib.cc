@@ -345,8 +345,12 @@ CPLErr ImgCollection::crop(ImgRasterGdal& imgWriter, const AppFactory& app){
       else if(projectionString.size())
         maskReader.setProjection(projectionString);
 
-      vector<double> burnValues(1,1);//burn value is 1 (single band)
-      maskReader.rasterizeBuf(extentReader,burnValues,eoption_opt);
+      // vector<double> burnValues(1,1);//burn value is 1 (single band)
+      if(eoption_opt.size())
+        maskReader.rasterizeBuf(extentReader,eoption_opt);
+      else
+        maskReader.rasterizeBuf(extentReader);
+      // maskReader.rasterizeBuf(extentReader,burnValues,eoption_opt);
     }
     catch(string error){
       cerr << error << std::endl;

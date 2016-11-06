@@ -1,6 +1,6 @@
 /**********************************************************************
 pkegcs.cc: Utility for raster files in European Grid Coordinate System
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

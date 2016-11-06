@@ -1,6 +1,6 @@
 /**********************************************************************
 pkstat.cc: program to calculate basic statistics from raster dataset
-Copyright (C) 2008-2015 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

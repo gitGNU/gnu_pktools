@@ -1,6 +1,6 @@
 /**********************************************************************
 pkascii2img.cc: program to create raster image based on ascii file
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -115,8 +115,14 @@ int main(int argc, char *argv[])
     exit(0);//help was invoked, stop processing
   }
 
-  assert(input_opt.size());
-  assert(output_opt.size());
+  if(input_opt.empty()){
+    std::string errorString="Error: no input provided";
+    throw(errorString);
+  }
+  if(output_opt.empty()){
+    std::string errorString="Error: no output provided";
+    throw(errorString);
+  }
   ImgRasterGdal imgWriter;
   ifstream ifile(input_opt[0].c_str(),ios::in);
   //get number of lines

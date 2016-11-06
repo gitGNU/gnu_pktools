@@ -1,6 +1,6 @@
 /**********************************************************************
 pktestOption: example program how to use class Optionpk pktestOption.cc 
-Copyright (C) 2008-2013 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

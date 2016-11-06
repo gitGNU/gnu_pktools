@@ -1,6 +1,6 @@
 /**********************************************************************
 pkregann.cc: regression with artificial neural network (multi-layer perceptron)
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -128,8 +128,18 @@ int main(int argc, char *argv[])
 
   unsigned int ninput=inputCols_opt.size();
   unsigned int noutput=outputCols_opt.size();
-  assert(ninput);
-  assert(noutput);
+  if(!ninput){
+    string errorString="Error: no input columns";
+    throw(errorString);
+  }
+  if(!noutput){
+    string errorString="Error: no output columns";
+    throw(errorString);
+  }
+  if(training_opt.empty()){
+    string errorString="Error: no training provided";
+    throw(errorString);
+  }
   vector< vector<float> > inputUnits;
   vector< vector<float> > trainingUnits;
   vector< vector<float> > trainingOutput;

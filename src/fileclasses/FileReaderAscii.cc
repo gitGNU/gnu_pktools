@@ -1,6 +1,6 @@
 /**********************************************************************
 FileReaderAscii.cc: class to read ASCII files using (colum based)
-Copyright (C) 2008-2013 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 

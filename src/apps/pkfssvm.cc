@@ -1,6 +1,6 @@
 /**********************************************************************
 pkfssvm.cc: feature selection for support vector machine classifier pksvm
-Copyright (C) 2008-2014 Pieter Kempeneers
+Copyright (C) 2008-2016 Pieter Kempeneers
 
 This file is part of pktools
 
@@ -368,7 +368,10 @@ int main(int argc, char *argv[])
 
   CostFactorySVM costfactory(svm_type_opt[0], kernel_type_opt[0], kernel_degree_opt[0], gamma_opt[0], coef0_opt[0], ccost_opt[0], nu_opt[0],  epsilon_loss_opt[0], cache_opt[0], epsilon_tol_opt[0], shrinking_opt[0], prob_est_opt[0], cv_opt[0], verbose_opt[0]);
 
-  assert(training_opt.size());
+  if(training_opt.empty()){
+    std::string errorString="Error: training is empty, use option -t to provide training sample";
+    throw(errorString);
+  }
   if(input_opt.size())
     costfactory.setCv(0);
   if(verbose_opt[0]>=1){
